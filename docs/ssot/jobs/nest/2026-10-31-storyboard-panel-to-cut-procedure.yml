@@ -1,0 +1,283 @@
+title: Storyboard panel-to-cut and action-continuity procedure
+subtitle: Define a repeatable, hash-bound workflow for panel-level video cuts
+icon: workflow
+card: kk-mac-video-render-lane-ltx-video-mps-p-267f14
+date: 2026-10-31
+
+planning:
+  goal: >-
+    Define and apply a reusable procedure for extracting numbered storyboard
+    panels as separate cut guides and keeping generated character action in
+    storyboard order.
+  scope: >-
+    Document the source, crop, action-ledger, generation, QC, timing, and
+    privacy gates. Prepare private cut-level references for the currently
+    approved S01-S03 pages. Tony selected the ten-minute master on OPS-0967;
+    stage one hash-bound render pack per panel and run only after fresh Mac
+    admission passes. Do not publish private project material.
+  success_criteria:
+    - A reusable storyboard panel-to-cut procedure exists and is indexed.
+    - Every numbered panel in the three approved pages has a traceable full-panel and visual-only crop.
+    - The private Education lesson shows the procedure and all three cut-sequence contact sheets.
+    - Record the target runtime and proportional per-panel durations before prompt lock.
+    - Stage the 30 private per-panel packs with serial dependencies and stop-on-failure.
+    - A first visible-action/camera plan passes creative review before continuing the panel chain.
+  risks:
+    - Incorrect crop boundaries or reading order could change the intended action; mitigate with contact-sheet and human review.
+    - Source panel durations differ; scale each page to the selected master target without flattening per-panel timing.
+    - Private family reference material must not leak to public documentation or generated-media surfaces.
+  resources:
+    - docs/kb/storyboard-panel-to-cut-procedure.md
+    - "Private project crop bundle: gdrive:ada-nest/projects/kk-video-c9f99fee6146/presentations/panel-crops-v2-2026-10-31/"
+    - "Education lesson: lesson-f16f13e54382 (post 3107)"
+    - "Private V10 presentation: gdrive:ada-nest/projects/kk-video-c9f99fee6146/presentations/sacred-father-storyboard-complete-2026-10-31-v10.html"
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+    - label: OPS-0967 KK-Mac video render lane
+      file: docs/ssot/kanban/cards/kk-mac-video-render-lane-ltx-video-mps-p-267f14.yml
+
+processing:
+  status: completed
+  started_at: "2026-10-31"
+  steps:
+    - id: 1
+      label: Check for an existing storyboard panel procedure
+      status: completed
+      notes: >-
+        Existing member-device/Mac procedure covered admission and pack safety,
+        but not panel segmentation or character-action continuity. No
+        panel-to-cut procedure was found in MDDB or SSOT.
+    - id: 2
+      label: Extract and inventory the approved storyboard panels
+      status: completed
+      notes: >-
+        Prepared 30 numbered crops across pages 9, 12, and 15: a full-cell
+        audit crop and visual-only guide crop per panel, plus contact sheets
+        and a hash-bound map. The pages are single embedded collage images,
+        each with ten numbered panels.
+    - id: 3
+      label: Define the reusable cut and continuity procedure
+      status: completed
+      notes: >-
+        Added source pinning, panel ordering, crop provenance, per-cut action
+        ledger, character/prop continuity, serial rendering, stop-on-failure,
+        per-cut QC, timing, and privacy rules to the KB and SSOT index.
+    - id: 4
+      label: Update Education and record the timing decision
+      status: completed
+      notes: >-
+        Education post 3107 now has 37 inline images, including all ten S01
+        visual crops with source/target timing, action guidance, and render
+        status, alongside the V10 presentation pointer, procedure, contact
+        sheets, caption sheets, and 30-cut action/timing ledger. Tony answered
+        `ten-minute-master` on
+        OPS-0967; no S01-S03 panel render was started.
+    - id: 5
+      label: Stage serial per-panel KK-Mac render packs
+      status: completed
+      notes: >-
+        Staged one shared CPU T5 embedding pack and 30 per-cut I2V packs
+        (S01-C01 through S03-C10) into the isolated KK-Mac root. All 69 crop
+        bundle files and 60 generated cut-pack files passed rclone checks.
+        An isolated smoke run completed T5 embeddings and rendered C01 v2.
+        Its technical QC passed but KK/Tony rejected the creative output:
+        page-like zoom-out, off-panel people, and almost no character action.
+        C02 v2 stopped at prep at 25% free memory; no C02 inference occurred.
+        Later Mac inspection found Adobe Illustrator active during the C01
+        test; the old preflight missed it, so that run was not a valid idle-lane
+        test. The v2 panel chain is held.
+    - id: 6
+      label: Replace app-presence and input-idle blocks with resource checks
+      status: completed
+      notes: >-
+        Revised the probe so HID keyboard/mouse input is informational, not a
+        veto. Open design apps are judged by a 10s process CPU sample (<=1 CPU
+        second/app tree) and total CPU <=65%; the pack separately requires
+        >=80% free memory. Known render/export processes, uncertain readings,
+        resident Ollama, and competing Nest workers remain hard blocks.
+    - id: 7
+      label: Run activity-gated C01 retry
+      status: blocked
+      notes: >-
+        The first system-Python worker could not parse YAML because PyYAML was
+        absent; rerunning through the kk-video venv fixed that. The v3 embed
+        attempt then failed safely because its worker-count awk matched itself.
+        V4 prompt embeddings completed in 26s, but the v4 render pack failed
+        prep when a separate kk-llm Nest worker started. No C01 v3/v4 video or
+        inference was produced. The awk pattern and full-command activity scan
+        are fixed. A new v5 render-only pack reusing v4 embeddings is now staged
+        and hash-verified. The v5 pack now treats input as advisory; the Mac is
+        currently offline, so no render has started.
+  decisions:
+    - label: A panel is an action beat and visual guide, not a page to animate
+      rationale: >-
+        The full page collage obscures action order, and the C01 v2 render
+        expanded into a page-like zoom instead of animating the visible actors.
+        A panel may guide one cut or an ordered subshot sequence.
+      alternatives_considered: One generic camera move over a still panel.
+    - label: Prompt visible action separately from caption context
+      rationale: >-
+        C01's caption context mentioned the mother preparing alms, while the
+        clean crop showed only father and daughter sharing food. The broad
+        prompt introduced off-panel people and did not direct actor movement.
+      alternatives_considered: Using the full narrative caption as the motion prompt.
+    - label: Creative failure stops the sequence even when technical QC passes
+      rationale: >-
+        C01 v2 decoded correctly but did not satisfy the action/continuity goal.
+        A technical pass cannot authorize the next cut or imply a useful result.
+      alternatives_considered: Continuing the chain based only on codec/decode QC.
+    - label: Keep technical QC separate from human review
+      rationale: A valid decode does not prove that character action follows the storyboard.
+      alternatives_considered: Marking a scene approved from codec and decode checks alone.
+    - label: Normalize each page to 60 seconds for the ten-minute master
+      rationale: >-
+        The printed source totals are 120s, 180s, and 200s for the first three
+        pages. Proportional timing preserves panel pacing while making each
+        page approximately one minute.
+      alternatives_considered: Uniform panel durations or preserving all source timings.
+  changes:
+    - file: docs/kb/storyboard-panel-to-cut-procedure.md
+      summary: Added the reusable panel extraction, cut continuity, QC, and timing procedure.
+    - file: docs/ssot/ssot.procedures.yml
+      summary: Indexed the storyboard panel-to-cut standard.
+    - file: "Private Drive panel crop bundle v2"
+      summary: Added corrected 30 full/visual crops, source/target timing, action summaries, contact sheets, and caption sheets.
+    - file: scripts/colab/panel-runners/mac-owner-app-activity.py
+      summary: Added a read-only HID-idle and owner-app CPU activity probe.
+    - file: scripts/colab/panel-runners/mac-owner-resource-gate.py
+      summary: Replaced input-idle veto with measured app/system CPU and render-process checks.
+    - file: tests/colab/test_mac_owner_app_activity.py
+      summary: Added tests for activity thresholds, hard render-process blocks, and the KK LTX batch.
+    - file: tests/colab/test_mac_owner_resource_gate.py
+      summary: Added tests that recent input does not block low resource use.
+
+followup:
+  verification:
+    - "rclone check --one-way reported zero differences for all 69 v2 bundle files."
+    - "Board API lesson readback confirms 37 inline JPEGs, including all ten individual S01 visual crops."
+    - "V10 presentation SHA-256 7aa87d9f5df0110bd72106801b958f84d6432706eadafd506a268ded6e9fe6a8 and private Drive readback were verified."
+    - "The isolated smoke root has a T5 embeddings pass and one C01 v2 output; the C01 creative-review record rejects it."
+    - "C02 v2 has a prep-refusal marker (25% memory free); no C02 video output exists."
+    - "No panel clip is accepted for the master; the staged v2 chain is held pending a revised visible-action/camera prompt."
+    - "Six activity-probe unit tests pass; the live probe distinguishes Illustrator being open from active use."
+    - "The activity probe observed an active kk_mac_video_batch.py command (27GB RAM, 56% CPU) and blocked it; the process later exited."
+    - "C01 v4 prompt embeddings passed; C01 v4 render prep refused because another kk-llm Nest worker was active. No C01 video exists."
+    - "The v4 activity helper and two packs passed rclone checks; v4 render pack has a failed prep marker and must not be retried in place."
+    - "C01 v5 render-only pack reuses the completed v4 embedding and passed rclone check (0 differences)."
+    - "The unrun v5 pack now treats HIDIdleTime as informational; CPU/resource and render-process checks control the app gate."
+    - "Resource-gate tests pass (4); the previous activity-probe tests pass (6)."
+  rollback_plan:
+    - Keep source PDFs and existing cuts immutable; correct future crop annotations in a new versioned bundle.
+    - If the procedure changes, update the KB/index and preserve the prior version for audit.
+  handoff:
+    - "Once KK-Mac is online, run C01 v5 after fresh AC, Ollama, memory >=80%, competing-worker, active-render, app CPU, and system CPU checks pass."
+    - "Keyboard/mouse input and an open Adobe app are not blockers by themselves; do not close owner apps."
+    - "Do not launch remaining v2/v3/v4 panel packs. Keep v5 limited to C01."
+    - "Continue the remaining panel chain only after the corrected C01 passes both technical QC and action/creative review."
+  deferred:
+    - C01 v5 render-only retry and remaining S01-S03 panels pending KK-Mac online and fresh resource/worker admission.
+    - Public release, WordPress Media upload, narration, and mux.
+
+report:
+  status: completed
+  completed_at: "2026-10-31"
+  summary: >-
+    Defined a reusable storyboard panel-to-cut and action-continuity procedure
+    and prepared a private 30-panel crop map for S01-S03. Tony selected the
+    ten-minute master; the v2 map scales the first three source pages to 60s
+    each using their printed per-panel timings. The C01 v2 smoke clip passed
+    technical QC but KK/Tony rejected it for camera-only zoom/page motion and
+    off-panel people. C02 v2 was refused before inference at 25% free memory.
+    No useful/accepted panel clip exists yet. The corrected visible-action
+    prompt is embedded in the activity-aware v4 packs. The live probe detected
+    and blocked a separate kk_mac_video_batch.py render (27GB RAM, 56% CPU);
+    that process later exited. V4 prompt embedding succeeded, but its render
+    pack refused when a competing kk-llm worker started. The v3 embed attempt
+    exposed a worker-count self-match bug, now fixed. The v5 render-only retry
+    reuses the completed v4 embedding and is staged. Tony reports KK-Mac is
+    now off; a fresh SSH check timed out. V5's revised gate treats input as
+    advisory and will judge measured CPU/resources, known render processes,
+    memory, Ollama, and worker state. No render is running while the Mac is off.
+  metrics:
+    - metric: storyboard_pages_mapped
+      value: 3
+    - metric: numbered_panel_cuts_mapped
+      value: 30
+    - metric: panel_crop_bundle_files
+      value: 69
+    - metric: panel_cut_renders
+      value: 1
+    - metric: panel_cut_creative_rejects
+      value: 1
+    - metric: panel_cut_preflight_refusals
+      value: 1
+    - metric: accepted_panel_clips
+      value: 0
+    - metric: panel_render_packs_staged
+      value: 30
+    - metric: panel_embedding_packs_staged
+      value: 1
+    - metric: c01_v3_retry_packs_staged
+      value: 2
+    - metric: c01_v4_activity_packs_staged
+      value: 2
+    - metric: c01_v5_render_only_packs_staged
+      value: 1
+    - metric: c01_v4_prompt_embedding_passes
+      value: 1
+    - metric: c01_render_prep_refusals
+      value: 1
+    - metric: activity_probe_unit_tests
+      value: 6
+    - metric: resource_gate_unit_tests
+      value: 4
+    - metric: education_inline_images
+      value: 37
+    - metric: source_page_durations_s
+      value: "120,180,200"
+    - metric: target_duration_per_page_s
+      value: 60
+    - metric: user_timing_decision
+      value: ten-minute-master
+  links:
+    - title: Storyboard panel-to-cut procedure
+      file: docs/kb/storyboard-panel-to-cut-procedure.md
+    - title: Procedure index
+      file: docs/ssot/ssot.procedures.yml
+    - title: OPS-0967 timing decision
+      file: docs/ssot/kanban/cards/kk-mac-video-render-lane-ltx-video-mps-p-267f14.yml
+    - title: Private v2 panel crop bundle
+      url: "gdrive:ada-nest/projects/kk-video-c9f99fee6146/presentations/panel-crops-v2-2026-10-31/"
+    - title: Private V10 storyboard
+      url: "gdrive:ada-nest/projects/kk-video-c9f99fee6146/presentations/sacred-father-storyboard-complete-2026-10-31-v10.html"
+    - title: Per-panel Mac pack source
+      url: "gdrive:ada-nest-kk-mac-video-pilot/packs/kk-mac-storyboard-panel-s01-c01-v2-20261031/"
+    - title: Rejected C01 v2 creative review
+      url: "gdrive:ada-nest-kk-mac-render-smoke-20261031/packs/kk-mac-storyboard-panel-s01-c01-v2-20261031/out/creative-review.json"
+    - title: Corrected C01 v3 retry pack
+      url: "gdrive:ada-nest-kk-mac-render-smoke-20261031/packs/kk-mac-storyboard-panel-s01-c01-v3-20261031/"
+    - title: Owner-app activity probe
+      file: scripts/colab/panel-runners/mac-owner-app-activity.py
+    - title: Owner-app activity probe tests
+      file: tests/colab/test_mac_owner_app_activity.py
+    - title: Owner-app resource gate
+      file: scripts/colab/panel-runners/mac-owner-resource-gate.py
+    - title: Resource gate tests
+      file: tests/colab/test_mac_owner_resource_gate.py
+    - title: C01 v5 render-only retry
+      url: "gdrive:ada-nest-kk-mac-render-smoke-20261031/packs/kk-mac-storyboard-panel-s01-c01-v5-activity-20261102/"
+  kb_review:
+    - Reuse this procedure for future multi-panel storyboard scenes.
+  lessons_learned:
+    - Keep original page collages as context, but render from separately hash-bound panel crops.
+
+config:
+  version: 1
+  created_at: "2026-10-31"
+  last_updated: "2026-11-02"
+  maintainer: tony
+  related_files:
+    - docs/kb/storyboard-panel-to-cut-procedure.md
+    - docs/ssot/ssot.procedures.yml
+    - docs/ssot/templates/job.yml

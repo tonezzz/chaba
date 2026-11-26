@@ -1,0 +1,68 @@
+title: render_job media upload — output_url must be a WP attachment URL
+id: 2026-11-23-render-job-media-upload
+card: render-job-writer-must-upload-output-to-78229c
+date: 2026-11-23
+status: implemented-in-worktree (chaba side; ada-voice call-site wiring pending)
+summary: |
+  Card follow-up to OPS-0701: render_job records were landing with
+  filesystem paths (job 117: /local/local-gen/test-sdxl-1024.png — file
+  later lost, image unrecoverable; the plugin's v0.4.1 flags these as
+  broken on the QC scoreboard + wp-admin widget). The convention
+  (ssot.wp-boards.yml writers.render_job): output MUST be uploaded via
+  POST /wp/v2/media and output_url set to the returned source_url — or
+  chaba/v1/media/<id> for member-gated delivery.
+
+what_landed:
+  - path: scripts/lib/wp_boards.py
+    what: |
+      Shared WP boards REST client (the plumbing every scripts/ada/*.py
+      writer hand-rolls: wp-boards.env parse, Basic auth,
+      index.php?rest_route= quirk) plus the two render primitives:
+      upload_media() POSTs the binary to /wp/v2/media (path|bytes|fileobj|
+      http(s) URL source, Content-Disposition filename, WP_MEDIA_MAX_BYTES
+      cap) and write_render_job() uploads `output` FIRST, then creates (or
+      slug-upserts) the render_job post with output_url=source_url,
+      featured_media=attachment id, title per title_standard
+      ("Render — {prompt-short} {date}", status private). member_gated=True
+      stores the plugin's chaba/v1/media/<id> REST URL instead.
+      output_url is HARD-validated: a non-http(s) value (i.e. a filesystem
+      path — the original bug) raises before any WP write.
+  - path: scripts/ada/render-job-record.py
+    what: |
+      CLI wrapper — `render-job-record.py --kind image|video --prompt ...
+      --output <path|url> [meta flags] [--slug] [--dry-run]`. Prints
+      {ok,id,slug,output_url}; exit 2 on failure. This is the drop-in
+      target for ada-voice render tools (ada_render_image /
+      ada_render_video / local_image lane) — they can subprocess it via
+      CHABA_REPO (precedent: tools.d/trip_calendar.py shells out to
+      scripts/ada/trip-calendar.py) or port lib.wp_boards directly.
+  - path: tests/test_wp_boards.py
+    what: 11 unit tests, fully offline (mocked urllib) — pins upload-
+      before-post ordering, output_url=source_url, featured_media,
+      path-output_url rejection, slug upsert, member_gated URL, dry-run.
+
+gap_remaining:
+  - |
+    The live call sites are in the ada-voice repo
+    (backend/tools.d/ada_render_image.py, ada_render_video.py +
+    wp_client.py) — NOT in chaba. This dispatch's worktree is chaba-only,
+    so the writer implementation landed here as the canonical shared
+    module + CLI; the ada-voice tools still need to call it (subprocess
+    to scripts/ada/render-job-record.py on a host with the chaba exec
+    checkout + wp-boards.env, or an ada-voice-side patch adding
+    wp_client.upload_media). Until then new renders keep landing
+    path-only output_urls.
+  - |
+    Live verification (done-condition: a real render_job uploads to
+    /wp/v2/media and logs a valid output_url) needs a writer host —
+    tony-macbook has no ~/.config/secrets/wp-boards.env. Run on
+    tony-dell/idc03:
+      python3 ~/CascadeProjects/chaba/scripts/ada/render-job-record.py \
+        --kind image --prompt "verify render_job media upload" \
+        --output /path/to/test.png --source dispatch-verify
+    then check /wp/v2/render_job for the new private post.
+
+verify:
+  - python3 -m unittest tests.test_wp_boards   # 11 tests, offline
+  - python3 scripts/ada/render-job-record.py --kind image --prompt x \
+      --output <png> --dry-run                  # payload preview (needs env)

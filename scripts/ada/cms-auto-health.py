@@ -11,6 +11,10 @@ Card lifecycle (the auto-improve loop):
   still unhealthy  -> note updated in place (card history = incident log)
   recovered        -> column=done after GREEN_WINDOWS consecutive healthy
                       ticks (flap guard), note records the recovery time
+  host-down        -> cfg['host'] tailnet-offline: a powered-off
+                      generator host can't refresh its pages — expected,
+                      not broken; no card is created and an open card
+                      auto-closes through the same green-window path
   interval_min=0   -> manual-trigger pages; no staleness check
 
 Runs anywhere with MDDB access; writes into a chaba checkout. Committing
@@ -21,6 +25,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 import time
 import urllib.request
@@ -47,6 +52,9 @@ ESCALATE_H = 12
 # automations (registry stale but page alternately judged fresh) would
 # thrash review<->done every sync; require consecutive green windows.
 GREEN_WINDOWS = 2
+# states that never open a card. host-down = the generator host is
+# powered off (reachability gate below) — expected, not broken.
+HEALTHY_STATES = ("ok", "manual", "host-down")
 
 
 def _post(path: str, payload: dict, timeout: int = 30) -> dict | list:
@@ -85,6 +93,26 @@ def page_freshness() -> dict[str, float]:
     return out
 
 
+def page_ts_for(slug: str) -> float | None:
+    """Targeted page timestamp — MDDB /search caps at 1000 docs and drops
+    older-but-live pages (cms-auto-news-flood false positive). /get works."""
+    if not slug:
+        return None
+    best = 0.0
+    for lang in ("en", "th", "ja", "zh"):
+        try:
+            d = _post("/get", {"collection": "ada-cms-pages",
+                               "key": slug, "lang": lang})
+        except Exception:
+            continue
+        if not isinstance(d, dict):
+            continue
+        ts = d.get("updatedAt")
+        if isinstance(ts, (int, float)):
+            best = max(best, float(ts))
+    return best or None
+
+
 def _parse_ts(raw) -> float | None:
     """Registry last_run can be epoch, naive local ISO, or tz-aware ISO
     (flood-news-update/roster-audit stamp UTC). mktime(strptime) treated
@@ -121,9 +149,14 @@ def judge(cfg: dict, now: float, page_ts: float | None = None) -> tuple[str, str
     if last_ts is None:
         if fresh_page:
             return "ok", "registry unrun but page regenerated recently"
+        if page_ts is not None:
+            return "ok", "registry unrun but page published (md5-gated)"
         return "dead", f"enabled every {interval}m but never ran"
     overdue_s = now - last_ts - interval * 60
-    if last_status and last_status != "ok":
+    # "no-items" means the producer ran and found nothing (flood RSS
+    # quiet day) — healthy, not an error. Other non-ok statuses still fail.
+    if last_status and last_status != "ok" and last_status not in (
+            "no-items", "no_items", "no-change", "unchanged"):
         return "error", f"last_status={last_status} — {last_error or 'no detail'}"
     if overdue_s > GRACE_S:
         if fresh_page:
@@ -131,6 +164,82 @@ def judge(cfg: dict, now: float, page_ts: float | None = None) -> tuple[str, str
         return "stale", (f"last_run {int(overdue_s // 60)}m overdue "
                          f"(interval {interval}m)")
     return "ok", ""
+
+
+# ---- generator-host reachability gate -------------------------------
+# Per-host producers (nest-mgr) stamp cfg["host"]; when that host is
+# offline on the tailnet its pages can't refresh — staleness is
+# expected, not broken, and host-down alerting already lives in the
+# ops-event reachability lane. Probed lazily via one
+# `tailscale status --json` per run, only when a cfg would otherwise go
+# unhealthy.
+_TS_PROBED = False
+_TS_PEERS: dict[str, bool] | None = None
+
+
+def _tailscale_peers() -> dict[str, bool] | None:
+    """tailnet label -> online map, or None when tailscale isn't usable
+    on this runner — callers must fail OPEN so a probe outage never
+    masks real staleness."""
+    global _TS_PROBED, _TS_PEERS
+    if _TS_PROBED:
+        return _TS_PEERS
+    _TS_PROBED = True
+    try:
+        proc = subprocess.run(["tailscale", "status", "--json"],
+                              capture_output=True, text=True, timeout=15)
+        if proc.returncode != 0:
+            return None
+        doc = json.loads(proc.stdout)
+
+        def labels(p: dict) -> set[str]:
+            out = {str(p.get("HostName") or "").lower(),
+                   str((p.get("DNSName") or "").split(".")[0]).lower()}
+            out.update(str(ip) for ip in (p.get("TailscaleIPs") or []))
+            return {x for x in out if x}
+
+        peers: dict[str, bool] = {}
+        # self is up by definition — the status call itself proves it
+        for lab in labels(doc.get("Self") or {}):
+            peers[lab] = True
+        for p in (doc.get("Peer") or {}).values():
+            online = p.get("Online")
+            if isinstance(online, bool):
+                for lab in labels(p):
+                    peers[lab] = online
+        _TS_PEERS = peers
+    except Exception:
+        pass
+    return _TS_PEERS
+
+
+def host_online(host) -> bool | None:
+    """cfg['host'] -> True/False; None = unknown (empty value, tailscale
+    unavailable, or host not a tailnet peer) — always fail OPEN."""
+    h = str(host or "").strip().lower()
+    if not h:
+        return None
+    peers = _tailscale_peers()
+    if peers is None:
+        return None
+    for cand in (h, h.split(".")[0]):
+        if cand in peers:
+            return peers[cand]
+    return None
+
+
+def host_gate(state: str, reason: str, cfg: dict) -> tuple[str, str]:
+    """Demote a non-healthy verdict to 'host-down' when the generator
+    host is confirmed tailnet-offline. Unknown reachability keeps the
+    judged state — the gate only suppresses on positive evidence."""
+    if state in HEALTHY_STATES or not cfg.get("host"):
+        return state, reason
+    if host_online(cfg["host"]) is False:
+        return "host-down", (
+            f"{reason} — but generator host `{cfg['host']}` is offline "
+            "on the tailnet; staleness while powered off is expected "
+            "(host-down alerting is the ops-event lane's job)")
+    return state, reason
 
 
 def card_path(slug: str) -> Path:
@@ -153,17 +262,19 @@ def main() -> int:
     now = time.time()
     today = time.strftime("%Y-%m-%d")
     cms = "https://idc03.taila0626a.ts.net/cms"
-    n_bad = n_ok = n_recovered = 0
+    n_bad = n_ok = n_recovered = n_hostdown = 0
     freshness = page_freshness()
     for cfg in list_automations():
         slug = cfg["_slug"]
         if not slug:
             continue
-        state, reason = judge(cfg, now, freshness.get(slug))
+        page_ts = freshness.get(slug) or page_ts_for(slug)
+        state, reason = judge(cfg, now, page_ts)
+        state, reason = host_gate(state, reason, cfg)
         path = card_path(slug)
         card = load_card(path)
         exists = path.exists()
-        healthy = state in ("ok", "manual")
+        healthy = state in HEALTHY_STATES
 
         if not healthy:
             n_bad += 1
@@ -197,7 +308,10 @@ def main() -> int:
             card.pop("ok_streak", None)
             write_card(path, card)
         else:
-            n_ok += 1
+            if state == "host-down":
+                n_hostdown += 1
+            else:
+                n_ok += 1
             # auto-close: unhealthy card whose automation stayed healthy
             # for GREEN_WINDOWS consecutive ticks
             if exists and card.get("column") == "review" and \
@@ -206,20 +320,36 @@ def main() -> int:
                 if streak >= GREEN_WINDOWS:
                     card["column"] = "done"
                     card.pop("ok_streak", None)
-                    card["note"] = (f"Auto-recovered {today}: {slug} "
-                                    f"healthy for {streak} consecutive "
-                                    f"ticks (status={cfg.get('last_status')}"
-                                    f", state={state}).")
+                    if state == "host-down":
+                        card["note"] = (
+                            f"Auto-closed {today}: {slug} generator host "
+                            f"`{cfg.get('host')}` offline on tailnet "
+                            "— staleness while powered off is expected, "
+                            "not a broken automation.")
+                    else:
+                        card["note"] = (
+                            f"Auto-recovered {today}: {slug} healthy for "
+                            f"{streak} consecutive ticks "
+                            f"(status={cfg.get('last_status')}, "
+                            f"state={state}).")
                     card["updated"] = today
                     n_recovered += 1
                 else:
                     card["ok_streak"] = streak
-                    card["note"] = (f"Recovering: {slug} healthy for "
-                                    f"{streak}/{GREEN_WINDOWS} ticks — "
-                                    "auto-closes when the streak holds.")
+                    if state == "host-down":
+                        card["note"] = (
+                            f"Recovering: {slug} host "
+                            f"`{cfg.get('host')}` offline "
+                            f"({streak}/{GREEN_WINDOWS} ticks) — "
+                            "auto-closes when the streak holds.")
+                    else:
+                        card["note"] = (
+                            f"Recovering: {slug} healthy for "
+                            f"{streak}/{GREEN_WINDOWS} ticks — "
+                            "auto-closes when the streak holds.")
                 write_card(path, card)
     print(f"cms-auto-health: {n_bad} unhealthy, {n_ok} ok/manual, "
-          f"{n_recovered} auto-recovered")
+          f"{n_hostdown} host-down, {n_recovered} auto-recovered")
     return 0
 
 

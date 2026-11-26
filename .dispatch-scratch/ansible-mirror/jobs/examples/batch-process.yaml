@@ -1,0 +1,29 @@
+# Example CPU-only Batch Job
+# Dispatch with: ./scripts/dispatch_job.py -f jobs/examples/batch-process.yaml
+
+job_id: "batch-process-{{ '%Y%m%d-%H%M' | strftime }}"
+job_image: "python:3.11-slim"
+job_cmd: >
+  python -c "
+  import time, json, os
+  print('Starting batch job', os.environ.get('JOB_ID'))
+  for i in range(10):
+      time.sleep(30)
+      print(f'Progress: {i*10}%')
+  print('Job completed')
+  "
+
+# Resource requirements (CPU only)
+job_gpus: 0
+job_max_load_pct: 80
+job_max_mem_pct: 85
+job_timeout_sec: 3600  # 1 hour
+
+# Placement constraints - prefer IDC hosts, avoid GPU hosts (save for ML)
+job_require_tags: ["idc"]
+job_exclude_tags: ["gpu", "laptop"]
+target_group: "idc"
+
+# Runtime
+container_runtime: "podman"
+sidecar_redis_host: "100.123.163.11"

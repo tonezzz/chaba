@@ -1,0 +1,65 @@
+# Video queue read-only audit — video-queue-audit-opencode retry
+title: Video queue audit — read-only status + Sacred Father canonical check
+card: video-queue-audit-opencode
+date: 2026-11-26
+session: dispatch-wt-20261126-152413-run-the-existing-read-only-vid
+hosts_touched: none (read-only Drive audit via rclone + repo artifacts only)
+
+summary: >-
+  Re-ran the read-only queue audit that the 2026-11-03 opencode attempt
+  failed to land (verifier rejected a gitignored artifact path; card was
+  re-queued 2026-11-26 after the pilot proved the reports/card-runner/
+  path). Fresh inventory of both video roots is byte-identical in state
+  to the 2026-11-24 audit: pilot 14 packs (11 done / 1 queued / 2 failed),
+  ada-nest 79 packs (60 done / 19 queued), zero live or stale claims,
+  39 residual claim files on done packs (ages 492-812h). Sacred Father
+  canonical final-preview artifacts re-verified live (qc_pass=true).
+  No claims released, no Drive writes, no renders started.
+
+audit:
+  tool: scripts/devnest/video_queue_status.py (stale-hours=2.0 default)
+  roots:
+    - gdrive:ada-nest/kk-mac-video-pilot   # spec's "ada-nest-kk-mac-video-pilot" does not exist; real path per tool docstring
+    - gdrive:ada-nest
+  fresh_audit_2026-11-26:
+    gdrive:ada-nest/kk-mac-video-pilot:
+      packages: 14 (12 render / 2 support)
+      states: "11 done, 1 queued, 2 failed"
+      queued: kk-mac-mlx-colab-scene0-control-20261124
+      claims: "0 active, 0 stale, 2 residual on done packs (~640h)"
+    gdrive:ada-nest:
+      packages: 79 (30 render / 49 support)
+      states: "60 done, 19 queued"
+      claims: "0 active, 0 stale, 37 residual on done packs (492-812h)"
+  delta_vs_2026-11-24: "zero — no pack added/removed, no state transition, no new claims in ~48h"
+  report_json: reports/video-queue-status-2026-11-26.json
+  report_md: reports/card-runner/video-queue-status-opencode.md
+
+sacred_father:
+  project_id: kk-video-c9f99fee6146
+  canonical_manifest: reports/sacred-father-canonical-manifest-20261103.yml
+  dispatch_manifest: scripts/devnest/video-manifests/sacred-father-final-preview.yml
+  qc_verified: >-
+    video_dispatch.py verify re-run 2026-11-26 -> verified:true,
+    qc_pass:true on final/pdf-final-preview-v4-clean.{mp4,th.srt,en.srt}
+    under gdrive:ada-nest/kk-mac-video-pilot.
+  queued_pack: kk-video-c9f99fee6146-preview-v2 (ada-nest, unclaimed)
+  open_question: >-
+    final/pdf-final-preview-canonical-v1.mp4 (2026-11-04 alternate encode)
+    still unmanifested on the same final/ root — canonical-or-stray
+    decision remains Tony/KK's.
+
+recommendations:
+  - "no claims to release — queues idle"
+  - "role-triage 20 queued packs: retire 12 support/eval + T4-QUEUE-ADDITIONS.md; promote doc-v2 chain + preview-v2 only via approved video-dispatch/v1 manifest"
+  - "scene0 control awaits KK review then kk-mac-mlx-controls.yml approved:true + apply"
+  - "optional approved hygiene: clean/retire 39 residual claim files; re-publish corrected canonical manifest to Drive manifests/"
+
+verification:
+  - "python3 scripts/devnest/video_queue_status.py > reports/video-queue-status-2026-11-26.json (exit 0)"
+  - "python3 scripts/devnest/video_dispatch.py verify --manifest scripts/devnest/video-manifests/sacred-father-final-preview.yml (verified:true)"
+  - "state diff vs reports/video-queue-status-2026-11-24.json: empty"
+
+not_done_by_design:
+  - "no claim release / no Drive mutation / no renders — card spec is read-only"
+  - "queued-pack retirement and manifest promotion are dispatch-gated, not audit actions"

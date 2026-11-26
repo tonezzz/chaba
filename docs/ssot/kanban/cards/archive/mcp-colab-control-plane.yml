@@ -1,0 +1,184 @@
+id: mcp-colab-control-plane
+title: build mcp-colab — Colab fleet control plane (packs, tunnel, model probes)
+column: done
+updated: 2026-11-23 13:34
+brief: 'Consolidate Colab management into one MCP server (fleet pattern: mcp-gpu, mcp-llama). Wraps rclone gdrive
+  + queue-runner state + tunnel probe so agents/Ada/IDE can submit packs, check status, fetch results without Drive
+  poking.'
+priority: high
+program: chaba-ci
+tags:
+- colab
+- mcp
+- eval
+- free-lane
+spec: 'Python MCP server, host = tony-dell (has gdrive rclone remote + tailnet to idc03). Tools: pack_status (list
+  packs, claim/done state), pack_submit (copy local pack.yml+inputs to ada-nest/packs/<name>/), pack_result (cat
+  out/*.json), tunnel_check (curl 127.0.0.1:11434 via idc03 or probe proxy colab-qwen3), model_probe (chat 1-token
+  through LiteLLM). Depends: rclone gdrive remote (dell), queue-runner convention (drive ada-nest/packs). v1 = read+submit
+  only, no destructive ops. Test: list packs, submit a smoke pack, fetch its result.'
+note: 'OPS-0792 eval family — efficiency driver: one surface to manage Colab instead of manual rclone/notebook poking.'
+ref: OPS-0808
+comms:
+- at: 2026-10-24 08:54
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-24 09:36
+  from: devin
+  text: 'Deployed to all hosts: dell (local, live in session), omen (local files + litellm secret + registered,
+    verified pack_status), macbook (ssh->dell pattern, registered, verified). Omen also already had Google official
+    colab-mcp (kernel-level) — complements mine (fleet/queue-level).'
+- at: 2026-10-24 17:46
+  from: tony
+  text: queued for processing
+- at: 2026-10-24 17:47
+  from: tony-omen
+  text: claimed
+- at: 2026-10-24 17:47
+  from: chaba
+  text: started devin-task-20261024-174711-python-mcp-server-host-tony-de on tony-omen (dispatch)
+- at: 2026-10-24 17:48
+  from: devin
+  text: 'dispatch 174711 picked up card — server.py already on branch (fe76cf12d, built 08:57). Verifying tools
+    end-to-end on omen: rclone gdrive:ada-nest/packs reachable, listing live state now.'
+- at: 2026-10-24 17:56
+  from: tony-omen
+  text: 'finished (ok): exit=0 ctive mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261024-174711-python-mcp-se'
+- at: 2026-10-24 17:56
+  from: chaba
+  text: 'session-end checkpoint c7baa2fc: 1 leftover file(s) committed'
+- at: 2026-10-24 17:56
+  from: chaba
+  text: pushed dispatch/20261024-174711-python-mcp-server-host-tony-de to origin
+- at: 2026-10-24 17:56
+  from: chaba
+  text: 'test gate failed — merge held: tests/ops/test_podman_lock_watchdog.py::Tick::test_dead_pause_pid_removed'
+- at: 2026-10-24 17:56
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-10-24 17:59
+  from: chaba
+  text: 'merge-sweep: merged a46d8a14 (dispatch/20261024-174711-python-mcp-server-host-tony-de from tony-omen) ->
+    origin/master — marked verified (exit_code=0; 2 file(s) changed vs base) — auto-closed'
+- at: 2026-10-24 17:59
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261024-174711-python-mcp-server-host-tony-de,
+    branch dispatch/20261024-174711-python-mcp-server-host-tony-de on tony-omen'
+- at: 2026-10-25 17:10
+  from: devin
+  text: 'Status inconsistency 2026-10-25: colab_pack_status reports eval-code-14b/nasa-embeds/nasa-i2v CLAIMED,
+    but direct Drive checks show no claim files; heartbeat is stale at vyncx-v2-score flush-settle. Also decision-arena
+    and jev-triage contain reports but no pack.yml, yet appear QUEUED. Make pack_status require actual claim objects
+    and pack.yml before reporting claimed/queued.'
+- at: 2026-11-08 10:53
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-10 22:21
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-12 00:21
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-12 06:22
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:06
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:15
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:36
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:37
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:04
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:15
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:01
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:17
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:01
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:05
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:41
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:34
+  from: tony
+  text: archived (1d in done, verified)
+action:
+  type: dispatch
+  status: done
+  runner: tony-omen
+  result: 'exit=0 ctive mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261024-174711-python-mcp-server-host-tony-de.service:
+    Consumed 1min 673ms CPU time over 6min 3ms wall clock time, 1G memory peak, 343.1M memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-24 17:59
+  note: verified — exit_code=0; 2 file(s) changed vs base

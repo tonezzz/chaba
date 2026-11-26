@@ -1,0 +1,102 @@
+title: Illustration-pivot metadata for comparison-c-omen-sdxl (OPS-1079, pass 2)
+id: adobe-stock-illustration-pivot-test
+date: 2026-11-26
+card: adobe-stock-illustration-pivot-test
+ref: OPS-1079
+program: adobe-stock
+domain: nest
+dispatch: 20261126-192745-candidate-c-was-rejected-for-p
+status: done
+no_upload: true
+
+summary: >-
+  Re-ran the OPS-1079 illustration-pivot task with corrections to the
+  2026-11-08 pass. Verified current Adobe Stock rules: raster
+  illustrations are JPEG-only sRGB with a 4MP minimum — the prior
+  "PNG 1344x768 fine" note was wrong on both counts. comparison-c
+  (1344x768 = 1.03MP) needs the proven Real-ESRGAN x4 path +
+  JPEG/sRGB conversion before it could ever be submitted. Drafted v2
+  title/keywords matched to the actual image (high-contrast flat /
+  silhouette style, not cartoon). Decision: keep the illustration
+  second product line — OPS-1078 already classified the omen sd lane
+  as illustration-tier — but treat this asset as the category/metadata
+  pilot, not the product; it is composition-marginal even by
+  illustration standards.
+
+category_requirements:
+  source: helpx.adobe.com contributor docs, checked 2026-11-26
+  asset_type: illustration (required for all generative-AI images)
+  checkboxes:
+    - '"Created using generative AI tools" (required)'
+    - '"People and Property are fictional" (tick if fictional people/places depicted; none here — generic interior)'
+  format: JPEG only for raster illustrations (AI/EPS/SVG for vectors);
+    PNG is a separate submission class for transparent-background
+    assets only
+  resolution: 4MP min, 100MP max, 45MB max, sRGB
+  metadata_rules:
+    - title <=200 chars, <=49 keywords, first ~10 weighted most
+    - no artist names, real people, fictional characters, brands,
+      copyrighted works in prompt/title/keywords
+    - '"generative AI" not required in title/keywords since 2023; omitting it preserves keyword space'
+    - keywords must be accurate — irrelevant-style tags risk refusal
+
+visual_qc:
+  method: preview_url fetch + full-frame inspection
+  reads_as: >-
+    high-contrast flat/poster illustration — near-black silhouette
+    desk with two laptops, detailed foliage planters, window grid
+    with saturated blue panes, warm floor reflections, striped rug
+  weaknesses:
+    - furniture cropped at right frame edge
+    - office chair from prompt not discernible (merged into black mass)
+    - ambiguous bump on desk surface between laptops
+    - partial dark bar at left edge
+  verdict: >-
+    style consistent enough to pass as intentional flat design;
+    composition rough for stock — fine as metadata/category pilot,
+    marginal as a polished product
+
+draft_metadata_v2:
+  title: >-
+    Flat design illustration of a modern home office with laptops,
+    plants and large window, remote work concept
+  alt_title: >-
+    Modern home office flat illustration, remote work and
+    freelancing concept
+  suggested_category: 'Business (alt: Lifestyle)'
+  keywords: >-
+    remote work, home office, flat design, work from home,
+    illustration, laptop, office interior, workspace, houseplant,
+    desk, freelancer, digital nomad, silhouette, modern office,
+    telecommuting, window, indoor plants, productivity, hybrid work,
+    freelance, workplace, computer, technology, cozy, minimal,
+    video call, online meeting, morning light, business, lifestyle,
+    remote job, telework, interior, hardwood floor, contemporary,
+    design, communication, corporate, job, ergonomic
+  omitted_keywords:
+    vector: raster file — misleading for vector-searching buyers
+    cartoon: style mismatch; spec's trending-cartoon note does not
+      describe this asset
+    generative AI: not required since 2023; wastes keyword space
+
+submission_blockers_before_any_upload:
+  - x4 upscale to >=4MP (Real-ESRGAN local-ncnn lane, proven on
+    comparison-d-x4 → 5376x3072)
+  - JPEG/sRGB conversion (manifest output_format is png)
+  - Tony visual QC of the silhouette style
+  - Adobe upload itself remains manual / not authorized
+
+decision: >-
+  KEEP as second product line; asset = pilot not product. If Tony's
+  eyeball reads the silhouette as defect not style, discard the asset
+  but keep the line — next iteration should render flat design on
+  purpose ("flat vector illustration style" in-prompt) rather than
+  salvage a photorealism failure.
+
+artifacts:
+  - evals/adobe-stock-multirun/input/40-qc-review.md (re-check section appended)
+  - docs/ssot/jobs/nest/2026-11-26-illustration-pivot-metadata.yml
+
+verify: >-
+  grep -n "re-check (OPS-1079, 2026-11-26)"
+  evals/adobe-stock-multirun/input/40-qc-review.md

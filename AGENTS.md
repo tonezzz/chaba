@@ -18,7 +18,7 @@ Valid modes: `normal`, `plan`, `build`, `review`.
 - Deploy lock: deploy-card.sh uses flock /tmp/pfg-deploy.lock — do not bypass.
 - After push-dashboard.py, always run sync-ssot-from-live.sh and commit.
 - Dashboard config changes: mutate live over websocket, then sync. No rebuild needed.
-- Verify card changes on michael-dev before promoting; promotion needs explicit approval.
+- Verify card changes on mn-ha-dev before promoting; promotion needs explicit approval.
 - This repo's memory/context system is Chaba (ชบา). Ada is the separate voice assistant — her memory lives in ada-* MDDB banks; do not write to them from here.
 - Single-writer rule (2026-10-05; writer moved dell→idc03 2026-10-17, OPS-0725): only the served checkout on idc03 (`~/CascadeProjects/chaba-tony-dell`) has the periodic auto-committer (kanban-commit.timer); its pull goes through `scripts/git-safe-pull.sh` (untracked-collision + upstream-wins generated-path resolution). Arm every checkout once with `scripts/install-hooks.sh` (pre-commit warns on focus-inbox writes outside served + >10-commit divergence); audit drift with `scripts/check-single-writer.sh`.
 - Write-path split (2026-10-11): card mutations from non-writer hosts go through board-api (`POST /apps/board-api/{card,comment,request,respond,action,pipeline}` on idc03) — not file-edit+push; pre-commit BLOCKS `docs/ssot/kanban/cards/` edits outside the served checkout (escape: `CHABA_ALLOW_CARD_COMMIT=1` for dispatch worktrees/schema work). Pushes from non-served checkouts use `scripts/git-safe-push.sh` (safe-pull rebase + push, retry x4; idc03's kanban-commit races every ~15min). Satellite checkouts push to `origin` = git@github.com:tonezzz/chaba.git (deploy key per host), never to a non-bare checkout. Card files that DO arrive via dispatch worktree merges are accepted — since 2026-10-23 `docs/ssot/kanban/cards/*.yml` is bound to the `card-union` merge driver (`scripts/board/merge-card-yaml.py`): concurrent card writes union-merge (comms deduped, scalars won by newer `updated`) instead of conflicting, in both kanban-commit's pull --rebase and dispatch close-out merges. board-api remains the preferred write path; the driver is the convergence layer, not a second API.
@@ -79,6 +79,8 @@ A "sweep" — status check, board hygiene, multi-ask morning batch, "finish my k
 4. **Close** what's verified done; move cards honestly (never claim completion without evidence).
 5. **Report** once, at the end: fixed / carded / awaiting-Tony.
 
+**Register freshness (added 2026-11-25, OPS-1368):** during any sweep, check the newest `at:` in `docs/ssot/ssot.repeat-asks.yml` `topics[].history` — `capture-metrics.py` reports it as `stale_days`. If >14d old, decide which it is: genuinely zero repeats (fine — say so in the report) or a capture gap (Tony re-asked and nobody incremented — that IS a repeat-ask process failure; card it). Same check applies to the `misses:` block: misses recorded only when agents file them, so an empty log is weak evidence, not proof.
+
 Stop only at real gates (same list as the idea-pipeline): destructive/irreversible ops, prod changes without precedent, spend, Tony-declared decisions. Asking "should I fix this?" mid-sweep for a safe fix is a process failure — fix it, then report.
 
 ## Idea-pipeline duty (added 2026-10-09 — Tony's standing order)
@@ -127,9 +129,11 @@ retrieval surface: agents read lessons back via MDDB `search` on
 `chaba-lessons` or `POST /lesson {op:list|get, source:"mddb"}`
 (source `wiki`/`wp` read the other stores). Backfill:
 `scripts/board/lesson-mddb-backfill.py`. If the write fails, say so — a
-lesson that only lived in the reply is a miss, and misses are counted in
-`docs/ssot/ssot.repeat-asks.yml` (check + increment it when Tony flags a
-repeat).
+lesson that only lived in the reply is a miss: append it to the `misses:` block
+of `docs/ssot/ssot.repeat-asks.yml` via
+`python3 scripts/chaba/miss-add.py --topic <slug> --location <chat|voice> --should-have-been <sink-ref> --evidence <pointer>`
+(deduped; commit through the governed SSOT path). Re-asks still check +
+increment the `topics:` block of the same register when Tony flags a repeat.
 
 Split rule (added 2026-10-16 — Tony): SSOT keeps only the
 comparison/decision layer — verdict, table, pointer to the lesson post.
@@ -160,6 +164,10 @@ When Tony asks "what's our standard procedure for X" — answer **from the syste
 2. Answer situationally: apply the found procedure to his actual context, don't recite it abstractly.
 3. If no procedure exists or it's partial — say so plainly, then per the idea-pipeline duty the default is to **define it** (SSOT doc + card + Ada mirror where she acts on it), not improvise one.
 4. Same for Ada: her mirror carries the duty — "how do we handle X" gets the system's real answer or a proposal, never a made-up rule.
+
+   Fleet/host/service changes (Ansible) are governed by `docs/ssot/infrastructure/ssot.ansible-change-procedure.yml` +
+   `docs/kb/ansible-fleet-change-procedure.md`: locate playbook → confirm target →
+   diagnose → `--check --diff` → approval → backup → converge → verify → file evidence.
 
 ## Devin workflow & error-handling standard (added 2026-11-19 — DEV-0253)
 
@@ -230,24 +238,24 @@ the reported failure first.
 ## Key URLs
 
 - tony-ha: `https://tony-omen.taila0626a.ts.net:8123` (tailnet — on tony-omen since ph5; stable front `http://idc02.taila0626a.ts.net:8123` shadow; public `https://tony-ha.surf-thailand.com`)
-- michael-dev: `https://idc03.taila0626a.ts.net:8124` / `https://michael-dev.surf-thailand.com` (migrated to idc03 2026-10-09; `127.0.0.1:8124` refers to that host)
+- mn-ha-dev: `https://mn01.taila0626a.ts.net:8124` / `https://michael-dev.surf-thailand.com` (migrated tony-dell -> idc03 2026-10-09 -> idc02 2026-10-26 -> mn01 2026-11-25; physical rename michael-dev -> mn-ha-dev 2026-11-24; `127.0.0.1:8124` refers to mn01)
 - michael-ha: `http://michael-ha:8123` / `https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/` / public `https://mn-ha.surf-thailand.com` (renamed from michael-ha.surf-thailand.com 2026-10-16)
-- tony-test views: `https://idc03.taila0626a.ts.net:8124/tony-test/{pf3,pf4,pfg,pfg1,pfg2,tpl,data}` (michael-dev instance)
+- tony-test views: `https://mn01.taila0626a.ts.net:8124/tony-test/{pf3,pf4,pfg,pfg1,pfg2,tpl,data}` (mn-ha-dev instance)
 
 ## Token files
 
 - Secrets originate on tony-macbook first (`~/.config/secrets/`), then sync to the host that needs them (2026-10-20 — Tony). macbook is the canonical secrets origin; hosts get copies for runtime/backup.
 - tony-ha: `~/.config/secrets/home-assistant-token.env` on tony-omen (`HA_LONG_LIVED_TOKEN`)
 - ada-ha: `~/.config/secrets/ada-ha-token.env` on tony-omen (`HA_LONG_LIVED_TOKEN`) — instance on :8125
-- michael-dev: `~/.config/secrets/ha-michael-dev.env` (`HASS_TOKEN`)
+- mn-ha-dev: `~/.config/secrets/ha-mn-ha-dev.env` (`HASS_TOKEN`)
 - michael-ha: `~/.local/share/home-assistant-michael/ha-token` (raw token file, NOT `ha-michael-live.env`)
 - Never paste tokens into chat or commit them.
-- The `michael-dev` token in `~/.config/secrets/ha-michael-dev.env` is valid and works for REST (verified 2026-09-04).
+- The `mn-ha-dev` token in `~/.config/secrets/ha-mn-ha-dev.env` is valid and works for REST (verified 2026-09-04).
 - Tailscale SSH (`ssh tony-dell`) periodically requires a browser auth check; it prints a `login.tailscale.com/a/...` link — ask the user to open it, then retry.
 
 ## Deployment policy
 
-- **Never auto-deploy from michael-dev.** Building and previewing on `michael-dev` is fine, but deploying or promoting the bundle/dashboard to `michael-ha` or `tony-ha` requires explicit user approval in the same session.
+- **Never auto-deploy from mn-ha-dev.** Building and previewing on `mn-ha-dev` is fine, but deploying or promoting the bundle/dashboard to `michael-ha` or `tony-ha` requires explicit user approval in the same session.
 - `deploy-card.sh` is dev-only by default; use `promote-michael.sh`, `promote-tony.sh`, or `promote-ada.sh` for live hosts — all require `--confirm` (explicit same-session approval).
 - Even if `tony-ha` runs on the same machine (`tony-dell`), copying a bundle or resource to it is a deploy and must be approved.
 
@@ -255,13 +263,13 @@ the reported failure first.
 
 - Build card: `cd /home/tony/CascadeProjects/sunsynk-power-flow-card && npm run build`
 - Typecheck before trusting the bundle: `npx -p typescript tsc --noEmit` (the rollup build uses Babel and does NOT type-check)
-- Restart michael-dev: `ssh idc03 'systemctl --user restart michael-dev.service'` (migrated to idc03 2026-10-09; the `~/.config/michael-dev` copy on tony-dell is stale)
+- Restart mn-ha-dev: `ssh idc02 'systemctl --user restart mn-ha-dev.service'` (migrated tony-dell -> idc03 2026-10-09 -> idc02 2026-10-26; the `~/.config/mn-ha-dev` copy on tony-dell is stale)
 - Restart michael-ha: `ssh michael-ha 'ha core restart'`
-- Deploy card bundle to dev: `./scripts/home-assistant/deploy-card.sh` — builds, derives the next version from michael-dev's `lovelace_resources`, scp's, restarts, verifies HTTP 200.
+- Deploy card bundle to dev: `./scripts/home-assistant/deploy-card.sh` — builds, derives the next version from mn-ha-dev's `lovelace_resources`, scp's, restarts, verifies HTTP 200.
 - Lane parity check: `./scripts/home-assistant/frontend-parity-check.sh <tony|ada|michael>` or `--from A --to B` — twin diff over dashboards/resources/bundles/automations/helpers/users (registry `docs/ssot/infrastructure/ssot.home-assistant.lanes.yml`, runbook `lane_release_pipeline`).
-- Promote per lane (all wrappers on `promote-lane.sh`; `--dry-run` prints the exact diff, `--confirm` required for any prod write — same-session approval, never automatic): `./scripts/home-assistant/promote-michael.sh` (michael-dev→michael-ha), `./scripts/home-assistant/promote-tony.sh` (tony-dev→tony-ha; `--from michael-dev` until tony-dev is provisioned), `./scripts/home-assistant/promote-ada.sh` (ada-dev→ada-ha). Scope selector: `--scope dashboards,bundle,automations,helpers,users`. With `--card <id>` on a release-tracked card (`release:` field) the s4 gate is enforced first: `[smoke]` dev-twin evidence + satisfied soak; a confirmed run posts `[rc]` + `[prod]` comms and runs the post-deploy smoke itself.
+- Promote per lane (all wrappers on `promote-lane.sh`; `--dry-run` prints the exact diff, `--confirm` required for any prod write — same-session approval, never automatic): `./scripts/home-assistant/promote-michael.sh` (mn-ha-dev→michael-ha), `./scripts/home-assistant/promote-tony.sh` (tony-dev→tony-ha; `--from mn-ha-dev` until tony-dev is provisioned), `./scripts/home-assistant/promote-ada.sh` (ada-dev→ada-ha). Scope selector: `--scope dashboards,bundle,automations,helpers,users`. With `--card <id>` on a release-tracked card (`release:` field) the s4 gate is enforced first: `[smoke]` dev-twin evidence + satisfied soak; a confirmed run posts `[rc]` + `[prod]` comms and runs the post-deploy smoke itself.
 - Release evidence tags (`release:`-tracked cards only, enforced by `scripts/ada/lifecycle-check.py` inside kanban-sync — `ssot.release-lifecycle.yml`): append `[exp]`/`[alpha]`/`[beta]`/`[smoke]`/`[rc]`/`[prod]` comms at each stage; review needs [exp]+[alpha], done needs the whole chain + soak (`soak_until` auto-stamps on review entry). Dev-twin browser gate: `python3 scripts/home-assistant/dev-twin-smoke.py --lane <lane> --card <id>` → `[smoke]` comms + screenshot under `reports/dev-twin-smoke/`.
-- Push dashboard config live (no restart): `python3 scripts/home-assistant/push-dashboard.py <ha_url> tony-test --mutate /tmp/mutate.py` (dev: `source ~/.config/secrets/ha-michael-dev.env`; ha: `HASS_TOKEN=$(cat ~/.local/share/home-assistant-michael/ha-token)`)
+- Push dashboard config live (no restart): `python3 scripts/home-assistant/push-dashboard.py <ha_url> tony-test --mutate /tmp/mutate.py` (dev: `source ~/.config/secrets/ha-mn-ha-dev.env`; ha: `HASS_TOKEN=$(cat ~/.local/share/home-assistant-michael/ha-token)`)
 - Apply a TPL template onto a view tile: `python3 scripts/home-assistant/apply-tpl.py <ha_url> tony-test tpl pfg2 --map "Title:r,c;..."` (does NOT copy pfg_spans; add `--dry-run` to preview)
 - Sync live dashboard into repo: `./scripts/home-assistant/sync-ssot-from-live.sh`
 - Sync SSOT to MDDB: `python3 scripts/sync-ssot-to-mddb.py`
@@ -271,7 +279,7 @@ the reported failure first.
 
 - Dashboard config changes (card layout, lines, images — anything already supported by the bundle): mutate live via `push-dashboard.py` over websocket, then `sync-ssot-from-live.sh`. No rebuild or restart needed; HA refreshes Lovelace automatically.
 - Copy a whole view between instances (parity): read it from dev's `lovelace/config`, replace in ha's config, `lovelace/config/save`. On michael-ha, re-add `card_mod` to the pfg2 card after every view copy (the visionos theme injects a frosted-glass `ha-card::before`; the copy from dev drops the override).
-- michael-dev parity entities: `packages/a_dev_mocks.yaml` has `dev_*` helpers AND `mha_mirror_*` REST sensors that live-mirror real michael-ha entities on the same entity_id (tze200_*, washer power). Prefer those mirrors over new mocks — same entity IDs mean identical dashboard config on both hosts. Mirrors are gated (2026-10-10, card michael-dev-offlan-mirrors): `binary_sensor.michael_ha_reachable` probes `http://michael-ha:8123` every 300s and the `mha_mirror_refresh` automation only fires `update_entity` while it's on — off-LAN replicas fail quiet instead of spamming REST timeouts.
+- mn-ha-dev parity entities: `packages/a_dev_mocks.yaml` has `dev_*` helpers AND `mha_mirror_*` REST sensors that live-mirror real michael-ha entities on the same entity_id (tze200_*, washer power). Prefer those mirrors over new mocks — same entity IDs mean identical dashboard config on both hosts. Mirrors are gated (2026-10-10, card michael-dev-offlan-mirrors): `binary_sensor.michael_ha_reachable` probes `http://michael-ha:8123` every 300s and the `mha_mirror_refresh` automation only fires `update_entity` while it's on — off-LAN replicas fail quiet instead of spamming REST timeouts.
 - Reorder or add a tab: prefer `push-dashboard.py` websocket mutate; `.storage` edits directly require an HA restart to take effect.
 - Fix SVG text overlay: check `Battery*_SOC` `<svg>` display condition in `src/components/compact/bat/bat-elements.ts` so plain text hides when combined `{target}% | {current}%` is visible.
 - Verify visually: use a logged-in Chrome profile or browser dev tools on the card shadow root.
@@ -292,7 +300,7 @@ Parallel sessions caused real breakage: duplicated `pfg2-card.ts`, undeclared `v
 
 ## Current state (2026-09-09)
 
-- Active card bundle: `v207` on michael-dev; `v206` on michael-ha and tony-ha. Per-host counters; verify parity by md5, not version.
+- Active card bundle: `v207` on mn-ha-dev; `v206` on michael-ha and tony-ha. Per-host counters; verify parity by md5, not version.
 - Chart code is modularized under `src/cards/pfg/` (registry + `chartOverlayStyle` + per-type files in `charts/` plus `pfg3d-loader.ts` and `pfg3d-chart.ts`). `pfg-shared.ts` is gone — update imports to `./pfg`.
 - 3D charts (`surface3d`/`bar3d`) are now rendered by a reactive `<pfg-3d-chart>` custom element: incremental hourly-statistics refresh, camera state preserved on updates, and observers/listeners cleaned up on disconnect.
 - `deploy-card.sh` is dev-only; live promotion uses `promote-michael.sh` (michael-ha), `promote-tony.sh` (tony-ha), `promote-ada.sh` (ada-ha) — all wrappers on `promote-lane.sh`, requiring explicit same-session approval (`--confirm`).
@@ -306,7 +314,7 @@ Parallel sessions caused real breakage: duplicated `pfg2-card.ts`, undeclared `v
 - New `/local/` assets may 404 in cached browsers while curl returns 200 — bump the reference `?v=N` in the config (runbook: `stale_local_asset_404` in howto SSOT).
 - `apply-tpl.py` gained `--bg` (forces copied charts to `position: "bg"`).
 - Dashboard snapshot is `docs/home-assistant/dashboards/tony-test-current.json`.
-- Post-restart MCP verification: all 18 configured Devin MCP servers are reachable after tony-dell restart. `michael-dev` and `tony-ha` `ha_mcp_tools` require `_READY_STALL_TIMEOUT_SECONDS=300s` / `_READY_TOTAL_CAP_SECONDS=900s` in `embedded_server.py` to avoid startup timeout on HA 2026.9.0. `github` MCP now uses `~/.config/devin/mcp-scripts/mcp-github-proxy.py`.
+- Post-restart MCP verification: all 18 configured Devin MCP servers are reachable after tony-dell restart. `mn-ha-dev` and `tony-ha` `ha_mcp_tools` require `_READY_STALL_TIMEOUT_SECONDS=300s` / `_READY_TOTAL_CAP_SECONDS=900s` in `embedded_server.py` to avoid startup timeout on HA 2026.9.0. `github` MCP now uses `~/.config/devin/mcp-scripts/mcp-github-proxy.py`.
 
 ## XMEye VMS — primary on mn01, standby on tony-dell
 
@@ -316,11 +324,10 @@ no password — never bind LAN/public). tony-dell keeps the old container stoppe
 (`192.168.2.67:5900` if restarted).
 
 - Stack (portable, host-agnostic): `stacks/services/xmeye-vms/` — quadlet, install.sh (renders `PublishPort` from `tailscale ip -4`), verify.sh, README with move runbook. State on each host: `~/.local/share/xmeye-vms/{vms-runtime→/app, wineprefix→/wine}`; secrets `~/.config/secrets/xmeye-dvr.env` out-of-band.
-- Browser noVNC (tailnet-gated): `https://tony-dell.taila0626a.ts.net/apps/vms/` -> `wss://…/apps/vms/ws` (Caddy -> `websockify-vms-mn01.service` 127.0.0.1:6082 -> `100.106.196.22:5900`). Route requires `Tailscale-User-Login` — public funnel and LAN get 403. Legacy dell path `/apps/vnc/` still exists (websockify :6081, dell VNC when standby runs). Port 6080 is reserved for `websockify-macbook.service`.
+- Browser noVNC (tailnet-gated): **retired 2026-11-23 (OPS-1312)** — `/apps/vms/`, `/apps/vnc/` and the `websockify-vms-mn01`/`websockify-macbook` bridges are gone; the `vms`/`macbook` cast aliases were removed from `cast-browser-server.mjs`. Restore steps: `docs/kb/retired-apps/vnc-bridges.md`. Direct VNC (`<host-tailscale-ip>:5900`) and the `/apps/vms-snap` XMEye snapshot shim remain.
 - Startup (`/app/start-vms.sh` in vms-runtime): clears `/tmp/.X11-unix/X99` **and** `/tmp/.X99-lock` (a stale lock after `podman restart` kills Xvfb), `Xvfb :99 -screen 0 1280x720x16`, `x11vnc -display :99 -noxkb -forever -shared -rfbport 5900 -nopw`, then `wine explorer /desktop=VMS,1280x720 VMS.exe`. **No twm** — a window manager makes VMS map as an interactive-placement wireframe and eats the first click; without it the desktop maps at 0,0 and renders immediately.
-- VMS config: `vms-runtime/config.ini` (`autologin=true`, `www.xmeye.net` cloud). VMS app login `admin`/`admin` (saved hash `F360C0DD174588FA`).
-- VMS app login: `admin` / `admin` (saved hash `F360C0DD174588FA` in `config.ini` `[Login]` `password`).
-- Device/DVR test password supplied by user: `amc123456` (also stored, along with per-DVR cloud IDs/users, in `~/.config/secrets/xmeye-dvr.env`).
+- VMS config: `vms-runtime/config.ini` (`autologin=true`, `www.xmeye.net` cloud). VMS app login uses the saved hash in `config.ini` `[Login]` `password`; the app password itself is a vendor-default-ish value recorded as a deviation in `docs/ssot/infrastructure/ssot.security.devices.yml` (`xmeye-dvrs`) — do not re-embed credential values here.
+- Device/DVR credentials (user-supplied test password + per-DVR cloud IDs/users/passes): `~/.config/secrets/xmeye-dvr.env` — out-of-band secrets file (registered as `xmeye-dvr` in `ssot.secrets.yml`); never commit values.
 - DVRs:
   - `noble-club`: Cloud/Serial ID `d811d82e21d6c031`, user `admin`, pass in `~/.config/secrets/xmeye-dvr.env`.
   - `noble-a`: Cloud/Serial ID `f2ca2dca0bc4ae4fnxjd`, user `advance`, pass in `~/.config/secrets/xmeye-dvr.env`.
@@ -336,11 +343,24 @@ no password — never bind LAN/public). tony-dell keeps the old container stoppe
 Source and build: `/home/tony/gods-eye-view`
 
 - Build: `npm run build` (requires Vite base `/apps/gev/`).
-- After every build, patch `dist/assets/index-*.js`:
-  - `/api/*` -> `/apps/gev/api/*`
+- After every build, run `scripts/gev/patch-gev-dist.sh` (in chaba) on
+  `dist/` — it codifies the post-build patches:
+  - `/api/*` -> `/apps/gev/api/*` (quote-bounded, `assets/*.js`)
   - `/models/*` -> `/apps/gev/models/*`
   - `msaaSamples:4` -> `/iPad|iPhone|iPod/.test(navigator.userAgent)?1:4`
-- Stage to `stacks/web/public/apps/gev/`: `index.html`, `*.svg`, `assets/`, `models/`, `cesium/`.
+    (the iPad crash patch — do not drop it)
+  - injects `honest-fail.js` into `index.html` + stages it — the
+    watchdog that turns a can't-render pane into a visible failure
+    instead of a black pane.
+  - voice playback patches on the entry bundle via
+    `stacks/web/scripts/gev-patch-dist.mjs` (node): inbound binary
+    PCM16@24k ws frames -> `playGeminiAudio`, `{type:interrupted}`
+    flush, AudioContext cleanup in `cleanupSession`. `--check` verifies;
+    exit 2 = anchor drift after a rebuild (update the patcher).
+  - `--check` verifies a dist is fully patched; `--self-test` runs a
+    fixture test.
+- Stage to `stacks/web/public/apps/gev/`: `index.html`, `*.svg`,
+  `assets/`, `models/`, `cesium/`, `honest-fail.js`.
 
 Infrastructure:
 
@@ -353,7 +373,8 @@ Infrastructure:
 Voice controller (`src/voice/gevGeminiRealtime.js`):
 
 - Connects to `/apps/gev-live/ws`, captures mic audio as 16kHz PCM mono.
-- The `ScriptProcessorNode` input must pass through a `GainNode` set to `1` while recording and `0` while muted; the recording flag alone is not enough.
+- The `ScriptProcessorNode` input must pass through a `GainNode` set to `1` while recording and `0` while muted; the recording flag alone is not enough. Regression check: `node stacks/web/input-bridge/gev-voice-check.mjs` (asserts muted => zero outbound PCM frames, incl. a flag-stripped mutation run).
+- Inbound model audio arrives as binary ws frames (24kHz PCM16, forwarded by `bridge.py` from `model_turn` parts); `playGeminiAudio` queues them on a 24kHz AudioContext. `{type:interrupted}` flushes the queue.
 
 Service worker / PWA:
 
@@ -370,8 +391,14 @@ Test commands:
 Caveats:
 
 - iOS microphone works in Safari, not in standalone home-screen PWA mode.
-- iPad requires `msaaSamples:1` to avoid Cesium WebGL crash.
-- Current implementation uses Gemini output transcription text only; no audio playback.
+- iPad requires `msaaSamples:1` to avoid Cesium WebGL crash (the
+  patch-gev-dist.sh ternary).
+- Panes that cannot render must say so: `honest-fail.js` overlays
+  #gev-honest-fail + posts `gev-honest-fail`/`gev-honest-ok` to the
+  host frame; the vcast display covers the pane with `.pfail` and
+  reports `state=pane-fail` (per-pane: video/img/iframe). Repo-side
+  check: `node stacks/web/input-bridge/gev-honest-fail-check.mjs`.
+- Model audio playback ships in the staged bundle's post-build patches (`playGeminiAudio`); `vcast_say` remains the separate non-Latin TTS path.
 
 # Devin on tony-dell — crash/runbook (2026-09-12)
 
@@ -578,7 +605,7 @@ Also check for a duplicate instance: clicking the launcher while the first insta
 
 - The Caddy subpath URLs under `/apps/ha/<instance>/` are now 308 redirects to the dedicated HTTPS endpoints.
 - `tony-ha`: `https://tony-dell.taila0626a.ts.net/apps/ha/tony-ha/` -> `https://tony-dell.taila0626a.ts.net:8123/`
-- `michael-dev`: `https://tony-dell.taila0626a.ts.net/apps/ha/michael-dev/` -> `https://tony-dell.taila0626a.ts.net:8124/`
+- `mn-ha-dev`: `https://tony-dell.taila0626a.ts.net/apps/ha/mn-ha-dev/` -> `https://tony-dell.taila0626a.ts.net:8124/`
 - `michael-ha`: `https://tony-dell.taila0626a.ts.net/apps/ha/michael-ha/` -> `https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/`
 - Caddyfile: `~/.config/caddy/Caddyfile.tony-dell`; apply with `caddy fmt --overwrite /home/tony/.config/caddy/Caddyfile.tony-dell` and `systemctl --user restart caddy-tony-dell`.
 - HA is bound to loopback (`127.0.0.1:8123` and `127.0.0.1:8124`) and exposed via Tailscale Serve on the same ports.
@@ -792,8 +819,8 @@ python3 scripts/notebooklm-query.py "-" "Summarize the Home Assistant setup."
   python3 /home/tony/CascadeProjects/chaba/scripts/home-assistant/assess-device.py michael-ha/sensor.foo
   python3 /home/tony/CascadeProjects/chaba/scripts/home-assistant/assess-device.py --format json --verbose michael-ha/number.sr258_temperature
   ```
-- Supported instances: `michael-ha`, `michael-dev`, `tony-ha`
-- Tokens are read from `~/.config/secrets/ha-michael-live.env`, `~/.config/secrets/ha-michael-dev.env`, `~/.config/secrets/home-assistant-token.env` (or the matching `*_TOKEN` env vars).
+- Supported instances: `michael-ha`, `mn-ha-dev`, `tony-ha`
+- Tokens are read from `~/.config/secrets/ha-michael-live.env`, `~/.config/secrets/ha-mn-ha-dev.env`, `~/.config/secrets/home-assistant-token.env` (or the matching `*_TOKEN` env vars).
 - Use the `home-assistant` MCP server for deeper config or write operations; `assess-device.py` is the fast read-only fallback.
 
 # AI Hub extension + Chrome remote debugging (learned 2026-09-17)

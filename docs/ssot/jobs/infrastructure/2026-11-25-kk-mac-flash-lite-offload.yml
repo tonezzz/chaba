@@ -1,0 +1,284 @@
+title: "Routing proposal v3 — flash-lite offload: job-class lanes already on kk-mac; the real-name chain is the actual spend"
+date: 2026-11-25
+card: kk-mac-offload-flash-lite
+ref: OPS-1363
+parent_eval: kk-mac-card-judgment-eval (KNB-1087)
+extends: docs/ssot/jobs/devnest/2026-11-18-kk-mac-routing-proposal.yml
+session: "devin-dispatch 20261125-102320 (idc02)"
+status: proposal — awaiting approval (board request raised on the card)
+
+context: >-
+  Card spec assumed the steady gemini-3.5-flash-lite spend sits in the
+  tool-call/summary/classify job-class lanes and asked to move them to
+  the kk-mac local legs "where admission gates pass". SpendLogs says
+  otherwise: summary/classify/bench have been kk-mac leg-1 since
+  2026-11-13 and their paid-leg spill is ~$0.09 in November. The money
+  is in the REAL-NAME gemini-3.5-flash-lite chain, driven by opencode
+  callers. This proposal covers both: confirms the deployed job-class
+  placement, adds the tool-call resilience leg the eval gate has nearly
+  earned, and names the real-name offload as the actual durable lever.
+
+evidence:
+  spend_attribution:
+    source: "LiteLLM_SpendLogs on idc03 litellm-db, queried 2026-11-25
+      (model_group = alias the caller sent; request_tags UA class)"
+    all_time_flashlite_usd: "~$32.2 total: gemini paid $27.36
+      (real-name $19.01 + -free alias $8.36 est), openrouter $3.07,
+      summary paid-fallback $1.76, bench/classify/tool-call/voice-aux
+      <$2 combined"
+    november_by_caller_class:
+      opencode: "$21.0 of ~$24.6 (85%) — real-name $15.92 + or-$2.86 +
+        -free $2.19 across chaba/ada-sec1286/bench keys; includes
+        free_lane dispatches (LANE_MODELS free_lane =
+        litellm/gemini-3.5-flash-lite) and interactive opencode CLI /
+        openchamber sessions"
+      urllib_route_free_only: "~$1.0 — dispatch-triage arbiter-label-pass
+        (179 calls), board-api lesson-translation (33), chaba
+        dispatch-triage-label (248) on the -free alias"
+      genai_sdk: "~$0.9 — Ada REST side-calls (lane=tony tags) +
+        batch_opt_in jobs (session-report/rollup/memory-distill/
+        distill-devin-bank) + backlog-spec-enrich"
+      job_class_aliases: "chat-local 8501 calls $0.000 (all local legs);
+        summary 98 calls $0.094 paid-fallback; bench 163 $0.028;
+        tool-call 6 ~$0; classify 1; voice-aux 1"
+    keys: "chaba $14.3 + ada-sec1286 $11.4 all-time flash-lite —
+      interactive/eval + dispatch traffic, not batch jobs"
+  eval_2026_11_25:
+    source: "kk-mac card-judgment rerun, 94-case corpus (commit
+      893107b1c4 on dispatch/20261125-074813-*, job doc
+      docs/ssot/jobs/devnest/2026-11-25-kkmac-card-judgment-eval-rerun.yml
+      — not yet on master at proposal time)"
+    llama3.2:3b: "0.851 acc / 0.947 def / 0.938 prec / 1.0 rec / 0
+      parse-fails — ALL T3 bars PASS, only qualifying model"
+    qwen2.5:32b: "0.840 / 0.872 / 0.968 / 1.0 / 0 — misses acc+deference
+      (inverted vs 11-13)"
+    qwen3:8b: "0.745 / 0.830 / 16 parse-fails — still fragile, stays out"
+    qwen2.5vl:7b: "0.755 / 0.840 / misses all bars"
+    note: "paid flash-lite scored 0.49-0.57 acc on sibling corpora —
+      local models beat it on decision-shaped work; the corpus measures
+      judgment, not summarization quality"
+  live_probe_2026_11_25:
+    shim: "kkmac-admission-shim :11447 eligible — heartbeat 10.9s,
+      ollama_ok, disk 61G, load_1m 3.39/14, 40C, node_busy false;
+      lifetime admitted 271 / denied 15 / proxied 3780"
+    tool_call: "qwen2.5:32b via /v1/chat/completions returned a correct
+      OpenAI tool_calls frame (get_weather{city:Paris}) — agent-loop
+      tool calling works through the shim"
+    pulled_unused: "ollama also serves qwen3:30b-a3b (18.6GB MoE) and
+      gpt-oss:20b (13.8GB) — pulled 11-17, never evaled; bge-m3 pulled
+      but WRONG embedding space (1024d vs required 768d gemini — never
+      chain it, same rule as nomic)"
+
+current_state:
+  deployed_chains_repo_mirror: stacks/idc03/litellm/config.yaml
+    (live drifts — edits land repo-side then restart, per live_audit)
+  summary: "LIVE leg-1 [qwen2.5:32b@ollama-kkmac :11447, lite@paid,
+    lite@free, lite@or, colab, llama3.2@idc03] since 11-13"
+  classify: "same as summary — LIVE leg-1 kk-mac"
+  bench: "same as summary — LIVE leg-1 kk-mac (spend-isolated canary)"
+  chat-local: "[qwen7b@tonydell :11446, qwen32b-kkmac, llama3.2@idc03,
+    colab] — 8501 calls $0 in Nov"
+  tool-call: "[lite@paid, lite@free, or-lite, colab, llama3.2] — NO
+    kk-mac leg; ~zero volume (6 calls Nov)"
+  voice-aux: "[lite@paid, lite@free, or-lite, colab, llama3.2] — NO
+    kk-mac leg; ~zero volume (1 call Nov)"
+  real_name_gemini-3.5-flash-lite: "[lite@paid, lite@free-alias,
+    or-lite, colab, llama3.2] — THE spend driver ($15.9 opencode Nov)"
+  real_name_gemini-3.5-flash-lite-free: "single free-key leg, no
+    fallbacks — the route=free-only target"
+  deployed_but_unused_legs: "ollama-llama32-3b-kkmac (in model_list,
+    zero chains), ollama-qwen38b-kkmac, ollama-qwen25vl7b-kkmac"
+
+proposal:
+  P1_tool_call_resilience_leg:
+    change: >-
+      INSERT ollama-llama32-3b-kkmac at position 3 of the tool-call
+      chain: [lite@paid, lite@free, llama32-3b-kkmac@shim, or-lite,
+      colab, llama3.2@idc03]. Model choice = llama3.2:3b, NOT
+      qwen2.5:32b — it is the only T3-qualifying local model after the
+      11-25 rerun (all bars pass; qwen32b regressed below acc+def).
+    why: >-
+      Spec asked to move tool-call to kk-mac legs where gates pass.
+      Honest scope: tool-call volume is ~zero so this saves ~$0 — its
+      value is resilience + eval alignment. Leg-3 fires only when both
+      gemini legs fail (paid quota/ outage), converting what is today
+      an OR-spend-or-colab path into a $0 T3-qualified answer; when
+      kk-mac sleeps the shim 503s and the chain continues to or-lite
+      exactly as now — fail-fast, no queueing. NOT leg-1: ada decision
+      calls are defer-critical and interactive; paid gemini stays
+      primary until the 3-consecutive-run T3 streak completes on
+      llama3.2:3b (1 of 3 in hand).
+    deploy: "config.yaml tool-call fallbacks + ssot.llm-gateway.yml
+      job_classes.tool-call chain + restart litellm on idc03"
+  P2_agent_local_alias_the_real_lever:
+    change: >-
+      NEW job-class alias `agent-local` for agentic dispatch traffic:
+      chain [ollama-qwen32b-kkmac@shim, ollama-qwen7b@tonydell,
+      ollama-llama3.2@idc03, colab-gemma3, lite@paid, lite@free,
+      or-lite] — free-local-first with paid gemini as LAST resort
+      (inverted vs every existing chain on purpose: this is the
+      free_lane's $0 contract; paid only fires when every local leg
+      including idc03's always-on llama3.2 fails).
+      Then repoint LANE_MODELS["free_lane"] in
+      scripts/board/dispatch_repos.py from litellm/gemini-3.5-flash-lite
+      to litellm/agent-local — GATED on an evals/opencode-lane pass
+      (one ops-readonly profile run + one real card) proving qwen2.5:32b
+      survives real agent tool-call loops; live probe already confirms
+      the tool_calls frame shape.
+      Interactive opencode sessions are NOT touched — they pick their
+      own model; only dispatch free_lane traffic repoints.
+    why: >-
+      $21 of ~$24.6 November flash-lite spend is opencode on the
+      real-name chain. free_lane dispatches are batch-tolerant — the
+      exact profile kk-mac leg-1 was built for. During kk-mac sleep
+      windows the shim fails fast to qwen7b@tonydell / llama3.2@idc03
+      ($0, always-on) instead of paid lite — that is where the durable
+      savings come from, since member-device downtime is the norm.
+    rejected_alternatives:
+      - "kk-mac leg inside the real-name gemini-3.5-flash-lite chain —
+        rejected: that chain serves latency-sensitive interactive
+        opencode + callers that specifically want Gemini quality
+        (Thai, nuance); local-first would silently downgrade them and
+        member-device flapping = erratic quality. Per-caller opt-in via
+        a job-class alias is the clean door."
+      - "repoint free_lane to existing litellm/chat-local — viable
+        zero-config fallback (8501 calls $0 proven) but leg-1 is qwen7b
+        which is too weak for agentic dispatch; agent-local puts the
+        32b on kk-mac first with the same always-on locals behind it."
+      - "or-free-*/cf-* legs inside agent-local — noted as candidates
+        (nemotron-ultra 1M ctx, cf-qwen38-27b 262k) but unverified for
+        agentic tool-calling; keep the chain local-ollama-only for v1."
+    deploy: >-
+      config.yaml model_list + fallbacks + ssot.llm-gateway.yml
+      job_classes + LANE_MODELS repoint + add agent-local to the
+      LITELLM_KEY_CHABA allowlist (ada/bench keys unrestricted or
+      allowlisted — verify per-key /v1/models before repoint) +
+      litellm restart on idc03.
+    post_gate_tuning_2026_11_25: >-
+      VERIFIED DEVIATION from local-first ordering. opencode injects
+      chaba/AGENTS.md (81,199 bytes) into every system prompt: the real
+      S1 request was 117,919 bytes / ~35k input tokens. qwen2.5:7b took
+      265.6s to first byte (past opencode's 300s headerTimeout and the
+      420s lane wall clock); llama3.2 150s+; kk-mac legs 503 temp_high.
+      Fixes: agent-local primary timeout 120s -> 15s (fast-fail); agent-local
+      profile runs use a scratch cwd OUTSIDE the repo with scripts/ + evals/
+      symlinks (103,723 -> 17,383 system-prompt chars; qwen7b 265.6s ->
+      64.1s first byte); agent-local fallbacks begin with the $0
+      gemini-3.5-flash-lite-free leg (2.05s on the full payload), local
+      Ollama legs follow, paid Gemini stays LAST. The $0 contract holds
+      (best run cost $0.0). Local-only legs produced no tool calls or
+      artifact on S1 — capability limit, not latency. The info-find rails
+      now require the results array to be physically sorted by source
+      (profile.yml), not emitted in tool order. FINAL GATE: PASS —
+      evals/opencode-lane/runs/p1-info-find-agent-local-test-20261125-184706,
+      16/16 verifier checks, artifact landed, exit 0, wall 80.9s,
+      $0.00 provider cost, no denials/mutations/scope violations. The
+      OPS-1363 repoint of LANE_MODELS['free_lane'] to litellm/agent-local
+      is therefore verified. LiteLLM 1.105.0 custom pre-call callbacks
+      loaded but async_pre_call_hook did not fire on proxy requests — do
+      not rely on gateway-side prompt trimming there. RECONCILED
+      2026-11-26: the live-only agent-local model + fallback, the 15s
+      timeout and the tool-call leg-3 were written back to
+      stacks/idc03/litellm/config.yaml and agent-local added as a
+      job_class in ssot.llm-gateway.yml. LANE_MODELS['free_lane'] was
+      ALSO repointed to litellm/agent-local in
+      scripts/board/dispatch_repos.py on 2026-11-26 — that code change
+      was missing from the earlier gate-run session despite being
+      reported as done; the PR commit now carries it. Unrelated
+      live-vs-repo drift
+      (consult-* aliases, embed extra_body, tunnel comments,
+      ssot.jobs.yml timeouts) was left untouched.
+  P3_optional_caller_repoints:
+    what: >-
+      ~$1.7 Nov spend on real-name/-free calls from batch jobs:
+      batch_opt_in four (session-report, rollup-summaries,
+      memory-distill, distill-devin-bank), backlog-spec-enrich
+      (ENRICH_MODEL already accepts ollama-qwen38b-kkmac — point it at
+      summary/classify instead), news-digest brief_th, lesson-miner,
+      bench-recall/bench-edu-manage judges, ada_result_review
+      ADA_REVIEW_MODEL. Each is an env/model-name change to an
+      existing kk-mac-legged alias — no gateway work. Phase 2, card
+      separately if approved.
+  P4_eval_queue:
+    what: >-
+      kkmac_eval.sh on qwen3:30b-a3b and gpt-oss:20b at next awake
+      windows (both pulled 11-17, untested). qwen3:30b-a3b is MoE
+      3B-active — if it qualifies it could beat dense qwen2.5:32b on
+      both quality and tok/s for leg-1 slots. Track the T3 streak on
+      whichever model the proposal pins (currently llama3.2:3b, 1/3).
+  unchanged:
+    summary/classify/bench: "already kk-mac leg-1 — keep; residual
+      paid spend is deny-window spill by design (shim fails fast to
+      paid rather than queueing a member device). Do NOT insert
+      non-kkmac locals ahead of paid here: summary feeds reports,
+      quality floor matters."
+    voice-aux: "excluded again — voice-path latency + member-device
+      jitter; volume is ~zero anyway."
+    chat: "ada-facing 3.5-flash parity — out of scope."
+    embedding/vision/image: "modality/space constraints — out of scope;
+      bge-m3 on kk-mac is the WRONG vector space, never chain it."
+
+savings_estimate:
+  basis: "November flash-lite spend ~$24.6; opencode share ~$21.0.
+    free_lane dispatches are a subset of opencode (interactive CLI +
+    openchamber make up the rest and are NOT repointed)."
+  honest_range: >-
+    If free_lane dispatches are ~half of opencode volume, agent-local
+    absorbs most of that at $0 during kk-mac-awake AND kk-mac-asleep
+    windows (tonydell/idc03 locals catch the sleep case) — expect
+    roughly $3-8/month off the flash-lite line, i.e. the movable
+    spend the spend_anatomy note describes, minus the interactive
+    opencode share which stays paid by caller choice. The bigger
+    structural win is that free_lane stops being 'free' in name only.
+  evidence_path: >-
+    SQL used (repeat monthly): SELECT model_group, request_tags-class,
+    count, sum(spend) FROM LiteLLM_SpendLogs WHERE model IN
+    (flash-lite upstreams) GROUP BY ... — plus scripts/litellm/
+    daily-ledger.py --publish and scripts/board/lane-savings.py
+    --month for the dispatch-side view. Success metric: November-
+    repeat real-name gemini-3.5-flash-lite spend drops by the
+    free_lane dispatch share; agent-local request count rises;
+    zero new fallback-storm alerts.
+
+risks:
+  - "member-device availability: kk-mac sleeps for hours/days —
+    MITIGATED by design: shim 503s instantly, chain continues to
+    always-on locals (tonydell/idc03) then paid last. agent-local is
+    the ONLY chain where paid is last — a total local outage still
+    lands on paid, never dies."
+  - "agentic quality on local legs: qwen2.5:32b tool_calls verified
+    live today but NOT evaled inside a real opencode loop — the
+    evals/opencode-lane gate exists precisely for this; do not
+    repoint LANE_MODELS before it passes."
+  - "weaker fallback legs: when kk-mac sleeps, dispatches ride
+    qwen7b/llama3.2-3b — cheaper but dumber; acceptable for
+    free_lane's $0 contract, NOT acceptable for paid_frontier or
+    interactive lanes (untouched)."
+  - "key allowlists: LITELLM_KEY_CHABA is model-allowlisted —
+    agent-local must be added or calls 403 key_model_access_denied;
+    verify each lane key's /v1/models before repoint."
+  - "config drift: live config.yaml diverges from repo — all edits
+    land repo-side + restart, never live-only (live_audit rule)."
+  - "corpus discrepancy unresolved: 98 vs 94 cases between the 11-13
+    and 11-25 eval artifacts — cross-run deltas approximate; the
+    llama3.2-vs-qwen32b inversion is large enough to trust anyway."
+
+verification:
+  - "curl http://100.102.134.91:4000/v1/chat/completions model=
+    agent-local with LITELLM_KEY_CHABA — x-litellm-model-api-base
+    shows :11447 when kk-mac awake, :11446/:11434 when asleep"
+  - "SpendLogs model_group='agent-local' rows appear at $0.000;
+    real-name gemini-3.5-flash-lite opencode share drops next month"
+  - "evals/opencode-lane profile run completes with artifacts before
+    any LANE_MODELS repoint"
+
+next_steps:
+  - "board request on kk-mac-offload-flash-lite: approve P1+P2 staged
+    (agent-local deploy + eval gate, then LANE_MODELS repoint) vs
+    P1-only vs full-immediate"
+  - "on approval: config.yaml + ssot.llm-gateway.yml edits, litellm
+    restart on idc03, allowlist update, smoke via /v1/models per key"
+  - "queue qwen3:30b-a3b + gpt-oss:20b kkmac_eval runs; keep T3 streak
+    on llama3.2:3b (needs 2 more consecutive qualifying runs)"
+  - "card P3 caller repoints separately if the monthly delta proves
+    the lever"

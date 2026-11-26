@@ -8,11 +8,13 @@ event). No network: sinks are mocked, state dirs are tmp.
 
 from __future__ import annotations
 
+import fcntl
 import importlib.util
 import json
 import os
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -317,6 +319,73 @@ class OutboxTest(PubTestBase):
         self.assertEqual(res["dead"], 1)
 
 
+class HangSink(pub.Sink):
+    """Sink that hangs — proves the per-sink deadline bounds it."""
+
+    def __init__(self, name="hang", sleep_s=30):
+        super().__init__(name=name, surface="private", kinds=pub.KINDS)
+        self.sleep_s = sleep_s
+        self.events = []
+
+    def publish(self, ev):
+        time.sleep(self.sleep_s)
+        self.events.append(dict(ev))
+        return {"ref": "hang:done"}
+
+
+class DeadlineTest(PubTestBase):
+    """Card board-api-wedged-8min-on-hung-outbound-h-389be8: urllib's
+    timeout is per-socket-op, not a deadline — run_bounded + the
+    per-sink deadline + the drain budget keep one hung peer from
+    parking the write door."""
+
+    def test_run_bounded_returns_and_times_out(self):
+        self.assertEqual(pub.run_bounded(lambda: 42, 5, "ok"), 42)
+        t0 = time.monotonic()
+        with self.assertRaises(pub.DeadlineError):
+            pub.run_bounded(lambda: time.sleep(30), 0.2, "slow")
+        self.assertLess(time.monotonic() - t0, 10)
+
+    def test_hung_sink_queues_not_wedges(self):
+        real = pub.PUB_SINK_DEADLINE_S
+        pub.PUB_SINK_DEADLINE_S = 0.3
+        try:
+            hang = HangSink()
+            res = pub.publish_event(
+                ev(sinks=["hang"]), {"hang": hang},
+                self.box, self.noise, "t")
+            self.assertEqual(
+                res["receipts"]["hang"]["status"], "queued")
+            self.assertIn("deadline", res["receipts"]["hang"]
+                          .get("reason", ""))
+            self.assertEqual(self.box.pending_count(), 1)
+        finally:
+            pub.PUB_SINK_DEADLINE_S = real
+
+    def test_drain_budget_defers_backlog(self):
+        # two due entries; a zero budget must defer every launch
+        rec = RecSink()
+        for i in range(2):
+            self.box.enqueue(
+                pub.validate_event(ev(title=f"t{i}", sinks=["mock"])),
+                "mock", "seed", now="2020-01-01T00:00:00+00:00")
+        res = self.box.drain({"mock": rec}, budget_s=0)
+        self.assertEqual(res["deferred"], 2)
+        self.assertEqual(res["pending"], 2)
+        self.assertEqual(rec.events, [])
+
+    def test_flock_bounded_times_out(self):
+        f = self.tmp / "held.lock"
+        fd = f.open("w")
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        try:
+            with f.open("a") as fh, self.assertRaises(TimeoutError):
+                pub._flock_bounded(fh, timeout_s=0.2)
+        finally:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+            fd.close()
+
+
 class NoiseTest(PubTestBase):
     def test_progress_throttled_per_topic(self):
         rec = RecSink()
@@ -385,6 +454,59 @@ class NoiseTest(PubTestBase):
         self.assertIn("[DevNest news]", text)
         self.assertIn("Flood watch upgraded", text)
         self.assertIn("http://x", text)
+
+    def test_telegram_uses_project_card_and_job_refs_for_topic_routing(self):
+        posted = []
+
+        def poster(payload):
+            posted.append(dict(payload))
+            return {"ok": True, "message_thread_id": 33}
+
+        tg = pub.TelegramSink(poster=poster)
+        e = pub.validate_event(ev(
+            kind="milestone", title="Preview rendered",
+            project="kk-video-c9f99fee6146",
+            job="kk-video-c9f99fee6146-preview",
+            card="kk-video-c9f99fee6146",
+            visibility="members"))
+        tg.publish(e)
+        self.assertEqual(posted[0]["project_id"], "kk-video-c9f99fee6146")
+        self.assertEqual(posted[0]["card_ref"], "kk-video-c9f99fee6146")
+        self.assertEqual(posted[0]["job_ref"],
+                         "kk-video-c9f99fee6146-preview")
+        self.assertNotIn("message_thread_id", posted[0])
+
+    def test_telegram_explicit_thread_overrides_project_refs(self):
+        posted = []
+
+        def poster(payload):
+            posted.append(dict(payload))
+            return {"ok": True, "message_thread_id": 44}
+
+        tg = pub.TelegramSink(poster=poster)
+        e = pub.validate_event(ev(
+            kind="milestone", title="Pinned elsewhere",
+            project="kk-video-c9f99fee6146", card="kk-video-c9f99fee6146",
+            visibility="members", meta={"tg_thread_id": 44}))
+        tg.publish(e)
+        self.assertEqual(posted[0]["message_thread_id"], 44)
+        self.assertNotIn("project_id", posted[0])
+        self.assertNotIn("card_ref", posted[0])
+
+    def test_telegram_render_includes_artifact_refs_and_qc_meta(self):
+        e = pub.validate_event(ev(
+            kind="milestone", title="Preview artifact ready",
+            body="Rendered teaser.",
+            media=["gdrive:ada-nest/projects/kk-video/teaser.mp4"],
+            meta={"qc": "pass", "sha256": "abc123",
+                  "job_status": "done"},
+            visibility="members"))
+        text = pub.TelegramSink.render(e)
+        self.assertIn("refs: gdrive:ada-nest/projects/kk-video/teaser.mp4",
+                      text)
+        self.assertIn("qc=pass", text)
+        self.assertIn("sha256=abc123", text)
+        self.assertIn("job_status=done", text)
 
     def test_mediawiki_sink_login_edit_and_metadata(self):
         calls = []
@@ -1155,6 +1277,33 @@ class BoardApiWiringTest(PubTestBase):
             {"title": "Education:Index", "wikitext": "x"}, "devin")
         self.assertEqual(r["wiki_title"], "Education:Index")
 
+    def test_wiki_page_infrastructure_ns(self):
+        # card wiki-page-door-infrastructure-namespace: Infrastructure:
+        # (ns 3000, Lockdown-protected) joins the write allowlist —
+        # host pages like Infrastructure:Hosts/tony-dell/Backup-and-Recovery
+        # go through the same siteinfo gate as Education:/Reports:.
+        self._wiki_env()
+        calls = []
+        self._fake_wiki_api(calls, namespaces=[
+            "Template", "Infrastructure"])
+        r = self.ba.do_wiki_page(
+            {"title": "Infrastructure:Hosts/tony-dell/Backup-and-Recovery",
+             "wikitext": "= DR plan ="}, "devin")
+        self.assertEqual(
+            r["wiki_title"],
+            "Infrastructure:Hosts/tony-dell/Backup-and-Recovery")
+        # unregistered Infrastructure -> refuse, don't litter main ns
+        calls.clear()
+        self._fake_wiki_api(calls, namespaces=["Template"])
+        try:
+            self.ba.do_wiki_page(
+                {"title": "Infrastructure:Hosts/x", "wikitext": "x"},
+                "devin")
+        except ValueError as e:
+            self.assertIn("not registered", str(e))
+        else:
+            raise AssertionError("expected namespace gate")
+
     def test_wiki_page_edit_uses_login_session(self):
         # Regression (live 502, 2026-11-06): the edit must ride the
         # opener _wiki_login returns — it holds the session cookies.
@@ -1220,6 +1369,94 @@ class BoardApiWiringTest(PubTestBase):
         self.assertTrue(r2["deduped"])
         wp_posts = [p for p in posts if p[0] == "/wp/v2/nest_job"]
         self.assertEqual(len(wp_posts), 1)
+
+    # --- OPS-0923: milestones never silently complete a job ---
+
+    def _fake_wp_existing(self, existing):
+        posts = []
+
+        def fake(route, data=None, method=None):
+            if data is None:
+                return existing
+            posts.append((route, data))
+            return {"id": 42}
+        self.ba.wp_api = fake
+        return posts
+
+    def test_milestone_does_not_complete_job(self):
+        """A generic milestone annotates the job — it must NOT write
+        status=done (the pre-OPS-0923 implicit mapping)."""
+        posts = self._fake_wp()
+        res = self.ba.do_publish(
+            {"kind": "milestone", "title": "bench checkpoint",
+             "job": "j1", "source": "q", "visibility": "members",
+             "sinks": ["job", "json"]}, "q")
+        self.assertEqual(res["receipts"]["job"]["status"], "delivered")
+        route, payload = posts[-1]
+        self.assertEqual(route, "/wp/v2/nest_job")
+        self.assertNotEqual(payload["meta"].get("status"), "done")
+        self.assertNotIn("status", payload["meta"])
+
+    def test_explicit_done_needs_evidence(self):
+        posts = self._fake_wp()
+        res = self.ba.do_publish(
+            {"kind": "milestone", "title": "bench done", "job": "j1",
+             "source": "q", "visibility": "members",
+             "meta": {"job_status": "done"},
+             "sinks": ["job", "json"]}, "q")
+        # do_job rejects bare done -> the job sink Skips (never retried);
+        # sibling sinks still deliver — honest partial receipt
+        self.assertEqual(res["receipts"]["job"]["status"], "skipped")
+        self.assertIn("result_ref", res["receipts"]["job"]["reason"])
+        self.assertEqual(res["receipts"]["json"]["status"], "delivered")
+        self.assertEqual(
+            [p for p in posts if p[0] == "/wp/v2/nest_job"], [])
+
+    def test_explicit_done_with_evidence_delivers(self):
+        posts = self._fake_wp()
+        res = self.ba.do_publish(
+            {"kind": "milestone", "title": "bench done", "job": "j1",
+             "source": "q", "visibility": "members",
+             "confidence": "verified",
+             "evidence": ["ada-nest/packs/j1/done"],
+             "meta": {"job_status": "done"},
+             "sinks": ["job"]}, "q")
+        self.assertEqual(res["receipts"]["job"]["status"], "delivered")
+        route, payload = posts[-1]
+        meta = payload["meta"]
+        self.assertEqual(meta["status"], "done")
+        self.assertEqual(meta["result_ref"], "ada-nest/packs/j1/done")
+        self.assertEqual(meta["artifact_verified"], "true")
+        self.assertIn("ada-nest/packs/j1/done", meta["evidence"])
+
+    def test_card_scoped_event_never_touches_nest_job(self):
+        """runner-lifecycle events carry `card`, not `job` — they audit
+        via board/telegram sinks and must not mint nest_job posts."""
+        posts = self._fake_wp()
+        res = self.ba.do_publish(
+            {"kind": "milestone", "title": "card finish: c-1",
+             "card": "c-1", "source": "runner-lifecycle",
+             "visibility": "members"}, "runner-lifecycle")
+        self.assertEqual(res["receipts"]["job"]["status"], "skipped")
+        self.assertIn("job ref", res["receipts"]["job"]["reason"])
+        self.assertEqual(
+            [p for p in posts if p[0] == "/wp/v2/nest_job"], [])
+
+    def test_progress_cannot_resurrect_done_job(self):
+        """done is terminal — a late progress/alert write that would
+        regress it is rejected by the transition guard -> Skip."""
+        posts = self._fake_wp_existing(
+            [{"id": 7, "meta": {"status": "done",
+                               "result_ref": "packs/j1/done",
+                               "artifact_verified": "true"}}])
+        res = self.ba.do_publish(
+            {"kind": "progress", "title": "late heartbeat", "job": "j1",
+             "source": "q", "visibility": "members",
+             "sinks": ["job"]}, "q")
+        self.assertEqual(res["receipts"]["job"]["status"], "skipped")
+        self.assertIn("invalid transition", res["receipts"]["job"]["reason"])
+        self.assertEqual(
+            [p for p in posts if "nest_job/7" in p[0]], [])
 
     # --- /lesson source=wiki read path (card
     #     wiki-member-knowledge-surface-migrate-wp-3a1cf2, step 4)

@@ -188,7 +188,16 @@ config:
       - infrastructure/ssot.services.yml
       - infrastructure/ssot.tools.yml
       - ssot.mysystem.home.yml
+    # kanban/cards/* are exempt from review-threshold bloat checks at the
+    # validator level (scripts/ssot-validate-all.mjs, 2026-11-25,
+    # ssot-baseline-board-drift-race) — board-api comms growth is normal
+    # traffic. The 750-line hard threshold still applies to cards; entries
+    # below that name kanban/cards paths are retained for the record only.
     review_threshold:
+      # Active decision card — comms grow while the plug/automation work is
+      # closed out. Review threshold is advisory; the hard threshold still
+      # applies (2026-11-24, CI optimize-gate).
+      - kanban/cards/omen-battery-charge-policy.yml
       - ssot.focus.yml
       - ssot.focus.decisions.yml
       - infrastructure/ssot.jobs.yml

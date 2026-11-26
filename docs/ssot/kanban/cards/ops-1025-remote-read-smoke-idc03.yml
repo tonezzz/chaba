@@ -1,7 +1,7 @@
 id: ops-1025-remote-read-smoke-idc03
 title: 'OPS-1025 one-shot remote-read verification: idc02 to idc03'
 column: backlog
-updated: 2026-11-19 20:42
+updated: 2026-11-26 21:23
 brief: One supervised, read-only S3 verification of the merged remote-read gates.
 priority: medium
 program: OPS-1025
@@ -22,7 +22,7 @@ action:
   type: dispatch
   repo: chaba
   model: litellm/or-free-nemotron-nano
-  executor: opencode
+  executor: devin
   agent_profile: ops-remote-read
   target_host: idc02
   artifact: evals/opencode-lane/out/ops-1025-remote-read-smoke-idc03.json
@@ -69,15 +69,14 @@ action:
       of guessing. Set services to the observed failed units (or []), and include a concrete failure_class plus
       the exact read-only output as evidence in findings. Emit only the JSON artifact required by the profile, with
       read_only=true and an ISO-8601 collected_at. No paid fallback; this is one attempt only.'
-  status: failed
-  runner: idc02
-  attempts: 1
-  result: 'exit=1 /FAILURE | devin-task-ops-1025-remote-read-smoke-idc03-1795095438.service: Failed with result
-    ''exit-code''. | devin-task-ops-1025-remote-read-smoke-idc03-1795095438.service: Consumed 13.029s CPU time,
-    521.9M memory peak, 0B memory swap peak.'
-  last_failure: 'exit=1 /FAILURE | devin-task-ops-1025-remote-read-smoke-idc03-1795095438.service: Failed with result
-    ''exit-code''. | devin-task-ops-1025-remote-read-smoke-idc03-1795095438.service: Consumed 13.029s CPU time,
-    521.9M memory peak, 0B memory swap peak.'
+  status: queued
+  attempts: 0
+  last_failure: 'exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795696328.service: Main
+    process exited, code=exited, status=2/INVALIDARGUMENT | devin-task-ops-1025-remote-read-smoke-idc03-1795696328.service:
+    Failed with result ''exit-code''.'
+  sweep:
+    stale_running: 2026-11-26 15:53
+    zero_commit: 2026-11-26 15:53
 ref: OPS-0245
 comms:
 - at: 2026-11-19 20:36
@@ -97,5 +96,725 @@ comms:
 - at: 2026-11-19 20:42
   from: chaba
   text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-19 21:12'
+- at: 2026-11-20 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:46
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:05
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:20
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:48
+  from: tony
+  text: retry requested
+- at: 2026-11-23 14:49
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.03 > 1.5)'
+- at: 2026-11-23 14:49
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 15:03
+  from: idc02
+  text: claimed
+- at: 2026-11-23 15:03
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795420994 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-23 15:05
+  from: idc02
+  text: 'finished (failed): exit=1 1/FAILURE | devin-task-ops-1025-remote-read-smoke-idc03-1795420994.service: Failed
+    with result ''exit-code''. | dev — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-23 15:05
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-23 15:35'
+- at: 2026-11-23 15:59
+  from: tony
+  text: retry requested
+- at: 2026-11-23 16:17
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261123-161416-ada-benchmark-coverage-scenari)
+    — claims held ~29m'
+- at: 2026-11-23 16:19
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:47
+  from: idc02
+  text: claimed
+- at: 2026-11-23 16:48
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795427272 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-23 16:50
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795427272.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-23 16:50
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-23 17:20'
+- at: 2026-11-23 18:34
+  from: tony
+  text: retry requested
+- at: 2026-11-23 18:35
+  from: idc02
+  text: claimed
+- at: 2026-11-23 18:36
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795433757 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-23 18:37
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795433757.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-23 18:37
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-23 19:07'
+- at: 2026-11-23 18:48
+  from: tony
+  text: retry requested
+- at: 2026-11-23 18:50
+  from: idc02
+  text: claimed
+- at: 2026-11-23 18:50
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795434600 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-23 18:51
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795434600.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-23 18:51
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-23 19:21'
+- at: 2026-11-23 19:10
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:10
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:12
+  from: tony
+  text: retry requested
+- at: 2026-11-23 19:12
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.83 > 1.5)'
+- at: 2026-11-23 20:50
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 23:32
+  from: idc02
+  text: claimed
+- at: 2026-11-23 23:32
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795451529 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-23 23:33
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795451529.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-23 23:33
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-24 00:03'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:05
+  from: tony
+  text: retry requested
+- at: 2026-11-24 08:08
+  from: idc02
+  text: claimed
+- at: 2026-11-24 08:08
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795482522 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-24 08:09
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795482522.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-24 08:09
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-24 08:39'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:23
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:27
+  from: tony
+  text: retry requested
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:40
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 09:02
+  from: idc02
+  text: claimed
+- at: 2026-11-24 09:02
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795485747 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-24 09:02
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795485747.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-24 09:02
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-24 09:32'
+- at: 2026-11-24 10:29
+  from: tony
+  text: retry requested
+- at: 2026-11-24 10:30
+  from: idc02
+  text: claimed
+- at: 2026-11-24 10:30
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795491019 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-24 10:30
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 10:31
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795491019.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-24 10:31
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-24 11:01'
+- at: 2026-11-24 10:46
+  from: tony
+  text: retry requested
+- at: 2026-11-24 10:47
+  from: idc02
+  text: claimed
+- at: 2026-11-24 10:47
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795492052 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-24 10:48
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795492052.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-24 10:48
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-24 11:18'
+- at: 2026-11-24 10:57
+  from: tony
+  text: retry requested
+- at: 2026-11-24 10:59
+  from: idc02
+  text: claimed
+- at: 2026-11-24 10:59
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795492749 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-24 10:59
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795492749.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-24 10:59
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-24 11:29'
+- at: 2026-11-24 11:31
+  from: tony
+  text: retry requested
+- at: 2026-11-24 11:32
+  from: idc02
+  text: claimed
+- at: 2026-11-24 11:33
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795494777 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-24 11:33
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795494777.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-24 11:33
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-24 12:03'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:08
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:21
+  from: tony
+  text: retry requested
+- at: 2026-11-24 12:22
+  from: idc02
+  text: claimed
+- at: 2026-11-24 12:22
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795497744 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-24 12:22
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795497744.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-24 12:23
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-24 12:52'
+- at: 2026-11-24 14:03
+  from: tony
+  text: retry requested
+- at: 2026-11-24 14:03
+  from: idc02
+  text: claimed
+- at: 2026-11-24 14:04
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795503837 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-24 14:04
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795503837.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-24 14:04
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-24 14:34'
+- at: 2026-11-24 14:29
+  from: tony
+  text: retry requested
+- at: 2026-11-24 14:31
+  from: idc02
+  text: claimed
+- at: 2026-11-24 14:31
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795505467 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-24 14:31
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795505467.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-24 14:31
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-24 15:01'
+- at: 2026-11-24 15:11
+  from: tony
+  text: retry requested
+- at: 2026-11-24 15:13
+  from: idc02
+  text: claimed
+- at: 2026-11-24 15:13
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795508017 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-24 15:13
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795508017.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-24 15:13
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-24 15:43'
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 18:43
+  from: tony
+  text: retry requested
+- at: 2026-11-24 18:44
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 18:44
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 18:44
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 18:54
+  from: devin
+  text: 'Root-caused the exit=2 loop: profile-result.json on idc02 shows admit reasons [wrong_stage:job=S3 lane=S1,
+    concurrency_cap]. Lane was manually rolled back to S1 on 2026-11-23 and is re-qualifying; this S3 envelope cannot
+    be admitted until the lane returns to S3 — retries will keep failing fast until then. Also: verify.py now requires
+    a top-level failure_class field in the artifact (added 2026-11-24 per OPS-1025 card contract) — emit it alongside
+    findings.'
+- at: 2026-11-24 19:08
+  from: idc02
+  text: claimed
+- at: 2026-11-24 19:08
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795522119 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-24 19:09
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795522119.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-24 19:09
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-24 19:39'
+- at: 2026-11-24 19:41
+  from: tony
+  text: retry requested
+- at: 2026-11-24 19:41
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 4.13 > 1.5)'
+- at: 2026-11-24 20:32
+  from: idc02
+  text: claimed
+- at: 2026-11-24 20:32
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795527153 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-24 20:33
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795527153.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-24 20:33
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-24 21:03'
+- at: 2026-11-24 20:50
+  from: tony
+  text: retry requested
+- at: 2026-11-24 20:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-24 20:50
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:25
+  from: idc02
+  text: claimed
+- at: 2026-11-24 21:25
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795530321 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-24 21:27
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795530321.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-24 21:27
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-24 21:57'
+- at: 2026-11-24 21:30
+  from: tony
+  text: retry requested
+- at: 2026-11-24 21:31
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 21:48
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.36 > 1.5)'
+- at: 2026-11-24 22:02
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 22:12
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.84 > 1.5)'
+- at: 2026-11-24 22:19
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 22:35
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.60 > 1.5)'
+- at: 2026-11-24 22:54
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 23:04
+  from: idc02
+  text: claimed
+- at: 2026-11-24 23:04
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795536292 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-24 23:05
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795536292.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-24 23:05
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-24 23:35'
+- at: 2026-11-25 07:28
+  from: tony
+  text: retry requested
+- at: 2026-11-25 07:28
+  from: idc02
+  text: claimed
+- at: 2026-11-25 07:28
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795566517 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-25 07:29
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795566517.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-25 07:29
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-25 07:59'
+- at: 2026-11-25 07:49
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 14:00
+  from: tony
+  text: retry requested
+- at: 2026-11-25 14:00
+  from: idc02
+  text: claimed
+- at: 2026-11-25 14:00
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795590047 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-25 14:00
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 14:00
+  from: chaba
+  text: 'kk-mac defers: installed runner-agent drifted from repo /Users/kkkakk/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 14:01
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795590047.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-25 14:01
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 14:01
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-25 14:31'
+- at: 2026-11-25 14:15
+  from: tony
+  text: retry requested
+- at: 2026-11-25 14:15
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 14:16
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 14:16
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 14:51
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 5.40 > 1.5)'
+- at: 2026-11-25 15:11
+  from: idc02
+  text: claimed
+- at: 2026-11-25 15:11
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795594288 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-25 15:12
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795594288.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-25 15:12
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-25 15:42'
+- at: 2026-11-25 15:21
+  from: tony
+  text: retry requested
+- at: 2026-11-25 15:21
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 15:24
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.54 > 1.5)'
+- at: 2026-11-25 15:34
+  from: idc02
+  text: claimed
+- at: 2026-11-25 15:34
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795595650 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-25 15:35
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795595650.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-25 15:35
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-25 16:05'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:03
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 12:26
+  from: tony
+  text: retry requested
+- at: 2026-11-26 12:26
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-26 12:26
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.03 > 1.5)'
+- at: 2026-11-26 12:44
+  from: idc02
+  text: claimed
+- at: 2026-11-26 12:44
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795671846 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-26 12:45
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795671846.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-26 12:45
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-26 13:15'
+- at: 2026-11-26 15:50
+  from: tony
+  text: retry requested
+- at: 2026-11-26 15:51
+  from: idc02
+  text: claimed
+- at: 2026-11-26 15:51
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795683075 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-26 15:52
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795683075.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-26 15:52
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-26 16:22'
+- at: 2026-11-26 15:53
+  from: chaba
+  text: 'merge-sweep: devin-task-ops-1025-remote-read-smoke-idc03-1795683075 no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-26 15:53
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=2; attempt limit reached, needs a human'
+- at: 2026-11-26 19:31
+  from: tony
+  text: retry requested
+- at: 2026-11-26 19:31
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-26 19:32
+  from: idc02
+  text: claimed
+- at: 2026-11-26 19:32
+  from: chaba
+  text: started devin-task-ops-1025-remote-read-smoke-idc03-1795696328 on idc02 (dispatch executor=opencode profile=ops-remote-read
+    model=litellm/or-free-nemotron-nano)
+- at: 2026-11-26 19:33
+  from: idc02
+  text: 'finished (failed): exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795696328.service:
+    Main process exited, code=exi — attempt cap 1 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-26 19:33
+  from: chaba
+  text: 'idc02 retry backoff: fail 2/3 — next claim not before 11-26 20:33'
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:52
+  from: chaba
+  text: 'TRIAGE 2026-11-26 batch 2: DECISION NEEDED: single attempt already consumed (exit=2 INVALIDARGUMENT on
+    idc02). Spec says one attempt only; choose retry with devin pin or close as attempted.'
+- at: 2026-11-26 21:00
+  from: tony
+  text: retry requested
+- at: 2026-11-26 21:01
+  from: tony
+  text: 'routing edited: executor=devin by tony: HUMAN CALL 2026-11-26: retry exception approved, pin devin to avoid
+    free_lane lane_envelope hold'
+- at: 2026-11-26 21:03
+  from: chaba
+  text: 'idc02 defers: runner at local cap (3/3) — remote slots unaffected'
+- at: 2026-11-26 21:23
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.53 > 1.5)'
 claim:
-  since: 2026-11-19 20:37
+  since: 2026-11-26 19:32

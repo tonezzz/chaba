@@ -1,0 +1,76 @@
+title: lesson-polish pass 2026-11-26 — 7 R1:overdue flags cleared + board-api accept-loop wedge incident
+subtitle: standing lesson-polish-run dispatch; small pass (previous run cleared the 190-flag backlog); board-api needed a manual restart mid-pass
+icon: education
+version: 1
+
+card: lesson-polish-run
+date: 2026-11-26
+dispatch: 20261126-084458-recurring-lesson-polish-pass-q
+attempt: 3
+
+summary: |
+  Re-audited via POST /lesson {op:list, content:1} (227 lessons, wiki-primary
+  store) and applied scripts/lessons-audit.py audit_one. The 2026-11-25 pass
+  had cleared all R1/R3/R4 flags; the 2026-11-26 07:40 audit re-flagged only
+  7 lessons — all R1:overdue, all with next_review=2026-11-25 (their first
+  spaced review came due one day after the previous pass; lessons due ON the
+  audit date are not yet overdue, so they kept their date). Re-filed all 7
+  through the /lesson door with explicit next_review=2026-12-03 override.
+  After-state: 0 R1/R3/R4 flags; 61 total flagged = R2 thin x6 (human-gated)
+  + R5 consider-thai x55 (curated exemptions; agent-tool-surfaces gained an
+  auto-Thai section as a re-file side effect, dropping R5 56->55).
+
+per_lesson_actions: |
+  All writes: POST /lesson {topic, level, source, status, content:
+  html.escape(stored wikitext), next_review:"2026-12-03", no_th:true when the
+  body already carries Thai, from:"devin"}.
+  - lesson-021a96fe34da claude-code-install — next_review->2026-12-03, body byte-identical
+  - lesson-75daf5e2997c claude-code-update — next_review->2026-12-03, body byte-identical
+  - lesson-7a0c0f5dc791 claude-code-openchamber — next_review->2026-12-03, body byte-identical
+  - lesson-7bc595208216 agent-tool-surfaces — next_review->2026-12-03, EN body identical + door auto-appended Thai (th:true); meta.no_th correctly NOT set
+  - lesson-9a1db3e435c5 claude-code-standard — next_review->2026-12-03, body byte-identical
+  - lesson-b00c79064ad9 claude-code-auth — next_review->2026-12-03, body byte-identical
+  - lesson-ef9b09a8f8db ada-deploy-flow — next_review->2026-12-03, body byte-identical (see incident)
+
+verification: |
+  Content fidelity verified WITHOUT the wedged door: direct MediaWiki API
+  reads of the Education: pages (bot login from wiki-h3-gizmo.env on idc03)
+  — template params show next_review=2026-12-03, learned_at=2026-11-18
+  preserved, updated=2026-11-26; bodies byte-identical to pre-pass wikitext
+  for all 7 (agent-tool-surfaces = old body + appended Thai tail).
+  Canonical-title check: all 7 wiki_titles == lesson_wiki_title(topic),
+  slugs == lesson-<md5(topic)[:12]> — no duplicate hazard this pass.
+  Audit re-run on fresh op:list content=1: 227 lessons, 0 polish-flagged.
+  Report: docs/reports/lesson-audit/lesson-polish-after-2026-11-26.json.
+
+incident_board_api_wedge: |
+  ~09:00-09:17Z the chaba-board-api process on idc03 stopped answering ALL
+  requests (last 200 at 08:56:12Z; only 503 lock-saturated / 504 after).
+  Stack dump (LOCK-HOLD-ALERT at 09:03:50Z) showed the MAIN thread deadlocked
+  in Thread.start() -> _started.wait() inside socketserver.process_request —
+  no new handler threads could spawn; listen backlog is only 6, so every
+  endpoint (/health /cards /comment /lesson) timed out for ~20min while the
+  process stayed 'active'. Contributing load: idc03 4 cores at load ~8
+  (runner-agent, kanban-commit, 60s render loop, render-board.py itself
+  hitting its 60s timeout). The _lock_watchdog dumps stacks but cannot
+  recover a dead accept thread. Manual `systemctl --user restart
+  chaba-board-api.service` restored service immediately (health 200; the
+  pending ada-deploy-flow write then completed in 8.4s). Carded as
+  KNB-1423 (board-api-accept-loop-wedge-auto-restart-7dd2f1): candidates =
+  systemd WatchdogSec keepalive, self-exit on accept stall, bigger backlog.
+
+notes_for_future_passes: |
+  - op:get per slug rescans the whole Education: namespace (~227 pages) —
+    under load it exceeded 140s. op:list content=1 is the only sane bulk
+    read; for single-lesson verification prefer direct MediaWiki API queries
+    (fast, bypasses board-api entirely).
+  - When board-api is wedged, writes through it cannot land — check
+    journalctl --user -u chaba-board-api.service for the last 200 timestamp
+    before assuming a write failed vs is still queued.
+  - The html.escape(wikitext) resubmit trick round-tripped byte-identical
+    on all 7 bodies this pass (incl. <pre>/<code>/[[wikilinks]] and Thai
+    sections) — method remains sound.
+  - no_th semantics confirmed: passing no_th:true on Thai-bearing content
+    skips re-translation WITHOUT setting meta.no_th (thai_free=False);
+    on Thai-free non-exempt content it WOULD set meta.no_th — do not use it
+    there (let the door auto-translate instead).

@@ -1,0 +1,62 @@
+title: OpenCode session-start recall — /recall command + instructions pointer
+subtitle: Option A landed; option B (plugin auto-inject) assessed, deferred
+icon: terminal
+
+card: opencode-session-start-recall-injection
+date: 2026-11-25
+dispatch: 20261125-090530-goal-give-ada-ocb-opencode-ses
+parent: DEV-0038 (publish-promote-knowledge-capture-ssot-w-d34a39)
+
+planning:
+  goal: |
+    Give ada-ocb/OpenCode sessions a bounded Chaba L0 resume signal
+    equivalent to Devin's SessionStart recall hook.
+  context: |
+    Devin injects rendered context via ~/.config/devin/scripts/
+    notebooklm-recall.sh (render --if-stale + bounded head). OpenCode
+    sessions started cold — only AGENTS.md/instructions.
+  options_assessed: |
+    A) /recall command — ALREADY LANDED. .opencode/commands/recall.md
+       (commit 800d086aae, PR #207) instructs the agent to run
+       `chaba-session-capture render --if-stale` (ansible-deployed
+       ~/.local/bin helper wrapping scripts/chaba/render-memory.py;
+       repo fallback `python3 scripts/chaba/render-memory.py
+       --if-stale`), read ~/.local/share/chaba/context.md, and inject
+       only a bounded ~4k-char pointer-first head. Read-only, no
+       secrets, stale/missing handled explicitly.
+
+    B) Plugin/hook auto-injection — FEASIBLE but deferred. OpenCode
+       plugin API (packages/plugin) supports `event` subscription
+       (session.created) and V1 `experimental.chat.system.transform` /
+       V2 `ctx.session.hook("context")` which can edit `event.system`
+       before provider dispatch — that is the correct injection point
+       for bounded context.md head. Cost: a TS plugin file under
+       .opencode/plugin/ + per-host install path + version-coupled API
+       (V1 vs V2 hook shapes differ). Not needed to satisfy acceptance
+       ("one command OR automatically"); revisit if /recall proves
+       skippable in practice.
+
+    C) AGENTS.md static instruction — rejected as sole mechanism
+       (easy to skip, always-on token cost); partially covered anyway
+       since opencode.jsonc instructions are always loaded.
+
+deliverables:
+  - .opencode/commands/recall.md — the /recall command (pre-existing,
+    verified this dispatch)
+  - .opencode/instructions/session-start.md — NEW always-on instruction
+    telling the agent to run /recall when continuing prior work;
+    registered in opencode.jsonc instructions array
+  - this job note — option assessment + pointers
+
+verification:
+  - python3 scripts/chaba/render-memory.py --check — clean (no writes)
+  - opencode.jsonc parses; instructions array lists both files
+  - chaba-session-capture helper is ansible-managed
+    (ansible/playbooks/session-capture.yml) — absent on hosts that
+    haven't run the playbook; recall.md falls back to the repo script
+
+notes: |
+  context.md is rendered per-host under ~/.local/share/chaba/ — the
+  ada-ocb lane hosts need the session-capture playbook (or a manual
+  render-memory.py run) before /recall has content. Missing file is
+  handled gracefully by the command.

@@ -255,10 +255,18 @@ def main() -> int:
     if not args.no_personal:
         # fallback lane — no --hosts so the shipper's full DEFAULT_HOSTS
         # fleet is covered; per-host local timers are the primary lane.
-        r = subprocess.run(
-            [sys.executable, str(ADA_SCRIPTS / "log-shipper.py")],
-            capture_output=True, text=True, timeout=600)
-        print((r.stdout.strip().splitlines() or ["log-ship: no output"])[-1])
+        # A slow/stuck shipper must not fail the whole refresh chain —
+        # catch the timeout, warn, and let the digest layers proceed.
+        try:
+            r = subprocess.run(
+                [sys.executable, str(ADA_SCRIPTS / "log-shipper.py")],
+                capture_output=True, text=True, timeout=600)
+            print((r.stdout.strip().splitlines()
+                   or ["log-ship: no output"])[-1])
+        except subprocess.TimeoutExpired:
+            print("warn: log-shipper exceeded 600s — skipped "
+                  "(per-host timers remain the primary lane)",
+                  file=sys.stderr)
         # vocab/log per-speaker notes -> my-words* CMS pages
         r = subprocess.run(
             [sys.executable, str(ADA_SCRIPTS / "vocab-pages-sync.py")],

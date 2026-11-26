@@ -8,12 +8,14 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
+from unittest.mock import patch
 
 REPO = Path(__file__).resolve().parents[2]
 SCRIPT = REPO / "scripts/devnest/opencode_profiles.py"
@@ -507,15 +509,15 @@ class RetryAttempts(unittest.TestCase):
 
 
 class LintProfiles(unittest.TestCase):
-    def test_all_committed_profiles_lint_clean(self):
+    def test_all_visible_profiles_lint_clean(self):
         pids = mod.list_profiles()
         self.assertEqual(sorted(pids),
                          ["artifact-write", "branch-code",
                           "branch-code-supervised-pilot", "doc-draft",
                           "gs-capture-eval", "info-find", "mddb-sequence",
-                          "ops-readonly",
-                          "ops-remote-read", "ssot-research",
-                          "storage-dryrun"])
+                          "ops-readonly", "ops-remote-read",
+                          "plan-route-only", "proposal-only",
+                          "ssot-research", "storage-dryrun"])
         for pid in pids:
             self.assertEqual(mod.lint_profile(mod.load_profile(pid)),
                              [], pid)
@@ -596,6 +598,33 @@ class LintProfiles(unittest.TestCase):
             del p[k]
             self.assertIn(f"missing_profile_field:{k}",
                           mod.lint_profile(p), k)
+
+    def test_scratch_context_is_limited_to_toolless_s0_shadow_profiles(self):
+        p = mod.load_profile("proposal-only")
+        p["isolation"] = {"project_context": "scratch"}
+        self.assertEqual(mod.lint_profile(p), [])
+
+        p["tools"]["read"] = True
+        self.assertIn(
+            "scratch_context_requires_no_tools_or_mcp",
+            mod.lint_profile(p),
+        )
+
+        p = mod.load_profile("proposal-only")
+        p["isolation"] = {"project_context": "scratch"}
+        p["mcp"]["allowed"] = ["mcp_read_ssot"]
+        self.assertIn(
+            "scratch_context_requires_no_tools_or_mcp",
+            mod.lint_profile(p),
+        )
+
+        p = mod.load_profile("proposal-only")
+        p["isolation"] = {"project_context": "scratch"}
+        p["stages"] = ["S1"]
+        self.assertIn(
+            "scratch_context_requires_s0_shadow_replay",
+            mod.lint_profile(p),
+        )
 
 
 class CheckEnvelope(unittest.TestCase):
@@ -734,6 +763,24 @@ class CheckEnvelope(unittest.TestCase):
 
 
 class Render(unittest.TestCase):
+    def test_scratch_project_context_is_empty_run_directory(self):
+        prof = mod.load_profile("proposal-only")
+        prof["isolation"] = {"project_context": "scratch"}
+        env = mk_env("proposal-only", task_class="shadow_replay",
+                     stage="S0", unattended=False)
+        with tempfile.TemporaryDirectory() as td:
+            project_dir = mod.project_dir_for_run(env, prof, Path(td))
+            self.assertEqual(project_dir, Path(td) / "project")
+            self.assertTrue(project_dir.is_dir())
+            self.assertEqual(list(project_dir.iterdir()), [])
+
+    def test_repository_context_remains_default(self):
+        prof = mod.load_profile("ops-readonly")
+        self.assertEqual(
+            mod.project_dir_for_run(mk_env(), prof, Path("/tmp/oc-run")),
+            mod.REPO,
+        )
+
     def test_render_disables_builtin_agents(self):
         prof = mod.load_profile("ops-readonly")
         cfg = mod.render_config(mk_env(), prof)
@@ -800,6 +847,44 @@ class Render(unittest.TestCase):
             # prompt carries the task + lane rails
             prompt = (Path(td) / "prompt.md").read_text()
             self.assertIn("Lane rails", prompt)
+
+
+class RunDiagnostics(unittest.TestCase):
+    def test_timeout_preserves_partial_stdout_and_stderr(self):
+        with tempfile.TemporaryDirectory() as td:
+            timeout = subprocess.TimeoutExpired(
+                ["opencode"], 5,
+                output=b'{"part":{"type":"step-start"}}\n',
+                stderr=b"synthetic provider timeout",
+            )
+            with patch.object(mod.subprocess, "run", side_effect=timeout):
+                result = mod.run_opencode(
+                    ["opencode"], {}, 5, Path(td), Path(td))
+
+            self.assertEqual(result["exit_code"], -2)
+            self.assertEqual(result["error"], "timeout 5s")
+            self.assertIn(
+                "step-start",
+                (Path(td) / "events.jsonl").read_text(encoding="utf-8"))
+            self.assertIn(
+                "synthetic provider timeout",
+                (Path(td) / "stderr.log").read_text(encoding="utf-8"))
+
+    def test_timeout_is_not_misreported_as_only_missing_artifact(self):
+        audit = {
+            "mutating_commands": [],
+            "verifier_peeks": [],
+        }
+        self.assertEqual(
+            mod.classify_failure_reason(
+                audit, [], 0, False, -2, False),
+            "timeout",
+        )
+        self.assertEqual(
+            mod.classify_failure_reason(
+                audit, [], 0, False, 0, False),
+            "missing_artifact",
+        )
 
 
 class ArtifactExtraction(unittest.TestCase):

@@ -1,0 +1,96 @@
+id: ansible-fleet-service-drift
+title: 'Ansible audit: fleet service drift detected'
+column: backlog
+updated: 2026-11-26 20:38
+spec: 'Read-only ansible audit-fleet-services detected service/resource drift vs ssot.audit.hosts.yml. Hosts: con01,
+  idc02, idc03, mn01, tony-dell, tony-omen. Report dir: reports/ansible-benchmark/services/. No remediation performed.'
+action:
+  type: manual
+ref: OPS-1402
+comms:
+- at: 2026-11-25 15:47
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-25 15:47
+  from: devin
+  text: 'ansible audit-fleet-services: 6 host(s) with drift. fp=con01:6|idc02:1|idc03:1|mn01:1|tony-dell:1|tony-omen:1.
+    [{"host": "con01", "count": 6}, {"host": "idc02", "count": 1}, {"host": "idc03", "count": 1}, {"host": "mn01",
+    "count": 1}, {"host": "tony-dell", "count": 1}, {"host": "tony-omen", "count": 1}]'
+- at: 2026-11-25 16:23
+  from: devin
+  text: 'ansible audit-fleet-services: 6 host(s) with drift. fp=con01:7|idc02:4|idc03:33|tony-dell:18|tony-macbook:2|tony-omen:20.
+    [{"host": "con01", "count": 7}, {"host": "idc02", "count": 4}, {"host": "idc03", "count": 33}, {"host": "tony-dell",
+    "count": 18}, {"host": "tony-macbook", "count": 2}, {"host": "tony-omen", "count": 20}]'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:07
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:55
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:56
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:56
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 08:47
+  from: devin
+  text: 'ansible audit-fleet-services: 7 host(s) with drift. fp=con01:6|idc02:11|idc03:31|mn01:5|tony-dell:20|tony-macbook:3|tony-omen:19.
+    [{"host": "con01", "count": 6}, {"host": "idc02", "count": 11}, {"host": "idc03", "count": 31}, {"host": "mn01",
+    "count": 5}, {"host": "tony-dell", "count": 20}, {"host": "tony-macbook", "count": 3}, {"host": "tony-omen",
+    "count": 19}]'
+- at: 2026-11-26 18:52
+  from: tony
+  text: '[batch A 19:16 +07] Triage — recurring audit signals, fingerprints unstable; not closed. The three audit
+    cards are board notifications from read-only Ansible jobs, and their fingerprints change on every run (fleet
+    services: 7→6→7 hosts, idc03 31→33→31; runner tools: 7→6 hosts). Runner-tool details show genuine drift (runner-agent
+    src=1514c75c4679 vs installed 8c28da6b4922 on con01/idc02) plus MISSING-DEST entries for claude-dispatch/devin-dispatch-prune/dispatch-queue/dispatch_repos.py
+    on severa'
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'

@@ -1,0 +1,32 @@
+# GPU Embedding Batch Job (~1.5GB VRAM)
+# Demonstrates a batch job that waits for VRAM to free up.
+#
+# The scheduler will keep this job QUEUED until omen has at least
+# 2GB free VRAM (current baseline: ~1.8GB free after transient jobs finish).
+#
+# This is the key advantage of centralized dispatch: the queue provides
+# backpressure — jobs wait for resources instead of failing or OOMing.
+
+job_id: "gpu-embed-batch-{{ '%Y%m%d-%H%M' | strftime }}"
+job_image: "ghcr.io/huggingface/text-embeddings-inference:cpu-1.2"
+job_cmd: >
+  bash -c "echo 'Embedding batch job placeholder — GPU dispatch validated; replace with real workload' &&
+  sleep 30 &&
+  echo 'GPU EMBEDDING BATCH OK'"
+
+# Requires 2GB — will wait in queue until VRAM available
+job_gpus: 1
+job_min_vram_gb: 2
+job_max_load_pct: 1000  # see GPU-JOBS.md — raw load1 needs oversubscription on omen
+job_max_mem_pct: 90
+job_timeout_sec: 3600
+
+job_require_tags: ["gpu"]
+job_exclude_tags: ["laptop"]
+target_group: "all"
+priority: 7
+user: "tony"
+project: "embeddings"
+
+container_runtime: "podman"
+sidecar_redis_host: "100.123.163.11"

@@ -1,0 +1,129 @@
+title: Sacred Father private image-conditioning probe
+subtitle: Test the approved v1_01 page-2 reference image with the existing shot01 embedding
+icon: film
+card: kk-video-preview-output-qc-assembly
+date: 2026-10-28
+
+planning:
+  goal: >-
+    Verify that an approved private image from OST_-_v1_01.pdf can condition
+    one short LTX shot on the managed Colab T4 before designing a full image-aware
+    preview release.
+  scope: >-
+    Generate one approximately one-second private technical smoke using the
+    v1_01 page-2 image-000 reference and existing shot01 prompt embeddings. Do not
+    render the full preview, generate audio, clone a voice, publish, or change
+    the existing creative brief/story/prompt pack in this probe.
+  success_criteria:
+    - Input image hash matches the private PDF image-audit artifact.
+    - LTX I2V produces a decodable H.264 640x384 clip with expected frame count.
+    - Output and verdict remain in the private ada-nest pack store.
+    - The normal preview remains blocked pending integrated scene mapping.
+  risks:
+    - The image is a composite reference board; this is a technical smoke, not a quality sign-off.
+    - T4 memory is near the proven ceiling; run one shot only and stop on OOM.
+    - Do not infer voice-cloning consent from image approval.
+  resources:
+    - managed Colab T4 boot 12f47b46-5ee1-47f8-9000-59a4fe697f0c
+    - private source image: v1_01 PDF page 2, extracted image-000.jpg
+    - existing prompt embeddings: kk-video-c9f99fee6146-embeds/embeds/shot01.pt
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+    - label: Sacred Father preview and source revision
+      file: docs/ssot/kanban/cards/kk-video-c9f99fee6146.yml
+
+processing:
+  status: completed
+  started_at: 2026-10-28
+  steps:
+    - id: 1
+      label: Verify Colab runtime and approval evidence
+      status: completed
+      notes: Fresh managed T4 boot 12f47b46 is registered; runner is absent and queue lease is stale. OPS-0952 records KK's all-pages private-use approval.
+    - id: 2
+      label: Stage and run the one-shot I2V pack
+      status: completed
+      notes: >-
+        Colab reports the pack DONE. Its verdict passes: H.264 640x384,
+        25 frames, 1.042s, full decode; render took 42s and peak GPU
+        allocation was 7.84GB. The run remained private and generated no
+        audio. The runner verified the input image SHA-256 against the
+        fetched source audit before inference.
+    - id: 3
+      label: Verify probe artifact and preserve preview gate
+      status: completed
+      notes: >-
+        Read back verdict.json from the Colab result API; it records status
+        pass, source page 2, image SHA-256
+        e410f9d2041a970fafd1813862f2b8abb60ffd0692b1a2d561c110c98da88999,
+        valid H.264 dimensions/frame count/duration, and successful decode.
+        The queue lists this pack DONE. This validates one technical shot
+        only; the probe itself produced no audio or publication. A separate
+        run later completed the existing 60s preview using the prior generated
+        shots and non-cloned Edge TTS.
+  decisions:
+    - label: Probe uses a private page-2 reference board with shot01 embeddings
+      rationale: KK approved all v1_01 embedded image pages for private preview; this is a bounded technical sample, not final scene mapping.
+      alternatives_considered: Skip image conditioning and keep all visuals symbolic.
+  changes:
+    - file: scripts/colab/packs/kk-video-c9f99fee6146-image-conditioning-probe/
+      summary: Added a private one-shot I2V smoke using an approved v1_01 image and the existing shot01 embedding.
+
+followup:
+  verification:
+    - Probe runner matched the input image SHA-256 to the fetched audit record before inference.
+    - Colab verdict confirms MP4 decode, H.264 codec, 640x384 dimensions, 25 frames, 1.042s duration, and 7.84GB peak allocation.
+    - Colab pack status marks the probe DONE; the queue has no active runner.
+    - The separate 60s preview passed all 10-shot QC and narration checks, but reused its prior generated visuals.
+  rollback_plan:
+    - Do not publish the probe; if malformed, leave it private and create a new versioned probe pack.
+  handoff:
+    - Tony/KK review the private probe and answer the image-aware v2 scene-map request.
+  deferred:
+    - Integrated scene-to-image mapping and any image-aware full-preview shot regeneration.
+    - Voice clone: not authorized by the image-only approval; the preview uses non-cloned Edge TTS.
+
+report:
+  status: completed
+  completed_at: 2026-10-28
+  summary: >-
+    The private one-shot LTX image-conditioning probe passed on the managed
+    Colab T4. The audited v1_01 page-2 image conditioned one 640x384,
+    25-frame H.264 clip with successful decode. This proves the technical
+    path, not scene mapping or creative quality. A separate run later completed
+    the 60s narrated private preview using the existing generated shots and
+    non-cloned Edge TTS; the full image-aware v2 remains gated on a scene map.
+  metrics:
+    - metric: render_seconds
+      value: 42.0
+    - metric: gpu_peak_gb
+      value: 7.84
+    - metric: video
+      value: H.264 640x384, 25 frames, 1.042s, decode passed, 49,371 bytes
+    - metric: source_image_sha256
+      value: e410f9d2041a970fafd1813862f2b8abb60ffd0692b1a2d561c110c98da88999
+    - metric: prompt_embedding_sha256
+      value: ad7558cdbfbc4a79b2e0812d1d90397b55d3279e40db66419847dded54cbc133
+  links:
+    - title: OPS-0952 preview/QC card
+      file: docs/ssot/kanban/cards/kk-video-preview-output-qc-assembly.yml
+    - title: Source audit report
+      file: docs/reports/kk-video-c9f99fee6146-source-audit-2026-10-28.md
+    - title: Private conditioned probe video
+      url: gdrive:ada-nest/packs/kk-video-c9f99fee6146-image-conditioning-probe/out/shot01-conditioned.mp4
+    - title: Machine verdict
+      url: gdrive:ada-nest/packs/kk-video-c9f99fee6146-image-conditioning-probe/out/verdict.json
+    - title: Narrated private v1 preview (not PDF-image-integrated)
+      url: gdrive:ada-nest/packs/kk-video-c9f99fee6146-preview/teaser-preview.mp4
+  kb_review: []
+  lessons_learned:
+    - A single image-conditioned 640x384 shot fit the T4 at 7.84GB peak allocation; keep full-scene rendering gated until PDF images are mapped to shots.
+
+config:
+  version: 1
+  created_at: 2026-10-28
+  last_updated: 2026-10-28
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml

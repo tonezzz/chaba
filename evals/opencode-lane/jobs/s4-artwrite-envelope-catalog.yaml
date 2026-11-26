@@ -1,0 +1,42 @@
+# S4 artifact_write job 2/5 — lane job-envelope catalog
+# (card branch-code-s4-evidence-ladder, OPS-1030). See
+# s4-artwrite-profile-inventory.yaml for the envelope contract.
+id: s4-artwrite-envelope-catalog
+card: branch-code-s4-evidence-ladder
+task_class: artifact_write
+stage: S4
+target_host: idc02
+executor: opencode
+profile: artifact-write
+model: litellm/gemini-3.5-flash-lite
+provider: litellm
+unattended: true
+mcp_allowlist: []
+allowed_paths: [docs/reports/]
+artifact:
+  path: docs/reports/s4-envelope-catalog-2026-11-24.md
+  schema: >-
+    evals/opencode-lane/profiles/artifact-write/fixture/task.yaml
+    #contract.required_fields
+verifier:
+  type: held_out_py
+  ref: evals/opencode-lane/profiles/artifact-write/fixture/verify.py
+escalation:
+  on_fail: manual
+  max_retries: 1
+rollback:
+  kind: worktree-drop
+  ref: dispatch/profile-run worktree dropped after review; artifact is
+    a single new file under docs/reports/
+heartbeat:
+  required: false
+timeout_s: 420
+task: >-
+  Write a markdown catalog of every job envelope in
+  evals/opencode-lane/jobs/. For each .yaml file report: id, card,
+  task_class, stage, target_host, executor, profile, model. Group by
+  stage. Note which envelopes are live pilots vs disabled/defined-only
+  (e.g. p5-branch-code-disabled). Close with a count per stage. The
+  file must mention s4-artwrite-profile-inventory and
+  p5-branch-code-disabled verbatim. Begin the file with a single
+  `# ` title line.

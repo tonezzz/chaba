@@ -39,7 +39,7 @@ edges:
       # Retired (OPS-0754, 2026-10-20 — serve config was wiped; census found
       # nothing local left to proxy):
       #   :8123 tony-ha     -> tony-omen tailscale serve :8123
-      #   :8124 michael-dev -> idc02 tailscale serve :8124 (moved 2026-10-26)
+      #   :8124 mn-ha-dev -> mn01 tailscale serve :8124 (moved 2026-10-26 -> mn01 2026-11-25)
       #   :8444 ha-live     -> tony-omen :8444 (-> :9005)
       #   :8448 go2rtc      -> tony-omen :1984 direct (no serve port)
       # Watchdog: check-serve-config.timer alerts when this edge has no config
@@ -53,6 +53,7 @@ edges:
       /apps/ha/ada-dev: http://127.0.0.1:8005     # ada-dev backend (added 2026-10-08 for Chaba AI tab)
       /apps/ha/ada-ha: http://127.0.0.1:8006      # ada-ha-ada backend (Ada lab lane, added 2026-10-23)
       /apps/ha/ada-kk: http://127.0.0.1:8007      # ada-kk backend (Kaewta — KK member node, 2026-10-09)
+      /apps/roster-shim: http://127.0.0.1:8796    # roster lane shim — /<lane>/ws per agent (devin, nest); card roster-devin-nest-shims, 2026-11-24
       # :8447 mount = vcast display front (2026-10-17): whole port proxies to
       # caddy-edge http://127.0.0.1:8749, which serves /srv/public static
       # (apps/vcast/, pair, remote) + strips /api/input-bridge/* ->
@@ -79,9 +80,6 @@ edges:
   #   /ada-ws/michael/* -> rewrite /apps/ha/ada-michael{uri} -> https://idc03.taila0626a.ts.net
   #   /ada-ws/dev/*     -> rewrite /apps/ha/ada-dev{uri}     -> https://idc03.taila0626a.ts.net
   # (rides the CF Access session; ws + /api/* both proxy) 2026-10-09
-  # cline.surf-thailand.com edge (idc02 Caddy) -> con01 Tailnet Cline proxy.
-  # Cloudflare Access uses the Ada HA allowlist; the Cline proxy validates
-  # the signed Access JWT so direct-origin requests fail closed.
   # kk-ha.surf-thailand.com edge (idc02 caddy): same-origin lane
   #   /ada-ws/kk/* -> rewrite /apps/ha/ada-kk{uri} -> https://idc03.taila0626a.ts.net
   # then proxy -> https://idc03.taila0626a.ts.net:8126 (member node kk-ha)
@@ -117,9 +115,10 @@ services:
   ada-dev:        {host: idc03, listen: "127.0.0.1:8005", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-dev"}
   ada-kk:         {host: idc03, listen: "127.0.0.1:8007", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-kk"}
   ada-ha-ada:     {host: idc03, listen: "127.0.0.1:8006", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-ha"}
+  roster-shim:    {host: idc03, listen: "127.0.0.1:8796", tailnet: "https://idc03.taila0626a.ts.net/apps/roster-shim", note: "ada-lane ws shim for roster devin+nest contacts — stacks/services/roster-shim, card roster-devin-nest-shims"}
   ada-pi-pwa:     {host: idc03, listen: "127.0.0.1:8002", tailnet: "https://idc03.taila0626a.ts.net/", status: "PWA surface alias served by ada-ha-tony; separate :8001 service removed 2026-11-17"}
   tony-ha:        {host: tony-omen, listen: "127.0.0.1:8123", tailnet: "https://tony-omen.taila0626a.ts.net:8123"}   # evacuated dell 2026-10-19/20 (ph5)
-  michael-dev:    {host: idc02,     listen: "127.0.0.1:8124", tailnet: "https://idc02.taila0626a.ts.net:8124"}     # migrated 2026-10-09 -> idc02 2026-10-26
+  mn-ha-dev:    {host: mn01,      listen: "127.0.0.1:8124", tailnet: "https://mn01.taila0626a.ts.net:8124"}     # migrated 2026-10-09 -> idc03 2026-10-26 -> mn01 2026-11-25
   board-api:      {host: idc03, listen: "127.0.0.1:8787", tailnet: "https://idc03.taila0626a.ts.net:10000"}    # migrated 2026-10-16 OPS-0725 ph2
   report-api:     {host: idc02, listen: "127.0.0.1:8792"}    # migrated 2026-10-17 OPS-0725 ph3; tailnet shadow idc02:8792
   status-data-api: {host: idc02, listen: "127.0.0.1:8000", tailnet: "http://idc02.taila0626a.ts.net:8000"}   # migrated 2026-10-17 OPS-0725 ph3 (podman, loopback+shadow)
@@ -132,20 +131,16 @@ services:
   nlm-cookies:    {host: tony-dell, listen: "127.0.0.1:9876"}
   snapshot:       {host: tony-omen, listen: "127.0.0.1:9005", note: "ha-live bridge inside tony-ha — evacuated dell 2026-10-19/20"}
   chaba-docs:     {host: idc02, listen: "100.123.163.11:8092", note: "bserver — migrated from tony-dell 2026-10-18 (OPS-0725 ph3); tailnet-only bind"}
-  helm:           {host: idc02, listen: "100.123.163.11:3003", note: "migrated from tony-dell 2026-10-18 (OPS-0725 ph3); tailnet-only bind"}
   node-red:       {host: tony-omen, listen: "0.0.0.0:1880", note: "evacuated dell 2026-10-19/20 (ph5)"}
   yolo:           {host: mn01, listen: "0.0.0.0:8780", tailnet: "http://100.106.196.22:8780"}
   camwall-idc02:  {host: idc02, listen: "0.0.0.0:8380", tailnet: "http://100.123.163.11:8380"}
   camwall-idc03:  {host: idc03, listen: "0.0.0.0:8380", tailnet: "http://100.102.134.91:8380"}
-  websockify-vms:   {host: idc02, listen: "100.123.163.11:6082", note: "websockify -> mn01:5900 — migrated to idc02 2026-10-20 (OPS-0731); tailnet-IP bind"}
-  websockify-macbook: {host: idc02, listen: "100.123.163.11:6080", note: "websockify -> kk-macbook:5900 — migrated to idc02 2026-10-20 (OPS-0731); tailnet-IP bind"}
   yomi:           {host: idc03, listen: "100.102.134.91:3000", tailnet: "http://100.102.134.91:3000", note: "migrated from tony-dell 2026-10-19 (constellation move w/ pg+redis+trade); tailnet-only bind"}
   weaviate:       {host: idc02, listen: "100.123.163.11:8084", tailnet: "http://100.123.163.11:8084", note: "migrated 2026-10-19"}
   gpu-queue:      {host: idc02, listen: "100.123.163.11:3001", tailnet: "http://100.123.163.11:3001", note: "migrated 2026-10-19"}
   trade-api:      {host: idc03, listen: "100.102.134.91:9002", tailnet: "http://100.102.134.91:9002", note: "migrated from tony-dell 2026-10-19 (constellation move w/ pg+redis+yomi); tailnet-only bind"}
   input-bridge:   {host: idc03, listen: "0.0.0.0:3010", tailnet: "http://100.102.134.91:3010"}
   cms-render:     {host: idc03, listen: "100.102.134.91:8010", tailnet: "http://100.102.134.91:8010", note: "chaba-cms-render FastAPI (apps/cms-render) — live MDDB->HTML; public as cms.surf-thailand.com via idc02 caddy-edge behind CF Access"}
-  cline-kanban:   {host: con01, listen: "100.72.146.39:3484", tailnet: "http://100.72.146.39:3484", public: "https://cline.surf-thailand.com", auth: "Cloudflare Access JWT verified by the Tailnet proxy"}
   netdata:        {host: tony-omen, listen: "0.0.0.0:19999", tailnet: "http://100.75.102.88:19999", public: "https://netdata.surf-thailand.com", auth: "Cloudflare Access", note: "fleet parent — 8 hosts streaming (children -> :19999 over tailnet); docker netdata/netdata:stable in stacks/web, state persisted at ~/netdata/{etc,lib,cache}; edge block added idc02 caddy 2026-11-18"}
   frigate:        {host: tony-dell, listen: "docker-net:5000", tailnet: "frigate:5000"}
   imagen:         {host: tony-omen, listen: "docker-net:8000", tailnet: "imagen-inference:8000"}
@@ -183,7 +178,8 @@ routes:
   - {id: ada-pi-legacy,    kind: alias,  path: /apps/ada_pi*,          target: "https://idc03.taila0626a.ts.net{uri}", owner: ada-voice}
   - {id: ha-index,         kind: alias,  path: /apps/ha,            target: "/apps/ha/", owner: chaba}
   - {id: ha-tony,          kind: alias,  path: /apps/ha/tony-ha*,      target: "https://tony-omen.taila0626a.ts.net:8123/", owner: tony-ha}
-  - {id: ha-michael-dev,   kind: alias,  path: /apps/ha/michael-dev*,  target: "https://idc02.taila0626a.ts.net:8124/", owner: michael-ha}
+  - {id: ha-mn-ha-dev,   kind: alias,  path: /apps/ha/mn-ha-dev*,  target: "https://mn01.taila0626a.ts.net:8124/", owner: michael-ha}
+  - {id: ha-michael-dev-legacy, kind: alias, path: /apps/ha/michael-dev*, target: "https://mn01.taila0626a.ts.net:8124/", owner: michael-ha, note: "legacy alias kept during transition — renamed 2026-11-24; repointed idc02 -> mn01 2026-11-25"}
   - {id: ha-michael,       kind: alias,  path: /apps/ha/michael-ha*,   target: "https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/", owner: michael-ha}
   - {id: ha-tony-short,    kind: alias,  path: /apps/tony-ha*,         target: "/apps/ha/tony-ha{uri}", owner: tony-ha}
   # nlm-cookies removed 2026-10-07: :9876 browser-cookie sidecar retired;
@@ -193,10 +189,6 @@ routes:
   - {id: yolo-api,         kind: proxy,  path: /apps/yolo/api/*,       strip: /apps/yolo/api, upstream: "100.106.196.22:8780", owner: yolo}
   - {id: yolo,             kind: static, path: /apps/yolo/*,           owner: yolo}
   - {id: dance2energy,     kind: static, path: /apps/dance2energy/*,   owner: chaba}
-  - {id: vnc-ws,           kind: proxy,  path: /apps/vnc/ws,           ws: true, upstream: "100.123.163.11:6082", owner: vms, note: "default target = mn01 vms; websockify units on idc02 host, tailnet-IP binds"}
-  - {id: vnc-ws-mn01,      kind: proxy,  path: /apps/vnc/ws-mn01,      ws: true, upstream: "100.123.163.11:6082", owner: vms}
-  - {id: vnc-ws-macbook,   kind: proxy,  path: /apps/vnc/ws-macbook,   ws: true, upstream: "100.123.163.11:6080", owner: vms}
-  - {id: vnc,              kind: static, path: /apps/vnc/*,            owner: vms}
   - {id: vms-snap,         kind: proxy,  path: /apps/vms-snap/*,       strip: /apps/vms-snap, upstream: "100.106.196.22:8377", owner: vms, note: "xmeye channel snapshots (vms-snap shim on mn01) — /apps/eye ?src=vms:<ch>"}
   - {id: eye-mddb,         kind: proxy,  path: /apps/eye-mddb/v1/add,  upstream: "100.102.134.91:11023", owner: chaba, custom: true, note: "MDDB write lane for /apps/eye bench+detections — only /v1/add proxied, tailnet-identity-write"}
   - {id: snapshot,         kind: proxy,  path: /snapshot,              upstream: "100.75.102.88:9005", owner: chaba, note: "ha-live bridge on tony-omen since ph5"}
@@ -209,7 +201,6 @@ routes:
   - {id: gpu-queue,        kind: proxy,  path: /api/gpu-queue/*,       strip: /api/gpu-queue, upstream: "100.123.163.11:3001", owner: gpu}
   - {id: input-bridge,     kind: proxy,  path: /api/input-bridge/*,    strip: /api/input-bridge, upstream: "100.102.134.91:3010", owner: chaba}
   - {id: api-status-data,  kind: proxy,  path: /api/*,                 upstream: "idc02.taila0626a.ts.net:8000", owner: chaba, custom: true, note: "catch-all → status-data-api on idc02 (migrated 10-18); must stay last of /api group; Caddy sort puts /api/* BEFORE deeper handles — matcher must exclude /api/yomi/* and /api/ws/* (fixed 10-19, was shadowing both since 10-17)"}
-  - {id: helm,             kind: proxy,  path: "{/apps/helm,/apps/helm/*}", upstream: "idc02.taila0626a.ts.net:3003", upstream_host: localhost, owner: chaba, custom: true, note: "basePath-preserved multi-path matcher; upstream idc02 since 2026-10-18"}
   - {id: frigate,          kind: proxy,  path: /frigate/*,             strip: /frigate, upstream: "frigate:5000", owner: frigate, expect_down: true, note: "on-demand NVR stack (frigate/) — stopped by design"}
   # imagen routes archived 2026-10-07 — omen-layout cargo cult, dead on
   # dell. Worker topology lives in gpu-queue; knowledge preserved in

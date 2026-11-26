@@ -1,0 +1,70 @@
+id: con01-script-smoke
+title: con01 runner — script lane e2e smoke
+column: done
+priority: low
+created: '2026-11-24'
+updated: 2026-11-24 10:37
+brief: 'E2E: script lane on con01 (8c/23Gi, podman 4.9.3, push:chaba, cap 1) — proves heartbeat, claim, execute
+  and finish.'
+action:
+  type: script
+  status: done
+  host: con01
+  labels:
+  - cpu
+  - container
+  - script
+  - push:chaba
+  script:
+    repo: chaba
+    cmd: hostname && uname -sm && podman version --format '{{.Client.Version}}' && git log --oneline -1
+    timeout: 300
+  runner: con01
+  attempts: 1
+  result: 'exit=0 Started runner-con01-script-smoke-1795491142.service - runner con01-script-smoke. | Linux x86_64
+    | 4.9.3 | c54bdc43 kanban: cms-auto-health sync 2026-11-24T10:16:45+07:00'
+spec: smoke — con01 runner claim+execute verify
+comms:
+- at: 2026-11-24 10:30
+  from: tony
+  text: filed via direct YAML under /tmp/board-api.lock — POST /card refuses action.type=script (same as kk-mac-script-smoke).
+- at: 2026-11-24 10:31
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: action.host=con01 names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-24 10:32
+  from: con01
+  text: claimed
+- at: 2026-11-24 10:32
+  from: chaba
+  text: 'tony-dell defers: unclaimable by the declared runner fleet: action.host=con01 names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-24 10:32
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: action.host=con01 names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-24 10:32
+  from: chaba
+  text: started runner-con01-script-smoke-1795491142 on con01 (script)
+- at: 2026-11-24 10:33
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: action.host=con01 names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-24 10:33
+  from: con01
+  text: 'finished (ok): exit=0 Started runner-con01-script-smoke-1795491142.service - runner con01-script-smoke.
+    | Linux x86_64 | 4.9.3 | c54bdc'
+- at: 2026-11-24 10:35
+  from: chaba
+  text: 'con01 defers: unclaimable by the declared runner fleet: action.host=con01 names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-24 10:36
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: action.host=con01 names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: '2026-11-24 11:22'
+  from: tony
+  text: 'archived (verification scaffolding — result recorded in fleet SSOT + ADA-0191 comms)'
+review_kind: verify
+claim:
+  since: 2026-11-24 10:32

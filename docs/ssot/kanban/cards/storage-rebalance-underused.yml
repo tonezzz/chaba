@@ -1,0 +1,282 @@
+id: storage-rebalance-underused
+title: 'Rebalance fleet storage: move heavy data from tight hosts to underused con01/idc02'
+column: done
+updated: 2026-11-26 20:34
+brief: con01 (52% used, 140.5 GiB free) and idc02 (45%, 160.1 GiB free) are underused while idc03 (90%, 31 GiB)
+  and tony-dell (88%, 25.8 GiB) are tight. Migrate yt-live-media cache, backups, mddb/backup data and large logs
+  to free space.
+priority: medium
+tags:
+- ansible
+- storage
+- infrastructure
+spec: 'GOAL: rebalance disk usage across the fleet. Move heavy consumers (yt-live-media cache, backups, mddb data,
+  large logs) from idc03 and tony-dell onto con01/idc02. Add an underused signal (mount < 50% used or > 100 GiB
+  free) to disk-headroom.yml and disk-trend-watch.py so over-provisioned hosts surface. Consider capacity planning:
+  downsize con01/idc02 or expand idc03/tony-dell.'
+ref: OPS-0017
+comms:
+- at: 2026-11-23 07:13
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-23 10:52
+  from: chaba
+  text: classified as devin (kw:host conf 1.00)
+- at: 2026-11-23 10:52
+  from: tony
+  text: queued for processing
+- at: 2026-11-23 10:53
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 3.35 > 1.0)'
+- at: 2026-11-23 10:53
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.73 > 0.85)'
+- at: 2026-11-23 10:54
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 0.96 > 0.85)'
+- at: 2026-11-23 10:54
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 10:59
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-23 11:03
+  from: tony-omen
+  text: claimed
+- at: 2026-11-23 11:04
+  from: chaba
+  text: started devin-task-20261123-110440-goal-rebalance-disk-usage-acro on tony-omen (dispatch)
+- at: 2026-11-23 11:04
+  from: chaba
+  text: 'primer injected 8 lesson(s): [kanban-card-torn-write-investigation-b4034e] ROOT CAUSE NAMED: idc03 disk
+    hit E; [report-graph-producer-metas-never-reach-7b0982] [devin] DONE — option (a) live ; runbook docs/kb/disk-space-management.md:
+    Disk Space Management — `/data` is the; [ada-job-brief-builder] v1 scaffold (precedents only) already landed
+    12:36-12:49; [cms-to-wiki-storage-assessment] primer injected 8 lesson(s): [assessments-to-ed; [docs-map-one-registry-across-all-doc-sto-7ac35a]
+    [dispatch 1'
+- at: 2026-11-23 11:04
+  from: devin
+  text: 'started: reading disk-headroom playbook + disk-trend-watch.py, then assessing fleet disk state'
+- at: 2026-11-23 11:15
+  from: devin
+  text: 'raised request approve-prod-delete-move-batch-a-idc03-r-0ceb11: Approve prod delete/move batch? (a) idc03:
+    rm mddb.db.precompact-20261111 (31G stale), rm devnest model mirror (33G, con'
+- at: 2026-11-23 11:15
+  from: devin
+  text: 'LANDED (worktree): underused signal in disk-headroom.yml+j2 (verified live: idc02/mn01/omen + dell /dell-backup+/timeshift
+    flagged) and disk-trend-watch.py (selftest PASS, report-only, no cards). NEW mddb-backup-offload.sh -> idc02
+    archive, e2e tested. Survey+plan: docs/ssot/jobs/infrastructure/2026-11-23-storage-rebalance-plan.yml. Board
+    request raised for the prod delete/move batch — dell fills in ~2.9d, idc03 ~4.7d at current slopes'
+- at: 2026-11-23 11:30
+  from: chaba
+  text: restarted zombie claim as devin-task-20261123-113021-goal-rebalance-disk-usage-acro on tony-omen — claim
+    committed but the response was lost (OPS-1071)
+- at: 2026-11-23 11:32
+  from: tony
+  text: 'Approved prod batch executed: idc03 precompact(31G)+devnest models(33G)+mddb-embed(2.8G) deleted; podman
+    pruned; / now 68% (96G free). Dell model-bench-dl+model-archive (34G) moved to /dell-backup/models with symlinks;
+    / now ~??. Offload script deployed to idc03. Remaining: chrome file-cache 40G clear (needs chrome stop), CascadeProjects
+    GC, journal vacuum, wire offload timer, and separate mddb-ops migration card.'
+- at: 2026-11-23 11:32
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-23 11:34
+  from: devin
+  text: 'attempt 2: recovered attempt-1 work (8c73817d45) — its cherry-pick conflicted because the parallel disk-guard-ssot-enforce
+    checkpoint had already landed the base underused flag. Kept that model and ported the refinements on top: 10
+    GiB size floor, ok-gate (alerting mounts never double-flag), summary surfacing in j2. mddb-backup-offload.sh
+    + plan doc landed. selftest PASS, j2 mock-render verified. Prod batch request still open — no answer yet.'
+- at: 2026-11-23 11:35
+  from: tony
+  text: 'Execution progress: idc03 / 68% (96G free) after deleting precompact+devnest models+mddb-embed and podman
+    prune. Dell / 72% (59G free) after moving model-bench-dl+model-archive (34G) to /dell-backup and journal vacuum
+    1.6G. Chrome file-cache 40G not cleared (requires chrome stop; left for separate PWA cache-cap card). CascadeProjects
+    GC and offload timer wiring still pending. Dell fills-in now ~? days.'
+- at: 2026-11-23 11:35
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-23 11:35
+  from: devin
+  text: 'DONE (worktree commit fca82601ef, dispatch/20261123-113021). Underused signal finalized on top of the disk-guard-ssot-enforce
+    base: >=10 GiB floor, ok-gate, summary surfacing; disk-trend --selftest PASS + j2 mock-render verified. mddb-backup-offload.sh
+    (idc03 -> idc02 archive) + full survey/plan in docs/ssot/jobs/infrastructure/2026-11-23-storage-rebalance-plan.yml.
+    STILL GATED on your answer to request approve-prod-delete-move-batch-a-idc03-r-0ceb11 (all / abc / a / none)
+    — no prod deletes or m'
+- at: 2026-11-23 11:36
+  from: devin
+  text: closed by devin
+- at: 2026-11-23 11:37
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 11:37
+  from: chaba
+  text: 'session-end checkpoint 8c7655fe: 1 leftover file(s) committed'
+- at: 2026-11-23 11:37
+  from: chaba
+  text: banked 145 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 11:37
+  from: chaba
+  text: pushed dispatch/20261123-113021-goal-rebalance-disk-usage-acro to origin
+- at: 2026-11-23 11:37
+  from: chaba
+  text: 'auto-merge conflicts: ansible/playbooks/disk-headroom.yml, ansible/playbooks/templates/disk-headroom.j2
+    — card stays in review for manual resolution'
+- at: 2026-11-23 11:37
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-23 11:39
+  from: ada
+  text: 'answered approve-prod-delete-move-batch-a-idc03-r-0ceb11: HOLD — request is stale. Tony executed (a) and
+    (c) manually at 2026-11-23 11:35: idc03 / at 68% (96G free) after deleting precompact DB + devnest model mirror
+    + mddb-embed leftover and podman prune; d'
+- at: 2026-11-23 14:09
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:20
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:18
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:07
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:08
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:24
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:40
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:08
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:48
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:58
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:53
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:55
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:34
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+action:
+  type: dispatch
+  status: done
+  lane: devin
+  lane_source: kw
+  runner: tony-omen
+  attempts: 1
+claim:
+  since: 2026-11-23 11:03
+requests:
+- id: approve-prod-delete-move-batch-a-idc03-r-0ceb11
+  ask: 'Approve prod delete/move batch? (a) idc03: rm mddb.db.precompact-20261111 (31G stale), rm devnest model
+    mirror (33G, con01 has superset, declared disposable), rm mddb-embed leftover (2.8G, moved to idc02 11-12);
+    (b) deploy mddb-backup-offload.sh -> idc02 (frees ~40G, keeps newest local); (c) dell: mv model-bench-dl+model-archive
+    34G -> /dell-backup + symlink; (d) dell: clear chrome file-cache 40G (regrows until PWA cache capped). Reply:
+    all / abc / a / none. Full plan: docs/ssot/jobs/infrastructure/2026-11-23-storage-rebalance-plan.yml'
+  status: answered
+  at: 2026-11-23 11:15
+  from: devin
+  options:
+  - proceed
+  - hold
+  answer: 'HOLD — request is stale. Tony executed (a) and (c) manually at 2026-11-23 11:35: idc03 / at 68% (96G
+    free) after deleting precompact DB + devnest model mirror + mddb-embed leftover and podman prune; dell / at
+    72% (59G free) after moving model-bench-dl+model-archive (34G) to /dell-backup and journal vacuum 1.6G. (b)
+    mddb-backup-offload.sh + plan doc landed, but offload timer wiring is still pending — authorize that separately,
+    do not repeat the deletes/moves. (d) chrome file-cache 40G deliberatel'

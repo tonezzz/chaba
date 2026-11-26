@@ -1,0 +1,37 @@
+id: ada-dep-gate
+host: idc03
+description: >-
+  Dependency health gate for the idc03 ada-* user lanes. An ExecStartPre
+  drop-in (dep-gate.conf) waits fail-closed until BOTH hard runtime deps
+  answer their unauthenticated /health endpoints before the lane starts:
+  MDDB leader http://100.102.134.91:11023/health and notebooklm-rest
+  http://100.123.163.11:3011/health (idc02 — ConversationMemory ->
+  NotebooklmClient). Supersedes the ad-hoc mddb-gate.conf (2026-10-05,
+  MDDB-only, untracked) which left :3011 ungated — the dead
+  tony-dell:3011 URL ran ~5 weeks (2026-10-17 migration -> 2026-11-25
+  repoint) with zero gate trips.
+verify: >-
+  systemctl --user cat ada-chaba.service | grep -q '3011/health' &&
+  systemctl --user cat ada-ai-kraut.service | grep -q '3011/health' &&
+  ! ls ~/.config/systemd/user/ada-ai-kraut.service.d/mddb-gate.conf
+files:
+  - "~/.config/systemd/user/<unit>.service.d/dep-gate.conf — dual-dep ExecStartPre gate + TimeoutStartSec=300"
+units:
+  - ada-ha-tony
+  - ada-chaba
+  - ada-ai-kraut
+  - ada-kk
+  - ada-kk-dev
+  - ada-dev
+  - ada-ha-ada
+notes: >-
+  ada-bankq-student excluded — no NOTEBOOKLM_REST_BASE_URL in its env.
+  ada-dev/ada-kk-dev are disabled on idc03 (live twins on tony-omen) but
+  keep the drop-in for parity with stagger.conf. ExecStartPre order is
+  lexical by drop-in filename: dep-gate.conf runs before stagger.conf,
+  and stagger's TimeoutStartSec=180 overrides the 300 here (same budget
+  the old mddb-gate ran under). install.sh is the canonical writer; do
+  not hand-edit live drop-ins.
+related_cards: [ada-lane-health-gate-misses-notebooklm-dep, notebooklm-rest-base-url-points-at-dead-b8ef61]
+status: deployed
+deployed: 2026-11-25

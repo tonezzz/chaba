@@ -34,10 +34,18 @@ Endpoints (after prefix strip):
                  compact=2 -> {id,ref,title,column,priority,updated,
                                brief,spec,action_status} — card-detail
                                tier, no comms/action bulk
+                 summary=1 -> same slim set as compact=1 under a
+                             discoverable name — the cheap overview
+                             read (KNB-0147; no comms/spec/brief)
+                 fields=all -> explicit full card body, opting out of
+                             projection (previously a silent empty dict)
       comms:      comms_tail=<n> keeps only the last n comms entries per
                  card (0 drops comms) and stamps comms_total; combines
                  with fields/compact and also applies to /card/<id>
       pagination: limit=<n> (cap 1000), offset=<n>
+      gzip:       JSON bodies >=1KB are gzip'd when Accept-Encoding
+                 allows (Content-Encoding + Vary headers); small
+                 replies and identity clients stay uncompressed
   GET  /card/<id>[?fields=|compact=1|comms_tail=<n>] -> {"ok", card} | 404
   POST /action   {id, do, column?, host?}   do: queue|close|hold|retry|claim|move|finish
       close/move->done runs the merge guard (dispatch_repos.guard): a
@@ -47,6 +55,16 @@ Endpoints (after prefix strip):
       finish {host, ok?, result?} is the remote-runner report path
       (runner-agent.py): only the claiming host may finish; ok:true
       moves the card to review, ok:false marks it failed in place.
+      attempt cap: a claim at cap parks the card failed in backlog and
+      answers 400 (do=queue at cap does the same); do=retry is the only
+      re-arm and resets attempts. Capped cards never stay queued.
+      do:queue|retry|close|hold are verify-or-loud (card
+      board-api-queue-write-verify-lost-race-f85f2f): after the flock
+      releases, the queued commit is flushed (bounded
+      BOARD_API_ACTION_VERIFY_S) and the card re-read; a write an
+      autostash pop already reverted is re-applied once under the flock,
+      and a still-unproven write answers 503 instead of claiming
+      'queued'. BOARD_API_ACTION_VERIFY_S=0 disables the wait.
   POST /respond  {id, request_id, answer, from?, reopen?}
       also pushes the answer into a running dispatch session: when the
       card's action.status=='running', a kind:"answer" line is appended
@@ -110,8 +128,11 @@ Endpoints (after prefix strip):
                   now a thin CLI client of this endpoint. Every write also
                   mirrors into the MDDB chaba-lessons collection — the
                   retrieval surface agents search to get lessons back
-                  (card assessments-to-education-split-ssot-keep-113ca4);
-                  {op:list|get, source:"mddb"} reads it.
+                  (card assessments-to-education-split-ssot-keep-113ca4).
+                  Read ops {op:"list"|"get", source?:wp|wiki|mddb,
+                  limit?, offset?}: list -> paginated rows {slug, topic,
+                  level, modified, next_review, status}; get{slug} ->
+                  {slug, topic, content, meta} (OPS-0821).
   POST /job      {slug, title?, status?, comms?|note?, parent?, kind?,
                   host?, pack?, runner?, result_ref?, error?} — nest_job
                   CPT upsert by slug: queue-mgr mirrors the ada-nest Drive
@@ -125,6 +146,20 @@ Endpoints (after prefix strip):
   POST /inbox    {label?, text, priority?, tags?, missing_info?,
                   session?, owner?} — focus-inbox YAML entry under the
                   card flock with the same immediate-commit discipline.
+  POST /wp-comment {post|post_id, parent?, content|text,
+                    as: devin|ada|chaba} — in-thread WP comment reply
+                    under a REAL agent identity (card
+                    lesson-comments-dev-board loop-close): wp-comment-
+                    sync's digest lane routes a member comment to a
+                    kanban card; the actioning agent replies here as
+                    itself and records the returned comment id in card
+                    comms. devin/ada callers may only post `as`
+                    themselves; chaba/tony may use any configured
+                    identity. Identities live in
+                    ~/.config/secrets/wp-agent-users.env (created by
+                    scripts/wp-boards/ensure-agent-users.py) — agents
+                    never hold WP creds; the comment posts with
+                    status=approve so it skips the hold queue.
   POST /publish  {canonical PublicationEvent} — provider-neutral
                   publication door (card devnest-publication-adapter-layer,
                   scripts/board/publication.py): one event fans out to
@@ -156,6 +191,19 @@ Endpoints (after prefix strip):
       is re-armed to queued + comms 're-spawned from report page' — a
       second click on a report page's spawn button is safe. Response
       carries id (+ status when the card is armed).
+  POST /card-set {id, set:{lane?, executor?, tags?}, from, reason}
+      the routing-field door (card board-api-card-lane-executor-edit):
+      corrects action.lane / action.executor / tags on an EXISTING card
+      without a hand YAML edit. Whitelisted fields only — workflow
+      fields (column, requests, comms) stay producer/human-owned and
+      are refused. lane must be in valid_lanes() (LANE_MODELS ∪
+      LANE_EXECUTORS minus catalog-retired lanes — note 'devin' is NOT
+      a lane; executor=devin pins devin), executor in dr.EXECUTORS, and
+      an empty value clears the field. tags takes a list (replace,
+      <=20, each <=40 chars) or {add:[], remove:[]}. An explicit lane
+      set drops lane_source so it counts as author-set and wins over
+      the queue-time classifier. Refused while the card is running or
+      claimed; every edit appends an audit comms line.
 
 Writes are serialized with an flock so concurrent clicks don't race.
 ALL card writes must go through this API — any direct card-YAML edit
@@ -189,7 +237,10 @@ tailnet logins may write; unset = any tailnet identity.
 Smoke test: python3 scripts/board/board-api.py --selftest
 """
 import base64
+import copy
 import fcntl
+import faulthandler
+import gzip
 import hashlib
 import hmac
 import json
@@ -203,6 +254,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import uuid
 from http.cookiejar import CookieJar
 from datetime import date, datetime, timezone, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -218,9 +270,20 @@ import dispatch_repos as dr
 import board_notify as bn
 import host_status as hs
 import publication as pub
+import opencode_command as opc
+
+# libyaml: same emit/parse semantics as the pure-Python safe pair,
+# ~10-20x faster — a pure-Python round-trip on fat cards measured
+# save_ms up to ~16s INSIDE the card flock (2026-11-20 profiling,
+# board-api-lock-contention). Falls back cleanly without libyaml.
+_YAML_DUMP = getattr(yaml, "CSafeDumper", yaml.SafeDumper)
+_YAML_LOAD = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
 
 REPO = Path(__file__).resolve().parent.parent.parent
 CARD_DIR = REPO / "docs/ssot/kanban/cards"
+# DevNest lane catalog — retired/removed lanes drop out of valid_lanes();
+# the selftest redirects this to a tmp file for the mtime-cache test.
+LANES_FILE = REPO / "docs/ssot/infrastructure/ssot.devnest-lanes.yml"
 # /attach store (board-attachments-photo-image-evidence): kept inside the
 # repo so uploads commit + propagate exactly like card YAML; the board
 # app can't see this tree directly (/srv/public is all the web container
@@ -239,6 +302,15 @@ ATTACH_EXTS = {
 RENDER = REPO / "scripts/render-board.py"
 RENDER2 = REPO / "scripts/render-board2.py"
 LOCK = Path("/tmp/board-api.lock")
+# Render flock — same file git-safe-pull's pull phase and
+# board-render-guard serialize on. acquire_lock is bounded LOCK_NB:
+# an unbounded flock here is the 2026-11-25 wedge class — on py<=3.13
+# fcntl.flock holds the GIL while blocked, so a contended render lock
+# (a multi-minute pull phase) froze EVERY board-api thread.
+RENDER_LOCK = Path(os.environ.get("BOARD_API_RENDER_LOCK",
+                                  "/tmp/board-render.lock"))
+RENDER_LOCK_WAIT_S = float(os.environ.get(
+    "BOARD_API_RENDER_LOCK_WAIT_S", "30"))
 # Bounded write-lock wait (OPS-1314, 2026-11-16 incident): an unbounded
 # LOCK_EX queues a writer behind git-safe-pull's whole pull phase
 # (1-6min when upstream moved) — the client's 30-60s timeout dies first,
@@ -259,6 +331,13 @@ PORT = int(os.environ.get("BOARD_API_PORT", "8787"))
 ACTORS = {"devin", "ada", "chaba", "tony"}
 TRANSITIONS = {"queue", "close", "hold", "retry", "claim", "move",
                "finish", "archive", "unarchive"}
+
+
+class AttemptCapError(ValueError):
+    """A claim hit the dispatch attempt cap and parked the card. The
+    request handler catches this to persist the park before answering 400
+    — a bare ValueError left the card queued and every runner re-tried
+    it every minute (2026-11-24 capped-queue churn)."""
 # done+verified cards older than this move to cards/archive/ via
 # /action do=archive (KNB-1178; SSOT column_sla.done convention).
 ARCHIVE_MIN_DAYS = float(os.environ.get("BOARD_API_ARCHIVE_DAYS", "7"))
@@ -286,12 +365,18 @@ ACTION_TYPES = {"dispatch", "manual"}
 OPTION_ACTIONS = {"queue", "retry", "close", "hold", "none"}
 LLM_KEY_ALIASES = {"ada", "chaba", "bench", "kk", "michael", "cline"}
 # action keys a caller may set — status/runner/task_id are board-owned and
-# silently dropped so a spawn can't fake a running card
+# silently dropped so a spawn can't fake a running card. verify_* are the
+# held-out verifier contract read by the opencode profile verify.py
+# fixtures (OPS-1014: they were never settable through this door, so
+# doc-draft sentinel checks were unreachable — card
+# doc-draft-verifier-semantic-gap).
 ACTION_KEYS = ("type", "repo", "host", "labels", "button", "model",
                "executor", "agent_profile", "profile", "target_host",
                "artifact", "task_class", "prompt", "expect", "lane",
                "subject_host", "llm_key_alias", "lane_envelope", "nlm_notebook",
-               "nlm_source_file", "nlm_source_text", "nlm_source_url")
+               "nlm_source_file", "nlm_source_text", "nlm_source_url",
+               "verify_contains", "verify_sections", "verify_regex",
+               "verify_min_terms")
 
 # --- write gate (card board-api-auth) ------------------------------------
 LOOPBACK_NETS = [ip_network("127.0.0.0/8"), ip_network("::1/128")]
@@ -358,6 +443,44 @@ def now() -> str:
 _ARCHIVE_INDEX = {"t": 0.0, "map": {}}
 _ARCHIVE_INDEX_TTL = 60.0
 
+# Top-level `id:`/`ref:` extractor for miss-path scans. A drifted or
+# ref-addressed lookup (e.g. KNB-0233) used to yaml.safe_load ALL ~1000
+# cards under the card flock — measured card_path_ms=59598 on idc03
+# (2026-11-20), the >25s holds behind the 503 storm. The line scan
+# covers every shape the repo's writers emit (block style, optional
+# quotes/comments); a file where NO id:/ref: line is found falls back
+# to a real parse so odd YAML (anchors, flow style) still resolves.
+_KEY_RE = re.compile(r"^(id|ref)[ \t]*:[ \t]*['\"]?([^\s'\"#]+)", re.M)
+
+
+def _text_id_ref(text: str) -> dict:
+    """{id?, ref?} scalars visible to a line scan; last key wins to
+    match yaml semantics on duplicate keys."""
+    out = {}
+    for k, v in _KEY_RE.findall(text):
+        out[k] = v
+    return out
+
+
+def _cand_id_ref(cand: Path) -> dict:
+    """id/ref of a card file via the text scan, yaml-parsed only when no
+    top-level id:/ref: line exists at all."""
+    try:
+        text = cand.read_text()
+    except OSError:
+        return {}
+    kv = _text_id_ref(text)
+    if kv:
+        return kv
+    try:
+        c = yaml.safe_load(text) or {}
+    except Exception:
+        return {}
+    if isinstance(c, dict):
+        return {k: v for k in ("id", "ref")
+                if (v := c.get(k)) is not None}
+    return {}
+
 
 def _archive_index() -> dict:
     """id/ref/stem -> path for cards/archive/*.yml, cached 60s. The
@@ -370,11 +493,8 @@ def _archive_index() -> dict:
     adir = CARD_DIR / "archive"
     if adir.is_dir():
         for cand in adir.glob("*.yml"):
-            try:
-                c = yaml.safe_load(cand.read_text()) or {}
-            except Exception:
-                continue
-            for k in (c.get("id"), c.get("ref"), cand.stem):
+            kv = _cand_id_ref(cand)
+            for k in (kv.get("id"), kv.get("ref"), cand.stem):
                 if k:
                     m.setdefault(str(k), cand)
     _ARCHIVE_INDEX.update(t=now_t, map=m)
@@ -391,13 +511,11 @@ def card_path(cid: str) -> Path:
             # filename/id drift happens when a session renames a card's
             # id without renaming the file — fall back to an id-field
             # scan so respond/action/comment still find it. Refs
-            # (ADA-0042) resolve through the same scan.
+            # (ADA-0042) resolve through the same scan — as a text pass,
+            # not a per-file YAML parse in the flock (see _KEY_RE).
             for cand in CARD_DIR.glob("*.yml"):
-                try:
-                    c = yaml.safe_load(cand.read_text()) or {}
-                except Exception:
-                    continue
-                if c.get("id") == cid or c.get("ref") == cid:
+                kv = _cand_id_ref(cand)
+                if kv.get("id") == cid or kv.get("ref") == cid:
                     return cand
             # archived cards stay resolvable via the cached archive index
             # (KNB-1178) — a per-request yaml scan of cards/archive/ would
@@ -457,10 +575,7 @@ def _ref_seed() -> int:
     """Highest ref number already on the board (for first-run init)."""
     hi = 0
     for cand in CARD_DIR.glob("*.yml"):
-        try:
-            r = (yaml.safe_load(cand.read_text()) or {}).get("ref") or ""
-        except Exception:
-            continue
+        r = _cand_id_ref(cand).get("ref") or ""
         m = re.match(r"^[A-Z]{3}-(\d{4})$", str(r))
         if m:
             hi = max(hi, int(m.group(1)))
@@ -477,6 +592,25 @@ def alloc_ref(cat: str) -> str:
     n += 1
     seq.write_text(f"{n}\n")
     return f"{cat}-{n:04d}"
+
+
+def note_ref(ref: str) -> None:
+    """Reserve an explicitly assigned ref in .ref-seq (OPS-1037 collision).
+
+    do_create only called alloc_ref() for auto-refs, so a card created
+    with an explicit ref never advanced the counter: the next auto-ref
+    reused the same number (e.g. ops-manual-command-api-mcp-efficiency-
+    followups took OPS-1037 on 10-31, then ops-1037 was auto-minted on
+    11-02 with the same ref). Explicit refs are first-class claims — bump
+    the counter to at least their number, never backwards. Caller holds
+    the write flock; _queue_commit persists .ref-seq with the card.
+    """
+    seq = CARD_DIR / ".ref-seq"
+    n = int(str(ref)[4:])  # REF_RE already guaranteed CAT-NNNN
+    cur = (int(seq.read_text().strip() or 0) if seq.exists()
+           else _ref_seed())
+    if n > cur:
+        seq.write_text(f"{n}\n")
 
 
 def ref_cat(card: dict, body: dict) -> str:
@@ -498,6 +632,66 @@ def ref_cat(card: dict, body: dict) -> str:
     return REF_DEFAULT
 
 
+# Lock-hold watchdog (card board-api-wedged-8min-on-hung-outbound-h-
+# 389be8): the 2026-11-25 wedge held the card flock AND WP_LOCK ~8min
+# behind an upstream call that never returned while every endpoint —
+# including lock-free /health — timed out, with no journal trace of
+# where the time went. acquire_lock now records each held flock and a
+# daemon thread dumps every thread's stack to the journal once a hold
+# exceeds LOCK_HOLD_ALERT_S, so the next wedge names its culprit
+# instead of needing a live py-spy mid-outage. The 'alerted' flag
+# re-arms on the next acquire — one dump per hold episode.
+LOCK_HOLD_ALERT_S = float(os.environ.get(
+    "BOARD_API_LOCK_HOLD_ALERT_S", "120"))
+LOCK_WATCHDOG_S = float(os.environ.get(
+    "BOARD_API_LOCK_WATCHDOG_S", "5"))
+_held_locks: dict = {}
+_held_mu = threading.Lock()
+
+
+def _hold_mark(path: Path) -> None:
+    with _held_mu:
+        _held_locks[str(path)] = {
+            "since": time.monotonic(),
+            "thread": threading.current_thread().name,
+            "alerted": False}
+
+
+def _hold_unmark(path: Path) -> None:
+    with _held_mu:
+        _held_locks.pop(str(path), None)
+
+
+class _TrackedLock:
+    """File wrapper acquire_lock returns — close() releases the flock
+    and clears the watchdog's hold record. __getattr__ passthrough keeps
+    it file-like for callers that need more than close()."""
+
+    __slots__ = ("_f", "_path")
+
+    def __init__(self, f, path: Path):
+        self._f = f
+        self._path = path
+
+    def close(self) -> None:
+        try:
+            self._f.close()
+        finally:
+            _hold_unmark(self._path)
+
+    def __getattr__(self, name):
+        return getattr(self._f, name)
+
+
+def _lock_holds_snapshot() -> dict:
+    """Live flock holds this process owns — surfaced on /lock-stats."""
+    now = time.monotonic()
+    with _held_mu:
+        return {p: {"held_s": round(now - h["since"], 1),
+                    "thread": h["thread"]}
+                for p, h in _held_locks.items()}
+
+
 def acquire_lock(path: Path, timeout_s: float):
     """Bounded LOCK_EX acquire — fcntl.flock has no timeout, so retry
     LOCK_NB until the deadline. Returns (open file, wait_seconds) or
@@ -509,12 +703,44 @@ def acquire_lock(path: Path, timeout_s: float):
     while True:
         try:
             fcntl.flock(lf, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            return lf, time.monotonic() - t0
+            _hold_mark(path)
+            return _TrackedLock(lf, path), time.monotonic() - t0
         except BlockingIOError:
             if time.monotonic() - t0 >= timeout_s:
                 lf.close()
                 return None
             time.sleep(0.25)
+
+
+def _lock_watchdog_tick() -> None:
+    """One watchdog pass — a hold past LOCK_HOLD_ALERT_S dumps all
+    thread stacks to the journal (faulthandler -> stderr) once per
+    hold episode."""
+    now = time.monotonic()
+    with _held_mu:
+        due = [(p, h) for p, h in _held_locks.items()
+               if not h["alerted"]
+               and now - h["since"] >= LOCK_HOLD_ALERT_S]
+        for _p, h in due:
+            h["alerted"] = True
+    for p, h in due:
+        sys.stderr.write(
+            f"board-api LOCK-HOLD-ALERT {p} held "
+            f"{now - h['since']:.0f}s (>= {LOCK_HOLD_ALERT_S:.0f}s) "
+            f"by {h['thread']} — dumping thread stacks\n")
+        try:
+            faulthandler.dump_traceback()
+        except Exception as e:
+            sys.stderr.write(f"board-api stack dump failed: {e}\n")
+
+
+def _lock_watchdog_loop() -> None:
+    while True:
+        time.sleep(LOCK_WATCHDOG_S)
+        try:
+            _lock_watchdog_tick()
+        except Exception as e:
+            sys.stderr.write(f"board-api lock watchdog error: {e}\n")
 
 
 # Lock-wait telemetry (card board-api-lock-contention): per-endpoint
@@ -526,7 +752,7 @@ _lock_stats_mu = threading.Lock()
 
 
 def _lock_stat(path: str, wait_s: float, hold_s: float = 0.0,
-               timeout: bool = False) -> None:
+               timeout: bool = False, phases: dict | None = None) -> None:
     b = next((f"<{x:g}s" for x in _LOCK_STAT_BUCKETS if wait_s < x),
              f">={_LOCK_STAT_BUCKETS[-1]:g}s")
     hb = next((f"h<{x:g}s" for x in _LOCK_STAT_BUCKETS if hold_s < x),
@@ -545,6 +771,15 @@ def _lock_stat(path: str, wait_s: float, hold_s: float = 0.0,
         st[hb] = st.get(hb, 0) + 1
         if timeout:
             st["timeouts"] += 1
+        # in-flock phase attribution — where hold time went (the
+        # card_path_ms=59598 convoy was invisible until these were
+        # per-request counters surfaced on /lock-stats)
+        for k in ("load_ms", "save_ms", "card_path_ms"):
+            v = round(float((phases or {}).get(k) or 0.0), 1)
+            if v:
+                st[k + "_total"] = round(
+                    st.get(k + "_total", 0.0) + v, 1)
+                st[k + "_max"] = max(st.get(k + "_max", 0.0), v)
 
 
 # In-flock phase timing (board-api-residual-lock-holds): commits moved
@@ -628,9 +863,7 @@ def _post_write_loop() -> None:
 def load(p: Path) -> dict:
     t0 = _phase_clock()
     try:
-        d = yaml.load(p.read_text(),
-                      Loader=getattr(yaml, "CSafeLoader",
-                                     yaml.SafeLoader)) or {}
+        d = yaml.load(p.read_text(), Loader=_YAML_LOAD) or {}
         if not isinstance(d, dict):
             raise ValueError(f"card {p.name} is not a YAML mapping")
         return d
@@ -657,9 +890,9 @@ def save(p: Path, card: dict, extra: list | None = None) -> None:
     interval — short enough that autostash can't eat them in practice."""
     t0 = _phase_clock()
     try:
-        text = yaml.safe_dump(card, allow_unicode=True, sort_keys=False,
-                              width=110)
-        if not isinstance(yaml.safe_load(text), dict):
+        text = yaml.dump(card, Dumper=_YAML_DUMP, allow_unicode=True,
+                         sort_keys=False, width=110)
+        if not isinstance(yaml.load(text, Loader=_YAML_LOAD), dict):
             raise ValueError(
                 f"refusing to write {p.name}: serialized card did not "
                 "re-parse as a mapping")
@@ -743,6 +976,19 @@ COMMIT_RETRY_S = float(
 # kanban-commit sweep — a persistently-broken path must not retry+log
 # forever (the sweep sees the same dirty tree).
 COMMIT_MAX_TRIES = int(os.environ.get("BOARD_API_COMMIT_MAX_TRIES", "60"))
+# /action verify-or-loud (card
+# board-api-queue-write-verify-lost-race-f85f2f): the 2026-11-18/19
+# OPS-0200 losses — 'queued — kanban-dispatch will claim it' answered
+# while a git-safe-pull autostash-pop had resolved the raced write to
+# HEAD — happened because the response fired before the queued commit
+# proved the mutation durable. do:queue|retry|close|hold now wait
+# (bounded) for the commit worker, re-read the card, and compare the
+# persisted state; a proven mismatch re-applies the verb once under
+# the flock, anything unproven answers 503.
+# BOARD_API_ACTION_VERIFY_S bounds each flush wait (0 disables).
+ACTION_VERIFY_S = float(os.environ.get("BOARD_API_ACTION_VERIFY_S", "8"))
+ACTION_VERIFY_LOCK_S = float(
+    os.environ.get("BOARD_API_ACTION_VERIFY_LOCK_S", "10"))
 _pending_commits: dict = {}      # rel path -> label (insertion ordered)
 _commit_tries: dict = {}         # rel path -> consecutive failed drains
 _commit_mu = threading.Lock()
@@ -1288,8 +1534,12 @@ def _refuse_human_queue(card: dict, frm: str, verb: str,
 
 
 def _apply_classify_at_queue(card: dict, a: dict) -> str | None:
-    """Queue-time classification (OPS-0838). Sets lane and model, and
-    returns an abort message if classified as manual."""
+    """Queue-time classification (OPS-0838). Sets lane (and lane_source);
+    the lane->model pick is executor-aware and resolves at claim/launch
+    via dispatch_repos.lane_model — the executor isn't known at queue
+    time, so no lane-derived model is persisted here
+    (devin-executor-model-routing). Returns an abort message if
+    classified as manual."""
     if not BOARD_CLASSIFY_AT_QUEUE:
         return None
     # An explicit action.lane (author-set, no lane_source provenance) is
@@ -1321,8 +1571,6 @@ def _apply_classify_at_queue(card: dict, a: dict) -> str | None:
             comms_add(card, "chaba",
                       f"classified as manual ({source} conf {conf:.2f})")
             return "classified as manual — queue skipped"
-        if lane in dr.LANE_MODELS and not a.get("model"):
-            a["model"] = dr.LANE_MODELS[lane]
         comms_add(card, "chaba",
                   f"classified as {lane} ({source} conf {conf:.2f})")
     return None
@@ -1349,6 +1597,23 @@ def do_action(card: dict, verb: str, frm: str) -> str:
         if refused:
             return refused
         a.setdefault("type", "dispatch")
+        # A plain re-queue is NOT a re-arm: it keeps attempts. Queueing a
+        # card that already spent its budget recreates the claim churn —
+        # park it and point the operator at do=retry (which resets
+        # attempts to 0). This closes the second path that left capped
+        # cards claimable-but-unclaimable.
+        att = int(a.get("attempts") or 0)
+        max_att = dr.dispatch_attempt_cap(card)
+        if att >= max_att:
+            reason = (f"attempt cap reached ({att}/{max_att}) — "
+                      "/action do=retry re-arms it")
+            a["status"] = "failed"
+            # Keep the real failure — the cap is a lifecycle fact, not the
+            # root cause. Overwriting it hid exit codes/OOM/precondition
+            # evidence from triage (found the day this guard landed).
+            a.setdefault("last_failure", reason)
+            comms_add(card, frm, f"queue refused — {reason}")
+            return f"parked at attempt cap — /action do=retry re-arms it"
         a["status"] = "queued"
         a.pop("runner", None)   # a re-queue after done/failed must be
         a.pop("task_id", None)  # claimable by any host, not its last one
@@ -1440,12 +1705,19 @@ def do_move(card: dict, body: dict, frm: str = "tony") -> str:
     return f"moved to {col}"
 
 
-def do_archive(card: dict, frm: str, cap: bool = False) -> str:
+def do_archive(card: dict, frm: str, cap: bool = False,
+               min_days: float | None = None) -> str:
     """Eligibility gate for /action do=archive — the file move itself is
     done by the caller (_archive_move). Only verified done work ages out;
     unverified done cards stay on the board for human review — unless
     cap=True (board over its card cap, archive-done.py --cap): then any
-    done card ages out, but never one with an unanswered request."""
+    done card ages out, but never one with an unanswered request.
+
+    min_days comes from the sweep's own --days so dry-run and the write
+    door agree; without it the service default (ARCHIVE_MIN_DAYS) applies.
+    Needed when a bulk YAML rewrite has stamped `updated` on every card
+    (2026-11-21) — the 7d default then finds nothing until the stamps
+    age out, while --days lets an operator run a bounded recovery pass."""
     if card.get("column") != "done":
         raise ValueError("archive needs column=done")
     verified = bool((_act(card)).get("verified"))
@@ -1461,9 +1733,10 @@ def do_archive(card: dict, frm: str, cap: bool = False) -> str:
     except Exception:
         raise ValueError(f"unparseable updated: {upd!r}")
     age = (datetime.now() - dt).days
-    if age < ARCHIVE_MIN_DAYS:
+    floor = ARCHIVE_MIN_DAYS if min_days is None else float(min_days)
+    if age < floor:
         raise ValueError(
-            f"too fresh: updated {upd} ({age}d < {ARCHIVE_MIN_DAYS}d)")
+            f"too fresh: updated {upd} ({age}d < {floor}d)")
     comms_add(card, frm, f"archived ({age}d in done, "
                          f"{'verified' if verified else 'board over card cap'})")
     return f"archived ({age}d in done)"
@@ -1520,9 +1793,24 @@ def do_claim(card: dict, body: dict) -> str:
     att = int(a.get("attempts") or 0)
     max_att = dr.dispatch_attempt_cap(card)
     if att >= max_att:
-        raise ValueError(
-            f"attempt cap reached ({att}/{max_att}) — /action do=retry "
-            "re-arms it")
+        reason = (f"attempt cap reached ({att}/{max_att}) — "
+                  "/action do=retry re-arms it")
+        # Park instead of merely refusing: a capped card left queued is
+        # claimable-but-unclaimable, so every runner hammers it on each
+        # tick (2026-11-24: 12 dispatch cards at 2/2 retried fleet-wide).
+        # The handler persists this mutation before answering 400.
+        # do=retry is the only re-arm and resets attempts.
+        a["status"] = "failed"
+        # Preserve the dispatch's real failure (exit code, precondition,
+        # OOM) — the cap note goes to comms, not over the diagnosis.
+        a.setdefault("last_failure", reason)
+        a.pop("runner", None)
+        a.pop("task_id", None)
+        _ensure_claim(card).pop("session", None)
+        if card.get("column") in ("doing", "review", "done"):
+            card["column"] = "backlog"
+        comms_add(card, host, f"parked at attempt cap — {reason}")
+        raise AttemptCapError(reason)
     pinned = a.get("host")
     if pinned and dr.canon_host(pinned) != dr.canon_host(host):
         raise ValueError(f"card is pinned to {pinned}")
@@ -1532,9 +1820,22 @@ def do_claim(card: dict, body: dict) -> str:
     model = str(body.get("model") or "").strip()
     if lane:
         if lane not in {"codemod", "free_lane", "paid_frontier", "devin",
-                        "manual", "jules", "nlm_batch"}:
+                        "manual", "nlm_batch"}:
             raise ValueError("invalid action lane")
+        # A claim-time lane is classifier output, not author intent —
+        # stamp lane_source provenance so the next queue re-evaluates it
+        # instead of reading a bare stamp as an explicit pin forever
+        # (devin-lane-cheap-ops-reroute: the audit's explicit bucket was
+        # mostly bare claim stamps). An author pin — lane already on the
+        # card with no lane_source — stays untouched.
+        author_pin = bool(a.get("lane")) and not a.get("lane_source")
         a["lane"] = lane
+        if not author_pin:
+            src = str(body.get("lane_source") or "").strip()[:40]
+            if src:
+                a["lane_source"] = src
+            elif not a.get("lane_source"):
+                a["lane_source"] = "claim"
     if model:
         if not dr.MODEL_ID_RE.match(model):
             raise ValueError("invalid action model")
@@ -1656,6 +1957,112 @@ def do_finish(card: dict, body: dict) -> str:
     return "marked failed"
 
 
+def _action_fp(card: dict) -> dict:
+    """Fingerprint of the fields a do_action verb mutates — the
+    verify-or-loud comparison surface. comms/requests/updated are
+    excluded: concurrent legit writers may append there without
+    invalidating the proof."""
+    a = card.get("action")
+    a = a if isinstance(a, dict) else {}
+    cl = card.get("claim")
+    cl = cl if isinstance(cl, dict) else {}
+    return {"column": card.get("column"),
+            "awaiting_action": bool(card.get("awaiting_action")),
+            "action": copy.deepcopy(a),
+            "claim_session": cl.get("session")}
+
+
+def _action_write_durable(p: Path) -> bool:
+    """Porcelain-clean proof the card write is committed — only a
+    committed write survives every pull path (autostash pops carry
+    uncommitted changes only). BOARD_API_COMMIT=0 and non-repo paths
+    (selftest/tmp harnesses) report True: there is no pull window to
+    lose the write in — the sweep owns durability in that mode."""
+    if os.environ.get("BOARD_API_COMMIT", "1") == "0":
+        return True
+    try:
+        rel = p.resolve().relative_to(REPO.resolve())
+    except (ValueError, OSError):
+        return True
+    try:
+        r = subprocess.run(
+            ["git", "-C", str(REPO), "status", "--porcelain", "--",
+             str(rel)],
+            capture_output=True, text=True, timeout=10)
+    except Exception:
+        return False
+    return r.returncode == 0 and not r.stdout.strip()
+
+
+def _reapply_action(v: dict) -> bool:
+    """One locked re-apply of a proven-lost /action verb. Refuses to
+    stomp: re-loads under the flock and only mutates when disk still
+    shows the pre-write fingerprint — anything else means a concurrent
+    writer owns the card now."""
+    got = acquire_lock(LOCK, ACTION_VERIFY_LOCK_S)
+    if got is None:
+        return False
+    lf, _w = got
+    try:
+        try:
+            card = load(v["path"])
+        except Exception:
+            return False
+        if _action_fp(card) != v["before"]:
+            return False
+        try:
+            do_action(card, v["verb"], v["frm"])
+            card["updated"] = now()
+            save(v["path"], card)
+        except Exception as e:  # noqa: BLE001 — verify reports, not 500s
+            sys.stderr.write(f"board-api action re-apply failed: {e}\n")
+            return False
+        return True
+    finally:
+        lf.close()
+
+
+def verify_action_write(v: dict) -> dict:
+    """Post-lock persistence proof for do_action verbs (queue/retry/
+    close/hold). Waits (bounded) for the queued commit to drain, then
+    re-reads the card: fingerprint == after-write AND porcelain-clean
+    means the mutation is committed and un-losable. Fingerprint ==
+    before-write means an autostash pop (or equivalent) already
+    reverted it — re-apply once under the flock and re-verify. Any
+    other state is a concurrent writer — never stomp, report
+    unverified so the caller answers loudly instead of claiming
+    'queued' over a lost write (the 2026-11-18/19 OPS-0200 losses)."""
+    p = v["path"]
+    if v["before"] == v["after"]:
+        return {"ok": True}        # no-op verb — no state to lose
+    reapplied = False
+    for attempt in range(2):
+        commit_pending_flush(timeout_s=ACTION_VERIFY_S)
+        try:
+            card_now = load(p)
+        except Exception:
+            return {"ok": False,
+                    "error": "card re-read failed after write"}
+        fp = _action_fp(card_now)
+        if fp == v["after"]:
+            if _action_write_durable(p):
+                return {"ok": True, "reapplied": reapplied}
+            return {"ok": False, "persisted": fp,
+                    "error": "write landed but is not committed yet — "
+                             "retry to verify"}
+        if fp != v["before"]:
+            return {"ok": False, "persisted": fp,
+                    "error": "card changed concurrently — write "
+                             "unverified"}
+        # fp == before: the write was reverted — safe to re-apply once
+        if attempt == 1 or not _reapply_action(v):
+            return {"ok": False, "persisted": fp,
+                    "error": "action write lost and re-apply failed — "
+                             "retry"}
+        reapplied = True
+    return {"ok": False, "error": "unreachable"}
+
+
 def _opt_label(o) -> str:
     return str(o if not isinstance(o, dict)
                else (o.get("label") or o.get("id") or ""))
@@ -1680,6 +2087,7 @@ def do_ask_respond(card: dict, body: dict, frm: str) -> str:
         raise ValueError("no request_id and card has no ask")
     opts = ask.get("options") or []
     answer = ""
+    sel_opt = None   # the option the answer resolved to, when known
     opt = body.get("option")
     if opt is not None and str(opt).strip() != "":
         if not opts:
@@ -1691,6 +2099,7 @@ def do_ask_respond(card: dict, body: dict, frm: str) -> str:
         if not 0 <= idx < len(opts):
             raise ValueError(f"option must be 0..{len(opts) - 1}")
         answer = _opt_label(opts[idx])
+        sel_opt = opts[idx]
     else:
         answer = str(body.get("text") or body.get("answer") or "").strip()
         if not answer:
@@ -1702,6 +2111,7 @@ def do_ask_respond(card: dict, body: dict, frm: str) -> str:
             hit = [o for o in opts if _opt_label(o).lower().startswith(low)]
         if len(hit) == 1:
             answer = _opt_label(hit[0])
+            sel_opt = hit[0]
         # ambiguous or unmatched free text stands as its own answer
     if ask.get("status") == "answered" and not body.get("reopen"):
         # idempotent retry: the same answer again is a no-op success —
@@ -1715,18 +2125,68 @@ def do_ask_respond(card: dict, body: dict, frm: str) -> str:
     ask["status"] = "answered"
     ask["answer"] = answer[:500]
     ask["answered_at"] = now()
+    if verb == "re-answered":
+        ask.pop("executed", None)  # fresh answer — the old stamp is stale
     body["answer"] = answer  # resolved text feeds live-session delivery
     comms_add(card, frm, f"{verb} ask: {answer[:200]}")
+    # a declared option action (click-approve) executes in this write —
+    # the click IS the approval signal the dispatch gate accepts
+    exec_note = _exec_option_action(card, ask, sel_opt, frm)
     # answer recorded but nothing is armed to act on it — same triage
-    # nudge as the requests[] path
+    # nudge as the requests[] path (not when the option's declared
+    # action just ran — an executed answer is resolved, not triage)
     a = _act(card)
-    if (card.get("column") != "done"
+    if (not ask.get("executed")
+            and card.get("column") != "done"
             and a.get("status") not in ("queued", "running")):
         card["awaiting_action"] = True
         comms_add(card, "chaba",
                   "answer recorded but no active action — card needs "
                   "triage (queue it, or spec+arm an action)")
-    return "answer saved"
+    return "answer saved" + (f" — {exec_note}" if exec_note else "")
+
+
+def _exec_option_action(card: dict, req: dict, sel_opt, frm: str) -> str:
+    """Respond-time execution of a declared option action (card
+    ada-dispatch-approve-button — the click-approve flow). When the
+    answered option is a dict carrying action:queue|retry|close|hold|none,
+    run it NOW through do_action — the same guarded transition the board
+    buttons use — rather than holding the answer for answer-sweep's next
+    tick (~15min). The click IS the approval signal.
+
+    The sweep stays the backstop for everything deferred here: a live
+    claim (starting/running) and a verb that must wait for it, a
+    guard-refused transition (manual card, merge guard, manual
+    classifier), and answers that never resolved to a concrete option
+    object. A refused/deferred answer is left UNexecuted so the sweep
+    still owns it. Returns the note appended to the respond message (''
+    when nothing ran)."""
+    if not isinstance(sel_opt, dict):
+        return ""
+    act = str(sel_opt.get("action") or "").strip().lower()
+    if act not in OPTION_ACTIONS:
+        return ""
+    stamp = datetime.now().date().isoformat()
+    opt_name = str(sel_opt.get("id") or sel_opt.get("label") or "?")
+    if act == "none":
+        req["executed"] = f"{stamp} none@respond"
+        return f"option {opt_name!r}: resolved — no board action"
+    st = _act(card).get("status")
+    if st in ("starting", "running"):
+        if act == "queue":
+            # approve intent already satisfied by the in-flight session —
+            # same verdict answer-sweep stamps on a busy card
+            req["executed"] = f"{stamp} queue@respond (already {st})"
+            return f"option {opt_name!r}: already {st}"
+        return ""   # retry/close/hold wait for the claim — sweep owns it
+    out = do_action(card, act, frm)
+    if out.startswith(("not queued", "not re-queued",
+                       "classified as manual", "blocked")):
+        # guard refused — do_action already logged the reason; leave the
+        # answer unexecuted so the sweep keeps it for triage/retry
+        return f"option {opt_name!r}: deferred — {out[:120]}"
+    req["executed"] = f"{stamp} {act}@respond"
+    return f"option {opt_name!r}: executed {act} — {out[:160]}"
 
 
 def do_respond(card: dict, body: dict, frm: str) -> str:
@@ -1746,6 +2206,7 @@ def do_respond(card: dict, body: dict, frm: str) -> str:
         else:
             return do_ask_respond(card, body, frm)
     answer = str(body.get("answer") or body.get("text") or "").strip()
+    sel_opt = None   # the option an index pick resolved to, when known
     if not answer and "option" in body:
         # option-index responds work against requests[] too — the voice/UI
         # path posts {option: N} for whichever ask is open; map the index to
@@ -1757,6 +2218,7 @@ def do_respond(card: dict, body: dict, frm: str) -> str:
                     o = opts[int(body["option"])]
                 except (IndexError, TypeError, ValueError):
                     raise ValueError(f"option must be 0..{len(opts) - 1}")
+                sel_opt = o
                 if isinstance(o, str):
                     answer = o
                 else:
@@ -1782,6 +2244,9 @@ def do_respond(card: dict, body: dict, frm: str) -> str:
                 verb = "re-answered"
             r["status"] = "answered"
             r["answer"] = answer[:500]
+            if verb == "re-answered":
+                r.pop("executed", None)  # fresh answer — stale stamp
+            body["answer"] = answer  # resolved text feeds session delivery
             comms_add(card, frm, f"{verb} {rid}: {answer[:200]}")
             # owned-prefix requests execute their decision in this same
             # write — an answered lab-review used to sit awaiting_action
@@ -1791,17 +2256,23 @@ def do_respond(card: dict, body: dict, frm: str) -> str:
                 if _lab_decision(card, r):
                     r["executed"] = datetime.now().date().isoformat()
                     executed_owned = True
+            # a declared option action (click-approve) executes in this
+            # write — the click IS the approval signal the dispatch gate
+            # accepts; the sweep stays the backstop for deferrals
+            exec_note = _exec_option_action(card, r, sel_opt, frm)
             # answer recorded but nothing is armed to act on it —
-            # flag for triage so the decision doesn't sit silent
+            # flag for triage so the decision doesn't sit silent (an
+            # executed answer is resolved, not triage)
             a = _act(card)
             if (not executed_owned
+                    and not r.get("executed")
                     and card.get("column") != "done"
                     and a.get("status") not in ("queued", "running")):
                 card["awaiting_action"] = True
                 comms_add(card, "chaba",
                           "answer recorded but no active action — card needs "
                           "triage (queue it, or spec+arm an action)")
-            return "answer saved"
+            return "answer saved" + (f" — {exec_note}" if exec_note else "")
     raise ValueError(f"no request {rid}")
 
 
@@ -2141,10 +2612,9 @@ def do_create(body: dict, frm: str) -> dict:
         # or the write door silently drops the declaration — the first
         # OPS-1021 claims failed closed on exactly that (2026-10-30).
         ln = str(act.get("lane") or "").strip()
-        if ln and ln not in (set(dr.LANE_MODELS) | set(dr.LANE_EXECUTORS)):
+        if ln and ln not in valid_lanes():
             raise ValueError(
-                f"action.lane must be one of "
-                f"{sorted(set(dr.LANE_MODELS) | set(dr.LANE_EXECUTORS))}")
+                f"action.lane must be one of {sorted(valid_lanes())}")
         for pk in ("agent_profile", "profile"):
             pv = str(act.get(pk) or "").strip()
             if pv and not dr.PROFILE_ID_RE.match(pv):
@@ -2258,6 +2728,67 @@ def do_create(body: dict, frm: str) -> dict:
                 raise ValueError(
                     "action.expect.enums must be an object of small "
                     "lists")
+        # verify_* is the held-out verifier contract (opencode profile
+        # verify.py fixtures read it live off the card). Validate shapes
+        # at the door so a malformed contract fails here, not silently
+        # at verify time — card doc-draft-verifier-semantic-gap.
+        for vk in ("verify_contains", "verify_sections"):
+            vv = act.get(vk)
+            if vv is not None and not (
+                    isinstance(vv, str)
+                    or (isinstance(vv, list) and len(vv) <= 20
+                        and all(isinstance(s, str) and len(s) <= 300
+                                for s in vv))):
+                raise ValueError(
+                    f"action.{vk} must be a string or a list of <=20 "
+                    "strings (<=300 chars each)")
+        vrx = act.get("verify_regex")
+        if vrx is not None:
+            pats = [vrx] if isinstance(vrx, str) else vrx
+            if not (isinstance(pats, list) and len(pats) <= 20
+                    and all(isinstance(s, str) and len(s) <= 300
+                            for s in pats)):
+                raise ValueError(
+                    "action.verify_regex must be a string or a list of "
+                    "<=20 regex strings (<=300 chars each)")
+            for p in pats:
+                try:
+                    re.compile(p)
+                except re.error as e:
+                    raise ValueError(
+                        "action.verify_regex pattern does not compile: "
+                        f"{p!r} ({e})")
+        vmt = act.get("verify_min_terms")
+        if vmt is not None:
+            if isinstance(vmt, dict):
+                terms = vmt.get("terms")
+                at_least = vmt.get("at_least")
+                if not (isinstance(terms, list) and terms
+                        and len(terms) <= 50
+                        and all(isinstance(s, str) and s.strip()
+                                and len(s) <= 200 for s in terms)):
+                    raise ValueError(
+                        "action.verify_min_terms.terms must be a "
+                        "non-empty list of <=50 strings (<=200 chars)")
+                if at_least is not None and not (
+                        isinstance(at_least, int)
+                        and not isinstance(at_least, bool)
+                        and 1 <= at_least <= len(terms)):
+                    raise ValueError(
+                        "action.verify_min_terms.at_least must be an "
+                        "int between 1 and len(terms)")
+            elif isinstance(vmt, list):
+                if not (vmt and len(vmt) <= 50
+                        and all(isinstance(s, str) and s.strip()
+                                and len(s) <= 200 for s in vmt)):
+                    raise ValueError(
+                        "action.verify_min_terms must be a non-empty "
+                        "list of <=50 strings (<=200 chars) or "
+                        "{terms, at_least}")
+            else:
+                raise ValueError(
+                    "action.verify_min_terms must be a list of terms "
+                    "or {terms: [...], at_least: N}")
     on_exists = str(body.get("on_exists") or "error").strip()
     if on_exists not in ("error", "queue"):
         raise ValueError("on_exists must be error|queue")
@@ -2405,8 +2936,11 @@ def do_create(body: dict, frm: str) -> dict:
     if help_txt:
         card["help"] = help_txt[:4000]
     want_ref = str(body.get("ref") or "").strip().upper()
-    card["ref"] = (want_ref if REF_RE.match(want_ref)
-                   else alloc_ref(ref_cat(card, body)))
+    if REF_RE.match(want_ref):
+        note_ref(want_ref)   # explicit ref reserves its number (OPS-1037)
+        card["ref"] = want_ref
+    else:
+        card["ref"] = alloc_ref(ref_cat(card, body))
     card.setdefault("comms", []).append(  # setdefault — queue-time
         {"at": now(), "from": frm,      # classification notes land
          "text": str(body.get("text") or  # before the first comms entry
@@ -2433,6 +2967,180 @@ def do_create(body: dict, frm: str) -> dict:
         elif cmsg:
             res["message"] = msg + f" — {cmsg}"
     return res
+
+
+# mirrors RETIRE_RE in tests/board/test_runner_tooling_contract.py —
+# one definition of "lane is gone" across the door and the contract test
+_RETIRE_RE = re.compile(
+    r"^\s*(removed|retired|deprecated|disabled|dead)\b", re.I)
+
+
+def _retired_lanes() -> set:
+    """Lane ids the DevNest catalog (ssot.devnest-lanes.yml) marks
+    removed/retired/dead — excluded from the lane whitelist. Same rule
+    as the lane-retirement contract test; falls back to a line scan
+    when the prose-heavy catalog doesn't yaml-load — the
+    LANE_MODELS/LANE_EXECUTORS tables are the real gate either way."""
+    try:
+        txt = LANES_FILE.read_text()
+    except OSError:
+        return set()
+    try:
+        doc = yaml.safe_load(txt) or {}
+        lanes = doc.get("lanes") or {}
+        return {k for k, v in lanes.items()
+                if isinstance(v, dict)
+                and _RETIRE_RE.match(str(v.get("status") or ""))}
+    except Exception:
+        pass
+    retired, cur = set(), None
+    in_lanes = False
+    for line in txt.splitlines():
+        if re.match(r"^lanes:\s*$", line):
+            in_lanes = True
+            continue
+        if not in_lanes:
+            continue
+        if line and not line.startswith(" "):
+            break                    # next top-level block ends lanes:
+        m = re.match(r"^  ([a-zA-Z0-9_-]+):\s*$", line)
+        if m:
+            cur = m.group(1)
+            continue
+        if cur:
+            sm = re.match(r"^    status:\s*(.+)$", line)
+            if sm and _RETIRE_RE.match(sm.group(1)):
+                retired.add(cur)
+    return retired
+
+
+_VALID_LANES_CACHE: dict = {"mtime": 0.0, "value": None}
+
+
+def valid_lanes() -> set:
+    """action.lane values the write door admits — the same union /card
+    validates against (LANE_MODELS ∪ LANE_EXECUTORS), minus any lane the
+    DevNest lane catalog marks removed/retired. Cached on the catalog
+    file's mtime so the prose-heavy YAML isn't re-parsed per request."""
+    try:
+        mtime = LANES_FILE.stat().st_mtime
+    except OSError:
+        mtime = 0.0
+    if _VALID_LANES_CACHE["value"] is not None and \
+            _VALID_LANES_CACHE["mtime"] == mtime:
+        return _VALID_LANES_CACHE["value"]
+    value = (set(dr.LANE_MODELS) | set(dr.LANE_EXECUTORS)) \
+        - _retired_lanes()
+    _VALID_LANES_CACHE["mtime"] = mtime
+    _VALID_LANES_CACHE["value"] = value
+    return value
+
+
+def do_card_set(card: dict, body: dict, frm: str) -> str:
+    """POST /card-set — the routing-field door (card
+    board-api-card-lane-executor-edit): corrects action.lane,
+    action.executor and tags on an EXISTING card without hand-editing
+    YAML. Refused while the card is running or claimed; runs under the
+    request flock so it can't race a claim. Field-ownership rule:
+    workflow fields (column, requests, comms) are NOT admitted here —
+    producers must not use this door on them."""
+    # Routing fields live on dispatch actions only. A card with no
+    # action block (or a non-dispatch one) must be armed via /card first
+    # — _ensure_act would otherwise fabricate an action block here and
+    # make a never-dispatched card dispatchable on the next queue.
+    raw_a = card.get("action")
+    if not isinstance(raw_a, dict) or \
+            str(raw_a.get("type") or "").strip() != "dispatch":
+        raise ValueError(
+            "card has no dispatch action — arm it with /card first; "
+            "/card-set only edits routing fields on dispatch cards")
+    a = _ensure_act(card)
+    st = a.get("status", "idle")
+    if st in ("running", "claimed", "starting") or a.get("runner"):
+        raise ValueError(
+            f"card is {st}"
+            + (f" (runner={a['runner']})" if a.get("runner") else "")
+            + " — routing fields are frozen until the claim finishes")
+    s = body.get("set")
+    if not isinstance(s, dict) or not s:
+        raise ValueError("set must be a non-empty object "
+                         "{lane?, executor?, tags?}")
+    bad = set(s) - {"lane", "executor", "tags"}
+    if bad:
+        raise ValueError(
+            f"set only admits lane|executor|tags (got {sorted(bad)}) — "
+            "workflow fields move via /action")
+
+    # validate everything first — a rejected edit must not half-apply
+    ln = ex = None
+    new_tags = None
+    if "lane" in s:
+        ln = str(s["lane"] or "").strip()
+        if ln and ln not in valid_lanes():
+            raise ValueError(
+                f"action.lane must be one of {sorted(valid_lanes())} — "
+                "note 'devin' is an executor, not a lane")
+    if "executor" in s:
+        ex = str(s["executor"] or "").strip()
+        if ex and ex not in dr.EXECUTORS:
+            raise ValueError(
+                f"action.executor must be one of {sorted(dr.EXECUTORS)}")
+    if "tags" in s:
+        t = s["tags"]
+        cur = card.get("tags")
+        new_tags = list(cur) if isinstance(cur, list) else []
+        if isinstance(t, dict):
+            add = t.get("add") or []
+            rem = t.get("remove") or []
+            if not isinstance(add, list) \
+                    or not isinstance(rem, list):
+                raise ValueError("tags add/remove must be lists")
+            new_tags = [x for x in new_tags
+                        if x not in {str(r) for r in rem}]
+            for x in add:
+                x = str(x).strip()
+                if x and x not in new_tags:
+                    new_tags.append(x)
+        elif isinstance(t, list):
+            new_tags = [str(x).strip() for x in t if str(x).strip()]
+        else:
+            raise ValueError("tags must be a list or {add, remove}")
+        if len(new_tags) > 20:
+            raise ValueError("tags must be <=20 entries")
+        if any(len(x) > 40 for x in new_tags):
+            raise ValueError("each tag must be <=40 chars")
+
+    reason = str(body.get("reason") or "").strip()
+    if not reason:
+        raise ValueError("reason required — routing edits are audited")
+
+    changed = []
+    if "lane" in s:
+        if ln:
+            a["lane"] = ln
+            # author-set lane: drop classifier provenance so the next
+            # queue does not re-classify over it
+            # (_apply_classify_at_queue lane_source semantics)
+            a.pop("lane_source", None)
+            changed.append(f"lane={ln}")
+        else:
+            a.pop("lane", None)
+            a.pop("lane_source", None)
+            changed.append("lane cleared")
+    if "executor" in s:
+        if ex:
+            a["executor"] = ex
+            changed.append(f"executor={ex}")
+        else:
+            a.pop("executor", None)
+            changed.append("executor cleared")
+    if "tags" in s:
+        card["tags"] = new_tags
+        changed.append("tags")
+    comms_add(card, frm,
+              f"routing edited: {', '.join(changed)} "
+              f"by {frm}: {reason}")
+    return f"routing edited ({', '.join(changed)})"
 
 
 # --- request push notifications (card kanban-push-notify) ---------------
@@ -2582,14 +3290,29 @@ MDDB_PAGES = "ada-cms-pages"
 # it, Education knowledge is thin-and-invisible to every agent.
 MDDB_LESSONS = os.environ.get("BOARD_API_MDDB_LESSONS",
                               "chaba-lessons")
+# Agent WP identities for POST /wp-comment (card
+# lesson-comments-dev-board): per-identity app passwords created by
+# scripts/wp-boards/ensure-agent-users.py — the service host holds them,
+# callers never see them.
+WP_AGENT_ENV_FILE = Path(os.environ.get(
+    "BOARD_API_WP_AGENT_ENV",
+    str(Path.home() / ".config/secrets/wp-agent-users.env")))
+WP_AGENT_IDENTITIES = {"devin", "ada", "chaba"}
 REMOTE_WRITE_PATHS = {"/lesson", "/job", "/report", "/publish",
                       "/wiki/extension", "/wiki/news-review",
-                      "/wiki/news-diagnose", "/wiki/page"}
+                      "/wiki/news-diagnose", "/wiki/page",
+                      "/opencode-command", "/wp-comment"}
 WIKI_EXTENSION_ALLOWLIST = {
     "CategoryTree", "Mermaid", "MsUpload", "MultimediaViewer",
     "Cargo", "PageForms", "Lockdown",
 }
 WIKI_API_CALL = None
+# Test seam for the Special:Version HTML fetch (not an api.php call).
+WIKI_SPECIAL_VERSION = None
+# Off-repo receipt store — one JSON receipt per mutation attempt.
+WIKI_EXT_STATE = Path(os.environ.get(
+    "BOARD_API_WIKI_EXT_STATE",
+    str(Path.home() / ".local/state/board-api-wiki-ext")))
 
 # --- publication layer (devnest-publication-adapter-layer) ------------------
 # State lives off-repo on the service host; tests redirect via env.
@@ -2601,6 +3324,19 @@ PUB_TG_URL = os.environ.get("PUB_TELEGRAM_URL",
 PUB_PROGRESS_MIN_S = int(os.environ.get("PUB_PROGRESS_MIN_S", "900"))
 PUB_TG_MIN_S = int(os.environ.get("PUB_TG_MIN_S", "600"))
 PUB_ALERT_MIN_S = int(os.environ.get("PUB_ALERT_MIN_S", "60"))
+# Piggyback outbox drain budget per /publish — a backlog of due entries
+# must not hold WP_LOCK indefinitely; unreached entries stay pending
+# (card board-api-wedged-8min-on-hung-outbound-h-389be8). Explicit
+# {op:"drain"} gets a larger budget since it's operator-initiated.
+PUB_DRAIN_BUDGET_S = int(os.environ.get("PUB_DRAIN_BUDGET_S", "60"))
+# Whole-request deadline for the REMOTE_WRITE_PATHS dispatch — bounds
+# the do_* call including any upstream chain, so one hung peer can't
+# park WP_LOCK forever. On expiry the orphan finishes under its own
+# socket timeouts but holds no locks; upsert semantics make a late
+# completion + client retry converge. Sized above the slowest legit
+# single op (~5 sequential upstream calls at their socket timeouts).
+REMOTE_WRITE_DEADLINE_S = float(os.environ.get(
+    "BOARD_API_REMOTE_DEADLINE_S", "300"))
 
 # --- runner readiness projection (runner-readiness-projection, KNB-1007) --
 # Verdicts live off-repo on the service host: each runner POSTs its own
@@ -2670,8 +3406,54 @@ def _wiki_installed(api_url: str, opener) -> list[str]:
                   for x in result.get("query", {}).get("extensions", []))
 
 
+def _wiki_special_version(api_url: str, opener) -> dict:
+    """Best-effort Special:Version capture. The pretty /wiki/ path 404s
+    for special pages on this host — index.php/Special:Version (which
+    redirects to the localized name) is the reachable form. Returns a
+    hash+size receipt; callers treat a fetch failure as non-fatal but
+    recorded (the siteinfo extension table is the structured check)."""
+    if WIKI_SPECIAL_VERSION is not None:
+        return WIKI_SPECIAL_VERSION(api_url)
+    base = api_url.split("/api.php", 1)[0].rstrip("/")
+    req = urllib.request.Request(
+        base + "/index.php/Special:Version",
+        headers={"User-Agent": "chaba-board-api/1.0"})
+    try:
+        data = opener.open(req, timeout=30).read()
+    except OSError as e:
+        return {"error": str(e)}
+    return {"sha256": hashlib.sha256(data).hexdigest(),
+            "bytes": len(data)}
+
+
+def _wiki_ext_receipt(state_dir: Path, rec: dict) -> str:
+    """Persist one mutation receipt; returns the receipt id (filename
+    stem). Never raises — a receipt-write failure must not mask the
+    real result, but it is recorded on stderr."""
+    try:
+        state_dir.mkdir(parents=True, exist_ok=True)
+        rid = "{}-{}-{}-{}".format(
+            datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"),
+            re.sub(r"[^a-z0-9-]", "", rec.get("action", "?").lower()),
+            re.sub(r"[^A-Za-z0-9_-]", "", rec.get("name", "none")),
+            uuid.uuid4().hex[:6])
+        path = state_dir / (rid + ".json")
+        path.write_text(json.dumps(rec, indent=2, sort_keys=True))
+        return rid
+    except OSError as e:
+        sys.stderr.write(f"wiki-ext receipt write failed: {e}\n")
+        return ""
+
+
 def do_wiki_extension(body: dict, frm: str) -> dict:
-    """List or confirm-gated install/enable/disable of approved extensions."""
+    """List or confirm-gated install/enable/disable of approved extensions.
+
+    Mutations are single-extension, allowlisted, and require
+    confirm=true (same gate shape as /opencode-command). Springboard
+    stays server-side: callers never see repo/branch/commit/delete
+    parameters. Every mutation records before/after Special:Version +
+    the siteinfo extension table and a durable receipt; failures raise
+    UpstreamError instead of claiming success."""
     action = str(body.get("action") or "list").strip().lower()
     name = str(body.get("name") or "").strip()
     if action not in {"list", "install", "enable", "disable"}:
@@ -2682,44 +3464,92 @@ def do_wiki_extension(body: dict, frm: str) -> dict:
     env, api_url = _wiki_env()
     opener = urllib.request.build_opener(
         urllib.request.HTTPCookieProcessor(CookieJar()))
-    before = _wiki_installed(api_url, opener)
+    before_ext = _wiki_installed(api_url, opener)
     if action == "list":
-        return {"action": "list", "installed": before,
+        return {"action": "list", "installed": before_ext,
                 "approved": sorted(WIKI_EXTENSION_ALLOWLIST),
                 "message": "wiki extension list"}
+    if body.get("confirm") is not True:
+        raise ValueError(
+            f"{action} {name} needs confirm=true — run action=list, "
+            "then re-call with confirm=true")
 
-    login = _wiki_api_call(
-        api_url, opener,
-        {"action": "query", "meta": "tokens", "type": "login",
-         "format": "json"})
-    login_token = login["query"]["tokens"]["logintoken"]
-    logged = _wiki_api_call(
-        api_url, opener,
-        {"action": "login", "lgname": env["WIKI_USER"],
-         "lgpassword": env["WIKI_PASSWORD"], "lgtoken": login_token,
-         "format": "json"}, post=True).get("login", {})
-    if logged.get("result") != "Success":
-        raise UpstreamError("mediawiki login failed")
-    csrf = _wiki_api_call(
-        api_url, opener,
-        {"action": "query", "meta": "tokens", "format": "json"}
-    )["query"]["tokens"]["csrftoken"]
-    result = _wiki_api_call(
-        api_url, opener,
-        {"action": "springboard", "sbaction": action,
-         "sbtype": "extension", "sbname": name, "token": csrf,
-         "format": "json"}, post=True)
-    if "error" in result:
-        raise UpstreamError("springboard: " +
-                            str(result["error"].get("info") or
-                                result["error"].get("code")))
-    after = _wiki_installed(api_url, opener)
-    if action == "install" and name not in after:
-        raise UpstreamError(f"{name} install was not visible after request")
-    return {"action": action, "name": name, "before": before,
-            "after": after, "verified": name in after,
-            "actor": frm,
-            "message": f"wiki extension {action}: {name}"}
+    rec = {"schema": "wiki-extension-receipt/1", "actor": frm,
+           "action": action, "name": name, "at": now(),
+           "before": {"extensions": before_ext,
+                      "special_version": _wiki_special_version(
+                          api_url, opener)},
+           "status": "failed"}
+    # Idempotent no-op: siteinfo lists enabled extensions, so a name
+    # already present satisfies install|enable and an absent name
+    # satisfies disable. Verify the end-state directly instead of
+    # calling Springboard — this also keeps the door honest while
+    # Springboard's sbname validation is broken on this MW version.
+    already = (name in before_ext) if action in ("install", "enable") \
+        else (name not in before_ext)
+    if already:
+        rec["verified"] = True
+        rec["status"] = "ok"
+        rec["note"] = "no-op: extension already in requested state"
+        rec["after"] = {"extensions": before_ext,
+                        "special_version": rec["before"]
+                        ["special_version"]}
+        rid = _wiki_ext_receipt(WIKI_EXT_STATE, rec)
+        return {"action": action, "name": name, "before": before_ext,
+                "after": before_ext, "verified": True, "no_op": True,
+                "receipt": rid, "actor": frm,
+                "message": f"wiki extension {action}: {name} "
+                           "(already in requested state)"}
+    try:
+        login = _wiki_api_call(
+            api_url, opener,
+            {"action": "query", "meta": "tokens", "type": "login",
+             "format": "json"})
+        login_token = login["query"]["tokens"]["logintoken"]
+        logged = _wiki_api_call(
+            api_url, opener,
+            {"action": "login", "lgname": env["WIKI_USER"],
+             "lgpassword": env["WIKI_PASSWORD"], "lgtoken": login_token,
+             "format": "json"}, post=True).get("login", {})
+        if logged.get("result") != "Success":
+            raise UpstreamError("mediawiki login failed")
+        csrf = _wiki_api_call(
+            api_url, opener,
+            {"action": "query", "meta": "tokens", "format": "json"}
+        )["query"]["tokens"]["csrftoken"]
+        result = _wiki_api_call(
+            api_url, opener,
+            {"action": "springboard", "sbaction": action,
+             "sbtype": "extension", "sbname": name, "token": csrf,
+             "format": "json"}, post=True)
+        if "error" in result:
+            raise UpstreamError("springboard: " +
+                                str(result["error"].get("info") or
+                                    result["error"].get("code")))
+        after = _wiki_installed(api_url, opener)
+        rec["springboard"] = {k: result.get(k) for k in
+                              ("springboard", "result") if k in result}
+        rec["after"] = {"extensions": after,
+                        "special_version": _wiki_special_version(
+                            api_url, opener)}
+        expected = (name in after) if action in ("install", "enable") \
+            else (name not in after)
+        rec["verified"] = bool(expected)
+        if not expected:
+            raise UpstreamError(
+                f"{name} {action} was not reflected in Special:Version "
+                "extension list")
+        rec["status"] = "ok"
+    except Exception as e:
+        rec["error"] = str(e)[:500]
+        _wiki_ext_receipt(WIKI_EXT_STATE, rec)
+        raise
+    rid = _wiki_ext_receipt(WIKI_EXT_STATE, rec)
+    out = {"action": action, "name": name, "before": before_ext,
+           "after": after, "verified": True,
+           "receipt": rid, "actor": frm,
+           "message": f"wiki extension {action}: {name}"}
+    return out
 
 
 def do_wiki_news_review(body: dict, frm: str) -> dict:
@@ -2928,7 +3758,7 @@ def _wiki_page_templates(env: dict) -> set:
     return out
 
 
-WIKI_PAGE_PREFIXES = ("Education:", "Reports:")
+WIKI_PAGE_PREFIXES = ("Education:", "Reports:", "Infrastructure:")
 WIKI_PAGE_TITLE_MAX = 150
 WIKI_PAGE_TEXT_MAX = 200000
 
@@ -2936,13 +3766,16 @@ WIKI_PAGE_TEXT_MAX = 200000
 def do_wiki_page(body: dict, frm: str) -> dict:
     """POST /wiki/page — guarded raw page write for support pages the
     kind-gated sinks can't reach: แม่แบบ:Education / แม่แบบ:Report
-    templates and Education:/Reports: index/portal pages
-    (card wiki-member-knowledge-surface-migrate-wp-3a1cf2). The
-    allowlist keeps this from becoming a generic write backdoor around
-    the News review gate — main space, News/, PrivateNews: and every
-    other namespace are refused. Education:/Reports: writes additionally
+    templates and Education:/Reports:/Infrastructure: index/portal/host
+    pages (card wiki-member-knowledge-surface-migrate-wp-3a1cf2;
+    Infrastructure: admitted by wiki-page-door-infrastructure-namespace).
+    The allowlist keeps this from becoming a generic write backdoor
+    around the News review gate — main space, News/, PrivateNews: and
+    every other namespace are refused. Prefixed writes additionally
     verify the namespace is actually registered (siteinfo) so a premature
-    call can't litter main space with 'Education:Foo' pages."""
+    call can't litter main space with 'Education:Foo' pages — and
+    Infrastructure: edits still have to pass the wiki-side Lockdown
+    group check (inhouse/sysop), the prefix gate is not an ACL grant."""
     title = str(body.get("title") or body.get("wiki_title") or "").strip()
     text = str(body.get("wikitext") or body.get("text") or "")
     if not title or "\n" in title or "\r" in title \
@@ -2988,18 +3821,40 @@ def do_wiki_page(body: dict, frm: str) -> dict:
                        f"{title}"}
 
 
-def wp_api(route: str, data=None, method: str | None = None):
+def wp_api(route: str, data=None, method: str | None = None,
+           agent: str | None = None):
     """WP REST call (index.php?rest_route= style — the Plesk vhost 404s
     /wp-json). Creds live in wp-boards.env on the SERVICE host only;
     callers of /lesson and /job never see them — that is the point of
-    the door. Tests monkeypatch this seam."""
+    the door. Tests monkeypatch this seam.
+
+    `agent` (devin|ada|chaba) posts as that WP agent identity using its
+    per-identity app password from wp-agent-users.env (card
+    lesson-comments-dev-board) instead of the shared app user — the
+    comment->work loop-close reply carries a real author and skips the
+    hold queue."""
     try:
-        env = _load_env_file(WP_ENV_FILE)
-        base = env["WP_SITE_URL"].rstrip("/")
+        if agent:
+            ident = str(agent).strip().lower()
+            if ident not in WP_AGENT_IDENTITIES:
+                raise ValueError(
+                    f"wp agent identity must be one of "
+                    f"{sorted(WP_AGENT_IDENTITIES)}")
+            aenv = _load_env_file(WP_AGENT_ENV_FILE)
+            user = aenv.get(f"WP_AGENT_{ident.upper()}_USER", "")
+            pw = aenv.get(f"WP_AGENT_{ident.upper()}_APP_PASSWORD", "")
+            base = aenv.get("WP_SITE_URL") or _load_env_file(
+                WP_ENV_FILE).get("WP_SITE_URL", "")
+            if not user or not pw:
+                raise KeyError(f"WP_AGENT_{ident.upper()}_*")
+        else:
+            env = _load_env_file(WP_ENV_FILE)
+            base = env["WP_SITE_URL"].rstrip("/")
+            user, pw = env["WP_APP_USER"], env["WP_APP_PASSWORD"]
+        base = base.rstrip("/")
         tok = base64.b64encode(
-            f'{env["WP_APP_USER"]}:{env["WP_APP_PASSWORD"]}'
-            .encode()).decode()
-    except (OSError, KeyError) as e:
+            f"{user}:{pw}".encode()).decode()
+    except (OSError, KeyError, ValueError) as e:
         raise UpstreamError(f"wp creds unavailable: {e}")
     u = (f"{base}/index.php?rest_route="
          f"{urllib.parse.quote(route, safe='/&=')}")
@@ -3164,6 +4019,28 @@ def _touch_lessons(body: dict, frm: str) -> dict:
             "touched": touched, "missing": missing, "via": frm}
 
 
+LESSON_LIST_MAX = 500
+
+
+def _lesson_page(body: dict, rows: list) -> tuple:
+    """limit/offset paging for op:list — same convention as GET /cards
+    (limit capped at LESSON_LIST_MAX, offset, truncated flag). No
+    params -> the full list, so existing consumers are unaffected."""
+    total = len(rows)
+    try:
+        off = max(0, int(body.get("offset") or 0))
+    except (TypeError, ValueError):
+        off = 0
+    try:
+        lim = int(body.get("limit") or 0)
+    except (TypeError, ValueError):
+        lim = 0
+    lim = min(lim, LESSON_LIST_MAX) if lim > 0 else 0
+    page = rows[off: off + lim if lim else None]
+    return page, {"total": total, "offset": off,
+                  "truncated": off + len(page) < total}
+
+
 def _read_lessons(body: dict, frm: str) -> dict:
     """op=list | op=get — read side of the education door (OPS-0821).
     Agents/lessons-due get lesson content without WP creds.
@@ -3205,9 +4082,11 @@ def _read_lessons(body: dict, frm: str) -> dict:
                             "next_review": m.get("next_review", ""),
                             "status": m.get("status", ""),
                             "no_th": bool(m.get("no_th"))})
-        return {"lessons": out, "count": len(out), "via": frm,
+        rows, paging = _lesson_page(body, out)
+        return {"lessons": rows, "count": len(rows), "via": frm,
                 "source": "wp",
-                "message": f"listed {len(out)} lessons"}
+                "message": f"listed {len(rows)} of {len(out)} lessons",
+                **paging}
     slug = str(body.get("slug") or "").strip()
     if not slug:
         raise ValueError("op=get requires slug")
@@ -3215,9 +4094,14 @@ def _read_lessons(body: dict, frm: str) -> dict:
     if not (isinstance(hits, list) and hits):
         raise ValueError(f"lesson not found: {slug}")
     h = hits[0]
-    return {"slug": h.get("slug"), "title": (h.get("title") or {}).get("rendered", ""),
+    m = h.get("meta") or {}
+    title = (h.get("title") or {}).get("rendered", "")
+    return {"slug": h.get("slug"),
+            "topic": m.get("topic")
+            or title.replace("Education — ", "").strip(),
+            "title": title,
             "content": (h.get("content") or {}).get("rendered", ""),
-            "meta": h.get("meta") or {}, "modified": h.get("modified"),
+            "meta": m, "modified": h.get("modified"),
             "via": frm, "source": "wp", "message": f"get {slug}"}
 
 
@@ -3245,9 +4129,11 @@ def _read_lessons_mddb(body: dict, frm: str) -> dict:
                         "status": _meta_first(m, "status"),
                         "no_th": bool(m.get("no_th"))})
         out.sort(key=lambda r: r["slug"])
-        return {"lessons": out, "count": len(out), "via": frm,
+        rows, paging = _lesson_page(body, out)
+        return {"lessons": rows, "count": len(rows), "via": frm,
                 "source": "mddb",
-                "message": f"listed {len(out)} lessons"}
+                "message": f"listed {len(rows)} of {len(out)} lessons",
+                **paging}
     slug = str(body.get("slug") or "").strip()
     if not slug:
         raise ValueError("op=get requires slug")
@@ -3255,6 +4141,7 @@ def _read_lessons_mddb(body: dict, frm: str) -> dict:
         if d.get("key") == slug:
             m = d.get("meta") or {}
             return {"slug": slug,
+                    "topic": _meta_first(m, "topic"),
                     "title": _meta_first(m, "title"),
                     "wiki_title": _meta_first(m, "wiki_title"),
                     "url": _meta_first(m, "url"),
@@ -3462,6 +4349,7 @@ def _read_lessons_wiki(body: dict, frm: str) -> dict:
             continue
         lessons.append(row)
     if body.get("op") == "list":
+        want_content = bool(body.get("content") or body.get("full"))
         out = [{"slug": l["slug"], "wiki_title": l["wiki_title"],
                 "url": url_of(l["wiki_title"]),
                 "topic": l["topic"], "level": l["level"],
@@ -3469,11 +4357,22 @@ def _read_lessons_wiki(body: dict, frm: str) -> dict:
                 "next_review": l["next_review"],
                 "status": l["status"], "no_th": l["no_th"]}
                for l in lessons]
+        if want_content:
+            # bulk read — the namespace scan already fetched every
+            # wikitext; per-slug op=get would rescan it each call
+            # (lesson-audit-scheduled: 221 lessons x ~13s was a
+            # guaranteed 10m-timeout). content=1 costs zero extra
+            # upstream calls.
+            for row, l in zip(out, lessons):
+                row["content"] = l["content"]
+                row["meta"] = l["meta"]
         out.sort(key=lambda r: r["slug"])
-        return {"lessons": out, "count": len(out),
+        rows, paging = _lesson_page(body, out)
+        return {"lessons": rows, "count": len(rows),
                 "skipped_non_lesson": skipped,
                 "source": "wiki", "via": frm,
-                "message": f"listed {len(out)} wiki lessons"}
+                "message": f"listed {len(rows)} of {len(out)} wiki lessons",
+                **paging}
     wiki_title = str(body.get("wiki_title") or "").strip()
     slug = str(body.get("slug") or "").strip()
     topic = str(body.get("topic") or "").strip()
@@ -3490,7 +4389,8 @@ def _read_lessons_wiki(body: dict, frm: str) -> dict:
             f"lesson not found: {wiki_title or slug or topic}")
     return {"slug": row["slug"], "wiki_title": row["wiki_title"],
             "url": url_of(row["wiki_title"]),
-            "title": row["topic"], "content": row["content"],
+            "topic": row["topic"], "title": row["topic"],
+            "content": row["content"],
             "meta": row["meta"], "modified": row["modified"],
             "source": "wiki", "via": frm,
             "message": f"get {row['wiki_title']}"}
@@ -3869,6 +4769,70 @@ JOB_META_KEYS = ("kind", "status", "host", "pack", "runner",
 JOB_COMMS_CAP = 200
 JOB_FROM_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,40}$")
 
+# Lifecycle contract (OPS-0923, docs/kb/job-package-status-sop.md):
+# nest_job is the Drive-queue mirror — status writes must follow the
+# SOP transition map. Same-status rewrites and writes with no status
+# are always allowed (idempotent mirror + comms-only updates); a prior
+# status outside the map (legacy/garbage meta) imposes no constraint.
+# Terminal states only exit through `queued` (explicit requeue) or
+# `failed` (a falsely-done job corrected honestly) — never a silent
+# resurrection back into claimed/running.
+JOB_TRANSITIONS = {
+    "queued":    {"claimed", "running", "done", "failed",
+                  "stalled", "cancelled"},
+    "claimed":   {"running", "done", "failed", "stalled",
+                  "cancelled", "queued"},
+    "running":   {"done", "failed", "stalled", "cancelled", "queued"},
+    "stalled":   {"claimed", "running", "queued", "done",
+                  "failed", "cancelled"},
+    "failed":    {"claimed", "running", "queued", "done",
+                  "stalled", "cancelled"},
+    "done":      {"queued", "failed"},
+    "cancelled": {"queued", "failed"},
+}
+
+
+def _job_evidence_refs(v) -> list:
+    """evidence: str | list[str] -> clean ref list (cap 20)."""
+    if isinstance(v, str):
+        v = [v]
+    if not isinstance(v, (list, tuple)):
+        return []
+    return [str(x).strip()[:300] for x in v if str(x).strip()][:20]
+
+
+def _job_truthy(v) -> bool:
+    return v is True or str(v).strip().lower() in (
+        "1", "true", "yes", "verified")
+
+
+def _job_verified_claim(*srcs) -> bool:
+    """Explicit verification signal — verified/artifact_verified flag or
+    confidence=verified on any of the given dicts (body, body.meta,
+    stored meta)."""
+    for src in srcs:
+        if not isinstance(src, dict):
+            continue
+        for k in ("verified", "artifact_verified"):
+            if _job_truthy(src.get(k)):
+                return True
+        if str(src.get("confidence") or "").strip().lower() == "verified":
+            return True
+    return False
+
+
+def _job_done_evidence(body: dict, meta: dict) -> bool:
+    """Terminal-done evidence gate (OPS-0923): a `done` write must show
+    the artifact was verified — evidence[] refs, an explicit verified
+    flag, or confidence=verified. result_ref is the durable pointer;
+    this is the proof someone checked it."""
+    extra = body.get("meta")
+    srcs = [body, extra if isinstance(extra, dict) else {}, meta]
+    for src in srcs:
+        if _job_evidence_refs(src.get("evidence")):
+            return True
+    return _job_verified_claim(*srcs)
+
 
 def job_actor(body: dict, ident: str) -> str:
     """/job writers are daemons (queue-mgr, pack runners) — allow ACTORS
@@ -3895,6 +4859,19 @@ def do_job(body: dict, frm: str) -> dict:
     if not re.fullmatch(r"[a-z0-9-]{1,80}", slug):
         raise ValueError("slug must match [a-z0-9-]{1,80}")
     status = str(body.get("status") or "").strip()
+    extra = body.get("meta")
+    # meta.status is an alternate carrier for the same field (the
+    # extra-meta merge below persists JOB_META_KEYS) — fold it into
+    # `status` BEFORE the gates so it can't bypass them, and reject a
+    # top-level/meta disagreement rather than silently picking one.
+    meta_status = str(extra.get("status") or "").strip() \
+        if isinstance(extra, dict) else ""
+    if meta_status:
+        if status and meta_status != status:
+            raise ValueError(
+                "conflicting status: top-level status and "
+                "meta.status disagree")
+        status = status or meta_status
     if status and status not in JOB_STATUSES:
         raise ValueError(f"status must be one of {sorted(JOB_STATUSES)}")
     parent = body.get("parent")
@@ -3913,6 +4890,31 @@ def do_job(body: dict, frm: str) -> dict:
 
     existing = _job_by_slug(slug)
     meta = dict(existing.get("meta") or {}) if existing else {}
+
+    # Lifecycle contract (OPS-0923): transitions follow JOB_TRANSITIONS;
+    # terminal `done` additionally requires a durable result_ref plus
+    # verified artifact evidence — a bare status=done is rejected.
+    prior = str(meta.get("status") or "").strip()
+    if status and status != prior and prior in JOB_TRANSITIONS \
+            and status not in JOB_TRANSITIONS[prior]:
+        raise ValueError(
+            f"invalid transition {prior} -> {status} for nest_job "
+            f"{slug} (allowed from {prior}: "
+            f"{sorted(JOB_TRANSITIONS[prior] | {prior})})")
+    if status == "done":
+        ref = str(body.get("result_ref")
+                  or meta.get("result_ref") or "").strip()
+        if not ref and isinstance(extra, dict):
+            ref = str(extra.get("result_ref") or "").strip()
+        if not ref:
+            raise ValueError(
+                "status=done requires result_ref — a durable pointer "
+                "to the verified result")
+        if not _job_done_evidence(body, meta):
+            raise ValueError(
+                "status=done requires verified artifact evidence — "
+                "evidence[] refs, verified:true, or confidence=verified")
+
     note_text = str(body.get("comms") or body.get("note") or "").strip()
     if note_text:
         try:
@@ -3927,12 +4929,20 @@ def do_job(body: dict, frm: str) -> dict:
         v = body.get(k)
         if v is not None and str(v).strip() != "":
             meta[k] = str(v)[:300]
-    extra = body.get("meta")
     if isinstance(extra, dict):
         for k, v in extra.items():
             k = str(k)
             if k in JOB_META_KEYS and str(v).strip():
                 meta[k] = str(v)[:300]
+    # evidence/verification ride meta for the reconciler + auditors —
+    # result_ref is the pointer, these are the proof it was checked
+    ev_refs = _job_evidence_refs(body.get("evidence"))
+    if not ev_refs and isinstance(extra, dict):
+        ev_refs = _job_evidence_refs(extra.get("evidence"))
+    if ev_refs:
+        meta["evidence"] = " ".join(ev_refs)[:300]
+    if _job_verified_claim(body, extra if isinstance(extra, dict) else {}):
+        meta["artifact_verified"] = "true"
     meta["updated"] = datetime.now(timezone.utc).isoformat(
         timespec="seconds")
     title = str(body.get("title") or "").strip()
@@ -3949,6 +4959,35 @@ def do_job(body: dict, frm: str) -> dict:
         action = "created"
     return {"message": f"{action} nest_job {slug} (post {r.get('id')})",
             "slug": slug, "post_id": r.get("id"), "action": action}
+
+
+def _nest_jobs(slug: str = "", limit: int = 200,
+               comms: bool = False) -> dict:
+    """Read-only nest_job CPT listing — the mirror side of the queue
+    contract, for reconciliation/audit (OPS-0923). Status/meta only;
+    the bulky comms log is stripped unless explicitly requested."""
+    route = ("/wp/v2/nest_job?per_page=100&status=private,archived"
+             "&_fields=id,slug,title,modified,meta")
+    if slug:
+        route += "&slug=" + urllib.parse.quote(slug, safe="")
+    out, page = [], 1
+    while len(out) < limit and page <= 10:
+        hits = wp_api(f"{route}&page={page}")
+        if not isinstance(hits, list) or not hits:
+            break
+        for h in hits:
+            meta = dict(h.get("meta") or {})
+            if not comms:
+                meta.pop("comms", None)
+            out.append({"id": h.get("id"), "slug": h.get("slug"),
+                        "title": (h.get("title") or {}).get("rendered", ""),
+                        "modified": h.get("modified"),
+                        "status": meta.get("status"),
+                        "meta": meta})
+        if len(hits) < 100:
+            break
+        page += 1
+    return {"count": len(out), "jobs": out[:limit]}
 
 
 def _dashed_slug(text: str) -> str:
@@ -4073,16 +5112,19 @@ def report_note_append(slug: str, text: str, lang: str) -> dict:
 
 
 def report_create_doc(slug: str, title: str, content_md: str,
-                      meta_extra: dict) -> dict:
+                      meta_extra: dict, lang: str = "en") -> dict:
     """Create an ada-cms-pages doc honoring the writer contract — reuses
     cms-report-note's merged_meta (empty doc = contract defaults) so the
-    create branch stays format-compatible with note-appended pages."""
+    create branch stays format-compatible with note-appended pages.
+    `lang` is the MDDB doc lang — any BCP-47-ish code works (en, th, de,
+    …); the store keys variants by (collection, key, lang)."""
     now_dt = datetime.now(timezone.utc)
     meta = _crn().merged_meta({}, slug, now_dt, now_dt.date().isoformat())
     if meta_extra:
         for k, v in meta_extra.items():
             meta[str(k)] = v if isinstance(v, list) else [str(v)]
-    _mddb_post("add", {"collection": MDDB_PAGES, "key": slug, "lang": "en",
+    meta["lang"] = [lang]
+    _mddb_post("add", {"collection": MDDB_PAGES, "key": slug, "lang": lang,
                        "contentMd": content_md, "meta": meta}, timeout=60)
     try:
         from lib.cms_index import regen_reports_index
@@ -4187,9 +5229,31 @@ def do_report(body: dict, frm: str) -> dict:
     title = title or slug
     meta_extra = body.get("meta") if isinstance(body.get("meta"), dict) \
         else {}
-    r = report_create_doc(slug, title, content_md[:200000], meta_extra)
+    lang = str(body.get("lang") or "en").strip()[:10] or "en"
+    r = report_create_doc(slug, title, content_md[:200000], meta_extra,
+                          lang=lang)
     return {"message": f"created report page {r['slug']}",
             "slug": r["slug"]}
+
+
+def do_opencode_command(body: dict, frm: str) -> dict:
+    """/opencode-command — the narrow OpenCode command publisher (card
+    ada-opencode-command-publisher-20261108). All path/git/shape logic
+    lives in opencode_command.py behind a fixed COMMANDS allowlist; this
+    door only adds the writer-pipeline commit hook and actor audit.
+    publish -> canonical write in the served checkout + _queue_commit
+    (kanban-commit safe-pull+push lands it upstream); sync -> fixed-argv
+    ssh/local atomic copy + sha verify."""
+    try:
+        res = opc.handle(
+            body,
+            commit_hook=lambda p: _queue_commit(
+                p, f"opencode-command "
+                   f"{str(body.get('name') or 'ada')}"))
+    except opc.PublishError as e:
+        raise UpstreamError(str(e))
+    res["actor"] = frm
+    return res
 
 
 # --- /publish — provider-neutral publication door ---------------------------
@@ -4201,13 +5265,23 @@ def do_report(body: dict, frm: str) -> dict:
 
 
 def _pub_job_send(ev: dict, frm: str) -> dict:
-    """progress|milestone|alert -> nest_job live execution state."""
-    slug = ev["job"] or ev["project"] or ev["card"]
+    """progress|milestone|alert -> nest_job live execution state.
+
+    OPS-0923 contract: the sink fires only for an explicit `job` ref —
+    card/project-scoped events audit via the board sink and must never
+    mint or complete a nest_job post. Status is never implied by the
+    event kind beyond liveness hints: progress->running, alert->stalled,
+    milestone->no status change (a milestone is a checkpoint, not
+    terminal evidence). meta.job_status is the explicit override; a
+    `done` assertion still hits do_job's result_ref + verified-artifact
+    gate, and contract rejections surface as Skip (never retried)."""
+    slug = ev["job"]
     if not slug:
-        raise pub.Skip("job sink needs a job|project|card ref")
+        raise pub.Skip("job sink needs an explicit job ref "
+                       "(card/project events are not nest jobs)")
     meta = ev.get("meta") or {}
     status = str(meta.get("job_status") or
-                 {"progress": "running", "milestone": "done",
+                 {"progress": "running",
                   "alert": "stalled"}.get(ev["kind"], ""))
     body = {"slug": slug, "title": ev["title"],
             "comms": ev["body"] or ev["title"],
@@ -4216,7 +5290,10 @@ def _pub_job_send(ev: dict, frm: str) -> dict:
     if status:
         body["status"] = status
     if ev["evidence"]:
+        body["evidence"] = ev["evidence"]
         body["result_ref"] = ev["evidence"][0]
+    if ev["confidence"] == "verified":
+        body["verified"] = True
     if ev["kind"] == "alert":
         body["error"] = ev["title"][:300]
     if ev["parent"]:
@@ -4224,7 +5301,10 @@ def _pub_job_send(ev: dict, frm: str) -> dict:
     for k in ("host", "pack", "runner"):
         if meta.get(k):
             body[k] = str(meta[k])
-    r = do_job(body, frm)
+    try:
+        r = do_job(body, frm)
+    except ValueError as e:
+        raise pub.Skip(f"job status rejected: {e}")
     return {"ref": f"nest_job:{r['slug']}", "post_id": r.get("post_id"),
             "action": r["action"]}
 
@@ -4382,6 +5462,76 @@ def _pub_sinks(frm: str) -> dict:
     return sinks
 
 
+def do_wp_comment(body: dict, frm: str) -> dict:
+    """POST /wp-comment — the comment->work loop-close door (card
+    lesson-comments-dev-board). An agent that actioned a member comment
+    replies IN-THREAD under its own WP identity; wp-comment-sync skips
+    agent-authored comments so the reply is never re-routed into a new
+    card.
+
+    {post|post_id, parent?, content|text, as: devin|ada|chaba}
+    `parent` threads the reply under the member comment id.
+    devin/ada callers may only post `as` themselves; chaba/tony (and
+    'local' loopback jobs like wp-comment-sync) may use any configured
+    identity. `status:"approve"` is requested explicitly — a WP user
+    without moderate_comments gets a 403 instead of a silent hold, so
+    the caller learns the provisioning is missing."""
+    post_id = body.get("post", body.get("post_id"))
+    try:
+        post_id = int(post_id)
+    except (TypeError, ValueError):
+        raise ValueError("post (int WP post id) required")
+    content = str(body.get("content") or body.get("text") or "").strip()
+    if not content:
+        raise ValueError("content required")
+    agent = str(body.get("as") or body.get("identity") or ""
+                ).strip().lower()
+    if agent not in WP_AGENT_IDENTITIES:
+        raise ValueError(
+            f"as must be one of {sorted(WP_AGENT_IDENTITIES)}")
+    if frm in ("devin", "ada") and agent != frm:
+        raise ValueError(f"from={frm} may only reply as '{frm}'")
+    payload = {"post": post_id, "content": content,
+               "status": "approve"}
+    if body.get("parent"):
+        payload["parent"] = int(body["parent"])
+    r = wp_api("/wp/v2/comments", payload, agent=agent)
+    cid = r.get("id") if isinstance(r, dict) else None
+    return {"message": f"comment {cid} posted on post {post_id} "
+                       f"as {agent}",
+            "comment_id": cid, "post_id": post_id, "as": agent,
+            "status": r.get("status") if isinstance(r, dict) else None,
+            "link": r.get("link") if isinstance(r, dict) else None}
+
+
+def _remote_dispatch(path: str, body: dict, frm: str) -> dict:
+    """The REMOTE_WRITE_PATHS do_* selection — invoked under
+    pub.run_bounded's per-request deadline so one hung upstream peer
+    can't park WP_LOCK forever (card
+    board-api-wedged-8min-on-hung-outbound-h-389be8)."""
+    if path == "/lesson":
+        return (do_lesson_topics(body, frm)
+                if body.get("op") == "topics"
+                else do_lesson(body, frm))
+    if path == "/job":
+        return do_job(body, frm)
+    if path == "/publish":
+        return do_publish(body, frm)
+    if path == "/wiki/extension":
+        return do_wiki_extension(body, frm)
+    if path == "/wiki/news-review":
+        return do_wiki_news_review(body, frm)
+    if path == "/wiki/news-diagnose":
+        return do_wiki_news_diagnose(body, frm)
+    if path == "/wiki/page":
+        return do_wiki_page(body, frm)
+    if path == "/opencode-command":
+        return do_opencode_command(body, frm)
+    if path == "/wp-comment":
+        return do_wp_comment(body, frm)
+    return do_report(body, frm)
+
+
 def do_publish(body: dict, frm: str) -> dict:
     """POST /publish — canonical event in, per-sink receipts out.
     {op:"sinks"} reports the capability table, {op:"drain"} retries
@@ -4402,13 +5552,14 @@ def do_publish(body: dict, frm: str) -> dict:
                           for n, s in sinks.items()},
                 "pending": box.pending_count()}
     if op == "drain":
-        res = box.drain(_pub_sinks(frm))
+        res = box.drain(_pub_sinks(frm),
+                        budget_s=PUB_DRAIN_BUDGET_S * 5)
         return {"message": f"drained: {len(res['delivered'])} delivered, "
                            f"{res['retrying']} retrying, "
                            f"{res['dead']} dead, {res['pending']} pending",
                 **res}
     sinks = _pub_sinks(frm)
-    drained = box.drain(sinks)   # piggyback retry on every publish
+    drained = box.drain(sinks, budget_s=PUB_DRAIN_BUDGET_S)
     res = pub.publish_event(body, sinks, box, noise, frm)
     if drained["delivered"] or drained["dead"]:
         res["drained"] = drained
@@ -4443,9 +5594,18 @@ def _render_loop() -> None:
 
 def render() -> None:
     # own lock, not the card lock — renders may serialize among themselves
-    # without blocking card mutations
-    with Path("/tmp/board-render.lock").open("w") as rl:
-        fcntl.flock(rl, fcntl.LOCK_EX)
+    # without blocking card mutations. Bounded acquire: a busy lock skips
+    # this pass — the 60s chaba-board-render timer is the backstop, and a
+    # blocking flock would park the whole process on py<=3.13 (the
+    # 2026-11-25 wedge).
+    got = acquire_lock(RENDER_LOCK, RENDER_LOCK_WAIT_S)
+    if got is None:
+        sys.stderr.write(
+            f"board-api render skipped: {RENDER_LOCK} busy "
+            f">{RENDER_LOCK_WAIT_S:.0f}s\n")
+        return
+    rl, _w = got
+    try:
         subprocess.run(
             [sys.executable, str(RENDER)], cwd=REPO, timeout=60, check=False
         )
@@ -4455,6 +5615,8 @@ def render() -> None:
             [sys.executable, str(RENDER2), "--if-changed"],
             cwd=REPO, timeout=60, check=False
         )
+    finally:
+        rl.close()
 
 
 def _ready_load() -> dict:
@@ -4527,6 +5689,14 @@ COMPACT_FIELDS = ("id", "title", "column", "updated", "priority", "ref",
 # dict. action_status stays synthesized (OPS-1107).
 COMPACT2_FIELDS = ("id", "ref", "title", "column", "priority", "updated",
                    "brief", "spec", "action_status")
+# KNB-0147: `summary=1` is the cheap overview projection. It is the same
+# field set as compact=1 — kept as a distinct named constant so overview
+# callers get a stable, discoverable contract that can be trimmed further
+# later without silently changing compact's shape.
+SUMMARY_FIELDS = COMPACT_FIELDS
+# Gzip only pays off above ~1KB; the full /cards dump is ~15MB so it always
+# qualifies, while small replies stay untouched for legacy clients.
+GZIP_MIN_BYTES = 1024
 CARDS_MAX_LIMIT = 1000
 
 
@@ -4667,14 +5837,40 @@ def _truthy(v: str) -> bool:
     return v.strip().lower() in ("1", "true", "yes", "on")
 
 
+def _accepts_gzip(header: str) -> bool:
+    """True when Accept-Encoding explicitly allows gzip (q>0) (KNB-0147).
+    Absent, `identity` and `gzip;q=0` stay uncompressed so legacy clients
+    are untouched."""
+    for part in (header or "").lower().split(","):
+        bits = [b.strip() for b in part.split(";")]
+        if bits[0] != "gzip":
+            continue
+        for param in bits[1:]:
+            if param.startswith("q="):
+                try:
+                    return float(param[2:]) > 0
+                except ValueError:
+                    return False
+        return True
+    return False
+
+
 def _field_set(q: dict) -> set:
+    fv = _q1(q, "fields").strip()
+    if fv.lower() == "all":
+        # KNB-0147: explicit full-body opt-out. Before this, fields=all
+        # matched no card key and silently projected every card to {}.
+        return set()
     cv = _q1(q, "compact").strip()
     if cv and cv.lower() not in ("0", "false", "no", "off"):
         # compact=2 is the detail tier; any other enabled value is the
         # original slim tier. Before this, compact=2 fell through to a
         # full-card dump — the heaviest possible miss.
         return set(COMPACT2_FIELDS) if cv == "2" else set(COMPACT_FIELDS)
-    return {f.strip() for f in _q1(q, "fields").split(",") if f.strip()}
+    if _truthy(_q1(q, "summary")):
+        # KNB-0147: cheap overview projection — no comms/spec/brief.
+        return set(SUMMARY_FIELDS)
+    return {f.strip() for f in fv.split(",") if f.strip()}
 
 
 def _comms_tail(q: dict):
@@ -4894,9 +6090,18 @@ class H(BaseHTTPRequestHandler):
 
     def _send(self, code: int, obj):
         body = json.dumps(obj, ensure_ascii=False, default=str).encode()
+        zipped = (len(body) >= GZIP_MIN_BYTES
+                  and _accepts_gzip(self.headers.get("Accept-Encoding", "")))
+        if zipped:
+            body = gzip.compress(body)
         try:
             self.send_response(code)
             self.send_header("Content-Type", "application/json")
+            # Vary on every representation so a Caddy/CDN cache cannot
+            # hand a gzip body to an identity-only client (KNB-0147).
+            self.send_header("Vary", "Accept-Encoding")
+            if zipped:
+                self.send_header("Content-Encoding", "gzip")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
@@ -4966,6 +6171,24 @@ class H(BaseHTTPRequestHandler):
                 "ok": True,
                 "jobs": _lane_evidence(job_id=job_id, card_id=card_id,
                                        limit=limit)})
+        if path == "/nest-jobs":
+            # Read-only nest_job CPT mirror listing (OPS-0923) — the
+            # status side of queue reconciliation; WP creds stay
+            # server-side, callers get slug/status/meta only.
+            q = parse_qs(url.query)
+            slug = _q1(q, "slug").strip()
+            try:
+                limit = int(_q1(q, "limit", "200") or 200)
+            except ValueError:
+                limit = 200
+            limit = max(1, min(limit, 500))
+            try:
+                return self._send(200, {
+                    "ok": True,
+                    **_nest_jobs(slug=slug, limit=limit,
+                                 comms=_q1(q, "comms") == "1")})
+            except UpstreamError as e:
+                return self._send(502, {"error": str(e)})
         if path == "/queue":
             try:
                 return self._send(200, queue_view())
@@ -4995,7 +6218,9 @@ class H(BaseHTTPRequestHandler):
             return self._send(200, {
                 "ok": True,
                 "buckets_s": list(_LOCK_STAT_BUCKETS),
-                "paths": snap})
+                "paths": snap,
+                "held_now": _lock_holds_snapshot(),
+                "lock_hold_alert_s": LOCK_HOLD_ALERT_S})
         self._send(404, {"error": "not found"})
 
     def do_POST(self):
@@ -5055,27 +6280,12 @@ class H(BaseHTTPRequestHandler):
                         "retry_after_s": 10})
                 lf, _w = got
                 try:
-                    if path == "/lesson":
-                        res = (do_lesson_topics(body, frm)
-                               if body.get("op") == "topics"
-                               else do_lesson(body, frm))
-                    elif path == "/job":
-                        res = do_job(body, frm)
-                    elif path == "/publish":
-                        res = do_publish(body, frm)
-                        if (res.get("receipts") or {}).get(
-                                "board", {}).get("status") == "delivered":
-                            render_async()   # board audit -> cards.json
-                    elif path == "/wiki/extension":
-                        res = do_wiki_extension(body, frm)
-                    elif path == "/wiki/news-review":
-                        res = do_wiki_news_review(body, frm)
-                    elif path == "/wiki/news-diagnose":
-                        res = do_wiki_news_diagnose(body, frm)
-                    elif path == "/wiki/page":
-                        res = do_wiki_page(body, frm)
-                    else:
-                        res = do_report(body, frm)
+                    res = pub.run_bounded(
+                        lambda: _remote_dispatch(path, body, frm),
+                        REMOTE_WRITE_DEADLINE_S, f"remote {path}")
+                    if path == "/publish" and (res.get("receipts") or {}).get(
+                            "board", {}).get("status") == "delivered":
+                        render_async()   # board audit -> cards.json
                 finally:
                     lf.close()
                 msg = res.pop("message")
@@ -5085,6 +6295,8 @@ class H(BaseHTTPRequestHandler):
                 return self._send(400, {"error": str(e)})
             except UpstreamError as e:
                 return self._send(502, {"error": str(e)})
+            except pub.DeadlineError as e:
+                return self._send(504, {"error": str(e)})
             except Exception as e:
                 return self._send(500, {"error": str(e)})
 
@@ -5118,7 +6330,15 @@ class H(BaseHTTPRequestHandler):
                     card = load(p)
                     if verb in ("claim", "move", "finish"):
                         if verb == "claim":
-                            msg = do_claim(card, body)
+                            try:
+                                msg = do_claim(card, body)
+                            except AttemptCapError:
+                                # do_claim parked the card at cap — persist
+                                # it before the 400 so it leaves /queue and
+                                # the next runner tick skips it entirely.
+                                card["updated"] = now()
+                                save(p, card)
+                                raise
                         elif verb == "move":
                             msg = do_move(card, body, actor(body))
                         else:
@@ -5127,7 +6347,8 @@ class H(BaseHTTPRequestHandler):
                         save(p, card)
                     elif verb == "archive":
                         msg = do_archive(card, actor(body),
-                                         cap=body.get("cap") is True)
+                                         cap=body.get("cap") is True,
+                                         min_days=body.get("min_days"))
                         card["updated"] = now()
                         _archive_move(p, card)
                     elif verb == "unarchive":
@@ -5138,9 +6359,14 @@ class H(BaseHTTPRequestHandler):
                         card["updated"] = now()
                         _unarchive_move(p, card)
                     else:
-                        msg = do_action(card, verb, actor(body))
+                        frm = actor(body)
+                        vbefore = _action_fp(card)
+                        msg = do_action(card, verb, frm)
                         card["updated"] = now()
                         save(p, card)
+                        resp_extra["_verify"] = {
+                            "path": p, "verb": verb, "frm": frm,
+                            "before": vbefore, "after": _action_fp(card)}
                 elif path == "/respond":
                     frm = actor(body)
                     p = card_path(body.get("id") or body.get("card") or "")
@@ -5217,6 +6443,13 @@ class H(BaseHTTPRequestHandler):
                     msg = res["message"]
                     resp_extra = {k: v for k, v in res.items()
                                   if k != "message"}
+                elif path == "/card-set":
+                    frm = actor(body)
+                    p = card_path(body.get("id", ""))
+                    card = load(p)
+                    msg = do_card_set(card, body, frm)
+                    card["updated"] = now()
+                    save(p, card)
                 elif path == "/pipeline":
                     frm = actor(body)
                     p = card_path(body.get("id", ""))
@@ -5237,12 +6470,14 @@ class H(BaseHTTPRequestHandler):
         finally:
             hold_s = time.monotonic() - t_lock - wait_s
             lf.close()
-            _lock_stat(path, wait_s, hold_s)
+            load_ms = getattr(_phase_t, "load_ms", 0.0)
+            save_ms = getattr(_phase_t, "save_ms", 0.0)
+            cp_ms = getattr(_phase_t, "card_path_ms", 0.0)
+            _lock_stat(path, wait_s, hold_s,
+                       phases={"load_ms": load_ms, "save_ms": save_ms,
+                               "card_path_ms": cp_ms})
             _phase_t.on = False
             if wait_s >= LOCK_SLOW_S or hold_s >= LOCK_SLOW_S:
-                load_ms = getattr(_phase_t, "load_ms", 0.0)
-                save_ms = getattr(_phase_t, "save_ms", 0.0)
-                cp_ms = getattr(_phase_t, "card_path_ms", 0.0)
                 mutate_ms = max(
                     0.0, hold_s * 1000 - load_ms - save_ms - cp_ms)
                 sys.stderr.write(
@@ -5250,8 +6485,33 @@ class H(BaseHTTPRequestHandler):
                     f"held={hold_s:.1f}s path={path} "
                     f"load_ms={load_ms:.0f} mutate_ms={mutate_ms:.0f} "
                     f"save_ms={save_ms:.0f} card_path_ms={cp_ms:.0f}\n")
-        # card lock released — queue the push (debounced, best-effort) and
-        # render under its own lock so neither stalls other writers
+        # card lock released — nudge the commit worker, then for
+        # do_action verbs prove the write durable BEFORE answering:
+        # verify-or-loud (card board-api-queue-write-verify-lost-race-
+        # f85f2f) — the 2026-11-18/19 OPS-0200 losses answered 'queued'
+        # while a git-safe-pull autostash pop had already reverted the
+        # card. A proven revert is re-applied once; anything still
+        # unproven answers 503 so the caller retries instead of
+        # believing a write that isn't there.
+        commit_async()   # flush queued write paths post-lock (worker commits)
+        ver = resp_extra.pop("_verify", None)
+        if ver is not None and ACTION_VERIFY_S > 0:
+            try:
+                vres = verify_action_write(ver)
+            except Exception as e:  # noqa: BLE001 — loud, never silent
+                sys.stderr.write(f"board-api action verify error: {e}\n")
+                vres = {"ok": False,
+                        "error": f"verify error: {e}"[:200]}
+            if not vres.get("ok"):
+                return self._send(503, {
+                    "error": vres.get("error")
+                             or "action write unverified — retry",
+                    "verified": False,
+                    "persisted": vres.get("persisted"),
+                    "retry_after_s": 5})
+            if vres.get("reapplied"):
+                msg += " — write re-applied after pull race"
+            resp_extra["verified"] = True
         if notify_req:
             try:
                 queue_request_notify(*notify_req)
@@ -5259,7 +6519,6 @@ class H(BaseHTTPRequestHandler):
                 sys.stderr.write(f"board-api notify queue failed: {e}\n")
         self._send(200, {"ok": True, "message": msg, "via": ident,
                          **resp_extra})
-        commit_async()   # flush queued write paths post-lock (worker commits)
         render_async()
 
 
@@ -5350,6 +6609,104 @@ def _selftest() -> None:
     gbody = {"option": 0}
     do_respond(gcard, gbody, "tony")
     assert gbody["answer"] == "go"
+
+    # --- click-approve (ada-dispatch-approve-button): a dict option
+    # carrying action:queue|retry|close|hold|none executes through
+    # do_action in the same write — the click IS the approval the
+    # dispatch gate accepts; the sweep stays the deferral backstop.
+    qopts = [{"id": "dispatch", "label": "Approve — queue",
+              "action": "queue"},
+             {"id": "hold", "label": "Hold", "action": "hold"}]
+    # requests[] path: an approve click arms the card immediately
+    qcard = {"id": "c-q", "column": "backlog",
+             "action": {"type": "dispatch", "executor": "devin"},
+             "requests": [{"id": "ap", "ask": "dispatch?",
+                           "status": "open", "options": qopts}]}
+    qbody = {"request_id": "ap", "option": 0}
+    msg = do_respond(qcard, qbody, "tony")
+    assert "executed queue" in msg, msg
+    assert qcard["action"]["status"] == "queued"
+    assert "queue@respond" in (qcard["requests"][0].get("executed") or "")
+    assert "awaiting_action" not in qcard   # resolved is not triage
+    assert qbody["answer"] == "dispatch — Approve — queue"  # delivery
+    # hold click executes too — and must NOT flag triage
+    hcard = {"id": "c-h", "column": "backlog",
+             "requests": [{"id": "ap", "ask": "dispatch?",
+                           "status": "open", "options": qopts}]}
+    msg = do_respond(hcard, {"request_id": "ap", "option": 1}, "tony")
+    assert "executed hold" in msg, msg
+    assert hcard["action"]["status"] == "idle"
+    assert "hold@respond" in (hcard["requests"][0].get("executed") or "")
+    assert "awaiting_action" not in hcard
+    # action:none stamps executed without a board transition
+    ncard = {"id": "c-n", "column": "backlog",
+             "requests": [{"id": "ap", "ask": "ok?",
+                           "status": "open",
+                           "options": [
+                               {"id": "d", "label": "Discuss",
+                                "action": "none"},
+                               {"id": "g", "label": "Go",
+                                "action": "queue"}]}]}
+    msg = do_respond(ncard, {"request_id": "ap", "option": 0}, "tony")
+    assert "no board action" in msg, msg
+    assert "none@respond" in (ncard["requests"][0].get("executed") or "")
+    assert "awaiting_action" not in ncard
+    # guard refusal (manual card) leaves the answer UNexecuted — the
+    # sweep keeps it for triage; the refusal is still surfaced
+    mcard = {"id": "c-m", "column": "backlog",
+             "action": {"type": "dispatch", "executor": "manual"},
+             "requests": [{"id": "ap", "ask": "dispatch?",
+                           "status": "open", "options": qopts}]}
+    msg = do_respond(mcard, {"request_id": "ap", "option": 0}, "tony")
+    assert "deferred" in msg, msg
+    assert not mcard["requests"][0].get("executed")
+    assert mcard["action"].get("status") != "queued"
+    assert mcard.get("awaiting_action") is True
+    # busy card: retry/hold/close defer to the sweep; 'queue' stamps
+    # executed — the approve intent is satisfied by the live session
+    bcard = {"id": "c-b", "column": "doing",
+             "action": {"type": "dispatch", "status": "running",
+                        "task_id": "t1"},
+             "requests": [{"id": "ap", "ask": "retry?",
+                           "status": "open",
+                           "options": [
+                               {"id": "r", "label": "Retry",
+                                "action": "retry"},
+                               {"id": "g", "label": "Go",
+                                "action": "queue"}]}]}
+    msg = do_respond(bcard, {"request_id": "ap", "option": 0}, "tony")
+    assert msg == "answer saved", msg        # deferred — no exec note
+    assert not bcard["requests"][0].get("executed")
+    assert bcard["action"]["status"] == "running"
+    msg = do_respond(bcard, {"request_id": "ap", "option": 1,
+                             "reopen": True}, "tony")
+    assert "already running" in msg, msg
+    assert "queue@respond" in (bcard["requests"][0].get("executed") or "")
+    # card-level ask: an index pick AND a uniquely-resolved voice answer
+    # both execute a declared action
+    acard2 = {"id": "c-a2", "column": "backlog",
+              "action": {"type": "dispatch", "executor": "devin"},
+              "ask": {"question": "dispatch?", "options": qopts}}
+    msg = do_respond(acard2, {"option": 0}, "tony")
+    assert "executed queue" in msg, msg
+    assert acard2["action"]["status"] == "queued"
+    assert "queue@respond" in (acard2["ask"].get("executed") or "")
+    vcard = {"id": "c-v", "column": "backlog",
+             "action": {"type": "dispatch", "executor": "devin"},
+             "ask": {"question": "dispatch?", "options": qopts}}
+    msg = do_respond(vcard, {"text": "dispatch"}, "tony")
+    assert "executed queue" in msg, msg       # voice resolved the option
+    assert vcard["action"]["status"] == "queued"
+    # free text on requests[] never resolves an option — verbatim only,
+    # sweep triages (same conservatism as before)
+    tcard = {"id": "c-t", "column": "backlog",
+             "requests": [{"id": "ap", "ask": "dispatch?",
+                           "status": "open", "options": qopts}]}
+    msg = do_respond(tcard, {"request_id": "ap", "answer": "dispatch"},
+                     "tony")
+    assert msg == "answer saved", msg
+    assert not tcard["requests"][0].get("executed")
+    assert (tcard.get("action") or {}).get("status") != "queued"
 
     # _deliver_to_session — /respond on a running card lands in the
     # session's task dir as answers.jsonl (board-answer-live-session);
@@ -5505,8 +6862,54 @@ def _selftest() -> None:
     fcntl.flock(held_fd, fcntl.LOCK_UN)
     got = acquire_lock(lpath, 1)
     assert got is not None
+    assert str(lpath) in _held_locks      # watchdog sees the hold
     got[0].close()
+    assert str(lpath) not in _held_locks  # ...and clears on release
     held_fd.close()
+
+    # lock-hold watchdog — a hold past the alert threshold dumps all
+    # thread stacks once per episode (the 2026-11-25 wedge left zero
+    # journal trace; the dump names the culprit next time)
+    real_alert = LOCK_HOLD_ALERT_S
+    globals()["LOCK_HOLD_ALERT_S"] = 0.01
+    dumps = []
+    real_dump = faulthandler.dump_traceback
+    faulthandler.dump_traceback = lambda *a, **k: dumps.append(1)
+    try:
+        lf3 = acquire_lock(lpath, 1)[0]
+        time.sleep(0.02)
+        _lock_watchdog_tick()
+        _lock_watchdog_tick()          # alerted -> one dump per episode
+        assert len(dumps) == 1
+        lf3.close()
+    finally:
+        faulthandler.dump_traceback = real_dump
+        globals()["LOCK_HOLD_ALERT_S"] = real_alert
+
+    # render() bounded acquire — a busy render flock skips the pass
+    # instead of parking the process (the wedge: an unbounded flock
+    # held the GIL on py<=3.13 and froze every thread)
+    noop = tmp / "noop-render.py"
+    noop.write_text("pass\n")
+    real_r, real_r2 = RENDER, RENDER2
+    real_rl, real_rlw = RENDER_LOCK, RENDER_LOCK_WAIT_S
+    globals()["RENDER"] = noop
+    globals()["RENDER2"] = noop
+    rlk = tmp / "board-render.lock"
+    rfd = rlk.open("w")
+    fcntl.flock(rfd, fcntl.LOCK_EX)
+    globals()["RENDER_LOCK"] = rlk
+    globals()["RENDER_LOCK_WAIT_S"] = 0.4
+    t0 = time.monotonic()
+    render()                       # busy -> skip, returns fast
+    assert time.monotonic() - t0 < 5
+    fcntl.flock(rfd, fcntl.LOCK_UN)
+    render()                       # free -> runs both (harmless) renders
+    rfd.close()
+    globals()["RENDER"] = real_r
+    globals()["RENDER2"] = real_r2
+    globals()["RENDER_LOCK"] = real_rl
+    globals()["RENDER_LOCK_WAIT_S"] = real_rlw
 
     # /patch-relay (runner-push-cred-gap): a runner that can't push
     # relays its session head as a git bundle into PATCH_INBOX; the
@@ -5634,6 +7037,128 @@ def _selftest() -> None:
     assert card["pipeline"]["benchmark"]["before"] == "2"
     do_pipeline(card, {"opt_in": False}, "devin")
     assert "pipeline" not in card
+
+    # /card-set (board-api-card-lane-executor-edit) — the routing-field
+    # door: lane/executor/tags whitelisted, refused while running or
+    # claimed, audit line in comms
+    scard = {"id": "set-1", "column": "backlog",
+             "tags": ["stale-tag"],
+             "action": {"type": "dispatch", "status": "queued",
+                        "lane": "free_lane",
+                        "lane_source": "classifier"},
+             "comms": []}
+    # set lane — author-set: lane_source provenance is dropped so the
+    # queue-time classifier cannot re-route over it
+    msg = do_card_set(scard, {"set": {"lane": "paid_frontier"},
+                              "reason": "needs frontier reasoning"},
+                      "tony")
+    assert scard["action"]["lane"] == "paid_frontier"
+    assert "lane_source" not in scard["action"]
+    assert "lane=paid_frontier" in msg
+    assert scard["comms"][-1]["text"].startswith(
+        "routing edited: lane=paid_frontier by tony: ")
+    assert "needs frontier reasoning" in scard["comms"][-1]["text"]
+    # set executor — same door, contract-validated
+    do_card_set(scard, {"set": {"executor": "devin"},
+                        "reason": "pin devin after jules EOL"}, "devin")
+    assert scard["action"]["executor"] == "devin"
+    # tags — add/remove form and wholesale replace
+    do_card_set(scard,
+                {"set": {"tags": {"add": ["dispatch", "fix"],
+                                  "remove": ["stale-tag"]}},
+                 "reason": "retag after lane fix"}, "devin")
+    assert scard["tags"] == ["dispatch", "fix"]
+    do_card_set(scard, {"set": {"tags": ["only"]},
+                        "reason": "reset tags"}, "devin")
+    assert scard["tags"] == ["only"]
+    # lane/executor clear — empty value unpins the field
+    do_card_set(scard, {"set": {"lane": "", "executor": ""},
+                        "reason": "unpin — let the classifier decide"},
+                "tony")
+    assert "lane" not in scard["action"] \
+        and "executor" not in scard["action"]
+    # refusals — running/claimed cards freeze routing fields
+    scard["action"]["status"] = "running"
+    rejects(lambda: do_card_set(
+        scard, {"set": {"lane": "free_lane"}, "reason": "x"}, "devin"),
+        "frozen until the claim finishes")
+    scard["action"]["status"] = "queued"
+    scard["action"]["runner"] = "idc02"   # claimed w/o running stamp
+    rejects(lambda: do_card_set(
+        scard, {"set": {"executor": "devin"}, "reason": "x"}, "devin"),
+        "runner=idc02")
+    scard["action"].pop("runner")
+    # invalid lane/executor and workflow fields fail closed
+    rejects(lambda: do_card_set(
+        scard, {"set": {"lane": "jules"}, "reason": "x"}, "devin"),
+        "action.lane must be one of")
+    rejects(lambda: do_card_set(
+        scard, {"set": {"lane": "devin"}, "reason": "x"}, "devin"),
+        "'devin' is an executor")
+    rejects(lambda: do_card_set(
+        scard, {"set": {"executor": "jules"}, "reason": "x"}, "devin"),
+        "action.executor must be one of")
+    rejects(lambda: do_card_set(
+        scard, {"set": {"column": "doing"}, "reason": "x"}, "devin"),
+        "only admits lane|executor|tags")
+    rejects(lambda: do_card_set(
+        scard, {"set": {"tags": ["x"]}}, "devin"), "reason required")
+    rejects(lambda: do_card_set(scard, {"reason": "x"}, "devin"),
+            "non-empty object")
+    rejects(lambda: do_card_set(
+        scard, {"set": {"tags": "a,b"}, "reason": "x"}, "devin"),
+        "list or {add, remove}")
+    rejects(lambda: do_card_set(
+        scard, {"set": {"tags": ["x" * 41]}, "reason": "x"}, "devin"),
+        "<=40 chars")
+    rejects(lambda: do_card_set(
+        scard, {"set": {"tags": [str(i) for i in range(21)]},
+                "reason": "x"}, "devin"), "<=20 entries")
+    # non-dispatch cards (no action, or a non-dispatch type) are refused
+    # — /card-set only edits routing fields on dispatch cards; arming
+    # happens via /card — and the refusal leaves the card untouched: no
+    # fabricated action block, no audit comms
+    noact = {"id": "no-action", "comms": [], "tags": []}
+    rejects(lambda: do_card_set(
+        noact, {"set": {"executor": "devin"}, "reason": "x"}, "devin"),
+        "no dispatch action")
+    assert "action" not in noact and noact["comms"] == []
+    script_card = {"id": "script-card", "comms": [], "tags": [],
+                   "action": {"type": "script", "status": "queued"}}
+    rejects(lambda: do_card_set(
+        script_card, {"set": {"lane": "codemod"}, "reason": "x"},
+        "devin"), "no dispatch action")
+    assert script_card["action"] == \
+        {"type": "script", "status": "queued"} \
+        and script_card["comms"] == []
+    # the classifier still respects an author-set lane on next queue
+    scard2 = {"id": "set-2", "comms": [],
+              "action": {"type": "dispatch", "status": "queued"}}
+    do_card_set(scard2, {"set": {"lane": "manual"},
+                         "reason": "human owns it"}, "tony")
+    assert "lane_source" not in scard2["action"]
+
+    # valid_lanes() is cached on the catalog file's mtime — a rewrite at
+    # the same mtime still serves the cached set, an mtime bump forces a
+    # re-parse (board-api-card-set-non-dispatch-guard §2)
+    cat = tmp / "ssot.devnest-lanes.yml"
+    cat.write_text("lanes: {}\n")
+    os.utime(cat, (1_700_000_000, 1_700_000_000))
+    globals()["LANES_FILE"] = cat
+    _VALID_LANES_CACHE["mtime"] = 0.0
+    _VALID_LANES_CACHE["value"] = None
+    base = valid_lanes()
+    assert "free_lane" in base
+    cat.write_text(
+        "lanes:\n  free_lane:\n    status: retired 2026-01-01\n")
+    os.utime(cat, (1_700_000_000, 1_700_000_000))   # same mtime
+    assert valid_lanes() == base                    # stale cache served
+    os.utime(cat, (1_700_000_100, 1_700_000_100))   # mtime bump
+    assert "free_lane" not in valid_lanes()         # re-parse happened
+    globals()["LANES_FILE"] = \
+        REPO / "docs/ssot/infrastructure/ssot.devnest-lanes.yml"
+    _VALID_LANES_CACHE["mtime"] = 0.0
+    _VALID_LANES_CACHE["value"] = None
 
     # /card spawn fields + on_exists (report-session-loop §1a). CARD_DIR
     # is redirected to a temp dir — do_create writes real card files.
@@ -5966,6 +7491,91 @@ def _selftest() -> None:
         assert "ไทย" not in payload["content"]
         assert payload["meta"]["no_th"] is True
 
+        # /lesson read ops (OPS-0821) — op=list paging + op=get topic
+        wpr = FakeWP([{"slug": "lesson-a", "modified": "m1",
+                       "title": {"rendered": "Education — Alpha"},
+                       "content": {"rendered": "<p>alpha body</p>"},
+                       "meta": {"topic": "Alpha", "level": "intro",
+                                "next_review": "2026-12-01",
+                                "status": "open"}},
+                      {"slug": "lesson-b", "modified": "m2",
+                       "title": {"rendered": "Education — Beta"},
+                       "content": {"rendered": "<p>beta body</p>"},
+                       "meta": {"topic": "Beta", "level": "deep",
+                                "next_review": "", "status": "learned"}}])
+        globals()["wp_api"] = wpr
+        res = _read_lessons({"op": "list", "source": "wp"}, "devin")
+        assert res["source"] == "wp" and res["count"] == 2
+        assert res["total"] == 2 and res["truncated"] is False
+        assert res["lessons"][0]["topic"] == "Alpha"
+        assert res["lessons"][0]["next_review"] == "2026-12-01"
+        res = _read_lessons({"op": "list", "source": "wp",
+                             "limit": 1}, "devin")
+        assert res["count"] == 1 and res["total"] == 2
+        assert res["offset"] == 0 and res["truncated"] is True
+        assert res["lessons"][0]["slug"] == "lesson-a"
+        res = _read_lessons({"op": "list", "source": "wp",
+                             "limit": 1, "offset": 1}, "devin")
+        assert res["count"] == 1 and res["total"] == 2
+        assert res["offset"] == 1 and res["truncated"] is False
+        assert res["lessons"][0]["slug"] == "lesson-b"
+        res = _read_lessons({"op": "get", "source": "wp",
+                             "slug": "lesson-a"}, "devin")
+        assert res["slug"] == "lesson-a" and res["topic"] == "Alpha"
+        assert "alpha body" in res["content"]
+        assert res["meta"]["level"] == "intro"
+        # bad paging params degrade to defaults, not errors
+        res = _read_lessons({"op": "list", "source": "wp",
+                             "limit": "junk", "offset": -5}, "devin")
+        assert res["count"] == 2 and res["offset"] == 0
+
+        # source=mddb — mirror read, same row contract
+        globals()["_mddb_post"] = lambda p, payload, timeout=30: [
+            {"key": "lesson-x", "updated_at": "u1",
+             "contentMd": "# X Topic\n\nmirror body",
+             "meta": {"topic": ["X Topic"], "level": ["intro"],
+                      "status": ["open"], "next_review": ["2026-12-01"]}}]
+        res = _read_lessons({"op": "list", "source": "mddb",
+                             "limit": 1}, "devin")
+        assert res["source"] == "mddb" and res["count"] == 1
+        assert res["total"] == 1 and res["truncated"] is False
+        res = _read_lessons({"op": "get", "source": "mddb",
+                             "slug": "lesson-x"}, "devin")
+        assert res["topic"] == "X Topic" and "mirror body" in res["content"]
+
+        # source=wiki — Education: namespace rows, index pages skipped
+        real_we, real_wl = _wiki_env, _wiki_login
+        real_wns, real_wpu = _wiki_ns_pages, _wiki_page_url
+        globals()["_wiki_env"] = lambda: (
+            {"WIKI_HOST": "https://wiki.example"},
+            "https://wiki.example/api.php")
+        globals()["_wiki_login"] = lambda api, env: (object(), "csrf")
+        globals()["_wiki_ns_pages"] = lambda api, opener, ns: [
+            {"title": "Education:Alpha", "modified": "2026-11-01T00:00:00Z",
+             "wikitext": "{{แม่แบบ:Education|topic=Alpha|level=intro|"
+                         "next_review=2026-12-01|status=open}}\n\n"
+                         "wiki body"},
+            {"title": "Education:Index", "modified": "m",
+             "wikitext": "{{แม่แบบ:Education|topic=Index|status=index}}"}]
+        globals()["_wiki_page_url"] = (
+            lambda env, t: f"https://wiki.example/{t}")
+        res = _read_lessons({"op": "list", "source": "wiki"}, "devin")
+        assert res["source"] == "wiki" and res["count"] == 1
+        assert res["skipped_non_lesson"] == 1
+        assert res["lessons"][0]["topic"] == "Alpha"
+        assert "content" not in res["lessons"][0]
+        res = _read_lessons({"op": "list", "source": "wiki",
+                             "content": 1}, "devin")
+        assert "wiki body" in res["lessons"][0]["content"]
+        assert res["lessons"][0]["meta"]["topic"] == "Alpha"
+        wslug = "lesson-" + hashlib.md5(b"alpha").hexdigest()[:12]
+        res = _read_lessons({"op": "get", "source": "wiki",
+                             "slug": wslug}, "devin")
+        assert res["topic"] == "Alpha" and "wiki body" in res["content"]
+        globals()["_wiki_env"], globals()["_wiki_login"] = real_we, real_wl
+        globals()["_wiki_ns_pages"], globals()["_wiki_page_url"] = (
+            real_wns, real_wpu)
+
         # /job — validation + create/update + comms log + parent
         assert job_actor({}, "local") == "local"
         assert job_actor({"from": "queue-mgr"}, "local") == "queue-mgr"
@@ -5982,13 +7592,19 @@ def _selftest() -> None:
                                "queue-mgr"), "no parent job")
         res = do_job({"slug": "thonburian-bench", "status": "done",
                       "comms": "finished in 98s", "pack": "thonburian-bench",
-                      "kind": "pack"}, "queue-mgr")
+                      "kind": "pack",
+                      "result_ref": "ada-nest/packs/thonburian-bench",
+                      "evidence": ["ada-nest/packs/thonburian-bench/done"]},
+                     "queue-mgr")
         assert res["action"] == "created"
         route, payload = wp3.posts[-1]
         assert route == "/wp/v2/nest_job"
         assert payload["slug"] == "thonburian-bench"
         assert payload["status"] == "private"
         assert payload["meta"]["status"] == "done"
+        assert payload["meta"]["result_ref"] == \
+            "ada-nest/packs/thonburian-bench"
+        assert payload["meta"]["evidence"]
         assert payload["meta"]["pack"] == "thonburian-bench"
         log = json.loads(payload["meta"]["comms"])
         assert log[0]["from"] == "queue-mgr" and "98s" in log[0]["text"]
@@ -6169,4 +7785,6 @@ if __name__ == "__main__":
         LOCK_REPO_SENTINEL.write_text(str(REPO.resolve()) + "\n")
     except OSError:
         pass
+    threading.Thread(target=_lock_watchdog_loop, daemon=True,
+                     name="lock-watchdog").start()
     ThreadingHTTPServer(("127.0.0.1", PORT), H).serve_forever()

@@ -67,7 +67,7 @@
 |---|---|
 | `~/.config/secrets/` (~20 envs + archives) | **M → idc03** (merge carefully — it has its own) + keep copy on dell for spare-box use |
 | `~/.config/home-assistant` (3.9G old tony-ha config) | **A** — archive to idc02 or drop (tony-ha lives on omen since ph5) |
-| `~/.config/ada-ha`, `~/.config/michael-dev` | **M → idc03** |
+| `~/.config/ada-ha`, `~/.config/mn-ha-dev` | **M → idc03** |
 | `~/.config/containers` (8.3G podman) | moves with quadlets; **`.parked` + `migrated-off/` already on idc03 → verify then drop** |
 | `~/CascadeProjects` (15G) | `chaba-tony-dell` → idc03 writer checkout; **rest → verify no uncommitted work, then drop** (github has history) |
 | `~/.local` (11G), `~/go`, venvs, npm caches | **R** — drop with services |
@@ -97,5 +97,5 @@
 
 ## Wave status
 
-- **Wave 1 done (2026-10-21):** `~/.config/secrets/` → `idc03:~/.config/secrets/from-dell-20261021/` (staged, no clobber — merge when units install); `ada-ha`/`michael-dev`/`caddy` configs → `idc03:~/.config/dell-lane-configs/`; `rclone.conf` → idc02.
+- **Wave 1 done (2026-10-21):** `~/.config/secrets/` → `idc03:~/.config/secrets/from-dell-20261021/` (staged, no clobber — merge when units install); `ada-ha`/`mn-ha-dev`/`caddy` configs → `idc03:~/.config/dell-lane-configs/`; `rclone.conf` → idc02.
 - Waves 2–7 pending.

@@ -1,0 +1,50 @@
+name: kk-mac-ltx-mps-probe-20261029
+needs:
+  ram_gb: 30
+  disk_gb: 10
+  egress_only_ok: false
+timeout_s: 3600
+artifacts:
+  - packs/kk-mac-ltx-mps-probe-20261029/out/kk-shot01-mps.mp4
+  - packs/kk-mac-ltx-mps-probe-20261029/out/probe.json
+  - packs/kk-mac-ltx-mps-probe-20261029/out/report.md
+prep: |
+  set -eu
+  pmset -g batt | grep -q "AC Power" || {
+    echo "MPS probe requires KK-Mac on AC power"; exit 1; }
+  FREE_PCT=$(memory_pressure | awk -F'[:%]' '/System-wide memory free percentage:/ {gsub(/[[:space:]]/, "", $2); print $2}')
+  if [ -n "$FREE_PCT" ] && [ "$FREE_PCT" -lt 20 ]; then
+    echo "MPS probe paused: only ${FREE_PCT}% system memory free"
+    exit 1
+  fi
+  if [ -x /opt/homebrew/bin/ollama ]; then
+    OLLAMA_MODELS=$(/opt/homebrew/bin/ollama ps 2>/dev/null | tail -n +2 | sed '/^[[:space:]]*$/d')
+    [ -z "$OLLAMA_MODELS" ] || {
+      echo "MPS probe paused: Ollama has a resident model"; exit 1; }
+  fi
+  PY="$HOME/kk-video/.venv/bin/python"
+  REV="8984fa25007f376c1a299016d0957a37a2f797bb"
+  MODEL="$HOME/.cache/huggingface/hub/models--Lightricks--LTX-Video/snapshots/$REV"
+  test -x "$PY"
+  test -s "$PACK_DIR/inputs/shot01.pt"
+  for f in model_index.json scheduler/scheduler_config.json \
+    transformer/config.json transformer/diffusion_pytorch_model.safetensors.index.json \
+    transformer/diffusion_pytorch_model-00001-of-00002.safetensors \
+    transformer/diffusion_pytorch_model-00002-of-00002.safetensors \
+    vae/config.json vae/diffusion_pytorch_model.safetensors; do
+    test -s "$MODEL/$f" || { echo "missing cached LTX component: $f"; exit 2; }
+  done
+  "$PY" - <<'PY'
+  import torch
+  from diffusers import LTXPipeline
+  assert torch.backends.mps.is_available(), "MPS is unavailable"
+  x = torch.ones((16, 16), device="mps", dtype=torch.bfloat16)
+  assert torch.equal((x @ x).cpu(), torch.full((16, 16), 16.0, dtype=torch.bfloat16))
+  print("MPS + bf16 smoke passed; LTX components are already cached")
+  PY
+run_sh: |
+  export HF_HUB_OFFLINE=1
+  "$HOME/kk-video/.venv/bin/python" "$PACK_DIR/run_probe.py" \
+    --model-dir "$HOME/.cache/huggingface/hub/models--Lightricks--LTX-Video/snapshots/8984fa25007f376c1a299016d0957a37a2f797bb" \
+    --embed "$PACK_DIR/inputs/shot01.pt" \
+    --out "$PACK_DIR/out"

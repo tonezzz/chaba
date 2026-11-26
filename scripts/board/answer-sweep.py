@@ -235,7 +235,18 @@ def pending(card: dict) -> list[dict]:
         if not isinstance(r, dict):
             continue
         rid = str(r.get("id") or "")
-        if any(rid.startswith(p) for p in OWNED_PREFIXES):
+        # KNB-0178 (Tony-approved execute-answer): owned prefixes are
+        # skipped because their answers used to have no executable shape.
+        # merge-conflict asks now declare {id,label,action} options, so an
+        # explicit-action answer IS executable — let only those through.
+        # Legacy string-option merge-conflict answers stay owned: no
+        # retroactive execution of the ~50 historical answered asks.
+        owned = any(rid.startswith(p) for p in OWNED_PREFIXES)
+        explicit = any(
+            isinstance(o, dict)
+            and str(o.get("action") or "").strip().lower() in ACTIONS
+            for o in (r.get("options") or []))
+        if owned and not explicit:
             continue
         if r.get("status") == "answered" and not r.get("executed"):
             out.append(r)

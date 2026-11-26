@@ -5,6 +5,8 @@
 # scene1-frames/. Outputs land in the pack out/ (artifact gate) AND
 # renders/ for the library.
 name: s1-i2v-chain
+hf_repos:                # selective restore-hf-cache (ADA-0806)
+  - Lightricks/LTX-Video
 needs:
   gpu_gb: 14
   disk_gb: 30
@@ -34,7 +36,7 @@ prep: |
 run: |
   import os, time, datetime, gc, subprocess
   import torch
-  for _v in ('model', 'pipe'):
+  for _v in ('model', 'pipe', 'enc', 'tok'):
       globals().pop(_v, None)
   gc.collect(); torch.cuda.empty_cache()
   from diffusers import LTXImageToVideoPipeline

@@ -338,3 +338,236 @@ fixtures:
     gold: asdkfj alskdjf
     preserve: []
     expected_tool_call: null
+  # --- dispatch_cmd (ADA-1088): Tony-style dev commands through Ada's
+  #     dispatch surface. protocol: dispatch selects the dev tool surface;
+  #     gold = canonical command; polish prompt = dispatch_spec_v1 rewrites
+  #     to spec-grade English. ---
+  - id: disp-en-runner-selfupdate
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: hey can you have devin look at the runner agent self update again it still feels flaky
+    gold: Dispatch a Devin session to investigate and fix flakiness in runner-agent self-update.
+    preserve: [runner]
+    expected_tool_call: {name: dispatch_devin}
+  - id: disp-en-card-polish
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: card this for later check why the wiki edu index is stale sometimes
+    gold: Create a kanban card to investigate why the wiki education index is sometimes stale.
+    preserve: [wiki]
+    expected_tool_call: {name: create_card}
+  - id: disp-en-ops-card
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: have devin check OPS-1039 stale worktree cleanup on idc02
+    gold: Dispatch a Devin session to check OPS-1039 stale worktree cleanup on idc02.
+    preserve: [OPS-1039, idc02]
+    expected_tool_call: {name: dispatch_devin}
+  - id: disp-typo-litellm
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: dispatch a devin task to fix the litellm key rotation scrpt
+    gold: Dispatch a Devin task to fix the LiteLLM key rotation script.
+    preserve: [litellm]
+    expected_tool_call: {name: dispatch_devin}
+  - id: disp-mix-thai
+    lang: mixed
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: ช่วยให้ devin แก้ bug ใน board api หน่อย
+    gold: Dispatch a Devin session to fix the bug in the board API.
+    preserve: [devin, board api]
+    expected_tool_call: {name: dispatch_devin}
+  - id: disp-opencode-readonly
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: run this through opencode readonly on idc02 check why mddb embed queue drops docs
+    gold: Run an OpenCode read-only check on idc02 for why the MDDB embed queue drops documents.
+    preserve: [opencode, idc02, mddb]
+    expected_tool_call: {name: dispatch_opencode}
+  - id: disp-en-lesson-post
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: get devin to write a lesson about the litellm gateway and post it to education
+    gold: Dispatch a Devin session to write a lesson about the LiteLLM gateway and post it to Education.
+    preserve: [lesson, litellm, education]
+    expected_tool_call: {name: dispatch_devin}
+  - id: disp-clean-card
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: Create a kanban card for the printer queue diagnosis follow-up
+    gold: Create a kanban card for the printer queue diagnosis follow-up.
+    preserve: [printer]
+    expected_tool_call: {name: create_card}
+  - id: disp-question-status
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: what's the status of the ada opencode dispatches
+    gold: What's the status of the ada opencode dispatches?
+    preserve: [ada, opencode]
+    expected_tool_call: null
+  - id: disp-question-progress
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: did the dispatch for the memory guard finish yet
+    gold: Did the dispatch for the memory guard finish yet?
+    preserve: []
+    expected_tool_call: null
+  - id: disp-amb-fix-thing
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: fix the thing from yesterday
+    gold: fix the thing from yesterday
+    preserve: []
+    expected_tool_call: null
+  - id: disp-amb-make-better
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: make it better
+    gold: make it better
+    preserve: []
+    expected_tool_call: null
+  - id: disp-messy-runner
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: pls have devin 2 look at why runner-agent self update keeps failing on the dell host again
+    gold: Dispatch a Devin session to investigate why runner-agent self-update keeps failing on the dell host.
+    preserve: [runner-agent, dell]
+    expected_tool_call: {name: dispatch_devin}
+  - id: disp-messy-card-th
+    lang: mixed
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: ช่วย card ไว้ก่อนนะ เรื่อง litellm key หมด ตัง แล้ว agent ตอบ 403
+    gold: Create a kanban card about the LiteLLM key running out of funds causing agent 403s.
+    preserve: [litellm, 403]
+    expected_tool_call: {name: create_card}
+  - id: disp-messy-frag
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: devin fix kanban dispatch zero commit sessions pls OPS-0941
+    gold: Dispatch a Devin session to fix the kanban dispatch zero-commit session issue, card OPS-0941.
+    preserve: [OPS-0941]
+    expected_tool_call: {name: dispatch_devin}
+  - id: disp-messy-typo-route
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: can u ask ada to rember that the printer ip is 192.168.2.78 not .75
+    gold: Ask Ada to remember that the printer IP is 192.168.2.78, not 192.168.2.75.
+    preserve: [192.168.2.78, 192.168.2.75]
+    expected_tool_call: null
+  # --- dispatch_real (command-polish-before-ai-dispatch): raw = VERBATIM
+  #     titles of live kanban cards — the real terse shorthand that flows
+  #     into dispatch intake. gold = canonical spec-grade rewrite.
+  #     Splitting from dispatch_cmd (synthetic Tony-style) so the report
+  #     can score polish on real vs synthetic commands separately. ---
+  - id: real-stale-local-conflict
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: stale .local-conflict-* files accumulated in job checkouts — reconcile re-flags forever
+    gold: Investigate and fix stale .local-conflict-* files accumulating in job checkouts, where reconcile keeps re-flagging them forever.
+    preserve: [local-conflict]
+    expected_tool_call: {name: dispatch_devin}
+  - id: real-smoke-tier-timeout
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: Smoke tier outgrew 45-min TimeoutStartSec — suite truncates mid-run
+    gold: Fix the smoke tier outgrowing its 45-minute TimeoutStartSec, which truncates the suite mid-run.
+    preserve: [TimeoutStartSec, 45]
+    expected_tool_call: {name: dispatch_devin}
+  - id: real-live-session-token-diet
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: Live session token diet — 134M text-in/day on ada-ha-tony
+    gold: Reduce live session token usage — 134M text-in/day on ada-ha-tony.
+    preserve: [134M, ada-ha-tony]
+    expected_tool_call: {name: dispatch_devin}
+  - id: real-openchamber-path
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: Fix stale OpenChamber project path DevNest-ada-agent -> DevNest
+    gold: Fix the stale OpenChamber project path from DevNest-ada-agent to DevNest.
+    preserve: [OpenChamber, DevNest-ada-agent, DevNest]
+    expected_tool_call: {name: dispatch_devin}
+  - id: real-mddb-ops-compact
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: "mddb-ops 30G: analyze + compact via mddbd -repair-db if freelist-bloated"
+    gold: Analyze and compact the 30G mddb-ops store via mddbd -repair-db if the freelist is bloated.
+    preserve: [mddb-ops, 30G, mddbd, repair-db]
+    expected_tool_call: {name: dispatch_devin}
+  - id: real-devin-handoff-ledger
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: Investigate devin-handoff job-ledger terminal writes (1176/1555 stuck running)
+    gold: Investigate devin-handoff job-ledger terminal writes — 1176/1555 jobs stuck running.
+    preserve: [devin-handoff, 1176, 1555]
+    expected_tool_call: {name: dispatch_devin}
+  - id: real-idc02-second-lane
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: Provision idc02 as second ada-pi dispatch lane
+    gold: Provision idc02 as the second ada-pi dispatch lane.
+    preserve: [idc02, ada-pi]
+    expected_tool_call: {name: dispatch_devin}
+  - id: real-video-render-dispatcher
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: Build canonical video render dispatcher and queue status
+    gold: Build the canonical video render dispatcher and queue status.
+    preserve: [video render dispatcher]
+    expected_tool_call: {name: dispatch_devin}
+  - id: real-wiki-page-door
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: "Extend /wiki/page door to allow Infrastructure: namespace writes"
+    gold: "Extend the /wiki/page door to allow writes in the Infrastructure: namespace."
+    preserve: [wiki page, Infrastructure]
+    expected_tool_call: {name: dispatch_devin}
+  - id: real-ansible-verify-r7
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: Ansible read-only verify for R7 host-software capabilities
+    gold: Run an Ansible read-only verify of R7 host-software capabilities.
+    preserve: [Ansible, R7]
+    expected_tool_call: {name: dispatch_opencode}
+  - id: real-timer-alert-idc03
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: Timer chaba-tony-ideas on idc03 failing
+    gold: Investigate why the chaba-tony-ideas timer on idc03 is failing.
+    preserve: [chaba-tony-ideas, idc03]
+    expected_tool_call: {name: dispatch_devin}
+  - id: real-local-conflict-guard
+    lang: en
+    category: dispatch_real
+    protocol: dispatch
+    raw: local-conflict reconcile failed
+    gold: Investigate the local-conflict reconcile failure.
+    preserve: [local-conflict]
+    expected_tool_call: {name: dispatch_devin}

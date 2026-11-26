@@ -1,0 +1,175 @@
+title: Jack shared workspace repository promotion lane
+subtitle: Operator-run import/verify/push/PR pipeline for opencode-jack.surf-thailand.com
+icon: shield
+
+planning:
+  goal: >-
+    Card jack-shared-workspace-repo-promotion: make opencode-jack.surf-thailand.com
+    the canonical shared Tony/Jack OpenCode instance with an organized
+    /workspace and a gated commit/push/PR flow that never exposes global
+    GitHub credentials to the container.
+  scope: >-
+    Repo-side implementation only: the jack-task operator CLI, lane config
+    examples, workspace docs, the tony-workspace bind mount in the Quadlet,
+    and tests. No deploy, no live idc02 changes, no credential minting —
+    those remain operator steps.
+  success_criteria:
+    - /workspace layout (repos/, worktrees/, shared/, incoming/, outputs/) documented and enforced by jack-task init.
+    - Operator-controlled repo import via an explicit allowlist.
+    - Per-task git worktrees on jack/<slug> branches with local commits.
+    - "Independent verify gate — clean tree, branch scope, secret scan,
+      forbidden paths, optional tests with scrubbed env."
+    - Scoped-token push of the task branch only; PR creation; merge/deploy stay human.
+    - Tony<->Jack mutual workspace access documented and mounted (tony-workspace).
+  risks:
+    - Fine-grained PAT is still a credential — mitigated by per-command http.extraHeader injection, repo+permission scoping, host-only storage.
+    - Secret scan is regex-based (high-confidence shapes only); gitleaks is the documented upgrade.
+    - SSH-origin repos bypass the scoped token (host ssh key used) — warned at push time.
+  resources:
+    - stacks/idc02/jack-ide/ (jack-opencode.container, WORKSPACES.md, README.md, stack.yml)
+    - stacks/idc02/jack-ide/lane/jack-task.py + lane/repos.example.json + lane/jack-git.env.example
+    - tests/jack/test_jack_task.py
+  owner: Devin
+  estimated_duration: 1 session
+  related_focus:
+    - label: kanban card jack-shared-workspace-repo-promotion
+      file: docs/ssot/kanban/cards/jack-shared-workspace-repo-promotion.yml
+
+processing:
+  status: completed
+  started_at: "2026-11-24"
+  steps:
+    - id: 1
+      label: Survey existing jack-ide stack and card history
+      status: done
+      notes: >-
+        Canonical instance + /workspace layout already live since 2026-11-03
+        (commit 31380302bb retired the duplicate Tony instance and the
+        cross-mount). WORKSPACES.md documented the target layout and gate
+        flow but no tooling existed. Container has git, no GitHub creds.
+    - id: 2
+      label: Implement lane/jack-task.py operator CLI
+      status: done
+      notes: >-
+        init/repos/import/new/status/verify/push/pr subcommands. State in
+        outputs/lane/ inside the shared workspace; manifests per task slug.
+        Token via JACK_GIT_TOKEN env file injected per-command only for
+        github.com https remotes.
+    - id: 3
+      label: Add tests + config examples
+      status: done
+      notes: >-
+        16 unittest cases with real local-git fixtures (bare origin, clone,
+        worktree, push, verdict gates). pytest absent locally; unittest ran clean.
+    - id: 4
+      label: Update stack docs + Quadlet mount
+      status: done
+      notes: >-
+        Re-added Tony drop dir as a dedicated bind mount
+        (~/.local/share/jack-ide/tony-workspace -> /workspace/tony-workspace),
+        rewrote WORKSPACES.md for current reality, documented lane install
+        in README.md, extended stack.yml secrets/state.
+  decisions:
+    - label: Operator-side lane, not in-container tooling
+      rationale: >-
+        The card forbids broad GitHub credentials in the OpenCode container.
+        Keeping push/PR host-side with a fine-grained PAT makes the container
+        structurally incapable of publishing — Jack can only produce local
+        commits in a worktree.
+      alternatives_considered: >-
+        GitHub App / installation tokens (better, heavier — noted as upgrade
+        path); gh CLI on host (broader ambient token, rejected); container-side
+        git push (rejected — credential exposure).
+    - label: Fine-grained PAT over classic PAT or deploy key
+      rationale: >-
+        Repo-scoped + permission-scoped (Contents/PR RW only), expirable,
+        simplest to operate for a one-repo pilot.
+      alternatives_considered: >-
+        Classic PAT (account-wide — rejected), SSH deploy key (write-capable
+        per-repo but no PR scope — kept as documented fallback for ssh remotes).
+    - label: tony-workspace as dedicated dir under jack-ide state
+      rationale: >-
+        The old mount pointed at the retired tony-ide stack's workspace.
+        A dedicated ~/.local/share/jack-ide/tony-workspace keeps the test
+        drop zone declared in stack.yml without resurrecting dead units.
+      alternatives_considered: >-
+        Mounting Tony's real CascadeProjects dirs (too broad for a supervised
+        test), reusing ~/.local/share/tony-ide/workspace (orphaned state of a
+        deleted stack).
+  changes:
+    - file: stacks/idc02/jack-ide/lane/jack-task.py
+      summary: New operator promotion-lane CLI (import/new/verify/push/pr/status/init).
+    - file: stacks/idc02/jack-ide/lane/repos.example.json
+      summary: Import allowlist example.
+    - file: stacks/idc02/jack-ide/lane/jack-git.env.example
+      summary: Scoped-token secret file example + minting notes.
+    - file: stacks/idc02/jack-ide/jack-opencode.container
+      summary: Added tony-workspace bind mount; comment documents no-GitHub-creds boundary.
+    - file: stacks/idc02/jack-ide/WORKSPACES.md
+      summary: Rewritten — canonical instance, current mutual-access model, lane pipeline.
+    - file: stacks/idc02/jack-ide/README.md
+      summary: Promotion-lane section with install/config/verify steps.
+    - file: stacks/idc02/jack-ide/stack.yml
+      summary: secrets/state entries for jack-git.env, repos.json, tony-workspace, jack-task.
+    - file: tests/jack/test_jack_task.py
+      summary: 16 unittest cases over the full lane with local git fixtures.
+
+followup:
+  verification:
+    - python3 -m unittest tests.jack.test_jack_task (16 tests, all pass locally)
+    - python3 -m py_compile stacks/idc02/jack-ide/lane/jack-task.py
+    - "On idc02 after deploy — jack-task init && import <pilot> && new <pilot>
+      smoke && verify smoke --test true && push smoke (needs JACK_GIT_TOKEN)"
+  rollback_plan:
+    - "Repo-side only — revert this commit. Live side — the new bind mount is
+      additive; removing the Volume line + daemon-reload + restart restores
+      prior state; lane state under outputs/lane/ is inert files."
+  handoff:
+    - "Operator (Tony) on idc02 — install jack-task + repos.json + jack-git.env,
+      copy updated .container file, mkdir tony-workspace (jack-task init does),
+      daemon-reload + restart jack-opencode, then run the pilot per card help:
+      one toy/private repo, one Jack task branch, deterministic tests,
+      independent verifier, local commit, reviewable diff."
+  deferred:
+    - GitHub App installation-token upgrade path.
+    - gitleaks (or equivalent) as the secret-scan engine.
+    - Retiring any fallback OpenCode instance (already retired 2026-11-03).
+    - Automated worktree cleanup after PR merge (manual `git worktree remove`).
+
+report:
+  status: completed
+  completed_at: "2026-11-24"
+  summary: >-
+    Built the operator-side promotion lane for the shared Jack OpenCode
+    instance: allowlisted repo import, per-task worktrees on jack/<slug>,
+    local commits inside the container, an independent verify gate
+    (clean-tree/branch-scope/secret-scan/forbidden-paths/tests), scoped-token
+    branch push, and PR creation — all without GitHub credentials entering
+    the container. Merge and deploy remain human gates. Deploy + pilot run
+    are operator steps on idc02.
+  metrics:
+    - metric: lane commands
+      value: init, repos, import, new, status, verify, push, pr
+    - metric: verify gates
+      value: worktree identity, branch scope, clean tree, base merge-base, forbidden paths, secret scan, tests (env-scrubbed)
+    - metric: tests
+      value: 16 unittest cases passing (tests/jack/test_jack_task.py)
+    - metric: credential boundary
+      value: container mounts workspace + tony-workspace + disposable HOME only; JACK_GIT_TOKEN host-side, per-command injection
+  links:
+    - title: kanban card
+      card: jack-shared-workspace-repo-promotion
+    - title: stack docs
+      path: stacks/idc02/jack-ide/WORKSPACES.md
+  kb_review: []
+  lessons_learned:
+    - 'lstrip("./") strips characters not prefixes — ".env" became "env" and escaped the forbidden-path gate; caught by test.'
+    - "Informational gate dicts without a pass/status key silently fail an all() verdict — give them pass: true or exclude them."
+
+config:
+  version: 1
+  created_at: 2026-11-24
+  last_updated: 2026-11-24
+  maintainer: Devin
+  related_files:
+    - docs/ssot/templates/job.yml

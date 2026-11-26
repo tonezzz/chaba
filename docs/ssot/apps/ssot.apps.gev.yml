@@ -9,7 +9,7 @@ sections:
       - label: Push-to-talk voice control
         text: Click the mic to start, speak a command, click again to end the turn; model receives the audio and returns a spoken response.
       - label: Gemini Live 2-way audio
-        text: Browser sends 16 kHz PCM16 mic audio to the bridge and plays 24 kHz PCM16 model audio through an AudioWorklet.
+        text: Browser sends 16 kHz PCM16 mic audio to the bridge; the bridge forwards model_turn audio as binary ws frames (24 kHz PCM16) and the page plays them via playGeminiAudio on a 24 kHz AudioContext.
       - label: GEV tool calling
         text: Gemini can invoke GEV tools such as fly_to_location, set_layer, and camera motion; results are returned to the model.
       - label: Live status and transcripts
@@ -32,10 +32,10 @@ sections:
     items:
       - label: index.html
         text: App shell and loader; injects the Google Maps API key.
-      - label: index-CeIlPFGN-v15.js
-        text: Minified production bundle patched for AudioWorklet playback, end-of-turn lifecycle, and tool running.
+      - label: index-Bd5DfCi5.js
+        text: Minified production bundle + post-build patches in place (api/models prefixes, msaaSamples iOS guard, voice playback, honest-fail). Patches are codified + idempotent — scripts/gev/patch-gev-dist.sh (dist pipeline) and stacks/web/scripts/gev-patch-dist.mjs (voice patches); rerun after every upstream rebuild.
       - label: bridge.py
-        text: Gemini Live WebSocket proxy inside the gev-gemini container.
+        text: Gemini Live WebSocket proxy inside the gev-gemini container; forwards model_turn inline_data audio to the client as binary ws frames (24 kHz PCM16) alongside JSON control frames.
       - label: tools.json
         text: 31 function declarations sent to Gemini during setup (includes play_tour/stop_tour/tour_status).
       - label: tours/
@@ -72,6 +72,10 @@ sections:
         text: "node stacks/web/input-bridge/gev-tour.mjs --tour stacks/web/input-bridge/tours/world-landmarks.json --screen N — plays a defined route on any display with a GEV remote; checkpoint report asserts stops reached in order. Format + contract: docs/runbooks/gev-tours.md; stub-relay suite: gev-tour-selftest.mjs."
       - label: Tour playback verify
         text: "node stacks/web/input-bridge/gev-tour-verify.mjs --screen 6 — plays london-icons on a cast screen and asserts checkpoints arrive in order (tour_status poll + /command/events stream)."
+      - label: Voice invariant check
+        text: "node stacks/web/input-bridge/gev-voice-check.mjs — GainNode mute invariant (muted => zero outbound PCM frames, behavioral sim incl. flag-stripped mutation), playback path presence, iOS meta, bridge audio forward. --live checks the deployed bundle (drift = WARN)."
+      - label: Bridge audio check
+        text: "python3 stacks/tony-dell/gev-gemini/audio-forward-check.py — stubbed-genai unit check that pump_responses forwards model_turn audio verbatim as binary frames."
   - title: Integration
     icon: "🔗"
     layout: list
@@ -87,7 +91,9 @@ sections:
       - label: Country-level geocoding
         text: Thailand as a country fails; city-level queries like New York work. Likely needs a non-Google geocoder or country preset.
       - label: Minified bundle patches
-        text: Working version is patched directly on tony-dell, not yet reflected in a buildable source repo.
+        text: Post-build patches are codified by scripts/gev/patch-gev-dist.sh (api/models prefix, iPad msaaSamples ternary, honest-fail.js inject) plus the voice playback patches in stacks/web/scripts/gev-patch-dist.mjs — run them on dist/ after every npm run build; --check verifies both. The staged bundle under stacks/web/public/apps/gev/ carries them in place.
+      - label: iOS mic constraint
+        text: getUserMedia works in mobile Safari but NOT in a standalone home-screen PWA — index.html deliberately sets apple-mobile-web-app-capable=no (and mobile-web-app-capable=no) so iOS opens the page in-browser. Do not flip to yes without a mic fallback.
       - label: Safari verification pending
         text: Latest fixes have only been confirmed on Chrome/Windows so far.
 config:

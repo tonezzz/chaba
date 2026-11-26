@@ -43,6 +43,7 @@ def render(manifest: Path, model_dir: Path, output_dir: Path) -> dict:
             num_frames=int(shot.get("frames", 17)),
             height=int(shot.get("height", 480)),
             width=int(shot.get("width", 768)),
+            num_steps=int(shot.get("steps", 4)),
             seed=int(shot.get("seed", 42)),
             image=image,
         )

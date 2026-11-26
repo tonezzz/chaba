@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build + deploy the forked pfg3d-card.
-# Usage: deploy-card.sh [--host michael-dev|michael-ha]   (default michael-dev)
+# Usage: deploy-card.sh [--host mn-ha-dev|michael-ha]   (default mn-ha-dev)
 #        deploy-card.sh --host all                        (both hosts)
 #        deploy-card.sh --check                           (md5 parity report)
 #        deploy-card.sh --prune                           (remove stale bundles, keep active + newest backup)
@@ -18,15 +18,15 @@ CARD_REPO="${CARD_REPO:-/home/tony/CascadeProjects/sunsynk-power-flow-card}"
 BASE="pfg3d-card"
 OLD_BASE="sunsynk-power-flow-card-fork"
 
-TARGET="michael-dev"
+TARGET="mn-ha-dev"
 [ "${1:-}" = "--host" ] && TARGET="$2"
 
 # --check: compare local dist md5 vs each host's ACTIVE bundle (no build/deploy)
 if [ "${1:-}" = "--check" ]; then
   LOCAL_MD5=$(md5sum "$CARD_REPO/dist/pfg3d-card.js" | cut -d' ' -f1)
-  for host in michael-dev michael-ha; do
+  for host in mn-ha-dev michael-ha; do
     case "$host" in
-      michael-dev) SSH=idc02; RES=/home/tony/.config/michael-dev/.storage/lovelace_resources; WWW=/home/tony/.config/michael-dev/www ;;
+      mn-ha-dev) SSH=mn01; RES=/home/tony/.config/mn-ha-dev/.storage/lovelace_resources; WWW=/home/tony/.config/mn-ha-dev/www ;;
       michael-ha)  SSH=michael-ha; RES=/config/.storage/lovelace_resources; WWW=/config/www ;;
     esac
     FILE=$(ssh "$SSH" "grep -o '${BASE}-v[0-9]*\.js' '$RES' | head -1" || true)
@@ -40,9 +40,9 @@ fi
 # --prune: delete stale bundle copies on both hosts, keep the ACTIVE file and
 # the newest other copy as a rollback backup.
 if [ "${1:-}" = "--prune" ]; then
-  for host in michael-dev michael-ha; do
+  for host in mn-ha-dev michael-ha; do
     case "$host" in
-      michael-dev) SSH=idc02; RES=/home/tony/.config/michael-dev/.storage/lovelace_resources; WWW=/home/tony/.config/michael-dev/www ;;
+      mn-ha-dev) SSH=mn01; RES=/home/tony/.config/mn-ha-dev/.storage/lovelace_resources; WWW=/home/tony/.config/mn-ha-dev/www ;;
       michael-ha)  SSH=michael-ha; RES=/config/.storage/lovelace_resources; WWW=/config/www ;;
     esac
     ssh "$SSH" "cd '$WWW' && ACTIVE=\$(grep -o '${BASE}-v[0-9]*\.js' '$RES' | head -1) && KEEP=\$(ls -t ${BASE}-v*.js 2>/dev/null | grep -v \"^\$ACTIVE\$\" | head -1) && echo \"[$host] active=\$ACTIVE backup=\$KEEP\" && ls -t ${BASE}-v*.js | grep -v \"^\$ACTIVE\$\" | grep -v \"^\$KEEP\$\" | xargs -r rm -f && ls ${BASE}-v*.js"
@@ -63,10 +63,10 @@ fi
 deploy_to() {
   local host="$1" SSH WWW RES RESTART TEST_URL TEST_SSH
   case "$host" in
-    michael-dev)
-      SSH=idc02; WWW=/home/tony/.config/michael-dev/www
-      RES=/home/tony/.config/michael-dev/.storage/lovelace_resources
-      RESTART="systemctl --user restart michael-dev.service"
+    mn-ha-dev)
+      SSH=mn01; WWW=/home/tony/.config/mn-ha-dev/www
+      RES=/home/tony/.config/mn-ha-dev/.storage/lovelace_resources
+      RESTART="systemctl --user restart mn-ha-dev.service"
       TEST_URL="http://127.0.0.1:8124"; TEST_SSH=1 ;;
     michael-ha)
       SSH=michael-ha; WWW=/config/www
@@ -134,7 +134,7 @@ cd "$CARD_REPO"
 npm run build
 
 if [ "$TARGET" = "all" ]; then
-  deploy_to michael-dev
+  deploy_to mn-ha-dev
   deploy_to michael-ha
 else
   deploy_to "$TARGET"

@@ -1,0 +1,116 @@
+title: mddb embed-quota write-timeout stall — 2026-11-19 incident verification + CMS-plane probe coverage
+subtitle: card mddb-cms-embed-quota-write-timeout-stall; verified live state on idc03 2026-11-24 ~21:15 ICT
+date: 2026-11-24
+dispatch: 20261124-210507-observed-2026-11-19-05-00-07-3 (tony-omen)
+card: mddb-cms-embed-quota-write-timeout-stall
+status: verified-degraded — write path healthy, both embed lanes still lossy
+
+incident_recap: |
+  2026-11-19 ~05:00-07:30 ICT: all gemini-ollama-proxy embed legs down
+  (OR daily-cap 5000, free Gemini circuit open, paid hourly-cap 150).
+  mddb-cms embed queue pinned at 4000; every /v1/add blocked ~30s on
+  MDDB_EMBEDDING_QUEUE_WAIT then exceeded the HTTP write timeout —
+  handler logged "response not delivered". >6000 docs written without
+  vectors. CMS plane has since migrated gemini-embedding-2 -> bge-m3
+  (runbook 2026-11-18-cms-plane-bge-m3-migration-runbook.yml) so the
+  quota-coupled failure mode no longer applies to :11027 — but the
+  queue-wait/write-timeout coupling is unchanged.
+
+verified_state_2026-11-24: |
+  Leader :11023 (gemini-embedding-2 via proxy :11435):
+    - /v1/vector-stats queue depth ~1641-2919/4000 (draining ~80/min),
+      droppedTotal=1138 cumulative, retried=194. pendingEmbeddings
+      2830->2572 over ~3min — backlog IS draining via OpenRouter.
+    - Embed attempts still fail intermittently: "context deadline
+      exceeded" POSTing 127.0.0.1:11435 (mddb client timeout vs slow
+      OR path). Proxy log: ~3000 routed calls/30min, Gemini free keys
+      429 again (daily quota pattern recurring), OR serving.
+    - mddb-vector-reindex.service ran 18:02 today: embedded=30,
+      skipped=50452, FAILED=2652 (ada-ha-bank-devin-handoff 2475,
+      ada-ha-scenario-reports 119, ada-ha-events-* 37) — exit 1.
+      Unit is pinned MDDB_BASE_URL=:11023 — CMS plane NOT covered.
+  CMS :11027 (bge-m3 via embed-pool-shim :11436):
+    - queue depth ~18-169/4000, droppedTotal=910, retried=741.
+      indexing.failedEmbeddings=1977 and climbing ~1/45s.
+    - Embed lane effectively DOWN: shim returns 504 "no upstream
+      answered in time" (EMBED_POOL_TIMEOUT_S=8) on most calls;
+      mddb-cms logs "embedding provider circuit open — pausing embed
+      attempts" with 30s->120s backoff. Direct probe embed succeeded
+      in 4s — pool is flaky, not dead.
+    - Upstream health (shim /health): kk-mac admission shim
+      (127.0.0.1:11447) wins but consec-fails -> dead_until cooldown;
+      kkmac-admission-shim itself returns intermittent 503 (Ada Nest
+      admission gate denying under load); con01 ollama won once at
+      6.5s; idc03 local ollama 2 consec fails; tony-omen idle.
+    - embed-pool-shim restarted 21:00:51 + 21:07:23 picking up
+      0397bff9b1b (cancel losing race calls) — live md5 matches repo.
+  Write path:
+    - ZERO "response not delivered"/write timeouts on mddb-cms in the
+      last 2h (journal grep). /v1/add no longer stalls because the
+      embed queue is near-empty — the 30s QUEUE_WAIT coupling is
+      latent, not active. Leader queue at ~2.9k/4k means a burst could
+      re-create the stall conditions.
+
+structural_options_assessed: |
+  (a) decouple write ack from embed enqueue (async ack): mddb-fork
+      change. Branch fix/embed-enqueue-breaker-open @4ac66b83 already
+      implements the cheaper half (fast-drop counted/reindexable when
+      breaker open) — unmerged, undeployed. True async-ack is the real
+      fix for the stall class; still out of this repo's scope.
+  (b) raise MDDB_HTTP_WRITE_TIMEOUT / lower QUEUE_WAIT: env-level on
+      idc03 units (mddb-cms.container + mddb unit both still carry
+      MDDB_EMBEDDING_QUEUE_WAIT=30s, QUEUE_SIZE=4000). Lowering wait
+      converts stall->fast-fail+drop (reindexable) — arguably better
+      than 30s hangs, but trades silent vector loss for loud write
+      errors. Prod env change — needs Tony's call, not done here.
+  (c) budget/quota alerting before caps hit: PARTIALLY DONE — proxy
+      emits embed_free_budget/embed_paid_cap/embed_circuit_open ops
+      events; embed-probe watches leader queue + provider health.
+      GAP FOUND + FIXED THIS SESSION: probe only watched :11023 — the
+      CMS plane queue had NO tripwire during the 11-19 incident.
+      embed-probe.py now checks both planes (see changes).
+  (d) embed-pool-shim fast-fail backlog card
+      (embed-pool-shim-fast-fail-for-dead-upstr-7343c9): today's
+      0397bff9b1b already deploys loser-cancellation (dead-leg latency
+      -> wasted race slot fix is the remaining suspect-marking work).
+      Today's 504s are race-timeout, not dead-leg latency — kk-mac
+      admission 503s + slow con01 are the live cause; card still
+      relevant but does not cover admission-gate flakiness.
+
+changes: |
+  - file: scripts/ada/embed-probe.py
+    what: >-
+      check_queue() is now per-plane: probes /v1/vector-stats on the
+      leader AND the CMS plane (MDDB_CMS_URL, default
+      http://100.102.134.91:11027, empty disables). State file migrates
+      to {"planes": {leader, cms}} while mirroring leader into the
+      legacy flat keys; proxy_degraded and other top-level keys are
+      preserved. Event details are plane-prefixed; embed_queue_drops
+      remedy text is plane-aware (reindex.service is leader-pinned;
+      CMS needs MDDB_BASE_URL=:11027). Verified against live endpoints
+      — cms depth/dropped read correctly, migration keeps
+      proxy_degraded.
+
+followups: |
+  - CMS embed lane is degraded NOW (shim 504s, kk-mac admission 503s).
+    If it persists, the bge-m3 plane needs either admission-gate
+    tuning for embed traffic or another upstream — worth a card if
+    still failing at next check.
+  - CMS droppedTotal=910 (+ today's failedEmbeddings ~1977 job-level)
+    needs vector-reindex on :11027 once the lane recovers — no
+    automated kick exists for the CMS plane (probe only kicks the
+    leader-pinned service on recovery).
+  - Leader queue depth reached ~2919/4000 today — the 11-19 stall
+    conditions (queue near cap + 30s wait) are one burst away.
+    Options (b) above remain Tony's call.
+  - embed-pool-shim-fast-fail card: still backlog; today's commit
+    covers loser-cancellation only.
+
+verify: |
+  python3 -m py_compile scripts/ada/embed-probe.py
+  # isolated check_queue run against live :11023/:11027 printed
+  # "leader queue depth=1641/4000 dropped=1138" and
+  # "cms queue depth=169/4000 dropped=910" with correct plane-prefixed
+  # emit text and state migration preserving proxy_degraded.
+  Live: curl -s http://100.102.134.91:11027/v1/vector-stats | jq .queue
+       curl -s http://100.102.134.91:11023/v1/vector-stats | jq .queue

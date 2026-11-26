@@ -1,0 +1,167 @@
+# doc-v2-music-bed — music bed for the ss1 hybrid cut
+# (card doc-pilot-v2-polish-music-bed-subs-shot-943456, item 1).
+# Source decision: GENERATED ambient pad, not licensed.
+#   Rationale: the cut is private (KK-facing, Education post 2157);
+#   a generated bed carries zero licensing cost/rights risk and is
+#   fully reproducible. Licensed swap-in stays open: drop an audio file
+#   at doc-pilot/assets/music/ (or pack inputs/music-bed.*) and re-run —
+#   the pack prefers any found licensed asset over synthesis.
+# Ducking: ffmpeg sidechaincompress keyed on the cut's own VO audio —
+# bed drops ~10-14 dB under narration, recovers in the gaps.
+# Outputs: dry bed wav, VO stem, ducked bed wav, audition mp4
+# (video + VO + ducked bed), and the decision report.
+name: doc-v2-music-bed
+needs:
+  gpu_gb: 0
+  disk_gb: 3
+venv: true
+timeout_s: 600
+fetch:
+  - doc-pilot/final/ss1-hybrid-v6.mp4
+artifacts:
+  - packs/doc-v2-music-bed/out/audio/music-bed-v1.wav
+  - packs/doc-v2-music-bed/out/audio/music-bed-ducked-v1.wav
+  - packs/doc-v2-music-bed/out/audio/vo-stem-v6.wav
+  - packs/doc-v2-music-bed/out/preview-music-v1.mp4
+  - packs/doc-v2-music-bed/out/music-bed-report.md
+publish:
+  out/audio: doc-pilot/audio
+  out/preview-music-v1.mp4: doc-pilot/audio
+prep: |
+  command -v ffmpeg >/dev/null || (apt-get update -qq && apt-get install -y -qq ffmpeg)
+  pip install -q soundfile numpy
+run: |
+  import os, glob, shutil, subprocess
+  import numpy as np
+  import soundfile as sf
+
+  ROOT = NEST_ROOT
+  CUT = f'{ROOT}/doc-pilot/final/ss1-hybrid-v6.mp4'
+  OUT = f'{PACK_DIR}/out'
+  AUDIO = f'{OUT}/audio'
+  STORE_AUDIO = f'{ROOT}/doc-pilot/audio'
+  STORE_PREVIEW = f'{ROOT}/doc-pilot/audio'
+  for d in (AUDIO, STORE_AUDIO):
+      os.makedirs(d, exist_ok=True)
+  os.makedirs(STORE_PREVIEW, exist_ok=True)
+
+  SR = 24000
+  DUR_S = 70.0                      # >= cut audio (69.165s) + tail
+
+  # --- source decision -------------------------------------------------
+  licensed = []
+  for pat in (f'{PACK_DIR}/inputs/music-bed.*',
+              f'{ROOT}/doc-pilot/assets/music/*'):
+      licensed += [p for p in glob.glob(pat)
+                   if os.path.splitext(p)[1].lower()
+                   in ('.wav', '.mp3', '.ogg', '.flac', '.m4a')]
+  source = 'licensed' if licensed else 'generated'
+
+  bed_path = f'{AUDIO}/music-bed-v1.wav'
+  if licensed:
+      # normalize any licensed bed to 24k stereo wav
+      subprocess.run(
+          ['ffmpeg', '-y', '-v', 'quiet', '-i', licensed[0],
+           '-ar', str(SR), '-ac', '2', '-t', f'{DUR_S}', bed_path],
+          check=True)
+      note = f'licensed bed used: {licensed[0]}'
+  else:
+      # --- generated ambient pad ---------------------------------------
+      # A-minor-ish warm pad: root + fifth + octave + ninth partials,
+      # slow detune drift, phrase-rate gain LFO, soft-clip, 1.5s fades.
+      t = np.arange(int(SR * DUR_S)) / SR
+      voices = [
+          (110.00, 0.50, 0),      # A2 root
+          (164.81, 0.32, 1),      # E3 fifth
+          (220.00, 0.26, 2),      # A3 octave
+          (261.63, 0.16, 3),      # C4 ninth-ish color
+          (329.63, 0.10, 4),      # E4 air
+      ]
+      rng = np.random.default_rng(7)
+      L = np.zeros(len(t), dtype='float64')
+      R = np.zeros(len(t), dtype='float64')
+      for f0, amp, ph in voices:
+          drift = 1.0 + 0.0015 * np.sin(2 * np.pi * 0.05 * t + ph)
+          lfo = 0.75 + 0.25 * np.sin(2 * np.pi * (0.09 + 0.013 * ph) * t
+                                     + ph * 1.7)
+          pan = 0.5 + 0.28 * np.sin(ph * 2.3)
+          sig = amp * lfo * np.sin(2 * np.pi * f0 * drift * t
+                                    + ph * 0.9)
+          # gentle second partial for warmth
+          sig = sig + 0.22 * amp * np.sin(2 * np.pi * f0 * 2.001
+                                          * drift * t + ph)
+          L += sig * (1.0 - pan)
+          R += sig * pan
+      # slow global swell so the bed breathes over ~14s phrases
+      swell = 0.8 + 0.2 * np.sin(2 * np.pi * t / 14.0)
+      bed = np.stack([L, R], axis=1) * swell[:, None]
+      bed = np.tanh(bed * 1.6) / np.tanh(1.6)   # soft clip
+      fade = int(SR * 1.5)
+      bed[:fade] *= np.linspace(0, 1, fade)[:, None]
+      bed[-fade:] *= np.linspace(1, 0, fade)[:, None]
+      # target ~-22 dBFS RMS — clearly under VO (VO sits ~-21 dB mean)
+      rms = float(np.sqrt((bed ** 2).mean()))
+      bed *= (10 ** (-22 / 20)) / max(rms, 1e-9)
+      sf.write(bed_path, bed.astype('float32'), SR)
+      note = ('generated ambient pad (A-minor warm pad, 70s, '
+              'synthesized in-pack — no licensing surface)')
+
+  # --- VO stem + ducking ----------------------------------------------
+  vo_wav = f'{AUDIO}/vo-stem-v6.wav'
+  subprocess.run(
+      ['ffmpeg', '-y', '-v', 'quiet', '-i', CUT, '-map', '0:a:0',
+       '-ac', '1', '-ar', str(SR), vo_wav], check=True)
+  # sidechain: VO keys the compressor; bed ducks under narration
+  ducked = f'{AUDIO}/music-bed-ducked-v1.wav'
+  subprocess.run(
+      ['ffmpeg', '-y', '-v', 'quiet',
+       '-i', bed_path, '-i', vo_wav,
+       '-filter_complex',
+       '[1:a]aformat=channel_layouts=mono,volume=6[key];'
+       '[0:a][key]sidechaincompress='
+       'threshold=0.03:ratio=8:attack=25:release=450:makeup=2',
+       '-ar', str(SR), '-ac', '2', ducked], check=True)
+
+  # --- audition: cut video + VO + ducked bed ----------------------------
+  preview = f'{OUT}/preview-music-v1.mp4'
+  subprocess.run(
+      ['ffmpeg', '-y', '-v', 'quiet', '-i', CUT,
+       '-i', ducked, '-i', vo_wav,
+       '-filter_complex',
+       '[1:a][2:a]amix=inputs=2:duration=first:normalize=0[a]',
+       '-map', '0:v:0', '-map', '[a]', '-c:v', 'copy',
+       '-c:a', 'aac', '-b:a', '160k', '-shortest', preview],
+      check=True)
+  # store-side copies (Colab: NEST_ROOT is the Drive mount; fleet:
+  # NEST_ROOT==PACK_DIR and publish: mirrors doc-pilot/audio)
+  for f in os.listdir(AUDIO):
+      shutil.copyfile(f'{AUDIO}/{f}', f'{STORE_AUDIO}/{f}')
+  shutil.copyfile(preview, f'{STORE_PREVIEW}/music-preview-v1.mp4')
+
+  # levels for the report
+  def vol(p):
+      r = subprocess.run(['ffmpeg', '-i', p, '-af', 'volumedetect',
+                          '-f', 'null', '-'], capture_output=True,
+                         text=True)
+      import re
+      m = re.search(r'max_volume: ([-\d.]+) dB', r.stderr)
+      return m.group(1) if m else '?'
+
+  rep = ['# doc-v2 music-bed report', '',
+         f'source decision: {source}', f'  - {note}', '',
+         'licensed swap-in contract: place an audio file at',
+         'gdrive:ada-nest/doc-pilot/assets/music/ (or pack',
+         'inputs/music-bed.*) and re-run this pack — found assets win',
+         'over synthesis. For fleet workers add the file to this pack',
+         "dir's fetch list or drop it under inputs/.", '',
+         '| file | peak dBFS |', '|---|---|',
+         f'| music-bed-v1.wav (dry) | {vol(bed_path)} |',
+         f'| music-bed-ducked-v1.wav | {vol(ducked)} |',
+         f'| vo-stem-v6.wav | {vol(vo_wav)} |',
+         f'| preview-music-v1.mp4 | {vol(preview)} |', '',
+         'ducking: sidechaincompress threshold=0.03 ratio=8 '
+         'attack=25ms release=450ms, VO stem keyed at 6x gain.']
+  open(f'{OUT}/music-bed-report.md', 'w').write('\n'.join(rep) + '\n')
+  open(f'{STORE_AUDIO}/music-bed-report.md', 'w').write(
+      '\n'.join(rep) + '\n')
+  print(f'doc-v2-music-bed done source={source}', flush=True)

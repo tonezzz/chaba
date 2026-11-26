@@ -43,9 +43,9 @@ verified:   # attempt 2 (dispatch 20261014-224101, idc03)
   - "no systemd unit on idc03 references CascadeProjects/ada-pi (23 patched in attempt 1)"
   - "live cards swept: 6 non-done cards moved action.repo ada-pi -> ada-voice; 91 done cards keep the old name (history; alias resolves anyway)"
 
-remaining:
-  - "mn01: ssh timed out — run rename-ada-voice.sh run mn01 when reachable (stacks/mn01 units reference the dir)"
-  - "retire compat symlinks + ada-pi alias lines once the board has no ada-pi repo references"
+remaining:   # cleared 2026-11-24 by card ada-voice-rename-cleanup (dispatch 20261124-151252)
+  - "DONE mn01: rename-ada-voice.sh run mn01 -> ada-voice@1c94657, 6 wt-fixes, 3 units patched, git pull --ff-only; mn01-canary.sh reinstalled from chaba/scripts/ops (was still defaulting ADA_REPO=ada-pi)"
+  - "DONE shims retired: ~/CascadeProjects/ada-pi symlink removed on all 6 hosts; ada-pi alias dropped from repos.conf (dell/idc03/macbook), BUILTIN_REPOS+REPO_TESTS (dispatch_repos.py), devin-dispatch.sh + claude-dispatch.sh fallback maps, dispatch-repos.conf template, deploy-diff.sh macbook row, backlog-spec-enrich.py repo list. REPO_ALIASES {ada-pi: ada-voice} kept in dispatch_repos/runner-agent/runner-fleet-health — canon_repo still maps stray ada-pi cards to ada-voice for push-guard/probe"
 
 gotchas:
   - "test_claim_order / patch-apply tests were already red on master before this change — staged integrations/ drop patches drifted vs evolved ada-voice sources (memory.py:206, line_relay.py:42, chat.py:234)"

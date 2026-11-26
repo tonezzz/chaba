@@ -1,0 +1,53 @@
+title: consumer-canary hardening — unauditable surfaces + exit-code semantics
+subtitle: dispatch consumer-canary-standing-retired-hostnam-6aa4a2 (2026-11-24)
+icon: timer
+
+decision:
+  summary: >
+    The standing retired-hostname audit (scripts/audit/consumer-canary.py,
+    consumer-canary.timer on idc03, 6h) was verified alive — CLEAN runs every
+    6h, last finding cleared 2026-11-18. Two latent defects fixed in the
+    script: (1) run() discarded ssh/grep return codes, so a dead host or grep
+    error produced empty stdout = silent CLEAN — the exact OPS-0731 blind
+    spot the canary exists to prevent; (2) exit-1-on-findings kept tripping
+    timer-sentinel into filing noise cards (follow-up flagged in
+    2026-11-08-consumer-canary-timer-alert.yml).
+  changes:
+    - id: unauditable-findings
+      detail: >
+        run() now returns (stdout, error); any returncode >1 (ssh 255,
+        grep 2+, timeout) or dashboard-scan SKIP/ssh failure is reported as
+        an UNAUDITABLE <surface>: <reason> finding posted to the canary
+        card. All 10 audited paths were verified present on their hosts
+        first, so rc>1 genuinely means broken audit, not missing file.
+    - id: mn01-split
+      detail: >
+        The chained `grep caddy; grep units` on mn01 masked the first
+        grep's exit code — split into mn01:caddy + mn01:units entries
+        (9 greps -> 10).
+    - id: exit-semantics
+      detail: >
+        Exit 0 on any completed audit, including runs with findings —
+        board-api card comms are the alert channel. Exit 1 only when
+        findings exist but the board-api post failed (genuine "found
+        something AND couldn't report" failure the sentinel should see).
+  verified:
+    - consumer-canary.py py_compile clean; run() unit-tested for dead-host
+      (ssh resolve error), grep rc=2, and no-match paths.
+    - Full run copied to idc03:/tmp — CLEAN (10 greps + dashboards), exit 0.
+    - Forced-findings run (RETIRED_HOSTS=idc02...) + dead BOARD_API ->
+      findings listed, post failed, exit 1 as designed.
+    - Forced dead-host GREPS entry -> UNAUDITABLE finding emitted.
+
+follow_ups:
+  - id: deploy-note
+    note: >
+      No unit changes needed — ExecStart path unchanged. The fix reaches
+      idc03's exec checkout via the normal chaba-repo-sync pull after this
+      dispatch merges; until then the timer keeps running the old script
+      (still correct, just blind to ssh failures and exit-1 noisy).
+  - id: sentinel-knowledge
+    note: >
+      timer-sentinel should treat consumer-canary exit-code as "findings
+      could not be posted" only — a clean exit-0 run may still have posted
+      findings to the standing card. Historical exit-1 alerts were noise.

@@ -89,6 +89,12 @@ class MetaHelpers(unittest.TestCase):
             ("house-timeline-x", "ada-cms-pages", "report", "leaf",
              "timeline"),
             ("news-digest", "ada-cms-pages", "report", "digest", "digest"),
+            ("memory-inspect", "ada-cms-pages", "report", "index",
+             "memory-inspect"),
+            ("memory-inspect-general", "ada-cms-pages-mn", "report",
+             "leaf", "memory-inspect"),
+            ("snap-1", "ada-cms-pages", "memory-inspect", "leaf",
+             "memory-inspect"),          # kind alone detects too
             ("anything", "ada-cms-pages", "report", "", "report"),
             ("anything", "ada-cms-pages", "page", "", "page"),
             ("cfg", "ada-cms-automation", "automation-config", "",
@@ -239,6 +245,29 @@ class IndexRowsTests(unittest.TestCase):
         slugs = [r["slug"] for r in rows]
         self.assertEqual(slugs, ["pg"])   # th dedup, superseded+archive out
 
+    def test_lang_variants_dedupe_preferring_en(self):
+        # the fake listing sorts (coll,key,lang) so de precedes en — the
+        # en row must still win, and a de-only key must still surface
+        # (any-lang variant support)
+        self.fake.seed("pg", meta_=meta(kind="page", slug="pg",
+                                        domain="ops", status="active",
+                                        title="EN title"))
+        self.fake.seed("pg", lang="de", meta_=meta(kind="page", slug="pg",
+                                                   status="active",
+                                                   title="DE title"))
+        self.fake.seed("pg", lang="th", meta_=meta(kind="page", slug="pg",
+                                                   status="active",
+                                                   title="TH title"))
+        self.fake.seed("de-only", lang="de", meta_=meta(
+            kind="page", slug="de-only", status="active",
+            title="Nur DE"))
+        rows = srv.index_rows("ada-cms-pages", self.now)
+        by_slug = {r["slug"]: r for r in rows}
+        self.assertEqual(sorted(by_slug), ["de-only", "pg"])
+        self.assertEqual(by_slug["pg"]["title"], "EN title")
+        self.assertEqual(by_slug["pg"]["langs"], ["de", "en", "th"])
+        self.assertEqual(by_slug["de-only"]["title"], "Nur DE")
+
     def test_sections(self):
         self.fake.seed("dg", meta_=meta(kind="page", slug="dg",
                                         report_role="digest", domain="news"))
@@ -246,10 +275,14 @@ class IndexRowsTests(unittest.TestCase):
                                         domain="ops"))
         self.fake.seed("cam-1", meta_=meta(kind="page", slug="cam-1",
                                            domain="cctv"))
+        self.fake.seed("memory-inspect-general", meta_=meta(
+            kind="memory-inspect", slug="memory-inspect-general",
+            domain="memory"))
         rows = srv.index_rows("ada-cms-pages", self.now)
         secs = {r["slug"]: r["section"] for r in rows}
         self.assertEqual(secs, {"dg": "digests", "rp": "reports",
-                                "cam-1": "cameras"})
+                                "cam-1": "cameras",
+                                "memory-inspect-general": "memory"})
 
 
 class RouteTests(unittest.TestCase):
@@ -267,6 +300,12 @@ class RouteTests(unittest.TestCase):
             kind="report", slug="news-digest", report_role="digest",
             domain="news", title="News digest",
             updated="2026-10-15T00:00:00+00:00"), md="# d")
+        cls.fake.seed("memory-inspect-general", meta_=meta(
+            kind="memory-inspect", slug="memory-inspect-general",
+            report_role="leaf", domain="memory",
+            title="Memory inspect — general",
+            updated="2026-11-23T00:00:00+00:00"),
+            md="# Memory inspect\n\n| attribute | kind |\n|---|---|")
         cls.orig_post = srv._post
         cls.orig_listing, cls.orig_pages, cls.orig_feeds = \
             srv.LISTING, srv.PAGES, srv.FEEDS
@@ -305,6 +344,15 @@ class RouteTests(unittest.TestCase):
         r = self.client.get("/k/digest")
         self.assertEqual(r.status_code, 200)
         self.assertIn("news-digest", r.text)
+
+    def test_memory_inspect_page_and_listing(self):
+        r = self.client.get("/p/memory-inspect-general")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("Read-only memory-bank snapshot", r.text)
+        self.assertIn("<table>", r.text)
+        r = self.client.get("/k/memory-inspect")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("memory-inspect-general", r.text)
 
     def test_feed(self):
         import xml.dom.minidom as md

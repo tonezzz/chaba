@@ -1,0 +1,114 @@
+---
+# Bootstrap play: restore SSH shell access on a host whose sshd forces every
+# session to internal-sftp. Run LOCALLY on the affected host (ssh(1) itself is
+# blocked from off-host), from a fresh chaba checkout:
+#
+#   ANSIBLE_LOCALHOST_WARNING=False \
+#     ~/.local/bin/ansible-playbook -i localhost, -c local --limit localhost \
+#     ansible/playbooks/restore-ssh-shell.yml
+#
+# Scope: remove ONLY the global `ForceCommand internal-sftp` line. The
+# `# Include /etc/ssh/sshd_config.d/*.conf` line is deliberately left alone —
+# the CIS-style config disables drop-ins, and re-enabling port 2222 is a
+# separate security decision. Idempotent: a second run reports changed=0.
+- name: Restore SSH shell access (local bootstrap)
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: true
+  any_errors_fatal: true
+  vars:
+    sshd_conf: /etc/ssh/sshd_config
+    # (?m) matters: set_fact searches the whole file, not one line.
+    force_re: '(?m)^\s*ForceCommand\s+internal-sftp\s*$'
+    backup_conf: >-
+      /etc/ssh/sshd_config.pre-shell-restore.{{
+      ansible_date_time.iso8601_basic_short }}
+  tasks:
+    - name: Read current sshd_config
+      slurp:
+        src: "{{ sshd_conf }}"
+      register: sshd_before
+
+    - name: Decode current config
+      set_fact:
+        sshd_before_text: "{{ sshd_before.content | b64decode }}"
+
+    - name: Decide whether a fix is needed
+      set_fact:
+        needs_fix: "{{ true if (sshd_before_text is search(force_re)) else false }}"
+
+    - name: Report detected state
+      debug:
+        msg: >-
+          {{ 'Global ForceCommand internal-sftp present - removing with backup'
+             if needs_fix else
+             'No global ForceCommand internal-sftp - nothing to do' }}
+
+    - name: Remove the forced SFTP command, back up, validate and reload
+      block:
+        - name: Refuse to edit a config we do not recognise
+          assert:
+            that:
+              - "'SSH Daemon Configuration - managed by Ansible' in sshd_before_text"
+            fail_msg: >-
+              Unexpected /etc/ssh/sshd_config shape; inspect it by hand rather
+              than letting this bootstrap guess.
+
+        - name: Back up sshd_config before editing
+          copy:
+            src: "{{ sshd_conf }}"
+            dest: "{{ backup_conf }}"
+            remote_src: true
+            mode: "0644"
+
+        - name: Record the rollback path
+          debug:
+            msg: "Rollback: cp {{ backup_conf }} {{ sshd_conf }}"
+
+        - name: Remove global ForceCommand internal-sftp (sshd -t validated)
+          lineinfile:
+            path: "{{ sshd_conf }}"
+            regexp: "{{ force_re }}"
+            state: absent
+            validate: "/usr/sbin/sshd -t -f %s"
+          register: force_edit
+
+        - name: Reload sshd so the change takes effect
+          service:
+            name: ssh
+            state: reloaded
+
+        - name: Re-read config after converge
+          slurp:
+            src: "{{ sshd_conf }}"
+          register: sshd_after
+
+        - name: Verify no forced command remains
+          assert:
+            that:
+              - "not ((sshd_after.content | b64decode) is search(force_re))"
+            fail_msg: "ForceCommand internal-sftp still present after edit"
+      rescue:
+        - name: Restore the pre-change config
+          copy:
+            src: "{{ backup_conf }}"
+            dest: "{{ sshd_conf }}"
+            remote_src: true
+            mode: "0644"
+
+        - name: Reload sshd with the restored config
+          service:
+            name: ssh
+            state: reloaded
+
+        - name: Fail with the rollback evidence
+          fail:
+            msg: >-
+              Converge failed; original config restored from {{ backup_conf }}.
+              Inspect sshd -t and journalctl -u ssh before retrying.
+      when: needs_fix
+
+    - name: Final check - sshd syntax is valid
+      command: /usr/sbin/sshd -t
+      changed_when: false

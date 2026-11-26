@@ -395,14 +395,17 @@ class TestRealRelease(unittest.TestCase):
                          "pack copy drifted from canonical "
                          "scripts/colab/pack-preflight.py — re-cp it")
 
-    def test_real_pack_requires_point_at_preflight(self):
+    def test_real_video_packs_require_current_preflight(self):
         import yaml
-        for name in ("kk-video-c9f99fee6146-embeds",
-                     "kk-video-c9f99fee6146-preview"):
-            spec = yaml.safe_load(
-                (REPO_PACKS / name / "pack.yml").read_text())
-            self.assertIn("kk-video-c9f99fee6146-preflight",
-                          spec.get("requires") or [], name)
+        expected = {
+            "kk-video-c9f99fee6146-embeds":
+                "kk-video-c9f99fee6146-preflight",
+            "kk-video-c9f99fee6146-preview":
+                "kk-video-c9f99fee6146-r4-preflight",
+        }
+        for name, preflight in expected.items():
+            spec = yaml.safe_load((REPO_PACKS / name / "pack.yml").read_text())
+            self.assertIn(preflight, spec.get("requires") or [], name)
 
     def test_submit_validator_accepts_new_fields(self):
         import yaml

@@ -1,0 +1,74 @@
+icon: wrench
+title: Land held dispatch work and clear dirty worktrees from the 2026-11-26 review batch
+date: 2026-11-26
+card: dispatch-zero-commit-sessions-epidemic
+context: >-
+  Four review cards were held with "test gate failed — merge held: pytest
+  unavailable — no test evidence" and dirty session worktrees on
+  tony-macbook/mn01. Two independent defects had to be cleared first: a
+  stale dispatch_repos.py tooling pin red-lined the gate even on hosts
+  with pytest, and tony-macbook's pre-commit hook could not find node
+  because ~/.local/bin was off PATH (the binary exists). merge-sweep
+  refuses dirty worktrees, so the leftover files had to be checkpointed
+  with the repo's own dispatch_repos.checkpoint() helper before the
+  branches could be fetched.
+changes:
+  - "Backed up every dirty file before touching it
+    (/tmp/opencode/checkpoint-backup-*-20261126-153927 and
+    /tmp/opencode/assessment-backup-*-20261126-*)."
+  - "Checkpointed four worktrees: tony-macbook 130316 -> b7464e43, 123407
+    -> 0d055255, 140605 -> f326045c; mn01 140633 -> 520204d1a5. Used
+    PATH=$HOME/.local/bin:$PATH so the .husky hook's node resolved; no
+    hook config was changed."
+  - "The periodically regenerated docs/ssot/ssot.dev-system.assessment.yml
+    re-dirtied the trees after checkpoint; restored it from HEAD with a
+    fresh backup each time (its diff was only last_reviewed and
+    branch/worktree counters, no session work)."
+  - "Ran merge-sweep from idc03's served chaba checkout. Landed
+    dispatch-podman-conmon-49-incompat, lesson-comments-dev-board and
+    dispatch-queue-approval-gate; all three verified, worktrees and
+    branches GC'd by the sweep."
+  - "dispatch-queue-approval-gate conflicted only on the generated
+    assessment file. Resolved upstream-wins by adding commit 5150728 to
+    the session branch (non-force push); sweep merged it to master.
+    Answered the stale 'merge-conflict' request via board-api so the
+    verified card drained to done."
+  - "rebuild-gesture-control-using-yolo-83cf4a could not be auto-merged:
+    its task_id had been cleared and it was unverified, so sweep skipped
+    it. Verified the session branch head 3ca1ffc with the ada-voice gate
+    on tony-omen, then merged --no-ff into origin/main as 5da3cc01bbc
+    from idc03 and closed the card via board-api with evidence."
+  - "The ada-voice push had been rejected because a clean, stale
+    /tmp/ada-voice-ssot-get worktree on tony-dell held main checked out.
+    Detached that worktree at the same commit (5a5379a); nothing deleted."
+verification:
+  - "chaba merge-critical gate: 300 passed on tony-omen (84.25s), RC=0,
+    after the tooling-pin fix."
+  - "ada-voice gate: 2022 passed, 7 skipped, 33 subtests, 118 warnings
+    (299.14s), RC=0, on tony-omen at session head 3ca1ffc."
+  - "All four cards are now in done; review column fell from 11 to 5."
+  - "All checkpoint commits passed the repo's pre-commit SSOT validation
+    (with node on PATH); full SSOT validation was clean earlier at
+    7176/7176."
+rollback: >-
+  Each merge is a normal --no-ff merge on origin/master or origin/main;
+  revert the merge commits. Checkpoint commits are recorded on their
+  session branches and file-level backups are under /tmp/opencode. The
+  tony-dell worktree can be re-attached to main with `git checkout main`
+  if the old layout is wanted, though that will block future pushes to
+  main from non-bare remotes.
+residual: >-
+  The five remaining review cards are watcher-held or manual-decision
+  states (two cms-auto cards, the zero-commit meta-card, the NCM composer
+  and the local-conflict guard) — not dispatch work. mn01's 140633
+  checkpoint is intact but its card has no task_id, so sweep will not
+  consume it. Periodic dev-system-assess refreshes will keep re-dirtying
+  dispatch worktrees unless the runner checkpoints them at close-out.
+lesson: >-
+  A held dispatch merge can have several stacked causes: a red gate, a
+  stale tooling pin, a missing PATH entry in a hook, a generated file that
+  re-dirties the tree, a stale request blocking verified close, and a
+  non-bare remote with main checked out in an unrelated worktree. Run the
+  gate on a host that satisfies its prerequisites before changing cards;
+  keep file-level backups and use the repo's own checkpoint helper rather
+  than inventing commits.

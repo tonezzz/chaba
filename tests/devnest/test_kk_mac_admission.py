@@ -1,16 +1,47 @@
 import json
+import os
+import tempfile
 import time
 import unittest
 from unittest.mock import patch
 
-from scripts.devnest.kk_mac_admission import snapshot
+from scripts.devnest.kk_mac_admission import local_snapshot, snapshot
 
 
 def doc(body):
     return {"contentMd": json.dumps(body)}
 
 
-class KkMacAdmissionTests(unittest.TestCase):
+class TempStateIsolated(unittest.TestCase):
+    """Keep thermal hysteresis state out of the real user's cache."""
+
+    def setUp(self):
+        fd, path = tempfile.mkstemp(prefix="kk-admission-state-")
+        os.close(fd)
+        os.unlink(path)
+        state = patch(
+            "scripts.devnest.kk_mac_admission.TEMP_STATE_PATH", path
+        )
+        state.start()
+        self.addCleanup(state.stop)
+        self.addCleanup(lambda: os.path.exists(path) and os.unlink(path))
+
+
+class KkMacAdmissionTests(TempStateIsolated):
+    def setUp(self):
+        super().setUp()
+        # snapshot()'s SSH temp fallback would otherwise probe the real
+        # kk-mac (and its hot GPU) from unit tests. Keep it deterministic.
+        probe = patch(
+            "scripts.devnest.kk_mac_admission._run_text",
+            side_effect=lambda cmd, **kw: (
+                "40.0\n" if "smctemp -c" in str(cmd) else
+                "42.0\n" if "smctemp -g" in str(cmd) else None
+            ),
+        )
+        probe.start()
+        self.addCleanup(probe.stop)
+
     def test_fresh_healthy_heartbeat_is_eligible(self):
         now = time.time()
         with patch(
@@ -82,6 +113,64 @@ class KkMacAdmissionTests(unittest.TestCase):
             result = snapshot(now=now)
         self.assertFalse(result["eligible"])
         self.assertIn("load_high", result["reasons"])
+
+    def test_load_is_normalized_by_reported_core_count(self):
+        # 9.0 on a 14-core Mac is 0.64/core — not the overload that the
+        # old absolute 4.0 gate reported every minute on KK-Mac.
+        now = time.time()
+        with patch(
+            "scripts.devnest.kk_mac_admission._search",
+            return_value=[doc({
+                "host": "KKs-Mac-Studio",
+                "ts": now - 30,
+                "ollama_ok": True,
+                "disk_free_gb": 78,
+                "load_1m": 9.0,
+                "cpu_cores": 14,
+            })],
+        ):
+            result = snapshot(now=now)
+        self.assertTrue(result["eligible"], result["reasons"])
+        self.assertEqual(result["reasons"], [])
+        self.assertEqual(result["cpu_cores"], 14)
+        self.assertEqual(result["load_limit"], 14.0)
+
+    def test_per_core_gate_still_denies_real_overload(self):
+        now = time.time()
+        with patch(
+            "scripts.devnest.kk_mac_admission._search",
+            return_value=[doc({
+                "host": "KKs-Mac-Studio",
+                "ts": now - 30,
+                "ollama_ok": True,
+                "disk_free_gb": 78,
+                "load_1m": 15.0,
+                "cpu_cores": 14,
+            })],
+        ):
+            result = snapshot(now=now)
+        self.assertFalse(result["eligible"])
+        self.assertIn("load_high", result["reasons"])
+        self.assertEqual(result["load_limit"], 14.0)
+
+    def test_unknown_core_count_keeps_absolute_limit(self):
+        # Legacy heartbeats have no cpu_cores: fail closed with 4.0.
+        now = time.time()
+        with patch(
+            "scripts.devnest.kk_mac_admission._search",
+            return_value=[doc({
+                "host": "KKs-Mac-Studio",
+                "ts": now - 30,
+                "ollama_ok": True,
+                "disk_free_gb": 78,
+                "load_1m": 4.1,
+            })],
+        ):
+            result = snapshot(now=now)
+        self.assertFalse(result["eligible"])
+        self.assertIn("load_high", result["reasons"])
+        self.assertIsNone(result["cpu_cores"])
+        self.assertEqual(result["load_limit"], 4.0)
 
     def test_old_heartbeat_uses_read_only_ssh_load_fallback(self):
         now = time.time()
@@ -198,6 +287,194 @@ class KkMacAdmissionTests(unittest.TestCase):
             result = snapshot(now=now)
         self.assertFalse(result["eligible"])
         self.assertIn("node_busy:load1", result["reasons"])
+
+
+class LocalAdmissionLoadTests(TempStateIsolated):
+    """On-host worker gate must use the same per-core ceiling."""
+
+    def _snapshot(self, load, cores):
+        class _Resp:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        stat = type("Stat", (), {"f_bavail": 100, "f_frsize": 10 ** 9})()
+        with patch(
+            "scripts.devnest.kk_mac_admission.urllib.request.urlopen",
+            return_value=_Resp(),
+        ), patch(
+            "scripts.devnest.kk_mac_admission.os.statvfs", return_value=stat
+        ), patch(
+            "scripts.devnest.kk_mac_admission._local_load_1m",
+            return_value=load,
+        ), patch(
+            "scripts.devnest.kk_mac_admission.os.cpu_count",
+            return_value=cores,
+        ), patch(
+            "scripts.devnest.kk_mac_admission._local_temp_c",
+            return_value=40.0,
+        ), patch(
+            "scripts.devnest.kk_mac_admission._local_gpu_temp_c",
+            return_value=None,
+        ), patch(
+            "scripts.devnest.kk_mac_admission._local_tmux_jobs",
+            return_value="",
+        ):
+            return local_snapshot()
+
+    def test_local_load_normalized_by_cpu_count(self):
+        result = self._snapshot(load=9.0, cores=14)
+        self.assertTrue(result["eligible"], result["reasons"])
+        self.assertEqual(result["cpu_cores"], 14)
+        self.assertEqual(result["load_limit"], 14.0)
+
+    def test_local_overload_denied(self):
+        result = self._snapshot(load=15.0, cores=14)
+        self.assertFalse(result["eligible"])
+        self.assertIn("load_high", result["reasons"])
+
+    def test_local_unknown_cpu_count_falls_back_to_absolute(self):
+        result = self._snapshot(load=4.5, cores=0)
+        self.assertFalse(result["eligible"])
+        self.assertIn("load_high", result["reasons"])
+        self.assertEqual(result["load_limit"], 4.0)
+
+
+class ThermalGateTests(TempStateIsolated):
+    """The 55C gate must see the hotter of CPU and GPU sensors."""
+
+    def _local(self, cpu, gpu):
+        class _Resp:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        stat = type("Stat", (), {"f_bavail": 100, "f_frsize": 10 ** 9})()
+        with patch(
+            "scripts.devnest.kk_mac_admission.urllib.request.urlopen",
+            return_value=_Resp(),
+        ), patch(
+            "scripts.devnest.kk_mac_admission.os.statvfs", return_value=stat
+        ), patch(
+            "scripts.devnest.kk_mac_admission._local_load_1m",
+            return_value=1.0,
+        ), patch(
+            "scripts.devnest.kk_mac_admission.os.cpu_count",
+            return_value=14,
+        ), patch(
+            "scripts.devnest.kk_mac_admission._local_temp_c",
+            return_value=cpu,
+        ), patch(
+            "scripts.devnest.kk_mac_admission._local_gpu_temp_c",
+            return_value=gpu,
+        ), patch(
+            "scripts.devnest.kk_mac_admission._local_tmux_jobs",
+            return_value="",
+        ):
+            return local_snapshot()
+
+    def test_local_gpu_hot_denies_when_cpu_cool(self):
+        result = self._local(40.0, 72.3)
+        self.assertFalse(result["eligible"])
+        self.assertIn("temp_high", result["reasons"])
+        self.assertEqual(result["cpu_temp_c"], 72.3)
+        self.assertEqual(result["gpu_temp_c"], 72.3)
+
+    def test_local_cpu_hotter_wins(self):
+        result = self._local(66.6, 40.0)
+        self.assertEqual(result["cpu_temp_c"], 66.6)
+        self.assertIn("temp_high", result["reasons"])
+
+    def test_local_both_cool_admits(self):
+        result = self._local(40.0, 42.0)
+        self.assertTrue(result["eligible"], result["reasons"])
+
+    def test_snapshot_uses_hotter_heartbeat_field(self):
+        now = time.time()
+        with patch(
+            "scripts.devnest.kk_mac_admission._search",
+            return_value=[doc({
+                "host": "KKs-Mac-Studio",
+                "ts": now - 30,
+                "ollama_ok": True,
+                "disk_free_gb": 78,
+                "load_1m": 1.2,
+                "cpu_temp_c": 40.0,
+                "gpu_temp_c": 72.3,
+            })],
+        ):
+            result = snapshot(now=now)
+        self.assertFalse(result["eligible"])
+        self.assertIn("temp_high", result["reasons"])
+        self.assertEqual(result["cpu_temp_c"], 72.3)
+        self.assertEqual(result["gpu_temp_c"], 72.3)
+
+    def test_snapshot_ssh_fallback_probes_both_sensors(self):
+        now = time.time()
+        readings = {"-c": "40.0\n", "-g": "72.3\n"}
+        with patch(
+            "scripts.devnest.kk_mac_admission._search",
+            return_value=[doc({
+                "host": "KKs-Mac-Studio",
+                "ts": now - 30,
+                "ollama_ok": True,
+                "disk_free_gb": 78,
+                "load_1m": 1.2,
+            })],
+        ), patch(
+            "scripts.devnest.kk_mac_admission._run_text",
+            side_effect=lambda cmd, **kw: readings.get(cmd[-1].split()[-1]),
+        ):
+            result = snapshot(now=now)
+        self.assertFalse(result["eligible"])
+        self.assertIn("temp_high", result["reasons"])
+        self.assertEqual(result["cpu_temp_c"], 72.3)
+        self.assertEqual(result["gpu_temp_c"], 72.3)
+
+    def test_snapshot_hysteresis_holds_until_resume_temp(self):
+        now = time.time()
+
+        def snap(temp):
+            with patch(
+                "scripts.devnest.kk_mac_admission._search",
+                return_value=[doc({
+                    "host": "KKs-Mac-Studio",
+                    "ts": now - 30,
+                    "ollama_ok": True,
+                    "disk_free_gb": 78,
+                    "load_1m": 1.2,
+                    "cpu_temp_c": temp,
+                    "gpu_temp_c": temp,
+                })],
+            ):
+                return snapshot(now=now)
+
+        hot = snap(60.0)
+        self.assertIn("temp_high", hot["reasons"])
+        warm = snap(52.0)
+        self.assertFalse(warm["eligible"])
+        self.assertIn("temp_cooldown", warm["reasons"])
+        self.assertTrue(warm["temp_cooling"])
+        cool = snap(48.0)
+        self.assertTrue(cool["eligible"], cool["reasons"])
+        self.assertFalse(cool["temp_cooling"])
+
+    def test_local_hysteresis_holds_until_resume_temp(self):
+        hot = self._local(60.0, None)
+        self.assertIn("temp_high", hot["reasons"])
+        warm = self._local(52.0, None)
+        self.assertFalse(warm["eligible"])
+        self.assertIn("temp_cooldown", warm["reasons"])
+        cool = self._local(48.0, None)
+        self.assertTrue(cool["eligible"], cool["reasons"])
 
 
 class QuietHoursTests(unittest.TestCase):

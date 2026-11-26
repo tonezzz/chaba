@@ -45,7 +45,7 @@ def resolve_image(name: str) -> Path | None:
         if p.exists():
             return p
     # name may be an asset id — pull latest candidate from Drive
-    for cand in (f"{name}.png", f"{name}.jpg"):
+    for cand in (f"{name}.png", f"{name}.jpg", f"{name}.jpeg"):
         dst = INBOX / cand
         r = subprocess.run(
             ["rclone", "copy",

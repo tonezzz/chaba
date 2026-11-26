@@ -1,12 +1,17 @@
 id: yt-voice-dub-mode
 title: YT voice dub — voice-mode selector on the cast URL
-column: review
+column: done
 program: yt-voice-dub
 area: productization
 priority: high
 metric: 'POST /cast {"voice": "th"} produces a dubbed cast end-to-end; "off" and omitted preserve today''s behavior'
-verify: cast a cached video with voice=th -> dub.mp4 muxed into HLS output plays on TV; /status reports dub phase;
-  media cache stores the dubbed variant under its own key
+verify: 'Verified from merged evidence (Tony 2026-11-23): POST /cast {voice:''th''|''en''|''off''} validated (400
+  on unknown, TH->th normalized, omitted->off); detached __dub worker renders dub.mp4 via yt-vtt-dub.py, muxes dub.m3u8
+  and re-points the cast mid-play (/status exposes dub {voice,phase}); media cache stores voice-suffixed variants
+  so subs and dubbed casts coexist; forced TTS failure leaves the subs cast untouched. Evidence: merge 724240b884
+  + spec diff review; 2026-10-06 sandbox e2e (fresh dub+upgrade, both replays, forced-fail fallback, API validation);
+  2026-11-23 audit + test-port smoke. Real-TV cast playback on tony-dell remains a deploy-gate follow-up (yt-pipeline-install.sh
+  refresh + :8791 start), not a close condition.'
 note: 'Productization lane from the E2E assessment (docs/assessments/yt-voice-dub-e2e-2026-10-06.md). Today the
   dub is an offline side-render (yt-vtt-dub.py -> dub.mp4 -> manual play_media); yt-live.sh casts subs-only. Add
   a voice-mode parameter end-to-end: POST /cast accepts {voice: off|th|en} (default off = current behavior); yt-live.sh
@@ -31,13 +36,22 @@ action:
   status: done
   task: 'Implement the voice-mode selector per card spec: voice param on POST /cast -> yt-live.sh -> yt-vtt-dub.py
     muxed into HLS, media-cache key includes voice mode, subs-only fallback on TTS failure.'
-  task_id: 20261006-164900-wire-voice-dubbing-into-the-ca
-  runner: tony-omen
-  result: 'exit=0 ode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261006-221236-wire-voice-dubbing-into-the-ca.service:
-    Consumed 2min 4.136s CPU time over 21min 5.801s wall clock time, 1.3G memory peak, 548.6M memory swap peak.'
   sweep:
     session_gone: 2026-11-08 16:22
-updated: 2026-11-19 20:04
+    stale_running: 2026-11-23 20:21
+  lane: free_lane
+  lane_source: kw
+  model: litellm/gemini-3.5-flash-lite
+  attempts: 2
+  last_failure: 'exit=1 k-20261123-202153-wire-voice-dubbing-into-the-ca.service: Failed with result ''exit-code''.
+    | devin-task-20261123-202153-wire-voice-dubbing-into-the-ca.service: Consumed 57.557s CPU time over 21min 23.355s
+    wall clock time, 358.3M memory peak.'
+  executor: devin
+  result: 'exit=1 k-20261123-202153-wire-voice-dubbing-into-the-ca.service: Failed with result ''exit-code''. |
+    devin-task-20261123-202153-wire-voice-dubbing-into-the-ca.service: Consumed 57.557s CPU time over 21min 23.355s
+    wall clock time, 358.3M memory peak.'
+  runner: mn01
+updated: 2026-11-26 20:32
 comms:
 - at: 2026-10-06 16:48
   from: tony
@@ -241,7 +255,367 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:50
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:44
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:05
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:19
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 15:13
+  from: chaba
+  text: '[verify-hold] Review pass 2026-11-23 (Tony): sandbox e2e only; 2026-11-08 16:04 lifecycle bounce: "declares
+    a verify: criterion but closed with no evidence comms" — real-TV cast not evidenced — held, not closed; needs
+    the noted decision/blocker cleared.'
+- at: 2026-11-23 15:13
+  from: tony
+  text: put on hold
+- at: 2026-11-23 19:00
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:13
+  from: chaba
+  text: classified as free_lane (kw:try conf 1.00)
+- at: 2026-11-23 19:13
+  from: tony
+  text: queued for processing
+- at: 2026-11-23 19:13
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.19 > 0.85)'
+- at: 2026-11-23 19:13
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.89 > 1.5)'
+- at: 2026-11-23 19:14
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-23 19:14
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 19:14
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-23 19:14
+  from: tony-omen
+  text: claimed
+- at: 2026-11-23 19:15
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.34 > 1.0)'
+- at: 2026-11-23 19:15
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 19:15
+  from: chaba
+  text: started devin-task-20261123-191551-wire-voice-dubbing-into-the-ca on tony-omen (dispatch)
+- at: 2026-11-23 19:15
+  from: chaba
+  text: 'primer injected 8 lesson(s): [yt-voice-dub-mode] merge-sweep: no session/worktree found for devin-task-202610;
+    _is_secondary_turn fail-open for stale labels means stale voice labels keep lane; [dispatch-triage-arbiter-label-pass]
+    session up on tony-omen — prior branch neve; [dispatch-worktree-merged-triage] TRIAGE-RUN 2026-11-17 on tony-dell
+    fleet (11 w; [jules-lane-feedback-state-handling] tony-dell defers: executor=jules declared b; runbook docs/kb/media-inbox-standard.md:
+    Media inbox standard'
+- at: 2026-11-23 19:18
+  from: devin
+  text: picked up (re-dispatch) — voice wiring already merged 2026-10-07 (724240b884); auditing current tree vs
+    spec + re-running sandbox e2e after the post-merge yt-vtt-dub.py changes (qc/fixmap/sentences/diarize). Real-TV
+    verify still needs the yt-pipeline-install refresh on tony-dell (deploy gate).
+- at: 2026-11-23 19:49
+  from: tony-omen
+  text: 'finished (failed): exit=1 dubbing-into-the-ca.service: Failed with result ''exit-code''. | devin-task-20261123-191551-wire-voice-dubbing-into
+    — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 19:49
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-191551-wire-voice-dubbing-into-the-ca (rate limit)
+    — tony-omen holds new claims ~30m
+- at: 2026-11-23 19:49
+  from: chaba
+  text: 'tony-omen retry backoff: fail 1/3 — next claim not before 11-23 20:19'
+- at: 2026-11-23 19:52
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-194248-the-goal-is-to-stop-the-tony-u)
+    — claims held ~27m'
+- at: 2026-11-23 19:52
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-192619-fix-the-executor-model-id-mism)
+    — claims held ~29m'
+- at: 2026-11-23 19:52
+  from: chaba
+  text: 'mn01 defers: provider rate-limited (rate limit on devin-task-20261123-123122-supersedes-manual-card-wiki-ta)
+    — claims held ~29m'
+- at: 2026-11-23 19:53
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-191504-investigate-and-resolve-the-fa)
+    — claims held ~29m'
+- at: 2026-11-23 19:55
+  from: chaba
+  text: 'idc03 defers: provider rate-limited (rate limit on devin-task-20261123-195341-deploy-the-updated-runner-agen)
+    — claims held ~29m'
+- at: 2026-11-23 19:56
+  from: chaba
+  text: 'idc03 defers: provider rate-limited (rate limit on devin-task-20261123-195436-ada-tool-consolidation-merge-o)
+    — claims held ~29m'
+- at: 2026-11-23 19:57
+  from: chaba
+  text: 'idc03 defers: provider rate-limited (rate limit on devin-task-20261123-195521-goal-address-the-live-voice-to)
+    — claims held ~29m'
+- at: 2026-11-23 20:14
+  from: tony
+  text: retry requested
+- at: 2026-11-23 20:18
+  from: tony
+  text: 'routing edited: executor=devin by tony: free_lane verdicts: lane free_lane routes to the opencode executor
+    but action.lane_envelope is not staged on idc02/tony-dell; card is a devin-task card (devin-task-20261123-191551).
+    Same fix as OPS-1039 — pin devin.'
+- at: 2026-11-23 20:19
+  from: chaba
+  text: 'kk-mac defers: executor=devin declared but this runner is launchd — devin-dispatch drives systemd-run internally;
+    the card stays queued for a Linux runner (executor=opencode/script serve here)'
+- at: 2026-11-23 20:21
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-23 20:21
+  from: chaba
+  text: started devin-task-20261123-202153-wire-voice-dubbing-into-the-ca on tony-macbook (dispatch executor=devin
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-23 20:21
+  from: chaba
+  text: 'primer injected 8 lesson(s): _is_secondary_turn fail-open for stale labels means stale voice labels keep
+    lane; [dispatch-worktree-merged-triage] TRIAGE-RUN 2026-11-17 on tony-dell fleet (11 w; [jules-lane-feedback-state-handling]
+    tony-dell defers: executor=jules declared b; [jules-lane-feedback-state-handling] tony-macbook defers: executor=jules
+    declare; [yt-voice-dub-mode] finished (failed): exit=1 dubbing-into-the-ca.service: Faile; [yt-voice-dub-mode]
+    merge-sweep: no session/worktree found fo'
+- at: 2026-11-23 20:21
+  from: chaba
+  text: 'merge-sweep: devin-task-20261123-191551 no longer active on tony-macbook but card still says running —
+    sweeping its branch'
+- at: 2026-11-23 20:34
+  from: devin
+  text: 're-dispatch audit: voice wiring already merged 2026-10-07 (724240b884) and survived post-merge yt-vtt-dub.py
+    changes — all dub_job flags (--qc/--fix-map/--sentences/--en-vtt/--no-compress) still valid, mux contract (sidechain-ducked
+    dub.mp4 -> dub.m3u8) intact. API smoke on test port: voice=fr -> 400, voice=TH -> normalized th, omitted ->
+    off, /status exposes dub. Found+fixed one real gap: a superseded dub render kept burning edge-tts up to 90min
+    alongside the new run''s dub — added a gen-token w'
+- at: 2026-11-23 20:43
+  from: tony-macbook
+  text: 'finished (failed): exit=1 k-20261123-202153-wire-voice-dubbing-into-the-ca.service: Failed with result
+    ''exit-code''. | devin-task-20261123-2 — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 20:43
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-202153-wire-voice-dubbing-into-the-ca (rate limit)
+    — tony-macbook holds new claims ~30m
+- at: 2026-11-23 20:43
+  from: chaba
+  text: 'tony-macbook retry backoff: fail 1/3 — next claim not before 11-23 21:13'
+- at: 2026-11-23 20:44
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.01 > 0.85)'
+- at: 2026-11-23 20:44
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-202451-ada-tool-consolidation-merge-o)
+    — claims held ~29m'
+- at: 2026-11-23 20:44
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-203733-fix-the-phantom-state-issue-in)
+    — claims held ~29m'
+- at: 2026-11-23 20:45
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-23 20:46
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-202527-corpus-18-jev-bench-cases-4-pi)
+    — claims held ~29m'
+- at: 2026-11-23 20:47
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-202348-investigate-and-resolve-the-fa)
+    — claims held ~28m'
+- at: 2026-11-23 20:56
+  from: mn01
+  text: claimed
+- at: 2026-11-23 20:57
+  from: tony
+  text: '[verify] Verification from merged evidence (Tony 2026-11-23): (1) Merge 724240b884 (2026-10-07) reviewed
+    against spec: POST /cast voice=off|th|en with 400 validation; /status exposes dub {voice,phase}; detached __dub
+    worker renders dub.mp4 via yt-vtt-dub.py, muxes dub.m3u8 and re-points TV mid-play (documented upgrade-over-gating
+    choice); TTS/mux failure leaves subs cast untouched; cache key <base>.<voice> variants with replay serving the
+    right playlist. (2) 2026-10-06 sandbox e2e: fresh th dub '
+- at: 2026-11-23 20:57
+  from: tony
+  text: put on hold
+- at: 2026-11-23 20:57
+  from: tony
+  text: moved backlog -> review
+- at: 2026-11-23 20:57
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-23 20:57
+  from: chaba
+  text: started devin-task-20261123-135728-wire-voice-dubbing-into-the-ca on mn01 (dispatch executor=devin model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-23 20:57
+  from: chaba
+  text: 'primer injected 8 lesson(s): _is_secondary_turn fail-open for stale labels means stale voice labels keep
+    lane; [adobe-stock-kk-mac-render-poc] mn01 defers: executor=jules declared but this ru; [dispatch-worktree-merged-triage]
+    TRIAGE-RUN 2026-11-17 on tony-dell fleet (11 w; [jules-lane-feedback-state-handling] mn01 defers: executor=jules
+    declared but th; [jules-lane-feedback-state-handling] tony-dell defers: executor=jules declared b; [kk-mac-lane-claim-hardening]
+    mn01 defers: executor=jules dec'
+- at: 2026-11-23 21:01
+  from: tony
+  text: '[verify-amend] Amended verify: from the real-TV-only criterion ("cast a cached video with voice=th -> dub.mp4
+    muxed into HLS output plays on TV; /status reports dub phase; media cache stores the dubbed variant under its
+    own key") to the merged/sandbox/API evidence actually available. The original on-TV playback requirement is
+    blocked by the open tony-dell deploy gate (installed ~/.local/bin/yt-live.sh out of sync with repo, yt-live-api
+    inactive, :8791 unreachable) and cannot be satisfied without'
+- at: 2026-11-23 21:01
+  from: tony
+  text: closed by tony
+- at: 2026-11-23 21:18
+  from: devin
+  text: 'attempt-2 done. Feature was already merged (724240b884) + Tony-verified; this run landed the one real gap
+    the lost tony-macbook session found: superseded dub renders burned edge-tts up to 90min. yt-live.sh dub_job
+    now runs the render under a gen-token watchdog — on supersede it resolves the render''s live pgid (GNU timeout
+    leads its OWN process group — verified empirically) and SIGKILLs render tree + __dub worker. Sandbox-verified:
+    normal path th:done+remux+upgrade intact; supersede kills render '
+- at: 2026-11-23 21:21
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 21:21
+  from: chaba
+  text: 'session-end checkpoint 3e205373: 1 leftover file(s) committed'
+- at: 2026-11-23 21:21
+  from: chaba
+  text: banked 225 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 21:21
+  from: chaba
+  text: pushed dispatch/20261123-135728-wire-voice-dubbing-into-the-ca to origin
+- at: 2026-11-23 21:21
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-23 21:21
+  from: chaba
+  text: auto-merged 60abbf0f (dispatch/20261123-135728-wire-voice-dubbing-into-the-ca) → origin/master
+- at: 2026-11-23 21:21
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 00:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:11
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:13
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:22
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:32
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:39
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:02
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:44
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:56
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:58
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:32
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 claim:
-  since: 2026-10-06 16:49
+  since: 2026-11-23 20:56
 ref: ADA-0156
 review_kind: verify

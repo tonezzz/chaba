@@ -1,0 +1,197 @@
+id: openclaw-authprofile-or-key-stale
+title: '@myChabaBot silent — OpenClaw auth profile holds expired OR key'
+column: done
+updated: 2026-11-26 20:31
+brief: 'TG DM chat 8960073266 (@myChabaBot) has been failing every model turn since 2026-11-20: 401 API key expired
+  → 401 User not found. Root cause: tony-omen ~/.openclaw/state/openclaw.sqlite config_machine_state authProfiles.store
+  profiles."openrouter:manual".key still holds sk-or-v1-e2c…f05528 (set 2026-10-12, expired 2026-11-11). The Nov-12/13
+  fleet rotations updated the 3 env-file stores but missed this 4th store. Valid key in env files (sk-or-v1-a26…00735b,
+  exp 2026-12-12) is near cap ($8.78/$10).'
+priority: high
+tags:
+- secrets
+- openclaw
+- telegram
+spec: '1) Tony mints a fresh OR key at openrouter.ai/keys and drops it into ~/.config/secrets/or-next-key on tony-omen.
+  2) Run ~/.local/bin/rotate-or-key (never pass the key as argv) — it swaps all 4 stores incl. authProfiles.store.
+  3) Restart openclaw-gateway if it cached the old key. 4) Verify: openclaw models auth paste-api-key/profile state,
+  a test heartbeat turn with cost 0, and no new 401 in the telegram session transcript. 5) Update ssot.services.yml
+  rotation note + close this card.'
+ref: SEC-0023
+comms:
+- at: 2026-11-23 10:59
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-23 10:59
+  from: devin
+  text: 'raised request mint-a-fresh-openrouter-key-at-openroute-b13d22: Mint a fresh OpenRouter key at openrouter.ai/keys
+    and drop it into ~/.config/secrets/or-next-key on tony-omen (do not pa'
+- at: 2026-11-23 10:59
+  from: devin
+  text: 'Evidence (2026-11-23 10:56 ICT): telegram conv conv_ffb1322f01fbcb4a62f59f283cc5e2af / session 5525abdc-cfaf-4627-a85f-e2f9f951a035
+    status=failed. First error seq 9485 11-20 17:13 401 API key expired; seq 9501 11-20 19:13 401 User not found;
+    64 errors total, hourly heartbeat polls only, no real user msgs. OpenRouter /api/v1/key: DB profile key sk-or-v1-e2c…f05528
+    -> HTTP 401 User not found; env key sk-or-v1-a26…00735b -> HTTP 200 usage 8.776/10 exp 2026-12-12. authProfiles.store
+    updated_at_ms 17'
+- at: 2026-11-23 13:46
+  from: devin
+  text: 'FIXED 2026-11-23 13:45 ICT. Tony placed fresh key in ~/.config/secrets/or-next-key on tony-omen (validated:
+    HTTP 200, $0/$1, exp 2026-12-23); streamed to tony-dell (mode 600) and ran ~/.local/bin/rotate-or-key on tony-dell.
+    All 4 stores now hold sk-or-v1-74d…180f6c: dell openrouter.env, omen openrouter.env, idc03 mddb-gemini.env,
+    omen openclaw sqlite authProfiles.store (updated 13:42:37). Restarted ghostroute-watcher (omen) + gemini-ollama-proxy
+    (idc03). Script e2e probe hit an upstream 429 on i'
+- at: 2026-11-23 13:46
+  from: tony
+  text: 'answered mint-a-fresh-openrouter-key-at-openroute-b13d22: DONE — fresh key file placed on tony-omen; rotation
+    completed and verified 2026-11-23 13:45 ICT'
+- at: 2026-11-23 13:46
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-23 13:46
+  from: tony
+  text: closed by tony
+- at: 2026-11-23 14:08
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:19
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:36
+  from: devin
+  text: 'FINAL VERIFICATION 2026-11-23 14:34 ICT: the real hourly heartbeat ran at 14:32 in the Telegram session
+    (seq 10030 user poll, seq 10032 assistant). Decompressed assistant event: stop=stop, no errorMessage, model
+    openrouter/nvidia/nemotron-3.5-super-vl:free, reply NO_REPLY (expected for idle). Events since rotation (13:42):
+    3, new 401s: 0. Last 401 ever: 2026-11-23 13:32:14 seq 10029, i.e. before the fix. @myChabaBot confirmed healthy.'
+- at: 2026-11-23 16:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:02
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:11
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:13
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:22
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:30
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:39
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:02
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:02
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:43
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:26
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:38
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:48
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:31
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+requests:
+- id: mint-a-fresh-openrouter-key-at-openroute-b13d22
+  ask: Mint a fresh OpenRouter key at openrouter.ai/keys and drop it into ~/.config/secrets/or-next-key on tony-omen
+    (do not paste in chat). The current valid key is down to ~$1.22 of its $10 cap. Reply DONE once the file is
+    in place; then rotate-or-key fixes all 4 stores including the missed authProfiles.store slot.
+  status: answered
+  at: 2026-11-23 10:59
+  from: devin
+  options:
+  - ★ DONE — fresh key file placed on tony-omen
+  - Use management key to mint a new $10 key automatically
+  - Hold — investigate a free-only fallback first
+  answer: DONE — fresh key file placed on tony-omen; rotation completed and verified 2026-11-23 13:45 ICT
+action:
+  status: done

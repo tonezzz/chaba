@@ -1,0 +1,36 @@
+{
+ "schema": "ada-opencode-review/1",
+ "case_id": "defect-missing-evidence",
+ "verdict": "needs_human",
+ "confidence": 0.9,
+ "summary": "cannot verify without artifact bytes",
+ "findings": [
+  {
+   "id": "f1",
+   "severity": "major",
+   "category": "missing_evidence",
+   "summary": "artifact content not in bundle",
+   "evidence_refs": [
+    {
+     "bundle_path": "result.artifacts[0].present",
+     "note": "false"
+    }
+   ]
+  }
+ ],
+ "evidence_refs": [
+  {
+   "bundle_path": "result.tests.verifier.verdict",
+   "note": "gate output"
+  }
+ ],
+ "deterministic_gate": {
+  "verifier_verdict": "pass"
+ },
+ "reviewer": {
+  "backend": "replay",
+  "model": "oracle"
+ },
+ "latency_ms": 1,
+ "cost_usd": 0.0
+}

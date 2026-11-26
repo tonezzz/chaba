@@ -1,0 +1,90 @@
+title: open-jev guard — OMP thread cap and conditional swap reclaim on tony-omen
+date: '2026-11-26'
+host: tony-omen (100.75.102.88, Tailscale)
+decision: tony-omen-cpu-job-guard-2026-11-25 (ssot.technical-decisions.yml)
+
+problem: |
+  open-jev.service (port 8777, gemma-3-4b-it on CPU) runs under CPUQuota=200%
+  but the process carries ~43 threads (torch's CPU-count-sized intra-op pool
+  plus Starlette/anyio's 40-thread sync-endpoint pool); over ~15h its working
+  set accumulated 7.5 GiB VmSwap at the MemoryHigh=4G cap. The 08:07 reclaim
+  restart spiked 1m load to 93.91 during swap-in. Metrics showed real
+  inference cost (214s/request), not idle spin: threads were sleeping between
+  requests.
+
+decision: |
+  Keep the model and the existing caps. Cap the OpenMP pool to match the
+  2-CPU quota, and turn the incident-driven reclaim into a daily conditional
+  check. Do NOT raise MemoryHigh/MemoryMax to hold ~12 GiB in RAM (would
+  starve the 16G cpu-jobs.slice used by evals), do NOT add a tight
+  MemorySwapMax (converts accumulation into cgroup OOM), do NOT swapoff.
+  Netdata cannot see user cgroups in this container, so the alert watches
+  mem.swapio swap-in (the actual incident signature ~15 MiB/s) rather than a
+  nonexistent per-service cgroup dimension; the exact MemorySwapCurrent > 4G
+  check lives in the reclaim script.
+
+what_changed: |
+  - ansible/playbooks/open-jev-guard.yml (new, role=exec checkout; committed
+    from a dispatch worktree because ~/CascadeProjects/chaba is role=exec).
+  - ~/.config/systemd/user.control/open-jev.service.d/60-OMPThreads.conf
+    Environment=OMP_NUM_THREADS=2.
+  - ~/.local/bin/open-jev-reclaim.sh (0755) — reads MemorySwapCurrent,
+    restarts open-jev only when > 4096 MiB, logs both outcomes to journal.
+  - ~/.config/systemd/user/open-jev-reclaim.{service,timer} — oneshot +
+    OnCalendar=*-*-* 04:00:00, Persistent=true.
+  - /home/tony/netdata/etc/health.d/tony-openjev.conf — tony_openjev_swap_in
+    warn > 6000 KiB/s, crit > 10000 KiB/s, 2m average, to sysadmin.
+
+preflight: |
+  Target confirmed from ansible/inventory/hosts.yml (primary_workstations,
+  ansible_host 100.75.102.88) and docs/ssot/infrastructure/, not memory.
+  ansible-playbook --check --diff --limit tony-omen: 0 unreachable / 0 failed,
+  changed=5. First check exposed a mode regression (0700 -> 0755 on
+  ~/.config/systemd/user); the file task was changed to preserve mode and
+  rechecked clean. Backup before converge:
+  /home/tony/backups/openjev-guard-20261126T082952 (existing dropins).
+  Restart of open-jev was called out and approved as part of the request.
+
+verification: |
+  Converge: ok=11 changed=5 failed=0. Recheck (--check): changed=0.
+  OMP_NUM_THREADS=2 present in /proc/<pid>/environ of both the uv parent and
+  the openjev worker; torch.get_num_threads()=2 in a fresh worker process.
+  Note: `ps -o nlwp` showed 2 threads immediately after restart but ~40 once
+  a request arrived — those are Starlette/anyio's default 40-token pool
+  (every @app route is a sync `def`), not torch workers. The OMP cap binds
+  torch's intra-op pool only; it does not shrink the anyio pool.
+  MemorySwapCurrent 819 MiB -> 0 after restart.
+  /health 200 in 88ms after model load; /metrics reachable.
+  Live /score smoke test on the 2-thread cap: HTTP 200 with the correct best
+  option, 400s total (prefill 121.8s + options 278.0s). A torch matmul
+  microbenchmark (256x2048 @ 2048x2048, 20 reps) gave 47.5ms / 27.8ms /
+  22.9ms / 18.2ms / 53.0ms at 1 / 2 / 4 / 8 / 12 threads — the 12-thread
+  default is a contention cliff worse than single-thread. The cap keeps torch
+  off that cliff and inside the 200% CPU quota; 8 threads is the raw-throughput
+  optimum but would fight the 2-CPU quota.
+  Timer next fire Fri 2026-11-27 04:00:00 +07.
+  Reclaim script manual run: "open-jev swap 0MiB <= 4096MiB - no restart needed".
+  Alarm loaded: GET /api/v1/alarms?all=true contains
+  mem.swapio.tony_openjev_swap_in (silent at ~1.7 MiB/s swap-in, correct).
+  Note: /api/v1/alarms without ?all=true only lists non-CLEAR alarms, so an
+  empty list means healthy, not missing config.
+
+rollback: |
+  Delete the 4 installed files and the alarm file, then:
+    systemctl --machine=tony@.host --user disable --now open-jev-reclaim.timer
+    systemctl --machine=tony@.host --user daemon-reload
+    docker exec netdata netdatacli reload-health
+    systemctl --machine=tony@.host --user restart open-jev.service
+  Original dropins are preserved in the backup path above.
+
+lesson: |
+  Netdata in this container binds /host/proc and /host/sys but does not
+  discover user.slice cgroups, and apps_groups.conf would require overriding
+  the whole default grouping plus a Netdata restart. A stock-chart alarm on
+  the observed symptom is more robust than a custom plugin for one service.
+  A fixed daily restart was replaced with a threshold check because the
+  swap accumulation tracks request volume and plateaus; unnecessary restarts
+  would interrupt in-flight /v1/systemone calls for no benefit.
+  Do not use `ps -o nlwp` right after restart to verify an OMP cap: sync
+  FastAPI endpoints lazily fill anyio's 40-thread pool on the first request.
+  Verify with torch.get_num_threads() in-process or /proc/<pid>/environ.

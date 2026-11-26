@@ -1,0 +1,158 @@
+id: mddb-backup-disk-headroom-guard-d5e029
+title: mddb-backup-disk-headroom-guard
+column: done
+updated: 2026-11-23 13:34
+spec: 'Add a disk-headroom guard to mddb-backup so it can never ENOSPC the idc03 single-writer host again. Incident
+  2026-11-19 ~02:55: backup wrote an 18GB partial mddb-ops .db onto a 99%-full / (290G, 3.6G free), causing ENOSPC
+  that cascaded into torn kanban card writes + board-api outage. Partial file manually deleted 08:1x (freed ~18G).
+
+
+  Fix in ~/mddb-backup.sh (idc03, canonical copy may live in chaba repo — check): (1) pre-flight df check — require
+  >= max(15G, 2x expected dump size) free before starting, else skip + alert; (2) write to .tmp then gzip/rename
+  so partials never look like valid backups; (3) retention sweep — delete oldest .db.gz beyond N copies or size
+  cap; (4) optionally stream pg_dump|gzip instead of podman cp of live DB (also gets consistent snapshot). Alert
+  path: focus-inbox entry or card comm on failure.
+
+
+  Done when: backup script refuses to run under low headroom (tested), partial artifacts can''t masquerade as backups,
+  retention enforced, and idc03 disk stays <90% after a week of cycles.'
+ref: MEM-0226
+comms:
+- at: 2026-11-19 10:11
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-19 10:11
+  from: chaba
+  text: classified as paid_frontier (kw:rename conf 1.00)
+- at: 2026-11-19 10:11
+  from: tony
+  text: queued for processing
+- at: 2026-11-19 10:12
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.80 > 1.5)'
+- at: 2026-11-19 10:12
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-19 10:12
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 2.14 > 0.85)'
+- at: 2026-11-19 10:12
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.21 > 0.85)'
+- at: 2026-11-19 10:13
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-19 10:15
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-19 10:17
+  from: chaba
+  text: started devin-task-20261119-101741-add-a-disk-headroom-guard-to-m on tony-macbook (dispatch)
+- at: 2026-11-19 10:17
+  from: chaba
+  text: 'primer injected 8 lesson(s): [kanban-card-torn-write-investigation-b4034e] ROOT CAUSE NAMED: idc03 disk
+    hit E; DB copy MUST come from /v1/backup (read-tx WriteTo + self-verify) — plain cp of ; [idc03-served-checkout-convergence-unbloc-0acb20]
+    RESOLVED — card filed on stale; [timer-alert-idc03-consumer-canary] 2026-11-13 sweep: `board-api comment failed:;
+    [timer-alert-tony-omen-timer-sentinel] RCA (OPS-1261): not a sentinel bug on ome; [assessments-to-education-split-ssot-keep-113ca4]
+    ALL DONE. ('
+- at: 2026-11-19 10:22
+  from: devin
+  text: 'Investigation done: live ~/mddb-backup.sh on idc03 (generalized 4-instance script deployed 11-11) is unversioned
+    — not in chaba repo. Repo canonical home is stacks/idc03/mddb/mddb-backup.sh (README already lists it; file
+    missing). Writing new canonical script there with headroom pre-flight, stream-to-.tmp.gz+rename, per-instance
+    + dir-cap retention, board-api alert. Will test guard logic locally with stubbed podman.'
+- at: 2026-11-19 10:26
+  from: devin
+  text: 'DONE (worktree, not deployed — scp after merge): new canonical stacks/idc03/mddb/mddb-backup.sh — the live
+    ~/mddb-backup.sh was unversioned, now landed for the first time. Guards: per-instance df pre-flight (free >=
+    max(15G, 2x live db size) else skip+alert+exit1), pull streams podman exec cat|gzip to .db.gz.tmp -> gzip -t
+    -> rename (partials can never look like backups; cp fallback still guarded), retention keep=3/instance + 80G
+    dir cap that never deletes an instance''s newest copy, stale .tmp ('
+- at: 2026-11-19 10:29
+  from: chaba
+  text: 'merge-sweep: devin-task-20261119-101741-add-a-disk-headroom-guard-to-m no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-19 10:29
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261119-101741-add-a-disk-headroom-guard-to-m on tony-macbook still
+    dirty — 3 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-19 10:29
+  from: tony-macbook
+  text: 'finished (ok): exit=0 sot/jobs/mddb/2026-11-19-backup-disk-headroom-guard.yml` and the dispatch-outcome
+    file. | devin-task-20261119-101'
+- at: 2026-11-19 10:29
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-19 10:29
+  from: chaba
+  text: 'session-end checkpoint d1af6b11: 3 leftover file(s) committed'
+- at: 2026-11-19 10:29
+  from: chaba
+  text: banked 73 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-19 10:30
+  from: chaba
+  text: pushed dispatch/20261119-101741-add-a-disk-headroom-guard-to-m to origin
+- at: 2026-11-19 10:30
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-19 10:30
+  from: chaba
+  text: auto-merged f1738f05 (dispatch/20261119-101741-add-a-disk-headroom-guard-to-m) → origin/master
+- at: 2026-11-19 10:30
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-19 10:36
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-19 17:04
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:55
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:05
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 15:16
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
+    the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-21 17:49
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:34
+  from: tony
+  text: archived (1d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: paid_frontier
+  lane_source: kw
+  model: litellm/gemini-2.5-flash
+  runner: tony-macbook
+  sweep:
+    stale_running: 2026-11-19 10:29
+    dirty: 3
+  result: 'exit=0 sot/jobs/mddb/2026-11-19-backup-disk-headroom-guard.yml` and the dispatch-outcome file. | devin-task-20261119-101741-add-a-disk-headroom-guard-to-m.service:
+    Consumed 3min 381ms CPU time over 8min 57.960s wall clock time, 431.3M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-19 10:36
+  note: verified — evidence checks green, closing itself

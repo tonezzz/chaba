@@ -1,0 +1,59 @@
+title: "Gate-visibility standard — every skip/defer/hold on a queued
+        item owes a rate-limited, consumer-visible reason"
+subtitle: >
+  Written standard generalizing OPS-1097 (per-card unclaimability),
+  KNB-1183 (host-level claim gates) and the embed-storm lesson
+  (service-level silent retry burn) into ssot.devin-autonomy.yml
+icon: eye
+
+context:
+  card: standard-gate-visibility-everywhere
+  ref: OPS-1193
+  spec: >
+    "Generalize as a written standard in ssot.devin-autonomy.yml or the
+    dispatch runbook: ANY component that decides not to act on a queued
+    item must emit a rate-limited, consumer-visible reason on the item
+    or a fleet-level surface — 'claim pass skipped' in a journal nobody
+    greps is silent starvation. Applies to runner-agent,
+    kanban-dispatch, kanban-act, Ada sweep tools, and mddb workers."
+  prior_attempts: >
+    Attempt 1 (dispatch-wt-20261125-093530) produced a dirty worktree
+    with no commits — merge-sweep counted it a failed dispatch. This
+    attempt lands the standard as a committed SSOT diff.
+
+shipped:
+  standard: >
+    docs/ssot/infrastructure/ssot.devin-autonomy.yml gained a top-level
+    `gate_visibility:` block: the rule, scope (all claim/act gates incl.
+    service-level retry loops and non-card queues), the four-part
+    contract (specific reason / normalized-reason debounce /
+    consumer-visible surface per-item or fleet-level / awaiting_action
+    only for deterministic fleet gaps), exemplars drawn from the
+    existing lanes, a nonconforming list, and a new-component
+    checklist.
+  related_pointer: >
+    `related:` in the same file now points at
+    docs/kb/devin-error-handling-standard.md so the two standards
+    cross-reference.
+
+key_decisions:
+  - "Home = ssot.devin-autonomy.yml (the dispatcher contract), not a
+    new runbook — the spec offered either; the autonomy file already
+    owns dispatch/waiting_cards/guards and is what lane code cites."
+  - "Debounce contract cites OPS-1314 (~12k defer comms) as the
+    rate-limit lesson and the ops0790 ~3h invisible starve as the
+    visibility lesson — the standard encodes both failure modes."
+  - "Doc-only change: no lane code touched; the standard names the
+    already-shipped exemplars (note_defer/_defer_norm, _defer_note,
+    _flag_unclaimable/UNCLAIM_MARK, verdict_pass->/ready) so reviewers
+    can flag deviations against them."
+
+verify:
+  - "python3 -c 'import yaml; yaml.safe_load(...)' on
+    ssot.devin-autonomy.yml — parses clean"
+  - "git diff --stat shows only the SSOT edit + this job record +
+    dispatch-outcome doc; committed on the dispatch branch"
+
+deployment: >
+  SSOT is read from the repo — takes effect on next served-checkout
+  pull; no unit, timer, or service change required.

@@ -87,8 +87,13 @@ def plan(days: float, cap: int) -> tuple[int, list[dict], list[dict]]:
     return total, verified, capped[:max(over, 0)]
 
 
-def archive(cid: str, cap: bool) -> dict:
+def archive(cid: str, cap: bool, days: float | None = None) -> dict:
+    # Pass the sweep's own age threshold through to the write door.
+    # Without this the API used its independent 7d service default, so
+    # `--days 2` dry-runs listed cards the door then rejected as fresh.
     body = {"id": cid, "do": "archive"}
+    if days is not None:
+        body["min_days"] = float(days)
     if cap:
         body["cap"] = True
     req = urllib.request.Request(
@@ -128,7 +133,7 @@ def main() -> int:
     ok = fail = 0
     for c in verified + capped:
         try:
-            res = archive(c["id"], cap=not c["verified"])
+            res = archive(c["id"], cap=not c["verified"], days=args.days)
             print(f"  archived {c['id']}: {res.get('message') or res}")
             ok += 1
         except Exception as e:

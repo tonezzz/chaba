@@ -1,0 +1,110 @@
+id: jobs/bench/2026-11-24-jev-stagnation-gate
+title: Jev stagnation gate — noul/choice probe + runner/bench wiring (BEN-0824)
+card: jev-stagnation-gate-for-agent-bench-loop-a70f74
+ref: BEN-0824
+date: 2026-11-24
+host: idc02 (dispatch worktree)
+session: devin-dispatch 20261124-160637-phase-1-a-noul-choice-probe-on
+status: delivered
+
+spec_deviation: >-
+  Card said "jev-student noul (proven) for the halt decision; real Jev
+  API for choice". Measured reality overturned both halves: arena v2
+  showed jev-student stag 0.417 vs jevos 0.917, and the live replay
+  below shows student returns p~0.005 flat on EVERY trajectory
+  (stall, healthy, agent-stall — the same OOD-collapse signature as
+  code-decision's gates). jev-student is kept as fleet fallback
+  (tailscale-reachable noul) but is NOT trusted as the primary halt
+  signal; real Jev API choice stays key-blocked (KNB-0822). Default
+  order is jev-api -> jevos -> jev-student; env
+  JEV_GATE_NOUL_ORDER / JEV_GATE_CHOICE_ORDER override.
+
+deliverables:
+  probe:
+    path: scripts/jev/loop-gate.py
+    what: >-
+      Phase 1. Two Jev questions per sample on /v1/systemone wire
+      shape: noul "stagnant" -> p, choice "action" ->
+      continue|warn|replan|halt. Verdict = max severity of the two
+      signals (LEVEL map); no choice backend -> noul p alone decides
+      (p>=halt_p halt, p>=warn_p warn); no backend -> "unknown"
+      (callers treat as continue — a gate never kills on missing
+      data). Thresholds halt_p=0.7 warn_p=0.5 (env
+      JEV_GATE_HALT_P/WARN_P).
+    state_sources:
+      - "normalize_state() — caller dict passthrough, recent clamped to last 20 lines x 200 chars"
+      - "state_from_taskdir() — devin-dispatch taskdir: heartbeat = freshest mtime among run.*.log/events.jsonl/transcript/exit_code/needs-input/answers; iterations = transcript steps else events rows; recent = newest run.*.log tail"
+      - "CLI: --state FILE|- , --taskdir DIR, --health, --selftest"
+  replay:
+    path: scripts/jev/loop-gate-replay.py
+    what: >-
+      Replays recorded per-task trajectories through gate() at every
+      prefix length and simulates the strikes rule. Trajectories
+      transcribed from the real 2026-10-24 colibri stall
+      (reports/colibri-bench-out.md + omen archive log) and the
+      clawbot healthy baseline (reports/bench-edu-manage-2026-10-24-
+      clawbot-baseline-reps3.md).
+  runner_wiring:
+    path: scripts/board/runner-agent.py
+    what: >-
+      Phase 2. gate_pass() in the per-tick pass chain (after
+      watchdog_pass): for each active unit in RUNNER_GATE_TYPES
+      (default dispatch) older than RUNNER_GATE_MIN_AGE_S
+      (2700s) and due per RUNNER_GATE_INTERVAL_S (900s), builds loop
+      state via _job_loop_state() — dispatch jobs sample the
+      devin-dispatch taskdir (state_from_taskdir), other types fall
+      back to the unit journal tail — then lg.gate(). WARN/REPLAN
+      post a debounced /comment (g["noted"] per verdict);
+      HALT needs RUNNER_GATE_HALT_STRIKES (2) consecutive verdicts,
+      then _signal_job(unit, TERM) and the finish pass prepends
+      "stagnation-gate HALT (noul p=…, choice=…, streak=N)" to the
+      failed result. Advisory: RUNNER_STAGNATION_GATE=0 disables;
+      missing probe module/backend or any probe error is a no-op.
+      Probe loaded via lg_module() SourceFileLoader (hyphenated
+      file) resolving repos.conf chaba checkout first.
+  bench_wiring:
+    path: scripts/bench-edu-manage.py
+    what: >-
+      Opt-in --stagnation-gate: after each agent-lane task
+      (ti>=3, every --gate-every tasks) the lane trajectory
+      (bench_loop_state: per-task ok/lat/err lines + consecutive_
+      failures/completed signals) goes through lg.gate();
+      --gate-strikes (default 2) consecutive halt verdicts breaks
+      the lane early and records agg["gate"] = {at_task, verdict,
+      noul, choice, strikes, ran, skipped}. "current" scripted lane
+      exempt. Default OFF — bench behavior unchanged unless asked.
+  tests:
+    - "tests/test_loop_gate.py — normalize/questions/stub/noul-level/gate-verdict matrix/taskdir-state/backends (22 tests)"
+    - "tests/board/test_runner_agent_gate.py — gate_pass with fake probe: disabled/no-module/probe-error no-ops, type/age filters, warn debounce, halt strikes -> SIGTERM, streak reset, unknown quiet (11 tests)"
+
+bench_replay_20261124:
+  artifacts:
+    - evals/results/jev/loop-gate-replay-20261124-idc03.json  (jevos live)
+    - evals/results/jev/loop-gate-replay-20261124-idc02.json  (student-only)
+  stall_trajectory: >-
+    13 edu-manage tasks, all ok=False lat=930s err=HTTP 429 /
+    TimeoutError (the real colibri-bench rep-1 shape).
+  healthy_trajectory: >-
+    clawbot rep-1, 13/13 completed lat 1-32s.
+  agent_stall_trajectory: >-
+    8-step agent-loop flavor — repeated identical tool=chat
+    429/TimeoutError failures.
+  results:
+    jevos_idc03:
+      stall: "halt from k=3 (first), strikes-stop k=4 -> skips 9/13 tasks, ~2.3h of 3.4h bench saved; noul p 0.69-0.77, choice halt every checkpoint"
+      healthy: "continue at all 11 checkpoints, noul p 0.21-0.26 — clean separation"
+      agent_stall: "halt from k=3, stop k=4"
+      latency: "5.7-8.4s per gate call (both questions, one request)"
+    jev_student_idc02:
+      all_trajectories: "continue everywhere, noul p 0.005-0.008 flat — student CANNOT judge this state shape (OOD collapse); gate is inert under student-only backends"
+  verdict: >-
+    YES — on jevos the gate HALTs the 4.4h stall after ~4 tasks
+    (~1h in) instead of running all 13 (~3.4h bench + ~1h prep).
+    With student-only backends it never fires — deployment needs
+    jevos reachability (idc03-localhost today) or the real Jev API
+    key (KNB-0822).
+
+followups:
+  - "jevos is an ad-hoc `./jev serve` process on idc03:8017, not a declared unit — gate depends on it; declare/ supervise or accept degraded=student-only"
+  - "real Jev API key still blocked (KNB-0822) — jev-api backend slot is dead config until then"
+  - "runner gate ships default-ON (auto) but self-disables when no backend answers — on student-only hosts it is a silent no-op by design; consider a degraded-heartbeat comms if that matters"

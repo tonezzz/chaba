@@ -1,0 +1,216 @@
+id: ada-ocb-answer-eval
+title: 'ada-ocb answer-quality eval: question -> tool -> data -> answer assertions'
+column: done
+updated: 2026-11-23 13:33
+brief: Tool-call benchmarks verify plumbing; nothing verifies the agent actually answers correctly. Build a small
+  eval set that asserts answer quality end-to-end.
+priority: high
+tags:
+- ada
+- opencode
+- kanban
+- testing
+- benchmark
+- eval
+spec: 'Extends the ocb-smoke/bench harness (ADA-0174). Create tests/eval_ocb/ (or scripts/ocb-eval.py) with ~10
+  curated cases covering the failure modes we actually hit:
+
+
+  - ''find the spec of tony-macbook from ssot'' -> must cite host-roles/host-capacity values (cpu/mem/tailnet),
+  not doc titles
+
+  - ''status of ADA-0172'' -> must return real column/ref, not timeout
+
+  - ''what cards need attention'' -> must use attention/next-card path, not guess
+
+  - SSOT deploy-flow question -> must hit vector-search docs, not collection head
+
+
+  Each case: prompt -> run bridge tools (or recorded session replay) -> assert on ANSWER content (required substrings/sources),
+  not just ok=true. Score per case, write kind:benchmark doc to ada-ha-scenario-reports MDDB with per-case results
+  so regressions show as score drops. Keep cases read-only; no mutations. Pair with ADA-0174''s ocb-smoke.py — share
+  the harness.'
+ref: ADA-0175
+comms:
+- at: 2026-11-17 22:11
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-17 22:11
+  from: chaba
+  text: classified as paid_frontier (kw:benchmark conf 1.00)
+- at: 2026-11-17 22:11
+  from: devin
+  text: queued for processing
+- at: 2026-11-17 22:11
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.47 > 0.85)'
+- at: 2026-11-17 22:12
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-17 22:12
+  from: tony-omen
+  text: claimed
+- at: 2026-11-17 22:12
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.51 > 1.5)'
+- at: 2026-11-17 22:12
+  from: chaba
+  text: started devin-task-20261117-221219-extends-the-ocb-smoke-bench-ha on tony-omen (dispatch)
+- at: 2026-11-17 22:21
+  from: tony-omen
+  text: 'finished (failed): exit=1 ask-20261117-221219-extends-the-ocb-smoke-bench-ha.service: Failed with result
+    ''exit-code''. | devin-task-20261117'
+- at: 2026-11-17 22:21
+  from: chaba
+  text: 'tony-omen retry backoff: fail 1/3 — next claim not before 11-17 22:51'
+- at: 2026-11-17 22:24
+  from: chaba
+  text: 'merge-sweep: devin-task-20261117-221219-extends-the-ocb-smoke-bench-ha failed — its branch isn''t auto-merged
+    (unverified partial work). Retry the card or merge dispatch/20261117-221219-extends-the-ocb-smoke-bench-ha by
+    hand.'
+- at: 2026-11-18 08:34
+  from: devin
+  text: retry requested
+- at: 2026-11-18 08:35
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.30 > 0.85)'
+- at: 2026-11-18 08:35
+  from: idc02
+  text: claimed
+- at: 2026-11-18 08:35
+  from: chaba
+  text: started devin-task-20261118-083536-extends-the-ocb-smoke-bench-ha on idc02 (dispatch)
+- at: 2026-11-18 08:35
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.42 > 1.0)'
+- at: 2026-11-18 08:35
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-18 08:39
+  from: chaba
+  text: 'merge-sweep: devin-task-20261117-221219-extends-the-ocb-smoke-bench-ha no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-18 08:39
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261117-221219-extends-the-ocb-smoke-bench-ha'
+- at: 2026-11-18 09:10
+  from: devin
+  text: 'in progress: scripts/ocb-eval.py + tests/eval_ocb/cases.yml (10 cases) built in an ada-voice clone branched
+    at 0899e56. tools mode all-green (~3s); live mode (opencode run --standalone on this repo bridge, hardened builtin-tool
+    deny) exercising now. Findings so far: deployed workspace bridge is stale (21 vs 25 tools — no ada_ssot_get/ada_context_pack);
+    opencode v2.2.6 needs agent tools:false (not permission map) to block shell/read builtins; flash-lite wanders
+    tools before answering — exactly wh'
+- at: 2026-11-18 10:02
+  from: devin
+  text: 'eval harness done: tests/eval_ocb/cases.yml (10 cases) + scripts/ocb-eval.py (tools/live/replay modes,
+    kind:benchmark MDDB doc). tools mode 10/10 in ~1s. live mode found real issues: flash-lite gets hijacked by
+    matching skills (ssot-search) + ignores ada-control prompt — exactly the wrong-path failure this eval measures.
+    canonical run writing now.'
+- at: 2026-11-18 10:05
+  from: devin
+  text: 'done. ada-voice branch eval/ocb-answer-eval @ 442cfc7 (not pushed): tests/eval_ocb/cases.yml (10 cases)
+    + scripts/ocb-eval.py (tools/live/replay, kind:benchmark MDDB docs) + offline schema test + hourly timer unit.
+    Canonical doc benchmark/ocb-answer-eval-20261118-100407 = score 1.0 (tools 10/10; live unscored on opencode
+    free-quota 429). Live-mode findings: dead-mcp fallback fixed, skill-hijack (ssot-search) + unenforceable builtins
+    confirmed as real wrong-path failures the suite now catches.'
+- at: 2026-11-18 10:09
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261118-083536-extends-the-ocb-smoke-bench-ha.service:
+    Failed to ope'
+- at: 2026-11-18 10:09
+  from: chaba
+  text: banked 64 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-18 10:09
+  from: chaba
+  text: pushed dispatch/20261118-083536-extends-the-ocb-smoke-bench-ha to origin
+- at: 2026-11-18 10:09
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 149.1s)
+- at: 2026-11-18 10:09
+  from: chaba
+  text: auto-merged 1542498d (dispatch/20261118-083536-extends-the-ocb-smoke-bench-ha) → origin/master
+- at: 2026-11-18 10:09
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261118-083536-extends-the-ocb-smoke-bench-ha,
+    branch dispatch/20261118-083536-extends-the-ocb-smoke-bench-ha'
+- at: 2026-11-18 10:09
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-18 17:29
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:09
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:11
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:18
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:02
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:06
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:41
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:33
+  from: tony
+  text: archived (1d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: paid_frontier
+  lane_source: kw
+  model: litellm/gemini-2.5-flash
+  sweep:
+    failed_noted: 2026-11-17 22:24
+    stale_running: 2026-11-18 08:39
+    no_repo: 2026-11-18 08:39
+  last_failure: 'exit=1 ask-20261117-221219-extends-the-ocb-smoke-bench-ha.service: Failed with result ''exit-code''.
+    | devin-task-20261117-221219-extends-the-ocb-smoke-bench-ha.service: Consumed 2.100s CPU time over 7min 58.348s
+    wall clock time, 111.4M memory peak.'
+  attempts: 1
+  runner: idc02
+  result: 'exit=0 ice: No such file or directory | devin-task-20261118-083536-extends-the-ocb-smoke-bench-ha.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261118-083536-extends-the-ocb-smoke-bench-ha.service:
+    No such file or directory'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-18 10:09
+  note: verified — evidence checks green, closing itself

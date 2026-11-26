@@ -1,0 +1,52 @@
+title: LiteLLM spend-ledger timer enabled on idc03
+subtitle: daily CMS publish went from inert quadlet-dir units to a live user timer
+icon: clock
+version: 1
+
+card: litellm-ledger-timer-enable
+ref: OPS-1361
+date: 2026-11-25
+dispatch: 20261125-103147-the-published-spend-ledger-sou
+
+question: |
+  The published spend ledger (ada-cms-pages/llm-gateway-spend-ledger) was
+  stale (~11.8 days as of 2026-11-13). litellm-ledger.timer was "kept
+  disabled until branch merges" — enable it so
+  scripts/litellm/daily-ledger.py publishes daily from LiteLLM_SpendLogs
+  to the CMS page.
+
+decision: |
+  Root cause was deeper than "disabled": deploy.sh installed
+  litellm-ledger.service/.timer into ~/.config/containers/systemd/ — the
+  podman quadlet source dir, which systemd never reads for plain
+  .service/.timer files. The units sat inert there from 2026-11-04;
+  `systemctl --user status litellm-ledger.timer` could not find them.
+  Fixed deploy.sh (moved the two units FILES -> USER_UNITS so they land
+  in ~/.config/systemd/user/), installed the units on idc03
+  (~/.config/systemd/user/, byte-identical sha256 to repo), removed the
+  inert quadlet-dir copies, daemon-reload + enable --now. Timer census
+  entries added to ssot.audit.hosts.yml (litellm-ledger.timer + the
+  same-day litellm-budget-watch.timer gap). Stack declaration stays in
+  stacks/idc03/litellm/ — no ssot.jobs.yml entry, avoiding a second
+  declaration of the same timer.
+
+verification: |
+  systemctl --user list-timers litellm-ledger.timer -> NEXT
+  2026-11-26 07:10:00 +07, Persistent=true.
+  systemctl --user start litellm-ledger.service -> exit 0/SUCCESS,
+  TriggeredBy litellm-ledger.timer; journal shows podman exec
+  litellm-db psql SpendLogs read + "published ->
+  ada-cms-pages/llm-gateway-spend-ledger".
+  MDDB /v1/get ada-cms-pages llm-gateway-spend-ledger -> meta.updated
+  2026-11-25T03:40:54Z, fresh 24h rows (total $8.841524,
+  source postgres:LiteLLM_SpendLogs) — consumer surface verified, not
+  just producer.
+
+notes: |
+  OnCalendar=*-*-* 07:10:00 +07 (off the 05:55 bench chain),
+  Persistent=true. ExecStart runs daily-ledger.py --publish from
+  ~/CascadeProjects/chaba (idc03 exec checkout, chaba-repo-sync kept
+  current — md5-verified identical to repo) with
+  EnvironmentFile=~/.config/secrets/litellm-keys.env; psql path is
+  primary, LITELLM_MASTER_KEY API fallback only if podman read fails.
+  First scheduled fire: 2026-11-26 07:10 +07.

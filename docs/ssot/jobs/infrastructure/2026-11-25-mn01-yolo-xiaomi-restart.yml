@@ -1,0 +1,43 @@
+title: mn01 yolo-xiaomi.service restart — capacity-stop triage verdict
+card: mn01-yolo-xiaomi-service-stopped-deliber-d2b384
+date: 2026-11-25
+executor: devin-dispatch
+pattern: "systemctl --user / journalctl --user / ssot.audit.hosts.yml"
+summary: >-
+  audit-hosts.py flagged yolo-xiaomi.service missing on mn01. Investigation
+  showed a clean `systemctl --user stop` (Result=success, SIGTERM) at
+  2026-11-25 02:38 UTC — squarely inside the mn-ha-dev crash-loop window
+  (NRestarts 40, HA Core clean-exiting every ~2-7min on mn01's 7.3GB
+  no-swap box after the idc02->mn01 move). Read as crisis triage, not a
+  retirement decision: the unit stayed enabled, has live published
+  consumers (/apps/yolo app + /apps/yolo/api proxy incl. /tvs /cast used
+  by the gesture screen and ada-chat-card YOLO button), and is NOT the
+  superseded omen copy (omen's yolo-xiaomi was retired 2026-11-25 because
+  yolo-detect owns HA's 127.0.0.1:8780 there — a different role).
+  Restarted and verified by surface on both tony-dell and idc02 edges.
+pre_state:
+  - "yolo-xiaomi inactive(dead) since 02:38:22 UTC, enabled, Type=simple, binds tailnet 100.106.196.22:8780 via bind.conf drop-in"
+  - "mn-ha-dev.service restart counter 26 at 02:37 UTC, climbing to 40 by 05:43 UTC — HA Core 'finish process exit code 0' clean shutdowns every ~2-7min, no OOM kill in kernel log"
+  - "mn01: 7.3GB RAM, 0 swap, ~1.4-1.6GB available; load ~2"
+steps_done:
+  - "journalctl --user -u yolo-xiaomi: last explicit stop Oct 20 (websockets upgrade restart); Nov 25 event logged only 'Consumed ... signal=TERM' — Result=success + ExecMainStatus=15 = intentional systemctl stop, not crash/OOM"
+  - "consumer audit: ssot.routes.yml yolo-api proxy -> 100.106.196.22:8780; stacks/web /apps/yolo page + api; gesture/screen.html /tvs + /cast; ada-chat-card.js YOLO button -> idc02 edge /apps/yolo/api; server.py implements /detect /image /pointer /set-source /tvs /cast (cast queries HA_BASE=tony-omen:8123)"
+  - "HA-side person_count consumer already migrated to omen yolo-detect 127.0.0.1:8780 (2026-10-17 card + 2026-11-25 omen restore) — mn01 yolo-xiaomi's remaining role is the apps/vision API, not HA polling"
+  - "mn-ha-dev stabilized spontaneously 05:43 UTC (up ~2h+ at decision time, NRestarts frozen at 40)"
+  - "systemctl --user start yolo-xiaomi.service on mn01 -> active, 'Serving YOLO xiaomi_c201 results on http://100.106.196.22:8780' 07:58:10 UTC"
+verification:
+  - "systemctl --user is-active/is-enabled -> active/enabled"
+  - "curl http://100.106.196.22:8780/detect -> JSON {person_count:0, error: imdecode empty-buffer, source: xiaomi_c201} — service healthy; imdecode error is the KNOWN upstream camera outage (xiaomi_c201@192.168.2.77 offline, card go2rtc-7-camera-producers), not a service fault"
+  - "https://tony-dell.taila0626a.ts.net/apps/yolo/ -> 200; /apps/yolo/api/detect -> live JSON; /apps/yolo/api/tvs -> {ok, tvs:[media_player.tony_tv, media_player.tony_tv_cast]} (HA cast backend works end-to-end)"
+  - "https://idc02.taila0626a.ts.net/apps/yolo/ -> 200 + api/detect live (heals ada-chat-card YOLO button path)"
+  - "idc03 edge has no /apps/yolo route (404) — expected, not its surface"
+residuals:
+  - "mn-ha-dev crash-loop root cause UNKNOWN — clean HA exits every ~2-7min for ~4h then spontaneous stability; filed AUD-1399 mn-ha-dev-crash-looped-40x-on-mn01-2026-986f32"
+  - "yolo-xiaomi /detect still reports imdecode empty-buffer — xiaomi_c201 camera offline upstream (tracked by go2rtc-7-camera-producers card); service + /tvs /cast /image surface all functional"
+  - "ssot.audit.hosts.yml mn01 entry unchanged — yolo-xiaomi stays expected_state:active; audit should go green"
+  - "mn01 memory remains tight (no swap, ~1.4GB available) — if mn-ha-dev destabilizes again, yolo-xiaomi is again the first capacity-triage candidate; consider MemoryMax on mn-ha-dev quadlet"
+lessons:
+  - "journal 'Consumed ... signal=TERM' with NO Stopping/Stopped lines can still be a clean systemctl stop — check Result=success + ExecMainStatus=15 via systemctl show; journald drops lines under podman healthcheck log floods."
+  - "mn-ha-dev 'crash-loop' was clean HA exits (code 0), not crashes — 'finish process exit code 0' + restart counter climbing = something is asking HA to shut down (or HA self-terminating), investigate HA-side not infra-side first."
+  - "Same-named yolo units have different roles per host: omen yolo-xiaomi retired (yolo-detect owns HA :8780), mn01 yolo-xiaomi is the /apps/yolo API + cast backend — never transfer a retirement verdict across hosts without checking consumers."
+  - "Verify-by-surface caught the real consumer chain: unit active != feature works — /apps/yolo/api/tvs proved the HA_BASE cast path end-to-end, which /detect alone (dead camera upstream) could not."

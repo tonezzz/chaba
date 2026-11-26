@@ -1,0 +1,33 @@
+icon: wrench
+title: Fix SSOT validation errors in 2026-11-26 job records
+date: 2026-11-26
+card: timer-alert-tony-dell-ha-auth-watch
+context: >-
+  After closing the ha-auth-watch loops and filing several job records, a
+  full `node scripts/ssot-validate-all.mjs` run over master reported 10
+  files with errors out of 7,164. Nine were 2026-11-26 job records missing
+  the required `title` field (four from the ha-auth fix/audit work and five
+  from earlier disk, SSH and health work in the same objective); one had a
+  `): ` sequence inside a plain YAML scalar that broke parsing.
+changes:
+  - "Added a descriptive `title` to all nine affected job records under
+    docs/ssot/jobs/{board,infrastructure,monitoring,security}/."
+  - "Replaced `API post otherwise): gh-runs-watch` with
+    `API post otherwise) - gh-runs-watch` in
+    jobs/board/2026-11-26-exec-checkout-inbox-door.yml so the scalar parses."
+verification:
+  - "Before: 7,154 valid / 10 invalid, 144 warnings.
+    After: 7,164 valid / 0 errors, 144 warnings (pre-existing)."
+  - "Every edited file re-parsed with `yaml.safe_load` and asserted its
+    title before commit."
+rollback: >-
+  Revert commit 89b9d73177; the records still exist and remain readable,
+  but full SSOT validation reports the 10 errors again.
+residual: >-
+  The 144 warnings are unchanged and pre-existing; they are not blockers
+  and were not touched in this scoped fix.
+lesson: >-
+  Job records written quickly during incident work tend to omit `title`,
+  and a `): ` inside an unquoted folded/plain scalar is a YAML parser
+  breaker. Run `ssot-validate-all.mjs` before declaring an incident
+  closed — the script is fast once its cache is warm.

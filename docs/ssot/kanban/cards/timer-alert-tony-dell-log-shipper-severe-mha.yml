@@ -1,0 +1,71 @@
+id: timer-alert-tony-dell-log-shipper-severe-mha
+title: Timer log-shipper-severe-mha on tony-dell failing
+column: done
+updated: 2026-11-26 20:37
+priority: high
+tags:
+- timer-alert
+- auto
+- by:timer-sentinel
+note: 'Last run (11-26 01:39) of `log-shipper-severe-mha.service` on `tony-dell` result=exit-code — investigate
+  journal: `journalctl --user -u log-shipper-severe-mha.service` on the host. See CMS `timer-timeline-tony-dell`.'
+ref: OPS-1413
+comms:
+- at: 2026-11-26 01:54
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-26 02:04
+  from: devin
+  text: '[still suspicious] Last run (11-26 01:39) of `log-shipper-severe-mha.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u log-shipper-severe-mha.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 07:23
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-26 09:21
+  from: devin
+  text: '2026-11-26 verified fix: mddb-ops :11026 HTTP write timeout raised 30s->120s (writes observed 32-79s);
+    log-shipper BATCH 10->5; unit TimeoutStartSec->45m fleet-wide. Runner-agent drift cleared (all 6 hosts pinned
+    1514c75c...). Re-run Result=success/0 for log-shipper-severe-mha.'
+- at: 2026-11-26 09:21
+  from: devin
+  text: closed by devin
+- at: 2026-11-26 20:37
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+spec: Investigate the failure of `log-shipper-severe-mha.service` on `tony-dell` by inspecting its user journal
+  via `journalctl --user -u log-shipper-severe-mha.service` on the host, referencing CMS `timer-timeline-tony-dell`.
+  Concurrently resolve the runner-agent drift across affected hosts by redeploying the current version from the
+  `chaba` repository (`scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent`). The done-condition
+  is verified when `log-shipper-severe-mha.service` runs successfully on `tony-dell` and the runner-agent on `tony-dell`
+  (plus any deferred hosts) matches the `chaba` repository version without drift.
+action:
+  status: done

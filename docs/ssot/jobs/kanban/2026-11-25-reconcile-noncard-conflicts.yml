@@ -1,0 +1,67 @@
+title: reconcile-local-conflicts — non-card conflict quarantine + quiet dedup
+subtitle: Orphan .local-conflict files archive after 7d; already-flagged files stop re-printing every pull
+icon: git
+version: 1
+
+card: reconcile-noncard-conflicts-never-resolve
+date: 2026-11-25
+dispatch: 20261125-143933-observed-2026-11-17-on-idc03-s
+
+summary: |
+  Card reconcile-noncard-conflicts-never-resolve (observed 2026-11-17 on
+  the idc03 served checkout): 16 focus-inbox *.local-conflict-* files
+  dated 2026-11-11 were logged as "non-card conflict kept" by
+  reconcile-local-conflicts.py on EVERY git-safe-pull/kanban-commit
+  exit — forever. The earlier expiry pass
+  (reconcile-local-conflicts-expire-stale-n-00974b, landed same day)
+  archived canonical-backed files after 24h but exempted orphans
+  entirely; focus-inbox entries moved to processed/ have no canonical
+  base, so they are exactly the orphan case. Two gaps remained:
+  orphans re-flagged forever, and flag_card's 48h board-flag dedup did
+  not quiet the per-file stderr line or the leftover count.
+
+  Fix combines the card's options (b) and (c):
+  - expire_noncard now applies NONCARD_ORPHAN_TTL_S (default 7d,
+    RECONCILE_NONCARD_ORPHAN_TTL_S) to conflicts with no canonical
+    base. The archive move to ~/.local/share/chaba-reconcile-archive/
+    preserves the only copy — quarantine, not deletion.
+  - flag_card returns a status ('flagged'|'dedup'|'lost'|'dry'); the
+    non-card paths (stray docs/ssot scan and non-.yml files inside the
+    cards dir) skip the stderr "kept" line and the leftover count when
+    the status is 'dedup', so a second run inside FLAG_DEDUP_H (48h)
+    is completely silent with rc 0. Card-conflict (.yml) failures keep
+    their loud per-run stderr — those may hold board writes.
+
+deliverables:
+  - scripts/board/reconcile-local-conflicts.py — NONCARD_ORPHAN_TTL_S
+    constant; expire_noncard picks NONCARD_TTL_S vs
+    NONCARD_ORPHAN_TTL_S by canonical existence and no longer exempts
+    orphans; flag_card returns status and drops its dedup stdout line;
+    both non-card call sites go quiet on 'dedup'.
+  - tests/board/test_reconcile_local_conflicts.py — orphan quarantine
+    after TTL, quiet-second-run (stderr empty, rc 0), updated
+    expire_noncard status coverage; selftest in the script covers the
+    same plus ancient-orphan archival.
+
+verify:
+  - "python3 scripts/board/reconcile-local-conflicts.py --selftest — OK"
+  - "python3 -m pytest tests/board/test_reconcile_local_conflicts.py — 6 passed"
+  - "scratch-repo e2e (isolated HOME + CHABA_SERVED_CHECKOUT): run 1
+    flagged fresh+recent-orphan conflicts and archived a 2020 orphan;
+    runs 2 and 3 produced zero stderr and rc 0"
+
+gotchas:
+  - "Orphan quarantine is time-based, not content-based: an orphan
+    younger than 7d still flags (and re-flags every 48h dedup cycle)
+    until it ages out. Set RECONCILE_NONCARD_ORPHAN_TTL_S very high to
+    restore never-expire semantics."
+  - "Dedup keys strip the .local-conflict-<ts> suffix, so a NEW
+    conflict on the same path inside 48h of a flagged one is also
+    quiet — same-file recurrence is treated as the same event."
+  - "flag_card's 'lost' status (board-api unreachable AND not the
+    served checkout) is NOT deduped — those files keep printing every
+    run because the flag genuinely never landed."
+  - "The 7d orphan window assumes the flag is seen; ops-local-conflict-
+    guard comms are the only surfacing. If inbox conflicts recur
+    faster than humans read the board, shorten NONCARD_TTL_S instead
+    of the orphan TTL."

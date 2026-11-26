@@ -1,0 +1,195 @@
+---
+# ha-dashboard-deploy.yml — promote the checked-in chaba-admin Hosts view.
+#
+# Companion to host-load-guard.yml --tags ha: that play installs the telemetry
+# script that creates the per-zone sensors; this play promotes the dashboard
+# that graphs them. Both are tony-omen-only and live in the `ha` tag slice.
+#
+# Usage (from ansible/, ALWAYS pass an explicit --limit):
+#   ansible-playbook playbooks/ha-dashboard-deploy.yml --check --diff --limit tony-omen
+#   ansible-playbook playbooks/ha-dashboard-deploy.yml --limit tony-omen
+#
+# Order: stage snapshot + helper -> probe (dry-run) -> back up live storage ->
+# promote only the named view -> verify entities. The HA token is read from a
+# 0600 file on the host (by the helper, and via slurp for `uri`) — it never
+# enters play vars, the command line, or the checked-in snapshot.
+#
+# In --check mode the websocket/API tasks below are skipped: only the staged
+# file diffs are previewed, so check mode never touches the live dashboard.
+
+- name: Deploy chaba-admin dashboard views
+  hosts: all:!macos:!disabled
+  gather_facts: false
+  become: false
+
+  vars:
+    remote_home: "/home/{{ ansible_user }}"
+    dashboard_path: chaba-admin
+    view_paths: hosts
+    snapshot_src: "{{ playbook_dir }}/../../docs/home-assistant/dashboards/chaba-admin-current.json"
+    snapshot_dest: "{{ remote_home }}/.config/chaba/chaba-admin-current.json"
+    helper_src: "{{ playbook_dir }}/../../scripts/home-assistant/promote-views.py"
+    helper_dest: "{{ remote_home }}/.config/chaba/promote-views.py"
+    ha_token_file: "{{ remote_home }}/.config/secrets/home-assistant-token.env"
+    ha_url: "http://127.0.0.1:8123"
+    storage_file: "{{ remote_home }}/.config/home-assistant/.storage/lovelace.chaba_admin"
+    backup_stamp: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
+    verify_entity: sensor.kk_mac_temp
+    verify_zone_entities:
+      - sensor.kk_mac_temp_cpu
+      - sensor.kk_mac_temp_gpu
+
+  tasks:
+    - name: Ensure chaba config directory exists
+      ansible.builtin.file:
+        path: "{{ remote_home }}/.config/chaba"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0700"
+      when: inventory_hostname == 'tony-omen'
+      tags: [ha]
+
+    - name: Install promote-views helper (tony-omen only)
+      ansible.builtin.copy:
+        src: "{{ helper_src }}"
+        dest: "{{ helper_dest }}"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0644"
+      when: inventory_hostname == 'tony-omen'
+      tags: [ha]
+
+    - name: Stage dashboard snapshot (tony-omen only)
+      ansible.builtin.copy:
+        src: "{{ snapshot_src }}"
+        dest: "{{ snapshot_dest }}"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0644"
+      when: inventory_hostname == 'tony-omen'
+      tags: [ha]
+
+    - name: Probe whether the live view needs updating
+      ansible.builtin.command: >-
+        python3 {{ helper_dest }}
+        --file {{ snapshot_dest }}
+        --view {{ view_paths }}
+        --token-file {{ ha_token_file }}
+        --dry-run
+        {{ ha_url }} {{ dashboard_path }}
+      register: view_probe
+      changed_when: false
+      when:
+        - inventory_hostname == 'tony-omen'
+        - not ansible_check_mode
+      tags: [ha]
+
+    - name: Stat live Lovelace storage before backup
+      ansible.builtin.stat:
+        path: "{{ storage_file }}"
+      register: storage_stat
+      when:
+        - inventory_hostname == 'tony-omen'
+        - not ansible_check_mode
+      tags: [ha]
+
+    - name: Back up live Lovelace storage before a write
+      ansible.builtin.copy:
+        src: "{{ storage_file }}"
+        dest: "{{ storage_file }}.bak-{{ backup_stamp }}"
+        remote_src: true
+        mode: preserve
+      when:
+        - inventory_hostname == 'tony-omen'
+        - not ansible_check_mode
+        - storage_stat.stat.exists
+        - "'already current' not in view_probe.stdout"
+      tags: [ha]
+
+    - name: Promote the named views into the live dashboard
+      ansible.builtin.command: >-
+        python3 {{ helper_dest }}
+        --file {{ snapshot_dest }}
+        --view {{ view_paths }}
+        --token-file {{ ha_token_file }}
+        {{ ha_url }} {{ dashboard_path }}
+      register: view_promote
+      changed_when: "'saved' in view_promote.stdout"
+      when:
+        - inventory_hostname == 'tony-omen'
+        - not ansible_check_mode
+      tags: [ha]
+
+    - name: Show dashboard merge result
+      ansible.builtin.debug:
+        msg: "{{ view_promote.stdout | default('') }}"
+      when:
+        - inventory_hostname == 'tony-omen'
+        - not ansible_check_mode
+      tags: [ha]
+
+    - name: Read HA token for entity verification
+      ansible.builtin.slurp:
+        src: "{{ ha_token_file }}"
+      register: ha_token_blob
+      no_log: true
+      when:
+        - inventory_hostname == 'tony-omen'
+        - not ansible_check_mode
+      tags: [ha]
+
+    - name: Extract bearer token
+      ansible.builtin.set_fact:
+        ha_bearer: >-
+          {{ (ha_token_blob.content | b64decode).splitlines()
+             | select('match', '(HA_LONG_LIVED_TOKEN|HASS_TOKEN|HA_TOKEN)=')
+             | first
+             | split('=', 1) | last | trim
+             | replace('"', '') | replace("'", '') }}
+      no_log: true
+      when:
+        - inventory_hostname == 'tony-omen'
+        - not ansible_check_mode
+      tags: [ha]
+
+    - name: Verify headline telemetry entity exists
+      ansible.builtin.uri:
+        url: "{{ ha_url }}/api/states/{{ verify_entity }}"
+        headers:
+          Authorization: "Bearer {{ ha_bearer }}"
+        method: GET
+        status_code: 200
+      register: headline_state
+      until: headline_state.status == 200
+      retries: 12
+      delay: 10
+      when:
+        - inventory_hostname == 'tony-omen'
+        - not ansible_check_mode
+      tags: [ha]
+
+    - name: Verify per-zone telemetry entities exist
+      ansible.builtin.uri:
+        url: "{{ ha_url }}/api/states/{{ item }}"
+        headers:
+          Authorization: "Bearer {{ ha_bearer }}"
+        method: GET
+        status_code: 200
+      loop: "{{ verify_zone_entities }}"
+      register: zone_state
+      when:
+        - inventory_hostname == 'tony-omen'
+        - not ansible_check_mode
+      tags: [ha]
+
+    - name: Report verified entity states
+      ansible.builtin.debug:
+        msg: >-
+          {{ verify_entity }}={{ headline_state.json.state }},
+          {{ zone_state.results | map(attribute='item') | join(', ') }}
+          states={{ zone_state.results | map(attribute='json.state') | list }}
+      when:
+        - inventory_hostname == 'tony-omen'
+        - not ansible_check_mode
+      tags: [ha]

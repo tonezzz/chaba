@@ -3,6 +3,6 @@ Description=Device telemetry retention prune (7d) (job:device-telemetry-prune, r
 
 [Service]
 Type=oneshot
-TimeoutStartSec=300
+TimeoutStartSec=1800
 ExecStart=/usr/bin/python3 %h/.local/share/device-telemetry/prune.py
 Environment="DEVICE_TELEMETRY_RETENTION_DAYS=7"

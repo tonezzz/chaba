@@ -14,8 +14,9 @@ spec: "Script requirements (procedure verified live 2026-10-10):\n - input: read
   \ OPENROUTER_API_KEY= line in ~/.config/secrets/openrouter.env on tony-dell and tony-omen (sed in place)\n - store\
   \ 3: OPENROUTER_API_KEY= line 5 in idc03 ~/.config/secrets/mddb-gemini.env (keep the commented line 4)\n - store\
   \ 4: json_replace on omen ~/.openclaw/state/openclaw.sqlite config_machine_state authProfiles.store $.profiles.\"\
-  openrouter:manual\".key\n - restart ghostroute-watcher (omen) + gemini-ollama-proxy (idc03); openclaw-gateway\
-  \ only if it caches the key (check before restart)\n - verify: /api/v1/auth/key shows expected label/expiry +\
+  openrouter:manual\".key\n - restart ghostroute-watcher (omen) + gemini-ollama-proxy (idc03); ALWAYS restart\
+  \ openclaw-gateway (omen) — it caches authProfiles.store at STARTUP (2026-11-23 401 incident, SEC-0027); wait for\
+  \ 127.0.0.1:18789 to bind before probing; retry several :free models on upstream 429\n - verify: /api/v1/auth/key shows expected label/expiry +\
   \ one :free chat/completions call returns cost:0\n - update ssot.services.yml rotation note with date + expiry\n\
   \ - rm the input file after success\n VERIFY: dry-run flag prints the 4 targets without changing anything; real\
   \ run verified on the Oct-17 rotation (or sooner with a test key)."
@@ -53,6 +54,9 @@ comms:
 - at: 2026-11-09 20:11
   from: tony
   text: archived (27d in done, board over card cap)
+- at: 2026-11-24 20:17
+  from: devin
+  text: 'procedure corrected (SEC-0027): the "restart openclaw-gateway only if it caches the key" assumption was wrong — the gateway caches authProfiles.store at startup and kept using the expired key after all 4 stores were swapped, causing a live agent-turn 401 on 2026-11-23. Script now restarts the gateway unconditionally, waits for 127.0.0.1:18789, retries :free models on upstream 429, and gates on a real gateway agent turn.'
 created: '2026-10-10'
 updated: 2026-11-09 20:11
 ref: SEC-0383

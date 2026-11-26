@@ -1,0 +1,74 @@
+# DevNestHA project event feed (card kk-video-devnest-topic-event-feed / OPS-0927)
+#
+# Bind existing DevNestHA forum topic thread_id 33 to project
+# kk-video-c9f99fee6146 and route project-scoped PublicationEvent traffic
+# through the relay's manifest-backed topic registry instead of relying on
+# a hard-coded tg_thread_id or a silent General fallback.
+title: DevNestHA project topic event feed
+job: kk-video-devnest-topic-event-feed
+date: 2026-11-24
+host: idc03 (board-api + devnest-tg-relay.service when deployed)
+unit: chaba-board-api.service, devnest-tg-relay.service
+source: scripts/board/publication.py + scripts/devnest/devnest-tg-relay.py
+card: kk-video-devnest-topic-event-feed
+ref: OPS-0927
+project: kk-video-c9f99fee6146
+telegram:
+  chat_id: -1003998821809
+  thread_id: 33
+  visible_title: preserved (no rename; registry binds by thread_id)
+
+binding:
+  manifest: ~/.local/share/devnest/projects/kk-video-c9f99fee6146/project.json
+  registry: ~/.local/share/devnest/telegram/topics.json
+  state: >-
+    Prior OPS-0927 work bound thread 33 -> kk-video-c9f99fee6146 and kept the
+    visible topic title. This change makes the publication/relay path use that
+    binding for project/card/job refs.
+
+publication_routing:
+  telegram_sink: >-
+    TelegramSink.render emits a concise [DevNest <kind>] title, bounded body,
+    short artifact refs from evidence/media, and allowlisted QC/hash/status
+    meta (artifact|drive|sha256|hash|qc|job_status). It never sends source
+    binaries or raw attachment payloads.
+  payload_refs: >-
+    When meta.tg_thread_id is absent, the sink forwards event project ->
+    project_id, card -> card_ref, and job -> job_ref to the relay /send door.
+    An explicit integer tg_thread_id still wins and suppresses ref forwarding.
+  relay_resolution: >-
+    route_send keeps explicit message_thread_id first, then resolves
+    project_id/card_ref/card_id through the active project registry. A new
+    job_ref path matches project-prefixed pack slugs (for example
+    kk-video-c9f99fee6146-preview) to the same project topic. Explicit
+    project/card refs with no active binding fail closed (LookupError/404);
+    unmatched non-project job refs keep the legacy General behavior.
+  general_mirror: >-
+    Only relay milestone=true / mirror='general' sends also mirror to General.
+    Routine project intake/status/artifact events stay in the bound topic.
+
+coverage:
+  intake_source_received: >-
+    Relay PDF/document intake already binds/attaches inside the project topic;
+    this change covers the publication path for follow-up events.
+  artifact_milestones: >-
+    Producers should emit kind=milestone (or alert) with project/job/card refs,
+    media/evidence Drive refs, and meta.qc/hash fields; Telegram renders the
+    refs concisely.
+  job_status_transitions: >-
+    Meaningful queued/claimed/running/done/failed/stalled/cancelled states map
+    to progress/milestone/alert PublicationEvents. progress remains throttled
+    and never routes to Telegram by default; milestone/alert carry status meta.
+
+verification:
+  - "python3 -m py_compile scripts/board/publication.py scripts/devnest/devnest-tg-relay.py"
+  - "python3 -m unittest tests.board.test_publication -v  # 75/75 OK"
+  - "uv run --with pytest python -m pytest tests/test_devnest_tg_relay.py -q  # 58/58 OK"
+  - "mocked end-to-end: PublicationEvent -> TelegramSink -> relay.route_send -> captured _send_text thread_id=33; no Telegram API call"
+  - "no live Telegram test message posted; no sharing permissions changed"
+
+deploy_note: >-
+  This is a code change in the dispatch worktree; it is not deployed by this
+  session. After merge, the served idc03 checkout picks it up through the
+  normal chaba-repo-sync/board-api path and devnest-tg-relay.service needs the
+  normal service restart for the relay-side job_ref/reconcile change.

@@ -1,0 +1,58 @@
+icon: shield
+title: Scoped SFTP-only SSH policy with admin shell preserved
+date: 2026-11-26
+card: ops-ssh-shell-policy-scoped-sftp
+context: >-
+  A separate in-flight site.yml convergence applied a global
+  `ForceCommand internal-sftp` from
+  /home/tony/tony-projects/ansible-chaba/roles/common/templates/sshd_config.j2
+  to con01, mn01, idc02, idc03 and tony-dell, breaking shell SSH and Ansible
+  module execution. The per-host Dell restore (see
+  2026-11-26-tony-dell-ssh-shell-restore.yml) fixed one host but would be
+  undone by the next converge. Tony chose the durable policy: keep a scoped
+  SFTP-only rule in the canonical template and re-converge the fleet.
+changes:
+  - "roles/common/templates/sshd_config.j2: removed the global ForceCommand
+    (done in the concurrent session) and added a trailing
+    `Match Group sftponly` block with `ForceCommand internal-sftp`,
+    `AllowTcpForwarding no` and `X11Forwarding no`. The Match block is last
+    so admin sessions keep normal shell access."
+  - "roles/common/tasks/ssh-hardening.yml: added an idempotent
+    `group: name=sftponly system=true state=present` task (tags ssh,
+    hardening) so the scoped rule has a real target group."
+  - "Re-ran `site.yml --tags ssh --diff` on tony-dell, con01, idc02, idc03,
+    tony-omen and mn01. Local bootstrap restores were completed first on
+    the four SFTP-only hosts (Kanban triage session); Ansible cannot exec
+    modules through a forced internal-sftp session."
+verification:
+  - "Shell probes succeed on tony-dell, con01, mn01, idc02, idc03,
+    tony-omen and tony-macbook."
+  - "All six converged hosts report `Match Group sftponly` count 1,
+    global `ForceCommand internal-sftp` count 0, `sshd -t` exit 0 and
+    effective `forcecommand none` for the admin user."
+  - "Check-mode rerun `--tags ssh` on the six hosts: 0 unreachable, 0
+    failed. The only reported change is the pre-existing date-stamped
+    sshd_config backup task."
+  - "Template rendered copy validated with `sudo sshd -t -f` before rollout."
+rollback: >-
+  Restore the pre-change template (no Match block) and rerun
+  `site.yml --tags ssh --limit <host>`; the previous per-host
+  sshd_config backups from the convergence remain in
+  /etc/ssh/sshd_config.backup.<date>. The earlier global SFTP-only policy
+  can be reinstated by moving `ForceCommand internal-sftp` above the Match
+  block, but that will again block Ansible exec on every host.
+residual: >-
+  tony-macbook was not converged (macOS, outside this Linux sshd template;
+  shell works and no global ForceCommand is present). The ansible-chaba
+  working copy under /home/tony/tony-projects has no .git metadata, so the
+  template edit lives on disk rather than in a version-controlled repo;
+  this SSOT record is the durable reference. ForceCommand is now opt-in via
+  the sftponly group; adding an account to that group re-enables SFTP-only
+  access for it.
+lesson: >-
+  A per-host sshd revert is not durable while the source template still
+  forces SFTP. Trace a 'managed by Ansible' config to its Jinja source,
+  scope the restriction with a trailing Match block, ensure the group
+  exists, and re-converge from a shell-capable host. Keep a local
+  bootstrap play (restore-ssh-shell.yml) available for hosts already
+  locked to internal-sftp.

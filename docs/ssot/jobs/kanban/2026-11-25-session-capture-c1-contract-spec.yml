@@ -1,0 +1,41 @@
+title: "session-capture C.1: capture-router/harvester contract spec in SSOT"
+summary: >
+  Card session-capture-c1-spec (OPS-1355, dev-0038 follow-up): define the
+  Phase C capture-router/harvester contract in
+  docs/ssot/ssot.knowledge-capture.yml — event envelope, approved sinks,
+  dedupe key, audit metadata, idempotency, dry-run, guards — with worked
+  examples. Spec only; no runtime behavior change. A prior session had
+  opened PR #218 with a lighter 28-line draft; this dispatch supersedes
+  it with a contract grounded in the actual implementation
+  (scripts/chaba/capture-router.py, harvester.py, capture-apply.py) and
+  adds the missing approved-sinks enumeration, dedupe-key derivation,
+  and examples the card's acceptance requires.
+card: session-capture-c1-spec
+verify:
+  - "python3 -c 'import yaml; yaml.safe_load(...)' — file parses, 11 sections"
+  - "structural check: every section has title/icon/layout/items, no
+    duplicate titles or item labels — clean"
+  - "python3 scripts/ssot-prose-smell.py --file docs/ssot/ssot.knowledge-capture.yml
+    — 0 flagged values"
+  - "node scripts/ssot-validate-all.mjs — 6425 files, 0 errors; the file
+    now trips bloat review-threshold warnings (471 lines / 11 sections /
+    55 items) which are warnings only, expected for a contract spec"
+  - "examples verified against real router output:
+    capture-router.py --self-test 13/13; sample routes reproduce the
+    documented proposal fields and dedupe_key formats"
+method_notes: >
+  Two sections appended after Phase D Baseline: "Capture Router Contract
+  (Phase C.1)" (layout: list, 8 items covering posture/pipeline, event
+  envelope candidate->proposal, approved sinks+actions, dedupe_key,
+  audit metadata, idempotency, dry-run, guards) and "Capture Router
+  Contract — Examples" (layout: text, real router/ledger shapes).
+  Grounding decisions: the contract documents the AS-BUILT Phase C
+  slice — propose-first posture, 7-sink namespace, write-approved pair
+  restricted to (kanban, create) via capture-apply -> board-api — rather
+  than the PR #218 draft's invented event_id/UUID envelope that did not
+  match the code. Identity is (source, source_id); dedupe is
+  "<sink>:<native_key>". CHANGELOG.md gained a 2026-11-25 minor entry
+  per ssot.file-control.yml. ssot.index.yml needed no change (file
+  already registered). config.last_updated bumped to 2026-11-25.
+  Downstream cards session-capture-c2-router / c3-hooks / c4-harvester
+  now have the canonical contract to implement against.

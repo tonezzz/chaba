@@ -174,6 +174,65 @@ class TestOpsPolicy(unittest.TestCase):
             self.assertNotIn(f"ada-ha-actions-{inst}", prune.POLICY)
 
 
+class TestSweepOps(unittest.TestCase):
+    """sweep_ops returns bare line strings — the summary phase regexes
+    'deleted N/' off them. A (line, ok) tuple result must be unwrapped
+    here, not downstream (ADA-1370: tuples exit-coded all four lanes
+    on 2026-11-25)."""
+
+    def _run(self, results):
+        it = iter(results)
+        with patch.object(lr.prune, "collection_bases",
+                          return_value=["http://ops/v1"]), \
+             patch.object(lr.prune, "sweep",
+                          side_effect=lambda *a: next(it)):
+            return lr.sweep_ops(lr.LANES["kk"], dry=True)
+
+    def test_string_results_pass_through(self):
+        line = "ada-ha-events-kk: deleted 3/10 (>30d on period_end)"
+        self.assertEqual(self._run([line, line]), [line, line])
+
+    def test_tuple_results_become_bare_lines(self):
+        lines = self._run([("ada-ha-events-kk: deleted 1/2", True),
+                           ("ada-ha-snapshots-kk: would delete 0/4",
+                            False)])
+        self.assertEqual(lines, ["ada-ha-events-kk: deleted 1/2",
+                                 "ada-ha-snapshots-kk: would delete 0/4"])
+        self.assertTrue(all(isinstance(l, str) for l in lines))
+
+    def test_non_string_results_dropped(self):
+        self.assertEqual(
+            self._run([None, ("x: deleted 0/1", True)]),
+            ["x: deleted 0/1"])
+
+
+class TestMainOpsOnly(unittest.TestCase):
+    """End-to-end --ops-only run: tuple-returning prune.sweep must not
+    crash the summary/card_comment phase (the reported failure)."""
+
+    def test_main_completes_with_tuple_sweep_results(self):
+        posted = []
+        with tempfile.TemporaryDirectory() as td, \
+             patch.object(sys, "argv",
+                          ["lane-retention.py", "--lane", "kk",
+                           "--ops-only"]), \
+             patch.object(lr, "STATE", Path(td) / "state.json"), \
+             patch.object(lr.prune, "collection_bases",
+                          return_value=["http://ops/v1"]), \
+             patch.object(lr.prune, "sweep",
+                          return_value=("x: deleted 2/5", True)), \
+             patch.object(lr, "card_comment",
+                          side_effect=lambda t: posted.append(t)), \
+             patch.object(lr, "ops_event"), \
+             patch.object(lr.chaba_event, "send"), \
+             patch.object(lr, "save_state"):
+            rc = lr.main()
+        self.assertEqual(rc, 0)
+        # 2 collections x 1 base x 'deleted 2/5' = 4 docs swept
+        self.assertEqual(len(posted), 1)
+        self.assertIn("4 ops docs swept", posted[0])
+
+
 class _FakeMddb:
     """list_docs stub + writes captured."""
 

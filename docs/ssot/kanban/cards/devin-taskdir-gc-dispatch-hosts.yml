@@ -1,0 +1,230 @@
+id: devin-taskdir-gc-dispatch-hosts
+title: 'Dispatch task-dir GC gap: hosts accumulate ~/.local/share/devin-dispatch/tasks forever (idc02: 917 dirs)'
+column: done
+updated: 2026-11-26 20:33
+brief: 'DEV-0044 lever 5. Verified on idc02 2026-11-24: 917 task dirs, no prune timer installed — devin-cleanup
+  declared only for tony-dell/tony-omen, session-prune covers omen sessions.db only.'
+priority: medium
+program: devnest
+tags:
+- devin
+- dispatch
+- hygiene
+- disk
+- ops
+spec: 'Parent: card devin-usage-reduction, job doc docs/ssot/jobs/devnest/2026-11-24-devin-usage-reduction.yml.
+
+
+  EVIDENCE (verified this session on idc02): `ls ~/.local/share/devin-dispatch/tasks | wc -l` = 917; 905 contain
+  exit_code (finished per scripts/prune-devin-sessions.sh predicate), 12 do not, 9 no-exit_code dirs stale >7d.
+  `systemctl --user status devin-cleanup.timer` = unit not found on idc02. Coverage map: devin-cleanup.timer declared
+  in docs/ssot/infrastructure/ssot.devin.maintenance.yml for tony-dell + tony-omen only; job:devin-session-prune
+  (docs/ssot/infrastructure/ssot.jobs.yml ~line 855) runs scripts/devin/session-prune.py --days 14 on tony_omen
+  only and prunes sessions.db rows, NOT task dirs; repo systemd/devin-cleanup.{service,timer} ExecStart points at
+  ~/CascadeProjects/chaba/scripts/prune-devin-sessions.sh which DOES contain a task-dir GC block (exit_code + retention)
+  but the units were never installed on idc02.
+
+
+  TASK: (1) Survey every dispatch-capable host (idc01/idc02/idc03/mn01/con01/tony-dell/tony-omen/tony-macbook):
+  task-dir count, whether any prune unit/timer is installed+active, sessions.db size trend. (2) Declare coverage
+  so every dispatch host gets task-dir GC — either per-host generated units (ssot.jobs.yml -> systemd/generated/<host>/)
+  running a shared script, or extend session-prune.py to also GC task dirs; follow docs/kb/host-hygiene-rules.md
+  (declared-or-dead, repo+restart changes, stated rollback). (3) Handle the no-exit_code case: dirs whose task died
+  before writing exit_code — collect when stale (>14d) AND no live devin-task-<id> unit AND no needs-input.txt pending.
+  (4) CRITICAL RETENTION CONSTRAINT: scripts/devin/devin-usage.py computes fleet usage by scanning these dirs —
+  do not prune below the longest reporting window in use (30d+); either set task-dir retention >= 45d or export
+  per-task metrics (prompt/cached/completion/model/finished_at JSONL) to a durable ledger before pruning older dirs.
+  (5) One-time sweep of existing dirs per host after the declared path exists; post counts to this card.
+
+
+  DONE WHEN: every dispatch host has a declared, active prune path covering task dirs incl. the no-exit_code case;
+  ssot.jobs.yml/ssot.devin.maintenance.yml updated; devin-usage.py still returns correct 30d numbers after the sweep
+  (verify by re-running before+after on idc02).'
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  lane: free_lane
+  lane_source: kw
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
+  sweep:
+    stale_running: 2026-11-25 09:55
+    dirty: 1
+  result: 'exit=0 ail in `docs/ssot/jobs/devnest/2026-11-25-devin-taskdir-gc.yml` and the outcome file. | devin-task-20261125-094030-parent-card-devin-usage-reduct.service:
+    Consumed 1min 50.961s CPU time over 13min 7.218s wall clock time, 591.9M memory peak.'
+  verified: false
+ref: DEV-1333
+comms:
+- at: 2026-11-24 22:59
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-25 07:49
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:19
+  from: chaba
+  text: classified as free_lane (kw:install conf 1.00)
+- at: 2026-11-25 09:19
+  from: tony
+  text: queued for processing
+- at: 2026-11-25 09:19
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.57 > 0.85)'
+- at: 2026-11-25 09:19
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 09:20
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 2.19 > 1.0)'
+- at: 2026-11-25 09:28
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 09:29
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 09:31
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (3/3)'
+- at: 2026-11-25 09:33
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 09:35
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-25 09:38
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-25 09:39
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-25 09:40
+  from: chaba
+  text: started devin-task-20261125-094030-parent-card-devin-usage-reduct on tony-macbook (dispatch)
+- at: 2026-11-25 09:40
+  from: chaba
+  text: 'primer injected 8 lesson(s): Dispatch task dirs accumulate forever on hosts without devin-cleanup.timer
+    — onl; [ops-1244d-janitor-merge] [sweep 2026-11-12] board-janitor is declared in ssot.j; editing `ssot.jobs.yml`
+    requires re-running `scripts/render-jobs.py --host <h>` ; idc02''s kanban-dispatch.service was a linked unit
+    running a stale scripts/-only ; [runner-dispatch-no-timeout] primer injected 8 lesson(s): idc02''s kanban-dispatc;
+    [devnest-queue-consolidation] VERIFY COMPLETE (attempt 2, ton'
+- at: 2026-11-25 09:52
+  from: devin
+  text: 'DONE (dispatch 20261125-094030). Survey: idc02=928 dirs/no timers, idc03=165, mn01=107 (1.1G), dell=236
+    (devin-cleanup.timer NEVER installed — ssot was stale), omen=392 (sessions.db-only cleanup), macbook=286 (live
+    bug: ~/.local/bin copy GCd task dirs at 7d retention, corrupting the 30d usage window — fixed). con01 excluded:
+    no devin CLI/registry, not dispatch-capable. idc01 declared, host offline ~34d. Changes: new scripts/devin/taskdir-prune.py
+    (45d finished retention >=30d window + durable ta'
+- at: 2026-11-25 09:55
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-094030-parent-card-devin-usage-reduct no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-25 09:55
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ail in `docs/ssot/jobs/devnest/2026-11-25-devin-taskdir-gc.yml` and the outcome file.
+    | devin-task-20261125-09403'
+- at: 2026-11-25 09:55
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 09:55
+  from: chaba
+  text: "checkpoint failed: commit: \U0001F50D Validating SSOT files...\n\U0001F4CB Found SSOT files to validate:\ndocs/ssot/ssot.dev-system.assessment.yml\n\U0001F527
+    Checking YAML syntax...\n\e[0;32m✅ YAML syntax valid\e[0m\n\U0001F527 C"
+- at: 2026-11-25 09:55
+  from: chaba
+  text: banked 7 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 09:55
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-094030-parent-card-devin-usage-reduct on tony-macbook still
+    dirty — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 09:55
+  from: chaba
+  text: pushed dispatch/20261125-094030-parent-card-devin-usage-reduct to origin
+- at: 2026-11-25 09:55
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 09:55
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-25 11:20
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-25): dispatch branch merged into origin/master as cbfce3742741
+    (conflicts resolved where applicable: generated SSOT snapshots kept from master, substantive code from branch).
+    Deliverable: devin taskdir GC on dispatch hosts (bc99a05, 21 files). Closing.'
+- at: 2026-11-25 11:20
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 14:03
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-25): dispatch branch merged into origin/master as 51db84a4cd46.
+    Deliverable: devin taskdir gc on dispatch hosts (bc99a05, 21 files). Closing.'
+- at: 2026-11-25 14:03
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:56
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:00
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:33
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+claim:
+  since: 2026-11-25 09:39
+review_kind: verify

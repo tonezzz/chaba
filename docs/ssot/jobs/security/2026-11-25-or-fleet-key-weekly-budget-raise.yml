@@ -1,0 +1,57 @@
+title: Raise fleet OpenRouter key weekly budget $1 → $5
+subtitle: card litellm-or-key-weekly-budget (SEC-1362) — provisioning API PATCH on key idc02-openclaw
+icon: shield
+
+decision:
+  summary: >
+    Reviewed the live fleet OR key (OR dashboard name "idc02-openclaw",
+    label sk-or-v1-74d…f6c, hash e7df92b7…, stored in
+    ~/.config/secrets/mddb-gemini.env on idc03 and the other 3 rotate-or-key
+    stores). It carried limit=1 limit_reset=weekly, $0.5977 spent with
+    $0.4023 remaining and reset due 2026-11-30 — at the observed burn rate
+    it would have capped mid-week. Raised to limit=5 weekly via
+    PATCH /api/v1/keys/{hash} using ~/.config/secrets/or-management.txt
+    (provisioning scope — the earlier "admin reads only" note in
+    ssot.secrets.yml was wrong; PATCH works). Verified via both
+    /api/v1/keys/{hash} and the key's own /api/v1/key: limit 5, weekly,
+    remaining 4.4023.
+  spend_analysis: >
+    Account-wide OR /api/v1/activity reconciles with the key's $0.5977
+    weekly usage almost exactly — effectively all account OR spend
+    this window went through this one key:
+      - google/gemini-embedding-2 $0.319 (16,476 req, 11-23+11-24) —
+        gemini-ollama-proxy embedding fallback while Gemini free+paid
+        legs were quota-dead (OPENROUTER_PRIMARY=0 working as designed;
+        0 OR embed calls on 11-25 after Gemini recovered)
+      - anthropic/claude-fable-5.1 $0.218 via LiteLLM (43 req) —
+        mostly LiteLLM virtual keys ada-sec1286 / chaba
+      - deepseek/deepseek-v4-flash $0.055 via LiteLLM
+    LiteLLM_SpendLogs weekly OR totals show the pattern is bursty:
+    $23.76 (wk 11-02), $26.87 (wk 10-19), $2.31 (wk 10-12), then
+    <$0.55 quiet weeks. Bench/eval weeks cannot fit any sane weekly
+    cap — they need a dedicated key (follow-up card filed).
+  rationale: >
+    $1/week (~$4.3/mo) cannot carry the key's designed roles: fleet
+    emergency fallback (ada-safety), LiteLLM openrouter/* production
+    routes, and the embedding resilience tier. The 11-12/13 incident
+    (embed-legs-correlated-failure) already showed the cap defeating
+    redundancy: OR 402/403 took down the fallback exactly when needed.
+    $5/week bounds exposure at ~$21.7/mo against $66.80 remaining
+    account credits; key expires 2026-12-23 anyway. key-watch.py +
+    litellm-budget-watch still alert before exhaustion.
+  alternatives_rejected:
+    - "Keep $1/week: rejected — predictable mid-week cap-out, correlated failure across litellm or-*, embed fallback, and fleet emergency use."
+    - "Rotate weekly via rotate-or-key.sh: not applicable — rotation needs Tony to mint keys manually; also doesn't fix sizing."
+    - "$10+/week: rejected — bench weeks ($20-27) should use a dedicated key, not inflate the fleet cap."
+  verified: >
+    PATCH response + GET /api/v1/keys/{hash} + GET /api/v1/key (with the
+    live key from mddb-gemini.env) all show limit=5, limit_reset=weekly,
+    spend_usd=0.5977 carried over, remaining_usd=4.4023, resets
+    2026-11-30T00:00Z. Propagation to /api/v1/key took ~30s.
+
+files:
+  - docs/ssot/infrastructure/ssot.secrets.yml   # openrouter-ada-safety notes updated
+  - docs/ssot/kanban/cards/litellm-or-key-weekly-budget.yml  # card comms (via board-api)
+
+followups:
+  - "Dedicated OR key for bench/eval lanes — all LiteLLM openrouter/* models share OPENROUTER_API_KEY, so $20+ bench weeks will cap the fleet key mid-run."

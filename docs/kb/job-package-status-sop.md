@@ -37,13 +37,54 @@
 - **Ada / Chaba** – can raise `request` or `comment` events that trigger `do_publish` → `_pub_job_send` → `do_job` to update status (e.g., `stalled` via a progress event).
 - **System sweeper** (`kanban-commit.timer`) – periodically reconciles any out-of-sync cards (autostash-eaten edits) but does not alter the logical status; it only ensures the card YAML is committed.
 
-## 5. Result Ref / Artifact Storage Convention
+## 5. Enforcement at the write door (OPS-0923)
+
+The transition table above is enforced in code, not just documented —
+`do_job` in `scripts/board/board-api.py` rejects violations with HTTP
+400 before any WP write:
+
+- **Transition guard** — `JOB_TRANSITIONS` maps each prior status to
+  its legal successors. Same-status rewrites and writes carrying no
+  `status` (comms-only updates) always pass; a prior status outside
+  the map (legacy/garbage meta) imposes no constraint. Terminal
+  `done`/`cancelled` exit only via `queued` (explicit requeue) or
+  `failed` (honest false-done correction) — never a silent
+  resurrection into claimed/running.
+- **Terminal-done gate** — `status=done` requires BOTH:
+  1. `result_ref` — a durable pointer to the result (body, stored
+     meta, or `meta.result_ref` all count), and
+  2. verified artifact evidence — `evidence[]` refs, `verified:true`,
+     `artifact_verified`, or `confidence=verified` (body or
+     `body.meta`). A bare `status=done` is rejected.
+- **Evidence persistence** — accepted `evidence[]` refs are joined
+  into `meta.evidence` (≤300 chars) and `meta.artifact_verified=true`
+  is stamped when a verified signal was supplied, so auditors and the
+  reconciler can see the proof without replaying comms.
+
+`/publish` honors the same contract through the job sink: a
+`PublicationEvent` only reaches `do_job` when it carries an explicit
+`job` ref (card/project-scoped events never mint `nest_job` posts),
+and `kind=milestone` no longer implies `status=done` — milestones are
+checkpoints. `meta.job_status` is the explicit override; `progress`→
+`running` and `alert`→`stalled` remain liveness hints. A `done`
+assertion missing evidence surfaces as a per-sink `skipped` receipt
+(`job status rejected: …`) — never retried through the outbox, while
+sibling sinks still deliver.
+
+`scripts/ops/nest-job-reconcile.py` is the read-only cross-check: it
+compares `nest_job` meta against pack `done`/`claim/` markers,
+`queue/packs-index`, and `queue/lease`, and reports drift
+(`DONE-NO-RESULT-REF`, `DONE-UNVERIFIED`, `DONE-NO-PACK-MARKER`,
+`PACK-DONE-JOB-NOT-DONE`, `CANCELLED-LINGER-CLAIM`, …). It never
+mutates — acting on a finding is a separate gated decision.
+
+## 6. Result Ref / Artifact Storage Convention
 - The **canonical reference** for the job’s result is the `result_ref` field stored in the `nest_job` CPT meta (key `"result_ref"`).  
 - The **artifact** (log files, reports, outputs) must be reachable via that reference (e.g., a path, URL, or internal storage identifier).  
 - The board-API never writes the artifact directly; it only records the reference. Runners are responsible for persisting the artifact and updating `result_ref` if the location changes.  
 - Errors are stored in the `error` meta key (string, max 300 chars) and are also surfaced via the `failed` status.
 
-## 6. Summary
+## 7. Summary
 - **Status flow**: `queued → claimed → running → (done | failed | stalled | cancelled)`.  
 - **Who writes**: queue-mgr (claim), pack runner (finish), any actor (progress/alert events), human verification (post-failure close).  
 - **State mirrors**: WP `nest_job` CPT meta holds the authoritative status, `result_ref`, and error; the kanban column reflects the same logical state; the `PublicationEvent` is the source of truth for fan-out to other sinks (Telegram, JSON ledger, etc.).  

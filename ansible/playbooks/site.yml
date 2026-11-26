@@ -1,0 +1,80 @@
+---
+# site.yml — chaba host baseline.
+#
+# Safe, idempotent baseline applied to `baseline` group hosts
+# (workstations + vps). Portable laptops and kk-mac are excluded by
+# group design — run them explicitly with --limit when needed.
+#
+# What it does:
+#   1. Common tooling packages (common_packages in inventory/group_vars/all.yml)
+#   2. unattended-upgrades: security updates on, auto-reboot off
+#   3. Docker presence check on hosts with docker_enabled: true
+#
+# What it deliberately does NOT do:
+#   - apt upgrade / dist-upgrade (run manually or via a dedicated
+#     playbook with a maintenance window)
+#   - firewall rules (ufw state differs per host — see ssot.audit.hosts.yml)
+#   - service restarts or config file edits beyond the two files below
+
+- name: Chaba host baseline
+  hosts: baseline
+  gather_facts: true
+
+  tasks:
+    - name: Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+      tags: [packages]
+
+    - name: Configure unattended-upgrades (security only)
+      ansible.builtin.copy:
+        dest: /etc/apt/apt.conf.d/52chaba-unattended-upgrades
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          // Managed by ansible (chaba/ansible). Security updates only.
+          Unattended-Upgrade::Allowed-Origins {
+              "${distro_id}:${distro_codename}-security";
+              "${distro_id}ESMApps:${distro_codename}-apps-security";
+              "${distro_id}ESM:${distro_codename}-infra-security";
+          };
+          Unattended-Upgrade::Automatic-Reboot "false";
+          Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+          Unattended-Upgrade::Remove-Unused-Dependencies "true";
+      notify: restart unattended-upgrades
+      tags: [packages, security]
+
+    - name: Enable unattended-upgrades service
+      ansible.builtin.service:
+        name: unattended-upgrades
+        enabled: true
+        state: started
+      tags: [security]
+
+    - name: Check docker presence on docker-enabled hosts
+      ansible.builtin.command: docker --version
+      register: docker_check
+      changed_when: false
+      failed_when: false
+      check_mode: no
+      when: docker_enabled | bool
+      tags: [docker]
+
+    - name: Fail clearly if docker_enabled but docker missing
+      ansible.builtin.fail:
+        msg: >-
+          docker_enabled is true for {{ inventory_hostname }} but `docker`
+          is not on PATH. Install docker first or set docker_enabled: false
+          in inventory/host_vars.
+      when: docker_enabled | bool and docker_check.rc is defined and docker_check.rc != 0
+      tags: [docker]
+
+  handlers:
+    - name: restart unattended-upgrades
+      ansible.builtin.service:
+        name: unattended-upgrades
+        state: restarted

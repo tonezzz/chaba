@@ -1,0 +1,58 @@
+id: monitor-bangkok-flood-situation-4b84da
+title: Monitor Bangkok Flood Situation
+column: backlog
+updated: 2026-11-26 21:23
+priority: medium
+note: 'Monitor the Bangkok flood situation and link with report slug: flood-report'
+ref: OPS-1448
+comms:
+- at: 2026-11-26 18:14
+  from: ada
+  text: 'Monitor the Bangkok flood situation and link with report slug: flood-report'
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:52
+  from: chaba
+  text: 'TRIAGE 2026-11-26 batch 2: TRIAGE 2026-11-26 batch 2: consolidation target for the three flood cards closed
+    last batch. Ongoing human monitoring, not a runner dispatch; write a bounded spec only if a one-shot status
+    digests is wanted.'
+- at: 2026-11-26 21:00
+  from: chaba
+  text: 'HUMAN CALL 2026-11-26: DECISION 2026-11-26 Tony: bound a one-shot digest. Fetch the current Bangkok flood
+    situation from report slug flood-repo'
+- at: 2026-11-26 21:00
+  from: tony
+  text: queued for processing
+- at: 2026-11-26 21:01
+  from: chaba
+  text: 'tony-dell defers: runner at local cap (3/3) — remote slots unaffected'
+- at: 2026-11-26 21:01
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.55 > 0.7)'
+- at: 2026-11-26 21:01
+  from: chaba
+  text: 'mn01 defers: runner at local cap (1/1) — remote slots unaffected'
+- at: 2026-11-26 21:01
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-26 21:03
+  from: chaba
+  text: 'idc02 defers: runner at local cap (3/3) — remote slots unaffected'
+- at: 2026-11-26 21:03
+  from: chaba
+  text: 'con01 defers: runner at local cap (1/1) — remote slots unaffected'
+- at: 2026-11-26 21:23
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.53 > 1.5)'
+spec: 'DECISION 2026-11-26 Tony: bound a one-shot digest. Fetch the current Bangkok flood situation from report
+  slug flood-report, write a short status artifact, and post one board comment on this card with the source timestamp.
+  Read-only; no ongoing monitoring loop and no new alerts. Done: artifact written and comment recorded.'
+action:
+  type: dispatch
+  status: queued
+  lane: devin
+  attempts: 0
+claim: {}

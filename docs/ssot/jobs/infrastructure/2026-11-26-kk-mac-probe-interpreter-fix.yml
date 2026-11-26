@@ -1,0 +1,74 @@
+title: kk-mac probe interpreter fix + deploy-key enrollment — fleet fully green
+subtitle: The dispatch_repos import failure was a probe-interpreter mismatch, not a broken runner; the deploy key is now enrolled and kk-mac is push-capable
+icon: terminal
+date: 2026-11-26
+status: deployed
+card: runner-auto-kk-mac
+check: scripts/board/runner-fleet-health.py
+
+context:
+  symptom: "After kk-mac joined the fleet audit (OPS-1406 restore),
+    runner-fleet-health reported two gaps: 'dispatch_repos import fails:
+    TypeError: unsupported operand type(s) for |: type and NoneType' and
+    'no push-creds'."
+  import_finding: "The health probe runs `ssh kk-mac python3 -` and the
+    SSH/default python3 is macOS 3.9.6, which evaluates dispatch_repos.py's
+    PEP 604 annotations (Path | None) at import time. kk-mac's actual
+    runner-agent is launched with /opt/homebrew/bin/python3 (3.15.2) via
+    ~/Library/LaunchAgents/ai.chaba.runner-agent.plist, so this was a
+    false probe failure — the runner itself was never broken."
+  push_finding: "kk-mac has exactly one key, ~/.ssh/id_chaba_deploy
+    (ED25519 SHA256:cVD1HkSzwsyTmWyPcZbUM3tZ9ClSf/wqw3gIaR3a8O4),
+    wired to the gh-chaba ssh alias. `git push --dry-run origin
+    HEAD:refs/heads/__fleet-push-probe` fails 'Permission denied
+    (publickey)' — the key is not enrolled on GitHub.
+    scripts/ops/kk-mac-runner-onboard.sh already marks enrollment as
+    NEEDS-MANUAL and warns that the runner declines dispatch cards until
+    push:chaba verifies."
+
+changes:
+  - "added PROBE_PYTHON host map and probe_python() helper; kk-mac's
+    remote probe now runs /opt/homebrew/bin/python3, matching launchd"
+  - "added test_probe_uses_kk_mac_runner_interpreter so the mapping
+    cannot silently disappear in another generated board write"
+  - "no host files or runner units were modified; the only key-side
+    change was enrolling kk-mac's existing PUBLIC key on GitHub (see
+    resolution)"
+
+verification:
+  tests: "pytest -q tests/board/test_fleet_host_parsing.py
+    tests/board/test_runner_tooling_contract.py -> 22 passed"
+  fleet_health: "runner-fleet-health.py -> 8 hosts, 8 ok, 0 failing after
+    the deploy key was enrolled (see resolution below); 1 auto-closed
+    card. The dispatch-repos false violation was gone immediately after
+    the interpreter fix."
+  consumer: "kk-mac's runner-agent was untouched; its launchd interpreter
+    already matched the new probe interpreter. No launchd label change
+    was needed: runner-agent.push_capable() falls back to a live
+    `git push --dry-run`, so an enrolled key admits cards without an
+    explicit push:chaba label."
+
+resolution:
+  action: "With the user's explicit approval (openchamber choice), enrolled
+    kk-mac's PUBLIC deploy key with WRITE access on tonezzz/chaba via
+    authenticated `gh api` (gh logged in as tonezzz, repo scope)."
+  key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMyiwfNAWHG/xcxOAQn57pg6PIIhIBcE7w1Fi2kPJasB kk-mac chaba deploy key"
+  key_id: "GitHub deploy key id 171204661, title 'kk-mac chaba deploy key
+    2026-11-26', read_only=false — matching the other fleet keys
+    (tony-dell, idc02, tony-macbook, mn01, tony-omen)."
+  verification: "`ssh kk-mac 'cd ~/CascadeProjects/chaba && git push
+    --dry-run origin HEAD:refs/heads/__fleet-push-probe'` -> '* [new
+    branch] HEAD -> __fleet-push-probe'. Fleet audit -> 0 hosts failing,
+    8 ok, 1 card auto-closed. runner-auto-kk-mac auto-closed by the audit."
+
+rollback:
+  - "Revert this commit to restore `python3 -` for every host; the
+    dispatch-repos false violation on kk-mac returns."
+
+lessons:
+  - "A remote audit must use the same interpreter as the service it
+    audits: the shell default can be older than the runner's runtime."
+  - "A capability audit warning is not always a code bug — here the
+    runner ran fine and only the probe used an incompatible Python."
+  - "Deploy-key enrollment is a GitHub-side action; a locally valid
+    key with a correct ssh alias still cannot push until enrolled."

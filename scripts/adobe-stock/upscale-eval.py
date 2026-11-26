@@ -18,6 +18,9 @@ Backends:
   spandrel         — any spandrel-supported arch (SwinIR/HAT/RRDB/DAT...)
                      via torch, cuda if available else cpu
   bicubic          — cv2 INTER_CUBIC control baseline
+  precomputed      — score an already-upscaled image produced by an
+                     external engine (e.g. ResShift/RSD diffusion SR);
+                     pass it via --precomputed. Same metric matrix.
 
 Post-ops:
   --unsharp N   unsharp mask percent on upscaled output (0=off)
@@ -177,7 +180,13 @@ def main() -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--input", required=True, help="source image path")
     ap.add_argument("--backend", default="realesrgan-ncnn",
-                    choices=["realesrgan-ncnn", "spandrel", "bicubic"])
+                    choices=["realesrgan-ncnn", "spandrel", "bicubic",
+                             "precomputed"])
+    ap.add_argument("--precomputed", help="precomputed: path to the "
+                    "already-upscaled output image to score")
+    ap.add_argument("--wall-s", type=float, default=None,
+                    help="precomputed: external engine wall time in "
+                         "seconds to record in the receipt")
     ap.add_argument("--ncnn-bin", help="path to realesrgan-ncnn-vulkan binary")
     ap.add_argument("--ncnn-model-dir", help="path to ncnn model dir")
     ap.add_argument("--model-path", help="spandrel: .pth/.safetensors file")
@@ -223,6 +232,14 @@ def main() -> int:
         else:
             wall, device = run_spandrel(src_img, raw_out,
                                         Path(args.model_path), args.device)
+    elif args.backend == "precomputed":
+        if not args.precomputed:
+            raise SystemExit("--precomputed required for precomputed backend")
+        raw_out = Path(args.precomputed)
+        if not raw_out.exists():
+            raise SystemExit(f"precomputed image not found: {raw_out}")
+        wall = args.wall_s if args.wall_s is not None else 0.0
+        device = "external"
     elif args.backend == "bicubic":
         raw_out = out_dir / f"{stem}-bicubic-x{args.scale}.png"
         t0 = time.time()

@@ -1,0 +1,143 @@
+---
+# ada-ocb-upgrade.yml — approval-gated write path for the OpenChamber pane.
+#
+# DESIGN RULE: Ansible does NOT implement the upgrade. It starts the host's
+# own openchamber-update.service (Type=oneshot, RemainAfterExit=no), which
+# does npm i -g, re-applies the models.status patch via ExecStartPost, then
+# restarts openchamber.service — FAILING LOUDLY if the patch stops applying.
+# Ansible only gates, invokes that unit, and re-runs the shared verify gate.
+#
+# SAFETY:
+#   - defaults to dry-run: ocb_change_approved=false (vars/ada-ocb-upgrade.yml)
+#   - --check --diff is a genuine simulation; the shell write is guarded by
+#     `not ansible_check_mode` (the systemd module cannot reach the user bus
+#     over SSH here, so the proven `systemctl --user` shell path is used).
+#   - rollback is stated on the controller BEFORE the write task.
+#   - post-gate reuses tasks/ada-ocb-assert.yml — the exact verify gate.
+#   - failure is loud: a failed unit exits nonzero and the play stops.
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/ada-ocb-upgrade.yml --check --diff   # preview
+#   ansible-playbook playbooks/ada-ocb-upgrade.yml                  # no write
+#   # after explicit same-session approval:
+#   ansible-playbook playbooks/ada-ocb-upgrade.yml -e ocb_change_approved=true
+
+- name: Preflight probe of the pane group (read-only)
+  hosts: ocb_pane:!disabled
+  gather_facts: false
+  become: false
+  vars_files:
+    - vars/ada-ocb-upgrade.yml
+
+  tasks:
+    - name: Include the shared pane probe
+      ansible.builtin.include_tasks: tasks/ada-ocb-probe.yml
+
+- name: Approval gate + rollback statement (controller-side)
+  hosts: localhost
+  gather_facts: false
+  become: false
+  vars_files:
+    - vars/ada-ocb-upgrade.yml
+
+  tasks:
+    - name: Load the declared pane contract
+      ansible.builtin.include_vars: "{{ playbook_dir }}/../inventory/group_vars/ocb_pane.yml"
+
+    - name: Target must be the declared primary pane
+      ansible.builtin.assert:
+        that:
+          - "'idc02' in groups['ocb_pane']"
+          - "hostvars['idc02'].ocb_role | default('fallback') == 'primary'"
+        success_msg: "Target idc02 is the declared primary pane"
+        fail_msg: >-
+          Refusing to upgrade: idc02 is not declared primary in ocb_pane.
+          Add it deliberately to inventory/hosts.yml first.
+
+    - name: Preflight state
+      ansible.builtin.debug:
+        msg: >-
+          PREFLIGHT idc02: web={{ hostvars['idc02'].ocb_probe.web_version }}
+          cli={{ hostvars['idc02'].ocb_probe.cli_version }}
+          patch={{ hostvars['idc02'].ocb_probe.patch_present }}
+          units={{ hostvars['idc02'].ocb_probe.units }}
+          (declared pins: web={{ ocb_web_version }}, cli={{ ocb_cli_version }})
+
+    - name: Rollback — stated BEFORE any destructive step
+      ansible.builtin.debug:
+        msg: >-
+          ROLLBACK PLAN: if the patch or edge check fails, restore the single
+          Caddy route line for the ada-ocb pane and reload Caddy (see the
+          idc02 OpenChamber migration runbook); the npm pin is reapplied by
+          the next monthly unit run. The update unit itself is patch-first
+          and fails loudly, so a bad patch is never silently served.
+
+    - name: Gated apply requires card traceability (OPS-1424 3A)
+      ansible.builtin.assert:
+        that:
+          - (card_ref | default('') | string | length > 0) or (card_id | default('') | string | length > 0)
+        success_msg: "Traceability OK: card_ref={{ card_ref | default('') }} card_id={{ card_id | default('') }}"
+        fail_msg: >-
+          OPS-1424 3A: gated apply requires -e card_ref=<id> (or card_id).
+          Refusing approved apply without kanban traceability.
+      when: ocb_change_approved | bool
+
+    - name: Approval verdict
+      ansible.builtin.debug:
+        msg: >-
+          {% if ansible_check_mode %}
+          DRY RUN (--check): simulation only — no unit start, no host write.
+          {% elif not (ocb_change_approved | bool) %}
+          NOT APPROVED: ocb_change_approved=false (default). Nothing will be
+          written. Re-run with -e ocb_change_approved=true after explicit
+          same-session approval.
+          {% else %}
+          APPROVED: the existing openchamber-update.service will be started
+          on idc02. This is the only write this playbook performs.
+          {% endif %}
+
+- name: Execute the upgrade via the host's existing unit (idc02)
+  hosts: idc02
+  gather_facts: false
+  become: false
+  vars_files:
+    - vars/ada-ocb-upgrade.yml
+
+  tasks:
+    - name: Start openchamber-update.service — fail-loud, patch-first (REAL WRITE)
+      ansible.builtin.shell: |
+        systemctl --user start openchamber-update.service
+      args:
+        executable: /bin/bash
+      when: (ocb_change_approved | bool) and not ansible_check_mode
+      register: ocb_upgrade_result
+      changed_when: true
+
+    - name: Simulation / unapproved notice (no write performed)
+      ansible.builtin.debug:
+        msg: >-
+          SKIPPED unit start — {% if ansible_check_mode %}check mode{% else %}ocb_change_approved=false{% endif %}.
+          No write occurred on {{ inventory_hostname }}.
+      when: not ((ocb_change_approved | bool) and not ansible_check_mode)
+
+- name: Post-upgrade probe of the pane group (read-only)
+  hosts: ocb_pane:!disabled
+  gather_facts: false
+  become: false
+  vars_files:
+    - vars/ada-ocb-upgrade.yml
+
+  tasks:
+    - name: Re-probe the pane after the unit run
+      ansible.builtin.include_tasks: tasks/ada-ocb-probe.yml
+
+- name: Post-upgrade gate — reuse the exact verify contract (controller-side)
+  hosts: localhost
+  gather_facts: false
+  become: false
+
+  tasks:
+    - name: Include the shared contract assertions
+      ansible.builtin.include_tasks: tasks/ada-ocb-assert.yml
+      vars:
+        ocb_assert_label: "ada-ocb post-upgrade"

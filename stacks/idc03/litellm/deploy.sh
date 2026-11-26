@@ -5,9 +5,14 @@
 #        ./deploy.sh --local    (run on idc03 itself)
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
-FILES=(litellm-db.container litellm.container litellm-ledger.service litellm-ledger.timer)
-# plain user units — ~/.config/systemd/user (NOT the quadlet dir)
-USER_UNITS=(kkmac-admission-shim.service)
+FILES=(litellm-db.container litellm.container)
+# plain user units — ~/.config/systemd/user (NOT the quadlet dir);
+# .service/.timer dropped in containers/systemd are never loaded
+# kkmac-ollama-tunnel installs disabled — fallback only (direct tailnet
+# bind is primary since 2026-11-19); do NOT enable without repointing
+# the shim upstream back to :11445
+USER_UNITS=(litellm-ledger.service litellm-ledger.timer
+            kkmac-admission-shim.service kkmac-ollama-tunnel.service)
 
 if [ "${1:-}" = "--local" ]; then
   for f in "${FILES[@]}"; do

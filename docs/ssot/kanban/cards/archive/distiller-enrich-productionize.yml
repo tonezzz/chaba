@@ -1,0 +1,629 @@
+id: distiller-enrich-productionize
+title: Productionize enriched T1 distiller — enable --enrich hook + hybrid T1/T2 recall path
+column: done
+updated: 2026-11-26 19:41
+brief: 'Bench v2 validated (session-mddb-recall-benchmark): T1-v2 hit@3 66.7%, oracle coverage 41.7%->86.1%, hybrid
+  T1 semantic + T2 keyword = 91.7% > 80% AQ. Work to ship: (1) enable sync-devin-summaries.py --enrich in the production
+  pipeline so devin-session docs get the Artifacts section in the pre-delete window; (2) recall hook runs hybrid
+  path — T1 semantic + T2 local transcript keyword fallback; (3) keep T2 transcripts locally grep-able (.md dir,
+  not GDrive-only); (4) mddb has no FTS — local BM25 over T2 dir or FTS endpoint in mddbd fork. Evidence: reports/bench-recall-v2-20261022.md'
+ref: OPS-0778
+comms:
+- at: 2026-10-23 13:35
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-29 13:20
+  from: backlog-spec-enrich
+  text: raised a decision request — spec needs owner input
+- at: 2026-10-29 15:13
+  from: tony
+  text: 'answered the-card-requests-productioniz-2005e7: ★ Use repo chaba on host tony-dell for the deployment'
+- at: 2026-10-29 15:13
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:25
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:42
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:45
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 19:01
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 23:32
+  from: chaba
+  text: classified as paid_frontier (kw:benchmark conf 1.00)
+- at: 2026-11-17 23:32
+  from: tony
+  text: re-spawned from report page
+- at: 2026-11-17 23:33
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.56 > 1.5)'
+- at: 2026-11-17 23:33
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 0.92 > 0.85)'
+- at: 2026-11-17 23:34
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-17 23:34
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.25 > 0.85)'
+- at: 2026-11-17 23:34
+  from: chaba
+  text: 'mn01 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-17 23:35
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-17 23:35
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.02 > 1.0)'
+- at: 2026-11-17 23:37
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-17 23:37
+  from: chaba
+  text: started devin-task-20261117-233752-productionize-enriched-t1-dist on tony-macbook (dispatch)
+- at: 2026-11-17 23:38
+  from: tony-macbook
+  text: 'finished (failed): exit=1 evin-task-20261117-233752-productionize-enriched-t1-dist.service: Failed with
+    result ''exit-code''. | devin-task-20'
+- at: 2026-11-17 23:38
+  from: chaba
+  text: 'tony-macbook retry backoff: fail 1/3 — next claim not before 11-18 00:08'
+- at: 2026-11-17 23:40
+  from: chaba
+  text: 'merge-sweep: devin-task-20261117-233752-productionize-enriched-t1-dist failed — its branch isn''t auto-merged
+    (unverified partial work). Retry the card or merge dispatch/20261117-233752-productionize-enriched-t1-dist by
+    hand.'
+- at: 2026-11-18 17:30
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:18
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:19
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:21
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:09
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:11
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 08:59
+  from: chaba
+  text: 'stalled-claim reaper: moved doing -> backlog — status=failed with no live claim — /action do=retry re-arms
+    it'
+- at: 2026-11-19 17:04
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:55
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:05
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 19:21
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-21 15:16
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
+    the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-21 17:49
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:08
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:21
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:21
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:10
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:11
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 20:15
+  from: chaba
+  text: classified as paid_frontier (kw:benchmark conf 1.00)
+- at: 2026-11-23 20:15
+  from: tony
+  text: queued for processing
+- at: 2026-11-23 20:15
+  from: tony
+  text: retry requested
+- at: 2026-11-23 20:15
+  from: chaba
+  text: 'idc03 defers: provider rate-limited (rate limit on devin-task-20261123-195521-goal-address-the-live-voice-to)
+    — claims held ~11m'
+- at: 2026-11-23 20:15
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.16 > 1.5)'
+- at: 2026-11-23 20:15
+  from: chaba
+  text: 'mn01 defers: provider rate-limited (rate limit on devin-task-20261123-123122-supersedes-manual-card-wiki-ta)
+    — claims held ~5m'
+- at: 2026-11-23 20:16
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-191504-investigate-and-resolve-the-fa)
+    — claims held ~6m'
+- at: 2026-11-23 20:16
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-192619-fix-the-executor-model-id-mism)
+    — claims held ~5m'
+- at: 2026-11-23 20:16
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-194248-the-goal-is-to-stop-the-tony-u)
+    — claims held ~3m'
+- at: 2026-11-23 20:22
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 20:23
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-23 20:26
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-23 20:26
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 20:27
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.38 > 0.85)'
+- at: 2026-11-23 20:28
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 20:44
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-202451-ada-tool-consolidation-merge-o)
+    — claims held ~29m'
+- at: 2026-11-23 20:44
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-203733-fix-the-phantom-state-issue-in)
+    — claims held ~29m'
+- at: 2026-11-23 20:44
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-202551-fix-the-executor-model-id-mism)
+    — claims held ~29m'
+- at: 2026-11-23 20:46
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-202527-corpus-18-jev-bench-cases-4-pi)
+    — claims held ~29m'
+- at: 2026-11-23 20:46
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-202348-investigate-and-resolve-the-fa)
+    — claims held ~28m'
+- at: 2026-11-23 21:14
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-23 21:15
+  from: chaba
+  text: started devin-task-20261123-211532-productionize-the-enriched-t1- on tony-macbook (dispatch)
+- at: 2026-11-23 21:15
+  from: chaba
+  text: 'primer injected 8 lesson(s): [mddb-coverage-audit-verify-kb-reports-in-fdcc8b] spec: Rules declare MDDB
+    seman; [distiller-enrich-productionize] finished (failed): exit=1 evin-task-20261117-23; [distiller-enrich-productionize]
+    merge-sweep: devin-task-20261117-233752-product; runbook docs/kb/ada-recall-architecture.md: Ada memory recall
+    — Weaviate assessm; runbook docs/kb/mddb-implementation-complete-status.md: System Status — - **MDDB; runbook
+    docs/kb/mddb-implementation-complete.md: MDDB Impleme'
+- at: 2026-11-23 21:22
+  from: chaba
+  text: 'merge-sweep: devin-task-20261117-233752-product no longer active on tony-macbook but card still says running
+    — sweeping its branch'
+- at: 2026-11-23 21:22
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261117-233752-product on tony-macbook — if the
+    work was never pushed it may be gone'
+- at: 2026-11-23 21:33
+  from: tony-macbook
+  text: 'finished (failed): exit=1 0261123-211532-productionize-the-enriched-t1-.service: Failed with result ''exit-code''.
+    | devin-task-20261123-2115 — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 21:33
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-211532-productionize-the-enriched-t1- (rate limit)
+    — tony-macbook holds new claims ~30m
+- at: 2026-11-23 21:33
+  from: chaba
+  text: 'tony-macbook retry backoff: fail 1/3 — next claim not before 11-23 22:03'
+- at: 2026-11-23 21:34
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-211532-productionize-the-enriched-t1-)
+    — claims held ~29m'
+- at: 2026-11-23 21:34
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-211800-kk-mac-classes-eval-2026-11-19)
+    — claims held ~29m'
+- at: 2026-11-23 21:35
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-211558-fix-the-phantom-state-issue-in)
+    — claims held ~29m'
+- at: 2026-11-23 21:35
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-211859-kk-mac-launchd-runner-port-shi)
+    — claims held ~29m'
+- at: 2026-11-23 21:37
+  from: chaba
+  text: 'mn01 defers: provider rate-limited (rate limit on devin-task-20261123-142345-redeploy-the-drifted-runner-ag)
+    — claims held ~29m'
+- at: 2026-11-23 22:04
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-23 22:05
+  from: chaba
+  text: started devin-task-20261123-220531-productionize-the-enriched-t1- on tony-macbook (dispatch)
+- at: 2026-11-23 22:05
+  from: chaba
+  text: 'primer injected 8 lesson(s): [distiller-enrich-productionize] primer injected 8 lesson(s): [mddb-coverage-aud;
+    [mddb-coverage-audit-verify-kb-reports-in-fdcc8b] spec: Rules declare MDDB seman; [distiller-enrich-productionize]
+    finished (failed): exit=1 0261123-211532-produc; [distiller-enrich-productionize] finished (failed): exit=1
+    evin-task-20261117-23; [distiller-enrich-productionize] merge-sweep: devin-task-20261117-233752-product; [distiller-enrich-productionize]
+    merge-sweep: no session/work'
+- at: 2026-11-23 22:06
+  from: devin
+  text: attempt 2/2 starting on tony-macbook worktree; reading distiller + recall code now
+- at: 2026-11-23 22:22
+  from: devin
+  text: 'progress: --enrich now on all 3 unit invocations (was only tony_omen jobs.yml); new scripts/devin/session/session_recall.py
+    implements hybrid T1(mddb vector-search)+T2(local sqlite FTS5 BM25 over ~/.local/share/devin .md archives, incremental
+    index, fail-open); notebooklm-recall.sh wired to it. verifying next'
+- at: 2026-11-23 22:31
+  from: tony-macbook
+  text: 'finished (failed): exit=1 0261123-220531-productionize-the-enriched-t1-.service: Failed with result ''exit-code''.
+    | devin-task-20261123-2205 — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-23 22:31
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-220531-productionize-the-enriched-t1- (rate limit)
+    — tony-macbook holds new claims ~30m
+- at: 2026-11-23 22:31
+  from: chaba
+  text: 'tony-macbook retry backoff: fail 2/3 — next claim not before 11-23 23:31'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 07:58
+  from: chaba
+  text: classified as paid_frontier (kw:benchmark conf 1.00)
+- at: 2026-11-24 07:58
+  from: tony
+  text: queued for processing
+- at: 2026-11-24 07:59
+  from: chaba
+  text: 'idc03 defers: disk headroom 1387MB < 2048MB floor'
+- at: 2026-11-24 07:59
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.49 > 1.0)'
+- at: 2026-11-24 08:01
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 08:07
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-24 08:08
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-24 08:09
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:24
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:41
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:44
+  from: chaba
+  text: 'con01 defers: host overloaded (5m load/core 1.67 > 1.6)'
+- at: 2026-11-24 09:02
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.43 > 0.85)'
+- at: 2026-11-24 09:03
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 09:23
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.54 > 1.5)'
+- at: 2026-11-24 09:24
+  from: chaba
+  text: 'kk-mac defers: host overloaded (5m load/core 2.23 > 1.0)'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:44
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 0.86 > 0.85)'
+- at: 2026-11-24 12:11
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 14:00
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 3.01 > 1.0)'
+- at: 2026-11-24 14:09
+  from: tony-macbook
+  text: parked at attempt cap — attempt cap reached (2/2) — /action do=retry re-arms it
+- at: 2026-11-24 14:29
+  from: tony
+  text: retry requested
+- at: 2026-11-24 14:29
+  from: tony-dell
+  text: claimed
+- at: 2026-11-24 14:30
+  from: chaba
+  text: model litellm/gemini-2.5-flash dropped — provider namespace doesn't match executor=devin; running the executor
+    default
+- at: 2026-11-24 14:30
+  from: chaba
+  text: started devin-task-20261124-143023-productionize-the-enriched-t1- on tony-dell (dispatch)
+- at: 2026-11-24 14:30
+  from: chaba
+  text: 'primer injected 8 lesson(s): [distiller-enrich-productionize] primer injected 8 lesson(s): [distiller-enrich-;
+    [distiller-enrich-productionize] primer injected 8 lesson(s): [mddb-coverage-aud; [mddb-coverage-audit-verify-kb-reports-in-fdcc8b]
+    spec: Rules declare MDDB seman; [distiller-enrich-productionize] finished (failed): exit=1 0261123-211532-produc;
+    [distiller-enrich-productionize] finished (failed): exit=1 0261123-220531-produc; [distiller-enrich-productionize]
+    finished (failed): exit=1 ev'
+- at: 2026-11-24 14:40
+  from: devin
+  text: 'dispatch 20261124-143023 on tony-dell: scoping done — --enrich already on tony_omen job+generated unit;
+    gaps found: ada-memory-pull.service + devin-summaries-sync.service run sync WITHOUT --enrich (would strip Artifacts),
+    no sticky-artifacts post-delete, no T2 .md dump, no hybrid recall hook. Building: sticky enrich + T2 transcript
+    dump in sync-devin-summaries.py, new session-recall.py (T1 semantic + T2 BM25), wire into notebooklm-recall.sh.'
+- at: 2026-11-24 14:49
+  from: tony-dell
+  text: 'finished (failed): journal=oom-kill ctionize-the-enriched-t1-.service: Failed with result ''oom-kill''.
+    | devin-task-20261124-143023-producti — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-24 14:50
+  from: chaba
+  text: 'tony-dell retry backoff: fail 1/3 — next claim not before 11-24 15:20'
+- at: 2026-11-24 14:50
+  from: idc02
+  text: claimed
+- at: 2026-11-24 14:51
+  from: chaba
+  text: model litellm/gemini-2.5-flash dropped — provider namespace doesn't match executor=devin; running the executor
+    default
+- at: 2026-11-24 14:51
+  from: chaba
+  text: started devin-task-20261124-145112-productionize-the-enriched-t1- on idc02 (dispatch)
+- at: 2026-11-24 14:51
+  from: chaba
+  text: 'primer injected 8 lesson(s): [distiller-enrich-productionize] primer injected 8 lesson(s): [distiller-enrich-;
+    [distiller-enrich-productionize] primer injected 8 lesson(s): [mddb-coverage-aud; [mddb-coverage-audit-verify-kb-reports-in-fdcc8b]
+    spec: Rules declare MDDB seman; [distiller-enrich-productionize] finished (failed): exit=1 0261123-211532-produc;
+    [distiller-enrich-productionize] finished (failed): exit=1 0261123-220531-produc; [distiller-enrich-productionize]
+    finished (failed): exit=1 ev'
+- at: 2026-11-24 14:57
+  from: devin
+  text: 'attempt 3 on idc02: prior work never merged (macbook sessions died, dell OOM). Rebuilding lean: sticky-##
+    Artifacts + T2 transcript dump in sync-devin-summaries.py, new session_recall.py (T1 mddb vector-search + T2
+    sqlite FTS5 over local .md archives — disk-backed, no in-memory BM25 = the likely OOM cause), wire into notebooklm-recall.sh,
+    --enrich onto the two bare systemd units.'
+- at: 2026-11-24 15:08
+  from: devin
+  text: 'DONE (attempt 3, idc02, commit a12b75e91f on dispatch/20261124-145112-productionize-the-enriched-t1-).
+    Rebuilt lean after prior OOM: sticky ## Artifacts + T2 transcript dump in sync-devin-summaries.py; new session_recall.py
+    = T1 mddb vector-search + T2 sqlite FTS5 (disk-backed incremental index — no in-memory BM25); notebooklm-recall.sh
+    injects bounded hybrid block; --enrich added to devin-summaries-sync.service + ada-memory-pull.service. Verified:
+    distiller --enrich real run exit 0 (3 docs upse'
+- at: 2026-11-24 15:13
+  from: idc02
+  text: 'finished (ok): exit=0 n interactive hosts, and idc02 lacking a summaries-sync timer is flagged as a follow-up
+    card candidate. | devin-t'
+- at: 2026-11-24 15:13
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 15:13
+  from: chaba
+  text: banked 292 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 15:13
+  from: chaba
+  text: pushed dispatch/20261124-145112-productionize-the-enriched-t1- to origin
+- at: 2026-11-24 15:13
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 59.0s)
+- at: 2026-11-24 15:13
+  from: chaba
+  text: auto-merged 49388032 (dispatch/20261124-145112-productionize-the-enriched-t1-) → origin/master
+- at: 2026-11-24 15:13
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-145112-productionize-the-enriched-t1-,
+    branch dispatch/20261124-145112-productionize-the-enriched-t1-'
+- at: 2026-11-24 15:22
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-24 17:04
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 23:28
+  from: devin
+  text: 'worktree-triage 2026-11-24: dispatch-wt-20261124-143023 dropped — --enrich/T2 archive verified on master
+    (sync-devin-summaries.py:285+), but untracked scripts/devin/session/session-recall.py (13KB, absent on master
+    entirely) preserved on branch dispatch/20261124-143023-productionize-the-enriched-t1- (tony-dell local ref).'
+- at: 2026-11-25 07:52
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:07
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:28
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:56
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:56
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+requests:
+- id: the-card-requests-productioniz-2005e7
+  ask: The card requests productionizing the enriched T1 distiller by enabling the --enrich hook and hybrid T1/T2
+    recall path, but lacks context on which target host and repository this functionality should be deployed to.
+  options:
+  - ★ Use repo chaba on host tony-dell for the deployment
+  - Postpone productionization until target infrastructure is confirmed
+  - Split the task into separate repository configuration and host deployment cards
+  status: answered
+  at: 2026-10-29 13:20
+  from: backlog-spec-enrich
+  answer: ★ Use repo chaba on host tony-dell for the deployment
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  lane: paid_frontier
+  lane_source: kw
+  model: litellm/gemini-2.5-flash
+  sweep:
+    failed_noted: 2026-11-17 23:40
+    stale_running: 2026-11-23 21:22
+    session_gone: 2026-11-23 21:22
+  last_failure: 'journal=oom-kill ctionize-the-enriched-t1-.service: Failed with result ''oom-kill''. | devin-task-20261124-143023-productionize-the-enriched-t1-.service:
+    Consumed 1min 40.225s CPU time over 18min 57.927s wall clock time, 4G memory peak, 1.4G memory swap peak.'
+  attempts: 2
+  result: 'exit=0 n interactive hosts, and idc02 lacking a summaries-sync timer is flagged as a follow-up card candidate.
+    | devin-task-20261124-145112-productionize-the-enriched-t1-.service: Consumed 39.918s CPU time, 499.4M memory
+    peak, 0B memory swap peak.'
+  runner: idc02
+  verified: true
+spec: Productionize the enriched T1 distiller by enabling the --enrich hook and setting up the hybrid T1/T2 recall
+  path in the chaba repository on idc02. The implementation must integrate the enrichment flag into the distiller
+  pipeline and verify hybrid recall operations. The done-condition is verified when running the distiller with --enrich
+  successfully executes without error and exercises the hybrid T1/T2 recall path.
+claim:
+  since: 2026-11-24 14:50
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 15:22
+  note: verified — evidence checks green, closing itself

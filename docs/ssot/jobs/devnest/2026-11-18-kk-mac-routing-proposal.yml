@@ -1,0 +1,172 @@
+title: "Routing proposal — where kk_mac_local / ollama-qwen32b-kkmac sits vs paid flash-lite"
+date: 2026-11-18
+card: kk-mac-routing-proposal-fold-local-qwen2-4d513b
+parent_eval: kk-mac-card-judgment-eval (KNB-1087)
+session: "dispatch-wt-20261118-184235-card-judgment-eval-done (tony-omen)"
+status: >-
+  v2 landing. v1 (2026-11-13, this filename dated -13) lived on orphaned
+  branch dispatch/20261113-202232-card-judgment-eval-done-2026-1 — merge-
+  sweep could not land it (15 conflicts) so this re-dispatch re-applies
+  the still-missing pieces on current master. Gateway legs themselves
+  ARE live since 2026-11-13 (Tony approved option (a), deployed +
+  verified same night) and the admission shim shipped 2026-11-14 —
+  what was missing is the doc, the lane-savings executor attribution,
+  and the qwen2.5:32b model pin.
+
+eval_basis:
+  corpus: "scripts/bench/card-judgment/corpus.jsonl — 98 frozen card
+    decision moments, judged shadow-mode; T3 bars (score.py): acc>=0.85,
+    deference>=0.90, corr_precision>=0.80, >=50 cases, 3 consecutive runs"
+  results_2026_11_13:
+    qwen2.5:32b: "0.857 acc / 0.878 def / 0.909 prec / 1.0 rec / 0 parse-fails
+      — AT the accuracy bar, just under deference; best local model"
+    llama3.2:3b: "0.827 / 0.908 / 0.968 / 1.0 / 0 — beats old 0.739 baseline;
+      the only model over the 0.90 deference bar"
+    qwen2.5vl:7b: "0.745 / 0.867 / 0.737 / 0.933 / 0"
+    qwen3:8b: "0.674 / 0.806 / 0.862 / 0.833 / 16 parse-fails — parse-fragile,
+      excluded from judgment-shaped routing"
+  honest_read: >-
+    qwen2.5:32b wins action accuracy but UNDER-DEFERS vs both the bar and
+    llama3.2:3b. For defer-critical judgment the existing llama3.2:3b leg
+    is the better-behaved local fallback; kk-mac's value is quality/capacity
+    at $0 on bounded classes where a deterministic verifier or non-decision
+    output bounds the blast radius — not judgment superiority.
+
+two_integration_surfaces:
+  executor_lane:
+    what: "action.executor=kk_mac_local — dispatch cards with task_class
+      summary|operator_brief|structured_extract|safe_route. Live since
+      OPS-0079 probe + auto-route dr.kk_mac_route. Admission-gated via
+      kk_mac_admission.snapshot(): fresh heartbeat, ollama_ok, disk>=20G,
+      load/temp (60C cap)."
+    change_shipped: >-
+      DEFAULT_MODEL repinned qwen3:8b -> qwen2.5:32b across the lane —
+      kk_mac_executor.py, kk_mac_llm.py, kk_mac_lane_worker.py,
+      kk_mac_plan_validator.py, devnest_report_feed.py — the eval says
+      the old default is parse-fragile (16 fails). devnest-lanes
+      expected_tokens note updated.
+  gateway_legs:
+    what: "ollama-qwen32b-kkmac (LiteLLM -> idc03:11447 admission shim ->
+      kkmac-ollama-tunnel :11445 -> kk-mac:11434) in job_class chains —
+      ssot.llm-gateway.yml + stacks/idc03/litellm/config.yaml."
+    state: >-
+      DEPLOYED 2026-11-13 ~20:45 ICT under approved option (a), verified
+      live via x-litellm-model-api-base=:11445 -> now :11447, $0.00,
+      ~250ms, 0 fallbacks. kkmac-admission-shim.service (job doc
+      2026-11-14-kkmac-admission-shim.yml) 503s instantly on stale
+      heartbeat (>900s), ollama down, disk<20G, load_1m>4,
+      cpu_temp_c>60C, or node busy — the member-device risk v1 flagged
+      is now gated at this layer. Drain: touch KK_ADMISSION_FORCE_DENY.
+
+job_class_placement:
+  # Position = order in model_list + fallbacks. kk-mac leg-1 = max
+  # savings; the shim makes a dead/hot/busy Mac a fast 503 fallthrough,
+  # not a 120s timeout.
+  summary:
+    placement: "LIVE leg-1: [qwen32b-kkmac@shim, lite@paid, lite@free, lite@or, colab, llama3.2]"
+    why: "batch posture/cms/session summaries; latency-tolerant; the
+      executor contract already bounds this class on the card plane"
+  classify:
+    placement: "LIVE leg-1: [qwen32b-kkmac@shim, lite@paid, lite@free, lite@or, colab, llama3.2]"
+    why: "cheap high-volume doc-ingest classify; same profile as summary"
+  bench:
+    placement: "LIVE leg-1 — natural canary: spend-isolated key, low blast radius"
+  chat-local:
+    placement: "LIVE leg-2: [qwen7b@tonydell, qwen32b-kkmac@shim, llama3.2@ollama, gemma3@colab]"
+    why: "free-lane adopters (news-digest EN, wp-comment-sync, kanban-brief)
+      carry deterministic/gemini fallbacks and bounded payloads; 32b
+      upgrades prose quality over 7b when the Mac is awake. tonydell
+      stays leg-1 (always-on batch host); promote kkmac only after
+      availability data justifies"
+  tool-call:
+    placement: "DEFERRED — candidate leg-3 only: [lite@paid, lite@free, qwen32b-kkmac@shim, lite@or, colab, llama3.2]"
+    why: "ada decision calls are defer-critical; 0.878 deference and
+      under-defers vs llama3.2:3b. Insert at leg-3 (resilience position —
+      fires only when both gemini legs fail) only after the 3-run gate;
+      never promote past paid legs until deference clears 0.90"
+  not_candidates:
+    voice-aux: "voice-path latency + member-device jitter — never"
+    chat: "ada-facing parity with 3.5-flash; revisit post-gate only"
+    vision/image: "modality — wrong models"
+    embedding: "768d gemini space only; a local leg poisons mddb retrieval"
+
+savings_evidence_path:
+  movable_spend: "~$22/window steady REST side-calls (gemini-3.5-flash-lite
+    $11.5 + flash + image of the $69.64 Oct-11..Nov-07 ledger) — the
+    summary+classify share is what leg-1 kk-mac placement buys down"
+  lane_report: >-
+    scripts/board/lane-savings.py — PATCHED with this landing:
+    card_lane() now honors action.executor via EXECUTOR_LANES before
+    the type fallback; kk_mac_local, jules, nlm_batch added to
+    CHEAP_LANES (opencode -> free-opencode). Previously every
+    executor-pinned kk_mac dispatch attributed to 'devin' and savings
+    were invisible. Verify: python3 scripts/board/lane-savings.py
+    --month 2026-11
+  token_evidence_gap: >-
+    lane-savings counts kk_mac_local runs but tokens stay 'unevidenced'
+    unless artifacts carry the bench-edu-manage scores.<lane>.loop
+    shape or action.result records usage — kk_mac_result.json usage
+    lives in the taskdir, not scanned. Options: (a) finish_kk_mac_lane
+    copies usage eval_count/eval_duration into action.result, or (b) a
+    monthly rollup artifact under docs/reports/ in the scanned shape.
+    Counts-first is honest; dollars need one of these.
+  gateway_side: >-
+    LiteLLM ledger already logs ollama-qwen32b-kkmac calls at $0 —
+    scripts/litellm/daily-ledger.py --publish + admin UI model-spend
+    table show the paid-leg delta. Expected signal: lite@paid spend
+    drops by the summary+classify share; qwen32b-kkmac request count
+    rises when the Mac is awake.
+  verify_loop: "monthly lane-savings report + LiteLLM ledger delta +
+    per-run kk_mac_result.json usage in taskdirs"
+
+risks:
+  - "member-device availability: kk-mac sleeps/powers off (tailnet
+    offline 19h before the eval). MITIGATED at the gateway layer by
+    the admission shim — dead/hot/busy Mac = instant 503 -> fast
+    fallthrough to paid legs; only batch/latency-tolerant classes hold
+    leg-1/leg-2 placements"
+  - "temp/load gating is enforced at :11447 (cpu_temp_c>60C,
+    load_1m>4, node busy) — the shim, not LiteLLM, owns member-device
+    politeness; shim outage itself fails open only if :11447 dies
+    silently — monitor kkmac-admission-shim.service like the tunnel"
+  - "qwen3:8b parse-fragility (16 parse-fails): qwen2.5:32b is now
+    pinned for all judgment/structured work — executor, llm adapter,
+    lane worker, plan validator, report feed; ollama-qwen38b-kkmac
+    stays deployed but out of every chain"
+  - "deference gap 0.878<0.90: kkmac stays out of defer-critical
+    positions; llama3.2:3b remains the better local defer-fallback"
+  - "capacity: M4 Max 36GB, qwen2.5:32b ~20GB — fine resident, but
+    keep NUM_PARALLEL low; batch classes only until throughput is
+    measured"
+  - "config drift: live config.yaml already diverges from repo
+    (documented in ssot.llm-gateway.yml live_audit) — chain edits
+    must land in repo config + restart, never live-only"
+
+rerun_cadence:
+  rule: "T3-style: 3 consecutive qualifying runs on the CURRENT corpus
+    before tool-call leg-3 promotion; a corpus rebuild (v4/v5) or model
+    bump resets the streak"
+  cadence: >-
+    scripts/bench/card-judgment/kkmac_eval.sh qwen2.5:32b at each
+    kk-mac online window, >=24h apart, target 3 runs inside ~2 weeks.
+    Queue via jevnest-kk-mac-capacity-loop (it already gates on
+    heartbeat) or run manually on any tailnet host. Post each
+    run-kkmac-qwen2532b.{md,json} to card kk-mac-card-judgment-eval.
+  current_state: "1 run in hand (2026-11-13): acc+precision+recall
+    pass, deference 0.878 fails the T3 bar — legs 1/2 for
+    non-defer-critical classes are live on that basis; tool-call
+    leg-3 waits for 3 clean runs AND deference >=0.90. Next pass
+    should try a defer-biased prompt variant to see if the gap is
+    prompt- or model-level."
+  also_rerun_on: "ollama upgrade, qwen2.5:32b repull, corpus rebuild,
+    or any prompt/template change in score.py"
+
+next_steps:
+  - "queue 2 more kkmac_eval.sh runs at next online windows (target:
+    3 consecutive qualifying runs)"
+  - "card: kk_mac usage -> lane-savings token evidence (copy usage into
+    action.result at finish_kk_mac_lane, or monthly rollup artifact)"
+  - "card: defer-biased prompt variant for the rerun gate — test
+    whether the 0.878 gap is prompt- or model-level"
+  - "watch the next lane-savings + LiteLLM ledger month for the
+    summary/classify paid-leg delta (first real savings signal)"

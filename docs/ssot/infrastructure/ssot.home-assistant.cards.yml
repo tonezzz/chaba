@@ -13,14 +13,14 @@ repositories:
       tool: rollup -c --bundleConfigAsCjs
       output: dist/pfg3d-card.js
     deploy:
-      michael-dev:
+      mn-ha-dev:
         target_host: ssot.values.yml::hosts.tony_dell
-        target_path: /home/tony/.config/michael-dev/www/pfg3d-card-v240.js
-        lovelace_resources: /home/tony/.config/michael-dev/.storage/lovelace_resources
+        target_path: /home/tony/.config/mn-ha-dev/www/pfg3d-card-v240.js
+        lovelace_resources: /home/tony/.config/mn-ha-dev/.storage/lovelace_resources
         resource_path: /local/pfg3d-card-v240.js
-        restart: systemctl --user restart michael-dev.service
-        service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
-        test_url: https://idc02.taila0626a.ts.net:8124/tony-test/pf4
+        restart: systemctl --user restart mn-ha-dev.service
+        service_ref: infrastructure/ssot.services.yml#tony-dell.mn-ha-dev.quadlet.service_unit
+        test_url: https://mn01.taila0626a.ts.net:8124/tony-test/pf4
       michael-ha:
         target_host: ssot.values.yml::hosts.michael_ha
         target_path: /config/www/pfg3d-card-v239.js
@@ -126,23 +126,23 @@ cards:
     name: PFG3D Card
     repo_ref: repositories.pfg3d-card
     bundle_version: 240
-    deployed_as: "/local/pfg3d-card-v240.js on michael-dev (md5 93f0d7c22b347a427894eac68124a21c); /local/pfg3d-card-v239.js on michael-ha (md5 d39394d4aa1fc64d687792d418ff3176)"
+    deployed_as: "/local/pfg3d-card-v240.js on mn-ha-dev (md5 93f0d7c22b347a427894eac68124a21c); /local/pfg3d-card-v239.js on michael-ha (md5 d39394d4aa1fc64d687792d418ff3176)"
     dashboards:
       - id: tony-test/v0
         tab: V0
-        test_url: https://idc02.taila0626a.ts.net:8124/tony-test/p0
+        test_url: https://mn01.taila0626a.ts.net:8124/tony-test/p0
       - id: tony-test/v1
         tab: V1
-        test_url: https://idc02.taila0626a.ts.net:8124/tony-test/p0-2
+        test_url: https://mn01.taila0626a.ts.net:8124/tony-test/p0-2
       - id: tony-test/g1
         tab: G1
-        test_url: https://idc02.taila0626a.ts.net:8124/tony-test/g1
+        test_url: https://mn01.taila0626a.ts.net:8124/tony-test/g1
       - id: tony-test/tpl
         tab: TPL
-        test_url: https://idc02.taila0626a.ts.net:8124/tony-test/tpl
+        test_url: https://mn01.taila0626a.ts.net:8124/tony-test/tpl
       - id: tony-test/tpl2
         tab: TPL2
-        test_url: https://idc02.taila0626a.ts.net:8124/tony-test/tpl2
+        test_url: https://mn01.taila0626a.ts.net:8124/tony-test/tpl2
       - id: michael-ha tony-test/v0
         tab: V0
         test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/p0
@@ -155,11 +155,11 @@ cards:
       - id: michael-ha tony-test/tpl
         tab: TPL
         test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/tpl
-    instance: ssot.home-assistant.michael.dev.yml::environments.dev
+    instance: ssot.home-assistant.mn-ha-dev.yml::environments.dev
   - id: michael-live
     name: Michael Live (ha-live bridge front-end)
     source: stacks/web/public/apps/michael-live/
-    instance: ssot.home-assistant.michael.dev.yml::environments.dev
+    instance: ssot.home-assistant.mn-ha-dev.yml::environments.dev
 
   - id: weather-station-card
     name: Weather Station Card
@@ -172,7 +172,7 @@ cards:
     dashboards:
       - id: tony-test/mn-weather
         tab: mnweather
-        instance: ssot.home-assistant.michael.dev.yml::environments.dev
+        instance: ssot.home-assistant.mn-ha-dev.yml::environments.dev
     note: >
       Fits the RK900/RK600 use case because it charts the local Modbus
       sensor history and can overlay weather.forecast_home in the same view.
@@ -288,12 +288,12 @@ cardstyle_policy:
     note: >-
       custom:power-flow-card and its bundles (sunsynk-power-flow-card-fork-v*.js,
       power-flow-card-v3.js) retired fleet-wide 2026-09-23: resources deleted on
-      tony-ha, michael-ha, michael-dev; stale files removed from www/ on
-      tony-ha + michael-dev. pfg3d-card is the only flow/tile card in use.
+      tony-ha, michael-ha, mn-ha-dev; stale files removed from www/ on
+      tony-ha + mn-ha-dev. pfg3d-card is the only flow/tile card in use.
       v206+v239 both registered pfg-cycle causing a duplicate-element
       DOMException on every dashboard load — that collision is gone.
 
 status:
   last_build: "2026-09-08"
   last_verified: "2026-09-16"
-  health: active; pfg3d-card-v239 on michael-dev and tony-ha, v214 on michael-ha (per-host counters — verify cross-host parity by md5sum, not version); legacy power-flow-card bundles retired fleet-wide 2026-09-23; cardstyle inventory is pfg + pfg2 + one 'full' juWorkshop diagram per host — see cardstyle_policy
+  health: active; pfg3d-card-v239 on mn-ha-dev and tony-ha, v214 on michael-ha (per-host counters — verify cross-host parity by md5sum, not version); legacy power-flow-card bundles retired fleet-wide 2026-09-23; cardstyle inventory is pfg + pfg2 + one 'full' juWorkshop diagram per host — see cardstyle_policy

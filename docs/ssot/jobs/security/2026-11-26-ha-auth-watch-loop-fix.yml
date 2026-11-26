@@ -1,0 +1,58 @@
+icon: shield
+title: Fix ha-auth-watch 15-minute crash loop
+date: 2026-11-26
+card: timer-alert-tony-dell-ha-auth-watch,exec-checkout-generated-writes-focus-inb-da698a
+context: >-
+  `ha-auth-watch.service` on tony-dell failed every 15 minutes (13:18,
+  13:33, 13:48, 14:03 +07) and raised a high-priority timer-alert card.
+  The service polls both HA instances, emits focus-inbox alerts through
+  the board-api door (tony-dell is a stamped `exec` / non-writer checkout),
+  then crashed before finishing. Each tick added two more auth-failure
+  entries to the focus-inbox — a live alert-spam loop, not a one-off.
+changes:
+  - "scripts/audits/ha-auth-watch.py: the 2026-11-26 inbox-door change
+    appended `fname` (a str) to `written` on the board-api path while the
+    local path appends a Path. `git_commit_push()` then called
+    `.relative_to()` on every item and died with `AttributeError: 'str'
+    object has no attribute 'relative_to'`."
+  - "Split the counter: `api_emitted` tracks board-api deliveries,
+    `written` stays Paths from local file writes only. `git_commit_push`
+    is now gated on `writable` as well as `args.git`, so a non-writer
+    checkout never attempts a local stage/commit/push for alerts it
+    already delivered over the API."
+  - "Hardened `git_commit_push()` to accept both Path and str inputs so a
+    future mixed list cannot crash a timer again."
+verification:
+  - "`python3 -m py_compile scripts/audits/ha-auth-watch.py` passed."
+  - "Unit check: imported the module and called `git_commit_push()` with
+    one str and one Path; both resolved to correct repo-relative names
+    (`git add docs/ssot/focus-inbox/...`)."
+  - "Live root cause confirmed from `journalctl --user -u
+    ha-auth-watch.service` on tony-dell: identical traceback at
+    13:48:41 and 14:03:40, next tick 14:18:39."
+  - "Deterministic reproduction of the exact failing path: imported the
+    module, patched the poll to return one failure, forced
+    `local_writable=False` and `emit_doc()='api'`, ran `main(['--git'])` →
+    `alerted 1 failure(s) via board-api; no local commit on non-writer
+    checkout`, exit 0, zero subprocess calls (old code raised here)."
+  - "Deployed: master e45adace24; tony-dell ff-pulled via
+    `systemctl --user start chaba-repo-sync.service` to 02ae1f31e6b with all
+    fix markers present. No service restart was needed: systemd executes
+    the script fresh on each oneshot invocation."
+  - "Live consumer proof: the 14:18:39 +07 tick exited `0/SUCCESS`, logged
+    `alerted 2 failure(s) via board-api; no local commit on non-writer
+    checkout`, and left the service inactive (dead) rather than failed."
+rollback: >-
+  Revert the single script file. No host config, timer or service unit was
+  changed; the next tick would simply run the previous code again (and fail).
+residual: >-
+  The underlying HA invalid-auth attempts are unchanged — this fix stops
+  the alert-spam loop, not the source of the bad logins. Two auth-failure
+  entries per tick still arrive via board-api (deduped by state), but they
+  no longer leave the service failed or generate timer-alert cards.
+lesson: >-
+  When routing a producer through the board-api write door, also remove
+  the local-commit tail: delivering an alert via the API and then trying
+  to `git add` a filename that was never written locally is a guaranteed
+  timer loop. Keep the local-write list typed as Paths and count API
+  deliveries separately; a mixed list hid the bug until runtime.

@@ -1,0 +1,61 @@
+---
+# Deploy the dispatch scheduler daemon to the control node (idc02)
+#
+# Usage:
+#   ansible-playbook playbooks/deploy_scheduler.yml
+
+- name: Deploy dispatch scheduler
+  hosts: idc02
+  become: false
+  vars:
+    sidecar_redis_host: "100.123.163.11"
+  tasks:
+    - name: Ensure venv has redis-py
+      ansible.builtin.pip:
+        name: redis
+        virtualenv: /home/tony/.local/venv-sidecar
+        virtualenv_command: /home/tony/.local/venv-sidecar/bin/activate
+      register: scheduler_pip
+
+    - name: Install scheduler systemd user unit
+      ansible.builtin.template:
+        src: /home/tony/ansible/queue/dispatch-scheduler.service.j2
+        dest: /home/tony/.config/systemd/user/dispatch-scheduler.service
+        mode: "0644"
+      register: scheduler_unit
+
+    - name: Reload systemd user daemon
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+        scope: user
+      when: scheduler_unit.changed
+
+    - name: Enable and start scheduler
+      ansible.builtin.systemd_service:
+        name: dispatch-scheduler.service
+        enabled: true
+        state: started
+        scope: user
+      when: not ansible_check_mode
+
+    - name: Restart scheduler after config change
+      ansible.builtin.systemd_service:
+        name: dispatch-scheduler.service
+        state: restarted
+        scope: user
+      when: not ansible_check_mode and (scheduler_unit.changed or scheduler_pip.changed)
+
+    - name: Show scheduler status
+      ansible.builtin.command:
+        argv:
+          - /home/tony/.local/venv-sidecar/bin/python
+          - /home/tony/ansible/queue/scheduler.py
+          - --once
+      register: scheduler_check
+      changed_when: false
+      when: not ansible_check_mode
+
+    - name: Display scheduler status
+      ansible.builtin.debug:
+        msg: "{{ scheduler_check.stdout }}"
+      when: not ansible_check_mode

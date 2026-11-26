@@ -1,0 +1,165 @@
+---
+# ada-ocb-verify.yml — contract gate for the OpenChamber pane.
+#
+# Standalone (does not depend on a prior audit run): probes each pane host,
+# probes the public edge, then asserts the declared contract from
+# inventory/group_vars/ocb_pane.yml, cross-checked against the pins in
+# ssot.audit.hosts.yml. A stale pin here fails loudly instead of silently
+# blessing the wrong version. Nonzero exit = drift, with the failing
+# assertion named in output — never a silent "ok".
+#
+# Shared assertions live in tasks/ada-ocb-assert.yml so the upgrade
+# playbook reuses the exact same gate as its post-check.
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/ada-ocb-verify.yml
+#   ansible-playbook playbooks/ada-ocb-verify.yml --limit idc02
+#   ansible-playbook playbooks/ada-ocb-verify.yml -e ocb_web_version=2.7.4
+#   ansible-playbook playbooks/ada-ocb-verify.yml -e board_notify=true -e card_ref=OPS-1424
+
+- name: Probe ada-ocb pane hosts (read-only)
+  hosts: ocb_pane:!disabled
+  gather_facts: false
+  become: false
+
+  tasks:
+    - name: Include the shared pane probe
+      ansible.builtin.include_tasks: tasks/ada-ocb-probe.yml
+
+- name: Assert the declared contract and emit evidence (controller-side)
+  hosts: localhost
+  gather_facts: false
+  become: false
+  vars:
+    benchmark_report_playbook: ada-ocb-verify
+    benchmark_report_ts_default: "{{ lookup('pipe', 'date -u +%Y%m%dT%H%M%SZ') }}"
+    benchmark_report_dir: "{{ playbook_dir }}/../../reports/ansible-benchmark/ada-ocb-verify/{{ benchmark_report_ts }}"
+    benchmark_report_hosts: "{{ groups['ocb_pane'] | default([]) | difference(groups['disabled'] | default([])) | sort }}"
+    board_notify: false
+    board_api_base: "https://idc03.taila0626a.ts.net:10000"
+    board_from: "devin"
+    card_ref: ""
+
+  tasks:
+    - name: Pin benchmark report timestamp
+      ansible.builtin.set_fact:
+        benchmark_report_ts: "{{ benchmark_report_ts | default(benchmark_report_ts_default) }}"
+        benchmark_report_dir: "{{ playbook_dir }}/../../reports/ansible-benchmark/{{ benchmark_report_playbook }}/{{ benchmark_report_ts | default(benchmark_report_ts_default) }}"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Run assertions and always emit benchmark evidence
+      block:
+        - name: Include the shared contract assertions
+          ansible.builtin.include_tasks: tasks/ada-ocb-assert.yml
+          vars:
+            ocb_assert_label: "ada-ocb verify"
+      always:
+        - name: Build per-host benchmark reports
+          ansible.builtin.set_fact:
+            benchmark_host_report: >-
+              {%- set p = hostvars[item].ocb_probe | default({}) -%}
+              {%- set role = hostvars[item].ocb_role | default('fallback') -%}
+              {%- set probed = (hostvars[item].ocb_probe is defined) and (hostvars[item].ocb_probe.error is not defined) -%}
+              {%- if not probed -%}
+              {{ {
+                'host': item,
+                'inventory_host': item,
+                'playbook': benchmark_report_playbook,
+                'ts': benchmark_report_ts,
+                'probed': false,
+                'unreachable': true,
+                'rc': 1,
+                'elapsed_s': 0,
+                'summary': 'unreachable role=' ~ role ~ ' web=? cli=? local=? (no ocb_probe — excluded by --limit or host unreachable)',
+                'checks': [
+                  {'name': 'ocb_probe', 'status': 'unreachable', 'detail': p.get('error', 'ocb_probe fact missing')}
+                ],
+                'deltas': [],
+                'evidence': [
+                  {'kind': 'probe', 'error': p.get('error', 'ocb_probe fact missing — host not in probe play')},
+                  {'kind': 'edge', 'http': ocb_edge.http | default('?'), 'csp_contains': ocb_edge_csp_must_contain in (ocb_edge.csp | default(''))}
+                ]
+              } }}
+              {%- else -%}
+              {%- set strict = role in (ocb_strict_roles | default(['primary'])) -%}
+              {%- set required_units = (ocb_required_units | default([])) + ((ocb_primary_extra_units | default([])) if role == 'primary' else []) -%}
+              {%- set unit_actual = p.get('units', {}) -%}
+              {%- set bad_units2 = [] -%}
+              {%- for u in required_units -%}
+                {%- if unit_actual.get(u) != 'active' -%}{%- set _ = bad_units2.append(u ~ '=' ~ unit_actual.get(u, 'missing')) -%}{%- endif -%}
+              {%- endfor -%}
+              {%- set checks = [
+                {'name': 'web_version', 'status': ('ok' if (p.get('web_version') == ocb_web_version or not strict) else 'drift'), 'detail': 'actual=' ~ p.get('web_version','?') ~ ' expected=' ~ ocb_web_version},
+                {'name': 'cli_version', 'status': ('ok' if (p.get('cli_version') == ocb_cli_version or not strict) else 'drift'), 'detail': 'actual=' ~ p.get('cli_version','?') ~ ' expected=' ~ ocb_cli_version},
+                {'name': 'required_units', 'status': ('ok' if (bad_units2 | length == 0) else 'fail'), 'detail': (bad_units2 | join(', ') if bad_units2 else 'all active')},
+                {'name': 'bind_3000', 'status': ('ok' if p.get('bind_3000') == ocb_bind else 'fail'), 'detail': 'actual=' ~ p.get('bind_3000','?') ~ ' expected=' ~ ocb_bind},
+                {'name': 'local_http', 'status': ('ok' if p.get('local_http') == '200' else 'fail'), 'detail': 'actual=' ~ p.get('local_http','?')},
+                {'name': 'patch_present', 'status': ('ok' if (p.get('patch_present') | bool or not strict) else 'fail'), 'detail': 'actual=' ~ p.get('patch_present','?')},
+                {'name': 'startup_env_mode', 'status': ('ok' if p.get('startup_env_mode') == '600' else 'fail'), 'detail': 'actual=' ~ p.get('startup_env_mode','?')},
+                {'name': 'litellm_dropin', 'status': ('ok' if p.get('litellm_dropin') | bool else 'fail'), 'detail': 'actual=' ~ p.get('litellm_dropin','?')},
+                {'name': 'edge_http', 'status': ('ok' if ocb_edge.http | default('?') == '200' else 'fail'), 'detail': 'actual=' ~ ocb_edge.http | default('?')}
+              ] -%}
+              {%- set deltas = checks | selectattr('status', 'in', ['drift','fail','error','missing','down']) | list -%}
+              {%- set summary = ('ok' if (deltas | length == 0) else ('fail' if (checks | selectattr('status','equalto','fail') | list | length > 0) else 'drift')) -%}
+              {{ {
+                'host': item,
+                'inventory_host': item,
+                'playbook': benchmark_report_playbook,
+                'ts': benchmark_report_ts,
+                'probed': true,
+                'unreachable': false,
+                'rc': (0 if summary == 'ok' else 1),
+                'elapsed_s': 0,
+                'summary': summary ~ ' role=' ~ role ~ ' web=' ~ p.get('web_version','?') ~ ' cli=' ~ p.get('cli_version','?') ~ ' local=' ~ p.get('local_http','?'),
+                'checks': checks,
+                'deltas': deltas,
+                'evidence': [
+                  {'kind': 'edge', 'http': ocb_edge.http | default('?'), 'csp_contains': ocb_edge_csp_must_contain in (ocb_edge.csp | default(''))},
+                  {'kind': 'contract', 'ocb_web_version': ocb_web_version, 'ocb_cli_version': ocb_cli_version}
+                ]
+              } }}
+              {%- endif -%}
+          loop: "{{ benchmark_report_hosts }}"
+          loop_control:
+            label: "{{ item }}"
+          delegate_to: "{{ item }}"
+          delegate_facts: true
+          ignore_unreachable: true
+
+        - name: Name pane hosts that produced no probe this run
+          ansible.builtin.debug:
+            msg: >-
+              {{ item }}: no usable ocb_probe (excluded by --limit or
+              unreachable{% if hostvars[item].ocb_probe is defined %}
+              :: {{ hostvars[item].ocb_probe.error }}{% endif %}) — reported
+              unreachable in benchmark evidence.
+          loop: "{{ benchmark_report_hosts }}"
+          loop_control:
+            label: "{{ item }}"
+          when: >-
+            hostvars[item].ocb_probe is not defined
+            or hostvars[item].ocb_probe.error is defined
+
+        - name: Write standard benchmark reports
+          ansible.builtin.include_tasks: tasks/benchmark-report-write.yml
+
+        - name: Build board comment text
+          ansible.builtin.set_fact:
+            ocb_verify_comment: >-
+              ada-ocb-verify {{ benchmark_report_ts }}: {{ benchmark_summary_report.summary | default('n/a') }}.
+              edge={{ ocb_edge.http | default('?') }}. artifact={{ benchmark_report_dir }}/summary.yml
+              {{ ('card=' ~ card_ref) if (card_ref | length > 0) else '' }}
+          when: board_notify | bool
+          delegate_to: localhost
+          run_once: true
+
+        - name: Post board evidence comment (optional)
+          ansible.builtin.include_tasks: tasks/board-api-comment.yml
+          vars:
+            board_card_id: "{{ card_ref }}"
+            board_comment_text: "{{ ocb_verify_comment }}"
+            board_notify_when: "{{ board_notify | bool and (card_ref | length > 0) }}"
+            board_delegate_to: localhost
+            board_run_once: true
+          when: board_notify | bool and (card_ref | length > 0)

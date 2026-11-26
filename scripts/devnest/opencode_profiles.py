@@ -189,6 +189,19 @@ def lint_profile(prof: dict) -> list:
                     + ",".join(sorted(allow & denied)))
     # a write-capable profile must scope its writes
     tools = prof.get("tools") or {}
+    isolation = prof.get("isolation") or {}
+    if not isinstance(isolation, dict):
+        errs.append("bad_value:isolation must be a map")
+        isolation = {}
+    project_context = isolation.get("project_context", "repo")
+    if project_context not in ("repo", "scratch"):
+        errs.append(f"bad_value:isolation.project_context={project_context}")
+    if project_context == "scratch":
+        if prof.get("task_classes") != ["shadow_replay"] or \
+                prof.get("stages") != ["S0"]:
+            errs.append("scratch_context_requires_s0_shadow_replay")
+        if any(tools.values()) or allow:
+            errs.append("scratch_context_requires_no_tools_or_mcp")
     writes_on = any(tools.get(t) for t in ("write", "edit", "patch"))
     if writes_on and not prof.get("allowed_paths"):
         errs.append("profile_writes_unscoped:write tools on but "
@@ -483,6 +496,19 @@ def _tool_denial(part: dict) -> bool:
         str(st.get("error") or st.get("output") or "")))
 
 
+def _artifact_relpath(fpath: str) -> str:
+    """Normalize a tool-reported file path to a repo-relative posix
+    path for comparison with envelope artifact.path (which is
+    repo-relative)."""
+    p = Path(fpath)
+    if p.is_absolute():
+        try:
+            p = p.resolve().relative_to(REPO.resolve())
+        except (ValueError, OSError):
+            return fpath
+    return p.as_posix()
+
+
 def audit_events(log_path: Path, env: dict, prof: dict) -> dict:
     """Scan an opencode --format json event log: token usage, tool
     calls, permission denials, mutating commands (incl. allowlist-bypass
@@ -490,8 +516,17 @@ def audit_events(log_path: Path, env: dict, prof: dict) -> dict:
     tokens = {"total": 0, "input": 0, "output": 0, "reasoning": 0,
               "cache_read": 0, "cache_write": 0}
     tools, denials, mutating, peeks, writes = [], [], [], [], []
+    write_violations = 0
     allow = set(env.get("mcp_allowlist") or [])
     builtin = set((prof.get("tools") or {}).keys())
+    # file-mode artifact profiles legitimately write the declared
+    # artifact path — only writes OUTSIDE it are denials-equivalent
+    # (message-mode profiles hold no write tools, so every write
+    # attempt there is a violation). Without this split the S4
+    # promote_gate max_tool_denials:0 was unreachable: every landed
+    # artifact counted its own write as a denial.
+    amode = (prof.get("artifact") or {}).get("mode", "message")
+    art_path = str((env.get("artifact") or {}).get("path") or "")
     for line in log_path.read_text(errors="replace").splitlines():
         try:
             ev = json.loads(line)
@@ -520,6 +555,10 @@ def audit_events(log_path: Path, env: dict, prof: dict) -> dict:
             denials.append(f"mcp_unlisted:{name}")
         if name in ("write", "edit", "patch", "apply_patch"):
             writes.append(f"{name}:{fpath[:120]}")
+            if amode == "message":
+                write_violations += 1
+            elif not fpath or _artifact_relpath(fpath) != art_path:
+                write_violations += 1
         if cmd and (lane_gate.shadow_eval.MUTATING_RE.search(cmd)
                     or MUTATING_EXTRA_RE.search(cmd)):
             mutating.append(cmd[:200])
@@ -528,7 +567,8 @@ def audit_events(log_path: Path, env: dict, prof: dict) -> dict:
             peeks.append(f"{name}:{(fpath or cmd)[:160]}")
     return {"tokens": tokens, "tool_calls": tools, "denials": denials,
             "mutating_commands": mutating, "verifier_peeks": peeks,
-            "write_attempts": writes}
+            "write_attempts": writes,
+            "write_violations": write_violations}
 
 
 def _git_status() -> set:
@@ -672,6 +712,67 @@ def _record_denial_metric(env: dict, reasons: list):
     m["failure_reason"] = ";".join(reasons)[:500]
     lane_gate.record_metric(m)
     return m
+
+
+def project_dir_for_run(env: dict, prof: dict, run_dir: Path) -> Path:
+    """Keep tool-less S0 replay agents out of the full repository context."""
+    isolation = prof.get("isolation") or {}
+    if isolation.get("project_context", "repo") == "scratch":
+        project_dir = run_dir / "project"
+        project_dir.mkdir(parents=True, exist_ok=True)
+        return project_dir
+    return REPO
+
+
+def _process_output_text(value) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return str(value)
+
+
+def _write_process_logs(run_dir: Path, stdout, stderr):
+    (run_dir / "events.jsonl").write_text(_process_output_text(stdout))
+    (run_dir / "stderr.log").write_text(_process_output_text(stderr))
+
+
+def run_opencode(cmd, env, timeout: int, run_dir: Path, cwd: Path) -> dict:
+    """Run OpenCode and retain any partial output if its process times out."""
+    try:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=timeout,
+            env=env, cwd=str(cwd))
+        _write_process_logs(run_dir, result.stdout, result.stderr)
+        return {"exit_code": result.returncode, "error": None}
+    except subprocess.TimeoutExpired as exc:
+        _write_process_logs(
+            run_dir,
+            exc.stdout if exc.stdout is not None else exc.output,
+            exc.stderr,
+        )
+        return {"exit_code": -2, "error": f"timeout {timeout}s"}
+
+
+def classify_failure_reason(audit: dict, scope_new: list, denials: int,
+                            landed: bool, exit_code, verifier_pass: bool):
+    if audit.get("mutating_commands"):
+        return "mutating_command"
+    if audit.get("verifier_peeks"):
+        return "verifier_peek"
+    if scope_new:
+        return "scope_violation"
+    if denials:
+        return "tool_denial"
+    if exit_code == -2:
+        return "timeout"
+    if not landed:
+        return "missing_artifact"
+    if exit_code not in (0, None) and not verifier_pass:
+        return "executor_error"
+    if not verifier_pass:
+        return "unverified_exit"
+    return None
 
 
 def _verify(rd: Path, env: dict) -> dict:
@@ -840,6 +941,26 @@ def _partial_text(data) -> str:
     return data or ""
 
 
+def instruction_free_cwd(project_dir: Path, rd: Path) -> Path:
+    """Scratch cwd for agent-local runs: opencode auto-injects the project's
+    AGENTS.md (81KB in chaba) into every system prompt. On the local Ollama
+    legs that inflates first-token latency to 265s+ on a real agent request
+    (past opencode's 300s header timeout and this lane's 420s wall clock).
+    Run from a cwd with no AGENTS.md; symlink the two trees the info-find
+    bash allowlist and artifact path need. Scoped to agent-local only —
+    other profiles keep their repository/worktree cwd (OPS-1363 followup).
+    """
+    # must be OUTSIDE the repo: an in-repo scratch cwd still inherits
+    # <repo>/AGENTS.md by ancestor walk (verified 2026-11-25).
+    cwd = Path("/tmp/opencode-lane-cwd") / rd.name
+    cwd.mkdir(parents=True, exist_ok=True)
+    for name in ("scripts", "evals"):
+        src, dst = project_dir / name, cwd / name
+        if src.is_dir() and not dst.exists():
+            dst.symlink_to(src)
+    return cwd
+
+
 def run_profile_process(cmd, rd, timeout, env, observer="", cwd=None):
     if observer:
         print(f"LIVE_EVENTS {rd / 'events.jsonl'}", flush=True)
@@ -915,6 +1036,11 @@ def _run_attempt(env, prof, pre, args, attempt, observer, max_attempts):
         run_id += f"-r{attempt}"
     rd = RUNS / f"{env['id']}-{run_id}"
     man = render_bundle(env, prof, rd)
+    project_dir = project_dir_for_run(env, prof, rd)
+    man["project_context"] = (
+        "scratch" if project_dir != REPO else "repository")
+    man["project_dir"] = str(project_dir)
+    (rd / "manifest.json").write_text(json.dumps(man, indent=1))
     prompt = (rd / "prompt.md").read_text()
     if observer:
         print(f"WATCH_EVENTS {rd / 'events.jsonl'}", flush=True)
@@ -939,13 +1065,16 @@ def _run_attempt(env, prof, pre, args, attempt, observer, max_attempts):
     if opencode_is_v2():
         cmd.append("--standalone")
     else:
-        cmd += ["--dir", str(REPO)]
+        cmd += ["--dir", str(project_dir)]
     cmd += ["--model", str(env["model"]),
             "--agent", agent_name(prof["id"]), prompt]
     rec = {"exit_code": None, "error": None}
+    exec_cwd = project_dir
+    if str(env.get("model") or "") == "litellm/agent-local":
+        exec_cwd = instruction_free_cwd(project_dir, rd)
     watch_start = time.monotonic()
     try:
-        r = run_profile_process(cmd, rd, timeout, oenv, observer=observer, cwd=str(REPO))
+        r = run_profile_process(cmd, rd, timeout, oenv, observer=observer, cwd=str(exec_cwd))
         rec["exit_code"] = r.returncode
     except subprocess.TimeoutExpired:
         rec["exit_code"] = -2
@@ -1006,26 +1135,15 @@ def _run_attempt(env, prof, pre, args, attempt, observer, max_attempts):
     m["verifier_pass"] = verdict.get("verdict") == "pass"
     needs_independent = (env.get("verifier") or {}).get("type") == "independent_devin" and verdict.get("verdict") == "skipped"
     m["artifact_landed"] = landed
-    den = len(audit["denials"]) + len(audit["write_attempts"])
+    den = len(audit["denials"]) + audit.get(
+        "write_violations", len(audit["write_attempts"]))
     m["tool_denials"] = den
     esc = (env.get("escalation") or {})
-    fr = None
-    if audit["mutating_commands"]:
-        fr = "mutating_command"
-    elif audit["verifier_peeks"]:
-        fr = "verifier_peek"
-    elif scope_new:
-        fr = "scope_violation"
-    elif den:
-        fr = "tool_denial"
-    elif not landed:
-        fr = "missing_artifact"
-    elif rec["exit_code"] == -2:
-        fr = "timeout"
-    elif rec["exit_code"] not in (0, None) and not m["verifier_pass"]:
-        fr = "executor_error"
-    elif not m["verifier_pass"] and not needs_independent:
-        fr = "unverified_exit"
+    fr = classify_failure_reason(
+        audit, scope_new, den, landed, rec["exit_code"],
+        m["verifier_pass"])
+    if fr == "unverified_exit" and needs_independent:
+        fr = None
     m["failure_reason"] = fr
     pending_review = needs_independent and not fr
     if observer:
@@ -1055,6 +1173,7 @@ def _run_attempt(env, prof, pre, args, attempt, observer, max_attempts):
            "verdict": verdict.get("verdict"), "checks": verdict.get("checks"),
            "artifact_landed": landed, "denials": audit["denials"],
            "write_attempts": audit["write_attempts"],
+           "write_violations": audit.get("write_violations"),
            "mutating": audit["mutating_commands"],
            "verifier_peeks": audit["verifier_peeks"],
            "scope_violations": scope_new, "metric": m,

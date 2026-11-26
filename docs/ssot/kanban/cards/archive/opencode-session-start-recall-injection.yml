@@ -1,0 +1,371 @@
+id: opencode-session-start-recall-injection
+title: OpenCode session-start recall injection (Chaba L0 context)
+column: done
+updated: 2026-11-26 19:41
+priority: medium
+tags:
+- opencode
+- session-capture
+- chaba-memory
+- dev-0038-followup
+spec: 'Goal: give ada-ocb/OpenCode sessions an automatic or one-command resume signal equivalent to Devin''s SessionStart
+  recall (bounded Chaba context).
+
+
+  Context:
+
+  - Canonical: docs/ssot/chaba/ssot.chaba.memory.yml (L0 render), scripts/chaba/render-memory.py, ~/.local/share/chaba/context.md
+
+  - Devin reference: ~/.config/devin/scripts/notebooklm-recall.sh (render --if-stale + inject head)
+
+  - Shared capture contract: docs/ssot/ssot.knowledge-capture.yml
+
+
+  Options:
+
+  A) ★ OpenCode /recall command (default, low risk) — add .opencode/commands/recall.md that instructs agent to run
+  `chaba-session-capture render --if-stale` (or read context.md) and summarize bounded head (<= ~4k chars) as resume
+  context; pointer-first, no volatile truth.
+
+  B) OpenCode plugin/hook startup injection — if OpenCode runtime supports session-start hook/plugin, inject bounded
+  context.md head automatically; fallback to /recall.
+
+  C) AGENTS.md static instruction only — tell agent to read context.md at start; simplest but easy to skip and adds
+  tool cost.
+
+
+  Acceptance:
+
+  - New OpenCode session can obtain recent Chaba resume context with one command or automatically.
+
+  - Bounded/pointer-first; no secrets; no stale volatile snapshots treated as truth.
+
+  - Documented in .opencode instructions/skill and DEV-0038 pointer note.'
+note: DEV-0038 follow-up. Devin gets rendered L0 context via SessionStart hook; ada-ocb/OpenCode starts cold except
+  AGENTS/instructions.
+ref: OPS-1321
+comms:
+- at: 2026-11-23 16:00
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-23 16:19
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:28
+  from: devin
+  text: '[2026-11-23 devin] Implemented A★ default: added .opencode/commands/recall.md (render --if-stale + bounded
+    context.md head, pointer-first, read-only). Commit c4790eaba7 on origin/ada/fleet-mcp-inventory-report (branch/unmerged
+    to master). Still needs governed landing; B/C options remain open if preferred.'
+- at: 2026-11-23 19:10
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:23
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:40
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:07
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 19:58
+  from: chaba
+  text: 'Ref reassigned OPS-0036 -> OPS-1321 in the active-card duplicate ref sweep: state-write-atomic-truncate-crash-loop
+    keeps OPS-0036 (earliest claim among non-done cards). Slug id and all workflow fields unchanged; historical
+    done cards are intentionally untouched.'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:48
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:01
+  from: chaba
+  text: classified as free_lane (kw:docs/ conf 1.00)
+- at: 2026-11-25 09:01
+  from: tony
+  text: queued for processing
+- at: 2026-11-25 09:03
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.84 > 0.85)'
+- at: 2026-11-25 09:03
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 09:03
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 2.25 > 1.0)'
+- at: 2026-11-25 09:04
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 09:04
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 09:04
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-25 09:05
+  from: chaba
+  text: started devin-task-20261125-090530-goal-give-ada-ocb-opencode-ses on tony-macbook (dispatch)
+- at: 2026-11-25 09:05
+  from: chaba
+  text: 'primer injected 8 lesson(s): [publish-promote-knowledge-capture-ssot-w-d34a39] [2026-11-20 devin] Continued:
+    ; runbook docs/kb/auto-kb-20261124-opencode-v2-session-persistence.md: Standalone ; idc02''s kanban-dispatch.service
+    was a linked unit running a stale scripts/-only ; [opencode-handoff-packet-scaffold-save] primer injected 8
+    lesson(s): [publish-pr; [publish-promote-knowledge-capture-ssot-w-d34a39] Phase B+ ansible session-captu; OpenCode
+    profile sessions must never receive the devin-execut'
+- at: 2026-11-25 09:08
+  from: devin
+  text: '[dispatch] Verified .opencode/commands/recall.md already landed via PR #207 (option A). render-memory.py
+    --check passes clean. Now: documenting /recall in .opencode instructions, assessing option B (plugin context
+    hook) for the trail doc, then DEV-0038 pointer note.'
+- at: 2026-11-25 09:12
+  from: devin
+  text: '[dispatch done] Acceptance met via option A: /recall command (already merged, PR #207) + NEW always-on
+    .opencode/instructions/session-start.md registered in opencode.jsonc so agents auto-run /recall on resume-type
+    sessions. Option B plugin auto-inject assessed feasible (ctx.session.hook context / chat.system.transform) but
+    deferred — trail in docs/ssot/jobs/session-summary/2026-11-25-opencode-session-start-recall.yml. DEV-0038 pointer
+    note posted on parent card. Commit 133623cd1e.'
+- at: 2026-11-25 09:24
+  from: tony-macbook
+  text: 'finished (ok): exit=0 261125-090530-goal-give-ada-ocb-opencode-ses.md` with verification steps and lessons.
+    | devin-task-20261125-09053'
+- at: 2026-11-25 09:24
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 09:24
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261125-090530-goal-give-ada-ocb-opencode-ses
+    is 39 commits behind origin/master —\n   run 'git pull -"
+- at: 2026-11-25 09:24
+  from: chaba
+  text: banked 182 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 09:24
+  from: chaba
+  text: pushed dispatch/20261125-090530-goal-give-ada-ocb-opencode-ses to origin
+- at: 2026-11-25 09:24
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 09:24
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
+- at: 2026-11-25 09:24
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-090530-goal-give-ada-ocb-opencode-ses no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-25 09:24
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-090530-goal-give-ada-ocb-opencode-ses on tony-macbook still
+    dirty — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 09:27
+  from: tony
+  text: '[verify] VERIFY-QUEUE triage 2026-11-25 (Tony): dispatch attempt produced no committed deliverable (session
+    reported ''no commits'' / ''NOT verified''; worktree was dropped or salvaged). No code landed in origin/master
+    from this card. Holding back to backlog for re-dispatch; not closing as done.'
+- at: 2026-11-25 09:27
+  from: tony
+  text: put on hold
+- at: 2026-11-25 10:08
+  from: chaba
+  text: classified as free_lane (kw:docs/ conf 1.00)
+- at: 2026-11-25 10:08
+  from: chaba
+  text: queued for processing
+- at: 2026-11-25 10:08
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/2)'
+- at: 2026-11-25 10:09
+  from: chaba
+  text: '[auto-dispatch] wave 2 (2026-11-25 10:09): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-25 10:09
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 10:11
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (4/4)'
+- at: 2026-11-25 10:15
+  from: chaba
+  text: 'idc02 defers: runner at cap (2/2)'
+- at: 2026-11-25 10:30
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.42 > 0.7)'
+- at: 2026-11-25 10:36
+  from: chaba
+  text: 'tony-dell defers: runner at cap (2/2)'
+- at: 2026-11-25 10:55
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-25 10:56
+  from: chaba
+  text: started devin-task-20261125-105612-goal-give-ada-ocb-opencode-ses on tony-macbook (dispatch)
+- at: 2026-11-25 10:56
+  from: chaba
+  text: 'primer injected 8 lesson(s): [publish-promote-knowledge-capture-ssot-w-d34a39] [2026-11-20 devin] Continued:
+    ; runbook docs/kb/auto-kb-20261124-opencode-v2-session-persistence.md: Standalone ; idc02''s kanban-dispatch.service
+    was a linked unit running a stale scripts/-only ; [opencode-handoff-packet-scaffold-save] primer injected 8
+    lesson(s): [publish-pr; [publish-promote-knowledge-capture-ssot-w-d34a39] Phase B+ ansible session-captu; OpenCode
+    profile sessions must never receive the devin-execut'
+- at: 2026-11-25 11:04
+  from: devin
+  text: '[dispatch attempt 2] Prior run commit 133623cd1e cherry-picked clean as 648e49ee1a (was held by pytest-unavailable
+    merge gate + dirty worktree, not a content failure). Verified: /recall cmd merged via PR #207; session-start.md
+    instruction registered in opencode.jsonc (parses OK); render-memory.py --check clean; DEV-0038 pointer already
+    on parent card. Writing outcome doc now.'
+- at: 2026-11-25 11:05
+  from: devin
+  text: '[dispatch done attempt 2] Acceptance met. Deliverables on branch dispatch/20261125-105612-goal-give-ada-ocb-opencode-ses:
+    648e49ee1a cherry-picks prior run commit 133623cd1e (.opencode/instructions/session-start.md always-on instruction
+    registered in opencode.jsonc + docs/ssot/jobs/session-summary/2026-11-25-opencode-session-start-recall.yml option
+    A/B/C trail); 92cf8f66e4 adds dispatch-outcome doc. /recall command itself already merged via PR #207 (800d086aae);
+    DEV-0038 pointer verified on pare'
+- at: 2026-11-25 11:07
+  from: tony-macbook
+  text: 'finished (ok): exit=0  same pytest gate may hold this docs/config-only diff again — flagged on the card
+    for Tony. | devin-task-20261125'
+- at: 2026-11-25 11:07
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 11:07
+  from: chaba
+  text: banked 134 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 11:07
+  from: chaba
+  text: pushed dispatch/20261125-105612-goal-give-ada-ocb-opencode-ses to origin
+- at: 2026-11-25 11:07
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 11:07
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-25 11:09
+  from: chaba
+  text: 'merge-sweep: merged 199abfad (dispatch/20261125-105612-goal-give-ada-ocb-opencode-ses from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-105612-goal-give-ada-ocb-opencode-ses.md)
+    — auto-closed'
+- at: 2026-11-25 11:09
+  from: local
+  text: 'pub milestone: card verified: opencode-session-start-recall-injection on idc03 — merged 199abfad (dispatch/20261125-105612-goal-give-ada-ocb-opencode-ses
+    from tony-macbook) -> origin/master — verified — merged 199abfad (dispatch/20261125-105612-goal-give-ada-ocb-opencode-ses
+    from tony-macbook) -> origin/master — verified — auto-closed [evt-cbc3cb3b8e57f421]'
+- at: 2026-11-25 11:09
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-105612-goal-give-ada-ocb-opencode-ses,
+    branch dispatch/20261125-105612-goal-give-ada-ocb-opencode-ses on tony-macbook'
+- at: 2026-11-25 11:09
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261125-105612-goal-give-ada-ocb-opencode-ses on
+    tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:03
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: free_lane
+  lane_source: kw
+  model: swe-2-flash-medium
+  attempts: 2
+  result: 'exit=0  same pytest gate may hold this docs/config-only diff again — flagged on the card for Tony. |
+    devin-task-20261125-105612-goal-give-ada-ocb-opencode-ses.service: Consumed 19.276s CPU time over 9min 5.908s
+    wall clock time, 423.3M memory peak.'
+  sweep:
+    stale_running: 2026-11-25 09:24
+    dirty: 2
+  runner: tony-macbook
+  verified: true
+claim:
+  since: 2026-11-25 10:55
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 11:09
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-105612-goal-give-ada-ocb-opencode-ses.md

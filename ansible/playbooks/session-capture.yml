@@ -1,0 +1,250 @@
+---
+# session-capture.yml — Phase B+ chaba memory/session-capture wiring (DRAFT)
+#
+# Targets: opt-in `session_capture` inventory group (see
+#   ansible/inventory/hosts.yml, group_vars/session_capture.yml, host_vars/*).
+# Scope (draft, safe/idempotent primitives):
+#   - ensure ~/.local/share/chaba and helper directories exist
+#   - deploy ~/.local/bin/chaba-session-capture helper (calls immediate-pin.py,
+#     recent-event.py, render-memory.py from configured chaba_repo_path)
+#   - optionally install user systemd service+timer for periodic render-memory
+#     --if-stale (chaba_render_timer_enabled)
+#   - report presence/status of Devin hook scripts and existing wiring (no
+#     automatic hook edits unless chaba_devin_hook_autopatch=true; autopatch is
+#     intentionally conservative and should be reviewed per host)
+#
+# Not in scope (governed follow-up / host-specific): full Devin hook-script
+# refactors, compaction/session-memory feed producers on all hosts, focus
+# (mcp_focus/ssot.focus.*) parity automation, Phase C/D harvester/guards.
+#
+# Dry-run validation (controller with ansible, e.g. tony-dell via pipx):
+#   cd ansible
+#   pipx run --spec ansible-core ansible-playbook playbooks/session-capture.yml --syntax-check
+#   pipx run --spec ansible-core ansible-playbook playbooks/session-capture.yml --check --diff --limit tony-dell
+#
+# Apply (after review): ansible-playbook playbooks/session-capture.yml --limit <host>
+
+- name: Phase B+ session-capture / chaba memory wiring (draft)
+  hosts: session_capture
+  gather_facts: true
+  become: false
+
+  vars:
+    chaba_memory_dir: "{{ ansible_facts.env.HOME }}/.local/share/chaba"
+    chaba_systemd_user_dir: "{{ ansible_facts.env.HOME }}/.config/systemd/user"
+    chaba_devin_scripts_dir: "{{ ansible_facts.env.HOME }}/.config/devin/scripts"
+    chaba_render_service_name: chaba-render-memory
+
+  pre_tasks:
+    - name: Verify chaba repo path is configured
+      ansible.builtin.assert:
+        that:
+          - chaba_repo_path is defined
+          - chaba_repo_path | length > 0
+        fail_msg: "chaba_repo_path must be set (group_vars/session_capture.yml or host_vars)."
+      tags: [always]
+
+    - name: Check chaba repo/scripts availability
+      ansible.builtin.stat:
+        path: "{{ chaba_repo_path }}/scripts/chaba/render-memory.py"
+      register: chaba_render_script
+      tags: [always]
+
+    - name: Report missing chaba repo (non-fatal in check/report; timer install will be skipped)
+      ansible.builtin.debug:
+        msg: >-
+          chaba_repo_path={{ chaba_repo_path }} does not contain
+          scripts/chaba/render-memory.py on {{ inventory_hostname }}.
+          Ensure the checkout exists (correct path, synced branch) before
+          enabling render timer/hooks.
+      when: not chaba_render_script.stat.exists
+      tags: [always]
+
+  tasks:
+    - name: Ensure chaba local memory directories exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - "{{ chaba_memory_dir }}"
+        - "{{ ansible_facts.env.HOME }}/.local/bin"
+        - "{{ chaba_systemd_user_dir }}"
+      tags: [dirs]
+
+    - name: Deploy chaba session-capture helper script
+      ansible.builtin.copy:
+        dest: "{{ chaba_session_capture_helper_path }}"
+        mode: "0755"
+        content: |
+          #!/usr/bin/env bash
+          # Managed by ansible (ansible/playbooks/session-capture.yml, draft).
+          # Helper for Devin/Chaba session-capture aids (SSOT-aligned, pointer-first).
+          # Does NOT replace durable sinks or the Session Handoff Packet.
+          set -euo pipefail
+          REPO="{{ chaba_repo_path }}"
+          PY="${PYTHON:-python3}"
+          CMD="${1:-help}"
+          shift || true
+
+          run_py() {
+            local script="$1"; shift
+            if [[ -f "$REPO/scripts/chaba/$script" ]]; then
+              (cd "$REPO" && "$PY" "scripts/chaba/$script" "$@")
+            else
+              echo "chaba-session-capture: missing $REPO/scripts/chaba/$script" >&2
+              return 0
+            fi
+          }
+
+          case "$CMD" in
+            recent-event)
+              # Usage: chaba-session-capture recent-event --kind lifecycle "Session end <id>" [--ref ...]
+              run_py recent-event.py "$@" || true
+              ;;
+            immediate-pin)
+              # Usage: chaba-session-capture immediate-pin --session <id> --task "..." --next "..." [--open ...]
+              run_py immediate-pin.py "$@" || true
+              ;;
+            render)
+              # Usage: chaba-session-capture render [--if-stale]
+              run_py render-memory.py "$@" || true
+              ;;
+            session-end)
+              # Best-effort aid: recent event + capture-router event + render.
+              # Immediate pin requires task/next context.
+              # Usage: chaba-session-capture session-end <session_id> [reason]
+              sid="${1:-${DEVIN_SESSION_ID:-unknown}}"
+              reason="${2:-unknown}"
+              run_py recent-event.py --kind lifecycle "Session end ${sid} (${reason})" || true
+              # Phase C.3 (OPS-1356): dry-run router event; emitter dedupes by
+              # dedupe_key, refuses evidence-free events, never writes sinks.
+              run_py capture-event.py --type focus_session --source script \
+                --session "$sid" --actor chaba-session-capture \
+                --summary "Session ${sid} ended (${reason})." \
+                --ref "session-capture:${sid}" || true
+              run_py render-memory.py --if-stale || true
+              ;;
+            capture-event|router-event)
+              # Usage: chaba-session-capture capture-event --type <t> --source <s> --summary "..." [args]
+              run_py capture-event.py "$@" || true
+              ;;
+            help|*)
+              cat <<'EOF'
+          Usage:
+            chaba-session-capture recent-event [args...]   # scripts/chaba/recent-event.py
+            chaba-session-capture immediate-pin [args...]  # scripts/chaba/immediate-pin.py
+            chaba-session-capture capture-event [args...]  # scripts/chaba/capture-event.py (dry-run router events)
+            chaba-session-capture render [--if-stale]      # scripts/chaba/render-memory.py
+            chaba-session-capture session-end <sid> [reason]
+          Notes: pointer-first aids only; follow ssot.knowledge-capture.yml sweep/handoff packet.
+          EOF
+              ;;
+          esac
+      tags: [helper]
+
+    - name: Install chaba-render-memory user service
+      ansible.builtin.copy:
+        dest: "{{ chaba_systemd_user_dir }}/{{ chaba_render_service_name }}.service"
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Chaba memory context render (--if-stale)
+          After=default.target
+
+          [Service]
+          Type=oneshot
+          WorkingDirectory={{ chaba_repo_path }}
+          ExecStart=/usr/bin/env python3 scripts/chaba/render-memory.py --if-stale
+          Nice=10
+          TimeoutStartSec=120
+      when:
+        - chaba_render_timer_enabled | bool
+        - chaba_render_script.stat.exists
+      register: chaba_render_service
+      tags: [render, systemd]
+
+    - name: Install chaba-render-memory user timer
+      ansible.builtin.copy:
+        dest: "{{ chaba_systemd_user_dir }}/{{ chaba_render_service_name }}.timer"
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Periodic Chaba memory context render
+
+          [Timer]
+          OnCalendar={{ chaba_render_timer_on_calendar }}
+          RandomizedDelaySec={{ chaba_render_timer_randomized_delay_sec }}
+          Persistent=true
+          Unit={{ chaba_render_service_name }}.service
+
+          [Install]
+          WantedBy=timers.target
+      when:
+        - chaba_render_timer_enabled | bool
+        - chaba_render_script.stat.exists
+      register: chaba_render_timer
+      tags: [render, systemd]
+
+    - name: Reload user systemd daemon when render units changed
+      ansible.builtin.command: systemctl --user daemon-reload
+      when:
+        - not ansible_check_mode
+        - chaba_render_timer_enabled | bool
+        - chaba_render_script.stat.exists
+        - (chaba_render_service is changed) or (chaba_render_timer is changed)
+      changed_when: true
+      tags: [render, systemd]
+
+    - name: Enable and start chaba-render-memory timer
+      ansible.builtin.command: "systemctl --user enable --now {{ chaba_render_service_name }}.timer"
+      when:
+        - not ansible_check_mode
+        - chaba_render_timer_enabled | bool
+        - chaba_render_script.stat.exists
+      register: chaba_timer_enable
+      changed_when: "'Created symlink' in (chaba_timer_enable.stdout | default('') + chaba_timer_enable.stderr | default(''))"
+      failed_when: false
+      tags: [render, systemd]
+
+    - name: Report timer enablement skipped in check mode
+      ansible.builtin.debug:
+        msg: "Check mode: skipped systemctl --user daemon-reload/enable --now for {{ chaba_render_service_name }}.timer"
+      when:
+        - ansible_check_mode
+        - chaba_render_timer_enabled | bool
+        - chaba_render_script.stat.exists
+      tags: [render, systemd]
+
+    - name: Check Devin hook scripts presence (integration points)
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - "{{ chaba_devin_scripts_dir }}/devin-session-end.sh"
+        - "{{ chaba_devin_scripts_dir }}/notebooklm-compaction.sh"
+        - "{{ chaba_devin_scripts_dir }}/notebooklm-recall.sh"
+        - "{{ chaba_devin_scripts_dir }}/session_recall.py"
+      register: chaba_devin_hooks
+      tags: [hooks]
+
+    - name: Report Devin hook integration status
+      ansible.builtin.debug:
+        msg: >-
+          {{ item.item }}: {{ 'present' if item.stat.exists else 'missing' }}.
+          Phase B+ capture aids (recent-event/immediate-pin/render helper) should
+          be integrated into SessionEnd/PostCompaction hooks per host after review;
+          autopatch={{ chaba_devin_hook_autopatch | bool }} (default false).
+      loop: "{{ chaba_devin_hooks.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      tags: [hooks]
+
+    - name: Guarded note when autopatch requested (manual review required)
+      ansible.builtin.debug:
+        msg: >-
+          chaba_devin_hook_autopatch=true requested, but automatic hook-script
+          patching is not implemented in this draft to avoid breaking host-local
+          Devin hooks. Review and integrate {{ chaba_session_capture_helper_path }}
+          into host hook scripts explicitly, then re-render context.
+      when: chaba_devin_hook_autopatch | bool
+      tags: [hooks]

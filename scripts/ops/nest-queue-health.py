@@ -10,9 +10,9 @@ This is the LIGHT sibling of nest-queue-status.py (the full audit: marker
 artifact verification, anomaly detection). This probe answers only what a
 status surface needs, in a bounded number of Drive calls:
 
-  - queue/heartbeat          (epoch + state; runner liveness signal)
+  - queue/lease              (unified liveness+fence: ts/job/phase/worker;
+                              queue/heartbeat is the pre-unification fallback)
   - queue/runner.id          (present = runner alive; absent = clean exit)
-  - queue/lease              (current queue writer)
   - queue/runtime-sessions/  (managed Colab runtimes; freshest = live VM)
   - packs/                   (total pack dirs vs `*/done` marker count)
 
@@ -277,11 +277,42 @@ def main():
             'root': ROOT}
     errors = []
 
-    hb_raw = cat(f'{Q}/heartbeat')
-    hb_epoch, hb_state = parse_hb(hb_raw)
+    lease_raw = cat(f'{Q}/lease')
+    lease = None
+    if lease_raw:
+        try:
+            lease = json.loads(lease_raw)
+            lease['age_s'] = now - int(lease.get('ts') or 0)
+        except (json.JSONDecodeError, TypeError, ValueError):
+            lease = {'raw': lease_raw}
+
+    # unified liveness: queue/lease carries {worker,epoch,ts,job,phase}
+    # (ADA-0806); queue/heartbeat text is the pre-unification fallback.
+    # Pre-unification leases carry ts but no job/phase — the heartbeat
+    # still supplies those for display while lease ts stays the clock.
+    hb_epoch, hb_state = 0, ''
+    lease_ts = 0
+    if isinstance(lease, dict):
+        try:
+            lease_ts = int(float(lease.get('ts') or 0))
+        except (TypeError, ValueError):
+            lease_ts = 0
+        hb_state = ' '.join(x for x in (
+            str(lease.get('job') or ''), str(lease.get('phase') or ''))
+            if x)
+    if lease_ts:
+        hb_epoch = lease_ts
+    if not hb_state:
+        _he, _hs = parse_hb(cat(f'{Q}/heartbeat'))
+        if _hs:
+            hb_state = _hs
+        if not hb_epoch:
+            hb_epoch = _he
+    if not hb_state:
+        hb_state = str((lease or {}).get('worker') or '')
     hb_age = now - hb_epoch if hb_epoch else None
     snap['heartbeat'] = {'epoch': hb_epoch, 'age_s': hb_age,
-                         'state': hb_state}
+                         'state': hb_state or '(empty/missing)'}
 
     rid_raw = cat(f'{Q}/runner.id')
     runner_id = None
@@ -292,15 +323,6 @@ def main():
             runner_id = {'raw': rid_raw}
     snap['runner_id'] = runner_id
     snap['runner_pid'] = cat(f'{Q}/runner.pid') or None
-
-    lease_raw = cat(f'{Q}/lease')
-    lease = None
-    if lease_raw:
-        try:
-            lease = json.loads(lease_raw)
-            lease['age_s'] = now - int(lease.get('ts') or 0)
-        except (json.JSONDecodeError, TypeError, ValueError):
-            lease = {'raw': lease_raw}
     snap['lease'] = lease
 
     sessions = lsl(f'{Q}/runtime-sessions')

@@ -36,7 +36,7 @@ def _proc(rc=0, out="", err=""):
 def _card(repo="ada-voice", **action_kw):
     a = {"type": "dispatch", "status": "queued", "repo": repo}
     a.update(action_kw)
-    return {"id": "ada-card", "action": a}
+    return {"id": "ada-card", "column": "backlog", "action": a}
 
 
 class PushGuardTest(unittest.TestCase):

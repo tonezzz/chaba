@@ -223,7 +223,12 @@ try:
 except Exception:
     m = {}
 m["voice"] = os.environ["FINAL_VOICE"]
-json.dump(m, open(sys.argv[1], "w"), ensure_ascii=False)
+_tmp = sys.argv[1] + ".tmp"
+with open(_tmp, "w") as _f:
+    json.dump(m, _f, ensure_ascii=False)
+    _f.flush()
+    os.fsync(_f.fileno())
+os.replace(_tmp, sys.argv[1])
 PY
   fi
   # validate: every playlist has ENDLIST and all its segments actually copied
@@ -351,8 +356,30 @@ dub_job() {  # $1 media input (src.mp4|m3u8), $2 karaoke vtt ("" ok),
     args+=(--sentences --en-vtt "$kar")
     echo "   dub: sentence mode (karaoke: $(basename "$kar"))"
   fi
-  if timeout 5400 "$YT_VTT_DUB" "${args[@]}" >"$APP_DIR/dub.log" 2>&1 \
-     && [ -s "$APP_DIR/dub.mp4" ] && [ -f "$gen" ]; then
+  # Supersede watchdog: clean_dir drops $gen the moment a newer cast (or
+  # `stop`) starts, but a detached render would otherwise keep burning
+  # edge-tts for up to 90min beside the new run's dub. The render does NOT
+  # share this worker's pgid — GNU timeout leads its own process group —
+  # so the watchdog resolves the render's live pgid and group-kills it
+  # (reaching yt-vtt-dub.py + its ffmpeg/edge-tts children), then takes
+  # down this __dub group too. Arming is gated on pgid==$$ so a manual
+  # __dub run can't group-kill the caller's own process group; the
+  # watchdog also exits once the render or this worker is gone.
+  timeout 5400 "$YT_VTT_DUB" "${args[@]}" >"$APP_DIR/dub.log" 2>&1 &
+  local dpid=$! pgid rpgid
+  pgid="$(ps -o pgid= -p $$ 2>/dev/null | tr -d '[:space:]')"
+  if [ "$pgid" = "$$" ]; then
+    ( while kill -0 "$dpid" 2>/dev/null && kill -0 "$pgid" 2>/dev/null; do
+        if [ ! -f "$gen" ]; then
+          rpgid="$(ps -o pgid= -p "$dpid" 2>/dev/null | tr -d '[:space:]')"
+          [ -n "$rpgid" ] && pkill -9 -g "$rpgid" 2>/dev/null
+          pkill -9 -g "$pgid" 2>/dev/null
+          break
+        fi
+        sleep 10
+      done ) &
+  fi
+  if wait "$dpid" && [ -s "$APP_DIR/dub.mp4" ] && [ -f "$gen" ]; then
     echo "$voice:muxing" >"$st"
     if ffmpeg -hide_banner -loglevel error -y -i "$APP_DIR/dub.mp4" -c copy \
         -f hls -hls_time 4 -hls_list_size 0 -hls_playlist_type vod \
@@ -648,7 +675,12 @@ m = {"vid": g("VID"), "title": g("TITLE"),
 if g("VOICE_REQ") not in (None, "", "off"):
     m["voice"] = g("VOICE_REQ")   # requested variant; __finalize rewrites
                                 # to "off" if the dub never lands
-json.dump(m, open(sys.argv[1], "w"), ensure_ascii=False)
+_tmp = sys.argv[1] + ".tmp"
+with open(_tmp, "w") as _f:
+    json.dump(m, _f, ensure_ascii=False)
+    _f.flush()
+    os.fsync(_f.fileno())
+os.replace(_tmp, sys.argv[1])
 PY
   mkdir -p "$MEDIA_CACHE"
   setsid "$0" __finalize "$MEDIA_CACHE/$CACHE_KEY" "$GEN_TOKEN" "$VOICE" \

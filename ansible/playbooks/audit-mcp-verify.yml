@@ -1,0 +1,487 @@
+---
+# audit-mcp-verify.yml — fleet MCP server verification audit (read-only).
+#
+# Runs scripts/verify-all-mcp-servers.py --json on each host that has a
+# chaba checkout, then renders a per-host report on the controller. This is
+# the Ansible/fleet counterpart to .github/workflows/mcp-verify.yml, which
+# cannot reach tailnet MCP endpoints from GitHub-hosted runners.
+#
+# The verify script exits 0 when no MCP config is present (reported as
+# skipped) or when all configured servers respond; exits 1 on failures.
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/audit-mcp-verify.yml
+#   ansible-playbook playbooks/audit-mcp-verify.yml --check --diff
+#   ansible-playbook playbooks/audit-mcp-verify.yml --limit tony-dell
+#
+# Artifacts: reports/ansible-benchmark/mcp/<inventory_host>.yml
+
+- name: Fleet MCP verification audit
+  hosts: all:!disabled
+  gather_facts: false
+  become: false
+
+  vars:
+    audited_hosts: >-
+      {{ groups['all']
+         | difference(groups['disabled'] | default([]))
+         | sort }}
+    controller_idents: >-
+      {{ (lookup('ansible.builtin.pipe', 'hostname -I', errors='ignore')
+          | default('')).split()
+         + [lookup('ansible.builtin.pipe', 'hostname', errors='ignore')
+            | default(''),
+            lookup('ansible.builtin.pipe', 'hostname -f', errors='ignore')
+            | default('')]
+         | select('truthy') | unique | list }}
+    controller_self: >-
+      {{ self_host | default(
+          ((hostvars | dict2items
+            | selectattr('key', 'in', audited_hosts)
+            | selectattr('value.ansible_host', 'defined')
+            | selectattr('value.ansible_host', 'in', controller_idents)
+            | map(attribute='key') | list)
+           + (audited_hosts | select('in', controller_idents) | list))
+          | unique | sort | first | default(''), true) }}
+    benchmark_out: "{{ playbook_dir }}/../../reports/ansible-benchmark/mcp"
+    chaba_checkout: "{{ chaba_repo_path | default('~/CascadeProjects/chaba') }}"
+    mcp_verify_timeout: "{{ mcp_verify_timeout_seconds | default(300) }}"
+    board_notify: false
+    board_api_base: "https://idc03.taila0626a.ts.net:10000"
+    board_from: "devin"
+
+  pre_tasks:
+    - name: Report controller detection
+      ansible.builtin.debug:
+        msg: >-
+          controller_self={{ controller_self or 'none' }}
+          {%- if controller_self %} (probes itself locally)
+          {%- else %} (controller not in inventory — all hosts use ssh)
+          {%- endif %}
+      run_once: true
+
+    - name: Probe the controller locally — ssh to its own tailnet IP may have no key path
+      ansible.builtin.set_fact:
+        ansible_connection: local
+      when: inventory_hostname == controller_self
+
+  tasks:
+    - name: Verify configured MCP servers (read-only probe)
+      ansible.builtin.shell: |
+        set -u
+        CO="{{ chaba_checkout }}"
+        CO="${CO/#\~/$HOME}"
+        SCRIPT="$CO/scripts/verify-all-mcp-servers.py"
+        if [ ! -d "$CO/.git" ]; then
+          printf '{"ok":true,"skipped":"no chaba checkout at %s","servers":{},"ok_count":0,"total":0}\n' "$CO"
+          exit 0
+        fi
+        if [ ! -f "$SCRIPT" ]; then
+          printf '{"ok":true,"skipped":"verify-all-mcp-servers.py missing in %s","servers":{},"ok_count":0,"total":0}\n' "$CO"
+          exit 0
+        fi
+        cd "$CO" || exit 0
+        out=$(timeout {{ mcp_verify_timeout }} python3 scripts/verify-all-mcp-servers.py --json 2>&1)
+        rc=$?
+        if printf '%s' "$out" | python3 -c 'import json,sys; json.load(sys.stdin)' >/dev/null 2>&1; then
+          printf '%s\n' "$out"
+          exit $rc
+        fi
+        # Fallback for older checkouts without --json support: parse human output.
+        printf '%s\n' "$out" | python3 -c '
+        import json, re, sys
+        text = sys.stdin.read()
+        m = re.search(r"Verified\s+(\d+)/(\d+)\s+MCP servers", text)
+        servers = {}
+        for line in text.splitlines():
+            m2 = re.match(r"\s+(\S+):\s+OK\s+\((.*)\)\s*$", line)
+            if m2:
+                name, extra = m2.group(1), m2.group(2)
+                info = {"ok": True}
+                if extra.isdigit():
+                    info["tool_count"] = int(extra)
+                else:
+                    info["status"] = extra
+                servers[name] = info
+                continue
+            m3 = re.match(r"\s+(\S+):\s+FAIL\s*(.*)$", line)
+            if m3:
+                servers[m3.group(1)] = {"ok": False, "error": m3.group(2).strip()}
+        ok_count = int(m.group(1)) if m else sum(1 for s in servers.values() if s.get("ok"))
+        total = int(m.group(2)) if m else len(servers)
+        skipped = "SKIP:" in text and total == 0
+        skip_reason = ""
+        if skipped:
+            sm = re.search(r"SKIP:\s*(.*)", text)
+            skip_reason = sm.group(1).strip() if sm else "skipped"
+        print(json.dumps({"ok": ok_count == total and not skipped, "skipped": skip_reason if skipped else None, "servers": servers, "ok_count": ok_count, "total": total}))
+        ' 2>/dev/null && exit $rc
+        # Last resort: emit parse error as JSON so the controller can report it.
+        python3 -c 'import json,sys; print(json.dumps({"ok": False, "skipped": None, "servers": {}, "ok_count": 0, "total": 0, "parse_error": sys.argv[1][:400]}))' "$out"
+        exit $rc
+      args:
+        executable: /bin/bash
+      register: mcp_probe
+      changed_when: false
+      failed_when: false
+      ignore_unreachable: true
+      check_mode: no
+
+    - name: Parse MCP verification snapshot
+      ansible.builtin.set_fact:
+        mcp_snapshot: >-
+          {{ (mcp_probe.stdout | default('') | trim | from_json)
+             if (mcp_probe.stdout | default('') | trim | length > 0
+                 and (mcp_probe.stdout | default('') | trim)[:1] == '{')
+             else {
+               'ok': false,
+               'skipped': false,
+               'skip_reason': '',
+               'servers': {},
+               'ok_count': 0,
+               'total': 0,
+               'parse_error': (
+                 'rc=' ~ (mcp_probe.rc | default('?') | string)
+                 ~ ' stdout=' ~ (mcp_probe.stdout | default('') | trim)[:200]
+                 ~ ' stderr=' ~ (mcp_probe.stderr | default('') | trim)[:200]
+               )
+             } }}
+      when: mcp_probe is defined and not (mcp_probe.unreachable | default(false))
+      ignore_unreachable: true
+
+    - name: Normalize skipped field
+      ansible.builtin.set_fact:
+        mcp_snapshot: >-
+          {{ mcp_snapshot | combine({
+               'skipped': (mcp_snapshot.skipped is string and (mcp_snapshot.skipped | length > 0)),
+               'skip_reason': (mcp_snapshot.skipped if (mcp_snapshot.skipped is string) else (mcp_snapshot.skip_reason | default('')))
+             }) }}
+      when: mcp_snapshot is defined
+      ignore_unreachable: true
+
+    # --- controller-side report rendering: run once, delegated to localhost
+    # so --limit cannot filter it out (same pattern as disk-headroom.yml) ---
+
+    - name: Ensure MCP benchmark report dir exists
+      ansible.builtin.file:
+        path: "{{ benchmark_out }}"
+        state: directory
+        mode: "0755"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Render per-host MCP verification reports (probed hosts only)
+      ansible.builtin.template:
+        src: mcp-verify.j2
+        dest: "{{ benchmark_out }}/{{ target }}.yml"
+        mode: "0644"
+      loop: "{{ audited_hosts }}"
+      loop_control:
+        loop_var: target
+        label: "{{ target }}"
+      when: hostvars[target].mcp_probe is defined
+      delegate_to: localhost
+      run_once: true
+
+    - name: Show MCP verification summary
+      ansible.builtin.debug:
+        msg: >-
+          {{ target }}:
+          {{ (lookup('ansible.builtin.template', 'mcp-verify.j2')
+              | from_yaml).summary }}
+      loop: "{{ audited_hosts }}"
+      loop_control:
+        loop_var: target
+        label: "{{ target }}"
+      when: hostvars[target].mcp_probe is defined
+      delegate_to: localhost
+      run_once: true
+
+    - name: Collect probed MCP hosts
+      ansible.builtin.set_fact:
+        probed_hosts: >-
+          {{ hostvars | dict2items
+             | selectattr('key', 'in', audited_hosts)
+             | selectattr('value.mcp_probe', 'defined')
+             | map(attribute='key')
+             | sort | list }}
+      delegate_to: localhost
+      run_once: true
+
+    - name: Compute MCP alert summary and fingerprint
+      ansible.builtin.set_fact:
+        mcp_alert_hosts: >-
+          {%- set out = [] -%}
+          {%- for h in probed_hosts -%}
+            {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
+            {%- if rpt -%}
+              {%- set y = rpt | from_yaml -%}
+              {%- set s = y.get('summary', '') -%}
+              {%- if s.startswith('fail') or s.startswith('error') or s.startswith('unreachable') -%}
+                {%- set kind = 'fail' if s.startswith('fail') else ('error' if s.startswith('error') else 'unreachable') -%}
+                {%- set _ = out.append({'host': h, 'kind': kind, 'summary': s}) -%}
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ out }}
+        mcp_alert_fingerprint: >-
+          {%- set out = [] -%}
+          {%- for h in probed_hosts -%}
+            {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
+            {%- if rpt -%}
+              {%- set y = rpt | from_yaml -%}
+              {%- set s = y.get('summary', '') -%}
+              {%- if s.startswith('fail') or s.startswith('error') or s.startswith('unreachable') -%}
+                {%- set kind = 'fail' if s.startswith('fail') else ('error' if s.startswith('error') else 'unreachable') -%}
+                {%- set _ = out.append(h ~ ':' ~ kind) -%}
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ out | join('|') }}
+      delegate_to: localhost
+      run_once: true
+
+    - name: Notify board-api when MCP alerts found
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card"
+        method: POST
+        body_format: json
+        status_code: [200, 201, 400]
+        return_content: true
+        body:
+          id: ansible-mcp-verify-alert
+          title: "Ansible audit: MCP verification drift/fail"
+          column: backlog
+          action: {type: manual}
+          from: "{{ board_from }}"
+          spec: >-
+            Read-only ansible audit-mcp-verify detected fail/error/unreachable hosts.
+            Hosts: {{ mcp_alert_hosts | map(attribute='host') | join(', ') }}.
+            Report dir: reports/ansible-benchmark/mcp/. No remediation performed.
+      when:
+        - board_notify | bool
+        - (mcp_alert_hosts | length) > 0
+      register: mcp_alert_card
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fail on unexpected MCP alert card create error
+      ansible.builtin.fail:
+        msg: "board-api /card create failed: {{ mcp_alert_card.content | default('') }}"
+      when:
+        - board_notify | bool
+        - (mcp_alert_hosts | length) > 0
+        - mcp_alert_card.status not in [200, 201]
+        - "'already exists' not in (mcp_alert_card.content | default(''))"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fetch MCP alert card for comment dedupe
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card/ansible-mcp-verify-alert"
+        method: GET
+        return_content: true
+        status_code: [200, 404]
+      register: mcp_alert_card_for_comment
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (mcp_alert_hosts | length) > 0
+
+    - name: Compute MCP alert comment dedupe
+      ansible.builtin.set_fact:
+        mcp_alert_comment_text: >-
+          ansible audit-mcp-verify: {{ mcp_alert_hosts | length }} host(s) alerting.
+          fp={{ mcp_alert_fingerprint }}. {{ mcp_alert_hosts | to_json }}
+        mcp_alert_comment_is_dup: >-
+          {{
+            (mcp_alert_card_for_comment.status | default(404)) == 200
+            and (
+              ((mcp_alert_card_for_comment.json.card.comms | default([]))
+                | selectattr('from', 'equalto', board_from)
+                | selectattr('text', 'defined')
+                | selectattr('text', 'search', 'fp=' ~ (mcp_alert_fingerprint | regex_escape))
+                | list | length) > 0
+            )
+          }}
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (mcp_alert_hosts | length) > 0
+
+    - name: Comment MCP alert summary
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/comment"
+        method: POST
+        body_format: json
+        status_code: [200, 201]
+        body:
+          id: ansible-mcp-verify-alert
+          from: "{{ board_from }}"
+          text: "{{ mcp_alert_comment_text }}"
+      when:
+        - board_notify | bool
+        - (mcp_alert_hosts | length) > 0
+        - not (mcp_alert_comment_is_dup | default(false) | bool)
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fetch MCP alert card for cleared check
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card/ansible-mcp-verify-alert"
+        method: GET
+        return_content: true
+        status_code: [200, 404]
+      register: mcp_alert_card_for_cleared
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (mcp_alert_hosts | length) == 0
+
+    - name: Compute MCP alert cleared comment
+      ansible.builtin.set_fact:
+        mcp_alert_cleared_comment: >-
+          ansible audit-mcp-verify: all clear, no alert hosts. fp=cleared.
+        mcp_alert_cleared_needed: >-
+          {{
+            (mcp_alert_card_for_cleared.status | default(404)) == 200
+            and (
+              (
+                (mcp_alert_card_for_cleared.json.card.comms | default([]))
+                | selectattr('from', 'equalto', board_from)
+                | selectattr('text', 'defined')
+                | selectattr('text', 'search', 'fp=')
+                | list
+              ) | length > 0
+            )
+            and (
+              'fp=cleared' not in (
+                (
+                  (mcp_alert_card_for_cleared.json.card.comms | default([]))
+                  | selectattr('from', 'equalto', board_from)
+                  | selectattr('text', 'defined')
+                  | selectattr('text', 'search', 'fp=')
+                  | list | last
+                ).text | default('')
+              )
+            )
+          }}
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (mcp_alert_hosts | length) == 0
+
+    - name: Comment MCP alert cleared
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/comment"
+        method: POST
+        body_format: json
+        status_code: [200, 201]
+        body:
+          id: ansible-mcp-verify-alert
+          from: "{{ board_from }}"
+          text: "{{ mcp_alert_cleared_comment }}"
+      when:
+        - board_notify | bool
+        - (mcp_alert_hosts | length) == 0
+        - mcp_alert_cleared_needed | default(false) | bool
+      delegate_to: localhost
+      run_once: true
+
+    - name: Show kanban notify summary
+      ansible.builtin.debug:
+        msg:
+          board_notify: "{{ board_notify }}"
+          alert_hosts: "{{ mcp_alert_hosts | map(attribute='host') | list }}"
+          comment_skipped_as_dup: "{{ mcp_alert_comment_is_dup | default(false) }}"
+          cleared_comment_posted: "{{ mcp_alert_cleared_needed | default(false) }}"
+      when: board_notify | bool
+      delegate_to: localhost
+      run_once: true
+
+- name: Verify canonical HA MCP endpoints (SSOT-driven)
+  hosts: localhost
+  gather_facts: false
+  become: false
+  vars:
+    benchmark_out: "{{ playbook_dir }}/../../reports/ansible-benchmark/mcp"
+    mcp_verify_timeout: "{{ mcp_verify_timeout_seconds | default(300) }}"
+    board_notify: false
+    board_api_base: "https://idc03.taila0626a.ts.net:10000"
+    board_from: "devin"
+    chaba_checkout: "{{ chaba_repo_path | default('/home/tony/CascadeProjects/chaba') }}"
+    canonical_ha_mcp_servers:
+      home-assistant:
+        url: http://tony-omen:9584/private_CtYuVkJEl28cp8qA8yXNCQ
+      michael-ha:
+        url: http://100.80.105.88:9584/private_oBVC604-FnxgBDP00t1L9g
+      michael-dev:
+        url: http://mn01:9585/private_B3WMIAChoseTpDS7fwgwRw
+
+  tasks:
+    - name: Write canonical HA MCP audit config
+      ansible.builtin.copy:
+        content: |
+          {
+            "mcpServers": {
+              "home-assistant": {"url": "{{ canonical_ha_mcp_servers['home-assistant'].url }}"},
+              "michael-ha": {"url": "{{ canonical_ha_mcp_servers['michael-ha'].url }}"},
+              "michael-dev": {"url": "{{ canonical_ha_mcp_servers['michael-dev'].url }}"}
+            }
+          }
+        dest: /tmp/chaba-mcp-audit-canonical.json
+        mode: "0644"
+
+    - name: Verify canonical HA MCP servers
+      ansible.builtin.shell: |
+        cd "{{ chaba_checkout }}" && MCP_CONFIG=/tmp/chaba-mcp-audit-canonical.json timeout {{ mcp_verify_timeout }} python3 scripts/verify-all-mcp-servers.py --json
+      args:
+        executable: /bin/bash
+      register: mcp_probe
+      changed_when: false
+      failed_when: false
+      check_mode: no
+
+    - name: Set canonical HA MCP snapshot
+      ansible.builtin.set_fact:
+        mcp_snapshot: >-
+          {{ (mcp_probe.stdout | default('') | trim | from_json)
+             if (mcp_probe.stdout | default('') | trim | length > 0
+                 and (mcp_probe.stdout | default('') | trim)[:1] == '{')
+             else {
+               'ok': false,
+               'skipped': false,
+               'skip_reason': '',
+               'servers': {},
+               'ok_count': 0,
+               'total': 0,
+               'parse_error': 'rc=' ~ (mcp_probe.rc | default('?') | string) ~ ' stdout=' ~ (mcp_probe.stdout | default('') | trim)[:200] ~ ' stderr=' ~ (mcp_probe.stderr | default('') | trim)[:200]
+             } }}
+
+    - name: Normalize canonical HA MCP skipped field
+      ansible.builtin.set_fact:
+        mcp_snapshot: >-
+          {{ mcp_snapshot | combine({
+               'skipped': (mcp_snapshot.skipped is string and (mcp_snapshot.skipped | length > 0)),
+               'skip_reason': (mcp_snapshot.skipped if (mcp_snapshot.skipped is string) else (mcp_snapshot.skip_reason | default('')))
+             }) }}
+
+    - name: Set canonical HA MCP report host context
+      ansible.builtin.set_fact:
+        target: localhost
+
+    - name: Render canonical HA MCP verification report
+      ansible.builtin.template:
+        src: mcp-verify.j2
+        dest: "{{ benchmark_out }}/canonical-ha.yml"
+        mode: "0644"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Show canonical HA MCP verification summary
+      ansible.builtin.debug:
+        msg: "{{ (lookup('ansible.builtin.template', 'mcp-verify.j2') | from_yaml).summary }}"

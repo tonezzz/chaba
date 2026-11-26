@@ -1,0 +1,42 @@
+column: done
+priority: low
+created: '2026-11-24'
+updated: 2026-11-24 10:49
+action:
+  type: script
+  status: done
+  host: tony-macbook
+  labels:
+  - macbook
+  - local-8c
+  - always-home
+  script:
+    repo: chaba
+    cmd: echo "PROBE 2 on $(hostname)"; grep -n RUNNER_CAP "$HOME/.config/systemd/user/runner-agent.service" 2>/dev/null
+      || true
+    timeout: 180
+  runner: tony-macbook
+  attempts: 1
+  result: exit=0 le' XDG_SESSION_TYPE ='x11' UID=1000 PID=1296736 PPID=1296672 |   GTK_IM_MODULE='' QT_IM_MODULE=''
+    CLUTTER_IM_MODULE='' SDL_IM_MODULE='' XMODIFIERS='' |   Set IM_CONFIG_CURRENT_DESKTOP <- XDG_CURRENT_DESKTOP='XFCE'
+    | PROBE 2 on tony-macbook
+spec: cap proof — concurrency probe 2
+review_kind: verify
+id: mac-cap-probe-2
+title: tony-macbook cap proof — probe 2
+claim:
+  since: 2026-11-24 10:49
+comms:
+- at: 2026-11-24 10:49
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-24 10:49
+  from: chaba
+  text: started runner-mac-cap-probe-2-1795492141 on tony-macbook (script)
+- at: 2026-11-24 10:49
+  from: tony-macbook
+  text: 'finished (ok): exit=0 le'' XDG_SESSION_TYPE =''x11'' UID=1000 PID=1296736 PPID=1296672 |   GTK_IM_MODULE=''''
+    QT_IM_MODULE='''' CLUTTER_IM_MOD'
+- at: '2026-11-24 11:22'
+  from: tony
+  text: 'archived (verification scaffolding — cap proof recorded in fleet SSOT)'

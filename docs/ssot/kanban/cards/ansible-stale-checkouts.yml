@@ -1,0 +1,335 @@
+id: ansible-stale-checkouts
+title: 'Ansible audit: stale chaba exec checkouts detected'
+column: done
+updated: 2026-11-26 20:38
+spec: 'Read-only audit detected stale/dirty/diverged chaba exec checkouts. Hosts: idc02. Report dir: reports/ansible-benchmark/stale-checkouts/.
+  No remediation performed; decide stash-u-ff / commit-wip / leave / abandon per host.'
+action:
+  type: manual
+  status: done
+ref: OPS-1397
+comms:
+- at: 2026-11-25 14:51
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-25 14:52
+  from: devin
+  text: 'ansible audit-stale-checkouts: 1 stale host(s): idc02. Reasons per host in reports/ansible-benchmark/stale-checkouts/.
+    Read-only; no host writes.'
+- at: 2026-11-25 15:22
+  from: devin
+  text: 'ansible audit-stale-checkouts: 1 stale host(s): idc02. fp=idc02:dirty. Reasons per host in reports/ansible-benchmark/stale-checkouts/.
+    Read-only; no host writes.'
+- at: 2026-11-25 15:22
+  from: devin
+  text: 'raised request idc02-chaba-exec-checkout-is-stale-dirty-02eca1: idc02 chaba exec checkout is stale/dirty
+    (dirty; behind=29, ahead=0, dirty=18). How should it be brought current? No wor'
+- at: 2026-11-25 15:38
+  from: tony
+  text: 'answered idc02-chaba-exec-checkout-is-stale-dirty-02eca1: stash-u-ff — git stash -u (tracked+untracked)
+    then pull/rebase to origin/master; stash left for owner (recommended, reversible)'
+- at: 2026-11-25 15:38
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-25 16:11
+  from: devin
+  text: 'idc02 stash-u-ff executed (user-approved go A). Pre: master, dirty=21, ahead=0, behind=38 (after fetch).
+    Action: git stash push -u -m "ansible-stale-checkouts: idc02 stash-u-ff 2026-11-25T16:10:42+07:00"; git pull
+    --ff-only origin master (8797036eed..11bfd6fde5). Post: clean worktree, HEAD 11bfd6fde5 origin/master. Stash
+    preserved as stash@{0} on idc02. No work destroyed. Request idc02-chaba-exec-checkout-is-stale-dirty-02eca1
+    already marked answered at time of comment.'
+- at: 2026-11-25 16:21
+  from: tony
+  text: queue skipped — action.type=manual — human-owned work, not runner-dispatchable
+- at: 2026-11-25 16:21
+  from: chaba
+  text: action.type=manual — human-owned work, not runner-dispatchable
+- at: 2026-11-25 16:35
+  from: tony
+  text: queue skipped — action.type=manual — human-owned work, not runner-dispatchable
+- at: 2026-11-25 16:35
+  from: chaba
+  text: action.type=manual — human-owned work, not runner-dispatchable
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: tony
+  text: queue skipped — action.type=manual — human-owned work, not runner-dispatchable
+- at: 2026-11-25 17:03
+  from: chaba
+  text: action.type=manual — human-owned work, not runner-dispatchable
+- at: 2026-11-25 17:08
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 19:01
+  from: tony
+  text: queue skipped — action.type=manual — human-owned work, not runner-dispatchable
+- at: 2026-11-25 19:01
+  from: chaba
+  text: action.type=manual — human-owned work, not runner-dispatchable
+- at: 2026-11-25 19:38
+  from: tony
+  text: queue skipped — action.type=manual — human-owned work, not runner-dispatchable
+- at: 2026-11-25 19:38
+  from: chaba
+  text: action.type=manual — human-owned work, not runner-dispatchable
+- at: 2026-11-25 19:52
+  from: tony
+  text: '[audit] HUMAN DECISION (Tony 2026-11-25): LEAVE AS ACTIVE WORK — no remediation. The 15:22 audit snapshot
+    (18 dirty, 29 behind, 3 stashes) is stale: current state is 167 behind / 4 ahead with 9 dirty files touched
+    19:00 today, i.e. live WIP on lane_gate.py, opencode_profiles.py, info-find profile, kk-mac job, plus two eval
+    jobs and the ncm-code-blocks-p2 experiment. The prior 16:10 stash-u-ff remediation is retained as stash@{0}
+    (12 files, 1388+/1052-) and was not discarded. Stashing or resettin'
+- at: 2026-11-25 19:52
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 03:55
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:56
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:58
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:06
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 06:30
+  from: devin
+  text: 'ansible audit-stale-checkouts: 7 stale host(s): con01, idc02, idc03, mn01, tony-dell, tony-macbook, tony-omen.
+    fp=con01:dirty|idc02:dirty+ahead|idc03:dirty|mn01:dirty|tony-dell:dirty|tony-macbook:dirty|tony-omen:dirty.
+    Reasons per host in reports/ansible-benchmark/stale-checkouts/. Read-only; no host writes.'
+- at: 2026-11-26 06:30
+  from: devin
+  text: 'raised request con01-chaba-exec-checkout-is-stale-dirty-bd709a: con01 chaba exec checkout is stale/dirty
+    (dirty; behind=14, ahead=0, dirty=4). How should it be brought current? No work'
+- at: 2026-11-26 06:30
+  from: devin
+  text: 'raised request idc02-chaba-exec-checkout-is-stale-dirty-89c8ce: idc02 chaba exec checkout is stale/dirty
+    (dirty, ahead; behind=24, ahead=3, dirty=10). How should it be brought current?'
+- at: 2026-11-26 06:30
+  from: devin
+  text: 'raised request idc03-chaba-exec-checkout-is-stale-dirty-b93e02: idc03 chaba exec checkout is stale/dirty
+    (dirty; behind=0, ahead=0, dirty=23). How should it be brought current? No work'
+- at: 2026-11-26 06:30
+  from: devin
+  text: 'raised request mn01-chaba-exec-checkout-is-stale-dirty-c8d27d: mn01 chaba exec checkout is stale/dirty
+    (dirty; behind=24, ahead=0, dirty=146). How should it be brought current? No wor'
+- at: 2026-11-26 06:30
+  from: devin
+  text: 'raised request tony-dell-chaba-exec-checkout-is-stale-d-545026: tony-dell chaba exec checkout is stale/dirty
+    (dirty; behind=11, ahead=0, dirty=10). How should it be brought current? No'
+- at: 2026-11-26 06:30
+  from: devin
+  text: 'raised request tony-macbook-chaba-exec-checkout-is-stal-bc1bdb: tony-macbook chaba exec checkout is stale/dirty
+    (dirty; behind=24, ahead=0, dirty=106). How should it be brought current'
+- at: 2026-11-26 06:30
+  from: devin
+  text: 'raised request tony-omen-chaba-exec-checkout-is-stale-d-4c3b02: tony-omen chaba exec checkout is stale/dirty
+    (dirty; behind=24, ahead=0, dirty=152). How should it be brought current? N'
+- at: 2026-11-26 08:26
+  from: devin
+  text: 'ansible audit-stale-checkouts: 7 stale host(s): con01, idc02, idc03, mn01, tony-dell, tony-macbook, tony-omen.
+    fp=con01:dirty|idc02:dirty|idc03:dirty|mn01:dirty|tony-dell:dirty|tony-macbook:dirty|tony-omen:dirty. Reasons
+    per host in reports/ansible-benchmark/stale-checkouts/. Read-only; no host writes.'
+- at: 2026-11-26 12:25
+  from: tony
+  text: 'answered tony-omen-chaba-exec-checkout-is-stale-d-4c3b02: stash-u-ff — git stash -u (tracked+untracked)
+    then pull/rebase to origin/master; stash left for owner (recommended, reversible)'
+- at: 2026-11-26 13:53
+  from: tony
+  text: 'answered tony-macbook-chaba-exec-checkout-is-stal-bc1bdb: stash-u-ff — git stash -u (tracked+untracked)
+    then pull/rebase to origin/master; stash left for owner (recommended, reversible)'
+- at: 2026-11-26 15:50
+  from: tony
+  text: 'answered tony-dell-chaba-exec-checkout-is-stale-d-545026: stash-u-ff — git stash -u (tracked+untracked)
+    then pull/rebase to origin/master; stash left for owner (recommended, reversible)'
+- at: 2026-11-26 15:50
+  from: tony
+  text: 'answered mn01-chaba-exec-checkout-is-stale-dirty-c8d27d: stash-u-ff — git stash -u (tracked+untracked)
+    then pull/rebase to origin/master; stash left for owner (recommended, reversible)'
+- at: 2026-11-26 15:50
+  from: tony
+  text: 'answered idc03-chaba-exec-checkout-is-stale-dirty-b93e02: stash-u-ff — git stash -u (tracked+untracked)
+    then pull/rebase to origin/master; stash left for owner (recommended, reversible)'
+- at: 2026-11-26 15:50
+  from: tony
+  text: 'answered con01-chaba-exec-checkout-is-stale-dirty-bd709a: stash-u-ff — git stash -u (tracked+untracked)
+    then pull/rebase to origin/master; stash left for owner (recommended, reversible)'
+- at: 2026-11-26 19:31
+  from: tony
+  text: 'answered idc02-chaba-exec-checkout-is-stale-dirty-89c8ce: stash-u-ff — git stash -u (tracked+untracked)
+    then pull/rebase to origin/master; stash left for owner (recommended, reversible)'
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+requests:
+- id: idc02-chaba-exec-checkout-is-stale-dirty-02eca1
+  ask: idc02 chaba exec checkout is stale/dirty (dirty; behind=29, ahead=0, dirty=18). How should it be brought
+    current? No work will be destroyed.
+  status: answered
+  at: 2026-11-25 15:22
+  from: devin
+  options:
+  - stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner (recommended,
+    reversible)
+  - commit-wip — commit dirty work on a branch, then bring checkout current; preserves work in history
+  - leave — accept stale checkout on this host for now; exclude from stale audit until resolved
+  - abandon — discard dirty work and hard-reset to origin/master (destructive, explicit approval required)
+  suggested: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+  answer: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+- id: con01-chaba-exec-checkout-is-stale-dirty-bd709a
+  ask: con01 chaba exec checkout is stale/dirty (dirty; behind=14, ahead=0, dirty=4). How should it be brought current?
+    No work will be destroyed.
+  status: answered
+  at: 2026-11-26 06:30
+  from: devin
+  options:
+  - stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner (recommended,
+    reversible)
+  - commit-wip — commit dirty work on a branch, then bring checkout current; preserves work in history
+  - leave — accept stale checkout on this host for now; exclude from stale audit until resolved
+  - abandon — discard dirty work and hard-reset to origin/master (destructive, explicit approval required)
+  suggested: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+  answer: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+- id: idc02-chaba-exec-checkout-is-stale-dirty-89c8ce
+  ask: idc02 chaba exec checkout is stale/dirty (dirty, ahead; behind=24, ahead=3, dirty=10). How should it be brought
+    current? No work will be destroyed.
+  status: answered
+  at: 2026-11-26 06:30
+  from: devin
+  options:
+  - stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner (recommended,
+    reversible)
+  - commit-wip — commit dirty work on a branch, then bring checkout current; preserves work in history
+  - leave — accept stale checkout on this host for now; exclude from stale audit until resolved
+  - abandon — discard dirty work and hard-reset to origin/master (destructive, explicit approval required)
+  suggested: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+  answer: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+- id: idc03-chaba-exec-checkout-is-stale-dirty-b93e02
+  ask: idc03 chaba exec checkout is stale/dirty (dirty; behind=0, ahead=0, dirty=23). How should it be brought current?
+    No work will be destroyed.
+  status: answered
+  at: 2026-11-26 06:30
+  from: devin
+  options:
+  - stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner (recommended,
+    reversible)
+  - commit-wip — commit dirty work on a branch, then bring checkout current; preserves work in history
+  - leave — accept stale checkout on this host for now; exclude from stale audit until resolved
+  - abandon — discard dirty work and hard-reset to origin/master (destructive, explicit approval required)
+  suggested: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+  answer: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+- id: mn01-chaba-exec-checkout-is-stale-dirty-c8d27d
+  ask: mn01 chaba exec checkout is stale/dirty (dirty; behind=24, ahead=0, dirty=146). How should it be brought
+    current? No work will be destroyed.
+  status: answered
+  at: 2026-11-26 06:30
+  from: devin
+  options:
+  - stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner (recommended,
+    reversible)
+  - commit-wip — commit dirty work on a branch, then bring checkout current; preserves work in history
+  - leave — accept stale checkout on this host for now; exclude from stale audit until resolved
+  - abandon — discard dirty work and hard-reset to origin/master (destructive, explicit approval required)
+  suggested: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+  answer: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+- id: tony-dell-chaba-exec-checkout-is-stale-d-545026
+  ask: tony-dell chaba exec checkout is stale/dirty (dirty; behind=11, ahead=0, dirty=10). How should it be brought
+    current? No work will be destroyed.
+  status: answered
+  at: 2026-11-26 06:30
+  from: devin
+  options:
+  - stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner (recommended,
+    reversible)
+  - commit-wip — commit dirty work on a branch, then bring checkout current; preserves work in history
+  - leave — accept stale checkout on this host for now; exclude from stale audit until resolved
+  - abandon — discard dirty work and hard-reset to origin/master (destructive, explicit approval required)
+  suggested: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+  answer: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+- id: tony-macbook-chaba-exec-checkout-is-stal-bc1bdb
+  ask: tony-macbook chaba exec checkout is stale/dirty (dirty; behind=24, ahead=0, dirty=106). How should it be
+    brought current? No work will be destroyed.
+  status: answered
+  at: 2026-11-26 06:30
+  from: devin
+  options:
+  - stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner (recommended,
+    reversible)
+  - commit-wip — commit dirty work on a branch, then bring checkout current; preserves work in history
+  - leave — accept stale checkout on this host for now; exclude from stale audit until resolved
+  - abandon — discard dirty work and hard-reset to origin/master (destructive, explicit approval required)
+  suggested: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+  answer: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+- id: tony-omen-chaba-exec-checkout-is-stale-d-4c3b02
+  ask: tony-omen chaba exec checkout is stale/dirty (dirty; behind=24, ahead=0, dirty=152). How should it be brought
+    current? No work will be destroyed.
+  status: answered
+  at: 2026-11-26 06:30
+  from: devin
+  options:
+  - stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner (recommended,
+    reversible)
+  - commit-wip — commit dirty work on a branch, then bring checkout current; preserves work in history
+  - leave — accept stale checkout on this host for now; exclude from stale audit until resolved
+  - abandon — discard dirty work and hard-reset to origin/master (destructive, explicit approval required)
+  suggested: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+  answer: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)

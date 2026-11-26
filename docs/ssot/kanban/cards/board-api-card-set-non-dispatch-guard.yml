@@ -1,0 +1,270 @@
+id: board-api-card-set-non-dispatch-guard
+title: '/card-set: refuse routing edits on cards with no dispatch action (and cache valid_lanes)'
+column: done
+updated: 2026-11-26 20:36
+brief: 'Review of OPS-0027 (merged 4d701d46e8, deployed to idc03 2026-11-21 06:12): POST /card-set on a card with
+  no action block creates {executor, status: idle} with no type; the runner treats a missing type as dispatch, so
+  a later queue could make a non-dispatch card dispatchable. Also valid_lanes() re-reads/parses ssot.devnest-lanes.yml
+  on every /card and /card-set request inside the card flock.'
+priority: low
+tags:
+- board-api
+- dispatch
+spec: 'REPO work (chaba, scripts/board/board-api.py do_card_set + valid_lanes, selftest). WORKTREE ONLY; no deploy
+  without Tony''s approval.
+
+
+  1) In do_card_set refuse (400) when the card has no action block or action.type is not ''dispatch'' (clear message:
+  use /card to arm it first). Do not let _ensure_act create an action block here.
+
+  2) Cache valid_lanes()/_retired_lanes() keyed on the catalog file mtime so the YAML parse is not repeated per
+  request inside the flock.
+
+  3) Selftests: no-action card refused and left untouched; cache invalidates when the file mtime changes; existing
+  /card-set and /card lane tests still pass.
+
+
+  Evidence: review probes 2026-11-21 (non-dispatch card -> ''routing edited (executor=devin)'' with no type).'
+ref: OPS-0007
+comms:
+- at: 2026-11-21 06:12
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-21 17:49
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 11:28
+  from: devin
+  text: 'FIXED + MERGED + DEPLOYED 2026-11-23: commit 132c1119af on origin/master, board-api restarted on idc03.
+    (1) do_card_set now refuses cards with no action block or action.type != ''dispatch'' before _ensure_act would
+    fabricate a dispatch action. (2) valid_lanes() cached on ssot.devnest-lanes.yml mtime. Selftest: 2 new refusals
+    (no-action card, script-typed card). Board-api tests 37 passed. Verified live: non-dispatch card (OPS-0037)
+    refused with 400 ''no dispatch action''; dispatch card (ADA-1285, don'
+- at: 2026-11-23 11:28
+  from: devin
+  text: closed by devin
+- at: 2026-11-23 14:09
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:21
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:55
+  from: chaba
+  text: classified as devin (fallback conf 0.25)
+- at: 2026-11-23 14:55
+  from: devin
+  text: queued for processing
+- at: 2026-11-23 14:56
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.88 > 0.85)'
+- at: 2026-11-23 14:56
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 14:56
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.09 > 1.0)'
+- at: 2026-11-23 14:56
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 14:57
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.63 > 1.5)'
+- at: 2026-11-23 14:59
+  from: tony-dell
+  text: claimed
+- at: 2026-11-23 15:00
+  from: chaba
+  text: started devin-task-20261123-150012-repo-work-chaba-scripts-board- on tony-dell (dispatch)
+- at: 2026-11-23 15:00
+  from: chaba
+  text: 'primer injected 8 lesson(s): [runner-readiness-projection] DONE + deployed + verified live (commit d2146addf);
+    [positive-signal-primer] merge-sweep: worktree dispatch-wt-20261109-155120-files; File new kanban cards via
+    POST /card on board-api — never edit card YAML directl; [ada-prompt-slim] primer injected 8 lesson(s): [ada-prompt-slim]
+    Additional Jule; [ada-text-model-promotion-path] Queue diagnosis (2026-11-20 09:01): ADA-0783 is ; [board-janitor-locked-edit-atomic-write-db7bed]
+    primer inject'
+- at: 2026-11-23 15:07
+  from: devin
+  text: 're-dispatch: guard+cache code verified present (132c1119af). Filled selftest gap vs spec item 3 — mtime-cache
+    invalidation test + untouched-card asserts; LANES_FILE extracted for redirect. Also fixed codemod-gate test
+    rotting on archived fixture card. selftest ok; 95 board tests pass.'
+- at: 2026-11-23 15:08
+  from: devin
+  text: 'DONE (worktree dispatch 20261123-150012): guard+cache verified already landed via 132c1119af. Delta: filled
+    spec item-3 selftest gap — no-action/script cards refused AND left untouched; valid_lanes cache re-parse on
+    catalog mtime bump (LANES_FILE extracted for redirect). Bonus fix: codemod-gate _load_card archive fallback
+    (fixture archived today). selftest ok; tests/board 193 pass. Commit 4600a0e9aa5 on dispatch/20261123-150012-repo-work-chaba-scripts-board-,
+    not pushed.'
+- at: 2026-11-23 15:12
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 15:12
+  from: chaba
+  text: banked 177 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 15:12
+  from: chaba
+  text: pushed dispatch/20261123-150012-repo-work-chaba-scripts-board- to origin
+- at: 2026-11-23 15:12
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 66.2s)
+- at: 2026-11-23 15:12
+  from: chaba
+  text: auto-merged e6710917 (dispatch/20261123-150012-repo-work-chaba-scripts-board-) → origin/master
+- at: 2026-11-23 15:12
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261123-150012-repo-work-chaba-scripts-board-,
+    branch dispatch/20261123-150012-repo-work-chaba-scripts-board-'
+- at: 2026-11-23 15:14
+  from: tony-dell
+  text: 'finished (ok): exit=0 r, org.opencontainers.image.created=2026-08-25T14:04:43.052Z) | devin-task-20261123-150012-repo-work-chaba-script'
+- at: 2026-11-23 15:14
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261123-150012-repo-work-chaba-scripts-board- — close will block
+    until merged'
+- at: 2026-11-23 15:17
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261123-150012-repo-work-chaba-script'
+- at: 2026-11-23 15:23
+  from: tony
+  text: closed by tony
+- at: 2026-11-23 15:23
+  from: chaba
+  text: '[verify] Review pass 2026-11-23 (Tony): 2026-11-23 11:28 devin FIXED+MERGED+DEPLOYED (132c1119af on origin/master,
+    board-api restarted on idc03, live-verified 400 refusal on non-dispatch card); 15:08 re-dispatch filled spec
+    item-3 selftest gap (no-action/script cards refused AND untouched, valid_lanes cache mtime re-parse) committed
+    4600a0e9aa5; 15:12 test gate passed + auto-merged e6710917 -> origin/master; 15:14 finished ok — done-condition
+    met'
+- at: 2026-11-23 16:22
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:13
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:24
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:11
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:04
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:52
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:01
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:08
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:28
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:40
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:56
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:07
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:36
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+action:
+  status: done
+  type: dispatch
+  lane: devin
+  lane_source: fallback
+  runner: tony-dell
+  attempts: 1
+  result: 'exit=0 r, org.opencontainers.image.created=2026-08-25T14:04:43.052Z) | devin-task-20261123-150012-repo-work-chaba-scripts-board-.service:
+    Consumed 4min 3.056s CPU time over 8min 46.446s wall clock time, 962.1M memory peak, 674.2M memory swap peak.'
+  sweep:
+    no_repo: 2026-11-23 15:17
+claim:
+  since: 2026-11-23 14:59
+review_kind: verify

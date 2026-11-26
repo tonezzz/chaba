@@ -1,137 +1,202 @@
 id: timer-alert-tony-dell-chaba-served-mirror-sync
 title: Timer chaba-served-mirror-sync on tony-dell failing
 column: done
-updated: 2026-11-19 20:04
+updated: 2026-11-26 20:30
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-13 23:00) of `chaba-served-mirror-sync.service` on `tony-dell` result=exit-code — investigate
+note: 'Last run (11-23 14:00) of `chaba-served-mirror-sync.service` on `tony-dell` result=exit-code — investigate
   journal: `journalctl --user -u chaba-served-mirror-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
-ref: OPS-0110
+ref: OPS-0030
 comms:
-- at: 2026-11-13 23:13
+- at: 2026-11-23 14:12
   from: devin
   text: card captured via board-api
-- at: 2026-11-13 23:23
-  from: devin
-  text: 'Root cause 2026-11-13: pull succeeds (HEAD=master current) but unit exits 1 — the readonly mirror checkout
-    is dirty BY DESIGN: exec units run code from this path and write runtime state (percussion state.json, card
-    yml touches, focus-inbox .local-conflict files). git-safe-pull flags untracked collisions -> exit 1 -> timer-alert
-    loops forever. NEEDS DECISION: (a) gitignore/exclude runtime paths so mirror stays clean, (b) relax sync exit
-    criteria to warn-only on dirty, or (c) move exec jobs off th'
-- at: 2026-11-13 23:23
-  from: devin
-  text: '[still suspicious] Last run (11-13 23:00) of `chaba-served-mirror-sync.service` on `tony-dell` result=exit-code
-    — investigate journal: `journalctl --user -u chaba-served-mirror-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
-- at: 2026-11-14 00:14
-  from: devin
-  text: '[auto-resolved] last run result=success at 11-14 00:00 — closing (timer-sentinel KNB-0577)'
-- at: 2026-11-14 00:14
-  from: tony
-  text: closed by tony
-- at: 2026-11-14 08:06
-  from: devin
-  text: 'FIXED 2026-11-13: root cause was 18 stale focus-inbox .local-conflict files (Nov-11 report-watch artifacts)
-    — reconcile keeps non-card conflicts forever by design, checkout stayed dirty, sync exited 1. Deleted >24h conflicts,
-    manual run Finished clean (1m57s). Durable fix carded: reconcile needs non-card conflict expiry.'
-- at: 2026-11-14 08:07
-  from: tony
-  text: closed by tony
-- at: 2026-11-14 14:15
+- at: 2026-11-23 14:20
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-14 14:15
+- at: 2026-11-23 14:22
+  from: devin
+  text: '[still suspicious] Last run (11-23 14:00) of `chaba-served-mirror-sync.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-served-mirror-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-23 15:12
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-23 15:01 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-23 15:12
+  from: tony
+  text: closed by tony
+- at: 2026-11-23 16:14
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:05
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:06
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-15 21:25
+- at: 2026-11-23 19:13
   from: tony
   text: moved done -> backlog
-- at: 2026-11-15 21:25
+- at: 2026-11-23 19:13
   from: devin
-  text: '[reopened — condition recurred] Last run (11-15 21:00) of `chaba-served-mirror-sync.service` on `tony-dell`
+  text: '[reopened — condition recurred] Last run (11-23 19:00) of `chaba-served-mirror-sync.service` on `tony-dell`
     result=exit-code — investigate journal: `journalctl --user -u chaba-served-mirror-sync.service` on the host.
     See CMS `timer-timeline-tony-dell`.'
-- at: 2026-11-15 21:35
+- at: 2026-11-23 19:22
   from: devin
-  text: '[still suspicious] Last run (11-15 21:00) of `chaba-served-mirror-sync.service` on `tony-dell` result=exit-code
+  text: '[still suspicious] Last run (11-23 19:00) of `chaba-served-mirror-sync.service` on `tony-dell` result=exit-code
     — investigate journal: `journalctl --user -u chaba-served-mirror-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
-- at: 2026-11-16 01:20
-  from: backlog-spec-enrich
-  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
-- at: 2026-11-16 09:56
+- at: 2026-11-23 20:12
   from: devin
-  text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
-- at: 2026-11-16 09:56
+  text: '[auto-resolved] last run result=success at 11-23 20:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-23 20:12
   from: tony
   text: closed by tony
-- at: 2026-11-17 18:07
-  from: chaba
-  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-17 18:16
-  from: chaba
-  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-17 18:37
-  from: chaba
-  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-17 18:39
-  from: chaba
-  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-17 21:06
+- at: 2026-11-24 00:12
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-18 17:17
-  from: chaba
-  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-18 18:05
+- at: 2026-11-24 08:11
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-18 18:07
-  from: chaba
-  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-18 21:18
-  from: chaba
-  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-18 22:03
-  from: chaba
-  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-18 22:07
-  from: chaba
-  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-19 17:01
+- at: 2026-11-24 08:13
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-19 18:53
+- at: 2026-11-24 08:22
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:31
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-19 19:08
+- at: 2026-11-24 08:39
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:42
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-19 20:04
+- at: 2026-11-24 12:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:02
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 03:14
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-25 03:14
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-25 03:00) of `chaba-served-mirror-sync.service` on `tony-dell`
+    result=exit-code — investigate journal: `journalctl --user -u chaba-served-mirror-sync.service` on the host.
+    See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-25 03:24
+  from: devin
+  text: '[still suspicious] Last run (11-25 03:00) of `chaba-served-mirror-sync.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-served-mirror-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-25 04:14
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-25 04:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-25 04:14
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 06:14
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-25 06:14
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-25 06:00) of `chaba-served-mirror-sync.service` on `tony-dell`
+    result=exit-code — investigate journal: `journalctl --user -u chaba-served-mirror-sync.service` on the host.
+    See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-25 06:24
+  from: devin
+  text: '[still suspicious] Last run (11-25 06:00) of `chaba-served-mirror-sync.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-served-mirror-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-25 07:45
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:14
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-25 09:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-25 09:14
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:56
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:30
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
-spec: Investigate and resolve the failing execution of `chaba-served-mirror-sync.service` on host `tony-dell`. Review
-  the systemd user journal using `journalctl --user -u chaba-served-mirror-sync.service` to diagnose the cause of
-  the exit-code failure. Ensure any underlying script or configuration issues within the `chaba` repository on `tony-dell`
-  are fixed. The done-condition is verified when `chaba-served-mirror-sync.service` completes a successful run without
-  exit-code errors on `tony-dell` and the associated timer-timeline status reflects healthy execution.

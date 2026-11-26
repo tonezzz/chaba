@@ -1,0 +1,107 @@
+title: "Rainy-day spend decisions — OR credit state, deepseek-v4-flash lane, Devin free default"
+date: 2026-11-23
+card: rainy-day-spend-decisions
+ref: OPS-1256
+session: "dispatch-wt-20261123-183713 (idc02), attempt 3 — prior two runs died at provider rate-limit before doing work"
+status: "executed — see results"
+
+openrouter_state_2026_11_23:
+  topup: >-
+    ALREADY DONE by Tony — /key shows free_model_daily_requests limit
+    1000/day (the >=$10 lifetime-credit tier; used 756 that day). The
+    11-09 approval was executed at the dashboard since then.
+  key_cap: >-
+    The rotated OR key (sk-or-v1-74d…f6c, expires 2026-12-23) carries a
+    $1/WEEK spend cap (resets 2026-11-30). Weekly spend $0.017 -> $0.98
+    headroom. Paid OR calls are possible but must stay small — the
+    deepseek bench (~$0.10-0.25) fits; anything bigger needs Tony to
+    raise the key limit at openrouter.ai/keys.
+  where: "OPENROUTER_API_KEY in ~/.config/secrets/mddb-gemini.env on idc03
+    (mounted into the litellm container)."
+
+litellm_route:
+  model_name: or-deepseek-v4-flash
+  upstream: "openrouter/deepseek/deepseek-v4-flash ($0.09/M in, $0.18/M out)"
+  surfaces_touched:
+    - "stacks/idc03/litellm/config.yaml model_list (repo + deployed to
+      idc03, litellm.service restarted, health/liveliness OK)"
+    - "chaba virtual key allowlist 43 -> 44 via POST /key/update"
+    - "tony-dell ~/.config/opencode/opencode.json litellm provider map via
+      scripts/devnest/sync-opencode-models.py --from-api --write"
+    - "docs/ssot/infrastructure/ssot.llm-gateway.yml openrouter_paid lane"
+  probe: "POST /v1/chat/completions model=or-deepseek-v4-flash -> 'ok' via
+    LITELLM_KEY_CHABA; tool-call still serves (allowlist verified)."
+  incident: >-
+    /key/update REPLACES the models list — a first attempt that built the
+    new list from a live /key/info fetch clobbered chaba's allowlist to
+    just the new model when the fetch returned empty (~2 min window; chaba
+    key serves ada-ha-tony/ada-pi-pwa REST). Restored from a captured
+    list and re-verified. Lesson: snapshot the allowlist to a file BEFORE
+    /key/update and diff after.
+
+opencode_v232_breakage:
+  what: >-
+    opencode v2.3.2 on tony-dell: (1) `run --dir <path>` removed —
+    directory is now a positional arg. (2) `{env:VAR}` substitution in
+    custom-provider options.apiKey silently resolves empty -> 401 "No
+    api key passed in" even with the var exported (upstream issue
+    anomalyco/opencode#19946 pattern). `{file:path}` substitution works.
+  fix: >-
+    tony-dell: wrote ~/.config/secrets/litellm-key.txt (chmod 600) and
+    repointed provider.litellm.options.apiKey to
+    "{file:/home/tony/.config/secrets/litellm-key.txt}". Probe:
+    litellm/gemini-3.5-flash-lite -> 'ok', $0.002.
+  blast_radius: >-
+    Any host whose opencode was upgraded to >=v2.3.x AND uses
+    {env:LITELLM_KEY} in opencode.json is equally broken — check
+    ~/.config/opencode/opencode.json per host if a litellm lane 401s.
+
+devin_default_model:
+  change: "agent.model swe-2-high -> swe-2-flash-high in
+    ~/.config/devin/config.json on idc02, tony-dell, idc03, tony-omen,
+    mn01, tony-macbook (all six dispatch hosts)."
+  correction: >-
+    Card premise was stale — `devin models list` now marks the whole
+    swe-2 family Free (swe-2-high/medium/max + swe-2-flash-*); only the
+    -lightning variants and claude/gpt families are metered. flash-high
+    chosen as the cheaper-class free default; revert is one line.
+  verify: >-
+    `devin --respect-workspace-trust false --print` test session on
+    idc02 logged resolved_model_uid=swe-2-flash-high — next sessions use
+    it. Note: --print refuses untrusted workspaces unless the flag is
+    passed (devin-dispatch already does).
+
+code_corpus_bench:
+  config: "~/evals/config.ds-v4-code.yaml on tony-dell — same tasks as
+    config.zen-code.yaml (t1-terrology-sea-predicate + m1-behavioral),
+    lanes: litellm/gemini-3.5-flash-lite (baseline), litellm/or-deepseek-v4-flash,
+    opencode/deepseek-v4.1-flash-free (zen $0 control)."
+  runs:
+    - run 20261123_114514_81e3c9: "all 6 failed ~instantly — opencode
+      v2.3.2 rejected --dir (pre-fix config). Scores shown (67-86%) are
+      the verifier grading an untouched workspace, NOT agent work."
+    - run 20261123_114806_aafd34: "positional-dir fix landed; zen-free
+      passed t1 (83s) but both litellm lanes 401'd — {env:LITELLM_KEY}
+      dead under v2.3.2 before the {file:} repair."
+    - run 20261123_115202_3d02ec: "CLEAN — 4/4 passed after the {file:}
+      apiKey repair."
+  results_20261123_115202_3d02ec:
+    or-deepseek-v4-flash: "m1-behavioral 1.0 ($0.033, 725s) + t1 1.0
+      ($0.006, 53s) — 100% pass, $0.0196 avg/run, 389s avg"
+    gemini-3.5-flash-lite: "m1 1.0 ($0.302, 984s) + t1 1.0 ($1.048, 723s)
+      — 100% pass, $0.675 avg/run, 853s avg"
+    zen-deepseek-v4.1-flash-free: "t1 1.0 (83s, $0) but m1 TIMEOUT at
+      1500s — free tier unreliable on the heavier task"
+    verdict: >-
+      DeepSeek V4 Flash (OR paid) matches the flash-lite paid baseline on
+      the code corpus at ~1/34th the cost and ~2.2x the speed —
+      viable as the cheap code brain. The $0 zen twin is strong on light
+      tasks but timed out on m1 (same flaky pattern as 11-09), so the
+      ~$0.02-0.04/run paid lane is the dependable option. Caveat: the
+      m1 1.0 pass inherits the known activation-fixture gap (card
+      m1-behavioral-fixture-activation-and-skips) — treat as a canary,
+      not contract proof.
+  compare_prior: "zen-code run 20261109_022656_b016d7: deepseek-free M1
+    3/3 + T1 7/7, GLM-free T1 7/7 (M1 timeout), flash-lite M1 3/3 T1 6/7 —
+    with the caveat that M1's 3/3 hid an activation-fixture gap (card
+    m1-behavioral-fixture-activation-and-skips)."

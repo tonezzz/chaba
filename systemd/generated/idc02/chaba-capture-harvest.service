@@ -1,0 +1,8 @@
+[Unit]
+Description=Capture ledger harvest + Phase D metrics refresh (daily) (job:chaba-capture-harvest, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=600
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/chaba/harvester.py
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/chaba/capture-metrics.py --out %h/.local/share/chaba/capture/metrics-latest.md

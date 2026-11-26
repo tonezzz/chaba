@@ -1,0 +1,58 @@
+title: Runner-agent hash drift — verified already converged (no-op)
+subtitle: batch request "converge runner-agent hash drift across hosts" resolved as no action required
+icon: check-circle
+date: 2026-11-26
+status: verified-noop
+related_jobs:
+  - docs/ssot/jobs/infrastructure/2026-11-26-runner-agent-stale-converge-retire.yml
+  - docs/ssot/jobs/infrastructure/2026-11-26-runner-tool-drift-followup.yml
+related_cards:
+  - timer-alert-idc02-ada-ocb-agent-runner-converge
+  - runner-tooling-drift-recurs-installed-ru-3aad1e
+
+context:
+  trigger: "Batch selected from stale drift candidates; earlier in the day two
+    real drift incidents were healed (08:41 fleet converge, 11:28 idc02 debug
+    residue + con01 devin-dispatch pin)."
+  decision: "No mutation. The flag was a lagging indicator — the exact case the
+    ansible-first skill warns about. Skill triage, read-only diagnosis and
+    check-mode preflight all ran before any write path was opened."
+
+diagnosis:
+  pin_sha256: 1514c75c4679a01b486bbffd9f75c5636d023fed528424aed358a970ee3f7210
+  controller: "tony-dell repo HEAD 5bf4d2d26ff; source file and manifest pin
+    both 1514c75c4679a01b — deployed build is pinned, not unpinned."
+  installed: "sha256 == pin on all 8 hosts: tony-dell, tony-omen, idc02, idc03,
+    con01, mn01, tony-macbook, kk-mac (kk-mac uses the launchd path)."
+  checkout_refs: "sha256 of ~/CascadeProjects/chaba/scripts/board/runner-agent.py
+    == pin on all 7 Linux hosts with that checkout. The sole stale copy is
+    idc02:~/CascadeProjects/chaba-tony-dell (adfa0c5733dd) — already documented
+    as an unreferenced stale checkout, not the drift gate ref."
+  service_state: "activating on tony-dell/tony-omen/mn01/tony-macbook, inactive
+    on idc03/con01 (idle runner, not failure), launchd loaded on kk-mac."
+
+verification:
+  drift_preview: "tony-dell: ansible-playbook playbooks/verify-runner-tools-sync.yml
+    -> required=0 leaf=0 on all four baseline hosts (tony-dell, tony-omen,
+    idc02, idc03); 0 unreachable, 0 failed."
+  check_mode: "tony-dell: ansible-playbook playbooks/deploy-runner-agent.yml
+    --check --diff --limit <7 Linux hosts> -> all 7 report in-sync,
+    changed=0 / unreachable=0 / failed=0."
+  fleet_health: "scripts/board/runner-fleet-health.py -> no tool-pin or
+    runner-agent failures. Only two unrelated stale-clone FAILs remain
+    (tony-omen chaba 658 behind, con01 mddb-fork 601 behind)."
+  cards: "Both drift-related cards already column=done status=done with zero
+    open requests — nothing to close."
+
+outcome:
+  changes_made: none
+  reason: "installed == checkout ref == manifest pin everywhere that counts;
+    forcing a redeploy would only cause an unnecessary runner-agent restart."
+  rollback: not-applicable
+
+lessons:
+  - "Re-check before converging: a drift flag from hours earlier can be stale
+    after a prior batch healed it. Installed hash, checkout-ref hash and the
+    manifest pin must all be read before choosing a direction."
+  - "Keep checking hosts outside the baseline group — kk-mac (macOS/launchd)
+    and con01 (absorber tier) are excluded from verify-runner-tools-sync.yml."

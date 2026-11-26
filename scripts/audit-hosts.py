@@ -52,6 +52,24 @@ FAILED_NOISE = re.compile(
     r"^(apport.*|NetworkManager-wait-online.*|xdg-desktop-portal.*|"
     r"xfce4-notifyd.*|snapd\..*|grub-initrd-fallback.*)$")
 
+# macOS launchd labels that are OS plumbing or vendor updaters — the
+# launchd inventory sees every third-party agent on the box, so the
+# ubiquitous desktop noise is filtered here; fleet leftovers still need
+# expected_services / allowed_running declarations.
+MACOS_LAUNCHD_NOISE = re.compile(
+    r"^(com\.apple\.|application\.|com\.adobe\.|com\.microsoft\.|"
+    r"com\.google\.|com\.telemetry\.agent|com\.openssh\.ssh-agent|"
+    r"com\.teamviewer\.|devin-task-.*|runner-task-.*)")
+
+# Process scan on macOS — deliberately tighter than FLEET_SYS_RE (which is
+# tuned for systemd unit names and false-positives on app arguments like
+# "mcp_"/"gesture"): only service-shaped command patterns count.
+FLEET_PROC_RE = re.compile(
+    r"(ollama serve|llama-server|runner-agent|kk_mac_lane_worker|"
+    r"nest-worker|ada-nest-heartbeat|\bmddb\b|jev serve|go2rtc|"
+    r"homeassistant|home-assistant|notebooklm|\bobsidian\b|\byomi\b|"
+    r"litellm|cloudflared|\bcaddy\b)")
+
 ESCALATE_H = 12
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -66,6 +84,7 @@ HOSTS = {
     "idc03": {"tailnet": "idc03", "os": "linux", "user": "tony"},
     "con01": {"tailnet": "con01", "os": "linux", "user": "tony"},
     "macbook": {"tailnet": "tony-macbook", "os": "linux", "user": "tony"},
+    "kk-mac": {"tailnet": "kk-mac", "os": "macos", "user": "kkkakk"},
 }
 
 
@@ -126,6 +145,16 @@ def linux_services(host: str, ssh: bool) -> dict:
     failed_sys, _err_sys, _ = run(
         r"systemctl list-units --failed --no-pager --plain | grep -E '\.(service|scope)' | awk '{print $1}'"
     )
+    # Unit-file existence probe — list-units only shows loaded units, so
+    # timer/manual-triggered oneshots read "missing" between fires. The
+    # `type: oneshot` census entries diff against this instead (masked
+    # still counts as absent — a masked oneshot can never fire).
+    unit_files_user, _err_uf, _ = run(
+        r"systemctl --user list-unit-files --no-pager --plain | awk '{print $1, $2}'"
+    )
+    unit_files_sys, _err_ufs, _ = run(
+        r"systemctl list-unit-files --no-pager --plain | awk '{print $1, $2}'"
+    )
     free, _err_free, _ = run("free -h | grep -E '^Mem:|^Swap:'")
     df, _err_df, _ = run("df -h / | tail -1")
     uptime, _err_uptime, _ = run("uptime")
@@ -142,6 +171,8 @@ def linux_services(host: str, ssh: bool) -> dict:
         "active_system_services": _parse_kv(active_sys),
         "failed_user_services": _parse_list(failed_user),
         "failed_system_services": _parse_list(failed_sys),
+        "unit_files_user": _parse_unit_files(unit_files_user),
+        "unit_files_system": _parse_unit_files(unit_files_sys),
         "oom_kills_24h": {"user": _to_int(oom_user), "system": _to_int(oom_sys)},
         "memory": _parse_free(free),
         "disk": _parse_df(df),
@@ -151,18 +182,200 @@ def linux_services(host: str, ssh: bool) -> dict:
     }
 
 
+# One remote pass that enumerates the launchd surface an unprivileged
+# ssh user can actually see. `launchctl list` only covers the CALLER's
+# gui domain — the OPS-1018 miss (adanest's ollama ran undeclared for
+# weeks) happened because nothing looked at other domains. What works
+# without sudo (verified on kk-mac 2026-11-24):
+#   - `launchctl print system/<label>` answers for /Library/LaunchDaemons
+#   - /Library/Launch{Daemons,Agents} + /Users/*/Library/LaunchAgents
+#     plist files are world-readable — on-disk intent even when the
+#     domain can't be printed (gui/<other-uid> is denied unprivileged)
+#   - `ps -axo user,pid,command` sees every user's processes — the
+#     undeclared-process safety net
+# `sudo -n` is attempted once; hosts with passwordless sudo get real
+# per-user `launchctl print gui/<uid>` state.
+_MACOS_INVENTORY = r"""
+echo '@@USERS@@'
+dscl . list /Users UniqueID 2>/dev/null
+echo '@@DAEMONS@@'
+for f in /Library/LaunchDaemons/*.plist; do
+  [ -e "$f" ] || continue
+  l=$(plutil -extract Label raw "$f" 2>/dev/null || basename "$f" .plist)
+  st=$(launchctl print "system/$l" 2>/dev/null \
+       | awk -F'= *' '/state =/{print $2; exit}')
+  echo "$l|${st:-plist}"
+done
+echo '@@SYSAGENTS@@'
+for f in /Library/LaunchAgents/*.plist; do
+  [ -e "$f" ] || continue
+  case "$f" in *.bak*) continue;; esac
+  l=$(plutil -extract Label raw "$f" 2>/dev/null || basename "$f" .plist)
+  echo "$l"
+done
+echo '@@USERAGENTS@@'
+dscl . list /Users UniqueID 2>/dev/null | awk '$2>=500 {print $1}' \
+| while read -r u; do
+    for f in "/Users/$u/Library/LaunchAgents"/*.plist; do
+      [ -e "$f" ] || continue
+      case "$f" in *.bak*) continue;; esac
+      l=$(plutil -extract Label raw "$f" 2>/dev/null || basename "$f" .plist)
+      echo "$u|$l"
+    done
+  done
+"""
+
+
+def _parse_macos_inventory(text: str) -> dict:
+    """Split the @@SECTION@@ inventory dump into per-section line lists."""
+    sections, cur = {}, None
+    for line in text.splitlines():
+        line = line.strip()
+        if line.startswith("@@") and line.endswith("@@"):
+            cur = line.strip("@")
+            sections[cur] = []
+        elif cur and line:
+            sections[cur].append(line)
+    return sections
+
+
+def _macos_launchd(run, caller_uid: int, launch: str) -> tuple[list[dict], list[dict], list[dict]]:
+    """Return (active_user_services, active_system_services, launchd_services).
+
+    Unit names are domain-qualified — `system/<label>`,
+    `gui/<uid>/<label>`, `useragent/<user>/<label>`, `sysagent/<label>` —
+    so expected_services can match a bare label in any domain via the
+    suffix rule in _is_present. `state` is "active" (running now),
+    "loaded" (registered, not running — interval agents), or "plist"
+    (on disk, not confirmed loaded). Only active/loaded units feed the
+    active_*_services lists the expected/absent diff consumes.
+    """
+    caller_labels = set()
+    caller_entries = []
+    for line in launch.splitlines():
+        parts = line.split()
+        if len(parts) < 3:
+            continue
+        pid, label = parts[0], parts[-1]
+        state = "active" if pid != "-" else "loaded"
+        caller_labels.add(label)
+        caller_entries.append(
+            {"unit": f"gui/{caller_uid}/{label}", "state": state})
+
+    inv, _e2, _ = run(_MACOS_INVENTORY, timeout=60)
+    sec = _parse_macos_inventory(inv)
+
+    services = {e["unit"]: dict(e, source="launchctl")
+                for e in caller_entries}
+
+    for line in sec.get("DAEMONS", []):
+        label, _, st = line.partition("|")
+        if not label:
+            continue
+        unit = f"system/{label}"
+        # a successful print means the job is loaded; only "running"
+        # is continuously active (interval agents show not running)
+        state = "plist" if not st.strip() else \
+            ("active" if st.strip() == "running" else "loaded")
+        services.setdefault(unit, {"unit": unit, "state": state,
+                                   "source": "plist+print"})
+
+    for label in sec.get("SYSAGENTS", []):
+        if label in caller_labels:
+            continue   # already covered as gui/<uid>/<label>
+        unit = f"sysagent/{label}"
+        services.setdefault(unit, {"unit": unit, "state": "plist",
+                                   "source": "plist"})
+
+    uid_by_name = {}
+    for line in sec.get("USERS", []):
+        parts = line.split()
+        if len(parts) >= 2:
+            try:
+                uid_by_name[parts[0]] = int(parts[1])
+            except ValueError:
+                continue
+
+    useragents = []   # (user, label) — resolved to uid below if sudo exists
+    for line in sec.get("USERAGENTS", []):
+        user, _, label = line.partition("|")
+        if not label or uid_by_name.get(user) == caller_uid and \
+                label in caller_labels:
+            continue
+        unit = f"useragent/{user}/{label}"
+        services.setdefault(unit, {"unit": unit, "state": "plist",
+                                   "source": "plist"})
+        useragents.append((user, label))
+
+    # sudo -n upgrade: passwordless sudo lets us print other users' gui
+    # domains for real loaded/running state (plist stays the fallback).
+    # Only labels discovered on disk are queried — no domain-wide dump.
+    sudo_ok, _e3, _ = run("sudo -n true 2>/dev/null && echo ok")
+    if "ok" in sudo_ok:
+        for user, label in useragents:
+            uid = uid_by_name.get(user)
+            if not uid or uid == caller_uid:
+                continue
+            out, _e4, _ = run(
+                f"sudo -n launchctl print gui/{uid}/{label} 2>/dev/null")
+            m = re.search(r"state = (\w[\w ]*)", out)
+            if not m:
+                continue
+            unit = f"gui/{uid}/{label}"
+            state = "active" if m.group(1).strip() == "running" else "loaded"
+            services[unit] = {"unit": unit, "state": state,
+                              "source": "sudo-print"}
+            old = f"useragent/{user}/{label}"
+            if old in services:
+                del services[old]
+
+    launchd_services = sorted(services.values(), key=lambda s: s["unit"])
+    active_user = [s for s in launchd_services
+                   if not s["unit"].startswith("system/")
+                   and s["state"] in ("active", "loaded")]
+    active_sys = [s for s in launchd_services
+                  if s["unit"].startswith("system/")
+                  and s["state"] in ("active", "loaded")]
+    return active_user, active_sys, launchd_services
+
+
+def _parse_fleet_processes(text: str) -> list[dict]:
+    out = []
+    for line in text.splitlines():
+        parts = line.split(None, 2)
+        if len(parts) < 3:
+            continue
+        user, pid, cmd = parts
+        if FLEET_PROC_RE.search(cmd):
+            out.append({"user": user, "pid": pid, "command": cmd.strip()})
+    return out
+
+
 def macos_services(host: str, ssh: bool) -> dict:
     def _run(cmd: str, timeout: int = 30):
         return run_ssh(host, cmd, timeout) if ssh else run_local(cmd, timeout)
     run = _run
-    launch, _err_launch, _ = run("launchctl list | sed '1,/^PID/d' | head -40")
+    caller_uid = _to_int(run("id -u")[0]) or 501
+    # NB: `sed '1,/^PID/d'` is WRONG here — sed range-end regexes aren't
+    # tested on the range's first line, so it deletes to EOF on macOS.
+    # tail -n +2 drops the header portably. Retry once on empty —
+    # launchctl list is occasionally flaky over non-interactive ssh.
+    launch, _err_launch, _ = run("launchctl list | tail -n +2")
+    if not launch.strip():
+        launch, _err_launch, _ = run("launchctl list | tail -n +2")
+    active_user, active_sys, launchd = _macos_launchd(run, caller_uid, launch)
     vm, _err_vm, _ = run("vm_stat | head -10")
     df, _err_df, _ = run("df -h / | tail -1")
     uptime, _err_uptime, _ = run("uptime")
     ps, _err_ps, _ = run("ps -ax -o pid,%mem,command -r | head -10")
+    ps_all, _err_psa, _ = run("ps -axo user=,pid=,command=")
 
     return {
         "active_services": _parse_launchctl(launch),
+        "active_user_services": active_user,
+        "active_system_services": active_sys,
+        "launchd_services": launchd,
+        "fleet_processes": _parse_fleet_processes(ps_all),
         "vm_stat": _parse_vm_stat(vm),
         "disk": _parse_df(df),
         "load": _parse_uptime(uptime),
@@ -182,6 +395,16 @@ def _parse_kv(text: str) -> list[dict]:
 
 def _parse_list(text: str) -> list[str]:
     return [line.strip() for line in text.splitlines() if line.strip()]
+
+
+def _parse_unit_files(text: str) -> dict:
+    """`list-unit-files --plain` 'name state' lines -> {unit: state}."""
+    out = {}
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) >= 2 and "." in parts[0]:
+            out[parts[0]] = parts[1]
+    return out
 
 
 def _to_int(text: str) -> int:
@@ -303,8 +526,12 @@ def _tailscale_ip(host: str) -> str | None:
 def _is_present(expected: str, kind: str, active: set[str]) -> bool:
     if expected in active:
         return True
-    if kind == "scope":
-        for unit in active:
+    for unit in active:
+        # launchd units are domain-qualified (system/<label>,
+        # gui/<uid>/<label>) — a bare expected label matches any domain.
+        if unit.endswith("/" + expected):
+            return True
+        if kind == "scope":
             if unit.startswith(expected + "-") and unit.endswith(".scope"):
                 return True
     return False
@@ -364,6 +591,24 @@ def diff_against_ssot(host: str, observed: dict, ssot_path: Path) -> list[str]:
         present_in = active_system_units if scope == "system" else active_user_units
         running_in = running_sys if scope == "system" else running_user
         want = exp.get("expected_state") or "active"
+        if exp_type == "oneshot" and want == "active" and \
+                ("unit_files_system" if scope == "system"
+                 else "unit_files_user") in observed:
+            # Timer/manual-triggered oneshots are legitimately inactive
+            # (often unloaded) between fires — the contract is that the
+            # unit file exists and isn't masked, not that it's running.
+            # Probe absent (e.g. macOS observed shape) -> legacy path.
+            unit_files = observed[
+                "unit_files_system" if scope == "system"
+                else "unit_files_user"]
+            if exp_name in unit_files and \
+                    not unit_files[exp_name].startswith("masked"):
+                continue
+            if exp_name in known_failed or \
+                    exp.get("note", "").startswith("Currently disabled"):
+                continue
+            deltas.append(f"Expected oneshot unit missing: {exp_name}")
+            continue
         present = _is_present(exp_name, exp_type, present_in)
         running = _is_present(exp_name, exp_type, running_in)
         if running and want in ("inactive", "absent"):
@@ -390,11 +635,18 @@ def diff_against_ssot(host: str, observed: dict, ssot_path: Path) -> list[str]:
         if name in expected_names:
             continue   # expected_state:absent on the service entry already covers it
         running = running_sys if scope == "system" else running_user
-        if name in running:
+        present_units = (active_system_units if scope == "system"
+                         else active_user_units)
+        # domain-qualified launchd units match by label suffix
+        hit_running = name in running or any(
+            u.endswith("/" + name) for u in running)
+        hit_present = name in present_units or any(
+            u.endswith("/" + name) for u in present_units)
+        if hit_running:
             note = a.get("note", "") if isinstance(a, dict) else ""
             deltas.append(f"Declared-absent service still running: {name}"
                           + (f" — {note}" if note else ""))
-        elif name in (active_system_units if scope == "system" else active_user_units):
+        elif hit_present:
             deltas.append(f"Declared-absent unit tried to start (failed): {name}")
 
     allow = [a if isinstance(a, str) else a.get("name", "")
@@ -402,26 +654,60 @@ def diff_against_ssot(host: str, observed: dict, ssot_path: Path) -> list[str]:
     def allowed(unit):
         return any(fnmatch.fnmatch(unit, p) for p in allow)
 
-    for s in observed.get("active_user_services", []):
-        unit, state = s.get("unit"), s.get("state")
-        if not unit or not unit.endswith(".service") or state != "active":
-            continue
-        if unit in expected_names or unit in absent_names or \
-                allowed(unit) or USER_SESSION_NOISE.match(unit) or \
-                HASH_UNIT_RE.match(unit):
-            continue
-        deltas.append(f"Unexpected running user service: {unit} "
-                      "(declare in expected_services, whitelist in "
-                      "allowed_running, or stop it)")
-    for s in observed.get("active_system_services", []):
-        unit, state = s.get("unit"), s.get("state")
-        if not unit or not unit.endswith(".service") or state != "active":
-            continue
-        if unit in expected_names or unit in absent_names or allowed(unit) \
-                or HASH_UNIT_RE.match(unit):
-            continue
-        if FLEET_SYS_RE.search(unit):
-            deltas.append(f"Unexpected fleet-looking system service: {unit}")
+    is_macos = "launchd_services" in observed
+    if is_macos:
+        # launchd inventory — every non-noise job must be declared in
+        # expected_services / expected_absent / allowed_running. This is
+        # the check that would have caught adanest's ollama (OPS-1018).
+        for svc in observed.get("launchd_services", []):
+            unit = svc.get("unit", "")
+            label = unit.rsplit("/", 1)[-1]
+            if not unit or MACOS_LAUNCHD_NOISE.match(label):
+                continue
+            if label in expected_names or unit in expected_names or \
+                    label in absent_names or unit in absent_names or \
+                    allowed(label) or allowed(unit):
+                continue
+            deltas.append(f"Unexpected launchd service: {unit} "
+                          f"(state={svc.get('state', '?')}, "
+                          f"source={svc.get('source', '?')}) — declare in "
+                          "expected_services, whitelist in "
+                          "allowed_running, or unload it")
+        # undeclared fleet processes — the ps safety net for anything
+        # running outside launchd's sight (nohup, manual, other users).
+        proc_globs = [p for p in host_ssot.get("allowed_processes", [])]
+        for exp in expected:
+            proc_globs += exp.get("procs") or []
+        for p in observed.get("fleet_processes", []):
+            cmd = p.get("command", "")
+            if any(fnmatch.fnmatch(cmd, g) for g in proc_globs):
+                continue
+            if any(n and n in cmd for n in expected_names):
+                continue
+            deltas.append(f"Undeclared fleet process: {p.get('user', '?')} "
+                          f"pid={p.get('pid', '?')} {cmd[:140]} — declare "
+                          "in expected_services procs / allowed_processes")
+    else:
+        for s in observed.get("active_user_services", []):
+            unit, state = s.get("unit"), s.get("state")
+            if not unit or not unit.endswith(".service") or state != "active":
+                continue
+            if unit in expected_names or unit in absent_names or \
+                    allowed(unit) or USER_SESSION_NOISE.match(unit) or \
+                    HASH_UNIT_RE.match(unit):
+                continue
+            deltas.append(f"Unexpected running user service: {unit} "
+                          "(declare in expected_services, whitelist in "
+                          "allowed_running, or stop it)")
+        for s in observed.get("active_system_services", []):
+            unit, state = s.get("unit"), s.get("state")
+            if not unit or not unit.endswith(".service") or state != "active":
+                continue
+            if unit in expected_names or unit in absent_names or allowed(unit) \
+                    or HASH_UNIT_RE.match(unit):
+                continue
+            if FLEET_SYS_RE.search(unit):
+                deltas.append(f"Unexpected fleet-looking system service: {unit}")
 
     for fail in observed.get("failed_user_services", []):
         if fail not in known_failed and not fail.startswith("session-") \

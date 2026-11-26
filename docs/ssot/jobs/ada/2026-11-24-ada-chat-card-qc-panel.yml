@@ -1,0 +1,109 @@
+title: ada-chat-card Adobe Stock QC panel — candidate thumb + decision buttons
+id: 2026-11-24-ada-chat-card-qc-panel
+card: ada-opencode-repair-menu-card
+ref: ADA-1130
+program: devnest
+date: 2026-11-24
+status: verified-in-worktree (dispatch branch, not pushed; live ada-ha/tony-ha www sync + picker-server restart are the remaining deploy steps)
+
+summary: |
+  Phase 1/3 of OPS-1109 UI landed in the worktree. The ada-chat-card now
+  polls picker-server /api/session and, when the campaign SESSION.json has
+  a landed candidate with no recorded QC decision, renders a pinned panel:
+  candidate thumbnail (/img/<asset> Drive pull-through) + asset/lane
+  subtitle + optional note + four buttons — Keep / Reject / Revise /
+  Repair region. Decisions POST /api/qc-decision which writes
+  comparison[<asset_underscored>_qc_decision|_qc_note] into SESSION.json
+  and appends 40-qc-review.md on Drive (pre-existing endpoint, now also
+  posts a board comment for audit). Repair opens the mask-picker at
+  ?img=/img/<asset>; picker POST /submit -> ~/adobe-work/inbox ->
+  inbox-processor.py cron -> land-render.py --lane gemini-image already
+  auto-lands the repair candidate (picker-<id>) — no new plumbing needed.
+  picker-server gained CORS (ACAO:* + OPTIONS + no-store on API JSON) so
+  the HA card can reach it cross-origin; mask-picker ?img= now accepts a
+  bare asset id.
+
+artifacts:
+  card: stacks/tony-dell/ada-ha/www/ada-chat-card.js (+ identical
+    stacks/tony-dell/tony-ha/www/ada-chat-card.js — the two copies are
+    kept byte-identical)
+  picker: scripts/adobe-stock/picker-server.py — end_headers() emits CORS,
+    do_OPTIONS 204, Cache-Control:no-store on /api/session|campaign|
+    qc-decision, board_comment() audit inside qc_decision()
+  picker-ui: scripts/adobe-stock/mask-picker.html — ?img=<asset> bare id
+    resolves to /img/<asset>
+  inbox: scripts/adobe-stock/inbox-processor.py — resolve_image tries
+    .jpeg too
+  harness: tests/ha/ada-chat-card/{server.py,harness.html,preview-bridge.mjs}
+    — new stateful /qc-picker/* fixture (session+decision+img+control)
+    and qc-panel scenario (13th); evidence/ refreshed
+
+card_config: |
+  picker_url  adobe-stock picker-server base. Default
+              http://tony-dell.taila0626a.ts.net:8777; "" disables the
+              panel entirely. qc_poll_s = interval (default 60, min 5).
+  CAVEAT: picker is plain http — viewers on an https dashboard (e.g.
+  https://tony-omen.taila0626a.ts.net:8125) get mixed-content-blocked
+  fetches and the panel silently stays hidden. LAN http viewers
+  (http://192.168.2.67:8125) work today. Follow-up if https matters:
+  tailscale-serve mount or caddy route for :8777, then set picker_url.
+
+pending_detection: |
+  _qcPendingAsset(session): candidates = comparison.last_landed.asset_id
+  then comparison.candidate_asset_id. An asset counts as decided when
+  comparison[<id-with-dashes-as-underscores>_qc_decision] exists; the
+  baseline candidate also honors the legacy candidate_qc_decision key
+  (real SESSION.json carries it). pending_decisions[] is free text, NOT
+  asset ids — deliberately not used. Verified against the live
+  SESSION.json: returns comparison-e-cf-inpaint-wheels (genuinely
+  pending), null after a simulated keep, null on empty sessions.
+
+actions: |
+  Keep/Reject/Revise -> POST {picker}/api/qc-decision {asset,decision,note}
+  (note from the panel's optional input; revise carries instructions
+  there). Success hides the panel + posts a chat-system line. Failure
+  shows the error in the panel message line; buttons re-enable.
+  Repair region -> window.open {picker}/?img=/img/<asset> — mask-picker
+  loads the candidate through picker-server's Drive pull-through; its
+  Submit repair request already lands picker-<id> via the inbox cron.
+  Repair records NO qc decision — the new candidate becomes
+  last_landed and the panel re-arms on the next poll.
+
+verify: |
+  cd <worktree>
+  python3 -m py_compile scripts/adobe-stock/{picker-server,inbox-processor}.py \
+    tests/ha/ada-chat-card/server.py
+  node --check stacks/tony-dell/ada-ha/www/ada-chat-card.js
+  # picker-server CORS smoke (no Drive writes):
+  python3 scripts/adobe-stock/picker-server.py --dir /tmp/x --port 18777 \
+    --inbox /tmp/x/inbox
+  curl -i -X OPTIONS http://127.0.0.1:18777/api/qc-decision   # 204 + ACAO:*
+  # full browser suite through OpenChamber Preview (13 scenarios):
+  ~/.local/node24/bin/node tests/ha/ada-chat-card/preview-bridge.mjs \
+    --spawn-server --scenario all        # verdict PASS, 0 unexpected problems
+  # or debug without OpenChamber:
+  ~/.local/node24/bin/node tests/ha/ada-chat-card/preview-bridge.mjs \
+    --direct --spawn-server --scenario qc-panel
+  Result 2026-11-24: all 13 scenarios + mobile-viewport PASS; qc-panel
+  checks cover hidden->shown transition, thumb decode, 4 labels,
+  keep/reject(+note)/revise POST bodies recorded fixture-side, repair
+  window.open URL, and no decision on repair.
+
+deploy_steps_remaining: |
+  1. picker-server.py on tony-dell (~/.config or wherever the live unit
+     runs it — check systemd unit; restart to pick up CORS + board audit).
+  2. scp stacks/tony-dell/ada-ha/www/ada-chat-card.js ->
+     tony-omen:~/.config/ada-ha/www/ada-chat-card.js (ada-ha lives on
+     tony-omen since 2026-10-19) and stacks/tony-dell/tony-ha/www/
+     ada-chat-card.js -> tony-ha www; bump the dashboard card's ?v= so
+     browsers drop the cached bundle.
+  3. ada-ha live verify: open chaba-home chat tab on
+     http://192.168.2.67:8125 (LAN http — https tailnet URL blocks the
+     http picker fetch); panel should appear for
+     comparison-e-cf-inpaint-wheels within one poll.
+
+lessons:
+  - SESSION.json comparison.pending_decisions[] holds free-text notes, not asset ids — candidate detection must key off last_landed.asset_id / candidate_asset_id + <underscored>_qc_decision.
+  - Legacy QC keys (candidate_qc_decision, e_fix3_qc_decision) coexist with the qc-decision endpoint's per-asset keys — honoring only the new scheme resurrects already-decided candidates.
+  - picker-server needed CORS (end_headers override + do_OPTIONS) before any HA card could fetch it cross-origin; error responses get ACAO too via the same override.
+  - ada-ha moved tony-dell -> tony-omen (2026-10-19); stacks/tony-dell/ada-ha is still the repo source but live www is tony-omen:~/.config/ada-ha/www.

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import signal
 import tempfile
 import types
 import unittest
@@ -35,7 +36,7 @@ def _card(**action_kw):
     a = {"type": "dispatch", "status": "queued", "repo": "chaba"}
     a.update(action_kw)
     return {"id": "lane-card", "title": "lane test", "spec": "do a thing",
-            "action": a}
+            "column": "backlog", "action": a}
 
 
 class StartTaskLaneTest(unittest.TestCase):
@@ -49,15 +50,26 @@ class StartTaskLaneTest(unittest.TestCase):
                        ("OPENCODE_LANES", "DISPATCH", "HOST")}
         self._saved_fn = {k: getattr(m, k) for k in
                           ("sh", "classify_lane", "start_opencode_lane",
-                           "dr_module", "enforce_task_limits")}
+                           "dr_module", "dt_module", "enforce_task_limits",
+                           "api")}
         m.DISPATCH = str(SCRIPT)          # exists -> dispatch executor present
         m.dr_module = lambda: None        # no host checkout resolution
         m.enforce_task_limits = lambda *a, **k: None
+        # Hermetic: the executor/model drop-guard posts a /comment note
+        # for card-declared bad pins — never hit the real board API.
+        m.api = lambda *a, **k: {}
         self.calls = []
         m.sh = lambda argv, **kw: self.calls.append(argv) or _proc(
             0, "fake-tid-123\n")
+        # Hermetic: dt_module() imports dispatch_task, whose primer
+        # (lesson_primer._bank_candidates) makes live HTTP calls to MDDB
+        # and can hang past the urlopen timeout. Mock it to None so
+        # start_task falls back to spec + RAILS without network I/O.
+        m.dt_module = lambda: None
+        signal.alarm(10)  # hard per-test timeout so a hang fails fast
 
     def tearDown(self):
+        signal.alarm(0)
         m = self.mod
         for k, v in self._saved.items():
             setattr(m, k, v)
@@ -88,15 +100,80 @@ class StartTaskLaneTest(unittest.TestCase):
         self.assertEqual(unit, "devin-task-x")
 
     def test_unset_lane_classifies_and_persists(self):
-        """Unset lane -> classify_lane result persisted on the action."""
+        """Unset lane -> classify_lane result persisted on the action.
+        The lane->model pick is executor-aware
+        (devin-executor-model-routing): paid_frontier has no devin pick
+        (paid route stays gated), so no model lands on the action —
+        claim_pass/start_task resolve it per executor."""
         self.mod.OPENCODE_LANES = False
         self.mod.classify_lane = lambda card: "paid_frontier"
         card = _card()
         unit, tid, err = self.mod.start_task(card, "dispatch")
         self.assertEqual(err, "")
         self.assertEqual(card["action"]["lane"], "paid_frontier")
-        self.assertEqual(card["action"]["model"],
-                         "litellm/gemini-2.5-flash")
+        self.assertNotIn("model", card["action"])
+
+    def test_free_lane_devin_path_gets_devin_native_model(self):
+        """free_lane on the devin executor resolves the devin-native
+        pick (DEVIN_LANE_MODELS), never the litellm alias — the
+        tony-macbook Cline/Nest failure mode."""
+        self.mod.OPENCODE_LANES = False
+        envs = []
+
+        def fake_sh(argv, **kw):
+            self.calls.append(argv)
+            envs.append(kw.get("env") or {})
+            return _proc(0, "fake-tid-123\n")
+
+        self.mod.sh = fake_sh
+        card = _card(lane="free_lane")
+        unit, tid, err = self.mod.start_task(card, "dispatch")
+        self.assertEqual(err, "")
+        self.assertTrue(envs)
+        self.assertEqual(envs[0].get("DISPATCH_MODEL"),
+                         "swe-2-flash-medium")
+        self.assertEqual(envs[0].get("DISPATCH_PROVIDER"), "devin")
+
+    def test_paid_frontier_devin_path_stays_gated(self):
+        """paid_frontier must NOT silently map to a billable devin id —
+        the lane keeps the executor default until explicit budget
+        approval (Tony answer executor-split-no-paid)."""
+        self.mod.OPENCODE_LANES = False
+        envs = []
+
+        def fake_sh(argv, **kw):
+            self.calls.append(argv)
+            envs.append(kw.get("env") or {})
+            return _proc(0, "fake-tid-123\n")
+
+        self.mod.sh = fake_sh
+        card = _card(lane="paid_frontier")
+        unit, tid, err = self.mod.start_task(card, "dispatch")
+        self.assertEqual(err, "")
+        self.assertTrue(envs)
+        self.assertNotIn("DISPATCH_MODEL", envs[0])
+        self.assertEqual(envs[0].get("DISPATCH_PROVIDER"), "devin")
+
+    def test_devin_pin_honors_persisted_lane_for_model(self):
+        """executor=devin + persisted lane=free_lane: the opencode
+        route stays closed (lane="" for routing) but the devin-native
+        lane pick still applies — parity with kanban-dispatch."""
+        self.mod.OPENCODE_LANES = True   # would route opencode if lane
+        envs = []                        # leaked into the route check
+
+        def fake_sh(argv, **kw):
+            self.calls.append(argv)
+            envs.append(kw.get("env") or {})
+            return _proc(0, "fake-tid-123\n")
+
+        self.mod.sh = fake_sh
+        card = _card(executor="devin", lane="free_lane")
+        unit, tid, err = self.mod.start_task(card, "dispatch")
+        self.assertEqual(err, "")
+        self.assertTrue(envs)
+        self.assertEqual(envs[0].get("DISPATCH_EXECUTOR"), "devin")
+        self.assertEqual(envs[0].get("DISPATCH_MODEL"),
+                         "swe-2-flash-medium")
 
     def test_unset_lane_classified_free_lane_uses_opencode(self):
         self.mod.OPENCODE_LANES = True
@@ -146,6 +223,33 @@ class StartTaskLaneTest(unittest.TestCase):
         self.assertEqual(envs[0].get("DISPATCH_MODEL"), "swe-2-flash")
         self.assertEqual(envs[0].get("DISPATCH_PROVIDER"), "devin")
 
+    def test_action_timeout_s_arms_runtime_max_sec(self):
+        """OPS-0999: a card-declared action.timeout_s reaches the
+        devin-dispatch unit as --property=RuntimeMaxSec via
+        DISPATCH_UNIT_PROPS; undeclared cards stay unbounded."""
+        self.mod.OPENCODE_LANES = False
+        envs = []
+
+        def fake_sh(argv, **kw):
+            self.calls.append(argv)
+            envs.append(kw.get("env") or {})
+            return _proc(0, "fake-tid-123\n")
+
+        self.mod.sh = fake_sh
+        card = _card(lane="devin", model="swe-2-flash", timeout_s=300)
+        unit, tid, err = self.mod.start_task(card, "dispatch")
+        self.assertEqual(err, "")
+        self.assertTrue(envs)
+        props = envs[0].get("DISPATCH_UNIT_PROPS") or ""
+        self.assertIn("--property=RuntimeMaxSec=300", props)
+
+        envs.clear()
+        card2 = _card(lane="devin", model="swe-2-flash")
+        unit, tid, err = self.mod.start_task(card2, "dispatch")
+        self.assertEqual(err, "")
+        props2 = envs[0].get("DISPATCH_UNIT_PROPS") or ""
+        self.assertNotIn("RuntimeMaxSec", props2)
+
     def test_classified_manual_is_refused_not_dispatched(self):
         """manual lane = Tony's hands — fail loudly, never burn tokens."""
         self.mod.classify_lane = lambda card: "manual"
@@ -172,6 +276,7 @@ class CollectTest(unittest.TestCase):
     def setUp(self):
         m = self.mod
         self._sh = m.sh
+        signal.alarm(10)
         self.td = tempfile.TemporaryDirectory()
         self.addCleanup(self.td.cleanup)
         self._home_old = os.environ.get("HOME")
@@ -189,6 +294,7 @@ class CollectTest(unittest.TestCase):
             os.environ["HOME"] = self._home_old
 
     def tearDown(self):
+        signal.alarm(0)
         self.mod.sh = self._sh
 
     def _stub(self, loadstate="not-found", result="success",
@@ -307,7 +413,7 @@ class ClaimPassLaneTest(unittest.TestCase):
         self._saved_env = os.environ.get("JEV_LANE")
         os.environ["JEV_LANE"] = "1"
         self._saved = {k: getattr(m, k) for k in
-                       ("DISPATCH", "RETRY_FILE")}
+                       ("DISPATCH", "RETRY_FILE", "OPENCODE_LANES")}
         self._saved_fn = {k: getattr(m, k) for k in
                           ("api", "start_task", "push_capable",
                            "gpu_preflight", "classify_lane", "dr_module",
@@ -316,7 +422,10 @@ class ClaimPassLaneTest(unittest.TestCase):
         self._tmpdir = tempfile.TemporaryDirectory()
         m.RETRY_FILE = Path(self._tmpdir.name) / "retry-ledger.json"
         m.dr_module = lambda: None
+        m.OPENCODE_LANES = False  # hermetic: unstaged-opencode hold is
+        # env-dependent; this test is about lane classification, not the hold
         m.push_capable = lambda repo: True
+        signal.alarm(10)
         m.gpu_preflight = lambda card: ""
         m.overloaded = lambda: False
         m.note_defer = lambda *a, **k: None
@@ -340,6 +449,7 @@ class ClaimPassLaneTest(unittest.TestCase):
             os.environ.pop("JEV_LANE", None)
         else:
             os.environ["JEV_LANE"] = self._saved_env
+        signal.alarm(0)
         for k, v in self._saved.items():
             setattr(m, k, v)
         for k, v in self._saved_fn.items():
@@ -362,20 +472,36 @@ class ClaimPassLaneTest(unittest.TestCase):
         self.assertEqual(self.classified, [])  # never consulted
 
     def test_pinned_lane_gets_lane_model_when_unset(self):
+        """free_lane on this devin-bound host persists the devin-native
+        pick, not the litellm alias (executor-aware lane->model)."""
         self.cards = [_card(lane="free_lane")]
         self.assertTrue(self.mod.claim_pass({}))
         bodies = self._claim_bodies()
-        self.assertEqual(bodies[0]["model"],
-                         "litellm/gemini-3.5-flash-lite")
+        self.assertEqual(bodies[0]["model"], "swe-2-flash-medium")
 
     def test_unset_lane_still_classifies_at_claim(self):
         self.cards = [_card()]
         self.assertTrue(self.mod.claim_pass({}))
         bodies = self._claim_bodies()
         self.assertEqual(bodies[0]["lane"], "paid_frontier")
-        self.assertEqual(bodies[0]["model"],
-                         "litellm/gemini-2.5-flash")
+        # paid_frontier has no devin pick — the paid route stays gated
+        # on explicit budget approval, so no model is persisted.
+        self.assertEqual(bodies[0]["model"], "")
         self.assertEqual(self.classified, ["lane-card"])
+        # devin-lane-cheap-ops-reroute: a claim-time classify is
+        # classifier output — flag provenance so board-api stamps
+        # lane_source and the next queue re-evaluates the lane.
+        self.assertEqual(bodies[0].get("lane_source"), "claim")
+
+    def test_pinned_lane_sends_no_lane_source(self):
+        # An author-pinned lane re-sent in the claim must NOT carry
+        # classifier provenance — board-api would ignore it anyway, but
+        # the claim should not pretend the pin was classified.
+        self.cards = [_card(lane="free_lane")]
+        self.assertTrue(self.mod.claim_pass({}))
+        bodies = self._claim_bodies()
+        self.assertEqual(bodies[0]["lane"], "free_lane")
+        self.assertNotIn("lane_source", bodies[0])
 
 
 class ClaimPassScriptOnlyTest(unittest.TestCase):

@@ -1,0 +1,118 @@
+id: 2026-11-24-ada-ha-chaba-admin-view-drift
+title: Ada HA chaba-admin live-view drift — Ada Control absence investigated
+date: 2026-11-24
+hosts: [tony-omen, idc02]
+card: ada-ha-dashboard-live-view-drift
+dispatch: dispatch-wt-20261124-212619-read-only-evidence-from-2026-1
+runner: idc02
+status: done
+mode: read-only evidence — no live mutation, no restore
+
+summary: >
+  Card asked whether the live ada-ha chaba-admin dashboard's missing
+  "Ada Control" view was drift to repair. Read-only investigation of the
+  repo snapshot git history plus a fresh sanitized live readback (ssh
+  tony-omen cat .storage/lovelace.chaba_admin through
+  sync-ada-ha-chaba-admin.py's extractor/sanitizer) confirms: the live
+  19-view set is correct, the repo snapshot is byte-identical to live,
+  and Ada Control should remain absent per the answered board request.
+
+live_view_order_2026_11_24:
+  - Pair
+  - Kanban              # classic board iframe classic.html?v=1
+  - Kanban 2            # board2 iframe index.html?v=1
+  - Diagram
+  - OpenChamber         # path ada-ocb
+  - Ada Code            # path ada-code
+  - Cline
+  - Node-RED
+  - DevNest
+  - Wiki
+  - Private Wiki
+  - Ada Pages
+  - Monitor
+  - Hosts
+  - Services
+  - Events
+  - Log
+  - Obsidian
+  - Gantt
+
+timeline:
+  - "2026-11-03: card opencode-ada-ha-tab-standard — Tony picks option B
+    'control-plane' for the tab after Board (protected read-only surface)."
+  - "2026-11-04 43a72beaaf: 'Ada Control' view added at path opencode-ada —
+    panel iframe to https://ada-ha.surf-thailand.com/chaba-home/ai."
+  - "2026-11-08 33380aa02b: same live-edit batch renamed Board->Kanban, added
+    'Ada Code' (opencode-ada.surf-thailand.com iframe) + 'Node-RED', and
+    reshaped 'Ada Control' to path ada-control holding native
+    custom:ada-voice-card + custom:ada-activity-card (live mic in admin UI)."
+  - "2026-11-09..18: Gantt (344f37ffe2), Diagram + OpenChamber (5ad01d90db,
+    f53fb1439d), Hosts (e04eeadda3 20:29), Services (fc69519a88 21:07) added;
+    snapshot still lists Ada Control through fc69519a88."
+  - "2026-11-18 20:29/21:07: hosts+services snapshot commits are surgical
+    +12-line JSON inserts committed directly by Tony — NOT full
+    sync-ssot-from-live.sh rewrites, so the snapshot could stay stale
+    w.r.t. live in that window."
+  - "2026-11-18 21:07 -> 2026-11-20 ~12:00: Ada Control removed from LIVE
+    storage. No repo commit, card comm, or dispatch outcome claims the
+    removal; HA storage-mode lovelace edits are not audit-logged
+    (.storage/ is gitignored on tony-omen; home-assistant.log carries no
+    per-save entries). Consistent with a manual HA UI edit during the
+    same Nov-18-evening hands-on session that added Hosts/Services."
+  - "2026-11-20 ~12:00-13:25: ada-ha-kanban2-tab session mutates live via
+    push-dashboard.py WebSocket (mutate-ada-ha-kanban2-tab.py provably only
+    retitles/re-URLs the kanban view and inserts one kanban2 view — it
+    cannot remove views); first sync 943d7895b9 captures live without
+    Ada Control; rollback d6dae339c8 and restore fbfb2728a5 preserve the
+    no-Ada-Control set. Drift carded by Tony 12:11."
+  - "2026-11-20 13:23: board request answered — 'Keep current live views
+    (recommended). Do not restore Ada Control now; reconcile the repo
+    snapshot/dashboard state to the current live view set unless
+    explicitly requested later after card resources are verified.'"
+  - "2026-11-23 16:17: last live storage write (OPS-0029 wiki
+    open-in-new-tab links, snapshot 9f8f17ad68)."
+  - "2026-11-24 (this run): sanitized live readback == repo snapshot,
+    byte-identical after json normalization; ada-voice-card.js?v=14 still
+    registered in lovelace_resources so restoration stays trivial if ever
+    requested."
+
+findings:
+  kanban2_cleared: >
+    mutate-ada-ha-kanban2-tab.py touches only the path==kanban view
+    (title/url) and inserts one deepcopy'd kanban2 view; no code path
+    removes other views. The 17 non-Kanban views were verified unchanged
+    by the session's own readback.
+  ada_control_should_stay_absent: >
+    (a) Tony/Ada already answered keep-live on the card; (b) the same
+    voice+activity card pair remains the canonical Ada surface on
+    ada-ha chaba-home/ai and chaba-ai dashboards, so the admin copy was
+    redundant; (c) no card or session ever requested its return; (d) the
+    original Nov-4 design itself treated it as an iframe slot pointing at
+    chaba-home/ai.
+  snapshot_ssot_state: >
+    docs/home-assistant/dashboards/ada-ha-chaba-admin-current.json already
+    matched live before this run (last synced 9f8f17ad68); this run
+    re-verified equality and updated the chaba_admin_ada note in
+    ssot.home-assistant.dashboards.yml with the investigation result.
+  card_spec_correction: >
+    The card spec says the pre-Kanban2 repo snapshot 'included Ada
+    Control but not Hosts/Services' — inaccurate: fc69519a88 (the
+    pre-Kanban2 snapshot) contained Ada Control AND Hosts AND Services.
+    The request ask's 'neither new tab' phrasing is likewise imprecise;
+    the substance (live lacked Ada Control vs. snapshot) was correct.
+
+verification:
+  - "ssh tony-omen cat /home/tony/.config/ada-ha/.storage/lovelace.chaba_admin
+    -> extract_dashboard_config + sanitize_snapshot (sync-ada-ha-chaba-admin.py)
+    -> diff vs repo snapshot: identical (19 views, same order/config)."
+  - "lovelace_resources on tony-omen still registers /local/ada-voice-card.js?v=14."
+  - "git log -S 'Ada Control' -- ada-ha-chaba-admin-current.json pins every
+    snapshot state Nov-04 -> Nov-24."
+
+references:
+  snapshot: docs/home-assistant/dashboards/ada-ha-chaba-admin-current.json
+  ssot: docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml (chaba_admin_ada)
+  kanban2_card: docs/ssot/kanban/cards/archive/ada-ha-kanban2-tab.yml
+  origin_card: docs/ssot/kanban/cards/archive/ada-opencode-control-plane-tab.yml
+  decision_request: the-live-ada-ha-chaba-admin-dashboard-co-8567e7 (answered keep-live)

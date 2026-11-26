@@ -1,0 +1,40 @@
+# con01 warm-standby copy of idc03's ada-line-relay.service.
+# Managed by chaba/ansible (deploy-con01-ada-warm-standby.yml). Do not edit on host.
+#
+# Inert by design: stored with a non-systemd suffix under
+# ~/.config/systemd/user/standby/, while the canonical ada-line-relay.service
+# name is MASKED (symlink -> /dev/null). Activation is a separate, approved
+# failover step — see docs/kb/con01-ada-lane-warm-standby.md.
+#
+# Uses the SAME secrets as the live lane (line-bot.env + tony-ha/backend.env),
+# restored from idc03's daily age-encrypted secrets-backup tarball already
+# landing on con01 (~/secrets-backup/secrets-*.tar.age). LINE webhook signature
+# verification therefore keeps working without re-issuing the channel secret.
+#
+# ADA_WS_URL defaults to ws://127.0.0.1:8002/ws and LINE_WEBHOOK_LISTEN to
+# 127.0.0.1:8912 — both local, matching caddy-edge's /webhook/line and
+# /relay-img/* routes on this host. Do not override either at failover.
+#
+# Isolation caps from ada-line-relay.service.d/isolation.conf folded in.
+# Start only AFTER ada-ha-tony.service is healthy (see runbook).
+
+[Unit]
+Description=Ada LINE two-way relay (ada-line-relay) — con01 warm standby of the idc03 lane
+Wants=network-online.target
+After=network-online.target ada-ha-tony.service
+
+[Service]
+Type=simple
+WorkingDirectory=%h/CascadeProjects/ada-voice
+EnvironmentFile=%h/.config/secrets/tony-ha/backend.env
+EnvironmentFile=%h/.config/secrets/line-bot.env
+ExecStart=%h/CascadeProjects/ada-voice/.venv/bin/python -m backend.line_relay
+Restart=on-failure
+RestartSec=10
+MemoryMax=2G
+CPUQuota=150%
+LogRateLimitIntervalSec=30s
+LogRateLimitBurst=1000
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,133 @@
+title: KK-Mac storyboard image-conditioning probe
+subtitle: Validate one approved mapped LTX I2V shot on MPS
+icon: video
+card: kk-mac-video-render-lane-ltx-video-mps-p-267f14
+date: 2026-10-29
+
+planning:
+  goal: >-
+    Use KK-Mac's available M4 Max MPS capacity to validate one image-conditioned
+    LTX shot from the approved private Sacred Father V2 storyboard map.
+  scope: >-
+    Render only shot 1 from v1_01 storyboard page 9 using audited image-006,
+    the existing shot01 prompt embedding, the already-cached pinned LTX model,
+    and a short 640x384 25-frame/12-step probe. Keep input and output private
+    in the isolated ada-nest-kk-mac-video-pilot store. Do not run Qwen or other
+    model inference, install software, download weights, generate narration,
+    render the full preview, or publish.
+  approval: >-
+    Tony asked to hold the Colab V2 execution and focus on KK-Mac while it is
+    available. The private V2 visuals are approved; public release is not.
+  success_criteria:
+    - Trusted Mac access confirms AC power, at least 20 percent free memory, and no resident Ollama model.
+    - Pinned local LTX cache and audited page-9 image/shot01 embedding hashes verify before inference.
+    - One MPS I2V clip fully decodes as H.264 640x384 at the expected frame count.
+    - Output and report land in the isolated private Mac pilot store and pass remote read-back verification.
+  risks:
+    - I2V on MPS has not yet been measured; stop on OOM, memory pressure, or owner workload.
+    - Mac has 36 GiB unified memory; do not overlap LTX with Ollama, MLX, or another GPU job.
+    - A technical decode pass is not visual-quality sign-off.
+  resources:
+    - KK-Mac M4 Max with cached Lightricks/LTX-Video revision 8984fa25007f376c1a299016d0957a37a2f797bb.
+    - v1_01 PDF audit image-006 on page 9 and the existing shot01 embedding.
+    - Trusted, read-only access through the approved tony-dell SSH hop.
+  owner: tony
+  estimated_duration: 1 bounded probe
+  related_focus:
+    - label: OPS-0967 KK-Mac video render lane
+      file: docs/ssot/kanban/cards/kk-mac-video-render-lane-ltx-video-mps-p-267f14.yml
+
+processing:
+  status: completed
+  started_at: '2026-10-29'
+  steps:
+    - id: 1
+      label: Verify Mac idle/resource preflight
+      status: completed
+      notes: >-
+        Trusted tony-dell -> kk-mac SSH preflight succeeded with host checking
+        intact. Mac is on AC, 92% system memory free, 0 Ollama models resident,
+        no matching compute/video owner processes, and 65GiB disk available.
+        The pinned MPS venv reports Torch 2.14.1, Diffusers 0.42.1, and MPS/I2V
+        import available.
+    - id: 2
+      label: Stage isolated one-shot I2V probe
+      status: completed
+      notes: >-
+        Staged to ada-nest-kk-mac-video-pilot, separate from the Qwen pilot root.
+        rclone check found 0 differences across six files; input image and
+        embedding hashes match the audit and approved shot01 embedding.
+    - id: 3
+      label: Run and verify one MPS image-conditioned shot
+      status: completed
+      notes: >-
+        An initial attempt safely stopped because Ollama had a resident model;
+        no inference ran. After it became idle, a second attempt exposed an
+        over-broad process-name check, also before inference. The gate was
+        narrowed to exact compute/video app names and rerun successfully.
+        MPS I2V generated and fully decoded one 25-frame shot in 11.23s.
+  decisions:
+    - label: Use one mapped I2V probe before broader Mac rendering
+      rationale: >-
+        Existing Mac evidence covers T2V only. A single mapped I2V probe is the
+        smallest useful test of the new V2 image-conditioned path.
+      alternatives_considered: Wait for the Colab CUDA path or run the full Mac render without an I2V probe.
+  changes:
+    - file: scripts/colab/packs/kk-mac-storyboard-i2v-probe-20261029/
+      summary: Added an offline, single-shot MPS I2V pack with AC, memory, model-residency, and input-hash gates.
+    - file: tests/colab/test_kk_mac_storyboard_i2v_probe.py
+      summary: Added regression tests for pack scope and the audited page/image binding.
+
+followup:
+  verification:
+    - Check image and embedding hashes against their authoritative manifests before inference.
+    - Verified page-9 image SHA-256 and shot01 embedding SHA-256 before inference.
+    - Verified H.264 640x384, 25 frames, 1.04s, zero detected black duration, and full decode.
+    - Mac-side rclone check reported 0 differences across nine staged/input/output files.
+    - Nest worker wrote a done marker after remote artifact verification.
+  rollback_plan:
+    - Stop without inference if trusted access, AC power, memory pressure, or model-isolation checks fail.
+    - Preserve partial artifacts privately; do not clear the existing model cache.
+  handoff:
+    - Review the private shot before deciding whether to render the remaining mapped shots at production settings.
+    - Keep V1 unchanged and all V2 outputs private.
+  deferred:
+    - Full ten-shot MPS render, Colab V2 execution, cloned narration, and public release.
+
+report:
+  status: completed
+  completed_at: '2026-10-30'
+  summary: >-
+    One private storyboard-mapped LTX I2V probe passed on KK-Mac MPS using the
+    pinned local cache. It produced a 640x384, 25-frame, 1.04-second H.264 clip
+    with full decode and no detected black frames. This validates the short
+    image-conditioning path only; production settings and visual quality remain
+    unapproved pending review. No narration, full render, or public release ran.
+  metrics:
+    - metric: probe_verdict
+      value: technical_probe_pass
+    - metric: model
+      value: Lightricks/LTX-Video@8984fa25007f376c1a299016d0957a37a2f797bb, MPS BF16
+    - metric: render
+      value: 640x384, 25 frames, 12 steps, 24 fps, 11.23s generation
+    - metric: memory_after_run
+      value: 4.69GB current allocation; 7.60GB driver allocation (not peak)
+    - metric: output
+      value: 91,261 bytes, SHA-256 2c92933e125bf15305f3ffe5bc67888777d95c24836102c3ecf541a27f1eeac1, full decode passed
+    - metric: visibility
+      value: private; no public release
+  links:
+    - title: Isolated Mac video pilot
+      url: gdrive:ada-nest-kk-mac-video-pilot
+    - title: OPS-0967 Mac LTX lane
+      file: docs/ssot/kanban/cards/kk-mac-video-render-lane-ltx-video-mps-p-267f14.yml
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: 2026-10-29
+  last_updated: 2026-10-29
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml

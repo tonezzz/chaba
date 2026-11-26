@@ -1,0 +1,69 @@
+id: timer-alert-tony-dell-log-shipper-mha
+title: Timer log-shipper-mha on tony-dell failing
+column: done
+updated: 2026-11-26 20:37
+priority: high
+tags:
+- timer-alert
+- auto
+- by:timer-sentinel
+note: 'Last run (11-26 01:39) of `log-shipper-mha.service` on `tony-dell` result=exit-code — investigate journal:
+  `journalctl --user -u log-shipper-mha.service` on the host. See CMS `timer-timeline-tony-dell`.'
+ref: OPS-1412
+comms:
+- at: 2026-11-26 01:54
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-26 02:04
+  from: devin
+  text: '[still suspicious] Last run (11-26 01:39) of `log-shipper-mha.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u log-shipper-mha.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 07:23
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-26 09:21
+  from: devin
+  text: '2026-11-26 verified fix: mddb-ops :11026 HTTP write timeout raised 30s->120s (writes observed 32-79s);
+    log-shipper BATCH 10->5; unit TimeoutStartSec->45m fleet-wide. Runner-agent drift cleared (all 6 hosts pinned
+    1514c75c...). Re-run Result=success/0 for log-shipper-mha.'
+- at: 2026-11-26 09:21
+  from: devin
+  text: closed by devin
+- at: 2026-11-26 20:37
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+spec: Investigate the failure of the `log-shipper-mha.service` timer on the host `tony-dell` by inspecting the user
+  journal using `journalctl --user -u log-shipper-mha.service`. The target host is `tony-dell` and the associated
+  repository context references `chaba`. The done-condition is verified when the root cause of the exit-code failure
+  is identified from the journal logs and documented on the card.
+action:
+  status: done

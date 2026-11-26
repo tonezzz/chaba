@@ -1,0 +1,376 @@
+id: publish-promote-knowledge-capture-ssot-w-d34a39
+title: Publish/promote knowledge-capture SSOT + wire capture parity hooks
+column: done
+updated: 2026-11-26 20:34
+priority: medium
+tags:
+- ssot
+- knowledge-capture
+- opencode
+- devin
+note: 'Follow-up (2026-11-20): branch ada/fleet-mcp-inventory-report pushed to origin (a9ea9da167). SSOT spec/procedures/index/changelog,
+  session-capture skills, OpenCode instructions, lessons (3da75cff08b2,857690e2fb8c), OC note e8a20117-9c45-4f3b-8b44-26ed1a2ea5f4.
+  Remaining: (1) merge/publish via canonical served writer flow + validate/sync; (2) wire Chaba hooks (immediate-pin,recent-event,render-memory,compaction/session-end)
+  per chaba/ssot.chaba.memory.yml; (3) focus parity (mcp_focus/logs) + Phas'
+ref: DEV-0038
+comms:
+- at: 2026-11-20 19:09
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-20 19:26
+  from: devin
+  text: '[2026-11-20 devin] Priority 1 implemented (branch/unmerged, pushed): enforced session-capture sweep + required
+    Session Handoff Packet (objective,as_of,current_state,canonical_refs,open_asks_decisions,next_action,where_filed,notes)
+    in docs/ssot/ssot.knowledge-capture.yml, docs/ssot/ssot.procedures.yml, .devin/.opencode session-capture skills,
+    .opencode/instructions/session-capture.md, opencode.jsonc. Commits: de8c76cbcd,4c0182d863,a9ea9da167,7349f156de
+    on origin/ada/fleet-mcp-inventory-report. Le'
+- at: 2026-11-20 19:39
+  from: devin
+  text: '[2026-11-20 devin] Continued: integrated session-capture sweep+handoff packet into .devin/skills/finish-and-close/SKILL.md
+    and added chaba immediate-pin/recent-event aid note to .opencode/instructions/session-capture.md (commit be5175cea6
+    local). Rebased 5 commits onto latest origin/master (4 unique + 1 integrated). Remote backup: origin/ada/fleet-mcp-inventory-report
+    force-updated to rebased tip. Master publish attempted repeatedly via git-safe-push (SAFE_PUSH_ATTEMPTS up to
+    12) but failed due '
+- at: 2026-11-20 19:42
+  from: devin
+  text: '[2026-11-20 devin] Master publish landed: git-safe-push succeeded (attempt 1). Rebased commits now on origin/master
+    (tip includes d4e2d83ebf session-capture finish-and-close integration + prior stack: ssot codify, skills, opencode
+    instructions/config, enforced sweep+packet). Served idc03 checkout to pick up via writer/sync flow; SSOT validation/index/MDDB
+    sync to verify after canonical sync. Phase B+ hooks/pipeline/focus parity/guards remain per card spec.'
+- at: 2026-11-20 19:43
+  from: devin
+  text: '[2026-11-20 devin] Correction + landed: previous safe-push updated feature-branch ref, not master. Retried
+    with HEAD:refs/heads/master loop; origin/master now at aab95f96f1 (rebased stack includes: ssot codify, session-capture
+    skills, opencode instructions/config, enforced sweep+handoff packet, finish-and-close integration). Served idc03
+    writer checkout will pick up via its sync; SSOT validation/index/MDDB sync should be verified post-sync. Remaining:
+    Phase B+ Chaba hooks/pipeline (immediate-pin'
+- at: 2026-11-20 19:49
+  from: devin
+  text: '[2026-11-20 devin] Status check: canonical publish confirmed in origin/master (aab95f96f1 ancestor of current
+    master; knowledge-capture spec, procedures, skills, instructions, finish-and-close integration present). idc03
+    served checkout still behind origin/master and lacks aab95f96f1 (writer-owned/dirty; awaiting normal sync) —
+    post-sync verify SSOT validation/index/MDDB sync. Phase B+ actionable next steps: (1) wire Devin session hooks
+    to call session-capture aids + prompt sweep (immediate-pin.'
+- at: 2026-11-21 07:06
+  from: devin
+  text: '[2026-11-21 devin] Proceeded: idc03 served checkout now contains aab95f96f1 (sync verified; key files present,
+    YAML OK). SSOT validation run in served checkout completed (exit 0; 5411 checked, 5405 valid, 6 errors, 232
+    warnings reported in summary — pre-existing). Ansible on tony-dell: not installed system-wide but runnable via
+    pipx (ansible-core 2.22.0, config ~/CascadeProjects/chaba/ansible); tested successfully: playbook syntax-check
+    OK, ping tony-dell OK, site.yml --check --diff --limit tony'
+- at: 2026-11-21 07:16
+  from: devin
+  text: '[2026-11-21 devin] Phase B+ draft: defined session-capture wiring targets and drafted ansible playbook
+    (local workspace). Targets: inventory group session_capture (initial tony-dell, tony-omen, idc03) with per-host
+    chaba_repo_path; primitives = ensure ~/.local/share/chaba dirs, deploy ~/.local/bin/chaba-session-capture helper
+    (recent-event/immediate-pin/render/session-end aids), install user chaba-render-memory.timer/service for periodic
+    render-memory --if-stale, report Devin hook integration po'
+- at: 2026-11-21 16:25
+  from: devin
+  text: '[2026-11-21 devin] Phase B+ draft continued: committed (5ac5800256) and pushed to origin/ada/session-capture-ansible-draft.
+    Dry-run validation extended: --check --diff --limit tony-omen OK (ok=10 changed=4 failed=0), --limit idc03 OK
+    (ok=10 changed=4 failed=0, repo path resolved to /home/tony/CascadeProjects/chaba-tony-dell; Devin hook scripts
+    reported missing on idc03 as expected). All three session_capture targets validated (tony-dell/tony-omen/idc03)
+    with systemctl guarded in check mode. Draf'
+- at: 2026-11-21 17:02
+  from: devin
+  text: '[2026-11-21 opencode] Re-verified Phase B+ ansible draft from tony-dell (core 2.21.6): syntax-check OK;
+    --check tony-dell/tony-omen/idc03 all ok=10 changed=4 failed=0 (Devin hooks missing on idc03 as expected). Cherry-picked
+    5ac5800256 onto master (ansible.cfg fix already present, auto-dropped); YAML sanity OK; landed as cea237f72d.
+    Opt-in draft, not applied; hook autopatch stays false.'
+- at: 2026-11-21 17:36
+  from: devin
+  text: '[2026-11-21 opencode] Hooks wired (dell first): ansible --tags helper deployed chaba-session-capture on
+    tony-dell + tony-omen; backed up + appended best-effort session-end capture call to both devin-session-end.sh
+    (60s timeout, autopatch still false). bash -n OK; helper test appended lifecycle events on both. idc03 has no
+    Devin hooks (expected). render-memory logs missing source files on dell (non-fatal).'
+- at: 2026-11-21 17:49
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 18:39
+  from: devin
+  text: 'raised request focus-parity-mcp-focus-logs-has-no-concr-9ade32: Focus parity (mcp_focus/logs) has no concrete
+    spec. Findings: (1) tony-dell/tony-omen rendered focus == canonical ssot.f'
+- at: 2026-11-21 18:39
+  from: devin
+  text: '[2026-11-21 opencode] Checks: runner-agent on tony-dell already self-healed (hash == origin/master, no
+    fix). SSOT validation 5485/5490 valid; 5 pre-existing errors (missing title: 2 focus-inbox + 2 devnest jobs;
+    empty: 1 focus-inbox) — unrelated to this work. Focus parity had no spec; raised request focus-parity-mcp-focus-logs-has-no-concr-9ade32
+    with 3 options.'
+- at: 2026-11-21 18:44
+  from: devin
+  text: '[2026-11-21 devin] Phase B+ rollout: confirmed draft already landed on origin/master as cea237f72d (ancestor
+    of tip 49fe0d8fb0; cherry-pick of 5ac5800256 was empty). Controlled apply from landed master content: --check
+    --diff then apply per host. Results: tony-dell ok=11 changed=5 failed=0 (timer active), tony-omen ok=11 changed=5
+    failed=0 (timer active), idc03 ok=11 changed=6 failed=0 (timer active, chaba_repo_path=/home/tony/CascadeProjects/chaba-tony-dell;
+    Devin hook scripts missing as expect'
+- at: 2026-11-21 19:54
+  from: devin
+  text: 'answered focus-parity-mcp-focus-logs-has-no-concr-9ade32: card-only'
+- at: 2026-11-21 19:54
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-21 20:04
+  from: chaba
+  text: 'answer-sweep: ''card-only'' resolves focus-parity-mcp-focus-logs-has-no-concr-9ade32 — no board action
+    (option ''card-only'' action=none)'
+- at: 2026-11-23 07:00
+  from: devin
+  text: '[2026-11-23 opencode] Closing card — stated scope (publish/promote knowledge-capture SSOT + wire capture
+    parity hooks) is complete and verified. Evidence: Phase A/B content on origin/master (aab95f96f1 ancestor);
+    Phase B+ playbook landed cea237f72d (still ancestor of master cb7b9ca15a); chaba-session-capture helper deployed
+    + SessionEnd hooks patched with backups on tony-dell/tony-omen (bash -n OK, lifecycle events appended); focus-parity
+    ambiguity resolved by Tony as card-only (request focus-pa'
+- at: 2026-11-23 07:00
+  from: devin
+  text: moved backlog -> done
+- at: 2026-11-23 07:19
+  from: devin
+  text: '[2026-11-23 devin] Manual Devin hook integration (tony-dell, tony-omen): verified session-end PYCAPTURE
+    already present on both; appended best-effort PostCompaction capture block (recent-event lifecycle Compaction
+    <sid> + render --if-stale, marker-guarded, no stdout pollution) to notebooklm-compaction.sh on both hosts; upgraded
+    tony-dell notebooklm-recall.sh to chaba-aware version (render-memory --if-stale + CHABA_CONTEXT head, parity
+    with tony-omen). bash -n syntax OK on all edited hooks. idc03'
+- at: 2026-11-23 10:02
+  from: devin
+  text: '[2026-11-23 devin] idc03 hook integration path decided: N/A for now (host-appropriate). Evidence: idc03
+    has Devin CLI/config but no ~/.config/devin/scripts, no hook config in config.json, no devin processes; it is
+    the served/writer host. Phase B+ helper+timer already deployed/active (chaba-render-memory.timer active, /home/tony/.local/bin/chaba-session-capture
+    present). Decision: do not fabricate hook scripts; keep timer+helper as the Phase B+ aid. If Devin SessionEnd/PostCompaction
+    hooks are la'
+- at: 2026-11-23 13:56
+  from: devin
+  text: '[2026-11-23 devin] Focus parity wired: added focus parity guardrail + session-boundary trigger to docs/ssot/ssot.knowledge-capture.yml;
+    updated session-capture procedure (docs/ssot/ssot.procedures.yml); updated .opencode/instructions/session-capture.md,
+    .opencode/skills/session-capture/SKILL.md, .devin/skills/session-capture/SKILL.md, .devin/skills/finish-and-close/SKILL.md
+    to include append-only focus decisions/session summaries (prefer mcp-debug mcp_focus session_summary/technical_decision;
+    fa'
+- at: 2026-11-23 14:08
+  from: devin
+  text: '[2026-11-23 devin] Added optional OpenCode one-shot command: .opencode/commands/session-capture.md (/session-capture)
+    aligned to SSOT sweep + handoff packet. Commit 01d357fe04 on ada/fleet-mcp-inventory-report, pushed to origin.
+    Remaining: land branch via governed flow; Phase C/D router/harvester/guards/metrics; observe tony-dell feed
+    freshness after next Devin session end/compaction.'
+- at: 2026-11-23 14:09
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:20
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 15:37
+  from: devin
+  text: 'Phase B+ ansible session-capture wiring re-verified 2026-11-23 (dry-run only, no apply). Controller tony-omen,
+    ansible-core 2.16.3, from chaba/ansible with ANSIBLE_CONFIG=./ansible.cfg. Syntax check OK. ''ansible-playbook
+    playbooks/session-capture.yml --check --diff --limit tony-dell'' => ok=10 changed=0 unreachable=0 failed=0 skipped=4;
+    systemctl --user daemon-reload/enable tasks correctly skipped in check mode. Surface-verified on all three targets
+    (tony-dell, tony-omen, idc03): ~/.local/bin/cha'
+- at: 2026-11-23 16:01
+  from: devin
+  text: '[2026-11-23 devin] Follow-up cards created (options included): OPS-0036 opencode-session-start-recall-injection
+    (A★ /recall command, B startup plugin/hook, C AGENTS instruction only); OPS-0037 opencode-handoff-packet-scaffold-save
+    (A★ command/template scaffold, B script helper, C plugin/form UI); MEM-0035 opencode-memory-freshness-check
+    (A★ repo script read-only, B /memory-status command, C audit/health integration). All backlog, linked as DEV-0038
+    follow-ups.'
+- at: 2026-11-23 16:19
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:28
+  from: devin
+  text: '[2026-11-23 devin] Proceeded with A★ defaults for follow-ups: /recall command (.opencode/commands/recall.md),
+    /handoff-packet command (.opencode/commands/handoff-packet.md), read-only freshness check (scripts/chaba/check-memory-freshness.py;
+    verified tony-dell+tony-omen FRESH). Commit c4790eaba7 pushed to origin/ada/fleet-mcp-inventory-report (branch/unmerged
+    to master). Cards OPS-0036/OPS-0037/MEM-0035 commented.'
+- at: 2026-11-23 19:10
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:23
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:40
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:07
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 19:58
+  from: devin
+  text: '[2026-11-24 devin] Opened clean PR for session-capture follow-ups: https://github.com/tonezzz/chaba/pull/207
+    (base master, head ada/session-capture-followups; cherry-picks 6d38546a70,01d357fe04,c4790eaba7). Covers focus
+    parity, /session-capture /recall /handoff-packet, and read-only memory freshness check (OPS-0036/OPS-0037/MEM-0035
+    A★). Awaiting governed review/merge.'
+- at: 2026-11-24 20:29
+  from: devin
+  text: '[2026-11-24 devin] PR #207 CI status: SSOT CI validate FAILED due pre-existing master issue (not in PR
+    diff): docs/ssot/jobs/voice/2026-11-24-scr-t1-threshold-calibration.yml wrong_fire_real_ref=''0/28'' -> ssot-validate-refs.py
+    missing file docs/ssot/0/28. Repo lint syntax+tooling-contracts PASS. PR diff only touches session-capture/focus-parity/commands/freshness-check
+    files. Awaiting maintainer decision on merge despite pre-existing CI break or fix on master.'
+- at: 2026-11-24 21:10
+  from: devin
+  text: '[2026-11-24 devin] Rebased PR #207 onto current origin/master (head 65c9bd901561). Pre-existing SSOT ref
+    break (wrong_fire_real_ref in 2026-11-24-scr-t1-threshold-calibration.yml) is resolved by master fix; PR diff
+    unchanged (3 session-capture commits). CI checks re-queued. Awaiting governed review/merge.'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:19
+  from: devin
+  text: '[2026-11-24 devin] PR #207 CI fix: SSOT optimize-gate failed on 3 warnings not in baseline (knowledge-capture
+    46 items from our PR; two kanban card bloat warnings pre-existing master drift). Refreshed reports/SSOT_OPTIMIZATION_WARNINGS.json
+    per gate instructions and pushed (head 66976abfac). CI rerunning; awaiting governed review/merge after green.'
+- at: 2026-11-24 21:22
+  from: devin
+  text: '[2026-11-24 devin] PR #207 CI is green (syntax PASS, tooling-contracts PASS, validate PASS on head 66976abfac).
+    Ready for governed review/merge.'
+- at: 2026-11-24 21:47
+  from: devin
+  text: '[2026-11-24 devin] PR #207 is CI-green (syntax/validate/tooling-contracts PASS, head 66976abfac) and ready
+    for governed review/merge. I cannot perform the merge (maintainer/governed gate). After merge: record evidence
+    and close/review MEM-0035 (A★ accepted), OPS-0036, OPS-0037.'
+- at: 2026-11-24 21:49
+  from: devin
+  text: '[2026-11-24 devin] PR #207 merged (squash 800d086aaefd7221d2d8ca0b819bb18d7a35e8d6). Posted merge evidence
+    and moved MEM-0035 (opencode-memory-freshness-check, A★ accepted by Tony) and OPS-0037 (opencode-handoff-packet-scaffold-save)
+    to review. Did NOT move OPS-0036: board ref OPS-0036 currently maps to state-write-atomic-truncate-crash-loop
+    (different card); recall-command follow-up card id needs confirmation before action.'
+- at: 2026-11-25 07:32
+  from: devin
+  text: '[2026-11-24 devin] Created recall follow-up card OPS-1347 (opencode-recall-command-followup, dev-0038-followup)
+    for /recall A★. Recorded PR #207 merge evidence (800d086a) and moved to review. Follow-up cards now: MEM-0035
+    done, OPS-0037 done, OPS-1347 review.'
+- at: 2026-11-25 07:50
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:11
+  from: devin
+  text: '[DEV-0038 pointer] OpenCode session-start recall follow-up landed: .opencode/commands/recall.md (PR #207)
+    + new always-on .opencode/instructions/session-start.md registered in opencode.jsonc — agent runs /recall (render-memory
+    --if-stale + bounded ~4k context.md head) when continuing prior work. Option B plugin auto-inject assessed feasible
+    via ctx.session.hook(context)/chat.system.transform but deferred. Trail: docs/ssot/jobs/session-summary/2026-11-25-opencode-session-start-recall.yml'
+- at: 2026-11-25 09:15
+  from: devin
+  text: '[2026-11-24 devin] Phase C.1 scoped+approved by Tony. Created cards OPS-1355 (C.1 spec), OPS-1354 (C.2
+    router), OPS-1356 (C.3 hooks), OPS-1358 (C.4 harvester), OPS-1357 (D.1 metrics). Opened PR #218 with SSOT C.1
+    contract section (no runtime behavior change). Awaiting governed review/merge.'
+- at: 2026-11-25 14:12
+  from: devin
+  text: '[2026-11-24 devin] PR #218 closed as superseded; C.1 contract is on origin/master (f518fa092a/8277cd3e,
+    ssot.knowledge-capture.yml Capture Router Contract + Examples). OPS-1355 moved to done with evidence. Current
+    follow-ups: OPS-1355 done, OPS-1354 done, OPS-1356 done, OPS-1358 done, OPS-1357 backlog (D.1).'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:03
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:34
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+requests:
+- id: focus-parity-mcp-focus-logs-has-no-concr-9ade32
+  ask: 'Focus parity (mcp_focus/logs) has no concrete spec. Findings: (1) tony-dell/tony-omen rendered focus ==
+    canonical ssot.focus.current.active.yml (OK); (2) idc03 SSOT matches but no rendered context.md or Devin hooks
+    (by design); (3) mcp_focus logs (focus.decisions/sessions.yml) last written 2026-09-30, no memory section reads
+    them. Which direction for Phase B+ focus parity?'
+  status: answered
+  at: 2026-11-21 18:39
+  from: devin
+  options:
+  - id: card-only
+    label: Decide later (★ recommended)
+    action: none
+  - id: cross-host-render
+    label: Deploy helper+render on idc03
+    action: none
+  - id: surface-focus-logs
+    label: Add focus-logs memory section
+    action: none
+  answer: card-only
+  executed: 2026-11-21 none
+action:
+  status: done
+claim: {}

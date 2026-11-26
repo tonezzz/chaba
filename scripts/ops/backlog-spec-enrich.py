@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""backlog-spec-enrich — draft specs for thin backlog cards via Gemini.
+"""backlog-spec-enrich — draft specs for thin backlog cards via LiteLLM.
 
 The board's throughput is spec-bound, not runner-bound: most backlog
 cards are title-only captures that a dispatch can't turn into a
 verifiable done-condition. This job takes the thinnest N per run, asks
-Gemini for either a draft spec or a clarifying ask, and writes the
+the model for either a draft spec or a clarifying ask, and writes the
 result back into the card on the served checkout (this runs on the
 live-writer host — idc03 — so YAML writes go straight to the tree and
 kanban-commit persists them; do NOT run it from a satellite checkout).
@@ -19,9 +19,23 @@ Env:
   CARD_DIR            card dir (default live served checkout on idc03)
   ENRICH_LIMIT        cards per run (default 4)
   ENRICH_MIN_SPEC     spec chars below which a card is 'thin' (default 80)
+  ENRICH_PROVIDER     litellm (default) | gemini. litellm rides the
+                      OpenAI-compatible gateway (scripts/ada/
+                      litellm_chat.py -> idc03:4000/v1/chat/completions)
+                      so calls get x-litellm attribution, per-key
+                      budgets, and the registered model fallback
+                      chains; gemini keeps the legacy direct
+                      gemini_rest path. A failed/empty litellm reply
+                      falls back to gemini_rest when ENRICH_MODEL names
+                      a gemini-* route and a direct key resolves.
+  ENRICH_MODEL        gateway model_name or Gemini model
+                      (default gemini-3.5-flash-lite; e.g.
+                      ollama-qwen38b-kkmac for free local kk-mac drafts)
+  LITELLM_URL/LITELLM_KEY  gateway creds — the job's env_file
+                      litellm-chaba.env supplies the chaba virtual key
   GEMINI_API_KEY      else ~/.config/secrets/mddb-gemini.env /
-                    gemini-keys.env (FREE first)
-  ENRICH_MODEL        default gemini-3.5-flash-lite
+                    gemini-keys.env (FREE first) — gemini provider +
+                    litellm fallback only
 Usage:
   backlog-spec-enrich.py [--dry-run] [--limit N]
 """
@@ -40,6 +54,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "ada"))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
 import yaml  # noqa: E402
 import gemini_rest  # noqa: E402
+import litellm_chat  # noqa: E402
 import card_io  # noqa: E402
 
 CARD_DIR = Path(os.environ.get(
@@ -48,6 +63,10 @@ CARD_DIR = Path(os.environ.get(
                        "docs/ssot/kanban/cards")))
 MIN_SPEC = int(os.environ.get("ENRICH_MIN_SPEC", "80"))
 MODEL = os.environ.get("ENRICH_MODEL", "gemini-3.5-flash-lite")
+PROVIDER = os.environ.get("ENRICH_PROVIDER", "litellm").strip().lower()
+if PROVIDER not in ("litellm", "gemini"):
+    print(f"ENRICH_PROVIDER {PROVIDER!r} unknown — using litellm")
+    PROVIDER = "litellm"
 MARKER = "backlog-spec-enrich"
 SECRET_FILES = [os.path.expanduser("~/.config/secrets/mddb-gemini.env"),
                 os.path.expanduser("~/.config/secrets/gemini-keys.env")]
@@ -68,7 +87,7 @@ Card:
 Decide ONE:
 - "spec"  — you can draft a concrete spec now. Write: goal, host/repo
   (hosts: tony-dell, idc02, idc03, tony-omen, tony-macbook, mn01, con01;
-  repos: chaba, ada-voice, ada-pi, sunsynk-card, mddb-fork, gods-eye-view),
+  repos: chaba, ada-voice, sunsynk-card, mddb-fork, gods-eye-view),
   constraints, and a testable done-condition. 3-6 sentences of plain
   text. Only assert facts present in the card/context — never invent
   hostnames, paths, or decisions.
@@ -158,6 +177,38 @@ def _now() -> str:
     return time.strftime("%Y-%m-%d %H:%M")
 
 
+def _enrich_json(prompt: str, cid: str, key: str | None):
+    """One spec-draft call -> dict | None (None = no usable reply).
+
+    litellm provider: OpenAI-compatible /chat/completions on the
+    gateway — x-litellm-tags/metadata stamp SpendLogs rows with
+    service/job/route/card attribution, per-key budgets apply, and
+    the model's registered fallback chain handles upstream failures.
+    ENRICH_MODEL is any gateway model_name (gemini-3.5-flash-lite,
+    ollama-qwen38b-kkmac, chat-local, ...). A failed/empty litellm
+    reply falls back to gemini_rest only when the model names a
+    gemini-* route — a local/OR alias has no direct-Google meaning."""
+    tags = "service=backlog-spec-enrich,job=backlog-spec-enrich"
+    meta = {"route": "spec_draft", "card": cid}
+    if PROVIDER == "litellm":
+        res = litellm_chat.chat_json(
+            prompt, model=MODEL, temperature=0.2, max_tokens=2048,
+            timeout=180, label="enrich", tags=tags,
+            litellm_metadata=meta)
+        if isinstance(res, dict):
+            return res
+        print(f"  {cid}: litellm {MODEL} -> no usable reply")
+        if not MODEL.startswith("gemini"):
+            return None
+        print(f"  {cid}: falling back to gemini_rest")
+    if not key:
+        print(f"  {cid}: no GEMINI key — cannot call gemini_rest")
+        return None
+    return gemini_rest.generate_json(
+        prompt, MODEL, key=key, timeout=180, tags=tags,
+        litellm_metadata=meta)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int,
@@ -166,8 +217,13 @@ def main() -> int:
     args = ap.parse_args()
 
     key = _gemini_key()
-    if not key:
+    if PROVIDER == "gemini" and not key:
         print("no GEMINI key in env or secrets files"); return 1
+    if PROVIDER == "litellm":
+        url, lkey = litellm_chat.gateway()
+        if not (url and lkey):
+            print("warn: LITELLM_URL/LITELLM_KEY unresolved — litellm "
+                  "path will no-op; gemini fallback needs a GEMINI key")
 
     candidates = [x for x in _load_cards() if _thin(*x)]
     candidates.sort(key=_rank)
@@ -185,7 +241,7 @@ def main() -> int:
             tags=", ".join(str(t) for t in (c.get("tags") or [])),
             comms=comms or "  (none)")
         try:
-            res = gemini_rest.generate_json(prompt, MODEL, key=key)
+            res = _enrich_json(prompt, cid, key)
         except Exception as e:
             print(f"  {cid}: model error {e}"); continue
         if not isinstance(res, dict):
@@ -197,8 +253,8 @@ def main() -> int:
             c["spec"] = res["spec"].strip()
             c["comms"].append({
                 "at": ts, "from": MARKER,
-                "text": f"spec drafted by {MARKER} ({MODEL}) — review "
-                        "before queueing"})
+                "text": f"spec drafted by {MARKER} ({PROVIDER}:{MODEL})"
+                        " — review before queueing"})
         elif dec == "ask" and (res.get("ask") or "").strip():
             c.setdefault("requests", []).append({
                 "id": _req_id(res["ask"]),

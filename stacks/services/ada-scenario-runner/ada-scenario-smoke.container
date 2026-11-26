@@ -22,13 +22,27 @@ Environment=ADA_LIVE_URL=ws://127.0.0.1:8005/ws
 Environment=MDDB_BASE_URL=http://100.102.134.91:11023/v1
 Environment=ADA_KEYS_FILE=/secrets/keys.json
 Environment=PYTHONUNBUFFERED=1
+# Graceful-truncation budget for scenario-report.py (honored once
+# docs/kb/patches/ada-scenario-report-truncation-20261124.patch lands in
+# ada-voice; ignored harmlessly before that). 7000s < TimeoutStartSec
+# leaves ~800s for lock wait + teardown so the run stops itself between
+# scenarios instead of eating a mid-scenario SIGTERM.
+Environment=SCENARIO_BUDGET_S=7000
 EnvironmentFile=%h/.config/secrets/ada-dev.env
 Exec=--tier smoke
 
 [Service]
 Type=oneshot
 RemainAfterExit=no
-TimeoutStartSec=2700
+# 2026-11-24 (card ada-scenario-smoke-timeout-truncation): 47 smoke
+# scenarios x ~60-150s (+one retry on fail) = ~70-130min worst case —
+# the old 2700s cap let systemd SIGTERM the oneshot mid-tier every run,
+# so the a-z tail of the suite effectively never ran (per-scenario MDDB
+# reports meant no data loss, just silent truncation). 7800s covers the
+# observed range with margin; the hourly timer self-throttles because a
+# fire that finds :8199 held exits 0 immediately — effective cadence
+# becomes ~run-length instead of a truncated hourly.
+TimeoutStartSec=7800
 WorkingDirectory=%h/CascadeProjects/ada-voice
 Environment=MDDB_BASE_URL=http://100.102.134.91:11023/v1
 # Spend guard (card scenario-spend-guard): probe once per run — unit

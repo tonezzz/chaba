@@ -42,9 +42,9 @@ capabilities:
       Requires working nvidia driver (2026-11-08 reboot restored
       595.99.02/CUDA 13.2 on Omen).
   ollama_bge_m3:
-    probe: 'curl -fsS --max-time 10 "http://$(tailscale ip -4 2>/dev/null || hostname -I | awk \"{print \$1}\"):11434/api/tags" | grep -q bge-m3'
+    probe: 'H="$(tailscale ip -4 2>/dev/null | head -n1 || true)"; [ -n "$H" ] || H="$(hostname -I 2>/dev/null | awk "{print \$1}" || true)"; [ -n "$H" ] || H="$(ipconfig getifaddr en0 2>/dev/null || true)"; [ -n "$H" ] || H="$(ifconfig 2>/dev/null | awk "/inet / && \$2 != \"127.0.0.1\" {print \$2; exit}" || true)"; [ -n "$H" ] || H=127.0.0.1; curl -fsS --max-time 10 "http://$H:11434/api/tags" | grep -q bge-m3'
     bootstrap: ollama_pull_bge_m3
-    note: ollama service running AND bge-m3 model present
+    note: ollama service running AND bge-m3 model present (probe falls back tailscale/hostname-I/ipconfig/ifconfig/localhost for macOS portability)
   node:
     probe: 'node --version || $HOME/.local/bin/node --version'
     bootstrap: node
@@ -53,18 +53,31 @@ capabilities:
     probe: 'podman --version'
     bootstrap: manual
     note: quadlet/container tasks — install is sudo, out of bootstrap scope
+  opencode:
+    probe: 'for c in "$OPENCODE_BIN" "$HOME/.opencode/bin/opencode" "$HOME/.local/bin/opencode" "$HOME/.npm-global/bin/opencode" "$HOME/.local/node/bin/opencode"; do [ -n "$c" ] && [ -x "$c" ] && exit 0; done; command -v opencode >/dev/null 2>&1'
+    bootstrap: manual
+    note: >-
+      opencode CLI binary only — lane enablement is separate
+      (OPENCODE_LANES drop-in + lane_gate stage, ssot.devnest-lanes.yml).
+      Probe mirrors runner-agent opencode_bin() resolution
+      ($OPENCODE_BIN -> PATH -> ~/.opencode/bin -> ~/.local/bin) plus
+      the npm-global prefix install path (omen 2026-11-24). Install is
+      `npm i -g @opencode/cli` or the official installer into
+      ~/.opencode/bin. Added 2026-11-24 (KNB-1008 card
+      tony-omen-declares-opencode-lanes-1-but-4cbe02) after omen ran
+      OPENCODE_LANES=1 with no binary for weeks.
 
 hosts:
   tony-dell:
-    capabilities: [python3, venv, node, podman]
+    capabilities: [python3, venv, node, podman, opencode]
   tony-omen:
-    capabilities: [python3, venv, python_ml, python_ml_gpu, ollama_bge_m3]
+    capabilities: [python3, venv, python_ml, python_ml_gpu, ollama_bge_m3, opencode]
   con01:
-    capabilities: [python3, venv, python_ml, ollama_bge_m3]
+    capabilities: [python3, venv, python_ml, ollama_bge_m3, opencode]
   idc02:
-    capabilities: [python3, venv, ollama_bge_m3]
+    capabilities: [python3, venv, ollama_bge_m3, opencode]
   idc03:
-    capabilities: [python3, venv, ollama_bge_m3, podman]
+    capabilities: [python3, venv, ollama_bge_m3, podman, opencode]
   kk-mac:
     capabilities: [python3, venv, ollama_bge_m3]
   kk-macbook:

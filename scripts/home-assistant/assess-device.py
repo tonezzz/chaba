@@ -8,7 +8,7 @@ Usage:
 
 Environment variables override file defaults:
     HA_URL, HA_TOKEN   for michael-ha
-    DEV_URL, DEV_TOKEN for michael-dev
+    DEV_URL, DEV_TOKEN for mn-ha-dev
     TONY_URL, TONY_TOKEN for tony-ha
 """
 import argparse
@@ -29,11 +29,11 @@ INSTANCES = {
             "~/.local/share/home-assistant-michael/ha-token",
         ],
     },
-    "michael-dev": {
+    "mn-ha-dev": {
         "url_env": "DEV_URL",
-        "default_url": "https://idc02.taila0626a.ts.net:8124",
+        "default_url": "https://mn01.taila0626a.ts.net:8124",
         "token_envs": ["DEV_TOKEN", "HASS_TOKEN"],
-        "token_files": ["~/.config/secrets/ha-michael-dev.env"],
+        "token_files": ["~/.config/secrets/ha-mn-ha-dev.env"],
     },
     "tony-ha": {
         "url_env": "TONY_URL",

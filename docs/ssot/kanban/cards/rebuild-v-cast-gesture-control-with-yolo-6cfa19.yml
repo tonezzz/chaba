@@ -1,0 +1,111 @@
+id: rebuild-v-cast-gesture-control-with-yolo-6cfa19
+title: Rebuild V-Cast gesture control with YOLO
+column: done
+updated: 2026-11-26 20:39
+priority: low
+note: Evaluate replacing V-Cast browser detector with YOLO (ONNX Web vs server-side frame streaming).
+ref: MED-1389
+comms:
+- at: 2026-11-25 12:21
+  from: ada
+  text: Evaluate replacing V-Cast browser detector with YOLO (ONNX Web vs server-side frame streaming).
+- at: 2026-11-25 12:21
+  from: ada
+  text: 'raised request should-we-benchmark-onnx-runtime-web-cli-3865a3: Should we benchmark ONNX Runtime Web client-side
+    or stream frames to a backend vision service on idc02?'
+- at: 2026-11-25 14:00
+  from: tony
+  text: 'answered should-we-benchmark-onnx-runtime-web-cli-3865a3: onnx_web — Client-side ONNX Web'
+- at: 2026-11-25 14:00
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:00
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:09
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:28
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:40
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:58
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:07
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 13:30
+  from: devin
+  text: 'Duplicate/stale of rebuild-gesture-control-using-yolo-83cf4a (doing/done): its comms record that the MediaPipe->YOLO
+    replacement already shipped in chaba. Closing this unclaimed backlog duplicate.'
+- at: 2026-11-26 13:30
+  from: devin
+  text: closed by devin
+- at: 2026-11-26 13:33
+  from: devin
+  text: 'Correction to triage note: the canonical rebuild-gesture-control-using-yolo-83cf4a finished its dispatch
+    and pushed a branch, but its merge is HELD (test gate failed - pytest unavailable - worktree unmerged). So the
+    YOLO replacement is not yet confirmed merged; this card stays closed purely as a duplicate of that in-flight
+    work, not because the change already shipped.'
+- at: 2026-11-26 20:39
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+requests:
+- id: should-we-benchmark-onnx-runtime-web-cli-3865a3
+  ask: Should we benchmark ONNX Runtime Web client-side or stream frames to a backend vision service on idc02?
+  status: answered
+  at: 2026-11-25 12:21
+  from: ada
+  options:
+  - id: onnx_web
+    label: Client-side ONNX Web
+  - id: backend_stream
+    label: Backend stream to idc02
+  - label: Hold for now
+    id: hold
+  suggested: onnx_web
+  answer: onnx_web — Client-side ONNX Web
+action:
+  status: done

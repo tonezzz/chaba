@@ -8,8 +8,11 @@ This is the bounded, read-only executor for opportunistic work on KK-Mac
   admission   fresh Ada Nest heartbeat (kk_mac_admission.snapshot —
               heartbeat age <= max_age_s, ollama_ok=true, disk over the
               threshold, node not busy/overloaded) AND a bounded task
-              class: summary, operator_brief, structured_extract,
-              safe_route. Anything else is a contract violation.
+              class: summary, structured_extract (operator_brief and
+              safe_route are held unadmitted pending re-eval — card
+              kk-mac-admitted-classes-narrow; the verifier still
+              scores them so the bench can re-prove them). Anything
+              else is a contract violation.
   execute     through scripts/devnest/kk_mac_llm.py — the fixed
               ssh+ollama /api/generate call. There is no shell, no code
               mutation, no credential path, no destructive action and no
@@ -73,7 +76,10 @@ JSON_CLASSES = frozenset(
 # scripts/, secrets, or anything executable/deployable
 ARTIFACT_ROOTS = ("evals/kk-mac-lane/out/", "reports/", "docs/reports/")
 DEFAULT_ARTIFACT_ROOT = "evals/kk-mac-lane/out/"
-DEFAULT_MODEL = "qwen3:8b"
+# qwen2.5:32b, not qwen3:8b — 2026-11-13 card-judgment eval (card
+# kk-mac-card-judgment-eval): qwen3:8b scored 0.674 acc with 16 parse
+# failures; qwen2.5:32b hit 0.857/0.878/0.909/1.0 with zero parse-fails.
+DEFAULT_MODEL = "qwen2.5:32b"
 MAX_RESPONSE_CHARS = 20000
 FALLBACK = "__kk_mac_fallback__"
 
@@ -266,11 +272,15 @@ def run_contract(task: dict, *, run_task=None,
     mem["during"] = list(getattr(monitor, "samples", []) or [])[-20:]
     post = sampler(host)
     mem["post"] = post
+    if res.get("memory_guard"):
+        mem["guard"] = res["memory_guard"]
     if not res.get("ok"):
         result["verdict"] = "fallback"
+        why = (res.get("admission") or {}).get("reasons")
+        if not why and res.get("abort_reason"):
+            why = [str(res["abort_reason"])]
         result["reasons"] = [
-            "run_declined:" + ",".join(
-                (res.get("admission") or {}).get("reasons") or ["?"])]
+            "run_declined:" + ",".join(why or ["?"])]
         _persist(result, worktree, taskdir)
         return result
     mem_reasons = list(getattr(monitor, "worst_reasons",

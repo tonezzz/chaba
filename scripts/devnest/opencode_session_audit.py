@@ -485,9 +485,10 @@ def audit_session(db, sess: dict, promote_at: dict) -> dict:
                 tool_lat.append(
                     (tool, (tt["end"] - tt["start"]) / 1000))
             summary = json.dumps(inp, sort_keys=True)[:200]
+            err = st.get("error") or ""
+            denied_call = status == "error" and DENY_SIGNATURE in err
             if status == "error":
-                err = st.get("error") or ""
-                if DENY_SIGNATURE in err:
+                if denied_call:
                     rec["tools"]["denied"] += 1
                     rec["tools"]["denied_calls"].append(
                         {"tool": tool, "input": summary,
@@ -517,7 +518,7 @@ def audit_session(db, sess: dict, promote_at: dict) -> dict:
                 if tgt and status != "completed":
                     rec["mutations"]["writes"].append(
                         {"tool": tool, "path": tgt,
-                         "status": status})
+                         "status": status, "denied": denied_call})
 
             # mutation accounting — smuggled through bash
             if tool == "bash":
@@ -530,8 +531,10 @@ def audit_session(db, sess: dict, promote_at: dict) -> dict:
                            "branch": "branches"}.get(kind, "writes")
                     rec["mutations"][key].append(
                         {"tool": "bash", "command": cmd[:200],
-                         "status": status})
-                    if kind == "write":
+                         "status": status, "denied": denied_call})
+                    # a permission-denied command never ran — its
+                    # redirect targets are not artifacts it produced
+                    if kind == "write" and not denied_call:
                         for tgt in bash_targets(cmd):
                             write_paths.append((tgt, "bash", status))
 
@@ -702,12 +705,21 @@ def audit_session(db, sess: dict, promote_at: dict) -> dict:
                        + "; ".join(c["tool"] for c in
                                    rec["tools"]["denied_calls"][:4])})
     mut = rec["mutations"]
+    # permission-denied calls never executed — they are already
+    # reported via denied_calls/denied_tool (which only cards on
+    # storms). Only calls that ran, or errored for a non-denial
+    # reason (partial execution possible), count toward the
+    # cardable mutating_command finding; denied-only attempts drop
+    # to an info finding so the report keeps the signal.
+    def _ran(entries):
+        return [e for e in entries if not e.get("denied")]
+
     # for bounded-write profiles, writes are the job — only the
     # irreversible/out-of-scope classes flag
     mut_kinds = [k for k in ("deletes", "commits", "pushes", "services",
                            "net_writes", "pkg", "stages", "branches")
-                 if mut[k]]
-    write_flag = bool(mut["writes"]) and not bw
+                 if _ran(mut[k])]
+    write_flag = bool(_ran(mut["writes"])) and not bw
     if write_flag or mut_kinds:
         kinds = (["writes"] if write_flag else []) + mut_kinds
         if ro or (bw and mut_kinds):
@@ -717,6 +729,15 @@ def audit_session(db, sess: dict, promote_at: dict) -> dict:
             "kind": "mutating_command",
             "severity": "high" if (ro or (bw and mut_kinds)) else "info",
             "summary": "mutations: " + ",".join(kinds)})
+    else:
+        denied_kinds = sorted(
+            k for k in mut if k != "count" and mut[k]
+            and all(e.get("denied") for e in mut[k]))
+        if denied_kinds:
+            rec["findings"].append({
+                "kind": "mutating_command", "severity": "info",
+                "summary": "denied mutation attempt(s) blocked by "
+                           "permission gate: " + ",".join(denied_kinds)})
     for a in rec["artifacts"]:
         if a["verdict"] == "protected":
             rec["safety_flags"].append(

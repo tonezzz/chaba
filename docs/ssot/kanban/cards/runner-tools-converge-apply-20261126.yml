@@ -1,0 +1,36 @@
+id: runner-tools-converge-apply-20261126
+title: Apply pinned runner-tool convergence fleet-wide
+column: done
+updated: 2026-11-26 20:38
+brief: 'Applied deploy-runner-tools.yml to all 7 managed hosts, installed the daily convergence timer, and re-audited:
+  no DRIFT remaining.'
+priority: medium
+program: chaba-ci
+tags:
+- ansible
+- runner-tools
+- drift
+spec: 'Approved by Tony 2026-11-26. Applied from origin/master (b7d5d243a8): ansible-playbook playbooks/deploy-runner-tools.yml
+  -> all hosts in-sync, changed=0, 0 failures. Installed ansible/playbooks/install-runner-tools-converge.yml ->
+  units on 7 hosts, 0 ignored/failed after PR #236 fixed [Timer] section. Verified systemctl --user is-active runner-tools-converge.timer
+  on tony-omen, idc02, con01 = active. Re-audit: no DRIFT lines; only expected MISSING-DEST on kk-mac (macOS excluded,
+  own launchd path). All 7 runner tools pinned and verified by the playbook assertion.'
+ref: OPS-1447
+comms:
+- at: 2026-11-26 18:08
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-26 18:08
+  from: devin
+  text: 'DONE 2026-11-26: convergence applied and daily timer active. Note: this closes the gap left by PR #229
+    — the playbook existed but had never been applied; PR #236 corrected the timer unit section that hosts rejected
+    on first install.'
+- at: 2026-11-26 18:43
+  from: devin
+  text: 'Re-verified 2026-11-26 after master moved dispatch_repos.py to bf7938: idc03 checkout was already at master
+    HEAD (0/0), no git nudge needed. Re-ran deploy-runner-tools.yml — all hosts in-sync, changed=0; audit shows
+    OK dispatch_repos.py src=bf793805a0f9 inst=bf793805a0f9 and no DRIFT lines. Daily timer remains active.'
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'

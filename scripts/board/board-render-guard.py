@@ -134,7 +134,19 @@ def upsert_card(note: str, healthy: bool) -> None:
 def main() -> int:
     fails = []
     with RENDER_LOCK.open("w") as rl:
-        fcntl.flock(rl, fcntl.LOCK_EX)
+        try:
+            fcntl.flock(rl, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            # A 60s timer tick landed while an earlier render (or
+            # board-api's own async render) still holds the lock. The
+            # in-flight render reads the same card state; queueing here
+            # only builds a backlog of stale snapshots that keep landing
+            # after a fresher one (2026-11-23: 2-3min renders vs a 60s
+            # timer had the unit permanently in `activating`). A skipped
+            # tick is not a failure — the next one re-checks the hash.
+            print("board-render-guard: render already in progress "
+                  "— skipping tick", file=sys.stderr)
+            return 0
         for r in RENDERS:
             p = subprocess.run(
                 [sys.executable, str(r), "--if-changed"],

@@ -161,6 +161,10 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import card_io
 import dispatch_repos as dr
+try:
+    import waiting_cards as wc
+except Exception:
+    wc = None   # verdict notify degrades to comms-only
 
 HOST = os.uname().nodename
 LOCK = Path("/tmp/board-api.lock")
@@ -669,15 +673,24 @@ def card_request(cid: str, rid: str, ask: str, dry: bool) -> None:
     if dry:
         print(f"  [dry] request {cid}/{rid}: {ask[:120]}")
         return
-    # merge-conflict asks always carry the same decision shape — without
-    # options the board renders an open request with no buttons (the
-    # "cards without decision buttons" complaint 2026-10-15).
-    opts = ["let devin resolve the conflict and land it ★",
-            "drop this dispatch — re-dispatch fresh from current main",
-            "hold the card"]
+    # merge-conflict asks carry explicit option actions (KNB-0178,
+    # Tony-approved execute-answer): resolve re-arms a devin dispatch
+    # (the conflict comms on the card are its marching orders), drop
+    # retries from current main, hold parks it. answer-sweep executes
+    # dict options with an `action`; legacy string-option asks stay owned
+    # and are never retroactively executed. Without options the board
+    # renders a dead request (the 2026-10-15 no-buttons complaint).
+    opts = [
+        {"id": "resolve", "action": "queue",
+         "label": "let devin resolve the conflict and land it ★"},
+        {"id": "drop", "action": "retry",
+         "label": "drop this dispatch — re-dispatch fresh from current main"},
+        {"id": "hold", "action": "hold", "label": "hold the card"},
+    ]
+    suggested = "resolve — let devin resolve the conflict and land it ★"
     r = api_post("/request", {"id": cid, "from": "chaba",
                               "ask": ask, "request_id": rid,
-                              "options": opts, "suggested": opts[0]})
+                              "options": opts, "suggested": suggested})
     if not r.get("error"):
         return
     def add(c):
@@ -685,7 +698,7 @@ def card_request(cid: str, rid: str, ask: str, dry: bool) -> None:
         if any(x.get("id") == rid for x in reqs):
             return False
         reqs.append({"id": rid, "ask": ask, "status": "open",
-                     "options": opts, "suggested": opts[0],
+                     "options": opts, "suggested": suggested,
                      "at": now(), "from": "chaba"})
         c.setdefault("comms", []).append(
             {"at": now(), "from": "chaba",
@@ -708,21 +721,36 @@ def stamp(cid: str, key: str, val, dry: bool) -> None:
     locked_edit(cid, add, touch=False)
 
 
-def open_conflict_req(card: dict) -> bool:
-    """An unanswered merge-conflict* request already sits on the card."""
-    for r in card.get("requests") or []:
-        if str(r.get("id", "")).startswith("merge-conflict") \
-                and r.get("status") != "answered":
-            return True
-    return False
+def conflict_sig(head: str, files: str) -> str:
+    """Stable identity of a conflict event: branch head + conflicted
+    paths. Answering a request is NOT a new event — only a changed head
+    (new commits) or changed conflict paths are. The 2026-11-21 flood
+    (~50 duplicate asks on three cards) came from gating on answer state
+    instead: a human answered, the next 15-min pass saw no open request
+    and minted merge-conflict-N+1 again. Truncated head is ample here."""
+    return f"{(head or '')[:12]}|{files}"
 
 
 def conflict_rid(card: dict) -> str:
     """merge-conflict, merge-conflict-2, ... — one request per distinct
-    conflict event; a re-conflict after a human answered gets a new id."""
+    conflict event; a genuinely new conflict (changed head/paths) gets a
+    new id. Answering alone never does (gated by the conflict_sig stamp)."""
     n = sum(1 for r in card.get("requests") or []
             if str(r.get("id", "")).startswith("merge-conflict"))
     return "merge-conflict" if n == 0 else f"merge-conflict-{n + 1}"
+
+
+def _verdict_notify(cid: str, detail: str, event: str = "verified") -> None:
+    """Close-the-loop verdict push (card ada-dispatch-approve-button):
+    the gate's verified/withheld verdict is what Tony approved — push it
+    through /publish (milestone/alert -> Telegram), same lane
+    kanban-dispatch's _notify uses. Best-effort, never raises."""
+    if wc is None:
+        return
+    try:
+        wc.notify_lifecycle(API, cid, event, detail[:200], host=HOST)
+    except Exception:
+        pass
 
 
 # ------------------------------------------------------- verified gate
@@ -1512,11 +1540,20 @@ def sweep_card(card: dict, active: dict, dry: bool,
                     if held.get("why") else " — auto-closed")
             card_note(cid, f"merge-sweep: {merged_txt} — marked "
                            f"verified ({g['why'][:160]}){tail}", dry)
+            if not dry:
+                _verdict_notify(cid, f"{merged_txt} — verified{tail}")
             return True
         key = "verify_deferred" if g.get("defer") else "verify_hold"
-        return flag_once(card, key,
-                         f"merge-sweep: {merged_txt} but verified "
-                         f"withheld — {g['why'][:200]}", dry)
+        out = flag_once(card, key,
+                        f"merge-sweep: {merged_txt} but verified "
+                        f"withheld — {g['why'][:200]}", dry)
+        if not dry and key == "verify_hold" and out:
+            # held verdicts need a human — push once, when the flag
+            # first lands (out=False on debounced repeats); 'defer'
+            # (auto_done_when gap) is routine, stays comms-only
+            _verdict_notify(cid, f"verified withheld — {g['why'][:160]}",
+                            event="unverified")
+        return out
 
     if m["ancestor"]:
         # head already in base — the runner's worktree can go too
@@ -1566,9 +1603,15 @@ def sweep_card(card: dict, active: dict, dry: bool,
         return True
     if res.get("conflicts"):
         files = ", ".join(str(f) for f in res["conflicts"][:10])
-        # comms rides the request — without it, every 15min pass would
-        # repost the same conflict line while it waits on a human
-        if not open_conflict_req(card):
+        # Gate on the conflict SIGNATURE (head + paths), not on whether a
+        # request is still unanswered. The old open_conflict_req() check
+        # treated "answered" as "new event", so every pass after a human
+        # answered minted another merge-conflict-N request (KNB-0178, the
+        # 2026-11-21 flood). A card with no stamp yet posts once and is
+        # stamped; answering never re-arms it, only a changed head/paths
+        # does. comms rides the same gate so the line isn't reposted either.
+        sig = conflict_sig(head, files)
+        if (a.get("sweep") or {}).get("conflict_sig") != sig:
             card_note(cid, f"merge-sweep: {probe.get('branch')} "
                            f"conflicts with {base_ref}: {files} — "
                            "merge aborted, card stays for human "
@@ -1580,6 +1623,7 @@ def sweep_card(card: dict, active: dict, dry: bool,
                          f"conflicted paths: {files}. Merge "
                          f"{runner or 'local'}:{probe.get('worktree')} "
                          "by hand, or retry/abandon the card.", dry)
+            stamp(cid, "conflict_sig", sig, dry)
         return True
     flag_once(card, "merge_err",
               f"merge-sweep: landing devin-task-{tid} failed: "
@@ -1626,6 +1670,11 @@ def sweep_zombies(host_units: dict, cards_by_tid: dict,
 # runner's session may still be alive and a second claim would
 # double-run it.
 STALLED_CLAIM_S = float(os.environ.get("STALLED_CLAIM_HOURS", "6")) * 3600
+# running+flagged but still no live unit / no fresh heartbeat -> escalate
+# to backlog/failed (never auto-requeue). Covers finish-reported/lost
+# reconciliations that otherwise stay in doing forever.
+STALLED_ESCALATE_S = float(
+    os.environ.get("STALLED_ESCALATE_HOURS", "10")) * 3600
 ORPHAN_DOING_S = float(os.environ.get("ORPHAN_DOING_HOURS", "24")) * 3600
 STARTING_SETTLE_S = float(
     os.environ.get("STARTING_SETTLE_MIN", "30")) * 60
@@ -1713,6 +1762,41 @@ def _reap_move(cid: str, why: str, dry: bool) -> bool:
     return locked_edit(cid, apply)
 
 
+def _reap_escalate_running(cid: str, why: str, dry: bool) -> bool:
+    """Escalate a running/claimed card that has no live unit and no fresh
+    heartbeat. Never auto-requeues: moves to backlog as failed with
+    explicit comms, clears stale claim/session fields, and preserves the
+    double-dispatch guard (no action.status=queued)."""
+    if dry:
+        print(f"  [dry] {cid}: doing/running -> backlog/failed — {why[:110]}")
+        return True
+
+    def apply(c):
+        if terminal(c) or c.get("column") != "doing":
+            return False
+        a = _ensure_act(c)
+        st = a.get("status")
+        if st not in ("running", "claimed"):
+            return False
+        a["status"] = "failed"
+        a["last_failure"] = ("finish/reconcile lost; no live unit, no "
+                             "fresh heartbeat")[:280]
+        a.pop("runner", None)
+        a.pop("task_id", None)
+        claim = _claim(c)
+        claim.pop("session", None)
+        claim.pop("since", None)
+        a.setdefault("sweep", {})["stalled_claim_escalated"] = now()
+        c["column"] = "backlog"
+        c["awaiting_action"] = True
+        c.setdefault("comms", []).append(
+            {"at": now(), "from": "chaba",
+             "text": (f"stalled-claim reaper: moved doing/running -> "
+                      f"backlog/failed — {why}. No auto-requeue; "
+                      "inspect/retry manually.")[:500]})
+    return locked_edit(cid, apply)
+
+
 def _reap_flag(cid: str, text: str, dry: bool,
                live_st: bool = True) -> bool:
     """One-shot flag for a stale claim — comms +
@@ -1763,14 +1847,28 @@ def reap_stalled_claims(cards: list, active: dict, live_ids,
                 continue  # settle window — may still be starting
             runner = str(a.get("runner") or _claim(c).get("host")
                          or "?")
-            changed |= _reap_flag(
-                cid,
-                f"stalled-claim reaper: status=running but no live "
-                f"devin-task unit ({tid or 'no task_id'}) and no fresh "
-                f"runner report for "
-                f">{int(STALLED_CLAIM_S / 3600)}h — runner={runner}. "
-                "If the session is dead, requeue via "
-                "/action do=queue.", dry)
+            sw = a.get("sweep") or {}
+            already_flagged = bool(sw.get("stalled_claim"))
+            escalated = bool(sw.get("stalled_claim_escalated"))
+            if already_flagged and not escalated \
+                    and age >= STALLED_ESCALATE_S:
+                changed |= _reap_escalate_running(
+                    cid,
+                    f"status={st} still has no live devin-task unit "
+                    f"({tid or 'no task_id'}) and no fresh runner "
+                    f"report after stalled flag "
+                    f"(>{int(STALLED_ESCALATE_S / 3600)}h, runner="
+                    f"{runner})",
+                    dry)
+            else:
+                changed |= _reap_flag(
+                    cid,
+                    f"stalled-claim reaper: status=running but no live "
+                    f"devin-task unit ({tid or 'no task_id'}) and no fresh "
+                    f"runner report for "
+                    f">{int(STALLED_CLAIM_S / 3600)}h — runner={runner}. "
+                    "If the session is dead, requeue via "
+                    "/action do=queue.", dry)
         elif st == "done":
             changed |= _reap_move(
                 cid,

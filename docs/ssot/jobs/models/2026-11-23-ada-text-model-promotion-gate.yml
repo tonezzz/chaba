@@ -1,0 +1,148 @@
+title: ADA_TEXT_MODEL promotion gate — bench-evidence path from flash-lite
+subtitle: education-manager bench gate status, challenger ledger, and the
+  exact re-run procedure; qwen2.5:7b (omen ollama) fresh rep 2026-11-23
+icon: flask
+version: 1
+
+card: ada-text-model-promotion-path
+date: 2026-11-23
+dispatch: 20261123-230449-ada-text-model-promotion-gate-
+parent: docs/ssot/jobs/models/2026-10-22-edu-agent-bench.yml
+
+question: |
+  Card ada-text-model-promotion-path (procedure card, ref ADA-0783):
+  a challenger lane may take ADA_TEXT_MODEL (ada-voice text-mode model
+  env, 'chat' class on the LiteLLM gateway) or side-tools ONLY after
+  clearing the education-manager bench gate on the fixed fixture
+  (scripts/bench-edu-manage.py + scripts/bench-edu-corpus.json, 13
+  tasks, local MockStore — never prod WP). This entry is the durable
+  evidence path: gate definition, every challenger measured to date,
+  the verdict, and how to re-run.
+
+gate: |
+  Operational gate (card note, measured 2026-11-20):
+    capture F1 = 1.0 (incumbent level)
+    dedupe >= 4/5   (incumbent current lane = 3/5)
+    sched/ops + recall = full marks (recall 3/3)
+    p50 latency <= 15s per task
+  Original AQ (edu-agent-benchmark card, still the quality bar):
+    challenger draft-Q (fixed gemini-3.5-flash-lite judge, 5-axis
+    rubric) must BEAT the incumbent's 5.0 AND hold dedupe — no free
+    or paid model has cleared this as of 2026-11-20.
+  Incumbent: gemini-3.5-flash-lite pipeline (classify + draft) for the
+  bench 'current' lane; production ADA_TEXT_MODEL 'chat' class is
+  gemini-3.5-flash paid with lite/free fallbacks (ssot.llm-gateway.yml).
+  Gemini Live voice moat is explicitly out of scope.
+
+challenger_ledger: |
+  lane / model                                   date       F1    dedupe  ops   recall  draft-Q  p50      verdict
+  current flash-lite pipeline (incumbent)        2026-10-22 1.0   3/5     5/5   3/3     5.00     ~0-3s    stays
+  clawbot openrouter/free rotation                2026-10-22 1.0   4/5     5/5   3/3     4.72     12.5s    draft-Q < 5.0
+  hermes3:8b (omen ollama, OpenClaw-shaped loop)  2026-10-22 0.545 2/5     3/5   1/3     3.90     19.4s    fail
+  gpt-oss:20b (omen ollama)                      2026-10-23 1.0   3/5     5/5   3/3     n/a      78.3s    latency fail
+  gpt-oss:20b (colab T4)                         2026-10-23 1.0   4/5     4/5   1/3     n/a      14.7s    recall/ops weak
+  clawbot nvidia/nemotron-3.5-super-vl:free x3    2026-10-24 1.0   3/5     ~4/5  3/3     n/a      ~10.5s   dedupe fail
+  clawbot or-free-nemotron-35 (3.5-lightning)     2026-11-20 1.0   4/5     ?     3/3     4.55     9.3s     best free; draft-Q < 5.0
+  local-qwen3:8b (kk-mac ollama)                 2026-11-12 1.0   4/5     5/5   1/3     4.45     17.9s    recall+latency fail
+  clawbot deepseek/deepseek-v3.2 (OR paid)       2026-11-12 1.0   5/5     5/5   3/3     4.67     11.1s    CLEARS operational gate; draft-Q < 5.0
+  clawbot gemini-3.5-flash (paid)                2026-11-20 ?     ?       ?     ?       4.80     ?        draft-Q < 5.0
+  clawbot gemini-3.1-pro (paid)                  2026-11-20 ?     ?       ?     ?       4.77     ?        draft-Q < 5.0
+  clawbot qwen2.5:7b (omen ollama, CPU)          2026-11-24 0.75  3/5     2/5   1/3     4.27     61.7s    FAIL all axes
+  Raw artifacts: reports/bench-edu-manage-*.{json,md} per row date;
+  the 2026-11-20 rows (nemotron-35, paid gemini pair, clawbot judged
+  re-score mean 4.52 n=21) exist only as card comms — no committed
+  JSON/MD. Re-run to make them auditable (procedure below).
+
+run_2026-11-24: |
+  Attempt 1 (tony-omen, litellm/gemini-2.5-flash) died exit=1 after
+  ~3.5min — provider rate-limit signature, infra crash not a work
+  failure. Attempt 2 (tony-macbook) probed live upstreams first:
+  OpenRouter :free daily cap exhausted (X-RateLimit-Remaining 0,
+  resets ~2026-11-24 00:00Z / 07:00 ICT), Cloudflare neuron tier 429,
+  so the card's best free challenger (or-free-nemotron-35) was
+  unrunnable. Pivoted to an unbenched fleet model reachable without
+  those upstreams: clawbot lane on tony-omen ollama qwen2.5:7b
+  (production chat-local leg-1 model, tool-calling verified live).
+  current lane re-run same-day for a same-judge incumbent comparison.
+
+  Config:
+    GEMINI_BASE_URL=http://100.102.134.91:4000
+    GEMINI_API_KEY=$LITELLM_KEY_CHABA   # /v1beta gemini-3.5-flash-lite OK
+    python3 scripts/bench-edu-manage.py --lanes current clawbot \
+      --clawbot-ollama --or-model qwen2.5:7b \
+      --out reports/bench-edu-manage-2026-11-24-qwen25-7b-omen-gate
+  (run crossed midnight; artifacts dated 2026-11-24 per result clock)
+  Caveats: /home/tony/reports/skills/{filing,ops,recall}.md absent on
+  tony-macbook (host-local skill addenda, never committed) — agent
+  lane ran on AGENT_SYS duties only, a handicap vs runs that had them.
+  qwen2.5:7b served CPU-only on omen (api/ps size_vram=0) — latency
+  numbers reflect CPU inference, not a GPU lane.
+
+measured: |
+  lane      F1    dedupe  sched/ops  recall  draft-Q      completed  p50     tokens-in/out
+  current   1.0   3/5     5/5        3/3     5.00 (n=5)   13/13      0.0s    896/211
+  clawbot   0.75  3/5     2/5        1/3     4.27 (n=3)   10/13      61.7s   28851/1520
+  clawbot per-task: t1 ok 284s, t2 ok 22s, t3 TIMEOUT 387s,
+  t4 TIMEOUT 335s, t5 ok 583s, t6 ok 280s, t7 ok 62s,
+  o1 ok 50s, o2 ok 14s, o3 HTTP 400 114s, r1 ok 28s, r2 ok 47s,
+  r3 ok 34s. Fidelity: arg_repairs=0 arg_errors=0 json_retries=1.
+  Raw: reports/bench-edu-manage-2026-11-24-qwen25-7b-omen-gate.{json,md}
+
+verdict: challenger-fails-gate
+verdict_detail: |
+  qwen2.5:7b on omen ollama (CPU) fails EVERY operational axis:
+  F1 0.75 (<1.0), dedupe 3/5 (<4/5), ops 2/5, recall 1/3 (<3/3),
+  draft-Q 4.27, p50 61.7s (>15s — 4x over, mean 172s). The two
+  transcript timeouts (t3/t4) and the o3 HTTP 400 are CPU-inference
+  failures, not capability proofs — but as DEPLOYED on omen this lane
+  cannot run the education-manager loop inside latency bounds. It also
+  cannot be promoted to side-tools on this evidence: chat-local's
+  qwen2.5:7b leg stays a chat lane, not an edu/tool lane.
+  Incumbent re-measured same-judge same-day: current F1 1.0, dedupe
+  3/5, ops 5/5, recall 3/3, draft-Q 5.0 — unchanged, stays.
+
+rerun_procedure: |
+  # incumbent + judge need a Gemini path; on hosts without a Google AI
+  # key, ride the LiteLLM gateway (any key allowed to call
+  # gemini-3.5-flash-lite on /v1beta — verified: LITELLM_KEY_CHABA/ADA/
+  # KK/MDDB/MICHAEL; LITELLM_KEY_BENCH is alias-restricted and 403s on
+  # the bare model name):
+  source ~/.config/secrets/litellm-keys.env
+  export GEMINI_BASE_URL=http://100.102.134.91:4000
+  export GEMINI_API_KEY="$LITELLM_KEY_CHABA"
+
+  # free OR challenger (after the daily reset; needs the gateway's OR
+  # key budget — or-free-* aliases are on LITELLM_KEY_BENCH's list):
+  python3 scripts/bench-edu-manage.py --lanes clawbot \
+    --or-model or-free-nemotron-35 \
+    --out reports/bench-edu-manage-<date>-<slug>
+
+  # local ollama challenger (direct, bypasses litellm):
+  python3 scripts/bench-edu-manage.py --lanes clawbot --clawbot-ollama \
+    --or-model <ollama-tag> --ollama-timeout 300 \
+    --out reports/bench-edu-manage-<date>-<slug>
+  # OLLAMA_URL defaults to tony-omen (100.75.102.88:11434); tool-capable
+  # tags verified 2026-11-23: qwen2.5:7b, hermes3:8b, llama3.2:3b,
+  # qwen3:8b. gemma3:* / phi3 have NO tool support in ollama.
+
+  # store-aware variant (hand the agent the existing topic list —
+  # production-realistic, helps dedupe): add --agent-topics.
+  # multi-rep for stability: --reps 3 (triples wall time).
+  # offline re-judge of saved drafts: --rescore <result.json> --no-judge
+  #   is NOT needed — rescore re-runs the judge on stored HTML.
+
+promotion_path: |
+  1. Run the fixture for the challenger (commands above); commit
+     reports/bench-edu-manage-<date>-<slug>.{json,md} + this jobs/ entry.
+  2. Check operational gate: F1=1.0, dedupe>=4/5, ops full, recall 3/3,
+     p50<=15s. draft-Q is reported but the relaxed gate does not set a
+     floor; the ORIGINAL AQ still requires beating incumbent 5.0 —
+     treat draft-Q < ~4.7 as a quality regression vs flash-lite even if
+     the operational axes pass.
+  3. If the challenger clears and Tony approves, flip ADA_TEXT_MODEL on
+     the ada-voice side (env on the text-mode session path; 'chat'
+     class chain lives in stacks/idc03/litellm/config.yaml) — promotion
+     needs explicit approval per AGENTS.md, never auto-flip.
+  4. Side-tools lanes (classify/summary/tool-call aliases) are separate
+     promotions with their own chains; this bench only evidences the
+     education-manager surface.

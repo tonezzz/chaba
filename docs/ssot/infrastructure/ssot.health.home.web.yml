@@ -25,30 +25,6 @@ services:
   - home
   host: tony_omen
   note: Moved to tony-omen in the phase-5 LAN cohort; serves raceman/yt-live media on :8083.
-- id: helm
-  name: Helm Dashboard
-  disabled: true
-  note: "Retired 2026-09-30 — superseded by project-health/focus/SSOT stack. Container removed."
-  type: http
-  url: http://100.68.142.13:3003/apps/helm
-  expected_status: 200
-  timeout: 30
-  category: web
-  profiles:
-  - home
-  - mobile
-  verification:
-  - 'Check podman container: ssh tony-dell podman ps | grep helm'
-  - 'Check podman logs: ssh tony-dell podman logs helm --tail 20'
-  - 'Test direct podman container: curl -s http://100.68.142.13:3003/apps/helm/'
-  - 'Test Caddy proxy: curl -s http://100.68.142.13:3003/apps/helm/'
-  recovery_actions:
-  - 'Restart service: ssh tony-dell systemctl --user restart helm'
-  - 'Rebuild helm: ssh tony-dell "cd /home/tony/CascadeProjects/chaba-tony-dell/stacks/web
-    && docker compose up -d --build helm"'
-  - Check Caddy proxy configuration in stacks/web/Caddyfile
-  - 'Verify env: ssh tony-dell podman exec helm env | grep LLM'
-  host: tony_dell
 - id: raceman-php
   name: Raceman PHP
   type: container
@@ -59,7 +35,7 @@ services:
   category: web
   profiles:
   - home
-  note: Migrated to tony_dell rootless podman.
+  note: PHP-FPM course API backend on tony-dell :9001 (host network); consumed by omen raceman-web nginx fastcgi since 2026-11-25. Was inactive 2026-10-20..2026-11-16 while omen nginx pointed at dead 127.0.0.1:9001.
 - id: mddb-panel
   name: MDDB Panel
   type: http

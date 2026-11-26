@@ -1,0 +1,146 @@
+id: jobs/nest/2026-11-24-nest-job-done-evidence-gate
+title: >-
+  nest_job terminal-done evidence gate + cross-surface reconciler
+  (OPS-0923)
+card: nest-job-done-evidence-gate
+date: 2026-11-24
+runner: devin-dispatch worktree (repo landing only — no deploy, no push)
+status: delivered
+refs:
+  - OPS-0922  # job-package-status-storage-sop (the SOP this enforces)
+  - docs/kb/job-package-status-sop.md
+  - docs/kb/colab-mcp-jobs.md#job-status-lifecycle-and-storage-map
+
+# Hardens the runtime job-status contract after the OPS-0922 lifecycle
+# SOP: terminal `done` must carry a durable result_ref AND verified
+# artifact evidence; generic milestones must not silently complete a
+# job; drift between the four status surfaces is reconciled read-only.
+
+changes:
+  do_job_contract:
+    what: >-
+      scripts/board/board-api.py do_job now enforces JOB_TRANSITIONS
+      (queued/claimed/running/stalled/failed -> forward set; terminal
+      done/cancelled exit only via queued|failed) and a terminal-done
+      gate: status=done requires result_ref (body, stored meta, or
+      meta.result_ref) plus verified artifact evidence (evidence[]
+      refs, verified:true, artifact_verified, or confidence=verified).
+      Violations are ValueError -> HTTP 400 before any WP write.
+      Same-status rewrites and status-less comms updates always pass;
+      unknown prior status imposes no constraint. Accepted evidence
+      persists to meta.evidence (joined refs, <=300 chars) and
+      meta.artifact_verified=true.
+    files: [scripts/board/board-api.py]
+  pub_job_sink:
+    what: >-
+      _pub_job_send no longer falls back to project/card refs — the
+      job sink fires only for an explicit `job` field, so
+      card/project-scoped lifecycle events (runner-agent, merge-sweep,
+      unattended-report digests) stop minting nest_job posts.
+      kind=milestone no longer implies status=done (was the silent
+      completion bug); progress->running and alert->stalled remain the
+      only kind-implied statuses; meta.job_status is the explicit
+      override. evidence[]/confidence=verified pass through
+      (result_ref defaults to evidence[0]). do_job ValueError ->
+      pub.Skip("job status rejected: ...") — a contract rejection is
+      terminal for that sink, never outbox-retried; sibling sinks
+      still deliver.
+    files: [scripts/board/board-api.py]
+  nest_jobs_read:
+    what: >-
+      New GET /nest-jobs?slug=&limit=&comms=1 on board-api — read-only
+      nest_job CPT listing (slug/status/meta, comms stripped unless
+      requested, <=500 cap, private+archived statuses) so reconciliation
+      never needs WP creds client-side.
+    files: [scripts/board/board-api.py]
+  reconciler:
+    what: >-
+      scripts/ops/nest-job-reconcile.py — read-only cross-check of the
+      four status surfaces: WP nest_job meta vs packs/<name>/ done +
+      claim/ markers vs queue/packs-index fold vs queue/lease
+      liveness. Pure reconcile(jobs, packs, index, lease) core with
+      thin rclone/HTTP collectors; finding codes DONE-NO-RESULT-REF
+      (error), DONE-UNVERIFIED / DONE-NO-PACK-MARKER /
+      PACK-DONE-JOB-NOT-DONE / PACK-FAILED-JOB-INCONSISTENT /
+      ACTIVE-JOB-PACK-TERMINAL / CANCELLED-LINGER-CLAIM /
+      LEASE-ACTIVE-TERMINAL-JOB / LEASE-STALE-WITH-ACTIVE-JOBS (warn),
+      ACTIVE-NO-CLAIM / PACK-TERMINAL-NO-JOB (info). NEVER mutates —
+      no status writes, no claim clears, no cancels; acting on a
+      finding is a separate gated op.
+    files: [scripts/ops/nest-job-reconcile.py,
+            tests/ops/test_nest_job_reconcile.py]
+  tests:
+    what: >-
+      tests/board/test_board_api_mutations.py: invalid transitions,
+      done-without-result_ref, done-without-evidence, verified-signal
+      variants, stored-meta gate reads, terminal requeue/failed
+      correction, failed/stalled retries, comms-only writes.
+      tests/board/test_publication.py: milestone does not complete a
+      job, explicit job_status=done needs evidence (skipped receipt,
+      siblings deliver), verified milestone delivers with
+      result_ref+artifact_verified meta, card-scoped events never
+      touch nest_job, progress cannot resurrect a done job.
+      board-api --selftest updated for the new contract.
+    files: [tests/board/test_board_api_mutations.py,
+            tests/board/test_publication.py, scripts/board/board-api.py]
+  hardening_attempt2:
+    what: >-
+      Review pass found two gaps in the attempt-1 gate: (a) do_job
+      read status only from the top-level field while meta.status
+      rode the JOB_META_KEYS merge ungated — a bare
+      {"meta":{"status":"done"}} write skipped transition AND
+      evidence checks; meta.status is now folded into the gated
+      status and disagreement is a 400. (b) queue-mgr's done writes
+      carried result_ref but no evidence — every pack completion
+      would 400 once the gate deployed; derive() now emits
+      evidence[] = the done marker (children) / child done markers
+      (root, cap 10).
+    files: [scripts/board/board-api.py, scripts/ops/queue-mgr.py,
+            tests/board/test_board_api_mutations.py,
+            tests/ops/test_queue_mgr.py]
+  docs:
+    what: >-
+      job-package-status-sop.md gained section 5 "Enforcement at the
+      write door"; colab-mcp-jobs.md gained the
+      job-status-lifecycle-and-storage-map section the card links;
+      board-api-write-door.md documents the /job contract, the
+      /publish job-sink rules, and GET /nest-jobs.
+    files: [docs/kb/job-package-status-sop.md, docs/kb/colab-mcp-jobs.md,
+            docs/kb/board-api-write-door.md]
+
+deployment_notes:
+  - >-
+    REPO LANDING ONLY — board-api deploys separately; the gate
+    activates on deploy. queue-mgr runs from the tony-dell exec
+    checkout (`~/CascadeProjects/chaba`, synced hourly by
+    chaba-repo-sync.timer) so its evidence fix lands on the same
+    merge — but board-api deploy is a separate manual step, so there
+    is a window where the new gate is live and queue-mgr still posts
+    bare done writes (they 400 and retry next tick — self-healing,
+    but mirror rows lag until queue-mgr syncs).
+  - >-
+    queue-mgr (scripts/ops/queue-mgr.py, in this repo) mirrors Drive
+    state through POST /job: attempt 2 added evidence[] = the pack
+    done marker on every done write (pack/env/work children; root
+    done aggregates up to 10 child done markers, queue dir fallback)
+    so its writes satisfy the gate. Other /job callers: none found —
+    queue-mgr is the only POST /job producer in the repo.
+  - >-
+    Attempt-2 review fixes on top of the cherry-picked attempt-1
+    commit: (a) do_job meta.status bypass closed — meta.status is
+    folded into the gated status and top-level/meta disagreement is
+    a 400 (previously {"meta":{"status":"done"}} skipped every
+    gate); (b) merge conflict in docs/kb/board-api-write-door.md
+    resolved against current master (kept master's queue-mgr.timer
+    wording + appended the OPS-0923 contract paragraph).
+  - >-
+    Pre-existing suite failures unrelated to this change:
+    test_control_pane_projection (card YAML archived upstream) and
+    test_runner_tooling_contract pin drift on runner-agent.py
+    (upstream merged a runner-agent change without a manifest bump).
+
+verify: >-
+  python3 -m pytest tests/board/test_board_api_mutations.py
+  tests/board/test_publication.py tests/ops/test_nest_job_reconcile.py
+  -q  (all pass); python3 scripts/board/board-api.py --selftest;
+  python3 scripts/ops/nest-job-reconcile.py --api <board-api> --json

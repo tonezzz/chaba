@@ -1,0 +1,36 @@
+{
+ "schema": "ada-opencode-review/1",
+ "case_id": "defect-hash-mismatch",
+ "verdict": "fail",
+ "confidence": 0.9,
+ "summary": "integrity failure seeded in bundle",
+ "findings": [
+  {
+   "id": "f1",
+   "severity": "critical",
+   "category": "artifact_integrity",
+   "summary": "declared hash cannot match content",
+   "evidence_refs": [
+    {
+     "bundle_path": "result.artifacts[0].sha256",
+     "note": "zeroed"
+    }
+   ]
+  }
+ ],
+ "evidence_refs": [
+  {
+   "bundle_path": "result.tests.verifier.verdict",
+   "note": "gate output"
+  }
+ ],
+ "deterministic_gate": {
+  "verifier_verdict": "pass"
+ },
+ "reviewer": {
+  "backend": "replay",
+  "model": "oracle"
+ },
+ "latency_ms": 1,
+ "cost_usd": 0.0
+}

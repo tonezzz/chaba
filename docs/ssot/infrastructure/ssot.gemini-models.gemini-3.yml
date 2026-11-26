@@ -134,6 +134,37 @@ models:
     status: available
     notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
     last_verified: "2026-08-15"
+  gemini-3.8-live:
+    display_name: Gemini 3.8 Live
+    api_name: gemini-3.8-live
+    family: Gemini 3
+    category: Live API
+    free_tier:
+      status: unverified
+    status: available
+    primary_for:
+      - rview-live
+    notes: >-
+      Sole primary for the rview-live Live-voice job since 2026-11-24 and the
+      runtime default since 2026-11-25 (job 2026-11-24-gemini-38-live-eval).
+      Emits an early turnComplete with tool calls, then a final spoken turn
+      after toolResponse — clients must not treat the first completion as the
+      end. The rview-live app itself was retired 2026-10-07; this job key
+      remains the registry's Live-voice label until it is renamed.
+      Live websockets do not transit the LiteLLM gateway.
+    last_verified: "2026-11-25"
+  gemini-3.8-live-extended-thinking:
+    display_name: Gemini 3.8 Live Extended Thinking
+    api_name: gemini-3.8-live-extended-thinking
+    family: Gemini 3
+    category: Live API
+    free_tier:
+      status: unverified
+    status: available
+    notes: >-
+      High-reasoning Live API variant with interactionStatus IN_PROGRESS / IDLE
+      and asynchronous tool calls. Pilot only on tool-heavy diagnostic sessions.
+    last_verified: "2026-11-24"
   gemini-3.1-flash-live-preview:
     display_name: Gemini 3.1 Flash Live Preview
     api_name: gemini-3.1-flash-live-preview
@@ -141,11 +172,14 @@ models:
     category: Live API
     free_tier:
       status: unverified
-    status: active
-    primary_for:
+    status: available
+    fallback_for:
       - rview-live
-    notes: Verified for Gemini Live WebSocket + function calling (rview tools). Add free-tier limits when available.
-    last_verified: "2026-08-20"
+    notes: >-
+      Demoted from primary to fallback on 2026-11-24 when gemini-3.8-live won
+      the voice eval gate; retained as the real failover for Live voice.
+      Verified for Gemini Live WebSocket + function calling (rview tools).
+    last_verified: "2026-11-25"
   gemini-3.1-flash-lite-preview:
     display_name: Gemini 3.1 Flash Lite Preview
     api_name: gemini-3.1-flash-lite-preview
@@ -207,8 +241,11 @@ models:
     category: Gemini 3
     free_tier:
       status: unverified
-    status: available
-    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
+    status: unavailable
+    notes: >-
+      NOT PRESENT in the v1beta /models catalog on 2026-11-24 — retained only
+      as an unverified placeholder. Do not route to this ID; the catalog
+      exposes gemini-3.1-pro-preview for this tier.
   gemini-3-pro-image-preview:
     display_name: Gemini 3 Pro Image Preview
     api_name: gemini-3-pro-image-preview
@@ -244,23 +281,70 @@ models:
     last_verified: "2026-08-15"
   gemini-3-flash-live:
     display_name: Gemini 3 Flash Live
+    api_name: gemini-3-flash-live
     family: Gemini 3
     category: Live API
     free_tier:
       rpm: null
       tpm: 65000
       rpd: null
-    status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: "2026-08-15"
-  gemini-3.5-live-translate:
-    display_name: Gemini 3.5 Live Translate
+    status: unavailable
+    notes: >-
+      NOT PRESENT in the v1beta /models catalog on 2026-11-24 — retained only
+      as a 2026-08-15 AI Studio rate-limit snapshot. Do not route to this ID;
+      use gemini-3.8-live for Live voice.
+    last_verified: "2026-11-24"
+  gemini-3.5-live-translate-preview:
+    display_name: Gemini 3.5 Live Translate (Preview)
+    api_name: gemini-3.5-live-translate-preview
     family: Gemini 3
     category: Live API
     free_tier:
+      status: unverified
       rpm: null
       tpm: 20000
       rpd: null
     status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: "2026-08-15"
+    notes: >-
+      Continuous speech-to-speech translation, 70+ languages. Audio-only input,
+      no tools and no text input — an interpreter, not a reasoning agent.
+      Official API ID verified in the v1beta catalog 2026-11-24; the previous
+      gemini-3.5-live-translate key was stale. Use constrained ephemeral tokens
+      for browser clients (BidiGenerateContentConstrained?access_token=).
+      tpm snapshot is from the 2026-08-15 AI Studio dashboard.
+    last_verified: "2026-11-24"
+  gemini-3.5-transcribe-live:
+    display_name: Gemini 3.5 Transcribe Live
+    api_name: gemini-3.5-transcribe-live
+    family: Gemini 3
+    category: Audio
+    free_tier:
+      status: unverified
+      rpm: null
+      tpm: null
+      rpd: null
+    status: available
+    notes: >-
+      Live Transcription (speech-to-text) over the Live WebSocket; TEXT output,
+      interim + finalized transcripts, auto language detection, custom
+      vocabulary, SMART mode and manual/hybrid VAD. 10-minute session cap.
+      No speaker diarization or word-level timestamps over Live. ID verified
+      in the v1beta catalog 2026-11-24.
+    last_verified: "2026-11-24"
+  gemini-3.5-transcribe:
+    display_name: Gemini 3.5 Transcribe
+    api_name: gemini-3.5-transcribe
+    family: Gemini 3
+    category: Audio
+    free_tier:
+      status: unverified
+      rpm: null
+      tpm: null
+      rpd: null
+    status: available
+    notes: >-
+      Non-streaming audio transcription endpoint (sibling of
+      gemini-3.5-transcribe-live). Use for files needing speaker diarization
+      and word-level timestamps, which the Live endpoint does not provide.
+      ID verified in the v1beta catalog 2026-11-24.
+    last_verified: "2026-11-24"

@@ -1,0 +1,50 @@
+{
+  "schema": "ada-opencode-review/1",
+  "case_id": "real-fail-ssot-research",
+  "verdict": "fail",
+  "confidence": 1.0,
+  "summary": "The execution failed deterministic verifier checks because the artifact produced by the agent formatted citations as plain text strings rather than structured objects with path and note properties, failing multiple contract and schema checks.",
+  "findings": [
+    {
+      "id": "f1",
+      "severity": "critical",
+      "category": "test_failure",
+      "summary": "Deterministic verifier failed with verdict 'fail' due to contract and citation structure check failures.",
+      "evidence_refs": [
+        {
+          "bundle_path": "result.tests.verifier.verdict",
+          "note": "Verifier returned verdict fail"
+        },
+        {
+          "bundle_path": "result.tests.verifier.checks",
+          "note": "Checks for required fields, citations format ({path,note} objects), and read_only true failed"
+        }
+      ]
+    },
+    {
+      "id": "f2",
+      "severity": "major",
+      "category": "spec_gap",
+      "summary": "Artifact citations array contains plain strings instead of required JSON objects with path and note keys.",
+      "evidence_refs": [
+        {
+          "bundle_path": "result.artifacts[0].content",
+          "note": "Artifact JSON contains string list for citations"
+        }
+      ]
+    }
+  ],
+  "evidence_refs": [
+    {
+      "bundle_path": "result.tests.verifier.verdict",
+      "note": "Verifier verdict fail"
+    },
+    {
+      "bundle_path": "result.artifacts[0].content",
+      "note": "Artifact content containing malformed citations schema"
+    }
+  ],
+  "deterministic_gate": {
+    "verifier_verdict": "fail"
+  }
+}

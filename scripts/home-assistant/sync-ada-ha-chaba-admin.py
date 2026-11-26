@@ -22,7 +22,7 @@ DEFAULT_REMOTE_PATH = "/home/tony/.config/ada-ha/.storage/lovelace.chaba_admin"
 DEFAULT_OUTPUT = "docs/home-assistant/dashboards/ada-ha-chaba-admin-current.json"
 
 
-def sanitize_snapshot(value, counts=None):
+def sanitize_snapshot(value, counts=None, path=()):
     """Redact credential fields and URL query values without changing layout."""
     if counts is None:
         counts = {"redacted": 0}
@@ -30,14 +30,18 @@ def sanitize_snapshot(value, counts=None):
     if isinstance(value, dict):
         result = {}
         for key, item in value.items():
-            if str(key).lower() in SECRET_FIELD_NAMES:
+            lowered = str(key).lower()
+            # pfg3d-card chart defs use "key" as a series identifier, not a credential
+            if lowered in SECRET_FIELD_NAMES and not (
+                lowered == "key" and "pfg_charts" in path
+            ):
                 result[key] = "<redacted>"
                 counts["redacted"] += 1
             else:
-                result[key] = sanitize_snapshot(item, counts)
+                result[key] = sanitize_snapshot(item, counts, path + (str(key),))
         return result
     if isinstance(value, list):
-        return [sanitize_snapshot(item, counts) for item in value]
+        return [sanitize_snapshot(item, counts, path) for item in value]
     if not isinstance(value, str) or "://" not in value:
         return value
 

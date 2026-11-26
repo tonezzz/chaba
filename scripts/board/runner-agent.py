@@ -40,10 +40,31 @@ Env:
                  canonical writer host (idc03) so the same value works on
                  every host
   RUNNER_HOST    hostname claim identity (default: uname nodename)
-  RUNNER_CAP     max concurrent claimed tasks (default 2)
+  RUNNER_CAP     max concurrent LOCAL-executor claims (default 2) —
+                 devin/opencode/claude/script/container lanes that do
+                 real work on this host
+  RUNNER_REMOTE_CAP  max concurrent REMOTE-executor claims (default 6)
+                 — executors in RUNNER_REMOTE_EXECUTORS (default
+                 jules,nlm_batch,kk_mac_local) hold a claim slot while
+                 the actual work waits on a remote service (~zero local
+                 load), so they count separately: a host holds
+                 RUNNER_CAP local + RUNNER_REMOTE_CAP remote claims
+                 concurrently (runner-per-executor-caps, OPS-1284).
+                 0 disables remote claims.
+  RUNNER_REMOTE_MAX_LOAD_PC  optional per-core load ceiling for the
+                 remote class (default 0 = load-independent — remote
+                 claims are exempt from RUNNER_MAX_LOAD_PC like the
+                 OPS-1182 script split, still bounded by their own
+                 lane quotas e.g. JULES_LANE_DAILY_CAP)
+  RUNNER_REMOTE_EXECUTORS  comma-separated executor names counted
+                 against RUNNER_REMOTE_CAP (default
+                 jules,nlm_batch,kk_mac_local)
   RUNNER_MAX_LOAD_PC  stop claiming when 5-min load per core exceeds
                  this (default 1.0; 0 disables — protects the host and
-                 yields the queue to idle runners)
+                 yields the queue to idle runners). Heavyweight
+                 (local) claims defer here; script claims use
+                 RUNNER_SCRIPT_MAX_LOAD_PC and remote-executor claims
+                 use RUNNER_REMOTE_MAX_LOAD_PC instead.
   RUNNER_LABELS  comma-separated capability labels (e.g. "gpu,ssd";
                  "desktop" marks an interactive host and arms the
                  guards below; "push:<repo>" declares push credentials
@@ -81,6 +102,14 @@ Env:
                  signature (default 1800). The lane model is shared —
                  re-claiming into a 429 burns card attempts across the
                  whole queue, not just the card that hit it.
+  RUNNER_WT_SWEEP_S    stale dispatch-worktree sweep interval —
+                 wt_sweep_pass runs dispatch-wt-sweep.py --apply once
+                 per interval (default 86400 = daily; 0 disables).
+                 The reaper keeps failed-run trees for
+                 RUNNER_WT_SWEEP_DAYS (default 3) and only removes
+                 ones whose task evidence is captured and no
+                 devin-task-<tid> unit is live. DISPATCH_WT_SWEEP=0
+                 disables inside the sweep itself.
 
 Interactive-host guards (card omen-gpu-display-wedge — on when the host
 carries the "desktop" label, or forced via RUNNER_TASK_LIMITS /
@@ -152,7 +181,7 @@ full fleet use 2026-10-30):
   "runner-agent"'` stays available as a second surface. The overload
   gate reads `sysctl vm.loadavg` on darwin. devin-dispatch itself
   stays systemd-only (its port is a separate job) — a launchd runner
-  serves executor=opencode|script|container|jules|nlm_batch|
+  serves executor=opencode|script|container|nlm_batch|
   kk_mac_local and the opencode lane route, while plain devin cards
   wait for a Linux runner.
 
@@ -177,7 +206,13 @@ leaves a session worktree whose head is provably on origin, the
 worktree+branch are removed locally (dr.gc_session — never dirty trees,
 never unmerged branches; KANBAN_WTGC=0 disables). Merge-sweep runs the
 same cleanup on this host over ssh when it salvaged the merge from
-dell's side.
+dell's side. The lane START side has the mirror problem
+(opencode-retry-stale-worktree): a held/failed lane run leaves
+dispatch-wt-<tid> behind and the tid is stable across retries, so
+_stale_worktree_gate reaps the tree when the previous attempt is
+provably over (taskdir exit_code/verdict.json, or a dead lane-family
+run) and defers while a devin-task-<tid> unit is live or the tree
+can't be attributed — the prior run's evidence stays in the taskdir.
 """
 
 import hashlib
@@ -242,6 +277,21 @@ MAX_LOAD_PC = float(os.environ.get("RUNNER_MAX_LOAD_PC", "1.0"))
 # ceiling while dispatch/container claims still defer.
 SCRIPT_MAX_LOAD_PC = float(
     os.environ.get("RUNNER_SCRIPT_MAX_LOAD_PC", "2.0"))
+# OPS-1284 / runner-per-executor-caps: remote-async executors hold a
+# claim slot while doing ~zero local work (jules waited ~1h Google-side,
+# nlm_batch polls NotebookLM, kk_mac_local waits on the KK-Mac) — under
+# one shared RUNNER_CAP, 3/3 jules claims meant zero local dispatch
+# capacity. They now count against RUNNER_REMOTE_CAP separately and are
+# exempt from the RUNNER_MAX_LOAD_PC claim gate (the OPS-1182
+# RUNNER_SCRIPT_MAX_LOAD_PC pattern, applied per class). jules stays in
+# the default set for contract completeness — the lane is retired and a
+# stale pin fails closed at claimable() long before this matters.
+REMOTE_CAP = int(os.environ.get("RUNNER_REMOTE_CAP", "6"))
+REMOTE_MAX_LOAD_PC = float(
+    os.environ.get("RUNNER_REMOTE_MAX_LOAD_PC", "0"))
+REMOTE_EXECUTORS = {x.strip() for x in os.environ.get(
+    "RUNNER_REMOTE_EXECUTORS",
+    "jules,nlm_batch,kk_mac_local").split(",") if x.strip()}
 LABELS = {x.strip() for x in os.environ.get("RUNNER_LABELS", "").split(",")
           if x.strip()}
 STATE_DIR = Path(os.environ.get(
@@ -258,13 +308,44 @@ DISPATCH = os.environ.get(
 CLAUDE_DISPATCH = os.environ.get(
     "CLAUDE_DISPATCH", str(Path.home() / ".local/bin/claude-dispatch"))
 
+# --- ADA-0024: dispatch job-lifecycle parity -------------------------
+# The board runner is the ada-ocb pane's remote executor. Devin-console
+# jobs emit a job/<id> doc into the shared MDDB bank so Ada's devin_pending
+# can surface them by voice and the Report Dispatch layer can render them.
+# The runner never had that emitter, nor a needs-input terminal state:
+# a task that stopped to ask Tony was either reported as a crash (retry
+# burn / auto-requeue) or vanished from the ledger. These knobs add an
+# ADVISORY lifecycle layer — every write is best-effort and warn-only,
+# so a dead MDDB/board-api can never stop claim or finish (the unattended
+# lane standard: advisory components degrade, never block).
+JOB_LIFECYCLE_ON = os.environ.get("RUNNER_JOB_LIFECYCLE", "1") != "0"
+DISPATCH_JOB_MDDB = os.environ.get(
+    "DISPATCH_JOB_MDDB_URL",
+    "http://100.102.134.91:11023/v1").rstrip("/")
+DISPATCH_JOB_COLLECTION = os.environ.get(
+    "DISPATCH_JOBS_COLLECTION", "ada-ha-bank-devin-handoff")
+NEEDS_INPUT_EXIT = 42
+NEEDS_INPUT_MARK = "NEEDS-INPUT:"
+
 # Lane -> cheapest model (jev-pilot Phase 2). Mirrors kanban-dispatch.
+# Executor-aware split (devin-executor-model-routing, DEV-0958):
+# LANE_MODELS ids are LiteLLM-proxy aliases — they resolve ONLY on the
+# opencode executor; DEVIN_LANE_MODELS holds the devin-native ids
+# `devin --model` accepts (every entry MUST appear in `devin models
+# list` — devin-dispatch.sh's preflight re-validates at launch).
+# paid_frontier has no devin pick: the paid route requires explicit
+# budget approval, so the lane keeps the devin default rather than
+# silently mapping to a billable model. Keep both tables in lockstep
+# with dispatch_repos.
 LANE_MODELS = {
     "free_lane": "litellm/gemini-3.5-flash-lite",
     # was litellm/or-claude-fable-5.1 — that alias was never deployed
     # on the litellm proxy (OPS-1021 escalation, 2026-11-02);
     # gemini-3.5-flash is the strongest served non-lite model
     "paid_frontier": "litellm/gemini-2.5-flash",
+}
+DEVIN_LANE_MODELS = {
+    "free_lane": "swe-2-flash-medium",
 }
 OPENCODE_LANES = os.environ.get("OPENCODE_LANES", "0") == "1"
 # claude executor gate (claude-dispatch lane, 2026-11-18 eval):
@@ -287,7 +368,7 @@ LANE_PROFILES = {
 # dispatch_repos.EXECUTORS — kept local because this file deploys as a
 # single file and may run where dispatch_repos isn't importable.
 EXECUTORS = {"opencode", "devin", "script", "manual", "kk_mac_local",
-            "jules", "nlm_batch", "claude"}
+            "nlm_batch", "claude"}
 # kk_mac_local executor contract (kk-mac-jev-adapter-integration):
 # bounded read-only LLM lane on KKs-Mac-Studio. Try-first, not strict —
 # the admitted task classes mirror kk_mac_llm.ALLOWED_TASKS; a card the
@@ -295,30 +376,11 @@ EXECUTORS = {"opencode", "devin", "script", "manual", "kk_mac_local",
 # KK_MAC_LANES=1 marks this host as able to serve it — off by default
 # until the supervised live dispatch passes.
 KK_MAC_LANES = os.environ.get("KK_MAC_LANES", "0") == "1"
+# mirrors kk_mac_llm.ALLOWED_TASKS — operator_brief/safe_route held
+# unadmitted pending re-eval (card kk-mac-admitted-classes-narrow)
 KK_MAC_TASK_CLASSES = {
-    "summary", "operator_brief", "structured_extract", "safe_route"}
+    "summary", "structured_extract"}
 KK_MAC_FALLBACK = "__kk_mac_fallback__"
-# jules executor (OPS-1048/OPS-1049): the Google AI Pro async
-# coding lane. JULES_LANES=1 marks a host jules-capable — it
-# needs scripts/jules/jules.py in the chaba checkout, a filled
-# ~/.config/secrets/jules.env, and egress to jules.googleapis.com.
-# Jules pushes its own branch+PR via the GitHub app, so push
-# creds and the push_capable() gate do NOT apply to this lane.
-JULES_LANES = os.environ.get("JULES_LANES", "0") == "1"
-JULES_ENV_FILE = Path.home() / ".config/secrets/jules.env"
-# dispatch repo name -> GitHub slug Jules can see (the GitHub
-# app must be installed on the repo — that gate is the Jules
-# sources list, not this map). The map IS the lane whitelist.
-JULES_REPO_MAP = {"chaba": "tonezzz/chaba",
-                "ada-voice": "tonezzz/ada-voice",
-                "sunsynk-card": "tonezzz/sunsynk-power-flow-card"}
-# Pro shares 100 tasks/day with the Jules web UI — the lane stays
-# well under it; a cap hit fails the start so the card retries
-# on the next claim instead of starving the account.
-JULES_LANE_DAILY_CAP = int(os.environ.get("JULES_LANE_DAILY_CAP",
-                                         "20"))
-JULES_LANE_TIMEOUT = int(os.environ.get("JULES_LANE_TIMEOUT",
-                                       "3600"))
 # nlm_batch executor (OPS-1048 finding #3): NotebookLM batch lane on
 # Google AI Pro quota (500 notebooks / 500 chats-day / 20 audio-day).
 # NLM_LANES=1 on hosts with `nlm` installed + authed profile
@@ -328,11 +390,6 @@ NLM_LANES = os.environ.get("NLM_LANES", "0") == "1"
 NLM_BIN = Path(os.environ.get("NLM_BIN",
                               str(Path.home() / ".local/bin/nlm")))
 NLM_PROFILE = Path.home() / ".notebooklm"
-# JULES_AUTO_MERGE=1 (precedent approved by Tony 2026-11-07,
-# OPS-1049): squash-merge a delivered Jules PR via the deploy key
-# when the session is COMPLETED and the PR is clean. Off = PR
-# lands for a human merge (verified=False review).
-JULES_AUTO_MERGE = os.environ.get("JULES_AUTO_MERGE", "0") == "1"
 
 
 def card_profile(card: dict) -> str:
@@ -350,11 +407,45 @@ def model_provider(model: str) -> str:
     return m.split("/", 1)[0] if "/" in m else "devin"
 
 
+def model_valid_for_executor(model: str, executor: str) -> bool:
+    """Mirror of dispatch_repos.model_valid_for_executor — kept local
+    because this file deploys standalone (may run where dispatch_repos
+    isn't importable). Provider/executor namespaces must match
+    (dispatch-model-pick-executor-mismatch 2026-11-08 +
+    devin-executor-model-routing 2026-11-24): the devin CLI accepts
+    only its own bare ids — a 'litellm/...' pick exits 'Unknown model';
+    opencode takes provider/model ids. `executor` is the RESOLVED
+    executor; '' resolves to devin. Empty model = the executor
+    default, always valid."""
+    m = (model or "").strip()
+    if not m:
+        return True
+    if (executor or "devin") == "opencode":
+        return "/" in m
+    return model_provider(m) == "devin"
+
+
+def lane_model(lane: str, executor: str) -> str:
+    """Mirror of dispatch_repos.lane_model — lane pick constrained to
+    the executor's model namespace ('' = no pick, executor default
+    applies). opencode gets LANE_MODELS (litellm ids); devin gets
+    DEVIN_LANE_MODELS (devin-native ids — free_lane only;
+    paid_frontier stays gated on explicit budget approval)."""
+    ex = executor or "devin"
+    if ex == "opencode":
+        return LANE_MODELS.get(lane or "", "")
+    if ex == "devin":
+        return DEVIN_LANE_MODELS.get(lane or "", "")
+    return ""
+
+
 LANE_KW = {
     # Keep in lockstep with dispatch_repos.LANE_KW — this vendored copy
-    # runs on remote hosts where dispatch_repos is absent. Bare "spend"
-    # removed 2026-11-17 (dispatch-lane-classifier-spend-false-manual):
-    # context-free spend mentions in spec bodies forced manual.
+    # runs on remote hosts where dispatch_repos is absent, and
+    # tests/board/test_codemod_lane_gate.py asserts the two dicts are
+    # identical. Bare "spend" removed 2026-11-17
+    # (dispatch-lane-classifier-spend-false-manual): context-free spend
+    # mentions in spec bodies forced manual.
     "manual": ["hardware", "buy", "usb cam", "camera", "physical",
                "spend money", "paid compute", "real spend", "costs money",
                "order the", "blocked on tony", "rotation", "rekey",
@@ -366,19 +457,74 @@ LANE_KW = {
                       "versus", "benchmark", "bench ", "productionize",
                       "promotion gate", "hardening", "hybrid recall",
                       "discussion board", "work bridge"],
-    "codemod": ["config", "retire", "remove", "bump", "lock", "change the",
-                "parallelism", "raise ", "cap", "flag", "script",
-                "copies task tests", "inject", "drift", "delete old", "purge",
-                "schedule", "recurring", "nest job"],
+    # codemod = deterministic pattern change, known transform, no
+    # judgment (OPS-0028, 2026-11-20). Entries are TITLE-scoped
+    # word-boundary matches — 'lock' no longer substring-hits
+    # block/clock/unlock (ADA-1285 routed codemod on "tools block" in
+    # its spec). Bare 'config'/'lock'/'script'/'raise ' dropped or
+    # qualified: any spec discussing a script or config matched.
+    # "codemod_body" holds the strong multi-word phrases that may also
+    # match the spec body; classify_lane picks codemod only on a title
+    # hit OR >=2 distinct hits — a lone body mention is context, not a
+    # known transform.
+    "codemod": ["retire", "remove", "bump", "deprecate", "purge",
+                "cap", "flag", "inject", "drift", "parallelism",
+                "raise", "schedule", "recurring", "change the"],
+    "codemod_body": ["delete old", "copies task tests", "nest job"],
+    # DEV-0045 reroute: lockstep with dispatch_repos.LANE_KW (host
+    # keyword removed — see the rationale there).
     "devin": ["shims", "wiring", "multi-repo", "backfill", "re-embed",
-              "roster", "protocol", "provision", "host", "feature",
+              "roster", "protocol", "provision", "feature",
               "automation", "diagnos", "experiment", "pipeline", "end-to-end",
               "quadlet", "warm standby", "repoint", "failing", "dep fix",
               "dependency"],
     "free_lane": ["install", "try", "launch", "write the", "design doc",
-                  "plan", "evaluate", "gui", "probe", "report", "fixture"],
+                  "docs-only", "documentation", "docs/", "checklist", "testable", "unit test", "python helper", "small code", "plan",
+                  "evaluate", "gui", "probe", "report", "fixture"],
 }
 LANE_COMPARE = r"(vs|versus|or)\s+(\w+\s+)?(lane|option|choice|path|approach)"
+
+# Read-only audit-class lead-in — lockstep with dispatch_repos
+# (classifier-readonly-audit-class-reroute): titles that LEAD with an
+# audit/assessment/review/investigate/sweep marker are bounded
+# read-only triage -> free_lane. Title-scoped ONLY; a mutation verb in
+# the TITLE vetoes; the hyphenated-slug form needs >=2 hyphens so
+# component names like 'audit-cast' don't match. See dispatch_repos
+# for the full rationale.
+_AUDIT_RO_STEM = r"(?:audit|assess|review|investigat|sweep)"
+AUDIT_RO_TITLE_RE = re.compile(
+    r"^\s*(?:\[[^\]\n]*\]\s*)*(?:"
+    r"\[[^\]\n]*\b" + _AUDIT_RO_STEM + r"\w*\b[^\]\n]*\]"
+    r"|\b" + _AUDIT_RO_STEM + r"\w*(?=[\s:;,.!?)\]]|$)"
+    r"|\b" + _AUDIT_RO_STEM + r"\w*(?:-\w+){2,}(?=[\s:;,.!?)\]]|$))",
+    re.I)
+AUDIT_RO_MUTATION_RE = re.compile(
+    r"\b(?:fix(?:es|ed|ing)?|implement\w*|deploy\w*|migrat\w*|"
+    r"merg\w*|repair\w*|patch\w*|clean[\s-]?up\w*|build\w*|creat\w*)\b",
+    re.I)
+
+
+def _kw_hit(kw: str, text: str) -> bool:
+    """Word-boundary keyword match — 'lock' hits 'lock' but not
+    block/clock/unlock; phrase words may span any whitespace run.
+    Lockstep with dispatch_repos._kw_hit."""
+    pat = r"\b" + r"\s+".join(re.escape(w) for w in kw.split()) + r"\b"
+    return re.search(pat, text) is not None
+
+
+def _codemod_hit(title: str, text: str):
+    """Codemod gate (OPS-0028), lockstep with dispatch_repos._codemod_hit:
+    a TITLE hit on any codemod keyword is decisive; the spec body counts
+    only through the LANE_KW['codemod_body'] multi-word phrases, and
+    codemod still needs >=2 distinct hits when the title says nothing —
+    a lone body mention is context, not a known transform. Returns the
+    first matched keyword (LANE_KW order) or None."""
+    title_hits = [k for k in LANE_KW["codemod"] + LANE_KW["codemod_body"]
+                  if _kw_hit(k, title)]
+    body_hits = [k for k in LANE_KW["codemod_body"]
+                 if k not in title_hits and _kw_hit(k, text)]
+    hits = title_hits + body_hits
+    return hits[0] if title_hits or len(hits) >= 2 else None
 
 
 def classify_lane(card: dict) -> str:
@@ -386,24 +532,44 @@ def classify_lane(card: dict) -> str:
     Lockstep with dispatch_repos.classify_lane: an explicit action.lane
     (no lane_source provenance) wins; manual keywords match the TITLE
     only so spec-body spend/hardware discussion can't force Tony's
-    hands (dispatch-lane-classifier-spend-false-manual, 2026-11-17)."""
-    import re as _re
+    hands (dispatch-lane-classifier-spend-false-manual, 2026-11-17);
+    codemod needs a title hit or >=2 distinct hits via _codemod_hit
+    (OPS-0028). Audit-class lead-in titles route to free_lane at the
+    free_lane slot unless the title carries a mutation verb — lockstep
+    with dispatch_repos.classify_lane (classifier-readonly-audit-class-
+    reroute)."""
     a = card.get("action") or {}
     declared = str(a.get("lane") or "").strip()
     if declared and not a.get("lane_source"):
         return declared
+    # DEV-0045 chosen slice — lockstep with dispatch_repos.classify_lane:
+    # timer-sentinel alerts are bounded diagnoses, pin them to free_lane
+    # before the generic "failing" keyword sends them to devin.
+    tags = {str(t) for t in (card.get("tags") or [])}
+    if {"timer-alert", "by:timer-sentinel"} <= tags:
+        return "free_lane"
     title = card.get("title", "").lower()
     text = (card.get("title", "") + " " +
             (card.get("brief") or card.get("spec") or "")).lower()
     if any(k in title for k in LANE_KW["manual"]):
         return "manual"
-    if _re.search(LANE_COMPARE, text):
+    if re.search(LANE_COMPARE, text):
         return "paid_frontier"
+    codemod_kw = _codemod_hit(title, text)
+    # audit-ro — lockstep: evaluated at the free_lane slot, after
+    # manual/compare/paid_frontier/codemod, before devin.
+    audit_ro = bool(AUDIT_RO_TITLE_RE.search(title)
+                    and not AUDIT_RO_MUTATION_RE.search(title))
+    # DEV-0045 reroute — lockstep: free_lane before devin.
     for lane, kws in (("paid_frontier", LANE_KW["paid_frontier"]),
                       ("codemod", LANE_KW["codemod"]),
-                      ("devin", LANE_KW["devin"]),
-                      ("free_lane", LANE_KW["free_lane"])):
-        if any(k in text for k in kws):
+                      ("free_lane", LANE_KW["free_lane"]),
+                      ("devin", LANE_KW["devin"])):
+        if lane == "free_lane" and audit_ro:
+            return "free_lane"
+        kw = codemod_kw if lane == "codemod" else next(
+            (k for k in kws if k in text), None)
+        if kw:
             return lane
     return "devin"
 
@@ -483,6 +649,26 @@ VSYNC_PAT = "GetVSyncParametersIfAvailable"
 UNSTICK = ("display unstick: ssh in, `sudo chvt 3`, sleep 2, "
            "`sudo chvt 2` (modeset reset — session survives)")
 
+# --- jev stagnation gate (card jev-stagnation-gate-...-a70f74) --------
+# Semantic stall detection over each running job's progress: heartbeat
+# (freshest taskdir/journal write) + recent outputs -> the Jev
+# loop-gate probe (scripts/jev/loop-gate.py) answers CONTINUE/WARN/
+# REPLAN/HALT. WARN/REPLAN post a debounced comms note; HALT needs
+# GATE_HALT_STRIKES consecutive halt verdicts, then the unit is
+# SIGTERMed and the finish result names the gate. Advisory by
+# contract: no probe module/backend -> the pass is a no-op, and a
+# gate error never blocks claims or finishes. The 4.4h colibri-bench
+# stall (2026-10-24) is the motivating replay — see
+# docs/ssot/jobs/bench/2026-11-24-jev-stagnation-gate.yml.
+GATE_ON = os.environ.get("RUNNER_STAGNATION_GATE", "auto")
+GATE_MIN_AGE_S = int(os.environ.get("RUNNER_GATE_MIN_AGE_S", "2700"))
+GATE_INTERVAL_S = int(os.environ.get("RUNNER_GATE_INTERVAL_S", "900"))
+GATE_HALT_STRIKES = int(os.environ.get("RUNNER_GATE_HALT_STRIKES", "2"))
+GATE_HALT_P = float(os.environ.get("RUNNER_GATE_HALT_P", "0.7"))
+GATE_WARN_P = float(os.environ.get("RUNNER_GATE_WARN_P", "0.5"))
+GATE_TYPES = {t.strip() for t in os.environ.get(
+    "RUNNER_GATE_TYPES", "dispatch").split(",") if t.strip()}
+
 # --- push-credential claim guard (runner-push-cred-gap) ---------------
 # A runner must only claim dispatch cards for repos it can push. The
 # ADA-0673 failure (2026-10-14): tony-macbook's ada-voice clone looked
@@ -553,7 +739,7 @@ def _publish(card_id: str, kind: str, title: str, body: str = "") -> None:
     api("/publish", {"kind": kind, "title": title[:240],
                      "body": body[:2000], "source": "runner-lifecycle",
                      "confidence": "observed", "visibility": "members",
-                     "card": card_id,
+                     "card": card_id, "project": "chaba",
                      "meta": {"lane": "unattended", "host": HOST}})
 
 
@@ -686,6 +872,9 @@ Rails: you are processing kanban card '{id}' on runner '{host}'.
 - Do NOT call board-api or any network endpoint — the runner records
   progress and verdicts itself. Emit only what the task contract asks
   as your final message.
+- If {answerfile} exists, its newest line with kind:"answer" is Tony's
+  authoritative reply to a question you previously raised — read it
+  locally before you start and act on it.
 """.strip()
 
 
@@ -1268,6 +1457,84 @@ def dr_module():
     return None
 
 
+_LG = None
+_LG_TRIED = False
+
+
+def lg_module():
+    """Import loop-gate — the Jev stagnation probe (scripts/jev/
+    loop-gate.py, card jev-stagnation-gate-...-a70f74). Same
+    single-file deploy constraint as dt_module/dr_module: the probe
+    lives in the chaba repo, so resolve it from a local checkout
+    (repos.conf chaba path first — freshest on exec hosts — then the
+    module-adjacent and ~/CascadeProjects/chaba copies). The file is
+    hyphenated like its scripts/jev siblings, so it loads via
+    SourceFileLoader (code-decision-eval.py convention). None -> the
+    gate pass is a no-op; advisory, never a claim blocker."""
+    global _LG, _LG_TRIED
+    if _LG_TRIED:
+        return _LG
+    _LG_TRIED = True
+    from importlib.machinery import SourceFileLoader
+    cands = []
+    env = os.environ.get("DISPATCH_REPOS_DIR")
+    if env:
+        cands.append(Path(env).parent / "jev" / "loop-gate.py")
+    cands += [Path(__file__).resolve().parent.parent / "jev"
+              / "loop-gate.py",
+              Path.home() / "CascadeProjects/chaba/scripts/jev"
+              / "loop-gate.py"]
+    co = _repo_checkout("chaba")
+    if co:
+        cands.append(co / "scripts" / "jev" / "loop-gate.py")
+    for p in cands:
+        if not p.exists():
+            continue
+        try:
+            _LG = SourceFileLoader("loop_gate", str(p)).load_module()
+            return _LG
+        except Exception:
+            continue
+    return None
+
+
+_WT_SWEEP = None
+_WT_SWEEP_TRIED = False
+
+
+def wt_sweep_module():
+    """Import dispatch-wt-sweep — the OPS-1036 bounded reaper for
+    failed-run dispatch worktrees (scripts/board/dispatch-wt-sweep.py).
+    Same single-file deploy constraint as lg_module: hyphenated name
+    -> SourceFileLoader, resolved from a local chaba checkout. None ->
+    the sweep pass is a no-op."""
+    global _WT_SWEEP, _WT_SWEEP_TRIED
+    if _WT_SWEEP_TRIED:
+        return _WT_SWEEP
+    _WT_SWEEP_TRIED = True
+    from importlib.machinery import SourceFileLoader
+    dirs = []
+    env = os.environ.get("DISPATCH_REPOS_DIR")
+    if env:
+        dirs.append(Path(env))
+    dirs += [Path(__file__).resolve().parent,
+             Path.home() / "CascadeProjects/chaba/scripts/board"]
+    co = _repo_checkout("chaba")
+    if co:
+        dirs.append(co / "scripts" / "board")
+    for d in dirs:
+        p = d / "dispatch-wt-sweep.py"
+        if not p.exists():
+            continue
+        try:
+            _WT_SWEEP = SourceFileLoader(
+                "dispatch_wt_sweep", str(p)).load_module()
+            return _WT_SWEEP
+        except Exception:
+            continue
+    return None
+
+
 def close_out_merge(cid: str, ent: dict, card: dict) -> tuple:
     """Local merge step for a finished dispatch claim. Returns
     (verified: bool|None, comms notes: list[str])."""
@@ -1292,18 +1559,6 @@ def close_out_merge(cid: str, ent: dict, card: dict) -> tuple:
     if dr is None:
         return None, ["auto-merge skipped: dispatch_repos module not "
                       "found on this host — merge by hand"]
-    # jules lane: the merge already happened on GitHub inside
-    # finish_jules_lane (PR squash-merge via deploy key) — there is no
-    # local dispatch worktree to merge.
-    tid0 = ent.get("tid") or (ent.get("unit") or "").removeprefix("devin-task-")
-    mfile = (Path.home() / ".local/share/devin-dispatch/tasks" / tid0 /
-             "meta.json")
-    try:
-        if json.loads(mfile.read_text()).get("executor") == "jules":
-            return True, ["jules: PR merged on GitHub — nothing local "
-                          "to merge"]
-    except Exception:
-        pass
     a = _act(card)
     pseudo = {"id": cid,
               "expected_goals": card.get("expected_goals"),
@@ -1378,7 +1633,7 @@ def finish_profile_dispatch(cid, taskdir, meta, card, ocp):
         if run.get("scope_violations"):
             raise ValueError("profile scope audit failed")
         artifact = (rd / "artifact.out").read_bytes()
-        if not ocp.artifact_matches_snapshot(rd):
+        if env.get("dispatch_verify") == "host_snapshot" and not ocp.artifact_matches_snapshot(rd):
             raise ValueError("artifact differs from original host tool output")
         if (wt / env["artifact"]["path"]).read_bytes() != artifact:
             raise ValueError("landed artifact differs from verified evidence")
@@ -1668,9 +1923,11 @@ def _self_stale_check() -> str:
             return ""
     except OSError:
         return ""
-    return (f"installed runner-agent drifted from repo {ref} — redeploy "
-            "it (scp scripts/board/runner-agent.py "
-            "<host>:~/.local/bin/runner-agent)")
+    return (f"installed runner-agent drifted from repo {ref} — "
+            "_self_update/sync-runner-tools converge it within a sync "
+            "cycle; persistent drift means a stale checkout or an "
+            "unpinned source (runner-tooling.manifest.json), not a "
+            "missing scp")
 
 
 def _claimable(card: dict) -> tuple:
@@ -1678,6 +1935,13 @@ def _claimable(card: dict) -> tuple:
     The gate order IS claimable(); the reason feeds /ready verdicts so
     the board can say *why* a card waits instead of silently starving."""
     a = _act(card)
+    # KNB-0036 follow-through: the claim queue is column-scoped. A stale
+    # action.status=queued on a done/review/lab card (finish-less
+    # close-outs and do_move leave exactly that) is off-queue — never
+    # claimed; claim_pass's defer-note gate already skips it too.
+    if card.get("column") not in ("backlog", "doing"):
+        return "", (f"column {card.get('column') or '(unset)'} — "
+                    "off the claim queue")
     if a.get("status") != "queued":
         return "", "not queued"
     stale = self_stale_reason()
@@ -1756,22 +2020,6 @@ def _claimable(card: dict) -> tuple:
             if not nlm_available():
                 return "", "executor=nlm_batch but no nlm/profile"
             return "dispatch", ""
-        if ex == "jules" or (not ex and a.get("lane") == "jules"):
-            # Declared jules executor / lane pin: claimable only where
-            # the lane can actually run — JULES_LANES=1, the client +
-            # filled key, and the repo installed in Jules. push_capable()
-            # does NOT gate this lane: Jules pushes its own branch via
-            # the GitHub app and there is no local worktree to merge
-            # (OPS-1049).
-            if not JULES_LANES:
-                return "", "executor=jules but JULES_LANES=0"
-            if not jules_script() or not jules_keyed():
-                return "", "executor=jules but no jules.py/key"
-            if not jules_repo_slug(str(a.get("repo") or "chaba")):
-                return "", (f"executor=jules: repo "
-                            f"{a.get('repo') or 'chaba'} not in "
-                            "JULES_REPO_MAP")
-            return "dispatch", ""
         if ex == "claude":
             # Declared Claude executor: same contract as opencode —
             # claimable only where the lane can actually run
@@ -1802,6 +2050,18 @@ def _claimable(card: dict) -> tuple:
                 return "", ("executor=opencode declared but no "
                             "action.lane_envelope staged — admission "
                             "holds at start; stage the envelope")
+            # Profile-resolution hold at CLAIM — mirrors
+            # _start_opencode_lane: action.agent_profile wins, else
+            # LANE_PROFILES[action.lane] (explicit executor forwards
+            # the card's own lane since OPS-1021). A card that resolves
+            # neither can never start — claiming it burns a failed
+            # attempt (ops-1244d-janitor-merge: 'no task profile for
+            # lane paid_frontier').
+            if not (card_profile(card)
+                    or LANE_PROFILES.get(str(a.get("lane") or ""))):
+                return "", ("executor=opencode declared but no task "
+                            "profile resolves — set action.agent_profile "
+                            "or a lane mapped in LANE_PROFILES")
         elif ex in ("", "devin", "kk_mac_local"):
             # the devin path launches devin-dispatch, which drives
             # systemd-run itself — outside the launchd seam's reach. On
@@ -1901,6 +2161,18 @@ def executor_defer_reason(card: dict) -> str:
                     "hold at start, so the claim is held too: stage "
                     "the envelope or pin executor=devin (no attempt "
                     "burned)")
+        # Mirror of the _claimable profile hold — a card that resolves
+        # no task profile can never start; surface the reason on the
+        # board instead of letting it look like silent starvation.
+        if not (card_profile(card)
+                or LANE_PROFILES.get(str(a.get("lane") or ""))):
+            lane = str(a.get("lane") or "")
+            return ("executor=opencode declared but no task profile "
+                    f"resolves (action.agent_profile unset, action.lane "
+                    f"{lane or '(none)'!r} unmapped) — the card stays "
+                    "queued for a profile pin or a LANE_PROFILES-mapped "
+                    "lane rather than failing 'no task profile' at "
+                    "start (no attempt burned)")
     if ex == "claude":
         missing = []
         if not CLAUDE_LANES:
@@ -1938,20 +2210,6 @@ def executor_defer_reason(card: dict) -> str:
             return ("executor=nlm_batch declared but this runner lacks "
                     "nlm — the card stays queued for a NotebookLM-capable "
                     "runner; it will never silently fall back to devin")
-    if ex == "jules" or (not ex and a.get("lane") == "jules"):
-        if (a.get("type") or "dispatch") == "dispatch":
-            missing = []
-            if not JULES_LANES:
-                missing.append("JULES_LANES=0")
-            if not jules_script():
-                missing.append("no jules.py")
-            if not jules_keyed():
-                missing.append("no jules key")
-            if missing:
-                return (f"executor=jules declared but this runner can't "
-                        f"serve it ({', '.join(missing)}) — the card stays "
-                        "queued for a Jules-capable runner; it will never "
-                        "silently fall back to devin")
     if ex == "devin" and task_runtime() != "systemd" \
             and (a.get("type") or "dispatch") == "dispatch":
         return ("executor=devin declared but this runner is launchd — "
@@ -1995,10 +2253,11 @@ def shutil_which(name: str) -> bool:
 
 
 def opencode_bin() -> str:
-    """Resolve the opencode binary — $OPENCODE_BIN, PATH, then the two
+    """Resolve the opencode binary — $OPENCODE_BIN, PATH, then the
     install locations the systemd user manager PATH never carries
-    (~/.opencode/bin only enters PATH via ~/.bashrc, so shutil_which
-    alone misses it under the timer unit)."""
+    (~/.opencode/bin only enters PATH via ~/.bashrc, ~/.npm-global/bin
+    only via per-unit drop-ins, so shutil_which alone misses both
+    under the timer unit)."""
     env = os.environ.get("OPENCODE_BIN") or ""
     if env and Path(env).is_file():
         return env
@@ -2007,7 +2266,8 @@ def opencode_bin() -> str:
         if c.is_file() and os.access(c, os.X_OK):
             return str(c)
     for c in (Path.home() / ".opencode/bin/opencode",
-              Path.home() / ".local/bin/opencode"):
+              Path.home() / ".local/bin/opencode",
+              Path.home() / ".npm-global/bin/opencode"):
         if c.is_file() and os.access(c, os.X_OK):
             return str(c)
     return ""
@@ -2033,47 +2293,9 @@ def opencode_needs_standalone(oc_bin: str) -> bool:
     return _OPENCODE_V2
 
 
-def jules_script() -> str:
-    """scripts/jules/jules.py in the chaba dispatch checkout, else ""."""
-    root = (_repo_checkout("chaba")
-            or (Path.home() / "CascadeProjects/chaba"))
-    p = root / "scripts" / "jules" / "jules.py"
-    return str(p) if p.is_file() else ""
-
-
-def jules_keyed() -> bool:
-    """~/.config/secrets/jules.env holds a real (non-placeholder) key."""
-    try:
-        for line in JULES_ENV_FILE.read_text().splitlines():
-            if line.startswith("JULES_API_KEY="):
-                v = line.split("=", 1)[1].strip()
-                return bool(v) and not v.startswith("__")
-    except OSError:
-        pass
-    return False
-
-
 def nlm_available() -> bool:
     """nlm CLI installed and an auth profile exists."""
     return NLM_BIN.is_file() and NLM_PROFILE.is_dir()
-
-
-def jules_repo_slug(repo: str) -> str:
-    """dispatch repo name -> 'owner/name' Jules source slug, else ""."""
-    return JULES_REPO_MAP.get(repo, "")
-
-
-def jules_daily_used() -> int:
-    """Jules sessions created today UTC; -1 on probe failure (the probe
-    does not gate — if quota were actually out the API would 429)."""
-    js = jules_script()
-    if not js:
-        return -1
-    r = sh(["python3", js, "usage"], timeout=60)
-    try:
-        return int((r.stdout or "").strip())
-    except (ValueError, AttributeError):
-        return -1
 
 
 # --- task unit resource limits ---------------------------------------
@@ -2330,6 +2552,261 @@ def note_defer(card: dict, kind: str, reason: str,
         DEFER_FILE.write_text(json.dumps(log, indent=1))
     except OSError:
         pass
+
+
+# --- ADA-0024: needs-input / job-ledger helpers -----------------------
+# Kept beside note_defer because both are the runner's "human must act"
+# surface. None of these raise into the lane: MDDB and board-api are
+# advisory here (warn-only), so a dead dependency never stops a claim or
+# a finish.
+
+def _job_taskdir(ent: dict) -> Path:
+    return (Path.home() / ".local/share/devin-dispatch/tasks"
+            / str(ent.get("tid") or ""))
+
+
+def _task_exit_code(ent: dict) -> int | None:
+    try:
+        return int((_job_taskdir(ent) / "exit_code").read_text().strip())
+    except (OSError, ValueError):
+        return None
+
+
+def needs_input_question(ent: dict, unit: str = "") -> str:
+    """The one-line question when a finished dispatch task stopped to ask
+    Tony, else ''. job-run.sh precedence: needs-input.txt first, then the
+    last NEEDS-INPUT: line in events.jsonl / output.log, then exit 42.
+    An ordinary non-zero exit is never treated as needs-input."""
+    td = _job_taskdir(ent)
+    marker = td / "needs-input.txt"
+    if marker.is_file():
+        try:
+            line = marker.read_text(errors="replace").splitlines()[0].strip()
+            if line:
+                return line[:300]
+        except OSError:
+            pass
+    for name in ("events.jsonl", "output.log"):
+        try:
+            lines = (td / name).read_text(errors="replace").splitlines()
+        except OSError:
+            continue
+        hits = []
+        for ln in lines:
+            text = ln
+            if ln.lstrip().startswith("{"):
+                try:
+                    ev = json.loads(ln)
+                except json.JSONDecodeError:
+                    ev = {}
+                if isinstance(ev, dict):
+                    text = str(ev.get("text") or ev.get("content")
+                               or ev.get("message") or "")
+            if NEEDS_INPUT_MARK in text:
+                hits.append(text.split(NEEDS_INPUT_MARK, 1)[1].strip())
+        if hits:
+            q = hits[-1][:300]
+            # Persist it so Ada and answer delivery see the same text as
+            # job-run.sh's _needs_input (which writes needs-input.txt).
+            try:
+                td.mkdir(parents=True, exist_ok=True)
+                marker.write_text(q + "\n")
+            except OSError:
+                pass
+            return q
+    if _task_exit_code(ent) == NEEDS_INPUT_EXIT:
+        return "Job needs direction — reply with the next step."
+    return ""
+
+
+def _job_doc(job_id: str, status: str, question: str = "",
+             detail: str = "") -> dict:
+    """MDDB /add payload — mirrors scripts/devin/job-run.sh exactly
+    (every meta value is a list; the bank's schema expects that shape)."""
+    now = datetime.now(timezone.utc).isoformat()
+    meta = {"kind": ["job"], "status": [status], "job_id": [job_id],
+            "host": [HOST], "ts": [now], "subject": ["job-" + job_id],
+            "source": ["runner-agent"], "written_by": ["runner-agent"],
+            "scope": ["tony"], "bank": ["devin-handoff"]}
+    if question:
+        meta["question"] = [question]
+    body = f"Job {job_id} on {HOST}: {status}."
+    if question:
+        body += f"\n\nNeeds input: {question}"
+    if detail:
+        body += f"\n\n{detail[:2000]}"
+    return {"collection": DISPATCH_JOB_COLLECTION, "key": "job/" + job_id,
+            "lang": "en", "contentMd": body, "meta": meta}
+
+
+def job_ledger_write(job_id: str, status: str, question: str = "",
+                     detail: str = "") -> bool:
+    """Best-effort upsert of job/<id> in the dispatch bank. Returns False
+    on failure — never raises, never blocks the lane."""
+    if not JOB_LIFECYCLE_ON or not job_id:
+        return False
+    try:
+        payload = json.dumps(
+            _job_doc(job_id, status, question, detail)).encode()
+        req = urllib.request.Request(
+            DISPATCH_JOB_MDDB + "/add", data=payload,
+            headers={"Content-Type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return 200 <= resp.status < 300
+    except Exception as e:
+        print(f"{job_id}: job ledger {status} write failed: {e}")
+        return False
+
+
+def _last_answer(ent: dict) -> str:
+    """Newest authoritative answer delivered by board-api /respond to
+    the task dir (kind:answer wins over review kind:comment lines)."""
+    try:
+        lines = (_job_taskdir(ent) / "answers.jsonl").read_text(
+            errors="replace").splitlines()
+    except OSError:
+        return ""
+    for raw in reversed(lines):
+        try:
+            row = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+        if row.get("kind") == "answer" and \
+                str(row.get("answer") or "").strip():
+            return str(row["answer"]).strip()[:1000]
+    return ""
+
+
+def _request_answer(card: dict, cid: str) -> str:
+    """Answer recorded on the board request we raised. Runner claims
+    don't carry action.task_id, so board-api's answers.jsonl delivery
+    can't reach these task dirs — the card's own requests[] is the
+    authoritative board-side channel."""
+    for r in card.get("requests") or []:
+        if not isinstance(r, dict) or r.get("id") != f"job-input-{cid}":
+            continue
+        if r.get("status") == "answered":
+            answer = str(r.get("answer") or "").strip()
+            if answer:
+                return answer[:1000]
+    return ""
+
+
+def _mddb_answer(cid: str) -> str:
+    """Ada voice answers (devin_answer) land as answer/<id> in the same
+    bank; they never touch the board request. Read the doc by key so the
+    voice channel works without a task_id/answers.jsonl path."""
+    if not JOB_LIFECYCLE_ON:
+        return ""
+    try:
+        payload = json.dumps({
+            "collection": DISPATCH_JOB_COLLECTION,
+            "key": f"answer/{cid}", "lang": "en"}).encode()
+        req = urllib.request.Request(
+            DISPATCH_JOB_MDDB + "/get", data=payload,
+            headers={"Content-Type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            doc = json.loads(resp.read())
+        txt = str((doc or {}).get("contentMd") or "")
+        # devin_answer writes "Answer for job <id> (<ts>):\n\n<message>"
+        answer = txt.partition(":\n\n")[2].strip()
+        return answer[:1000]
+    except Exception:
+        return ""
+
+
+def _raise_input_request(cid: str, question: str) -> None:
+    """Ask on the card so the normal answer path (board /respond, or a
+    voice reply written into the requests[] entry) reaches the blocked
+    task. Stable request id dedupes re-observation; a duplicate reply is
+    expected and ignored."""
+    try:
+        resp = api("/request", {
+            "id": cid, "from": "chaba",
+            "request_id": f"job-input-{cid}",
+            "ask": f"Job needs your input: {question}",
+            "options": [
+                {"id": "answer", "label": "Answer — reply in chat",
+                 "action": "none"},
+                {"id": "hold", "label": "Hold — leave blocked",
+                 "action": "hold"}]})
+        err = str((resp or {}).get("error") or "")
+        if err and "duplicate" not in err.lower():
+            print(f"{cid}: board input request failed: {err}")
+    except Exception as e:
+        print(f"{cid}: board input request failed: {e}")
+
+
+def _enter_awaiting(cid: str, ent: dict, question: str,
+                    detail: str = "") -> None:
+    """Park a finished task on Tony. Deliberately does NOT post
+    /action finish — do_finish(ok=False) burns retries and auto-requeues,
+    and a blocked job is not a failed job."""
+    ent["job_awaiting"] = {
+        "question": question,
+        "at": datetime.now(timezone.utc).isoformat(),
+        "tid": ent.get("tid") or "", "unit": ent.get("unit") or ""}
+    job_ledger_write(cid, "awaiting-user", question=question, detail=detail)
+    _raise_input_request(cid, question)
+    api("/comment", {"id": cid, "from": "chaba",
+                     "text": f"needs input: {question}",
+                     "awaiting_action": True})
+    _notify(cid, "needs-input", question[:160])
+
+
+def _job_answer_tick(cid: str, ent: dict, cards_get) -> bool:
+    """If Tony answered a blocked job, record it and resume the task.
+    Returns True when a new unit is running on ent."""
+    aw = ent.get("job_awaiting") or {}
+    if aw.get("resume_failed"):
+        return False  # a failed resume holds for a human — no silent loop
+    card = cards_get().get(cid) or {}
+    # Three answer channels, in authority order: a live answers.jsonl
+    # (if a task_id was stamped), the board request we raised, or Ada's
+    # voice-written MDDB answer doc.
+    answer = (_last_answer(ent) or _request_answer(card, cid)
+              or _mddb_answer(cid))
+    if not answer:
+        return False
+    job_ledger_write(cid, "answered", question=aw.get("question", ""),
+                     detail=answer)
+    api("/comment", {"id": cid, "from": "ada",
+                     "text": f"answer received — resuming: {answer[:200]}"})
+    if not card:
+        aw["resume_failed"] = True
+        api("/comment", {"id": cid, "from": "chaba",
+                         "text": "answer recorded but card vanished — "
+                                 "cannot resume; job holds for a human",
+                         "awaiting_action": True})
+        return False
+    try:
+        (_ensure_act(card))["last_answer"] = answer
+    except Exception:
+        pass
+    u2, t2, e2 = start_task(card, "dispatch")
+    if e2 or not u2:
+        aw["resume_failed"] = True
+        job_ledger_write(cid, "failed", detail=f"resume failed: {e2 or 'no unit'}")
+        api("/comment", {"id": cid, "from": "chaba",
+                         "text": f"resume failed: {e2 or 'no unit'} — "
+                                 "job holds for a human",
+                         "awaiting_action": True})
+        return False
+    # The resumed lane reads a fresh task dir; carry the authoritative
+    # answer across so RAILS_OPENCODE's answers.jsonl line is actionable.
+    try:
+        newtd = _job_taskdir({"tid": t2})
+        newtd.mkdir(parents=True, exist_ok=True)
+        with (newtd / "answers.jsonl").open("a") as fh:
+            fh.write(json.dumps({
+                "at": datetime.now(timezone.utc).isoformat(),
+                "card": cid, "from": "ada", "kind": "answer",
+                "answer": answer}) + "\n")
+    except OSError:
+        pass
+    ent.pop("job_awaiting", None)
+    ent.update({"unit": u2, "tid": t2})
+    return True
 
 
 def note_gpu_defer(card: dict, reason: str) -> None:
@@ -2751,8 +3228,9 @@ def start_kk_mac_lane(card: dict, unit: str) -> tuple:
     taskdir = Path.home() / ".local/share/devin-dispatch/tasks" / tid
     try:
         taskdir.mkdir(parents=True, exist_ok=True)
-        if worktree.exists():
-            return "", "", f"worktree already exists: {worktree}"
+        wterr = _stale_worktree_gate(root, worktree, taskdir, tid)
+        if wterr:
+            return "", "", wterr
         base = f"origin/{ent.get('default_branch') or 'master'}"
         sh(["git", "-C", str(root), "fetch", "-q", "origin",
             ent.get('default_branch') or 'master'], timeout=60)
@@ -2798,11 +3276,39 @@ def start_kk_mac_lane(card: dict, unit: str) -> tuple:
         f"echo \"$$rc\" > {shlex.quote(str(taskdir / 'exit_code'))}; "
         "exit $$rc"
     )
+    # Outer runtime bound (OPS-0999): the executor's own urlopen/ssh
+    # timeouts bound each call, but a stuck probe/monitor could still
+    # hold the unit forever — arm RuntimeMaxSec from the card's
+    # action.timeout_s, default 900s (one bounded generate + memory
+    # sampling fits comfortably).
+    try:
+        tmax = int(a.get("timeout_s") or 0) or 900
+    except (TypeError, ValueError):
+        tmax = 900
     err = rt_launch(f"devin-task-{tid}",
-                    f"runner {cid} kk_mac {task_class}", shell)
+                    f"runner {cid} kk_mac {task_class}", shell,
+                    timeout_s=tmax)
     if err:
         return "", "", err
     return f"devin-task-{tid}", tid, ""
+
+
+def _kk_mac_tokens_fragment(usage: dict) -> str:
+    """lane-savings TOKENS_RE-compatible usage fragment for a finished
+    kk_mac_local run (card kk-mac-usage-to-lane-savings). Compact JSON —
+    lane-savings matches the literal `"tokens":{"total":N,"input":N,
+    "output":N}` inside action.result, which board-api stores as
+    result[:300], so finish_pass PREPENDS this to the finish result.
+    Ollama counts: prompt_eval_count = input, eval_count = output."""
+    try:
+        inp = int(usage.get("prompt_eval_count") or 0)
+        out = int(usage.get("eval_count") or 0)
+    except (TypeError, ValueError):
+        return ""
+    if not (inp or out):
+        return ""
+    return (f'{{"tokens":{{"total":{inp + out},"input":{inp},'
+            f'"output":{out}}}}} ')
 
 
 def finish_kk_mac_lane(cid: str, ent: dict, card: dict) -> tuple:
@@ -2844,6 +3350,12 @@ def finish_kk_mac_lane(cid: str, ent: dict, card: dict) -> tuple:
             (taskdir / "kk_mac_result.json").read_text())
     except Exception:
         result = {}
+    frag = _kk_mac_tokens_fragment(result.get("usage") or {})
+    if frag:
+        # finish_pass prepends this to its /action result so the
+        # TOKENS_RE fragment lands inside board-api's result[:300]
+        # cap -> action.result -> lane-savings token evidence.
+        ent["result_extra"] = frag
     art = str(verdict.get("artifact")
               or (_act(card)).get("artifact") or "")
     wt = Path(str(meta.get("worktree") or ""))
@@ -3005,6 +3517,116 @@ def launch_profile_dispatch(card, env, taskdir, worktree, tid):
     return ("", "", err) if err else (f"devin-task-{tid}", tid, "")
 
 
+def _task_units_active(tid: str) -> bool:
+    """True while a devin-task-<tid> unit — the base unit or a -fuN
+    followup, which shares the taskdir/worktree — is still running.
+    The stale-worktree gate must never pull a live tree."""
+    base = f"devin-task-{tid}"
+    if unit_active(base):
+        return True
+    fu = re.compile(re.escape(base) + r"-fu\d+$")
+    if task_runtime() == "launchd":
+        try:
+            cands = [p.name[:-len(".plist")]
+                     for p in _launchd_dir().glob(f"{base}-fu*.plist")]
+        except OSError:
+            cands = []
+    else:
+        r = sh(["systemctl", "--user", "list-units", "--all",
+                "--no-legend", "--plain", f"{base}*"], timeout=15)
+        cands = []
+        for ln in (r.stdout or "").splitlines():
+            parts = ln.split()
+            if parts:
+                u = parts[0].removesuffix(".service")
+                if fu.fullmatch(u):
+                    cands.append(u)
+    return any(unit_active(u) for u in cands)
+
+
+def _stale_worktree_reapable(taskdir: Path) -> bool:
+    """Whether the previous attempt behind a leftover dispatch-wt-<tid>
+    is provably over. The payload shell writes taskdir/exit_code at
+    exit and the lane closeout writes verdict.json — either is durable
+    finish evidence (OPS-1039). A meta.json naming a lane-family
+    executor (opencode*/kk_mac_local) proves this machinery launched
+    the dead run — the caller already proved no devin-task-<tid> unit
+    is live, so SIGKILL/RuntimeMaxSec/failed-launch residue is safe to
+    reap. A foreign executor, a meta with no executor, or no meta at
+    all defers unless finish evidence exists — never reap what we
+    can't attribute."""
+    try:
+        meta = json.loads((taskdir / "meta.json").read_text())
+        ex = meta.get("executor")
+        if ex is not None:
+            ex = str(ex)
+            return ex.startswith("opencode") or ex == "kk_mac_local"
+    except Exception:
+        pass
+    return (taskdir / "exit_code").is_file() or \
+        (taskdir / "verdict.json").is_file()
+
+
+def _remove_dispatch_worktree(root: Path, worktree: Path) -> str:
+    """"" when the stale dispatch worktree is gone, else the reason it
+    had to stay. The tree's own git context names the repo that owns
+    it — action.repo can change between retries, so the caller's
+    checkout isn't guaranteed to be the owner. A tree git still
+    registers (locked or otherwise unremovable) stays and the caller
+    defers; an unregistered leftover is plain directory residue."""
+    repo = root
+    r = sh(["git", "-C", str(worktree), "rev-parse",
+            "--git-common-dir"], timeout=15)
+    if r.returncode == 0:
+        common = Path(r.stdout.strip())
+        if not common.is_absolute():
+            common = (worktree / common).resolve()
+        repo = common.parent
+    r = sh(["git", "-C", str(repo), "worktree", "remove",
+            "--force", str(worktree)], timeout=60)
+    if r.returncode == 0:
+        sh(["git", "-C", str(repo), "worktree", "prune"], timeout=30)
+        return ""
+    chk = sh(["git", "-C", str(repo), "worktree", "list",
+              "--porcelain"], timeout=15)
+    registered = any(ln.strip() == f"worktree {worktree}"
+                     for ln in (chk.stdout or "").splitlines())
+    if registered:
+        return (r.stderr or r.stdout).strip()[:200]
+    try:
+        shutil.rmtree(worktree)
+    except OSError as e:
+        return f"{(r.stderr or r.stdout).strip()[:160]}; rmtree: {e}"
+    sh(["git", "-C", str(repo), "worktree", "prune"], timeout=30)
+    return ""
+
+
+def _stale_worktree_gate(root: Path, worktree: Path,
+                         taskdir: Path, tid: str) -> str:
+    """"" when the dispatch worktree path is free for a fresh
+    `git worktree add`, else the reason this start must defer
+    (opencode-retry-stale-worktree / OPS-1039). A held or failed lane
+    run leaves dispatch-wt-<tid> behind; the tid is stable across
+    retries — runner-* unit names truncate the epoch for long card
+    ids — so every retry used to die on "worktree already exists"
+    until a human removed the dir. Order matters: a live
+    devin-task-<tid> unit defers even when a stale exit_code from a
+    prior attempt is present; only a provably-over previous run is
+    reaped."""
+    if not worktree.exists():
+        return ""
+    if _task_units_active(tid):
+        return ("worktree already exists and the previous run is "
+                f"still active: {worktree}")
+    if not _stale_worktree_reapable(taskdir):
+        return ("worktree already exists and the previous run left "
+                f"no usable finish evidence: {worktree}")
+    err = _remove_dispatch_worktree(root, worktree)
+    if err:
+        return f"stale worktree kept — removal failed: {err}"
+    return ""
+
+
 def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
     if not isinstance((_act(card)).get("lane_envelope"), dict):
         return "", "", "OpenCode admission requires a complete action.lane_envelope; unstaged dispatch is held"
@@ -3053,9 +3675,18 @@ def _start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
         return "", "", f"profile {prof_id}: {e}"
     # model precedence: explicit action.model > lane table > the
     # profile's declared default — the contract's model always wins.
-    model = str(a.get("model") or "").strip() or \
-        str(LANE_MODELS.get(lane) or "") or \
-        str(((prof.get("model") or {}).get("default")) or "")
+    # Provider/executor namespaces must match
+    # (devin-executor-model-routing): opencode takes provider/model
+    # ids, so a bare devin id (e.g. a devin lane pick persisted by an
+    # earlier claim) is skipped for the next candidate rather than
+    # launched into an unknown-model failure.
+    model = ""
+    for cand in (str(a.get("model") or "").strip(),
+                 str(LANE_MODELS.get(lane) or ""),
+                 str(((prof.get("model") or {}).get("default")) or "")):
+        if cand and model_valid_for_executor(cand, "opencode"):
+            model = cand
+            break
     if not model:
         return "", "", (f"no model resolvable for profile {prof_id} — "
                         "set action.model or a lane")
@@ -3082,8 +3713,9 @@ def _start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
     taskdir = Path.home() / ".local/share/devin-dispatch/tasks" / tid
     try:
         taskdir.mkdir(parents=True, exist_ok=True)
-        if worktree.exists():
-            return "", "", f"worktree already exists: {worktree}"
+        wterr = _stale_worktree_gate(root, worktree, taskdir, tid)
+        if wterr:
+            return "", "", wterr
         base = f"origin/{ent.get('default_branch') or 'master'}"
         sh(["git", "-C", str(root), "fetch", "-q", "origin",
             ent.get('default_branch') or 'master'], timeout=60)
@@ -3120,7 +3752,8 @@ def _start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
     spec = (card.get("spec") or "").strip() or \
         f"{card.get('title', '')}\n\n{card.get('note', '')}"
     task = spec + "\n\n" + RAILS_OPENCODE.format(
-        id=card["id"], host=HOST, api=API)
+        id=card["id"], host=HOST, api=API,
+        answerfile=str(_job_taskdir({"tid": tid}) / "answers.jsonl"))
     # Render the task-scoped profile into a worktree-local opencode
     # config: profile agent only, builtin agents disabled, MCP surface
     # minimal (proxy-only, only when present), permission rules from
@@ -3173,19 +3806,47 @@ def _start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
     key_alias = str(a.get("llm_key_alias") or "ada").strip().lower()
     key_env_var = "LITELLM_KEY_" + key_alias.upper()
     key_expr = "${" + key_env_var + ":-}"
+    oc_argv = [oc_bin, "run", "--format", "json"]
+    if opencode_needs_standalone(oc_bin):
+        oc_argv.append("--standalone")
+    oc_argv += ["--model", model,
+                "--agent", ocp.agent_name(prof_id), task]
+    events = taskdir / "events.jsonl"
+    # Denial-streak circuit breaker (OPS-0999 follow-up): headless
+    # doom_loop can't escalate, so N consecutive permission denials
+    # trip the guard — it kills the child, writes
+    # taskdir/denial-breaker.json, and the unit exits nonzero instead
+    # of burning the whole RuntimeMaxSec budget in a retry loop.
+    # action.denial_streak_max / OPENCODE_DENIAL_STREAK_MAX override
+    # the default; 0 disables. Missing guard script = plain tee
+    # (RuntimeMaxSec still bounds the run).
+    try:
+        streak = int(a.get("denial_streak_max")
+                     or os.environ.get("OPENCODE_DENIAL_STREAK_MAX")
+                     or 10)
+    except (TypeError, ValueError):
+        streak = 10
+    guard = _devnest_script("opencode_stream_guard.py") \
+        if streak > 0 else None
+    if guard is not None:
+        inner = (f"python3 -u {shlex.quote(str(guard))} "
+                 f"--events {shlex.quote(str(events))} "
+                 f"--max-streak {streak} "
+                 f"--marker {shlex.quote(str(taskdir / 'denial-breaker.json'))} "
+                 f"-- {shlex.join(oc_argv)}")
+        rc_expr = "$$?"
+    else:
+        inner = (f"{shlex.join(oc_argv)} 2>&1 | "
+                 f"tee {shlex.quote(str(events))}")
+        rc_expr = "$${PIPESTATUS[0]}"
     shell = (
         "set -a; if [ -f $$HOME/.config/secrets/litellm-keys.env ]; then "
         f". $$HOME/.config/secrets/litellm-keys.env; export LITELLM_KEY={key_expr}; "
         "else . $$HOME/.config/secrets/litellm-chaba.env; fi; "
         f"export OPENCODE_CONFIG={shlex.quote(str(confdir / 'opencode.json'))}; "
         f"cd {shlex.quote(str(worktree))} && "
-        f"{shlex.quote(oc_bin)} run --format json "
-        + ("--standalone " if opencode_needs_standalone(oc_bin) else "")
-        + f"--model {shlex.quote(model)} "
-        f"--agent {shlex.quote(ocp.agent_name(prof_id))} "
-        f"{shlex.quote(task)} 2>&1 | "
-        f"tee {shlex.quote(str(taskdir / 'events.jsonl'))}; "
-        "rc=$${PIPESTATUS[0]}; "
+        f"{inner}; "
+        f"rc={rc_expr}; "
         f"echo \"$$rc\" > {shlex.quote(str(taskdir / 'exit_code'))}; "
         "exit $$rc"
     )
@@ -3263,7 +3924,14 @@ def start_nlm_lane(card: dict, unit: str) -> tuple:
     shell = (f"cd {shlex.quote(str(taskdir))} && "
              f"{shlex.join(argv_n)} > run.log 2>&1")
     u2 = f"devin-task-{tid}"
-    err = rt_launch(u2, f"runner {cid} nlm {repo}", shell)
+    # Same OPS-0999 bound as the other lanes: action.timeout_s or the
+    # script-lane default — an nlm_batch hang must not hold the unit.
+    try:
+        ntmax = int(a.get("timeout_s") or 0) or 1800
+    except (TypeError, ValueError):
+        ntmax = 1800
+    err = rt_launch(u2, f"runner {cid} nlm {repo}", shell,
+                    timeout_s=ntmax)
     if err:
         return "", "", err
     return u2, tid, ""
@@ -3355,7 +4023,14 @@ def start_nlm_lane(card: dict, unit: str) -> tuple:
     shell = (f"cd {shlex.quote(str(taskdir))} && "
              f"{shlex.join(argv_n)} > run.log 2>&1")
     u2 = f"devin-task-{tid}"
-    err = rt_launch(u2, f"runner {cid} nlm {repo}", shell)
+    # Same OPS-0999 bound as the other lanes: action.timeout_s or the
+    # script-lane default — an nlm_batch hang must not hold the unit.
+    try:
+        ntmax = int(a.get("timeout_s") or 0) or 1800
+    except (TypeError, ValueError):
+        ntmax = 1800
+    err = rt_launch(u2, f"runner {cid} nlm {repo}", shell,
+                    timeout_s=ntmax)
     if err:
         return "", "", err
     return u2, tid, ""
@@ -3393,210 +4068,6 @@ def finish_nlm_lane(cid: str, ent: dict, card: dict) -> tuple:
         pass
     return False, [f"nlm_batch produced no artifact {out} — "
                    f"run.log tail: {log or '(none)'}"]
-
-
-def start_jules_lane(card: dict, unit: str) -> tuple:
-    """Run a Jules REST session as a dispatch executor (OPS-1049).
-
-    Unlike every other executor there is NO local worktree: Jules clones
-    the repo itself, plans, patches, and opens a GitHub PR
-    (automationMode AUTO_CREATE_PR). The unit shells `jules.py create --
-    auto-pr` then `wait`; the session id and final session JSON land in
-    the task dir for finish_jules_lane. The PR IS the evidence — the
-    merge path is a human squash-merge (auto-merge is a follow-up)."""
-    if not JULES_LANES:
-        return "", "", ("JULES_LANES=0 on this runner — the jules "
-                        "executor is disabled; the card needs a "
-                        "Jules-capable runner, not a devin run")
-    js = jules_script()
-    if not js or not jules_keyed():
-        return "", "", ("jules lane needs scripts/jules/jules.py and a "
-                        "filled ~/.config/secrets/jules.env")
-    a = _act(card)
-    cid = card.get("id") or ""
-    repo = str(a.get("repo") or "chaba")
-    slug = jules_repo_slug(repo)
-    if not slug:
-        return "", "", f"jules lane: repo {repo} not in JULES_REPO_MAP"
-    dr = dr_module()
-    ent = (dr.repos().get(repo) if dr else None) or {}
-    branch = str(a.get("branch") or ent.get("default_branch") or "master")
-    used = jules_daily_used()
-    if used >= JULES_LANE_DAILY_CAP:
-        return "", "", (f"jules daily cap reached ({used} sessions "
-                        f"today >= {JULES_LANE_DAILY_CAP}) — retry "
-                        "after the daily window")
-    spec = (card.get("spec") or "").strip() or card.get("title", "")
-    tid = unit.removeprefix("runner-")
-    taskdir = Path.home() / ".local/share/devin-dispatch/tasks" / tid
-    try:
-        taskdir.mkdir(parents=True, exist_ok=True)
-    except OSError as e:
-        return "", "", f"taskdir: {e}"
-    prompt = (f"{card.get('title', '')}\n\n{spec}\n\n"
-              "Constraints: keep the change minimal and inside the "
-              "declared scope. Open a pull request with the result.")
-    try:
-        (taskdir / "prompt.txt").write_text(prompt)
-        (taskdir / "meta.json").write_text(json.dumps({
-            "card": cid, "task": tid, "host": HOST, "executor": "jules",
-            "repo": repo, "slug": slug, "branch": branch,
-            "model": "jules (Gemini 3 Pro via Google AI Pro)"},
-            indent=1))
-    except OSError as e:
-        return "", "", f"taskdir write: {e}"
-    shell = (
-        f"cd {shlex.quote(str(taskdir))} && "
-        f"python3 {shlex.quote(js)} create --repo {shlex.quote(slug)} "
-        f"--branch {shlex.quote(branch)} --auto-pr "
-        f"--title {shlex.quote(str(card.get('title') or '')[:80])} "
-        "--prompt-file prompt.txt > create.json || exit 1; "
-        "SID=$(python3 -c \"import json; "
-        "print(json.load(open('create.json'))['id'])\" 2>/dev/null); "
-        "test -n \"$SID\" || exit 1; "
-        "echo \"$SID\" > session.id; "
-        f"python3 {shlex.quote(js)} wait \"$SID\" --approve "
-        f"--timeout {JULES_LANE_TIMEOUT} > wait.log 2>&1; "
-        f"python3 {shlex.quote(js)} status \"$SID\" "
-        "> session.json 2>&1; "
-        f"python3 {shlex.quote(js)} result \"$SID\" "
-        "> result.txt 2>&1; "
-        "STATE=$(python3 -c \"import json; "
-        "print(json.load(open('session.json')).get('state',''))\" "
-        "2>/dev/null); "
-        "test \"$STATE\" != \"FAILED\""
-    )
-    u2 = f"devin-task-{tid}"
-    err = rt_launch(u2, f"runner {cid} jules {repo}", shell)
-    if err:
-        return "", "", err
-    return u2, tid, ""
-
-
-def jules_merge_pr(repo: str, head_ref: str, tid: str,
-                   title: str) -> tuple:
-    """Squash-merge a delivered Jules PR head into origin/<default_branch>
-    via a throwaway worktree + deploy-key push (no gh on runners).
-    Returns (merged: bool, note: str). Conflicts/failures -> False and the
-    card stays on the human-merge path."""
-    dr = dr_module()
-    ent = (dr.repos().get(repo) if dr else None) or {}
-    root = Path(ent.get("path") or "")
-    branch = ent.get("default_branch") or "master"
-    if not root.is_dir() or not head_ref:
-        return False, "merge skipped: no local checkout or empty headRef"
-    wt = Path.home() / ".local/share/devin-dispatch/jules-merge" / tid
-    if wt.exists():
-        sh(["git", "-C", str(root), "worktree", "remove", str(wt),
-            "--force"], timeout=30)
-    try:
-        if sh(["git", "-C", str(root), "fetch", "-q", "origin",
-               branch, head_ref], timeout=90).returncode:
-            return False, "merge failed: git fetch"
-        r = sh(["git", "-C", str(root), "worktree", "add", str(wt),
-                f"origin/{branch}"], timeout=60)
-        if r.returncode:
-            return False, f"merge failed: worktree {(r.stderr or '')[:120]}"
-        r = sh(["git", "-C", str(wt), "merge", "--squash",
-                f"origin/{head_ref}"], timeout=60)
-        if r.returncode:
-            return False, ("merge failed: conflict "
-                           f"{(r.stderr or r.stdout or '')[:160]}")
-        r = sh(["git", "-C", str(wt), "commit", "-q", "-m",
-                f"{title or 'jules lane task'}\n\n"
-                f"Jules lane auto-merge (JULES_AUTO_MERGE)"],
-               timeout=30)
-        if r.returncode:
-            return False, f"merge failed: commit {(r.stderr or '')[:120]}"
-        # deploy-key push — exec checkouts carry https origin (no
-        # creds); the gh-chaba ssh alias is the write path on runners
-        # with chaba deploy keys. JULES_PUSH_URL overrides.
-        slug = JULES_REPO_MAP.get(repo, "")
-        purl = os.environ.get("JULES_PUSH_URL") or \
-            (f"gh-chaba:{slug}.git" if slug else "origin")
-        r = sh(["git", "-C", str(wt), "push", "-q", purl,
-                f"HEAD:{branch}"], timeout=90)
-        if r.returncode:
-            return False, ("merge failed: push — likely raced; human "
-                           "rebase+merge the PR "
-                           f"{(r.stderr or '')[:120]}")
-        return True, f"PR head {head_ref} squash-merged to {branch}"
-    finally:
-        sh(["git", "-C", str(root), "worktree", "remove", str(wt),
-            "--force"], timeout=30)
-
-
-def finish_jules_lane(cid: str, ent: dict, card: dict) -> tuple:
-    """Jules closeout — runs BEFORE close_out_merge like the other
-    executor closeouts. There is no local worktree, so 'merged' here
-    means the Jules PR landed on GitHub — v1 leaves the PR for a human
-    squash-merge.
-
-    Returns (may_merge, notes): (True, []) for non-jules tasks so the
-    normal merge gate proceeds unchanged; (False, notes) for jules tasks
-    so finish posts verified=False ('checked and NOT merged — stays for
-    a human') with the PR/session URL in comms. That IS the contract —
-    a declared executor fails into review, never silently into a
-    different lane."""
-    tid = ent.get("tid") or ""
-    if not tid:
-        u = ent.get("unit") or ""
-        tid = (u[len("devin-task-"):]
-               if u.startswith("devin-task-") else "")
-    if not tid:
-        return True, []
-    taskdir = Path.home() / ".local/share/devin-dispatch/tasks" / tid
-    try:
-        meta = json.loads((taskdir / "meta.json").read_text())
-    except Exception:
-        return True, []  # no meta -> not a jules task
-    if str(meta.get("executor") or "") != "jules":
-        return True, []
-    sid = ""
-    try:
-        sid = (taskdir / "session.id").read_text().strip()
-    except OSError:
-        pass
-    try:
-        sess = json.loads((taskdir / "session.json").read_text())
-    except Exception:
-        sess = {}
-    state = sess.get("state") or "unknown"
-    pr = ""
-    for o in sess.get("outputs") or []:
-        if (o.get("pullRequest") or {}).get("url"):
-            pr = o["pullRequest"]["url"]
-            break
-    surl = (sess.get("url")
-            or (f"https://jules.google.com/session/{sid}" if sid else ""))
-    if state == "COMPLETED" and pr:
-        head_ref = ""
-        for o in sess.get("outputs") or []:
-            if (o.get("pullRequest") or {}).get("url") == pr:
-                head_ref = o["pullRequest"].get("headRef") or ""
-        if JULES_AUTO_MERGE:
-            repo = str(meta.get("repo") or "chaba")
-            merged, mnote = jules_merge_pr(
-                repo, head_ref, tid,
-                str(card.get("title") or ""))
-            notes = [f"jules session {sid or '?'} COMPLETED — PR {pr}; "
-                     f"{mnote}"]
-            if merged:
-                return True, notes
-            notes.append("auto-merge did not land — PR stays open for "
-                         "a human squash-merge")
-        else:
-            notes = [f"jules session {sid or '?'} COMPLETED — PR {pr} "
-                     "opened; squash-merge it, then close this card "
-                     "(JULES_AUTO_MERGE=1 enables lane auto-merge)"]
-    elif state == "COMPLETED":
-        notes = [f"jules session {sid or '?'} COMPLETED but produced no "
-                 f"PR ({surl}) — check whether it yielded a changeset "
-                 "only"]
-    else:
-        notes = [f"jules session {sid or '?'} ended state={state} "
-                 f"({surl}) — no PR delivered"]
-    return False, notes
 
 
 def start_task(card: dict, typ: str) -> tuple:
@@ -3685,19 +4156,6 @@ def start_task(card: dict, typ: str) -> tuple:
                 return start_nlm_lane(card, unit)
             except Exception as e:
                 return "", "", f"nlm_batch executor: {e}"
-        if ex == "nlm_batch" or (not ex and
-                                 str(a.get("lane") or "") == "nlm_batch"):
-            try:
-                return start_nlm_lane(card, unit)
-            except Exception as e:
-                return "", "", f"nlm_batch executor: {e}"
-        if ex == "jules" or (not ex and
-                             str(a.get("lane") or "") == "jules"):
-            try:
-                return start_jules_lane(card, unit)
-            except Exception as e:
-                # contract failures fail the task — never a devin fallback
-                return "", "", f"jules executor: {e}"
         if ex == "manual" or (ex and ex not in EXECUTORS):
             return "", "", (f"action.executor={ex or '?'!r} cannot be "
                             "auto-claimed — fail closed")
@@ -3723,8 +4181,10 @@ def start_task(card: dict, typ: str) -> tuple:
                 lane = classify_lane(card)
                 if lane and lane != "manual":
                     a["lane"] = lane
-                    if lane in LANE_MODELS and not a.get("model"):
-                        a["model"] = LANE_MODELS[lane]
+            # lane->model is NOT persisted here: the pick is
+            # executor-aware and resolves in the env block below via
+            # lane_model() — a litellm alias must never land on a
+            # devin-bound claim (devin-executor-model-routing).
         if lane == "manual":
             return "", "", "manual lane — not dispatched (Tony's hands)"
         if lane in LANE_MODELS and OPENCODE_LANES and \
@@ -3771,6 +4231,17 @@ def start_task(card: dict, typ: str) -> tuple:
         dispatch_bin = CLAUDE_DISPATCH if ex == "claude" else DISPATCH
         argv = [dispatch_bin, "start", a.get("repo", "chaba"), task]
     env = dict(os.environ)
+    # Executor-aware model resolution
+    # (devin-executor-model-routing, DEV-0958): action.model is the
+    # card's DECLARED pin; a lane pick resolves through lane_model()
+    # for the executor this claim actually runs — litellm/* aliases
+    # only reach the opencode/proxy executor, devin gets
+    # DEVIN_LANE_MODELS (free_lane only; paid_frontier stays gated on
+    # explicit budget approval -> executor default). Captured before
+    # lane classification so the drop-guard below can tell a declared
+    # pin from a routine lane pick.
+    declared_model = str(a.get("model") or "")
+    model = declared_model
     if typ == "dispatch":
         # executor contract context — devin-dispatch._meta_write stamps
         # it into meta.json + usage.json so the close-out can prove who
@@ -3781,39 +4252,54 @@ def start_task(card: dict, typ: str) -> tuple:
             env["DISPATCH_PROFILE"] = card_profile(card)
         if a.get("target_host"):
             env["DISPATCH_TARGET_HOST"] = str(a["target_host"])
-    if a.get("model"):
-        env["DISPATCH_MODEL"] = str(a["model"])
-    elif typ == "dispatch":
-        # lane -> cheapest model (jev-pilot Phase 2). Parity with
-        # kanban-dispatch start_pending — whichever claimer wins applies
-        # the same routing: an explicit action.lane always maps through
-        # LANE_MODELS, and JEV_LANE=1 additionally classifies unset lanes.
-        # jev-model-chain-probe found this missing here: runner claims
-        # silently launched on the devin default model.
-        lane = str(a.get("lane") or "")
         dr = dr_module()
-        lane_models = getattr(dr, "LANE_MODELS", {}) if dr else {}
-        if not lane and dr and getattr(dr, "classify_lane", None) \
-                and os.environ.get("JEV_LANE", "0") == "1":
-            lane = dr.classify_lane(card) or ""
-        if lane == "manual":
-            return "", "", "manual lane — not dispatched (Tony's hands)"
-        if lane in lane_models:
-            env["DISPATCH_MODEL"] = str(lane_models[lane])
+        lane_model_fn = getattr(dr, "lane_model", None) if dr \
+            else lane_model
+        valid_fn = getattr(dr, "model_valid_for_executor", None) if dr \
+            else model_valid_for_executor
+        if not model:
+            # lane -> executor-aware model (jev-pilot Phase 2). Parity
+            # with kanban-dispatch start_pending — whichever claimer
+            # wins applies the same routing: an explicit action.lane
+            # always maps through the lane tables. `lane` was bound
+            # above for every dispatch path — "" for executor=devin
+            # pins (lane classification stays out), the resolved lane
+            # otherwise. jev-model-chain-probe found this missing
+            # here: runner claims silently launched on the devin
+            # default model.
+            if lane == "manual":
+                return "", "", ("manual lane — not dispatched "
+                                "(Tony's hands)")
+            # executor=devin pins lane="" above so the opencode route
+            # stays closed — but a persisted action.lane still picks
+            # the devin-native model, matching kanban-dispatch's
+            # resolution for the same card.
+            mlane = lane or (str(a.get("lane") or "")
+                             if (ex or "devin") == "devin" else "")
+            model = lane_model_fn(mlane, ex or "devin")
+        if model and not valid_fn(model, ex or "devin"):
+            # Provider/executor namespaces must match
+            # (dispatch-model-pick-executor-mismatch + this card): the
+            # devin CLI only accepts its own ids — a litellm/* lane pick
+            # or stale pin on a devin-bound claim drops to the executor
+            # default instead of launching into a guaranteed
+            # 'Unknown model' exit. A card-declared pin earns a comms
+            # note (the bad pin stays visible); a routine lane-table
+            # pick stays quiet.
+            if declared_model and model == declared_model:
+                api("/comment", {"id": cid, "from": "chaba",
+                                 "text": f"model {model} dropped — "
+                                         "provider namespace doesn't "
+                                         f"match executor={ex or 'devin'}"
+                                         "; running the executor "
+                                         "default"})
+            model = ""
+    if model:
+        env["DISPATCH_MODEL"] = model
     if typ == "dispatch":
-        # OPS-1127: a stale or lane-mapped litellm/* id must never reach
-        # the devin path — the CLI only accepts its own model ids and
-        # exits at launch (hands-off claim, 2026-11-08). A persisted
-        # action.model can outlive the lane/executor that produced it,
-        # so validate provider vs the resolved executor at launch:
-        # incompatible -> drop to the devin default model.
-        if (env.get("DISPATCH_EXECUTOR") or "devin") == "devin" and \
-                model_provider(env.get("DISPATCH_MODEL") or "") \
-                not in ("devin", ""):
-            env.pop("DISPATCH_MODEL", None)
-        # provider follows the RESOLVED model (action.model or the lane
-        # mapping) — computed after the guard so litellm lane ids still
-        # report provider=litellm on non-devin executors.
+        # provider follows the RESOLVED model (declared pin or the
+        # executor-aware lane pick) — computed after the guard so a
+        # dropped id never misreports.
         if (env.get("DISPATCH_EXECUTOR") or "") == "claude":
             env["DISPATCH_PROVIDER"] = "claude"
             # claude-dispatch accepts --effort; action.effort is the
@@ -3822,13 +4308,23 @@ def start_task(card: dict, typ: str) -> tuple:
             if a.get("effort"):
                 env["DISPATCH_EFFORT"] = str(a["effort"])
         else:
-            env["DISPATCH_PROVIDER"] = model_provider(
-                env.get("DISPATCH_MODEL") or "") or "devin"
-    if typ == "dispatch" and LIMITS_ON:
+            env["DISPATCH_PROVIDER"] = model_provider(model) or "devin"
+    if typ == "dispatch":
         # devin-dispatch splices this into its systemd-run call;
         # enforce_task_limits below re-applies the cgroup props on the
         # live unit for hosts with a stale devin-dispatch.
-        env["DISPATCH_UNIT_PROPS"] = " ".join(task_run_props())
+        # OPS-0999: a card-declared action.timeout_s also arms
+        # RuntimeMaxSec — opt-in only, devin sessions legitimately
+        # run long so there is no default bound on this path.
+        props = list(task_run_props()) if LIMITS_ON else []
+        try:
+            dmax = int(a.get("timeout_s") or 0)
+        except (TypeError, ValueError):
+            dmax = 0
+        if dmax > 0:
+            props.append(f"--property=RuntimeMaxSec={dmax}")
+        if props:
+            env["DISPATCH_UNIT_PROPS"] = " ".join(props)
     r = sh(argv, timeout=180, env=env)
     if r.returncode != 0:
         return "", "", (r.stderr or r.stdout).strip()[:240]
@@ -3845,11 +4341,58 @@ def finish_pass(st: dict) -> bool:
     """Report claimed tasks whose units exited. Returns state changed."""
     changed = False
     cards = None  # lazy /cards fetch — only the close-out needs it
+
+    def _cards_map():
+        nonlocal cards
+        if cards is None:
+            cards = {c.get("id"): c for c in
+                     (api("/cards") or {}).get("cards") or []}
+        return cards
+
     for cid, ent in list(st.items()):
+        # ADA-0024: a job parked on Tony stays claimed but is NEVER
+        # finished — do_finish(ok=False) burns retries and auto-requeues.
+        if ent.get("job_awaiting"):
+            card_now = _cards_map().get(cid) or {}
+            if card_now and _act(card_now).get("status") != "running":
+                # A human moved the card on (hold/retry/close) — release
+                # the local claim instead of polling a stale answer.
+                ent.pop("job_awaiting", None)
+                del st[cid]
+                changed = True
+                continue
+            if _job_answer_tick(cid, ent, _cards_map):
+                changed = True
+            continue
         unit = ent.get("unit") or ""
         if not unit or unit_active(unit):
+            # Emit the running ledger doc once, on first observation.
+            if (JOB_LIFECYCLE_ON and unit and ent.get("type") == "dispatch"
+                    and not ent.get("job_started_emitted")):
+                ent["job_started_emitted"] = True
+                job_ledger_write(cid, "running",
+                                 detail=f"claimed on {HOST} as {unit}")
+                changed = True
             continue
         ok, result = collect(unit)
+        # Stagnation-gate halt (gate_pass SIGTERMed the unit): name the
+        # gate in the finish result so the board/retry ledger sees WHY
+        # it died — prepended so it survives result truncation.
+        gh = ent.pop("gate_halt", None)
+        if gh and not ok:
+            result = ("stagnation-gate HALT "
+                      f"(noul p={(gh.get('noul') or {}).get('p')}, "
+                      f"choice={(gh.get('choice') or {}).get('action')}, "
+                      f"streak={gh.get('streak')}): " + result)[:2000]
+        # ADA-0024: needs-input is a blocked state, not a failure. This
+        # runs before the rate-limit scan and the executor merge gates so
+        # "stopped to ask" never turns into a crash/retry or a bogus merge.
+        if JOB_LIFECYCLE_ON and ent.get("type") == "dispatch":
+            question = needs_input_question(ent, unit)
+            if question:
+                _enter_awaiting(cid, ent, question, result[:400])
+                changed = True
+                continue
         # `systemd-run --collect` can remove the transient unit before the
         # next runner pass observes it. The kk_mac executor persists its
         # exit code and verifier evidence in the task directory, so use that
@@ -3921,8 +4464,11 @@ def finish_pass(st: dict) -> bool:
                 # In-claim fallback (kk-mac-jev-adapter-integration):
                 # the bounded lane declined after starting — mark the
                 # executor consumed on the local copy and run the next
-                # lane now; the card never requeues for it.
+                # lane now; the card never requeues for it. Drop the
+                # kk_mac token fragment so the next lane's own finish
+                # result doesn't carry a stale usage claim.
                 (_ensure_act(card))["kk_mac_tried"] = True
+                ent.pop("result_extra", None)
                 u2, t2, e2 = start_task(card, "dispatch")
                 if e2 or not u2:
                     notes.append(f"kk_mac_local fell back ({kk_fb}) but "
@@ -3930,7 +4476,11 @@ def finish_pass(st: dict) -> bool:
                                  f"{e2 or 'no unit'}")
                     verified = False
                 else:
-                    st[cid].update({"unit": u2, "tid": t2})
+                    # the claim continues on a LOCAL lane — flip the
+                    # recorded executor so _cap_counts stops drawing
+                    # this claim from the remote class (OPS-1284)
+                    st[cid].update({"unit": u2, "tid": t2,
+                                    "ex": claim_executor(card)})
                     notes.append(f"kk_mac_local fell back ({kk_fb}) — "
                                  f"next lane running as {u2}")
                     for n in notes:
@@ -3939,8 +4489,6 @@ def finish_pass(st: dict) -> bool:
                     changed = True
                     continue  # still claimed — no finish post yet
             elif may_merge:
-                may_merge, jules_notes = finish_jules_lane(cid, ent, card)
-                notes += jules_notes
                 if may_merge:
                     may_merge, nlm_notes = finish_nlm_lane(cid, ent, card)
                     notes += nlm_notes
@@ -3954,10 +4502,23 @@ def finish_pass(st: dict) -> bool:
                     verified = False
             else:
                 verified = False
+        # Lane-usage evidence (kk-mac-usage-to-lane-savings): a lane
+        # closeout may stash a compact token fragment on the state entry
+        # (ent["result_extra"]). Prepend so it survives board-api's
+        # result[:300] -> action.result cap where lane-savings reads it.
+        extra = str(ent.pop("result_extra", "") or "")
         body = {"id": cid, "do": "finish", "host": HOST,
-                "ok": ok, "result": result}
+                "ok": ok, "result": extra + result}
         if verified is not None:
             body["verified"] = verified
+        if JOB_LIFECYCLE_ON and ent.get("type") == "dispatch":
+            # Close the ledger too — otherwise the Report Dispatch layer
+            # and Ada's devin_jobs show a stale 'running' doc forever.
+            # verified=False (held merge) is a checked-and-failed job,
+            # never a 'done'.
+            job_ledger_write(cid,
+                             "done" if (ok and verified is not False)
+                             else "failed", detail=result[:400])
         resp = api("/action", body)
         for n in notes:
             api("/comment", {"id": cid, "from": "chaba", "text": n})
@@ -4075,6 +4636,7 @@ def reconcile_pass(st: dict) -> bool:
             st[cid] = {"unit": unit,
                        "type": a.get("type") or "dispatch",
                        "tid": tid, "at": int(time.time()),
+                       "ex": claim_executor(c),
                        "adopted": True}
             api("/comment", {"id": cid, "from": "chaba",
                              "text": f"adopted running claim {unit} on "
@@ -4083,8 +4645,13 @@ def reconcile_pass(st: dict) -> bool:
             changed = True
             print(f"{cid}: adopted {unit}")
             continue
-        if len(st) >= CAP:
-            continue  # no free slot — the next pass retries
+        # per-class slot check (OPS-1284) — a zombie remote claim
+        # draws REMOTE_CAP, everything else RUNNER_CAP
+        local_n, remote_n = _cap_counts(st)
+        ex = claim_executor(c)
+        if (ex in REMOTE_EXECUTORS and remote_n >= REMOTE_CAP) or \
+                (ex not in REMOTE_EXECUTORS and local_n >= CAP):
+            continue  # no free slot in this class — next pass retries
         typ = a.get("type") or "dispatch"
         unit, tid, err = start_task(c, typ)
         if err or not unit:
@@ -4100,7 +4667,8 @@ def reconcile_pass(st: dict) -> bool:
             print(f"{cid}: zombie claim released ({err or 'no unit'})")
             continue
         st[cid] = {"unit": unit, "type": typ, "tid": tid,
-                   "at": int(time.time()), "restarted": True}
+                   "at": int(time.time()), "restarted": True,
+                   "ex": claim_executor(c)}
         api("/comment", {"id": cid, "from": "chaba",
                          "text": f"restarted zombie claim as {unit} on "
                                  f"{HOST} — claim committed but the "
@@ -4254,13 +4822,115 @@ def _claim_order(cards: list) -> list:
     return sorter(cards, starve_hours=STARVE_HOURS)
 
 
+def claim_executor(card: dict) -> str:
+    """Executor a claim on this card runs under — mirrors claim_pass's
+    ex_decl/JEV kk-route resolution and start_task's kk_mac fallback.
+    '' = the default devin path (a local executor)."""
+    a = _act(card)
+    typ = a.get("type") or "dispatch"
+    if typ != "dispatch":
+        return str(typ)
+    declared = str(a.get("executor") or "").strip()
+    ex = declared
+    if ex == "kk_mac_local" and \
+            (a.get("kk_mac_tried") or not kk_mac_servable()):
+        # try-first consumed, or this host can't serve the lane — the
+        # claim falls back to the normal (local) lane cascade
+        ex = ""
+    if ex == "nlm_batch" or \
+            (not ex and str(a.get("lane") or "") == "nlm_batch"):
+        return "nlm_batch"
+    if ex:
+        return ex
+    if not declared and os.environ.get("JEV_LANE", "0") == "1":
+        # claim_pass's kk-route: an executor-unset dispatch card whose
+        # task class kk_mac_route admits is claimed AS kk_mac_local —
+        # remote only when this host can actually serve the lane
+        # (otherwise start_task falls back to local work)
+        if not str(a.get("lane") or ""):
+            dr = dr_module()
+            kk_tc = ""
+            if dr and getattr(dr, "kk_mac_route", None):
+                try:
+                    kk_tc = dr.kk_mac_route(card)
+                except Exception:
+                    kk_tc = ""
+            if kk_tc:
+                return "kk_mac_local" if kk_mac_servable() else ""
+    return ""
+
+
+def _cap_counts(st: dict) -> tuple:
+    """(local, remote) in-flight claim counts. State entries carry
+    'ex' — the executor resolved at claim time; entries without it
+    (state written before the split, adopted claims) count local —
+    conservative: unknown load is assumed to be host load."""
+    local = remote = 0
+    for ent in st.values():
+        ex = ent.get("ex") if isinstance(ent, dict) else ""
+        if str(ex or "") in REMOTE_EXECUTORS:
+            remote += 1
+        else:
+            local += 1
+    return local, remote
+
+
+def _claim_gate(typ: str, ex: str) -> str:
+    """'remote' | 'script' | 'heavy' — which load gate a claimable card
+    answers to. Remote executors are exempt from RUNNER_MAX_LOAD_PC;
+    script claims keep their OPS-1182 ceiling; everything else is
+    heavyweight."""
+    if ex in REMOTE_EXECUTORS:
+        return "remote"
+    return "script" if typ == "script" else "heavy"
+
+
+def _gate_hint(a: dict) -> str:
+    """_claim_gate from DECLARED action fields only — the cheap read
+    _note_capacity_skip uses so hostgate defer notes skip cards that
+    would still claim under the relaxed pass. claim_executor is the
+    authoritative per-claim resolution."""
+    ex = str(a.get("executor") or "").strip()
+    if ex in REMOTE_EXECUTORS and \
+            not (ex == "kk_mac_local" and a.get("kk_mac_tried")):
+        return "remote"
+    if not ex and str(a.get("lane") or "") == "nlm_batch":
+        return "remote"
+    if ex == "script" or (a.get("type") or "dispatch") == "script":
+        return "script"
+    return "heavy"
+
+
+def _load_gate_classes(cap: str) -> set | None:
+    """Gate classes allowed to claim under a _capacity_reason result:
+    None = unrestricted pass; a set = only those classes proceed
+    (the OPS-1182 script ceiling plus the remote-lane load exemption —
+    remote claims are bounded by REMOTE_MAX_LOAD_PC, default 0 =
+    load-independent, and by their own lane quotas)."""
+    if not cap:
+        return None
+    if not cap.startswith("host overloaded"):
+        return set()
+    allowed = set()
+    if not overloaded(SCRIPT_MAX_LOAD_PC):
+        allowed.add("script")
+    if not overloaded(REMOTE_MAX_LOAD_PC):
+        allowed.add("remote")
+    return allowed
+
+
 def _capacity_reason(st: dict) -> str:
     """"" when this host may claim now, else the refusal reason —
     shared by claim_pass (journal line) and verdict_pass (/ready
     projection) so a capacity-blocked card stops reporting 'eligible'
-    while the runner silently skips it (OPS-1107)."""
-    if len(st) >= CAP:
-        return f"runner at cap ({len(st)}/{CAP})"
+    while the runner silently skips it (OPS-1107). The cap reason fires
+    only when BOTH classes are full — a local-saturated host still
+    claims remote work and vice versa (OPS-1284); per-class fullness is
+    enforced per card in claim_pass/verdict_pass."""
+    local_n, remote_n = _cap_counts(st)
+    if local_n >= CAP and remote_n >= REMOTE_CAP:
+        return (f"runner at cap ({local_n}/{CAP} local, "
+                f"{remote_n}/{REMOTE_CAP} remote)")
     rl = ratelimit_reason()
     if rl:
         return rl
@@ -4288,17 +4958,23 @@ def _note_capacity_skip(cap: str, exempt: set | None = None) -> None:
     in a journal nobody greps is silent starvation.
 
     Only pins compatible with this host get the note (other hosts' pins
-    write their own). `exempt` action types are skipped — the OPS-1182
-    script-claim exception still lets those run under the same pass."""
+    write their own). `exempt` gate classes (script/remote/heavy — see
+    _gate_hint) are skipped — the OPS-1182 script-claim exception and
+    the OPS-1284 remote-lane exemption still let those run under the
+    same pass."""
     try:
         cards = (api("/cards") or {}).get("cards") or []
     except Exception:
         return
     for card in cards:
         a = _act(card)
-        if a.get("status") != "queued":
+        # same claim-queue scope as claim_pass's defer block (KNB-0036):
+        # a stale queued flag on a done/review card earns no hostgate
+        # note either — otherwise capacity skips re-create the spam.
+        if card.get("column") not in ("backlog", "doing") \
+                or a.get("status") != "queued":
             continue
-        if exempt and str(a.get("type") or "dispatch") in exempt:
+        if exempt and _gate_hint(a) in exempt:
             continue
         if (a.get("host") and a["host"] != HOST) or \
            (a.get("target_host") and a["target_host"] != HOST) or \
@@ -4311,31 +4987,42 @@ def _note_capacity_skip(cap: str, exempt: set | None = None) -> None:
 
 def claim_pass(st: dict) -> bool:
     cap = _capacity_reason(st)
-    script_only = False
-    if cap:
-        # OPS-1182: the load gate is one-size-fits-all — a 2s script
-        # probe was starved identically to a heavyweight devin claim.
-        # script claims get a separate higher ceiling; every other
-        # capacity reason still skips the whole pass.
-        if cap.startswith("host overloaded") \
-                and not overloaded(SCRIPT_MAX_LOAD_PC):
-            script_only = True
-            print(f"claim pass: script claims only ({cap}; "
-                  f"script cap {SCRIPT_MAX_LOAD_PC} ok)")
-            _note_capacity_skip(cap, exempt={"script"})
-        else:
-            print(f"claim pass skipped: {cap}")
-            _note_capacity_skip(cap)
-            return False
+    allowed = _load_gate_classes(cap)
+    if allowed is not None and not allowed:
+        # every capacity reason that isn't the overload gate (cap,
+        # ratelimit, kill switch, disk) — and an overload too deep for
+        # even the script/remote ceilings — skips the whole pass
+        print(f"claim pass skipped: {cap}")
+        _note_capacity_skip(cap)
+        return False
+    if allowed:
+        # OPS-1182 + OPS-1284: the load gate is per-class — script
+        # claims answer to RUNNER_SCRIPT_MAX_LOAD_PC, remote-executor
+        # claims to RUNNER_REMOTE_MAX_LOAD_PC (default 0 =
+        # load-independent), heavyweight claims to RUNNER_MAX_LOAD_PC.
+        print(f"claim pass: gated claims only ({cap}; "
+              f"allowed={'+'.join(sorted(allowed))})")
+        _note_capacity_skip(cap, exempt=allowed)
     cards = _claim_order((api("/cards") or {}).get("cards") or [])
     by_id = {c.get("id"): c for c in cards}
+    local_n, remote_n = _cap_counts(st)
     changed = False
     for card in cards:
-        if len(st) >= CAP:
-            break
+        if local_n >= CAP and remote_n >= REMOTE_CAP:
+            break  # both classes full — nothing left to claim
         cid = card.get("id") or ""
         typ = claimable(card)
         if not typ:
+            # KNB-0036: defer notes explain why a QUEUED card in an
+            # actionable column was not claimed. A done/review card with
+            # a stale action.runner still lands here — the fleet-gap
+            # check below doesn't look at column/status — so every
+            # runner wrote a fresh comms + awaiting_action on it on
+            # every pass (154+ notes grew one done lab card past the
+            # CI hard-bloat threshold). Nothing to defer off-queue.
+            if card.get("column") not in ("backlog", "doing") or \
+                    _act(card).get("status") != "queued":
+                continue
             stale = self_stale_reason()
             if stale:
                 note_defer(card, "stale", stale)
@@ -4370,8 +5057,25 @@ def claim_pass(st: dict) -> bool:
                           "runner the capability",
                         awaiting=True)
             continue
-        if script_only and typ != "script":
-            continue  # heavyweight gate holds for non-script claims
+        ex = claim_executor(card)
+        cls = "remote" if ex in REMOTE_EXECUTORS else "local"
+        if allowed is not None and _claim_gate(typ, ex) not in allowed:
+            continue  # this class's load gate holds for the card
+        # per-executor caps (OPS-1284): local claims draw RUNNER_CAP,
+        # remote-executor claims draw RUNNER_REMOTE_CAP — a saturated
+        # remote lane never starves local work and vice versa. The
+        # decline is noted per card so the board shows which cap held.
+        if cls == "remote":
+            if remote_n >= REMOTE_CAP:
+                note_defer(card, "cap",
+                           f"remote executor cap ({remote_n}/"
+                           f"{REMOTE_CAP}) — local slots unaffected")
+                continue
+        elif local_n >= CAP:
+            note_defer(card, "cap",
+                       f"runner at local cap ({local_n}/{CAP}) — "
+                       f"remote slots unaffected")
+            continue
         rg = retry_gate(card)
         if rg:
             print(f"{cid}: {rg}")
@@ -4428,6 +5132,7 @@ def claim_pass(st: dict) -> bool:
             # codemod/paid_frontier lanes (OPS-0885 miss class).
             lane = str(a.get("lane") or "")
             kk_tc = ""
+            lane_src = ""
             if not lane:
                 # Bounded read-only classes self-route to the kk_mac
                 # executor (kk-mac-auto-lane-classifier) — the same rule
@@ -4438,6 +5143,10 @@ def claim_pass(st: dict) -> bool:
                     kk_tc = dr.kk_mac_route(card)
                 if not kk_tc:
                     lane = classify_lane(card)
+                    # classifier output, not an author pin — flag it so
+                    # board-api stamps lane_source and the next queue
+                    # re-evaluates (devin-lane-cheap-ops-reroute)
+                    lane_src = "claim"
             if lane == "manual":
                 continue
             if kk_tc:
@@ -4448,10 +5157,24 @@ def claim_pass(st: dict) -> bool:
                 claim_body["task_class"] = kk_tc
             else:
                 a["lane"] = lane
-                if lane in LANE_MODELS and not a.get("model"):
-                    a["model"] = LANE_MODELS[lane]
+                # Executor-aware lane pick
+                # (devin-executor-model-routing): persist the model the
+                # route THIS claim resolves to will actually use —
+                # opencode gets the litellm alias, devin gets the
+                # devin-native id (free_lane only; paid_frontier has no
+                # devin pick -> stays gated, executor default). A stale
+                # action.model is never overwritten.
+                svc = "opencode" if (lane in LANE_MODELS and OPENCODE_LANES
+                                     and (card_profile(card)
+                                          or LANE_PROFILES.get(lane))) \
+                    else "devin"
+                pick = lane_model(lane, svc)
+                if pick and not a.get("model"):
+                    a["model"] = pick
                 claim_body["lane"] = lane
                 claim_body["model"] = a.get("model", "")
+                if lane_src:
+                    claim_body["lane_source"] = lane_src
         resp = api("/action", claim_body)
         if resp.get("error"):
             # rejections (lost race, already running on a stale view)
@@ -4488,13 +5211,204 @@ def claim_pass(st: dict) -> bool:
             LAST_PRIMER_LINES.clear()
             LAST_GOOD_LINES.clear()
         _notify(cid, "start", f"claimed {typ} — {unit}")
+        # Re-resolve AFTER start_task: a kk_mac_local claim whose lane
+        # declined at admission fell back to a local lane under this
+        # same claim (kk_mac_tried consumed) — the state entry must
+        # carry the executor that ACTUALLY runs so _cap_counts draws
+        # from the right class next pass.
+        ex_actual = claim_executor(card)
         st[cid] = {"unit": unit, "type": typ, "tid": tid,
-                   "at": int(time.time()),
+                   "at": int(time.time()), "ex": ex_actual,
                    "gpu": "gpu" in set((_act(card))
                                       .get("labels") or [])}
+        if ex_actual in REMOTE_EXECUTORS:
+            remote_n += 1
+        else:
+            local_n += 1
         changed = True
         print(f"{cid}: claimed + started {unit}")
     return changed
+
+
+# --- jev stagnation gate pass -----------------------------------------
+
+def _job_loop_state(cid: str, ent: dict, card: dict):
+    """Loop-state for the stagnation probe: heartbeat (freshest
+    taskdir/journal write) + recent outputs. Dispatch jobs sample the
+    devin-dispatch taskdir (run.*.log / events.jsonl / transcript);
+    other unit types fall back to the unit journal tail. Returns the
+    probe's normalized state dict, or None when nothing is
+    sampleable."""
+    lg = lg_module()
+    if lg is None:
+        return None
+    task = ""
+    if card:
+        task = str(card.get("title") or "")[:160]
+        spec = str(card.get("spec") or card.get("brief") or "")
+        if spec:
+            task = (task + " — " + spec.strip())[:500]
+    if (ent.get("type") or "dispatch") == "dispatch":
+        td = _job_taskdir(ent)
+        if td.is_dir():
+            st = lg.state_from_taskdir(td, task=task or cid)
+            if st:
+                return st
+    unit = ent.get("unit") or ""
+    recent = []
+    if task_runtime() == "launchd":
+        try:
+            recent = _launchd_log(unit).read_text()[-8000:] \
+                .splitlines()[-15:]
+        except OSError:
+            recent = []
+    else:
+        r = sh(["journalctl", "--user", "-u", unit, "-n", "15",
+                "--no-pager", "-o", "cat"], timeout=10)
+        recent = [l for l in (r.stdout or "").splitlines() if l.strip()]
+    recent = [l.strip()[:200] for l in recent[-15:] if l.strip()]
+    if not recent:
+        return None
+    return lg.normalize_state({
+        "loop": "job", "task": task or cid,
+        "iterations": 0,
+        "elapsed_s": round(time.time() - float(ent.get("at") or
+                                              time.time()), 1),
+        "heartbeat_age_s": None,
+        "recent": recent,
+        "signals": {"unit": unit, "type": ent.get("type") or ""}})
+
+
+def gate_pass(st: dict) -> bool:
+    """Jev stagnation gate over this host's running jobs (card
+    jev-stagnation-gate-...-a70f74). WARN/REPLAN post a debounced
+    comms note; HALT needs GATE_HALT_STRIKES consecutive verdicts
+    before the unit is SIGTERMed — the finish pass then reports it as
+    a failed run with the gate evidence in the result. Advisory by
+    contract: GATE_ON=0, no probe module, or any probe error is a
+    no-op — the gate never blocks the claim loop."""
+    if GATE_ON in ("0", "false", "no") or not GATE_TYPES:
+        return False
+    lg = lg_module()
+    if lg is None:
+        return False
+    now = time.time()
+    changed = False
+    cards = None
+    for cid, ent in list(st.items()):
+        unit = ent.get("unit") or ""
+        if not unit or not unit_active(unit):
+            continue
+        if ent.get("job_awaiting"):
+            continue
+        if (ent.get("type") or "dispatch") not in GATE_TYPES:
+            continue
+        g = ent.setdefault("gate", {})
+        if now - float(g.get("last") or 0) < GATE_INTERVAL_S:
+            continue
+        if now - float(ent.get("at") or now) < GATE_MIN_AGE_S:
+            continue
+        if cards is None:
+            cards = {c.get("id"): c for c in
+                     (api("/cards") or {}).get("cards") or []}
+        try:
+            state = _job_loop_state(cid, ent, cards.get(cid) or {})
+        except Exception as e:
+            print(f"{cid}: stagnation gate sample failed: {e}")
+            continue
+        if not state:
+            continue
+        g["last"] = now
+        try:
+            v = lg.gate(state, halt_p=GATE_HALT_P, warn_p=GATE_WARN_P)
+        except Exception as e:
+            print(f"{cid}: stagnation gate probe failed: {e}")
+            continue
+        verdict = str(v.get("verdict") or "unknown")
+        g["verdict"] = verdict
+        g["noul_p"] = (v.get("noul") or {}).get("p")
+        g["backends"] = v.get("backends")
+        if verdict == "halt":
+            g["halt_streak"] = int(g.get("halt_streak") or 0) + 1
+        else:
+            g["halt_streak"] = 0
+        ev = (f"noul p={g['noul_p']} "
+              f"choice={(v.get('choice') or {}).get('action')} "
+              f"backends={g['backends']}")
+        if verdict in ("warn", "replan") and g.get("noted") != verdict:
+            g["noted"] = verdict
+            api("/comment", {"id": cid, "from": "chaba",
+                             "text": f"stagnation gate: {verdict} "
+                                     f"({ev}) — job still running, "
+                                     "watching"})
+            changed = True
+        elif verdict == "halt":
+            streak = int(g.get("halt_streak") or 0)
+            if streak >= GATE_HALT_STRIKES and not ent.get("gate_halt"):
+                ent["gate_halt"] = {
+                    "at": datetime.now(timezone.utc).isoformat(),
+                    "verdict": verdict, "noul": v.get("noul"),
+                    "choice": v.get("choice"),
+                    "streak": streak}
+                _signal_job(unit, "TERM")
+                api("/comment", {"id": cid, "from": "chaba",
+                                 "text": f"stagnation gate: HALT after "
+                                         f"{streak} consecutive verdicts "
+                                         f"({ev}) — SIGTERM to {unit}; "
+                                         "finish pass reports it failed"})
+                _notify(cid, "stalled",
+                        f"gate halt p={g['noul_p']} on {unit}")
+                changed = True
+            elif not ent.get("gate_halt"):
+                api("/comment", {"id": cid, "from": "chaba",
+                                 "text": f"stagnation gate: halt verdict "
+                                         f"{streak}/{GATE_HALT_STRIKES} "
+                                         f"({ev}) — one more interval "
+                                         "before killing"})
+                changed = True
+    return changed
+
+
+# --- stale dispatch-worktree sweep (OPS-1036) -------------------------
+# gc_worktree/gc_session only reap provably-merged trees; failed runs
+# leak dispatch-wt-<tid> dirs forever (idc02 held 68 ~= 14GB). The
+# bounded reaper lives in the repo (scripts/board/dispatch-wt-sweep.py)
+# and runs here once per WT_SWEEP_S — in-process so its unit_active()
+# sees this host's real systemd/launchd task units. Throttled by a
+# stamp file so the 60s claim tick pays ~nothing; a missing module or
+# any sweep failure is warn-only and never holds the claim pass.
+WT_SWEEP = os.environ.get("RUNNER_WT_SWEEP", "1") != "0"
+WT_SWEEP_S = int(os.environ.get("RUNNER_WT_SWEEP_S", "86400"))
+WT_SWEEP_DAYS = float(os.environ.get("RUNNER_WT_SWEEP_DAYS", "3"))
+WT_SWEEP_STAMP = STATE_DIR / "wt-sweep.ts"
+
+
+def wt_sweep_pass() -> None:
+    """Run dispatch-wt-sweep --apply when the interval elapsed.
+    Never raises, never touches state.json — maintenance, not claims."""
+    if not WT_SWEEP or WT_SWEEP_S <= 0:
+        return
+    try:
+        last = float(WT_SWEEP_STAMP.read_text().strip())
+    except Exception:
+        last = 0.0
+    if time.time() - last < WT_SWEEP_S:
+        return
+    mod = wt_sweep_module()
+    if mod is None:
+        return                     # no local checkout copy yet — retry next pass
+    try:
+        rc = mod.sweep(Path.home() / "CascadeProjects", WT_SWEEP_DAYS,
+                       None, True)
+        if rc:
+            print(f"warn: wt-sweep finished rc={rc}")
+    except Exception as e:
+        print(f"warn: wt-sweep failed: {type(e).__name__}: {e}")
+    try:                            # stamp even on failure — a broken
+        STATE_DIR.mkdir(parents=True, exist_ok=True)   # sweep must not
+        WT_SWEEP_STAMP.write_text(str(time.time()))    # hot-loop the pass
+    except OSError:
+        pass
 
 
 def verdict_pass(st: dict) -> None:
@@ -4507,6 +5421,12 @@ def verdict_pass(st: dict) -> None:
         cards = (api("/cards") or {}).get("cards") or []
         by_id = {c.get("id"): c for c in cards}
         verdicts = {}
+        # mirror claim_pass's capacity resolution once per pass — the
+        # load gate is per-class (OPS-1182 script + OPS-1284 remote)
+        # and the slot caps are per executor class
+        cap = _capacity_reason(st)
+        allowed = _load_gate_classes(cap)
+        local_n, remote_n = _cap_counts(st)
         for c in cards:
             cid = c.get("id")
             if not cid or (_act(c)).get("status") != "queued":
@@ -4517,10 +5437,24 @@ def verdict_pass(st: dict) -> None:
                 continue
             # verdicts mirror claim_pass's real gate order so /queue's
             # eligible/blocked projection matches what a pass would do:
-            # capacity -> blocked_by -> gpu preflight
-            cap = _capacity_reason(st)
-            if cap:
+            # capacity -> class gate -> per-class cap -> blocked_by ->
+            # gpu preflight
+            ex = claim_executor(c)
+            if allowed is not None and \
+                    (not allowed or
+                     _claim_gate(typ, ex) not in allowed):
                 verdicts[cid] = {"ok": False, "reason": cap}
+                continue
+            if ex in REMOTE_EXECUTORS:
+                if remote_n >= REMOTE_CAP:
+                    verdicts[cid] = {"ok": False, "reason":
+                                     f"remote executor cap "
+                                     f"({remote_n}/{REMOTE_CAP})"}
+                    continue
+            elif local_n >= CAP:
+                verdicts[cid] = {"ok": False, "reason":
+                                 f"runner at local cap "
+                                 f"({local_n}/{CAP})"}
                 continue
             # retry gate mirrors claim_pass position (before blocked_by)
             # so /queue shows a held card's real reason, not 'eligible'
@@ -4560,16 +5494,43 @@ def verdict_pass(st: dict) -> None:
         print(f"warn: verdict_pass failed: {e}")
 
 
+def _self_pin_ok(src: Path, data: bytes) -> bool:
+    """True when the repo copy's bytes match the runner_agent pin in
+    scripts/devin/runner-tooling.manifest.json — the same fail-closed
+    gate sync-runner-tools.sh applies. Without it the fast path
+    propagates whatever the checkout happens to hold: an unpinned tool
+    change, a dirty local edit, or a half-landed pin bump — states the
+    pin contract (and fleet-health's tool-pin audit) considers invalid.
+    2026-11-24: commit 7dc2187b7d changed this file without bumping the
+    pin; sync-runner-tools refused installs while _self_update happily
+    installed the unpinned build — the two paths disagreed about what
+    'current' means."""
+    manifest = (src.parents[2] / "scripts" / "devin"
+                / "runner-tooling.manifest.json")
+    try:
+        tools = json.loads(manifest.read_text()).get("tools") or {}
+    except Exception:
+        return False
+    for pin in tools.values():
+        if pin.get("source") == "scripts/board/runner-agent.py":
+            want = str(pin.get("sha256") or "")
+            return bool(want) and \
+                hashlib.sha256(data).hexdigest() == want
+    return False
+
+
 def _self_update():
     """~/.local/bin/runner-agent is a deploy SNAPSHOT — chaba-repo-sync
     pulls the repo but the binary never refreshes (OPS-1026: every host
     ran stale code until manual scp, and a stale snapshot claimed OPS-1021
     with a bug already fixed in the repo). When running AS the snapshot,
-    install a differing repo copy if it byte-compiles, then re-exec so
-    this pass runs the new code — no restart step, no fleet scp. The
+    install a differing PINNED repo copy if it byte-compiles, then re-exec
+    so this pass runs the new code — no restart step, no fleet scp. The
     fleet-level convergence for this and the sibling tools (devin-dispatch
     etc.) is scripts/devin/sync-runner-tools.sh at git-safe-pull's tail —
-    this remains the fast path for a running agent."""
+    this remains the fast path for a running agent, gated by the same
+    content pin so the two paths can never disagree about what is
+    installable."""
     me = Path(__file__).resolve()
     if me != Path.home() / ".local/bin/runner-agent":
         return                     # repo checkout/dev run — not the snapshot
@@ -4587,6 +5548,10 @@ def _self_update():
         if data == me.read_bytes():
             return
         compile(data, str(src), "exec")   # never self-install a broken copy
+        if not _self_pin_ok(src, data):
+            return            # unpinned/dirty checkout state — the pin
+                             # contract refuses it; keep the last pinned
+                             # snapshot until the pin lands
         me.write_bytes(data)
     except Exception:
         return                            # keep the known-good snapshot
@@ -4596,9 +5561,10 @@ def _self_update():
 def main() -> int:
     _self_update()
     st = load_state()
-    changed = (finish_pass(st) | watchdog_pass(st)
+    changed = (finish_pass(st) | watchdog_pass(st) | gate_pass(st)
                | reconcile_pass(st) | claim_pass(st))
     verdict_pass(st)
+    wt_sweep_pass()
     if changed:
         save_state(st)
     return 0

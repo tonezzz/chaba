@@ -18,7 +18,9 @@ queue/run-*.out.log):
   == <name>: FAIL|PREP FAILED -> failed
   QUEUE-DRAINED             -> queue finished
   lease acquired / lost     -> runner up / fenced out
-Plus a stall alert when the heartbeat is >STALE_S old mid-job.
+Plus a stall alert when the queue lease liveness ts is >STALE_S old
+mid-job (queue/lease is the unified liveness file; queue/heartbeat is
+the pre-unification fallback).
 
 Kill switch (easy off): touch ~/.config/nest-queue-watch.off — every
 tick exits silently while it exists. `rm` it to resume. Or set
@@ -32,7 +34,7 @@ Env:
                             ~/.config/nest-queue-watch.off
   NEST_QUEUE_SSH            rclone proxy host (default idc02)
   NEST_QUEUE_REMOTE         rclone remote root (default gdrive:ada-nest)
-  NEST_QUEUE_STALE_S        heartbeat staleness alert (default 240)
+  NEST_QUEUE_STALE_S        liveness staleness alert (default 240)
   BOARD_NOTIFY_CHANNEL      board_notify channel (default tg)
 """
 
@@ -98,7 +100,12 @@ def load_state() -> dict:
 def save_state(st: dict) -> None:
     try:
         STATE.parent.mkdir(parents=True, exist_ok=True)
-        STATE.write_text(json.dumps(st))
+        tmp = STATE.with_name(STATE.name + ".tmp")
+        with tmp.open("w") as f:
+            f.write(json.dumps(st))
+            f.flush()
+            os.fsync(f.fileno())
+        tmp.replace(STATE)
     except OSError as e:
         print(f"state write failed: {e}", file=sys.stderr)
 
@@ -136,17 +143,37 @@ def fmt_event(m: re.Match) -> str | None:
     return f"runner: {other.strip()}"
 
 
+def liveness() -> tuple[float, str, str]:
+    """-> (ts, job, phase). queue/lease is the unified liveness file
+    (ADA-0806): {worker,epoch,ts,job,phase} refreshed every ~15s. Runners
+    deployed before the unification only wrote queue/heartbeat
+    ('<epoch> <job> <phase>') — fall back to it for job/phase/ts."""
+    ts, job, phase = 0.0, "", ""
+    try:
+        d = json.loads(remote("cat", f"{Q}/lease"))
+        ts = float(d.get("ts") or 0)
+        job = str(d.get("job") or "")
+        phase = str(d.get("phase") or "")
+    except (ValueError, TypeError, json.JSONDecodeError):
+        pass
+    if ts and phase:
+        return ts, job, phase
+    hb = remote("cat", f"{Q}/heartbeat").split()
+    if len(hb) >= 3:
+        try:
+            hts = float(hb[0])
+        except ValueError:
+            hts = 0.0
+        return (ts or hts), (job or " ".join(hb[1:-1])), \
+            (phase or hb[-1])
+    return ts, job, phase
+
+
 def main() -> int:
     if os.environ.get("NEST_QUEUE_WATCH") == "off" or OFF_FILE.exists():
         return 0
     st = load_state()
-    hb = remote("cat", f"{Q}/heartbeat").split()
-    hb_ts, hb_job, hb_phase = 0.0, "", ""
-    if len(hb) >= 3:
-        try:
-            hb_ts, hb_job, hb_phase = float(hb[0]), hb[1], hb[2]
-        except ValueError:
-            pass
+    hb_ts, hb_job, hb_phase = liveness()
 
     # Current detached runner uses log-*.txt; retain legacy logs during
     # migration so a format change cannot silently stop notifications.

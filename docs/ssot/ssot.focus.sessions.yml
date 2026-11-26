@@ -342,6 +342,55 @@ sessions:
     - No further action unless Apple ID / Xcode install becomes available
     date: '2026-09-09'
 
+  - date: "2026-11-23"
+    focus: Capture harvester gated apply door (OPS-0024)
+    source: Tony approved option b on OPS-0024 (explicit chat approval)
+    plan:
+      - Fix exact sink scope from the live proposal report
+      - Implement an explicit gated apply path: dry-run, dedupe, audit, bounded retries, rollback
+      - Respect board-api / single-writer; verify producer + consumer surfaces
+    done:
+      - Landed origin/master ac369526db (capture-apply.py + harvester ledger preservation + SSOT doc)
+      - All self-tests green (apply 8/8, harvester 5/5, router 13/13, metrics 21/21, miss-add 7/7, pointer-stale 7/7)
+      - One approved apply: kanban:065d94f97e90 -> card OPS-0029, GET-verified, ledger audit appended
+      - Idempotence re-apply blocked by 3 gates; producer + consumer surfaces verified
+      - OPS-0024 closed with evidence comm
+    follow_up:
+      - Future slices: add allowlisted sinks (kb/lesson/oc-note/ssot) each with their own write door + explicit approval
+      - runner-agent drift notices on idc02/tony-dell are unrelated infra debt
+    next_action: Leave the apply door as-is; add a new sink only when a concrete consumer justifies it
+    decisions:
+      - id: capture-apply-gated-sink-write
+        title: Keep harvester read-only; separate key-scoped gated writer, board-api first slice
+        chosen: Separate gated writer (capture-apply.py), no bulk mode, dry-run default
+    kb_items:
+      - docs/ssot/ssot.knowledge-capture.yml (gated apply write path section)
+
+  - date: "2026-11-23"
+    focus: Triage OPS-0029 from the approved capture apply (wiki login polish)
+    source: Tony said "please proceed" after the OPS-0029 triage recommendation
+    plan:
+      - Verify live board state before acting (not memory)
+      - Fix safely-fixable infra drift (runner-agent on tony-omen)
+      - Fix the confirmed h3 PluggableAuth button-label defect with backup + surface verification
+      - Route the unresolved iframe UX decision to a durable board request
+    done:
+      - tony-omen runner-agent drift fixed (installed md5 e9cbd25e... matches repo HEAD); backup runner-agent.bak-20261123-145018
+      - Confirmed "0" label live on both wiki hosts; PluggableAuth 7.5.0 uses buttonLabelMessage
+      - Created MediaWiki:pluggableauth-google-label (rev 444) + buttonLabelMessage in LocalSettings.php on h3 with named backup; byte-for-byte readback
+      - Surface-verified h3 login button renders "Sign in with Google" (2x cache-busted)
+      - OPS-0029 evidence comm + open request ops-0029-item-2-decision-needed-google-s-3917cf with 3 options
+    follow_up:
+      - Tony to choose iframe UX treatment (weblink card recommended / userloginprompt note / defer-close); live HA dashboard push needs same-session approval
+      - wiki.surf-thailand.com cosmetic "0" label unchanged; needs separate host approval
+      - idc02 SSH key denies access; its drift comms are stale/unrelated
+    next_action: Await the OPS-0029 request answer; do not push dashboard or touch surf-thailand without approval
+    decisions:
+      - id: wiki-h3-pluggableauth-button-label
+        title: Use buttonLabelMessage + MediaWiki message on h3, backup before edit, h3-only scope
+    kb_items:
+      - docs/ssot/decisions/ssot.technical-decisions.yml (wiki-h3-pluggableauth-button-label)
+
 related_files:
   - docs/ssot/ssot.focus.current.yml
   - docs/ssot/ssot.focus.yml

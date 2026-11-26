@@ -1,0 +1,30 @@
+# Private, CPU-only inventory of embedded images in the preserved source PDFs.
+# This pack audits provenance only; it does not feed images into LTX.
+name: kk-video-c9f99fee6146-pdf-image-audit
+requires:
+  - kk-video-c9f99fee6146-r4-preflight
+needs:
+  gpu_gb: 0
+  disk_gb: 4
+  egress_only_ok: true
+timeout_s: 1200
+fetch:
+  - projects/kk-video-c9f99fee6146/project.json
+  - projects/kk-video-c9f99fee6146/source/
+artifacts:
+  - packs/kk-video-c9f99fee6146-pdf-image-audit/out/report.md
+  - packs/kk-video-c9f99fee6146-pdf-image-audit/out/audit.json
+  - packs/kk-video-c9f99fee6146-pdf-image-audit/out/original/pdfinfo-summary.txt
+  - packs/kk-video-c9f99fee6146-pdf-image-audit/out/original/pdfimages-list.txt
+  - packs/kk-video-c9f99fee6146-pdf-image-audit/out/original/images/*
+  - packs/kk-video-c9f99fee6146-pdf-image-audit/out/v1_01/pdfinfo-summary.txt
+  - packs/kk-video-c9f99fee6146-pdf-image-audit/out/v1_01/pdfimages-list.txt
+  - packs/kk-video-c9f99fee6146-pdf-image-audit/out/v1_01/images/*
+prep: |
+  apt-get update -qq
+  apt-get install -y -qq poppler-utils
+run_sh: |
+  exec python3 "$PACK_DIR/audit_pdf_images.py" \
+    --project "$NEST_ROOT/projects/kk-video-c9f99fee6146/project.json" \
+    --source-dir "$NEST_ROOT/projects/kk-video-c9f99fee6146/source" \
+    --out "$PACK_DIR/out"

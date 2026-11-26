@@ -171,11 +171,11 @@ WATCHLIST = [
      "var": "HOME_ASSISTANT_TOKEN",
      "url": "http://michael-ha.taila0626a.ts.net:8123"},  # michael-ha is its own tailnet host
     {"id": "ha-mdev-dell", "kind": "ha", "host": "tony-dell",
-     "file": "~/.config/secrets/ha-michael-dev.env", "var": "HASS_TOKEN",
-     "url": "https://idc02.taila0626a.ts.net:8124"},
+     "file": "~/.config/secrets/ha-mn-ha-dev.env", "var": "HASS_TOKEN",
+     "url": "https://mn01.taila0626a.ts.net:8124"},
     {"id": "ha-mdev-omen", "kind": "ha", "host": "tony-omen",
-     "file": "~/.config/secrets/ha-michael-dev.env", "var": "HASS_TOKEN",
-     "url": "https://idc02.taila0626a.ts.net:8124"},
+     "file": "~/.config/secrets/ha-mn-ha-dev.env", "var": "HASS_TOKEN",
+     "url": "https://mn01.taila0626a.ts.net:8124"},
     {"id": "ha-mlive-dell", "kind": "ha", "host": "tony-dell",
      "file": "~/.config/secrets/ha-michael-live.env", "var": "HASS_TOKEN",
      "url": "http://michael-ha.taila0626a.ts.net:8123"},
@@ -847,7 +847,12 @@ def load_state() -> dict:
 
 def save_state(st: dict) -> None:
     STATE.parent.mkdir(parents=True, exist_ok=True)
-    STATE.write_text(json.dumps(st, indent=1))
+    tmp = STATE.with_name(STATE.name + ".tmp")
+    with tmp.open("w") as f:
+        f.write(json.dumps(st, indent=1))
+        f.flush()
+        os.fsync(f.fileno())
+    tmp.replace(STATE)
 
 
 def main() -> int:

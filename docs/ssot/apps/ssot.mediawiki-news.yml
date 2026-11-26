@@ -321,10 +321,21 @@ extensions:
     - "Drawio — archived; use DrawioEditor only with external-service approval"
   install_gate:
     current_state: >
-      Superseded 2026-11-06: all phase_1/phase_2 extensions are installed and
-      verified via the board-api /wiki/extension door, which drives the
-      wiki-side Springboard extension over an allowlist — no agent-held
-      filesystem access needed for extension enable/disable. New custom
+      Superseded 2026-11-06: all phase_1/phase_2 extensions are installed;
+      the board-api /wiki/extension door verifies state over an
+      allowlist — no agent-held filesystem access needed for extension
+      enable/disable. Correction 2026-11-24: the installs themselves
+      went through the manual bundle+LocalSettings path — Springboard
+      rejects every sbname on MW 1.46 (see
+      docs/ssot/jobs/infrastructure/2026-11-24-wiki-extension-control-plane.yml
+      live_finding; $wgSpringboardURL has no 1.46 recommended YAML).
+      Tightened
+      2026-11-24 (card wiki-extension-control-plane): mutations require
+      confirm=true, one extension per call, before/after Special:Version
+      + extension-table capture, durable receipt per attempt, honest
+      failure on unverified results, idempotent no-op when the
+      requested end-state already holds (verified via siteinfo,
+      Springboard skipped). New custom
       namespaces and Lockdown rules (e.g. Education:/Reports: per
       docs/ssot/jobs/education/2026-11-06-wiki-member-knowledge-surface.yml)
       still require a LocalSettings.php edit via the admin/Plesk path —

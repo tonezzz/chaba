@@ -1,0 +1,422 @@
+id: inference-provider-watch
+title: Inference-provider market watch — iterate the living research + eval new brains on the dev-AI fleet
+column: done
+updated: 2026-11-26 19:41
+brief: 'Living doc: devin-kb/docs/tools/inference-provider-market.md (iter 1, 2026-10-25). Each iteration: refresh
+  prices/free tiers, add providers, and — per Tony — try candidates on the dev-AI fleet itself: eval-bed (new LiteLLM
+  model group + config.<name>.yaml + cli-compare run vs bench baseline) AND live-task trials (route real chores/dispatch
+  work to promising brains). Key cost rule: agent sessions are prefill-heavy, so cached-input price × cache-hit
+  rate is the ranking metric, not headline $/Mtok.'
+priority: medium
+tags:
+- research
+- evals
+- litellm
+- recurring
+spec: 'Queued experiments from iter-1 doc: (1) groq-free model group — gpt-oss-120b + qwen3.8-27b are FREE with
+  real tool-calling and ~20x faster than CPU ollama — biggest free code-brain upgrade vs local qwen3:8b; add to
+  LiteLLM + run config.ops.yaml comparison. (2) OpenCode Zen free promo models as zero-config runner. (3) $10 OpenRouter
+  credit → 1000/day :free models + DeepSeek V4 Flash paid bench (~$0.05-0.11/session). (4) Mistral Experiment tier
+  → Codestral leg. (5) Groq/Cerebras TTFT test for ada voice-aux lane. Naming note: fleet called DevNest (Ada Nest-family
+  convention) pending Tony confirm.'
+ref: OPS-0850
+comms:
+- at: 2026-10-25 09:46
+  from: devin
+  text: 'Iter-1 research landed in devin-kb (pushed). Tony direction: use the dev fleet as testbed — eval-bed plus
+    live-task trials. Next iteration adds whichever providers he asks about + executes the queued experiments.'
+- at: 2026-10-25 10:19
+  from: devin
+  text: 'Iter-1b eval done: config.devnest-zen.yaml — zen/deepseek-v4.1-flash-free 4/4 @15.8s (fastest), zen/glm-5.3-flash-free
+    4/4 @19.9s, bench 4/4 @27.0s, local qwen3:8b 0/4 (all timeouts). Zen free lane now a second always-on free brain.
+    Still queued: Groq key needed for gpt-oss-120b leg; or-* weekly cap resets 2026-10-26 00:00Z.'
+- at: 2026-10-25 10:25
+  from: devin
+  text: 'Iter-1c parallel research bench done (~/evals/research-lanes/): same research→lesson prompt on 4 DevNest
+    lanes in ~2min. deepseek-v4.1-flash-free + glm-5.3-flash-free ran 6 websearches each → dense verified lessons;
+    bench lanes did ZERO research → generic memory answers. DeepSeek output filed as education lesson 2369 (self-hosted-llm-inference-homelab).
+    Finding: for research/education generation, tool-use depth is the differentiator — zen free brains beat flash-lite
+    on this class too.'
+- at: 2026-10-25 11:50
+  from: devin
+  text: 'Iter-1d Groq free tier: wired into LiteLLM on idc03 (groq-gpt-oss-120b, groq-gpt-oss-20b, groq-qwen3.8-27b
+    + opencode allowlist). Bench config.devnest-groq.yaml: bench 3/4, gpt-oss-120b 1/4, qwen3.8-27b 0/4. Root causes
+    measured: free TPM caps (8k/7k ITPM) sit BELOW one mid-session opencode request (~7.7-11.9k tokens) — hard fail,
+    not throttle; litellm bug #47931 (reasoning_content echoed to Groq turn2+ → 400); qwen3.8 max_tokens cap 16384.
+    Verdict: groq-free is for small-prompt latency-critical'
+- at: 2026-10-26 07:25
+  from: devin
+  text: 'DevNest research is now filed in Education post 2504. Existing eval evidence: Zen DeepSeek V4.1 Flash free
+    4/4 @15.8s, GLM-5.3 Flash free 4/4 @19.9s, Gemini bench 4/4 @27s, local Qwen3:8B 0/4 timeouts. New follow-up
+    OPS-087? created as devnest-cache-tokenization-bench to measure prefix/cache/tokenization performance rather
+    than speculate.'
+- at: 2026-10-26 07:25
+  from: devin
+  text: 'Correction: the cache/tokenization follow-up is BEN-0884 (devnest-cache-tokenization-bench).'
+- at: 2026-10-27 14:22
+  from: tony
+  text: queued for processing
+- at: 2026-10-27 14:22
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-27 14:22
+  from: chaba
+  text: started devin-task-20261027-142254-queued-experiments-from-iter-1 on tony-macbook (dispatch)
+- at: 2026-10-27 14:23
+  from: tony-macbook
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261027-142254-queued-experiments-from-iter-1.service:
+    Main process exited, cod'
+- at: 2026-10-27 14:23
+  from: chaba
+  text: pushed dispatch/20261027-142254-queued-experiments-from-iter-1 to origin
+- at: 2026-10-27 14:23
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261027-142254-queued-experiments-from-iter-1,
+    branch dispatch/20261027-142254-queued-experiments-from-iter-1'
+- at: 2026-10-27 14:32
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261027-142254-queued-experiments-from-iter-1 on
+    tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-10-31 13:50
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261027-142254-queued-experiments-from-iter-1'
+- at: 2026-11-07 16:52
+  from: devin
+  text: '[KNB-1098] living research stream is alive (iters 1/1b/1c recorded in comms); only the queued-experiments
+    dispatch was lost. Keeping in review — next iteration can re-dispatch from the queued list.'
+- at: 2026-11-14 14:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:10
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 10:27
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
+    the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-17 18:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:24
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:40
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:43
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 20:09
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
+    the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-17 21:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:29
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:15
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:18
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:21
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:07
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:02
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:05
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:52
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 15:15
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
+    the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-21 17:49
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:07
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:20
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 15:10
+  from: chaba
+  text: '[verify-hold] Review pass 2026-11-23 (Tony): 2026-11-07 16:52 devin: living research alive but queued-experiments
+    dispatch lost; next iteration needs re-dispatch — held, not closed; needs the noted decision/blocker cleared.'
+- at: 2026-11-23 15:10
+  from: tony
+  text: put on hold
+- at: 2026-11-23 16:18
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:07
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:07
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:22
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:32
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:40
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:06
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 15:54
+  from: chaba
+  text: classified as paid_frontier (kw:bench  conf 1.00)
+- at: 2026-11-24 15:54
+  from: tony
+  text: queued for processing
+- at: 2026-11-24 15:55
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (3/3)'
+- at: 2026-11-24 15:55
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-24 15:55
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 4.11 > 0.85)'
+- at: 2026-11-24 15:55
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-24 15:56
+  from: idc02
+  text: claimed
+- at: 2026-11-24 16:04
+  from: devin
+  text: 'iter-2 dispatch started on idc02. State check: groq models were removed from idc03 LiteLLM (iter-1d live-only,
+    overwritten by deploy); cf-gpt-oss-120b/cf-qwen38-27b now carry the same free models; or-deepseek-v4-flash route
+    live (OPS-1256, OR key has $0.70/wk left). Plan: groq direct probe + agent-cost-bench on tony-dell (cf-* + ds-v4-flash
+    legs vs bench baseline on o1-o4), Mistral/Cerebras keys absent -> will raise request.'
+- at: 2026-11-24 16:08
+  from: chaba
+  text: 'merge-sweep: devin-task-20261027-142254-queued-experiments-from-iter-1 no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-24 16:10
+  from: devin
+  text: 'raised request iter-2-bench-running-two-queued-legs-are-b4e29a: iter-2 bench running. Two queued legs are
+    key-blocked: (a) Mistral Experiment tier — no MISTRAL_API_KEY exists on idc02/'
+- at: 2026-11-24 16:27
+  from: devin
+  text: 'iter-2 done. Bench run 20261124_090941_c6e97c (tony-dell, o1-o4 ops, 16 runs): or-deepseek-v4-flash 4/4
+    @$0.0034/run avg 29.6s — combined with yesterday code-corpus 2/2 = 6/6 ~$0.05 total, verified cheap paid code
+    brain. zen-ds 3/4 then provider.free-limit (promo quota). cf-gpt-oss-120b 0/4 — CF 10K neurons/day already exhausted
+    fleet-wide, ~7min retry loops per task. bench/flash-lite 1/4 today (real content fails, was 4/4 on 10-25 — watching).
+    Groq re-probed: key+models live, TTFT 0.26-0.5s on '
+- at: 2026-11-24 16:31
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261124-155724-queued-experiments-from-iter-1.service:
+    Failed to ope'
+- at: 2026-11-24 16:31
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 16:31
+  from: chaba
+  text: pushed dispatch/20261124-155724-queued-experiments-from-iter-1 to origin
+- at: 2026-11-24 16:31
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 82.2s)
+- at: 2026-11-24 16:31
+  from: chaba
+  text: auto-merged 7dc1d062 (dispatch/20261124-155724-queued-experiments-from-iter-1) → origin/master
+- at: 2026-11-24 16:31
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-155724-queued-experiments-from-iter-1,
+    branch dispatch/20261124-155724-queued-experiments-from-iter-1'
+- at: 2026-11-24 16:38
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''iter-2-bench-running-two-queue''] block close)'
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 18:43
+  from: tony
+  text: 'answered iter-2-bench-running-two-queued-legs-are-b4e29a: proceed'
+- at: 2026-11-24 18:43
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-24 18:54
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:48
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:56
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:00
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:02
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  status: done
+  result: 'exit=0 ice: No such file or directory | devin-task-20261124-155724-queued-experiments-from-iter-1.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261124-155724-queued-experiments-from-iter-1.service:
+    No such file or directory'
+  sweep:
+    session_gone: 2026-10-27 14:32
+    no_repo: 2026-10-31 13:50
+    stale_running: 2026-11-24 16:08
+    close_held: 2026-11-24 16:38
+  lane: paid_frontier
+  lane_source: kw
+  runner: idc02
+  attempts: 1
+  verified: true
+review_kind: verify
+claim:
+  since: 2026-11-24 15:56
+requests:
+- id: iter-2-bench-running-two-queued-legs-are-b4e29a
+  ask: 'iter-2 bench running. Two queued legs are key-blocked: (a) Mistral Experiment tier — no MISTRAL_API_KEY
+    exists on idc02/idc03/tony-dell; needs a La Plateforme Experiment-tier key for the Codestral leg. (b) Cerebras
+    — no key; trial needs card signup ($5/30d). Provide keys via ~/.config/secrets/ on idc03 and I will wire + bench
+    both. Also confirm: was the approved $10 OpenRouter credit (OPS-1256, approved 2026-11-09) actually purchased?
+    or-deepseek-v4-flash paid bench already passed 2/2 yesterday at ~$0.04.'
+  status: answered
+  at: 2026-11-24 16:10
+  from: devin
+  options:
+  - proceed
+  - hold
+  answer: proceed
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 18:54
+  note: verified — evidence checks green, closing itself

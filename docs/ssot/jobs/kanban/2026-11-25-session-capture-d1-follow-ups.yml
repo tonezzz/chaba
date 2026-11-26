@@ -1,0 +1,111 @@
+id: session-capture-d1-follow-ups
+title: Session capture D1 — follow-ups from the metrics measurement
+card: session-capture-d-1-follow-ups-ledger-du-78e13f
+date: 2026-11-25
+host: idc02
+status: done
+ref: OPS-1368
+
+goal: >
+  Resolve the five follow-ups from the session-capture-d1-metrics
+  measurement (reports/capture/metrics-20261125.md): capture-ledger
+  durability, pointer-incidents adoption, resolved_ref semantics,
+  repeat-ask register freshness, info_find run adoption.
+
+context: >
+  The d1-metrics dispatch (tony-macbook) verified ok but its checkpoint
+  failed — report, job doc, SSOT Phase D refresh and dispatch-outcome
+  were left dirty in its worktree and never committed (merge-sweep:
+  "no commits"). This run recovered all four artifacts verbatim from
+  ~/CascadeProjects/dispatch-wt-20261125-094816-goal-measure-repeat-ask-miss-r
+  on tony-macbook and landed them here before implementing follow-ups.
+  SECOND CORRECTION found during implementation: the card's premise that
+  the canonical ledger is "absent on every reachable host" is wrong —
+  the d1 sweep checked idc03/tony-dell/tony-omen/con01/mn01/tony-macbook
+  but not idc02. ~/.local/share/chaba/capture/capture-ledger.yml on idc02
+  holds the real 2026-11-23 baseline: 2220 entries + the applied: block
+  (kanban:065d94f97e90 -> 2026-11-12-155922-wiki-login-polish), plus the
+  four 2026-11-23 metrics-*.md reports, pointer-incidents.yml (initialized,
+  0 incidents), events/audit jsonl and snapshot dirs. idc02 also has 29
+  info_find run samples vs the 3 the d1 report counted on tony-macbook.
+
+decisions:
+  ledger_durability: >
+    Canonical home = idc02 ~/.local/share/chaba/capture/ (declared, was
+    already the de-facto home — baseline + applied history live there, no
+    migration needed). entries[] regenerate deterministically; applied[]
+    is mirrored to a card comm by capture-apply.py going forward. Declared
+    daily job chaba-capture-harvest (ssot.jobs.yml, idc02, 05:30) refreshes
+    the canonical copy + writes metrics-latest.md on the job-exec
+    checkout. Other hosts' ~/.local/share copies are per-run regenerations.
+  pointer_incidents: >
+    Wired, not dead: pointer-stale-add.py is now referenced by the
+    session-capture sweep skill and both info-find skills. Incidents are
+    agent-reported (a human/agent judges staleness during a real lookup) —
+    deliberately not auto-detected; the log stays host-local telemetry.
+    idc02's log is already initialized (0 incidents); other hosts init
+    lazily on first recorded incident.
+  resolved_ref: >
+    Renamed to top_result_ref in info_find.py run audits — it always meant
+    "top citation exists". Verified resolution is a new agent verdict:
+    info_find.py record / info-find.mjs --record-result accept
+    --elapsed-ms and --resolved yes|no, written as kind:"result" records.
+    capture-metrics.py reports run_* (local source time, top_result_pct)
+    and session_* (end-to-end skill path, verified_resolved_pct) separately;
+    resolved_ref is reserved for a future verified signal.
+  register_freshness: >
+    AGENTS.md sweep duty now checks the newest history at: in
+    ssot.repeat-asks.yml (>14d stale -> decide zero-repeats vs capture
+    gap). 34d staleness at measurement is ambiguous by design — the check
+    makes the next sweep resolve it.
+  info_find_adoption: >
+    Instrumented the skill path instead of only `run`: the Devin-native
+    info-find.mjs previously wrote untyped audit records invisible to
+    capture-metrics (no kind field); it now emits kind:"plan"/"result"
+    with elapsed_ms/resolved, matching info_find.py record.
+
+delivered:
+  - docs/ssot/infrastructure/ssot.jobs.yml + systemd/generated/idc02/chaba-capture-harvest.{service,timer}: >
+      declared daily harvest+metrics job on the canonical capture host
+      (declare+render only; install via render-jobs.py --host idc02 --ids
+      chaba-capture-harvest --install after merge — normal jobs pipeline).
+  - scripts/chaba/capture-apply.py: >
+      applied audit mirrored to card comm (non-fatal warning on comm
+      failure); self-test 8/8.
+  - scripts/devnest/info_find.py: >
+      resolved_ref -> top_result_ref; record gains --elapsed-ms/--resolved;
+      tests 23/23.
+  - .devin/skills/info-find/info-find.mjs: >
+      typed audit records + --elapsed-ms/--resolved on --record-result.
+  - scripts/chaba/capture-metrics.py: >
+      run_* vs session_* sample classes, top_result_pct +
+      verified_resolved_pct; self-test covers both.
+  - .devin/skills/session-capture/SKILL.md: >
+      stale-pointer incident step.
+  - .agents/skills/info-find/SKILL.md + .devin/skills/info-find/SKILL.md: >
+      stale-pointer note + elapsed/resolved audit args.
+  - AGENTS.md: >
+      sweep-duty register freshness check.
+  - docs/ssot/ssot.knowledge-capture.yml: >
+      Phase D Refresh (2026-11-25) section (recovered) + resolutions recorded.
+  - reports/capture/metrics-20261125.md + docs/ssot/jobs/kanban/2026-11-25-session-capture-d1-metrics.yml + dispatch-outcome-20261125-094816-*.md: >
+      recovered d1 artifacts (prior dispatch verified ok, never committed).
+
+verify: >
+  python3 scripts/chaba/capture-metrics.py --self-test
+  python3 scripts/chaba/capture-apply.py --self-test
+  python3 scripts/chaba/pointer-stale-add.py --self-test
+  python3 scripts/chaba/harvester.py --self-test
+  python3 scripts/render-jobs.py --check
+  python3 -m pytest tests/devnest/test_info_find.py -q
+  node --check .devin/skills/info-find/info-find.mjs
+  python3 scripts/ssot-prose-smell.py
+
+notes: >
+  Remaining manual step: install chaba-capture-harvest on idc02 after this
+  branch merges and chaba-repo-sync picks it up (render-jobs.py --host
+  idc02 --ids chaba-capture-harvest --install). Until then the canonical
+  ledger on idc02 is simply stale (last harvest 2026-11-23) — a manual
+  `python3 scripts/chaba/harvester.py` on idc02 refreshes it anytime.
+  Lesson for future sweeps: "absent on every reachable host" claims must
+  enumerate the FULL host list — idc02 was skipped and held the baseline.

@@ -13,6 +13,7 @@ Env:
   DEVICE_TELEMETRY_NAME   default short hostname
   DEVICE_TELEMETRY_GEO    "0" to skip WAN geo lookup (privacy/offline)
   DEVICE_TELEMETRY_PROC   max processes to list (default 8, 0=off)
+  DEVICE_TELEMETRY_TEMP_CACHE_S  macOS last-good temperature TTL (default 900)
 """
 from __future__ import annotations
 
@@ -182,7 +183,76 @@ def _disk_pct() -> float | None:
         return None
 
 
-def _temps() -> tuple[float | None, dict]:
+# Last good macOS reading, reused only while younger than TTL. An SMC read
+# is occasionally transient (smctemp prints 0.0 plus a hint), and a single
+# null sample blanks the HA sensor until the next 5-min mirror push.
+TEMP_CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          ".temp-cache.json")
+TEMP_CACHE_TTL_S = int(os.environ.get(
+    "DEVICE_TELEMETRY_TEMP_CACHE_S", "900"))
+
+
+def _cached_temp() -> tuple[float | None, dict]:
+    """Last plausible reading, only while younger than TEMP_CACHE_TTL_S."""
+    try:
+        with open(TEMP_CACHE) as f:
+            d = json.load(f)
+        age = time.time() - float(d.get("ts") or 0)
+        t = float(d.get("temp_c"))
+        if 0 <= age <= TEMP_CACHE_TTL_S and 0 < t < 150:
+            zones = d.get("zones") or {"cpu": round(t, 1)}
+            return round(t, 1), zones
+    except (OSError, ValueError, TypeError):
+        pass
+    return None, {}
+
+
+def _remember_temp(t: float, zones: dict) -> None:
+    try:
+        tmp = TEMP_CACHE + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump({"ts": time.time(), "temp_c": t, "zones": zones}, f)
+        os.replace(tmp, TEMP_CACHE)
+    except OSError:
+        pass
+
+
+def _smctemp_zones() -> dict:
+    """Read every SMC zone we can (CPU, GPU) with a bounded retry each.
+
+    A missing sensor must not hide a hot one: the caller uses max(zones).
+    osx-cpu-temp is a CPU-only last resort — on kk-mac it reports 0.0C,
+    which is rejected as implausible.
+    """
+    smctemp = os.path.expanduser("~/.local/bin/smctemp")
+    zones = {}
+    for name, flag in (("cpu", "-c"), ("gpu", "-g")):
+        cmds = [[smctemp, flag], ["smctemp", flag]]
+        if name == "cpu":
+            cmds.append(["/opt/homebrew/bin/osx-cpu-temp"])
+        for attempt in range(3):
+            for cmd in cmds:
+                out = _run(cmd).strip()
+                if not out:
+                    continue
+                # smctemp sometimes appends a hint after the number —
+                # only the first line is the reading.
+                first = out.splitlines()[0].strip()
+                try:
+                    t = float(first.split(":")[-1].strip().rstrip("°C").strip())
+                except ValueError:
+                    continue
+                if 0 < t < 150:
+                    zones[name] = round(t, 1)
+                    break
+            if name in zones:
+                break
+            if attempt < 2:
+                time.sleep(0.4 * (attempt + 1))
+    return zones
+
+
+def _temps() -> tuple[float | None, dict, str]:
     zones = {}
     for z in sorted(__import__("glob").glob(
             "/sys/class/thermal/thermal_zone*/temp")):
@@ -194,16 +264,22 @@ def _temps() -> tuple[float | None, dict]:
         name = (ztype or f"zone{idx}")[:24]
         zones[name] = round(int(v) / 1000.0, 1)
     if zones:
-        return round(max(zones.values()), 1), zones
+        return round(max(zones.values()), 1), zones, "live"
     if platform.system() == "Darwin":
-        # no sysfs on macOS — osx-cpu-temp (brew) reads SMC keys unprivileged
-        out = _run(["/opt/homebrew/bin/osx-cpu-temp"])
-        try:
-            t = float(out.split(":")[-1].strip().rstrip("C").strip())
-            return round(t, 1), {"cpu": round(t, 1)}
-        except (ValueError, IndexError):
-            return None, {}
-    return None, {}
+        # No sysfs on macOS. Prefer the user-built smctemp (unprivileged
+        # SMC read); launchd's minimal PATH misses ~/.local/bin, so try
+        # the absolute path first. Retry briefly, then fall back to the
+        # short-lived cache so one bad SMC read cannot make the overview
+        # table show 'unknown'. The headline temp is always the hottest
+        # zone, and all zones are kept for the per-host breakdown.
+        zones = _smctemp_zones()
+        if zones:
+            peak = round(max(zones.values()), 1)
+            _remember_temp(peak, zones)
+            return peak, zones, "live"
+        t, z = _cached_temp()
+        return t, z, "cache" if t is not None else "none"
+    return None, {}, "none"
 
 
 
@@ -338,7 +414,7 @@ def _services() -> dict:
 def collect() -> dict:
     boot = _run(["/usr/sbin/sysctl", "-n", "kern.boottime"]).split("{ sec = ")[-1].split(",")[0] \
         if platform.system() == "Darwin" else ""
-    temps = _temps()
+    temps, temp_zones, temp_source = _temps()
     rx, tx = _net()
     d = {
         "device": NAME,
@@ -356,8 +432,9 @@ def collect() -> dict:
         "swap_pct": _swap_pct(),
         "net_rx_b": rx,
         "net_tx_b": tx,
-        "temp_c": temps[0],
-        "temp_zones": temps[1],
+        "temp_c": temps,
+        "temp_zones": temp_zones,
+        "temp_source": temp_source,
         "thermal_pressure": _thermal_pressure(),
         "top_procs": _procs(),
         "battery": _battery(),
@@ -383,7 +460,12 @@ def _post(key: str, doc: dict) -> bool:
         req = urllib.request.Request(
             f"{MDBB}/add", data=json.dumps(body).encode(),
             headers={"content-type": "application/json"}, method="POST")
-        urllib.request.urlopen(req, timeout=10).read()
+        # mddb-ops (:11026) writes routinely take 13-42s and occasionally
+        # exceed 80s under load; the old 10s client timeout made a healthy
+        # write look like a failure (timer-alert-*-device-telemetry,
+        # 2026-11-26). 45s covers the normal case; a genuinely stuck write
+        # still fails and the timer retries, so no silent success.
+        urllib.request.urlopen(req, timeout=45).read()
         return True
     except Exception:
         return False

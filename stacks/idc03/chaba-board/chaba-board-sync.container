@@ -1,0 +1,15 @@
+[Unit]
+Description=Kanban <-> CMS sync (xmatch) — containerized kanban-sync.service
+OnFailure=ada-report-fail@%p.service
+
+[Container]
+Image=localhost/chaba-board:latest
+ContainerName=chaba-board-sync
+Network=host
+Volume=/home/tony:/home/tony
+Volume=/tmp:/tmp
+Environment=HOME=/home/tony
+Exec=/home/tony/.config/containers/chaba-board/run-sync.sh
+
+[Service]
+TimeoutStartSec=600

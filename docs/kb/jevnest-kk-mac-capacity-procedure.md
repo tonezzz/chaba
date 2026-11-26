@@ -26,7 +26,9 @@ Before queueing or claiming work, require:
 ```text
 heartbeat age <= 900s
 ollama_ok = true
-load_1m <= 4.0
+load ceiling: 1.0 per reported cpu_core (absolute load_1m <= 4.0 only
+  when the core count is unknown) — per-core gate deployed 2026-11-25;
+  the absolute 4.0 was 0.29/core on the 14-core Mac and starved the lane
 disk_free_gb >= 20
 owner/busy gate clear
 ```
@@ -64,10 +66,15 @@ Only bounded, read-only packages:
 
 ```text
 summary
-operator_brief
 structured_extract
-safe_route
 ```
+
+`operator_brief` and `safe_route` are held unadmitted pending re-eval
+(card `kk-mac-admitted-classes-narrow`; 2026-11-19 class eval scored
+them 0.31-0.60 under the production verifier — see
+`docs/ssot/jobs/devnest/2026-11-19-kkmac-class-eval.yml`). They remain
+verifier-supported so `scripts/bench/kkmac-classes/` can re-prove them;
+they rejoin this list only after a passing re-bench.
 
 Every package carries:
 
@@ -83,21 +90,36 @@ artifact
 timeout
 ```
 
+`expect.facts` guidance (lesson from the 2026-11-19 class eval,
+card `kk-mac-held-classes-fix-operator-brief-f-dd32ac`): the verifier
+checks each fact as a case-insensitive substring of the raw response,
+so declare only tokens the model will literally echo — verbatim
+identifiers from the evidence (hostnames, unit names, error codes,
+key numbers), never phrases written for the gold answer's wording.
+Declare facts sparingly (1–3 per package): `required_keys` and
+`enums` already carry the structural load, and every extra fact is a
+chance to bounce a usable response to fallback. Corpus convention:
+`scripts/bench/kkmac-classes/build_corpus.py`.
+
 No package may request shell execution, repository mutation, credentials,
 service control, destructive work, or publication.
 
 ## Refill policy
 
 The producer runs when the admission gate is green and the queue depth is
-below three:
+below the watermark. Deployed steady-state is `--max-depth 5 --max-new 5`
+(raised from 3/3 on 2026-11-13 — inbox inflow ~8/hr vs worker throughput
+~20/hr needed headroom for gate flaps; the script defaults and the
+card-spec floor remain 3):
 
 1. Prefer real work from DevNest reports, host assessments, audit deltas,
    queue status, and outstanding operator briefs.
 2. Then use approved benchmark/replay packages.
 3. Never refill production capacity with synthetic soak tasks; soak is a
    benchmark and must be labelled as such.
-4. Refill at most three packages per cycle and keep worker concurrency at
-   one until a two-request load test is approved.
+4. Refill at most five packages per cycle at the deployed watermark and
+   keep worker concurrency at one until a two-request load test is
+   approved.
 5. Stop producing when heartbeat/load/disk admission fails.
 
 This keeps KK-Mac active without competing with the owner or exhausting

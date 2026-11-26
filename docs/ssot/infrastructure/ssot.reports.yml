@@ -110,6 +110,10 @@ status_enum:
   missing: declared node with no meta and no artifacts
   unreachable: target-side — generator ran, its audit target did not
     answer (host off tailnet, endpoint down); `offline_ok` nodes exempt
+  no-config: target answered, but no producer config surfaces were found
+    on it (e.g. an infrastructure host with no agent lane); informational,
+    never declaration drift and never an alarm — distinct from `unreachable`
+    (probe failed) and from `missing` (declared node never produced meta)
   planned: registered but generator not built yet (registry state
     field=planned) — informational, not an alarm
   remote: observe:remote — artifacts live off this checkout; meta is
@@ -272,6 +276,28 @@ nodes:
     references:
       - docs/ssot/infrastructure/ssot.audit.hosts.yml
     children: []
+  - id: audit-hosts/idc02
+    layer: L1-producer
+    purpose: Host snapshot + delta vs expected services/resources (public edge / offload VPS)
+    generator: scripts/audit-hosts.py --host idc02
+    cadence: 24h
+    output: reports/audit-hosts
+    artifact_pattern: "idc02-*.yml"
+    meta: reports/audit-hosts/meta.idc02.yml
+    references:
+      - docs/ssot/infrastructure/ssot.audit.hosts.yml
+    children: []
+  - id: audit-hosts/con01
+    layer: L1-producer
+    purpose: Host snapshot + delta vs expected services/resources (DR/absorber VPS, runs the report chain)
+    generator: scripts/audit-hosts.py --host con01
+    cadence: 24h
+    output: reports/audit-hosts
+    artifact_pattern: "con01-*.yml"
+    meta: reports/audit-hosts/meta.con01.yml
+    references:
+      - docs/ssot/infrastructure/ssot.audit.hosts.yml
+    children: []
   # audit-hosts/idc01 retired 2026-10-07 — host retired; its residual rot
   # (missing timers, dead ada-* services) is a decommission checklist,
   # not standing signal. Re-add the node if idc01 returns to service.
@@ -296,6 +322,19 @@ nodes:
     artifact_pattern: "macbook-*.yml"
     meta: reports/audit-hosts/meta.macbook.yml
     offline_ok: true   # laptop — sleeps/off-net is normal, not an outage
+    references:
+      - docs/ssot/infrastructure/ssot.audit.hosts.yml
+    children: []
+  - id: audit-hosts/kk-mac
+    layer: L1-producer
+    purpose: Host snapshot — macOS launchd inventory (all domains) + fleet
+      process scan vs expected state (added 2026-11-24, OPS-1018)
+    generator: scripts/audit-hosts.py --host kk-mac
+    cadence: 24h
+    output: reports/audit-hosts
+    artifact_pattern: "kk-mac-*.yml"
+    meta: reports/audit-hosts/meta.kk-mac.yml
+    offline_ok: true   # member device — travels with KK, sleeps/off-net is normal
     references:
       - docs/ssot/infrastructure/ssot.audit.hosts.yml
     children: []
@@ -416,6 +455,108 @@ nodes:
       - docs/ssot/infrastructure/ssot.audit.hosts.yml
       - docs/ssot/jobs/infrastructure/2026-10-05-disk-trend-watch.yml
     children: []
+  # --- MCP inventory domain (card KNB-0019) ---
+  # One L1 producer per declared MCP host. Each observes the Devin /
+  # Windsurf / Codeium / OpenCode config surfaces on that host and compares
+  # them with ssot.mcp.yml. L0 artifacts are append-only; meta carries the
+  # observed state. `observe: remote` because producers run at the host.
+  - id: mcp-inventory/tony_omen
+    layer: L1-producer
+    purpose: Observed MCP configs vs declared servers on tony-omen
+    generator: python3 scripts/mcp-inventory.py --host tony_omen
+    cadence: 24h
+    output: reports/mcp-inventory
+    artifact_pattern: "tony_omen-*.yml"
+    meta: reports/mcp-inventory/meta.tony_omen.yml
+    observe: remote
+    references:
+      - docs/ssot/infrastructure/ssot.mcp.yml
+      - docs/ssot/infrastructure/ssot.tools.yml
+    children: []
+  - id: mcp-inventory/tony_dell
+    layer: L1-producer
+    purpose: Observed MCP configs vs declared servers on tony-dell
+    generator: python3 scripts/mcp-inventory.py --host tony_dell
+    cadence: 24h
+    output: reports/mcp-inventory
+    artifact_pattern: "tony_dell-*.yml"
+    meta: reports/mcp-inventory/meta.tony_dell.yml
+    observe: remote
+    references:
+      - docs/ssot/infrastructure/ssot.mcp.yml
+      - docs/ssot/infrastructure/ssot.tools.yml
+    children: []
+  - id: mcp-inventory/mn01
+    layer: L1-producer
+    purpose: Observed MCP configs vs declared servers on mn01
+    generator: python3 scripts/mcp-inventory.py --host mn01
+    cadence: 24h
+    output: reports/mcp-inventory
+    artifact_pattern: "mn01-*.yml"
+    meta: reports/mcp-inventory/meta.mn01.yml
+    observe: remote
+    references:
+      - docs/ssot/infrastructure/ssot.mcp.yml
+    children: []
+  - id: mcp-inventory/idc02
+    layer: L1-producer
+    purpose: Observed MCP configs vs declared servers on idc02
+    generator: python3 scripts/mcp-inventory.py --host idc02
+    cadence: 24h
+    output: reports/mcp-inventory
+    artifact_pattern: "idc02-*.yml"
+    meta: reports/mcp-inventory/meta.idc02.yml
+    references:
+      - docs/ssot/infrastructure/ssot.mcp.yml
+    children: []
+  - id: mcp-inventory/idc03
+    layer: L1-producer
+    purpose: Observed MCP configs vs declared servers on idc03 (MDDB primary)
+    generator: python3 scripts/mcp-inventory.py --host idc03
+    cadence: 24h
+    output: reports/mcp-inventory
+    artifact_pattern: "idc03-*.yml"
+    meta: reports/mcp-inventory/meta.idc03.yml
+    observe: remote
+    references:
+      - docs/ssot/infrastructure/ssot.mcp.yml
+    children: []
+  - id: mcp-inventory/michael-ha
+    layer: L1-producer
+    purpose: Observed MCP configs vs declared servers on michael-ha appliance
+    generator: python3 scripts/mcp-inventory.py --host michael-ha
+    cadence: 24h
+    output: reports/mcp-inventory
+    artifact_pattern: "michael-ha-*.yml"
+    meta: reports/mcp-inventory/meta.michael-ha.yml
+    observe: remote
+    references:
+      - docs/ssot/infrastructure/ssot.mcp.yml
+    children: []
+  - id: mcp-fleet
+    layer: L2-domain
+    purpose: Cross-host MCP inventory drift — configured vs declared, with unreachable hosts kept visible
+    generator: python3 scripts/mcp-inventory.py --consolidate
+    cadence: 24h
+    output: reports/mcp-fleet
+    artifact_pattern: "MCP-FLEET-REPORT.*"
+    meta: reports/mcp-fleet/meta.yml
+    publish:
+      sink: wiki-reports
+      wiki_title: Reports:Fleet-MCP-Inventory
+      event_kind: report
+      visibility: private
+      via: board-api /publish
+    references:
+      - docs/ssot/infrastructure/ssot.mcp.yml
+      - docs/ssot/infrastructure/ssot.tools.yml
+    children:
+      - mcp-inventory/tony_omen
+      - mcp-inventory/tony_dell
+      - mcp-inventory/mn01
+      - mcp-inventory/idc02
+      - mcp-inventory/idc03
+      - mcp-inventory/michael-ha
   - id: fleet
     layer: L2-domain
     purpose: Cross-host rollup — delta trend + resource min/max over window
@@ -427,8 +568,11 @@ nodes:
       - audit-hosts/tony-dell
       - audit-hosts/tony-omen
       - audit-hosts/mn01
+      - audit-hosts/idc02
       - audit-hosts/idc03
+      - audit-hosts/con01
       - audit-hosts/macbook
+      - audit-hosts/kk-mac
       - health-monitor
       - host-loads
       - disk-trend
@@ -710,6 +854,23 @@ nodes:
       - docs/ssot/infrastructure/ssot.model-tiers.yml
       - docs/kb/model-fleet-benchmark-plan.md
     children: []
+  - id: nest-lanes/kk-llm
+    layer: L1-producer
+    purpose: KK-Mac JevNest lane metrics — pack counts, queue wait,
+      wall time, eval tokens, verifier pass, fallback/failed
+      interventions (lifetime + 7d window); the evidence feed for the
+      weekly JevTeam lane review (card jevnest-kk-mac-capacity-loop)
+    generator: scripts/devnest/kk_mac_metrics.py --tokens --publish
+      --window-days 7 via jevnest-kk-llm-metrics.timer (tony_dell, 15m)
+    cadence: 30m
+    output: reports/kk-llm
+    artifact_pattern: "kk-llm-metrics.json"
+    meta: reports/kk-llm/meta.kk-llm.yml
+    references:
+      - docs/kb/jevnest-kk-mac-capacity-procedure.md
+      - docs/kb/devnest-capacity-aware-dispatch-procedure.md
+      - docs/ssot/infrastructure/ssot.devnest-lanes.yml
+    children: []
   - id: chaba-nest
     layer: L2-domain
     purpose: Nest compound-AI domain — live lane health + decision/escalation
@@ -729,6 +890,7 @@ nodes:
       - nest-lanes/heavy-a
       - nest-lanes/heavy-b
       - nest-lanes/ollama
+      - nest-lanes/kk-llm
       - nest-brains/nest-01-ops-classifier
       - nest-brains/jev-student
       - nest-brains/orch-bench-corpus
@@ -760,6 +922,7 @@ nodes:
     overflow_order: [recent-timeline, raw-data, host-loads, producers, domains]
     children:
       - fleet
+      - mcp-fleet
       - audit-suite
       - ada-memory-report
       - overnight-assessment

@@ -1,0 +1,193 @@
+id: ada-voice-text-mode-sessions-never-call-e007bd
+title: 'ada-voice: text-mode sessions never call conversation.persist() — recall-summary/report/extract feed starved
+  since Oct'
+column: done
+updated: 2026-11-26 19:40
+priority: high
+tags:
+- ada
+- memory
+- text-mode
+- mddb
+spec: 'Found via card ada-session-summary-inflow-stalled (2026-11-25). OpenRouterTextProvider.close() (backend/openrouter_provider.py
+  ~line 638) only sets _closed + cancels _pending — it never invokes conversation.persist(), so text-mode sessions
+  (?mode=text, ADA_TEXT_ONLY_CALLERS, channels in ADA_TEXT_ONLY_CHANNELS default telegram,tg,line; ada-ha-tony drop-in
+  adds chat,web) write transcripts + session-end marker but produce NO kind=session-summary MDDB doc, NO reports/*.json,
+  NO extract candidates/actions. Only GeminiLiveProvider.close() (realtime_provider.py:6711) persists. Result: ada-ha-recall-summary-*
+  inflow stopped lane-by-lane (last docs tony 10-03, dev 10-09, kk 10-13, kk-dev 10-14, michael 10-17); LiteLLM
+  SpendLogs show zero tool=session_summary/session_report calls since 2026-10-17 15:19 UTC; memory-distill + consolidate
+  + merge-proposals starved (~480 drafts unreviewed). FIX: call conversation.persist() (or a slim variant skipping
+  the NotebookLM upload) from OpenRouterTextProvider.close() in ada-voice, deploy via deploy-ada.sh on idc03. Full
+  evidence: docs/ssot/jobs/ada/2026-11-25-session-summary-inflow-stalled.yml'
+ref: ADA-1400
+comms:
+- at: 2026-11-25 15:14
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-25 15:45
+  from: chaba
+  text: classified as free_lane (kw:docs/ conf 1.00)
+- at: 2026-11-25 15:45
+  from: chaba
+  text: queued for processing
+- at: 2026-11-25 15:45
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 0.98 > 0.7)'
+- at: 2026-11-25 15:45
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 15:45
+  from: chaba
+  text: '[auto-dispatch] wave 4 (2026-11-25 15:45): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-25 15:46
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 15:46
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 4.87 > 0.8)'
+- at: 2026-11-25 15:46
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-25 15:47
+  from: chaba
+  text: started devin-task-20261125-154705-found-via-card-ada-session-sum on tony-macbook (dispatch)
+- at: 2026-11-25 15:47
+  from: chaba
+  text: 'primer injected 8 lesson(s): [kk-cms-only-memory-deploy] deploy gate: FAILED — rc=7 verify=False File "/home/;
+    idc02''s kanban-dispatch.service was a linked unit running a stale scripts/-only ; [audit-miss-ada-voice-job-records]
+    merge-sweep: no session/worktree found for de; "Only en/th supported" was never the MDDB store — verify the
+    store layer first; ; [camwall-retire-to-wiki] primer injected 8 lesson(s): no chaba-audit.service/cha; [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f]
+    [progress] '
+- at: 2026-11-25 15:47
+  from: devin
+  text: '[progress] investigating ada-voice OpenRouterTextProvider.close() vs GeminiLiveProvider.close() persist
+    gap; will patch on an ada-voice dispatch worktree per established pattern'
+- at: 2026-11-25 16:10
+  from: devin
+  text: '[done] fix landed on ada-voice branch dispatch/text-mode-session-persist (worktree ~/CascadeProjects/ada-voice-wt-text-mode-persist,
+    commit c14758b, NOT pushed): OpenRouterTextProvider.close() now fires conversation.persist() fire-and-forget
+    like GeminiLiveProvider, with an idempotence guard. +2 regression tests; full suite 1982 passed, tool-lint clean.
+    Job trail: ada-voice docs/ssot/jobs/ada/2026-11-25-text-mode-session-persist.yml. Outcome doc in chaba dispatch
+    worktree. Next: merge branch on '
+- at: 2026-11-25 16:13
+  from: tony-macbook
+  text: 'finished (ok): exit=0 nscript-archive backfill for the Oct 17→now gap is noted as a possible follow-up
+    card. | devin-task-20261125-1547'
+- at: 2026-11-25 16:13
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 16:13
+  from: chaba
+  text: banked 56 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 16:13
+  from: chaba
+  text: pushed dispatch/20261125-154705-found-via-card-ada-session-sum to origin
+- at: 2026-11-25 16:13
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 16:13
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-25 16:24
+  from: chaba
+  text: 'merge-sweep: merged 6b8f55b2 (dispatch/20261125-154705-found-via-card-ada-session-sum from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-154705-found-via-card-ada-session-sum.md)
+    — auto-closed'
+- at: 2026-11-25 16:24
+  from: local
+  text: 'pub milestone: card verified: ada-voice-text-mode-sessions-never-call-e007bd on idc03 — merged 6b8f55b2
+    (dispatch/20261125-154705-found-via-card-ada-session-sum from tony-macbook) -> origin/master — verified — merged
+    6b8f55b2 (dispatch/20261125-154705-found-via-card-ada-session-sum from tony-macbook) -> origin/master — verified
+    — auto-closed [evt-4140976fb8c1c14c]'
+- at: 2026-11-25 16:24
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-154705-found-via-card-ada-session-sum,
+    branch dispatch/20261125-154705-found-via-card-ada-session-sum on tony-macbook'
+- at: 2026-11-25 16:24
+  from: chaba
+  text: 'merge-sweep: dispatch/20261125-154705-found-via-card-ada-session-sum already in origin/master — marked
+    verified (exit_code=0; outcome doc dispatch-outcome-20261125-154705-found-via-card-ada-session-sum.md) — auto-closed'
+- at: 2026-11-25 16:24
+  from: local
+  text: 'pub milestone: card verified: ada-voice-text-mode-sessions-never-call-e007bd on idc03 — dispatch/20261125-154705-found-via-card-ada-session-sum
+    already in origin/master — verified — auto-closed — dispatch/20261125-154705-found-via-card-ada-session-sum
+    already in origin/master — verified — auto-closed [evt-a7899f77181feea2]'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:26
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:38
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:48
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:40
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: free_lane
+  lane_source: kw
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
+  result: 'exit=0 nscript-archive backfill for the Oct 17→now gap is noted as a possible follow-up card. | devin-task-20261125-154705-found-via-card-ada-session-sum.service:
+    Consumed 1min 55.438s CPU time over 24min 18.080s wall clock time, 1.3G memory peak.'
+  verified: true
+claim:
+  since: 2026-11-25 15:46
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 16:24
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-154705-found-via-card-ada-session-sum.md

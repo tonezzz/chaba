@@ -1,0 +1,212 @@
+id: timer-alert-tony-dell-runner-agent-converge
+title: Timer runner-agent-converge on tony-dell failing
+column: done
+updated: 2026-11-26 20:31
+priority: high
+tags:
+- timer-alert
+- auto
+- by:timer-sentinel
+note: 'Last run (11-25 03:31) of `runner-agent-converge.service` on `tony-dell` result=exit-code — investigate journal:
+  `journalctl --user -u runner-agent-converge.service` on the host. See CMS `timer-timeline-tony-dell`.'
+ref: OPS-1339
+comms:
+- at: 2026-11-25 03:44
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-25 03:54
+  from: devin
+  text: '[still suspicious] Last run (11-25 03:31) of `runner-agent-converge.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u runner-agent-converge.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-25 07:44
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:59
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-25 11:12
+  from: tony
+  text: probe
+- at: 2026-11-25 11:12
+  from: chaba
+  text: classified as free_lane (timer-alert conf 1.00)
+- at: 2026-11-25 11:12
+  from: tony
+  text: queued for processing
+- at: 2026-11-25 11:12
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 11:13
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.77 > 0.7)'
+- at: 2026-11-25 11:13
+  from: chaba
+  text: 'kk-mac defers: installed runner-agent drifted from repo /Users/kkkakk/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 11:13
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 11:13
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 11:13
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 11:13
+  from: tony
+  text: '2026-11-25 11:15 (+07): root cause found — runner-agent-converge.service failed because playbooks/deploy-runner-agent.yml
+    was never committed (unit referenced a missing path). Restored the idempotent playbook (commit 050e7df458),
+    adopted it on tony-dell, and switched its restart handler to systemd_service no_block so an off-net laptop cannot
+    hang the fleet. Verified: systemctl --user start runner-agent-converge.service Result=success, ExecMainStatus=0;
+    all 7 baseline hosts in-sync, changed=0. Di'
+- at: 2026-11-25 11:13
+  from: tony
+  text: moved backlog -> done
+- at: 2026-11-25 11:13
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 6.14 > 0.8)'
+- at: 2026-11-25 11:15
+  from: tony
+  text: 'Root cause: runner-agent-converge.service failed with "playbook: playbooks/deploy-runner-agent.yml could
+    not be found" — the unit referenced that path but it was never committed to master. Restored the idempotent
+    playbook (commit 050e7df458), adopted it on tony-dell, and changed the restart handler to systemd_service no_block
+    so an off-net laptop cannot hang a fleet run. Verified: systemctl --user start runner-agent-converge.service
+    completes Result=success, ExecMainStatus=0; all 7 hosts in-sync, changed=0.'
+- at: 2026-11-25 11:15
+  from: tony
+  text: 'Root cause: runner-agent-converge.service failed with "playbook: playbooks/deploy-runner-agent.yml could
+    not be found" — the unit referenced that path but it was never committed to master. Restored the idempotent
+    playbook (commit 050e7df458), adopted it on tony-dell, and changed the restart handler to systemd_service no_block
+    so an off-net laptop cannot hang a fleet run. Verified: systemctl --user start runner-agent-converge.service
+    completes Result=success, ExecMainStatus=0; all 7 hosts in-sync, changed=0. The tony-dell checkout still has
+    a pre-existing unmerged stacks/web/public/apps/ha/ssot.ui.ha.yml — resolve it before a full git pull.'
+- at: 2026-11-25 11:21
+  from: tony
+  text: '2026-11-25 11:22 (+07): remaining issue resolved — the pre-existing unmerged stacks/web/public/apps/ha/ssot.ui.ha.yml
+    on tony-dell was an autostash-pop conflict (local HA refresh vs canonical master). HEAD was an ancestor of origin/master
+    with 0 unique commits, so local tracked work was salvaged to ~/.cache/chaba-tonydell-exec-salvage/20261125-1120/
+    and the exec checkout was reset to origin/master (5ed3ff675e4). Untracked live scripts/timers preserved. HA
+    file has 0 conflict markers and parses a'
+- at: 2026-11-25 11:22
+  from: tony
+  text: 'Remaining issue resolved: the pre-existing unmerged stacks/web/public/apps/ha/ssot.ui.ha.yml on tony-dell
+    was an autostash-pop conflict (local HA refresh vs canonical master). HEAD had 0 unique commits, so the refresh
+    was salvaged to ~/.cache/chaba-tonydell-exec-salvage/20261125-1120/ and the exec checkout reset to origin/master
+    (5ed3ff675e4). Untracked live scripts/timers preserved; HA file parses as YAML with 0 conflict markers; chaba-repo-sync.service
+    re-ran Result=success. Checkout clean except four intentional untracked files.'
+- at: 2026-11-25 16:39
+  from: tony
+  text: 'routing edited: executor=devin by tony: 2026-11-25 load adjustment: free_lane card had no staged lane_envelope
+    and was rejected on every host; route to devin on tony-dell (cap raised 2->4)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (4/4)'
+- at: 2026-11-25 16:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.12 > 1.5)'
+- at: 2026-11-25 17:06
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 4.46 > 1.0)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.99 > 0.7)'
+- at: 2026-11-25 17:14
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 3.55 > 0.8)'
+- at: 2026-11-25 17:14
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:50
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 0.82 > 0.75)'
+- at: 2026-11-25 19:40
+  from: tony
+  text: '[timer-alert] RESOLVED 2026-11-25 (Tony): the 03:31 runner-agent-converge failure was the stale installed
+    snapshot fixed by the governed deploy-runner-agent.yml converge. tony-dell journal: 11:05 run TERM''d at 11:07
+    by the playbook restart handler (expected), re-ran 11:07:32 and FINISHED 11:07:56; timer active/enabled, next
+    trigger 2026-11-26 03:34. sha256 installed == checkout == 1514c75c4679a0. Card was already in done but kept
+    a stale queued action flag — closing properly so it stops counting'
+- at: 2026-11-25 19:40
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:31
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+spec: Investigate and resolve the failure of runner-agent-converge.service on host tony-dell, which exited with
+  a non-zero code during the 11-25 03:31 run. Inspect the user journal using journalctl --user -u runner-agent-converge.service
+  on tony-dell and consult the CMS timer-timeline-tony-dell for additional context. Following the insight from con01,
+  check if the installed runner-agent drifted from the repository script at /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+  and redeploy it if necessary by scp'ing it to ~/.local/bin/runner-agent on the host. The done-condition is verified
+  when runner-agent-converge.service runs successfully on tony-dell without exiting with an error code.
+action:
+  type: dispatch
+  status: done
+  lane: free_lane
+  lane_source: timer-alert
+  executor: devin
+claim: {}

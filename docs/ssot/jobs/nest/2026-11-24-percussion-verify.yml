@@ -1,0 +1,57 @@
+id: percussion-verify-2026-11-24
+title: nest-percussion done-condition verified + pitch-from-health mapping
+    landed
+date: 2026-11-24
+card: nest-percussion
+ref: OPS-0381
+host: tony-omen (dispatch worktree; live checks against tony-dell)
+status: complete — page live, feed fresh, groove verified; app.js
+    detune change rides the next repo sync (no deploy in dispatch mode)
+
+context: >-
+  The percussion stack was already built (commit 791af4cb58, 2026-10-10)
+  and extended by percussion-music-layer (done). This dispatch verified
+  the card's done-condition end-to-end and closed the one spec gap:
+  "pitch/accents from health" had accents+velocity but no pitch mapping.
+
+live_state_verified:
+  page: 'https://tony-dell.taila0626a.ts.net/apps/percussion/ → 200,
+    renders stat line with live bpm/alerts/style (headless Chrome,
+    zero JS errors)'
+  feed: 'ops-percussion.timer armed on tony-dell, oneshot every 60s,
+    last runs SUCCESS; state.json ts age observed 11-52s (<60s done-condition)'
+  control: 'GET /api/input-bridge/percussion → 200, live
+    {style:polyphia, mood:bright, instruments:[guitar]}'
+  groove: 'scripts/ops-percussion-check.mjs (new) — 15/15 PASS: live
+    state.json loads, bpm mapped, tap-to-start engages scheduler, 544
+    hits/~17 bars on the 16th grid, error=stutter, degraded=quiet,
+    unknown=keeps voice, alerts=crash on downbeat only, pitch rises
+    with load and on error'
+
+changes:
+  - >-
+    stacks/web/public/apps/percussion/app.js — hostDetune(h): pitch
+    multiplier = 1 + clamp(load1m,0..30)/30*0.05 + state nudge
+    (degraded +2%, error +5%, unknown -1%); threaded as `det` param
+    through kick/snare/tom/hat/shaker. Busy/stressed hosts now hit
+    measurably sharper — the literal "pitch from health" half of the
+    spec. Header contract comment updated.
+  - >-
+    stacks/web/public/apps/percussion/index.html — added
+    mobile-web-app-capable meta (apple- variant is deprecated; Chrome
+    logged the deprecation in the headless check). iPad-first polish.
+  - >-
+    stacks/web/public/apps/apps.yml — percussion added to System & Ops
+    group + flat entry; was reachable by URL but absent from the
+    /apps/ launcher.
+  - >-
+    scripts/ops-percussion-check.mjs — new repo-side check (vm context,
+    stubbed DOM+WebAudio, no browser/hardware). Defaults to fetching
+    the LIVE state.json; `node scripts/ops-percussion-check.mjs
+    [file]` for a fixture. Style mirrors vcast-cast-check.mjs.
+
+deploy_note: >-
+  Dispatch mode — nothing pushed/deployed. app.js is cache-busted by
+  Date.now() in index.html so the detune lands on the next hourly
+  chaba-repo-sync pull of chaba-tony-dell on tony-dell; state.json and
+  the timer are unaffected.

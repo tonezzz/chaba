@@ -1,0 +1,206 @@
+id: systemic-sweep-non-atomic-state-write-te-040822
+title: 'Systemic sweep: non-atomic STATE.write_text(json.dumps()) in ~20 repo scripts'
+column: done
+updated: 2026-11-26 19:41
+priority: low
+tags:
+- ops
+- hardening
+spec: Convert every remaining `STATE.write_text(json.dumps(...))` / `json.dump(..., open(STATE,"w"))` state save
+  in scripts/ to write STATE.tmp + fsync + os.replace, matching the helpers added in scripts/chaba-nag.py, scripts/ada/line-chat-timeline.py,
+  scripts/rika-wx-alert.py (card state-write-atomic-truncate-crash-loop). Verify each service still loads state
+  after the change.
+note: Follow-up from state-write-atomic-truncate-crash-loop (2026-11-25). The 3 crash-looping services were fixed
+  (chaba-nag.py, line-chat-timeline.py, rika-wx-alert.py now tmp+fsync+os.replace + tolerant load). Audit found
+  the same non-atomic write pattern in ~20 more scripts — scripts/ops/{key-watch,stick-watch,podman-lock-watchdog,netdata-nodes-watch,served-checkout-watchdog,queue-mgr,devin-dispatch-tg-watch,kanban-notify,nest-queue-watch}.py,
+  scripts/ada/{burn-watch,memory-distill,memory-health-ch
+ref: OPS-1364
+comms:
+- at: 2026-11-25 09:40
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-25 09:41
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 14:45
+  from: chaba
+  text: classified as devin (fallback conf 0.16)
+- at: 2026-11-25 14:45
+  from: chaba
+  text: queued for processing
+- at: 2026-11-25 14:45
+  from: chaba
+  text: '[auto-dispatch] wave 3 (2026-11-25 14:45): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-25 14:45
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.10 > 0.7)'
+- at: 2026-11-25 14:46
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 14:46
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 0.84 > 0.7)'
+- at: 2026-11-25 14:47
+  from: chaba
+  text: 'kk-mac defers: installed runner-agent drifted from repo /Users/kkkakk/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 14:47
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 14:47
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 14:51
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 5.40 > 1.5)'
+- at: 2026-11-25 14:54
+  from: chaba
+  text: 'tony-dell defers: runner at cap (2/2)'
+- at: 2026-11-25 14:58
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.48 > 0.8)'
+- at: 2026-11-25 15:13
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 15:17
+  from: tony-dell
+  text: claimed
+- at: 2026-11-25 15:18
+  from: chaba
+  text: started devin-task-20261125-151847-convert-every-remaining-state- on tony-dell (dispatch)
+- at: 2026-11-25 15:18
+  from: chaba
+  text: 'primer injected 8 lesson(s): The fatal combo is strict-load + non-atomic-write; most repo scripts already
+    tol; Before landing a write-door contract change, audit ALL producers of that door in; after the MEM-0545 mddb
+    split, any long-lived script with a hardcoded :11023 def; no chaba-audit.service/chaba-audit-full.service entries
+    exist in ssot.audit.host; [camwall-retire-to-wiki] primer injected 8 lesson(s): no chaba-audit.service/cha;
+    [devin-session-audit-2026-10-29] primer injected 8 lesson(s):'
+- at: 2026-11-25 15:22
+  from: devin
+  text: claimed by dispatch-wt-20261125-151847. Auditing scripts/ for non-atomic JSON state saves; already-atomic
+    tmp+replace helpers (wiki-talk-watch, telegram-webhook-watch, cline-review-feed, model-cache index, wp-comment-sync,
+    lane-retention) noted. Will convert the rest to tmp+fsync+os.replace.
+- at: 2026-11-25 15:29
+  from: devin
+  text: 'progress: scripts/ops/ done (15 files: 11 save_state conversions + kanban-notify helper + 2 fsync additions
+    + yt-vtt-translate cache + yt-live.sh meta.json x2). All py_compile clean. Continuing: report/litellm/audits/cam-wall,
+    then ada/board/devnest/misc.'
+- at: 2026-11-25 16:22
+  from: devin
+  text: 'DONE: swept all of scripts/ — ~99 files converted/hardened to tmp+flush+fsync+os.replace (22-file batch
+    landed via CLI auto-commit 3a23f9c9769 at compaction; 77 files uncommitted in worktree). Covered ops/report/litellm/audits/cam-wall/ada/board/devnest/colab/adobe-stock/home-assistant/root.
+    Notable: job-dispatcher flock moved to .lock sibling (replace would orphan inode); HA .storage writes + token/credential
+    files included. Skipped: one-shot report/bench/taskdir artifacts + append-only .jsonl.'
+- at: 2026-11-25 16:27
+  from: tony-dell
+  text: 'finished (ok): exit=0 with a `lessons:` list, and final comms posted to the card. | devin-task-20261125-151847-convert-every-remaining-'
+- at: 2026-11-25 16:27
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 16:27
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261125-151847-convert-every-remaining-state-
+    is 235 commits behind origin/master —\n   run 'git pull"
+- at: 2026-11-25 16:27
+  from: chaba
+  text: banked 3 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 16:27
+  from: chaba
+  text: pushed dispatch/20261125-151847-convert-every-remaining-state- to origin
+- at: 2026-11-25 16:27
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 16:27
+  from: chaba
+  text: auto-merged aee363a6 (dispatch/20261125-151847-convert-every-remaining-state-) → origin/master
+- at: 2026-11-25 16:27
+  from: chaba
+  text: 'worktree kept: dirty — 79 uncommitted file(s)'
+- at: 2026-11-25 16:39
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:00
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:09
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:28
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:40
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:58
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:08
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: devin
+  lane_source: fallback
+  runner: tony-dell
+  attempts: 1
+  result: 'exit=0 with a `lessons:` list, and final comms posted to the card. | devin-task-20261125-151847-convert-every-remaining-state-.service:
+    Consumed 1min 59.099s CPU time over 1h 6min 14.153s wall clock time, 975.9M memory peak, 586M memory swap peak.'
+  verified: true
+claim:
+  since: 2026-11-25 15:17
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 16:39
+  note: verified — evidence checks green, closing itself

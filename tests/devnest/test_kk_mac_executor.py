@@ -173,7 +173,7 @@ class RunContractTests(unittest.TestCase):
 
     def test_invalid_output_falls_back(self):
         r = self.run_c(task=_task(
-            task_class="safe_route",
+            task_class="structured_extract",
             expect={"required_keys": ["route"]}),
             run_task=_ok_run("not json"))
         self.assertEqual(r["verdict"], "fallback")
@@ -183,6 +183,12 @@ class RunContractTests(unittest.TestCase):
         r = self.run_c(task=_task(task_class="code_mutation"))
         self.assertEqual(r["verdict"], "fail")
         self.assertIn("class_not_admitted", r["reasons"][0])
+        # held classes (kk-mac-admitted-classes-narrow) are contract
+        # violations at run time even though verify() still scores them
+        for held in ("operator_brief", "safe_route"):
+            r = self.run_c(task=_task(task_class=held))
+            self.assertEqual(r["verdict"], "fail")
+            self.assertIn(f"class_not_admitted:{held}", r["reasons"])
         r = self.run_c(task=_task(artifact="scripts/x.py"))
         self.assertEqual(r["verdict"], "fail")
         self.assertIn("artifact_outside_roots", r["reasons"][0])
@@ -235,16 +241,54 @@ class RunContractTests(unittest.TestCase):
             (self.wt / "evals/kk-mac-lane/out/c1.json").read_text())
         self.assertIn("memory", saved)
 
+    def test_guard_abort_surfaces_reason_and_persists(self):
+        def run(*a, **k):
+            return {"ok": False, "admission": {"reasons": []},
+                    "abort_reason":
+                        "memory_pressure_abort:45.0%<50.0%",
+                    "memory_guard": {
+                        "resident_before": [],
+                        "loaded_by_task": True,
+                        "min_free_pct": 45.0,
+                        "abort_reason":
+                            "memory_pressure_abort:45.0%<50.0%",
+                        "unloaded": True}}
+        r = self.run_c(run_task=run)
+        self.assertEqual(r["verdict"], "fallback")
+        self.assertIn("memory_pressure_abort", r["reasons"][0])
+        self.assertEqual(r["memory"]["guard"]["min_free_pct"], 45.0)
+        self.assertTrue(r["memory"]["guard"]["unloaded"])
+        saved = json.loads(
+            (self.taskdir / "kk_mac_result.json").read_text())
+        self.assertIn("guard", saved["memory"])
+
+    def test_guard_evidence_persisted_on_pass(self):
+        def run(*a, **k):
+            return {"ok": True, "response": "fine",
+                    "usage": {"eval_count": 2},
+                    "memory_guard": {
+                        "resident_before": ["other:7b"],
+                        "loaded_by_task": True,
+                        "min_free_pct": 71.0,
+                        "abort_reason": None,
+                        "unloaded": True}}
+        r = self.run_c(run_task=run)
+        self.assertEqual(r["verdict"], "pass")
+        self.assertEqual(r["memory"]["guard"]["min_free_pct"], 71.0)
+        saved = json.loads(
+            (self.wt / "evals/kk-mac-lane/out/c1.json").read_text())
+        self.assertEqual(saved["memory"]["guard"]["unloaded"], True)
+
     def test_facts_verified_independently(self):
         r = self.run_c(task=_task(
-            task_class="operator_brief",
+            task_class="structured_extract",
             expect={"required_keys": ["brief"],
                     "facts": ["six hosts", "zero errors"]}),
             run_task=_ok_run(
                 '{"brief": "six hosts, zero errors"}'))
         self.assertEqual(r["verdict"], "pass")
         r = self.run_c(task=_task(
-            task_class="operator_brief",
+            task_class="structured_extract",
             expect={"facts": ["never said"]}),
             run_task=_ok_run('{"brief": "something else"}'))
         self.assertEqual(r["verdict"], "fallback")

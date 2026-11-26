@@ -730,18 +730,18 @@ sections:
     - data-isolation
     - completed
   - label: Update SSOT to use ha-mcp and avoid restarts
-    text: Rework the michael-dev deployment and Home Assistant SSOT runbooks to use the in-process ha_mcp_tools MCP server
+    text: Rework the mn-ha-dev deployment and Home Assistant SSOT runbooks to use the in-process ha_mcp_tools MCP server
       for live reload and state inspection, avoiding full container restarts. Also resolve the Michael SSOT hardcoded-IPv4
-      warning, process the ARP inventory alert, and deploy/test the updated michael-dev flow on tony-dell.
+      warning, process the ARP inventory alert, and deploy/test the updated mn-ha-dev flow on tony-dell.
     date: '2026-09-05'
     duration: 1 session
-    outcome: 'Completed subtasks: Add ha-mcp reload helper and update deploy-michael-dev.sh, Update SSOT runbooks (howto)
-      to use ha-mcp and avoid restarts, Update michael-dev SSOT (full_flow, verification, mcp sections), Resolve Michael SSOT
-      hardcoded-IP warning and close related focus-inbox, Process ARP inventory alert and update MAC registries, Test michael-dev
+    outcome: 'Completed subtasks: Add ha-mcp reload helper and update deploy-mn-ha-dev.sh, Update SSOT runbooks (howto)
+      to use ha-mcp and avoid restarts, Update mn-ha-dev SSOT (full_flow, verification, mcp sections), Resolve Michael SSOT
+      hardcoded-IP warning and close related focus-inbox, Process ARP inventory alert and update MAC registries, Test mn-ha-dev
       deploy on tony-dell without restart'
     tags:
     - ha-mcp
-    - michael-dev
+    - mn-ha-dev
     - ssot
     - no-restart
     - completed
@@ -824,8 +824,8 @@ sections:
     - completed
   - label: 2026-09-10 session handoff — devin cleanup + barrier image copy
     text: "Session handoff from 2026-09-10. The Devin session grew too large; this item captures\npending work and learnings.\n\
-      \nCompleted:\n- michael-dev HA-MCP is now healthy: port 9585 responding, 172 entities via MCP.\n- All 3 HA MCPs verified:\
-      \ home-assistant (211), michael-ha (1,337), michael-dev (172).\n- SSOT updated: auth/display names synced for michael-dev\
+      \nCompleted:\n- mn-ha-dev HA-MCP is now healthy: port 9585 responding, 172 entities via MCP.\n- All 3 HA MCPs verified:\
+      \ home-assistant (211), michael-ha (1,337), mn-ha-dev (172).\n- SSOT updated: auth/display names synced for mn-ha-dev\
       \ and michael-ha.\n- ssot.home-assistant.instances.yml status block refreshed to 2026-09-10.\n- Commits b2f7aa21 and\
       \ 4e800abd pushed to origin/master.\n\nPending work:\n- devin-cleanup.timer on tony-omen failed at 03:24: `No space\
       \ left on device` while\n  copying 155G sessions.db to backups. Need more space or modify the script to skip/relocate\n\
@@ -839,7 +839,7 @@ sections:
     date: '2026-10-04'
     duration: 1 session
     outcome: 'Completed subtasks: Devin cleanup — free space or modify prune-devin-sessions.sh to skip backup, Investigate
-      mcp-health alert — Home Assistant Live (Gemini Live bridge) HTTP 502, michael-dev HA-MCP — done; verify overnight and
+      mcp-health alert — Home Assistant Live (Gemini Live bridge) HTTP 502, mn-ha-dev HA-MCP — done; verify overnight and
       document if needed'
     tags:
     - handoff

@@ -11,6 +11,8 @@ static mirror, no drift):
 
   ada-cms-pages        main lane   (EN default UI + content)
   ada-cms-pages-kk     kk lane     (Thai default UI + content)
+  ada-cms-pages-mn     mn lane     (Michael — carved 2026-10-17)
+  ada-cms-pages-kk-dev kk dev lane (dev writes stay off prod pages)
   chaba-docs           repo docs mirror (kind-less, path-shaped keys)
   ada-cms-automation   automation registry (JSON configs -> code view)
 
@@ -87,6 +89,8 @@ VERSION = "0.1.0 2026-10-15"
 COLLECTIONS = OrderedDict([
     ("ada-cms-pages", {"ui": "en", "lang": "en", "label": "main"}),
     ("ada-cms-pages-kk", {"ui": "th", "lang": "th", "label": "kk"}),
+    ("ada-cms-pages-mn", {"ui": "en", "lang": "en", "label": "mn"}),
+    ("ada-cms-pages-kk-dev", {"ui": "th", "lang": "th", "label": "kk-dev"}),
     ("chaba-docs", {"ui": "en", "lang": "en", "label": "docs"}),
     ("ada-cms-automation", {"ui": "en", "lang": "en", "label": "auto"}),
 ])
@@ -202,6 +206,8 @@ def detect_kind(doc: dict, collection: str = "") -> str:
         return "media-inbox"
     if "timeline" in key:
         return "timeline"
+    if kind == "memory-inspect" or key.startswith("memory-inspect"):
+        return "memory-inspect"
     if role == "digest" or key.endswith("-digest"):
         return "digest"
     if kind == "report":
@@ -386,7 +392,7 @@ def md_to_html(md_text: str, collection: str) -> tuple[str, bool]:
 
 PAGE_ORDER = ["digests", "reports", "cameras", "flood", "news", "bench",
               "ops", "research", "projects", "personal", "docs", "meta",
-              "pages", "automation"]
+              "memory", "pages", "automation"]
 DOMAIN_SECTION = {
     "cctv": "cameras", "flood": "flood",
     "news": "news", "media": "news", "weather": "news", "finance": "news",
@@ -406,22 +412,25 @@ SECTION_TITLES = {
     "flood": "Flood", "news": "News & media", "bench": "Bench",
     "ops": "Ops & infra", "research": "Research & notes",
     "projects": "Projects", "personal": "Personal",
-    "docs": "Docs & policy", "meta": "Meta", "pages": "Pages",
-    "automation": "Automation",
+    "docs": "Docs & policy", "meta": "Meta", "memory": "Memory",
+    "pages": "Pages", "automation": "Automation",
 }
 
 
 def index_rows(collection: str, now: dt.datetime) -> list[dict]:
     docs = LISTING.docs(collection)
-    en_keys = {d.get("key") for d in docs if d.get("lang") == "en"}
+    en_keys = {d.get("key") for d in docs
+               if (d.get("lang") or "en") == "en"}
     rows, seen_keys = [], set()
     for d in docs:
         meta = d.get("meta") or {}
         key = d.get("key", "")
-        # one row per key — prefer en, else first lang seen
+        # one row per key — prefer en, else first lang seen; any non-en
+        # variant (th, de, …) yields to an existing en sibling regardless
+        # of listing order
         if key in seen_keys:
             continue
-        if d.get("lang") == "th" and key in en_keys:
+        if (d.get("lang") or "en") != "en" and key in en_keys:
             continue
         seen_keys.add(key)
         kind = meta1(meta, "kind")
@@ -429,7 +438,7 @@ def index_rows(collection: str, now: dt.datetime) -> list[dict]:
         if kind == "archive" or status in EXCLUDED_STATUS:
             continue
         if collection in ("ada-cms-pages", "ada-cms-pages-kk") \
-                and kind not in ("report", "page"):
+                and kind not in ("report", "page", "memory-inspect"):
             continue
         slug = doc_slug(d)
         role = meta1(meta, "report_role")
@@ -440,6 +449,8 @@ def index_rows(collection: str, now: dt.datetime) -> list[dict]:
             section = "docs"
         elif role == "digest":
             section = "digests"
+        elif kind == "memory-inspect":
+            section = "memory"
         elif kind == "report":
             section = "reports"
         else:

@@ -38,6 +38,114 @@ DEVICE_ID = "chaba-nest-build"
 
 BADGE_OPTS = "pin: --accept {slug}  ·  drop: --reject {slug}  ·  decide via spec edit"
 
+# ── Fleet telemetry view templates ──────────────────────────────────────
+# extra_views entries may use `template: host_fleet|service_fleet` — expanded
+# here into the same entities cards as tony-ha's lovelace.chaba_admin
+# hosts/services views. The entity ids exist on ada-ha via the
+# telemetry-ha-push-ada mirror job (ssot.jobs.yml), so cards render natively
+# instead of iframing the CF-Access-gated tony-ha dashboards.
+FLEET_HOSTS = ["kk_mac", "tony_omen", "tony_macbook", "tony_dell",
+               "idc02", "idc03", "mn01", "con01"]
+SVC_ORDER = ["kk_mac", "tony_dell", "tony_omen", "idc02", "idc03",
+             "con01", "mn01", "tony_macbook"]
+_TEMPS = {"kk_mac", "tony_omen", "tony_macbook", "tony_dell", "mn01"}
+_NET = set(FLEET_HOSTS) - {"kk_mac"}
+_BATTERY = {
+    "tony_omen": ["battery_level", "battery_state"],
+    "tony_macbook": ["battery_level", "battery_state", "battery_health",
+                     "battery_voltage", "battery_cycles"],
+}
+
+
+# icon-density tweak carried over from the tony-ha source cards
+_CARD_MOD = {"card_mod": {"style":
+    "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n"
+    "    state-icon {\n      margin-inline-end: 2px;\n    }\n"}}
+
+
+def _row(dev, suffix, name=None, domain="sensor"):
+    return {"entity": f"{domain}.{dev}_{suffix}",
+            "name": name or suffix.replace("_", " ")}
+
+
+def _host_card(dev):
+    ents = [{"type": "section", "label": "Vitals"}]
+    if dev == "tony_macbook":
+        ents.append(_row(dev, "battery_temp"))
+    ents.append(_row(dev, "online", domain="binary_sensor"))
+    ents += [_row(dev, k) for k in ("load", "mem", "disk")]
+    if dev in _TEMPS:
+        ents.append(_row(dev, "temps"))
+    ents.append(_row(dev, "swap"))
+    ents.append({"type": "section", "label": "Detail"})
+    ents += [_row(dev, k) for k in _BATTERY.get(dev, [])]
+    ents += [_row(dev, "uptime"), _row(dev, "users")]
+    if dev in _NET:
+        ents += [_row(dev, "net_rx"), _row(dev, "net_tx")]
+    ents += [_row(dev, "top_proc"), _row(dev, "wan_city"),
+             _row(dev, "wan_country"), _row(dev, "wan_org", "wan isp")]
+    return {"type": "entities", "title": dev.replace("_", "-"),
+            "entities": ents, **_CARD_MOD}
+
+
+def _fleet_summary():
+    ids = ([f"binary_sensor.{d}_online" for d in FLEET_HOSTS]
+           + [f"sensor.{d}_{k}" for d in FLEET_HOSTS
+              for k in ("load", "mem", "disk", "swap", "temps")])
+    tpl = ("| sync | host | online | load | mem | disk | swap | temps |\n"
+           "|---|---|---|---|---|---|---|---|\n"
+           "{% for d in [" + ",".join(repr(d) for d in FLEET_HOSTS) + "] %}"
+           "{% set ls = state_attr('sensor.'~d~'_load','last_seen') %}"
+           "| {{ ls[:10].replace('-','') ~ '-' ~ ls[11:16] if ls else '—' }} "
+           "| {{ d.replace('_','-') }} "
+           "| {{ 'on' if is_state('binary_sensor.'~d~'_online','on') and is_state('binary_sensor.'~d~'_telemetry_fresh','on') else 'off' }} "
+           "| {{ states('sensor.'~d~'_load') }} "
+           "| {{ states('sensor.'~d~'_mem') }}% "
+           "| {{ states('sensor.'~d~'_disk') }}% "
+           "| {{ states('sensor.'~d~'_swap') }}% "
+           "| {{ states('sensor.'~d~'_temps') if states('sensor.'~d~'_temps') "
+           "not in ['unknown','unavailable'] else '—' }} |\n"
+           "{% endfor %}")
+    return {"type": "markdown",
+            "title": "Host fleet — telemetry mirror (5min)",
+            "entity_id": ids, "content": tpl}
+
+
+def _svc_card(dev):
+    ents = [{"type": "section", "label": "Vitals"},
+            _row(dev, "online", domain="binary_sensor"),
+            _row(dev, "uptime"),
+            {"type": "section", "label": "Chaba"},
+            _row(dev, "svc_device_telemetry", "device-telemetry",
+                 domain="binary_sensor"),
+            _row(dev, "top_proc", "watching")]
+    if dev == "kk_mac":
+        ents += [{"type": "section", "label": "DevNest"},
+                 _row(dev, "svc_nest_worker", "nest-worker",
+                      domain="binary_sensor"),
+                 _row(dev, "svc_nest_worker_pending", "pending"),
+                 _row(dev, "svc_nest_worker_job", "job")]
+    elif dev != "tony_macbook":
+        ents += [{"type": "section", "label": "DevNest"},
+                 _row(dev, "svc_nest_mgr", "nest-mgr",
+                      domain="binary_sensor"),
+                 _row(dev, "svc_nest_mgr_nodes", "nodes"),
+                 _row(dev, "svc_nest_mgr_active", "active")]
+    return {"type": "entities", "title": dev.replace("_", "-"),
+            "entities": ents, **_CARD_MOD}
+
+
+def _expand_template(v):
+    tpl = v.pop("template", None)
+    if tpl == "host_fleet":
+        v.setdefault("cards", [_fleet_summary()]
+                     + [_host_card(d) for d in FLEET_HOSTS])
+    elif tpl == "service_fleet":
+        v.setdefault("cards", [_svc_card(d) for d in SVC_ORDER])
+    if tpl:
+        v.setdefault("type", "masonry")
+    return v
+
 
 def load_spec(path):
     return yaml.safe_load(open(path))
@@ -122,7 +230,8 @@ def discover(spec, key):
 def build_views(spec, key):
     cms = f"{spec['dashboard']['cms_base']}?api_key={key}"
     zoom, ratio = spec["dashboard"]["zoom"], spec["dashboard"]["tile_aspect"]
-    views = [dict(v) for v in spec["dashboard"].get("extra_views") or []]
+    views = [_expand_template(dict(v))
+             for v in spec["dashboard"].get("extra_views") or []]
     for t in spec["topics"]:
         name, path = t["name"], t["path"]
         pending = sum(1 for x in t["tiles"] if tile_state(x) != "pinned")

@@ -1,0 +1,44 @@
+# S4 artifact_write job 5/5 — committed lane-evidence summary
+# (card branch-code-s4-evidence-ladder, OPS-1030). See
+# s4-artwrite-profile-inventory.yaml for the envelope contract.
+id: s4-artwrite-lane-evidence
+card: branch-code-s4-evidence-ladder
+task_class: artifact_write
+stage: S4
+target_host: idc02
+executor: opencode
+profile: artifact-write
+model: litellm/gemini-3.5-flash-lite
+provider: litellm
+unattended: true
+mcp_allowlist: []
+allowed_paths: [evals/opencode-lane/out/]
+artifact:
+  path: evals/opencode-lane/out/s4-lane-evidence-summary.md
+  schema: >-
+    evals/opencode-lane/profiles/artifact-write/fixture/task.yaml
+    #contract.required_fields
+verifier:
+  type: held_out_py
+  ref: evals/opencode-lane/profiles/artifact-write/fixture/verify.py
+escalation:
+  on_fail: manual
+  max_retries: 1
+rollback:
+  kind: worktree-drop
+  ref: dispatch/profile-run worktree dropped after review; artifact is
+    a single new file under evals/opencode-lane/out/
+heartbeat:
+  required: false
+timeout_s: 420
+task: >-
+  Write a markdown summary of the committed OpenCode lane evidence in
+  this checkout. Read evals/opencode-lane/reports/*.json promotion
+  reviews (stage, decision, reasons, aggregate jobs/verified/rate) and
+  list the run directories under evals/opencode-lane/runs/ with their
+  job ids. Explain how this committed evidence differs from the live
+  lane ledger (per-host state under
+  ~/.local/state/opencode-lane/, not committed) and why promotion
+  decisions are re-derived from ledger + embedded review records. The
+  file must mention promote_gate and verified_success_rate verbatim.
+  Begin the file with a single `# ` title line.

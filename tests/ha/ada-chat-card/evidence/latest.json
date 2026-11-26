@@ -1,0 +1,1362 @@
+{
+  "startedAt": "2026-11-24T14:50:10.164Z",
+  "ocUrl": "http://127.0.0.1:3000",
+  "serverUrl": "http://127.0.0.1:8777",
+  "scenarios": {
+    "connect": {
+      "pass": true,
+      "checks": [
+        {
+          "name": "ws url binds channel=web&chat_id=web-tester",
+          "pass": true,
+          "detail": "ws://127.0.0.1:8777/ada-ws/tony/ws?device_id=b2c70123aa50489090e404222e87d5f3&api_key=harness-key&channel=web&chat_id=web-tester"
+        },
+        {
+          "name": "ready frame → Connected status",
+          "pass": true,
+          "detail": "connected / Connected — type below"
+        },
+        {
+          "name": "input enabled after ready",
+          "pass": true,
+          "detail": ""
+        }
+      ],
+      "console": {
+        "errors": [],
+        "warnings": [],
+        "pageErrors": [],
+        "rejections": [],
+        "resources": []
+      },
+      "opened": [],
+      "linkClicks": [],
+      "consoleProblems": [],
+      "unexpectedProblems": [],
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "url": "http://127.0.0.1:8777/tests/ha/ada-chat-card/harness.html?scenario=connect",
+      "title": "ada-chat-card harness"
+    },
+    "text-urls": {
+      "pass": true,
+      "checks": [
+        {
+          "name": "three image renders (png+gif+path-pattern)",
+          "pass": true,
+          "detail": "imgs=3"
+        },
+        {
+          "name": "png img src",
+          "pass": true,
+          "detail": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/assets/ada-harness.png"
+        },
+        {
+          "name": "gif img src",
+          "pass": true,
+          "detail": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/assets/ada-harness.gif"
+        },
+        {
+          "name": "path-pattern /image?v= renders img",
+          "pass": true,
+          "detail": "http://127.0.0.1:8777/apps/yolo/api/image?v=42"
+        },
+        {
+          "name": "page + download are anchors",
+          "pass": true,
+          "detail": "links=2"
+        },
+        {
+          "name": "page anchor href/target/rel",
+          "pass": true,
+          "detail": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/pages/target.html _blank noopener"
+        },
+        {
+          "name": "download anchor is a link not an img",
+          "pass": true,
+          "detail": "http://127.0.0.1:8777/dl/download-note.txt"
+        }
+      ],
+      "console": {
+        "errors": [],
+        "warnings": [],
+        "pageErrors": [],
+        "rejections": [],
+        "resources": []
+      },
+      "opened": [],
+      "linkClicks": [],
+      "consoleProblems": [],
+      "unexpectedProblems": [],
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "url": "http://127.0.0.1:8777/tests/ha/ada-chat-card/harness.html?scenario=text-urls",
+      "title": "ada-chat-card harness"
+    },
+    "push-image": {
+      "pass": true,
+      "checks": [
+        {
+          "name": "bubble appended",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "name": "img.acc-media present",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "name": "img src",
+          "pass": true,
+          "detail": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/assets/ada-harness.png"
+        },
+        {
+          "name": "img lazy+alt",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "name": "image decoded (naturalWidth>0)",
+          "pass": true,
+          "detail": "naturalWidth=320"
+        },
+        {
+          "name": "no video element",
+          "pass": true,
+          "detail": ""
+        }
+      ],
+      "console": {
+        "errors": [],
+        "warnings": [],
+        "pageErrors": [],
+        "rejections": [],
+        "resources": []
+      },
+      "opened": [],
+      "linkClicks": [],
+      "consoleProblems": [],
+      "unexpectedProblems": [],
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "url": "http://127.0.0.1:8777/tests/ha/ada-chat-card/harness.html?scenario=push-image",
+      "title": "ada-chat-card harness"
+    },
+    "push-video": {
+      "pass": true,
+      "checks": [
+        {
+          "name": "video.acc-media present",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "name": "video src",
+          "pass": true,
+          "detail": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/assets/ada-harness.mp4"
+        },
+        {
+          "name": "video controls+muted+playsinline",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "name": "no img element",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "name": "video metadata decoded (videoWidth>0)",
+          "pass": true,
+          "detail": "readyState=1 videoWidth=320"
+        }
+      ],
+      "console": {
+        "errors": [],
+        "warnings": [],
+        "pageErrors": [],
+        "rejections": [],
+        "resources": []
+      },
+      "opened": [],
+      "linkClicks": [],
+      "consoleProblems": [],
+      "unexpectedProblems": [],
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "url": "http://127.0.0.1:8777/tests/ha/ada-chat-card/harness.html?scenario=push-video",
+      "title": "ada-chat-card harness"
+    },
+    "push-mixed": {
+      "pass": true,
+      "checks": [
+        {
+          "name": "text rendered",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "name": "image + video both present",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "name": "img src",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "name": "video src",
+          "pass": true,
+          "detail": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/assets/ada-harness.webm"
+        }
+      ],
+      "console": {
+        "errors": [],
+        "warnings": [],
+        "pageErrors": [],
+        "rejections": [],
+        "resources": []
+      },
+      "opened": [],
+      "linkClicks": [],
+      "consoleProblems": [],
+      "unexpectedProblems": [],
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "url": "http://127.0.0.1:8777/tests/ha/ada-chat-card/harness.html?scenario=push-mixed",
+      "title": "ada-chat-card harness"
+    },
+    "push-empty": {
+      "pass": true,
+      "checks": [
+        {
+          "name": "empty pushes append no bubble",
+          "pass": true,
+          "detail": "before=0 after=0"
+        },
+        {
+          "name": "whitespace-only text still renders a bubble (observed)",
+          "pass": true,
+          "detail": "after=1"
+        }
+      ],
+      "console": {
+        "errors": [],
+        "warnings": [],
+        "pageErrors": [],
+        "rejections": [],
+        "resources": []
+      },
+      "opened": [],
+      "linkClicks": [],
+      "consoleProblems": [],
+      "unexpectedProblems": [],
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "url": "http://127.0.0.1:8777/tests/ha/ada-chat-card/harness.html?scenario=push-empty",
+      "title": "ada-chat-card harness"
+    },
+    "push-broken": {
+      "pass": true,
+      "checks": [
+        {
+          "name": "three broken imgs still rendered as elements",
+          "pass": true,
+          "detail": "imgs=3"
+        },
+        {
+          "name": "broken imgs fail decode (naturalWidth=0)",
+          "pass": true,
+          "detail": "broken=3/3"
+        },
+        {
+          "name": "broken video element rendered",
+          "pass": true,
+          "detail": "http://127.0.0.1:8777/gone/clip.mp4"
+        }
+      ],
+      "console": {
+        "errors": [],
+        "warnings": [],
+        "pageErrors": [],
+        "rejections": [],
+        "resources": [
+          {
+            "tag": "img",
+            "src": "http://127.0.0.1:8777/gone/ada-harness.png"
+          },
+          {
+            "tag": "img",
+            "src": "http://127.0.0.1:8777/bogus/image.png"
+          },
+          {
+            "tag": "img",
+            "src": "http://127.0.0.1:8777/does-not-exist.png"
+          },
+          {
+            "tag": "video",
+            "src": "http://127.0.0.1:8777/gone/clip.mp4"
+          }
+        ]
+      },
+      "opened": [],
+      "linkClicks": [],
+      "consoleProblems": [
+        {
+          "kind": "http",
+          "message": "HTTP 410 http://127.0.0.1:8777/gone/ada-harness.png",
+          "url": "http://127.0.0.1:8777/gone/ada-harness.png"
+        },
+        {
+          "kind": "console.error",
+          "message": "Failed to load resource: the server responded with a status of 410 (Gone)",
+          "url": "http://127.0.0.1:8777/gone/ada-harness.png"
+        },
+        {
+          "kind": "http",
+          "message": "HTTP 410 http://127.0.0.1:8777/gone/clip.mp4",
+          "url": "http://127.0.0.1:8777/gone/clip.mp4"
+        },
+        {
+          "kind": "console.error",
+          "message": "Failed to load resource: the server responded with a status of 410 (Gone)",
+          "url": "http://127.0.0.1:8777/gone/clip.mp4"
+        },
+        {
+          "kind": "http",
+          "message": "HTTP 404 http://127.0.0.1:8777/does-not-exist.png",
+          "url": "http://127.0.0.1:8777/does-not-exist.png"
+        },
+        {
+          "kind": "console.error",
+          "message": "Failed to load resource: the server responded with a status of 404 (File not found)",
+          "url": "http://127.0.0.1:8777/does-not-exist.png"
+        },
+        {
+          "kind": "resource-error",
+          "message": "img http://127.0.0.1:8777/gone/ada-harness.png",
+          "url": "http://127.0.0.1:8777/gone/ada-harness.png"
+        },
+        {
+          "kind": "resource-error",
+          "message": "img http://127.0.0.1:8777/bogus/image.png",
+          "url": "http://127.0.0.1:8777/bogus/image.png"
+        },
+        {
+          "kind": "resource-error",
+          "message": "img http://127.0.0.1:8777/does-not-exist.png",
+          "url": "http://127.0.0.1:8777/does-not-exist.png"
+        },
+        {
+          "kind": "resource-error",
+          "message": "video http://127.0.0.1:8777/gone/clip.mp4",
+          "url": "http://127.0.0.1:8777/gone/clip.mp4"
+        }
+      ],
+      "unexpectedProblems": [],
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "url": "http://127.0.0.1:8777/tests/ha/ada-chat-card/harness.html?scenario=push-broken",
+      "title": "ada-chat-card harness"
+    },
+    "push-nonhttp": {
+      "pass": true,
+      "checks": [
+        {
+          "name": "non-http media pushes drop quietly",
+          "pass": true,
+          "detail": "before=0 after=0"
+        },
+        {
+          "name": "text survives, js: image_url skipped",
+          "pass": true,
+          "detail": ""
+        }
+      ],
+      "console": {
+        "errors": [],
+        "warnings": [],
+        "pageErrors": [],
+        "rejections": [],
+        "resources": []
+      },
+      "opened": [],
+      "linkClicks": [],
+      "consoleProblems": [],
+      "unexpectedProblems": [],
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "url": "http://127.0.0.1:8777/tests/ha/ada-chat-card/harness.html?scenario=push-nonhttp",
+      "title": "ada-chat-card harness"
+    },
+    "stream-rerender": {
+      "pass": true,
+      "checks": [
+        {
+          "name": "mid-stream: URL is raw text, no img yet",
+          "pass": true,
+          "detail": "imgs=0"
+        },
+        {
+          "name": "post-completion: URL re-rendered as img",
+          "pass": true,
+          "detail": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/assets/ada-harness.png"
+        },
+        {
+          "name": "surrounding text preserved",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "name": "interrupted turn also re-renders links",
+          "pass": true,
+          "detail": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/pages/target.html"
+        }
+      ],
+      "console": {
+        "errors": [],
+        "warnings": [],
+        "pageErrors": [],
+        "rejections": [],
+        "resources": []
+      },
+      "opened": [],
+      "linkClicks": [],
+      "consoleProblems": [],
+      "unexpectedProblems": [],
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "url": "http://127.0.0.1:8777/tests/ha/ada-chat-card/harness.html?scenario=stream-rerender",
+      "title": "ada-chat-card harness"
+    },
+    "click-open": {
+      "pass": true,
+      "checks": [
+        {
+          "name": "img click calls window.open(media url)",
+          "pass": true,
+          "detail": "[{\"url\":\"http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/assets/ada-harness.png\",\"target\":\"_blank\"}]"
+        },
+        {
+          "name": "anchor click recorded href (target=_blank)",
+          "pass": true,
+          "detail": "[{\"href\":\"http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/pages/target.html\",\"target\":\"_blank\",\"rel\":\"noopener\"}]"
+        },
+        {
+          "name": "anchor contract target=_blank rel=noopener",
+          "pass": true,
+          "detail": ""
+        }
+      ],
+      "console": {
+        "errors": [],
+        "warnings": [],
+        "pageErrors": [],
+        "rejections": [],
+        "resources": []
+      },
+      "opened": [
+        {
+          "url": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/assets/ada-harness.png",
+          "target": "_blank"
+        }
+      ],
+      "linkClicks": [
+        {
+          "href": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/pages/target.html",
+          "target": "_blank",
+          "rel": "noopener"
+        }
+      ],
+      "consoleProblems": [],
+      "unexpectedProblems": [],
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "url": "http://127.0.0.1:8777/tests/ha/ada-chat-card/harness.html?scenario=click-open",
+      "title": "ada-chat-card harness"
+    },
+    "download-link": {
+      "pass": true,
+      "checks": [
+        {
+          "name": "attachment url renders as anchor",
+          "pass": true,
+          "detail": "http://127.0.0.1:8777/dl/download-note.txt"
+        },
+        {
+          "name": "anchor opens in new tab",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "name": "server marks it attachment",
+          "pass": true,
+          "detail": "attachment; filename=\"download-note.txt\""
+        },
+        {
+          "name": "payload is the fixture file",
+          "pass": true,
+          "detail": ""
+        }
+      ],
+      "console": {
+        "errors": [],
+        "warnings": [],
+        "pageErrors": [],
+        "rejections": [],
+        "resources": []
+      },
+      "opened": [],
+      "linkClicks": [],
+      "consoleProblems": [],
+      "unexpectedProblems": [],
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "url": "http://127.0.0.1:8777/tests/ha/ada-chat-card/harness.html?scenario=download-link",
+      "title": "ada-chat-card harness"
+    },
+    "qc-panel": {
+      "pass": true,
+      "checks": [
+        {
+          "name": "panel hidden with no pending candidate",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "name": "panel appears for pending candidate",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "name": "asset label",
+          "pass": true,
+          "detail": "qc-fixture-candidate"
+        },
+        {
+          "name": "lane subtitle",
+          "pass": true,
+          "detail": "lane gemini-image · landed 2026-11-24"
+        },
+        {
+          "name": "four action buttons",
+          "pass": true,
+          "detail": "n=4"
+        },
+        {
+          "name": "button labels Keep/Reject/Revise/Repair",
+          "pass": true,
+          "detail": "✓ Keep|✗ Reject|↻ Revise|🛠 Repair region"
+        },
+        {
+          "name": "thumb src = picker /img/<asset>",
+          "pass": true,
+          "detail": "http://127.0.0.1:8777/qc-picker/img/qc-fixture-candidate"
+        },
+        {
+          "name": "thumb decoded (naturalWidth>0)",
+          "pass": true,
+          "detail": "nw=320 display="
+        },
+        {
+          "name": "panel hides after Keep",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "name": "Keep POST recorded decision=keep",
+          "pass": true,
+          "detail": "{\"qc-fixture-candidate\":{\"decision\":\"keep\",\"note\":\"\",\"at\":\"2026-11-24T14:50:22.587119+00:00\"}}"
+        },
+        {
+          "name": "panel reappears for re-pended candidate",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "name": "panel hides after Reject",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "name": "Reject recorded decision+note",
+          "pass": true,
+          "detail": "{\"qc-fixture-candidate\":{\"decision\":\"reject\",\"note\":\"fixture reject note\",\"at\":\"2026-11-24T14:50:22.737896+00:00\"}}"
+        },
+        {
+          "name": "Revise recorded decision=revise",
+          "pass": true,
+          "detail": "{\"qc-fixture-candidate\":{\"decision\":\"revise\",\"note\":\"\",\"at\":\"2026-11-24T14:50:22.893272+00:00\"}}"
+        },
+        {
+          "name": "Repair opens picker ?img=/img/<asset>",
+          "pass": true,
+          "detail": "[{\"url\":\"http://127.0.0.1:8777/qc-picker/?img=/img/qc-fixture-candidate\",\"target\":\"_blank\"}]"
+        },
+        {
+          "name": "Repair records no QC decision",
+          "pass": true,
+          "detail": "{}"
+        }
+      ],
+      "console": {
+        "errors": [],
+        "warnings": [],
+        "pageErrors": [],
+        "rejections": [],
+        "resources": []
+      },
+      "opened": [
+        {
+          "url": "http://127.0.0.1:8777/qc-picker/?img=/img/qc-fixture-candidate",
+          "target": "_blank"
+        }
+      ],
+      "linkClicks": [],
+      "consoleProblems": [],
+      "unexpectedProblems": [],
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "url": "http://127.0.0.1:8777/tests/ha/ada-chat-card/harness.html?scenario=qc-panel",
+      "title": "ada-chat-card harness"
+    },
+    "mobile-layout": {
+      "pass": true,
+      "checks": [
+        {
+          "name": "log has no horizontal overflow",
+          "pass": true,
+          "detail": "scrollW=928 clientW=928"
+        },
+        {
+          "name": "all bubbles/media inside stage bounds",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "name": "media capped at 100% width",
+          "pass": true,
+          "detail": "imgW=320"
+        }
+      ],
+      "console": {
+        "errors": [],
+        "warnings": [],
+        "pageErrors": [],
+        "rejections": [],
+        "resources": []
+      },
+      "opened": [],
+      "linkClicks": [],
+      "consoleProblems": [],
+      "unexpectedProblems": [],
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 900
+      },
+      "url": "http://127.0.0.1:8777/tests/ha/ada-chat-card/harness.html?scenario=mobile-layout",
+      "title": "ada-chat-card harness"
+    },
+    "all": {
+      "pass": true,
+      "results": [
+        {
+          "name": "connect",
+          "label": "connect",
+          "pass": true,
+          "checks": [
+            {
+              "name": "ws url binds channel=web&chat_id=web-tester",
+              "pass": true,
+              "detail": "ws://127.0.0.1:8777/ada-ws/tony/ws?device_id=b2c70123aa50489090e404222e87d5f3&api_key=harness-key&channel=web&chat_id=web-tester"
+            },
+            {
+              "name": "ready frame → Connected status",
+              "pass": true,
+              "detail": "connected / Connected — type below"
+            },
+            {
+              "name": "input enabled after ready",
+              "pass": true,
+              "detail": ""
+            }
+          ],
+          "ms": 282,
+          "opened": [],
+          "linkClicks": [],
+          "console": {
+            "errors": [],
+            "pageErrors": [],
+            "rejections": [],
+            "resources": []
+          }
+        },
+        {
+          "name": "text-urls",
+          "label": "text-urls",
+          "pass": true,
+          "checks": [
+            {
+              "name": "three image renders (png+gif+path-pattern)",
+              "pass": true,
+              "detail": "imgs=3"
+            },
+            {
+              "name": "png img src",
+              "pass": true,
+              "detail": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/assets/ada-harness.png"
+            },
+            {
+              "name": "gif img src",
+              "pass": true,
+              "detail": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/assets/ada-harness.gif"
+            },
+            {
+              "name": "path-pattern /image?v= renders img",
+              "pass": true,
+              "detail": "http://127.0.0.1:8777/apps/yolo/api/image?v=42"
+            },
+            {
+              "name": "page + download are anchors",
+              "pass": true,
+              "detail": "links=2"
+            },
+            {
+              "name": "page anchor href/target/rel",
+              "pass": true,
+              "detail": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/pages/target.html _blank noopener"
+            },
+            {
+              "name": "download anchor is a link not an img",
+              "pass": true,
+              "detail": "http://127.0.0.1:8777/dl/download-note.txt"
+            }
+          ],
+          "ms": 320,
+          "opened": [],
+          "linkClicks": [],
+          "console": {
+            "errors": [],
+            "pageErrors": [],
+            "rejections": [],
+            "resources": []
+          }
+        },
+        {
+          "name": "push-image",
+          "label": "push-image",
+          "pass": true,
+          "checks": [
+            {
+              "name": "bubble appended",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "img.acc-media present",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "img src",
+              "pass": true,
+              "detail": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/assets/ada-harness.png"
+            },
+            {
+              "name": "img lazy+alt",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "image decoded (naturalWidth>0)",
+              "pass": true,
+              "detail": "naturalWidth=320"
+            },
+            {
+              "name": "no video element",
+              "pass": true,
+              "detail": ""
+            }
+          ],
+          "ms": 252,
+          "opened": [],
+          "linkClicks": [],
+          "console": {
+            "errors": [],
+            "pageErrors": [],
+            "rejections": [],
+            "resources": []
+          }
+        },
+        {
+          "name": "push-video",
+          "label": "push-video",
+          "pass": true,
+          "checks": [
+            {
+              "name": "video.acc-media present",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "video src",
+              "pass": true,
+              "detail": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/assets/ada-harness.mp4"
+            },
+            {
+              "name": "video controls+muted+playsinline",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "no img element",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "video metadata decoded (videoWidth>0)",
+              "pass": true,
+              "detail": "readyState=4 videoWidth=320"
+            }
+          ],
+          "ms": 354,
+          "opened": [],
+          "linkClicks": [],
+          "console": {
+            "errors": [],
+            "pageErrors": [],
+            "rejections": [],
+            "resources": []
+          }
+        },
+        {
+          "name": "push-mixed",
+          "label": "push-mixed",
+          "pass": true,
+          "checks": [
+            {
+              "name": "text rendered",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "image + video both present",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "img src",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "video src",
+              "pass": true,
+              "detail": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/assets/ada-harness.webm"
+            }
+          ],
+          "ms": 361,
+          "opened": [],
+          "linkClicks": [],
+          "console": {
+            "errors": [],
+            "pageErrors": [],
+            "rejections": [],
+            "resources": []
+          }
+        },
+        {
+          "name": "push-empty",
+          "label": "push-empty",
+          "pass": true,
+          "checks": [
+            {
+              "name": "empty pushes append no bubble",
+              "pass": true,
+              "detail": "before=0 after=0"
+            },
+            {
+              "name": "whitespace-only text still renders a bubble (observed)",
+              "pass": true,
+              "detail": "after=1"
+            }
+          ],
+          "ms": 252,
+          "opened": [],
+          "linkClicks": [],
+          "console": {
+            "errors": [],
+            "pageErrors": [],
+            "rejections": [],
+            "resources": []
+          }
+        },
+        {
+          "name": "push-broken",
+          "label": "push-broken",
+          "pass": false,
+          "checks": [
+            {
+              "name": "three broken imgs still rendered as elements",
+              "pass": true,
+              "detail": "imgs=3"
+            },
+            {
+              "name": "broken imgs fail decode (naturalWidth=0)",
+              "pass": false,
+              "detail": "broken=0/3"
+            },
+            {
+              "name": "broken video element rendered",
+              "pass": true,
+              "detail": "http://127.0.0.1:8777/gone/clip.mp4"
+            }
+          ],
+          "ms": 4717,
+          "opened": [],
+          "linkClicks": [],
+          "console": {
+            "errors": [],
+            "pageErrors": [],
+            "rejections": [],
+            "resources": [
+              {
+                "tag": "video",
+                "src": "http://127.0.0.1:8777/gone/clip.mp4"
+              }
+            ]
+          }
+        },
+        {
+          "name": "push-nonhttp",
+          "label": "push-nonhttp",
+          "pass": true,
+          "checks": [
+            {
+              "name": "non-http media pushes drop quietly",
+              "pass": true,
+              "detail": "before=0 after=0"
+            },
+            {
+              "name": "text survives, js: image_url skipped",
+              "pass": true,
+              "detail": ""
+            }
+          ],
+          "ms": 264,
+          "opened": [],
+          "linkClicks": [],
+          "console": {
+            "errors": [],
+            "pageErrors": [],
+            "rejections": [],
+            "resources": [
+              {
+                "tag": "video",
+                "src": "http://127.0.0.1:8777/gone/clip.mp4"
+              }
+            ]
+          }
+        },
+        {
+          "name": "stream-rerender",
+          "label": "stream-rerender",
+          "pass": true,
+          "checks": [
+            {
+              "name": "mid-stream: URL is raw text, no img yet",
+              "pass": true,
+              "detail": "imgs=0"
+            },
+            {
+              "name": "post-completion: URL re-rendered as img",
+              "pass": true,
+              "detail": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/assets/ada-harness.png"
+            },
+            {
+              "name": "surrounding text preserved",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "interrupted turn also re-renders links",
+              "pass": true,
+              "detail": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/pages/target.html"
+            }
+          ],
+          "ms": 318,
+          "opened": [],
+          "linkClicks": [],
+          "console": {
+            "errors": [],
+            "pageErrors": [],
+            "rejections": [],
+            "resources": [
+              {
+                "tag": "video",
+                "src": "http://127.0.0.1:8777/gone/clip.mp4"
+              }
+            ]
+          }
+        },
+        {
+          "name": "click-open",
+          "label": "click-open",
+          "pass": true,
+          "checks": [
+            {
+              "name": "img click calls window.open(media url)",
+              "pass": true,
+              "detail": "[{\"url\":\"http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/assets/ada-harness.png\",\"target\":\"_blank\"}]"
+            },
+            {
+              "name": "anchor click recorded href (target=_blank)",
+              "pass": true,
+              "detail": "[{\"href\":\"http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/pages/target.html\",\"target\":\"_blank\",\"rel\":\"noopener\"}]"
+            },
+            {
+              "name": "anchor contract target=_blank rel=noopener",
+              "pass": true,
+              "detail": ""
+            }
+          ],
+          "ms": 314,
+          "opened": [
+            {
+              "url": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/assets/ada-harness.png",
+              "target": "_blank"
+            }
+          ],
+          "linkClicks": [
+            {
+              "href": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/pages/target.html",
+              "target": "_blank",
+              "rel": "noopener"
+            }
+          ],
+          "console": {
+            "errors": [],
+            "pageErrors": [],
+            "rejections": [],
+            "resources": [
+              {
+                "tag": "video",
+                "src": "http://127.0.0.1:8777/gone/clip.mp4"
+              }
+            ]
+          }
+        },
+        {
+          "name": "download-link",
+          "label": "download-link",
+          "pass": true,
+          "checks": [
+            {
+              "name": "attachment url renders as anchor",
+              "pass": true,
+              "detail": "http://127.0.0.1:8777/dl/download-note.txt"
+            },
+            {
+              "name": "anchor opens in new tab",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "server marks it attachment",
+              "pass": true,
+              "detail": "attachment; filename=\"download-note.txt\""
+            },
+            {
+              "name": "payload is the fixture file",
+              "pass": true,
+              "detail": ""
+            }
+          ],
+          "ms": 330,
+          "opened": [
+            {
+              "url": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/assets/ada-harness.png",
+              "target": "_blank"
+            }
+          ],
+          "linkClicks": [
+            {
+              "href": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/pages/target.html",
+              "target": "_blank",
+              "rel": "noopener"
+            }
+          ],
+          "console": {
+            "errors": [],
+            "pageErrors": [],
+            "rejections": [],
+            "resources": [
+              {
+                "tag": "video",
+                "src": "http://127.0.0.1:8777/gone/clip.mp4"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mobile-layout",
+          "label": "mobile-layout",
+          "pass": true,
+          "checks": [
+            {
+              "name": "log has no horizontal overflow",
+              "pass": true,
+              "detail": "scrollW=928 clientW=928"
+            },
+            {
+              "name": "all bubbles/media inside stage bounds",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "media capped at 100% width",
+              "pass": true,
+              "detail": "imgW=320"
+            }
+          ],
+          "ms": 322,
+          "opened": [
+            {
+              "url": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/assets/ada-harness.png",
+              "target": "_blank"
+            }
+          ],
+          "linkClicks": [
+            {
+              "href": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/pages/target.html",
+              "target": "_blank",
+              "rel": "noopener"
+            }
+          ],
+          "console": {
+            "errors": [],
+            "pageErrors": [],
+            "rejections": [],
+            "resources": [
+              {
+                "tag": "video",
+                "src": "http://127.0.0.1:8777/gone/clip.mp4"
+              }
+            ]
+          }
+        },
+        {
+          "name": "qc-panel",
+          "label": "qc-panel",
+          "pass": true,
+          "checks": [
+            {
+              "name": "panel hidden with no pending candidate",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "panel appears for pending candidate",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "asset label",
+              "pass": true,
+              "detail": "qc-fixture-candidate"
+            },
+            {
+              "name": "lane subtitle",
+              "pass": true,
+              "detail": "lane gemini-image · landed 2026-11-24"
+            },
+            {
+              "name": "four action buttons",
+              "pass": true,
+              "detail": "n=4"
+            },
+            {
+              "name": "button labels Keep/Reject/Revise/Repair",
+              "pass": true,
+              "detail": "✓ Keep|✗ Reject|↻ Revise|🛠 Repair region"
+            },
+            {
+              "name": "thumb src = picker /img/<asset>",
+              "pass": true,
+              "detail": "http://127.0.0.1:8777/qc-picker/img/qc-fixture-candidate"
+            },
+            {
+              "name": "thumb decoded (naturalWidth>0)",
+              "pass": true,
+              "detail": "nw=320 display="
+            },
+            {
+              "name": "panel hides after Keep",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "Keep POST recorded decision=keep",
+              "pass": true,
+              "detail": "{\"qc-fixture-candidate\":{\"decision\":\"keep\",\"note\":\"\",\"at\":\"2026-11-24T14:50:33.352854+00:00\"}}"
+            },
+            {
+              "name": "panel reappears for re-pended candidate",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "panel hides after Reject",
+              "pass": true,
+              "detail": ""
+            },
+            {
+              "name": "Reject recorded decision+note",
+              "pass": true,
+              "detail": "{\"qc-fixture-candidate\":{\"decision\":\"reject\",\"note\":\"fixture reject note\",\"at\":\"2026-11-24T14:50:33.495716+00:00\"}}"
+            },
+            {
+              "name": "Revise recorded decision=revise",
+              "pass": true,
+              "detail": "{\"qc-fixture-candidate\":{\"decision\":\"revise\",\"note\":\"\",\"at\":\"2026-11-24T14:50:33.629744+00:00\"}}"
+            },
+            {
+              "name": "Repair opens picker ?img=/img/<asset>",
+              "pass": true,
+              "detail": "[{\"url\":\"http://127.0.0.1:8777/qc-picker/?img=/img/qc-fixture-candidate\",\"target\":\"_blank\"}]"
+            },
+            {
+              "name": "Repair records no QC decision",
+              "pass": true,
+              "detail": "{}"
+            }
+          ],
+          "ms": 943,
+          "opened": [
+            {
+              "url": "http://127.0.0.1:8777/qc-picker/?img=/img/qc-fixture-candidate",
+              "target": "_blank"
+            }
+          ],
+          "linkClicks": [
+            {
+              "href": "http://127.0.0.1:8777/tests/ha/ada-chat-card/fixtures/pages/target.html",
+              "target": "_blank",
+              "rel": "noopener"
+            }
+          ],
+          "console": {
+            "errors": [],
+            "pageErrors": [],
+            "rejections": [],
+            "resources": [
+              {
+                "tag": "video",
+                "src": "http://127.0.0.1:8777/gone/clip.mp4"
+              }
+            ]
+          }
+        }
+      ],
+      "consoleProblems": [
+        {
+          "kind": "http",
+          "message": "HTTP 410 http://127.0.0.1:8777/gone/clip.mp4",
+          "url": "http://127.0.0.1:8777/gone/clip.mp4"
+        },
+        {
+          "kind": "console.error",
+          "message": "Failed to load resource: the server responded with a status of 410 (Gone)",
+          "url": "http://127.0.0.1:8777/gone/clip.mp4"
+        },
+        {
+          "kind": "requestfailed",
+          "message": "http://127.0.0.1:8777/gone/clip.mp4 net::ERR_ABORTED",
+          "url": "http://127.0.0.1:8777/gone/clip.mp4"
+        },
+        {
+          "kind": "resource-error",
+          "message": "video http://127.0.0.1:8777/gone/clip.mp4",
+          "url": "http://127.0.0.1:8777/gone/clip.mp4"
+        }
+      ],
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 900
+      }
+    },
+    "mobile-viewport": {
+      "pass": true,
+      "checks": [
+        {
+          "name": "log has no horizontal overflow",
+          "pass": true,
+          "detail": "scrollW=326 clientW=326"
+        },
+        {
+          "name": "all bubbles/media inside stage bounds",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "name": "media capped at 100% width",
+          "pass": true,
+          "detail": "imgW=251"
+        }
+      ],
+      "consoleProblems": [],
+      "unexpectedProblems": [],
+      "viewport": {
+        "mode": "mobile",
+        "width": 1440,
+        "height": 900
+      }
+    }
+  },
+  "summary": {
+    "total": 15,
+    "failed": [],
+    "verdict": "PASS"
+  },
+  "finishedAt": "2026-11-24T14:50:35.772Z"
+}

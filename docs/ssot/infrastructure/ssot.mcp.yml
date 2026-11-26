@@ -18,7 +18,6 @@ profiles:
       playlive_url: http://tony-dell.taila0626a.ts.net:9230
       weaviate_url: http://tony-dell.taila0626a.ts.net:8084
       postgres_url: postgresql://tony-dell.taila0626a.ts.net:5432
-      helm_url: http://tony-dell.taila0626a.ts.net:3003/apps/helm
     health_config: infrastructure/ssot.health.home.yml
     system_config: ssot.mysystem.home.yml
   mobile:
@@ -36,7 +35,6 @@ profiles:
       playlive_url: http://tony-dell.taila0626a.ts.net:9230
       weaviate_url: http://tony-dell.taila0626a.ts.net:8084
       postgres_url: postgresql://tony-dell.taila0626a.ts.net:5432
-      helm_url: http://tony-dell.taila0626a.ts.net:3003/apps/helm
     health_config: infrastructure/ssot.health.mobile.yml
     system_config: ssot.mysystem.mobile.yml
 hosts:
@@ -46,6 +44,73 @@ hosts:
   idc02: {}
   idc03: {}
   michael-ha: {}
+
+# Observed inventory surface (card KNB-0019). `servers` above is declared
+# truth; this block only declares where the producer looks and which
+# declarations are expected to be configured. Never put live observations
+# here — they belong in append-only reports/mcp-inventory/ artifacts.
+fleet_observation:
+  producer: scripts/mcp-inventory.py
+  report_node: mcp-fleet
+  report_artifact: reports/mcp-fleet/MCP-FLEET-REPORT.md
+  cadence: 24h
+  config_surfaces:
+    devin: ~/.config/devin/mcp_config.json
+    windsurf: ~/.config/windsurf/mcp_config.json
+    codeium: ~/.config/codeium/mcp_config.json
+    opencode: ~/.config/opencode/opencode.json
+  expected_statuses:
+    - operational
+  # Declared-vs-observed scope model (card OPS-0025). Every server in
+  # `servers` carries an explicit scope; absence of a `scope:` key is a
+  # declaration bug and the producer fails loudly. Host rows in `hosts`
+  # are observation targets, not scope — only `agent_lane_hosts` decides
+  # which hosts are expected to carry the global agent-lane servers.
+  scope_model:
+    default: agent-lanes
+    agent_lane_hosts: [tony_omen, tony_dell]
+    values:
+      fleet: expected on every observed host that has a config surface
+      agent-lanes: expected only on agent_lane_hosts
+      hosts: a YAML list of host keys — expected only on those hosts
+    rule: >-
+      Scope alone decides which hosts expect a server. A per_host map is an
+      implementation override (wrapper/pattern/env), not an inclusion filter;
+      use a named-host list to restrict a server. Unknown scope values fail
+      the producer instead of silently widening what counts as missing.
+  finding_states: [open, carded, suppressed]
+  # Human-owned triage of stable finding IDs (open | carded | suppressed).
+  # Producers read this map and annotate findings; they never write it.
+  # `suppressed` requires a reason; `until` (YYYY-MM-DD) expires it.
+  finding_triage:
+    # Resolved findings are removed from this map (OPS-0035/36, 2026-11-20);
+    # the cards keep the decision trail. Only live findings are triaged here.
+    mcp-tony-dell-undeclared-configured:
+      state: suppressed
+      reason: 'ada-control is injected into opencode.json by OpenChamber, not provisioned as a fleet-managed MCP server'
+      by: tony
+    mcp-idc02-undeclared-configured:
+      state: suppressed
+      reason: 'idc02 is a job host with no agent lane, so its opencode.json holds local-only tooling that its scope never expects - OpenChamber Code Mode tools plus fleet-declared servers installed for local use (e.g. mcp-weaviate) - not fleet drift'
+      by: tony
+    mcp-michael-ha-host-unreachable:
+      state: suppressed
+      reason: 'michael-ha is an HA appliance: SSH key auth is refused by design and the web UI is reachable, so no SSH config surface will ever exist'
+      by: tony
+  note: >-
+    L0 artifacts under reports/mcp-inventory/ are append-only; each host's
+    meta.*.yml carries observed state. An unreachable host is reported as
+    unreachable with no missing-server findings — unobserved is not missing.
+    A reachable host with no MCP client configs is reported as no-config
+    (informational, not drift) — an infra host without an agent lane is not
+    a declaration violation.
+  hosts:
+    tony_omen: {ssh: tony-omen, role: primary-workstation}
+    tony_dell: {ssh: tony-dell, role: headless-primary}
+    mn01: {ssh: mn01, role: services}
+    idc02: {ssh: idc02, role: job-host}
+    idc03: {ssh: idc03, role: canonical-mddb-primary}
+    michael-ha: {ssh: michael-ha, role: appliance}
 servers:
   github:
     name: GitHub Integration
@@ -64,6 +129,7 @@ servers:
     - get_file_contents
     single_instance: true
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: true
@@ -79,6 +145,7 @@ servers:
       LLAMA_URL: profile.service_urls.llama_server_url
     single_instance: true
     status: operational
+    scope: agent-lanes
     per_host:
       tony_dell:
         implementation: bash /home/tony/.config/devin/mcp-scripts/mcp-gpu-ssh.sh
@@ -89,7 +156,7 @@ servers:
   mcp-llama:
     name: Llama.cpp Server
     description: LLM inference server interface
-    implementation: python3 /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-llama/server.py
+    implementation: python3 /home/tony/CascadeProjects/chaba/mcp-servers/mcp-llama/server.py
     wrapper: mcp-single-instance.sh
     pattern: mcp-llama/server.py
     filter: none
@@ -97,12 +164,13 @@ servers:
       LLAMA_URL: profile.service_urls.llama_url
     single_instance: true
     status: operational
-    per_host:
-      tony_dell:
-        implementation: python3 /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-llama/server.py
+    scope: [tony_omen]
     config_files:
     - devin: true
     - windsurf: true
+    notes: 'Scoped to omen 2026-11-20 (OPS-0036): only omen configures it, pointed at
+      idc01 Ollama. Dell never carried it; full retirement to the LiteLLM gateway
+      (AUD-0886) remains a separate decision.'
   postgres:
     name: PostgreSQL Database
     description: Database operations and management
@@ -123,6 +191,7 @@ servers:
       POSTGRES_CONNECTION_STRING: profile.service_urls.postgres_url
     single_instance: true
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -138,6 +207,7 @@ servers:
     - get_insight
     single_instance: false
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: true
@@ -152,6 +222,7 @@ servers:
       PLAYLIVE_HOSTS_FILE: /home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/infrastructure/playlive-hosts.yml
     single_instance: true
     status: operational
+    scope: agent-lanes
     notes: 'Host registry is now in docs/ssot/infrastructure/playlive-hosts.yml.
 
       The playlive-hosts-loader.py wrapper reads that YAML, picks the per-host
@@ -177,6 +248,7 @@ servers:
     filter: none
     single_instance: false
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: true
@@ -193,12 +265,13 @@ servers:
     url: https://mcp.alphavantage.co/mcp?apikey=<PRIVATE_API_KEY>
     single_instance: false
     status: operational
+    scope: [tony_omen]
     config_files:
     - devin: true
     - windsurf: false
-    notes: 'API key is configured in ~/.config/devin/mcp_config.json.
-
-      '
+    notes: 'Scoped to omen 2026-11-20 (OPS-0036): only omen configures it. AUD-0886
+      flagged its ~5.6k-line schema as too heavy for every agent session; dell stays
+      free of it. API key lives in ~/.config/devin/mcp_config.json.'
   docs:
     name: Documentation Search (Chaba)
     description: Full-text search across chaba project documentation
@@ -208,6 +281,7 @@ servers:
     args: []
     single_instance: false
     status: retired-2026-10-26
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -232,6 +306,7 @@ servers:
     - /home/tony/CascadeProjects/trade/.docs-mcp
     single_instance: false
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -247,6 +322,7 @@ servers:
       WEAVIATE_URL: profile.service_urls.weaviate_url
     single_instance: true
     status: operational
+    scope: agent-lanes
     per_host:
       tony_dell:
         implementation: python3 /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-weaviate/server.py
@@ -264,6 +340,7 @@ servers:
       WORKFLOWS_LOG_LEVEL: INFO
     single_instance: false
     status: retired-2026-10-26
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -291,6 +368,7 @@ servers:
     url: http://100.102.134.91:9000/mcp
     single_instance: false
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -320,6 +398,7 @@ servers:
     filter: none
     single_instance: true
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: true
@@ -355,6 +434,7 @@ servers:
     filter: none
     single_instance: true
     status: retired-2026-10-26
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -376,6 +456,7 @@ servers:
     url: http://tony-omen:9584/<PRIVATE_TOKEN>
     single_instance: false
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -384,22 +465,23 @@ servers:
       verified mcp_list_tools.
 
       '
-  michael-dev:
+  mn-ha-dev:
     name: Michael Dev Home Assistant
-    description: Development Home Assistant instance MCP bridge on idc03 (container
-      migrated tony-dell -> idc03 2026-10-09)
-    implementation: http://idc02:9585/<PRIVATE_TOKEN>
+    description: Development Home Assistant instance MCP bridge on mn01 (container
+      migrated tony-dell -> idc03 2026-10-09 -> idc02 2026-10-26 -> mn01 2026-11-25)
+    implementation: http://mn01:9585/<PRIVATE_TOKEN>
     wrapper: none
     filter: none
-    url: http://idc02:9585/<PRIVATE_TOKEN>
+    url: http://mn01:9585/<PRIVATE_TOKEN>
     single_instance: false
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
     notes: 'Private token is configured in ~/.config/devin/mcp_config.json.
-      Repointed tony-dell -> idc03 2026-10-26 (card ha-mcp-endpoint-repoint); port
-      9585 published on idc02 tailnet IP + loopback via michael-dev quadlet (moved from idc03 2026-10-26).
+      Repointed idc02 -> mn01 2026-11-25 (card michael-dev-migrate-mn01); port
+      9585 published on mn01 tailnet IP + loopback via mn-ha-dev quadlet (moved idc03 -> idc02 2026-10-26 -> mn01 2026-11-25).
 
       '
   michael-ha:
@@ -412,6 +494,7 @@ servers:
     url: http://100.80.105.88:9584/<PRIVATE_TOKEN>
     single_instance: false
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -430,6 +513,7 @@ servers:
     filter: none
     single_instance: false
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -458,6 +542,7 @@ servers:
     filter: none
     single_instance: false
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -468,6 +553,52 @@ servers:
       sessions. No Colab Enterprise/GCP runtime provisioning.
 
       '
+  colab-mcp:
+    name: Colab MCP (official, kernel-level)
+    description: Google's official Colab MCP - kernel-level access; complements the chaba mcp-colab fleet/queue control plane (OPS-0808)
+    implementation: /home/tony/.local/venvs/colab-test/bin/uvx
+    wrapper: none
+    args:
+    - git+https://github.com/googlecolab/colab-mcp
+    filter: none
+    single_instance: false
+    status: operational
+    scope: [tony_omen]
+    config_files:
+    - devin: true
+    - windsurf: false
+    notes: 'Declared 2026-11-20 from live config; omen only (dell/macbook use the separate chaba mcp-colab).'
+  context7:
+    name: Context7 Documentation
+    description: Up-to-date library/framework/SDK/API documentation (official remote MCP)
+    implementation: https://mcp.context7.com/mcp
+    wrapper: none
+    filter: none
+    url: https://mcp.context7.com/mcp
+    single_instance: false
+    status: operational
+    scope: agent-lanes
+    config_files:
+    - devin: true
+    - windsurf: false
+    notes: 'Declared 2026-11-21 after Tony-approved install: official remote Streamable HTTP
+      endpoint, no secret needed for basic use. Configured on omen/dell devin (agent lanes) and
+      idc02 opencode as local-only tooling (covered by the suppressed idc02 undeclared finding).
+      github was also selected for idc02 but is NOT installed there: its wrapper needs Docker and
+      a GitHub token, neither present on idc02; github remains operational on omen/dell.'
+  icloud:
+    name: iCloud Bridge
+    description: iCloud access via the SSH wrapper on tony-omen
+    implementation: /home/tony/.config/devin/mcp-scripts/mcp-icloud-ssh.sh
+    wrapper: none
+    filter: none
+    single_instance: false
+    status: operational
+    scope: [tony_omen]
+    config_files:
+    - devin: true
+    - windsurf: true
+    notes: 'Declared 2026-11-20 from live config; present on both omen devin and windsurf surfaces.'
   mcp-kornia:
     name: Kornia GS Capture Evaluator
     description: Read-only Gaussian Splat capture-set evaluation — image metrics, view matching, mask proposals, manifest scoring, run comparison
@@ -483,6 +614,7 @@ servers:
     - compare_gs_runs
     single_instance: false
     status: operational
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -497,10 +629,12 @@ servers:
     filter: none
     single_instance: false
     status: operational
+    scope: [mn01, tony_omen]
     config_files:
     - devin: true
     - windsurf: false
     notes: 'FastMCP streamable-HTTP server, bound to the mn01 Tailscale IP only (100.106.196.22:8004).
+      Scope widened 2026-11-20 to include tony_omen (omen calls the mn01 endpoint over tailnet).
 
       Source: mcp-servers/google-home-mcp/server.py; stack: stacks/mn01/google-home-mcp/.
 
@@ -531,6 +665,7 @@ servers:
     filter: none
     single_instance: false
     status: blocked
+    scope: agent-lanes
     config_files:
     - devin: true
     - windsurf: false
@@ -557,7 +692,7 @@ decisions:
     card: AUD-0886
     report: devin-kb docs/tools/mcp-fleet-audit.md
     findings:
-    - 'dead at probe: home-assistant(9584), michael-dev(9585), michael-ha(19584), workflows, docs, notebooklm'
+    - 'dead at probe: home-assistant(9584), mn-ha-dev(9585), michael-ha(19584), workflows, docs, notebooklm'
     - 'mcp-llama superseded by LiteLLM gateway (retire/repoint recommended)'
     - 'alphavantage schema ~5.6k lines - allowlist or per-session profile recommended'
     - 'mddb moved to idc03 streamable-HTTP + X-API-Key'
@@ -566,6 +701,16 @@ decisions:
       to live mn01 container (dell units masked); workflows/docs/mcp-focus RETIRED
       and removed from mcp_config.json on omen+dell. See
       docs/ssot/jobs/infrastructure/2026-10-26-dead-mcp-triage.yml'
+  fleet_report_2026_11_20:
+    card: KNB-0019
+    title: 'Fleet MCP inventory report — SSOT consolidation + Reports:/Education: integration'
+    report_node: mcp-fleet
+    producer: scripts/mcp-inventory.py
+    findings:
+    - 'MDDB primary on idc03 (100.102.134.91:11023, mddbd :9000/mcp); the tony-dell local copy is a retired/dead follower'
+    - 'tony-dell: alphavantage + mcp-llama declared operational but absent from its config surfaces (schema-heavy / superseded by LiteLLM)'
+    - 'tony-omen: mcp-kornia declared operational but not configured on any surface'
+    - '3 of 6 declared hosts unreachable from idc02 at observation time (mn01, idc03, michael-ha) — reported unreachable, not missing'
   mcp_filter_disabled:
     date: 2026-08-07
     reason: Compatibility issues with mcp-filter implementation
@@ -602,6 +747,8 @@ validation:
   check_env_files: true
   max_servers: 20
 related_files:
+- infrastructure/ssot.reports.yml
+- scripts/mcp-inventory.py
 - ssot.devin.tools.yml
 - ssot.mysystem.home.yml
 - ssot.mysystem.mobile.yml

@@ -523,6 +523,23 @@ def rank(envelopes: list, max_results: int) -> list:
     return out[:max(10, max_results)]
 
 
+def _top_result_ref(results: list) -> str | None:
+    """Top ranked citation ref for the run audit.
+
+    Semantics (OPS-1368): this is "the top-ranked result HAS a citation",
+    NOT verified correctness — resolved_pct read ~100% even on weak runs.
+    A verified-resolution signal must come from the agent's `record`
+    outcome (--resolved), never inferred here. `resolved_ref` is reserved
+    for that future verified signal; do not reuse it for top-citation.
+    """
+    if not results:
+        return None
+    top = results[0]
+    cit = top.get("citation") or {}
+    return (str(cit.get("path") or cit.get("id") or top.get("path")
+                or top.get("excerpt", "")[:60]) or None)
+
+
 def audit_append(audit_path: str, rec: dict) -> None:
     p = Path(audit_path)
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -574,12 +591,24 @@ def run(query: str, session: str, project: str, root: Path, *,
     key = hashlib.sha256(query.encode()).hexdigest()[:16]
     (Path(plan["cache_dir"]) / f"{key}-result.json").write_text(
         json.dumps(out, indent=1))
+    # Phase D time-to-find telemetry: the per-source elapsed_ms already lived
+    # in the result cache; surface the totals + resolved citation in the audit
+    # so capture-metrics.py can aggregate without a second telemetry path.
     audit_append(plan["audit_path"],
                  {"kind": "run", "query": query,
                   "intent": plan["intent"],
                   "statuses": {s: v.get("status")
                                for s, v in statuses.items()},
-                  "result_count": len(results)})
+                  "result_count": len(results),
+                  "total_elapsed_ms": sum(v.get("elapsed_ms", 0)
+                                          for v in statuses.values()),
+                  "elapsed_by_source": {
+                      s: v["elapsed_ms"] for s, v in statuses.items()
+                      if "elapsed_ms" in v},
+                  "source_sequence": [s for s in SOURCES_ALL
+                                      if statuses.get(s, {}).get("status")
+                                      != STATUS_SKIPPED],
+                  "top_result_ref": _top_result_ref(results)})
     return out
 
 
@@ -609,6 +638,17 @@ def main(argv: list | None = None) -> int:
     rec = sub.add_parser("record")
     rec.add_argument("--session", required=True)
     rec.add_argument("--result", required=True)
+    rec.add_argument("--elapsed-ms", type=int,
+                     help="agent-measured wall time for the whole find "
+                          "(query -> answer); feeds the session-level "
+                          "time-to-find sample in capture-metrics.py")
+    rec.add_argument("--resolved", choices=("yes", "no", "unknown"),
+                     default="unknown",
+                     help="agent verdict: did the find actually resolve "
+                          "the query (yes/no); unknown = not assessed. "
+                          "This is the verified-resolution signal — "
+                          "top_result_ref in run audits is only 'top "
+                          "citation exists' (OPS-1368)")
     rec.add_argument("--project")
     rec.add_argument("--root", default=".")
     mh = sub.add_parser("mddb-health")
@@ -656,8 +696,12 @@ def main(argv: list | None = None) -> int:
         session = session_of(args.session)
         d = session_dir(project, session)
         d.mkdir(parents=True, exist_ok=True)
-        audit_append(str(d / "audit.ndjson"),
-                     {"kind": "result", "result": args.result})
+        rec: dict = {"kind": "result", "result": args.result}
+        if args.elapsed_ms is not None:
+            rec["elapsed_ms"] = args.elapsed_ms
+        if args.resolved != "unknown":
+            rec["resolved"] = args.resolved == "yes"
+        audit_append(str(d / "audit.ndjson"), rec)
         print(str(d / "audit.ndjson"))
         return 0
     if args.cmd == "mddb-health":

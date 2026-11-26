@@ -1,0 +1,68 @@
+id: runner-agent-drift-redeploy-verify-20261125
+title: runner-agent drift redeploy — idc02 + tony-dell verified converged
+date: 2026-11-25
+card: gdrive-ada-nest-pack-catalog-retention-p-e0d183
+ref: OPS-1026 lineage (installed-snapshot drift fails closed)
+hosts: [idc02, tony-dell]  # fleet sweep also covered idc03, mn01, tony-omen, tony-macbook, con01
+status: verified-converged-no-action-needed
+
+goal: >
+  Card spec asked to redeploy scripts/board/runner-agent.py to
+  ~/.local/bin/runner-agent on idc02 and tony-dell so neither defers
+  claims on "installed runner-agent drifted". Done-condition: both
+  hosts run the updated runner-agent successfully with no drift.
+
+finding: >
+  Drift was ALREADY healed before this dispatch ran. Both hosts'
+  installed snapshots and checkout copies sha256 to
+  1514c75c4679a01b486bbffd9f75c5636d023fed528424aed358a970ee3f7210 —
+  identical to origin/master's scripts/board/runner-agent.py AND the
+  runner_agent pin in scripts/devin/runner-tooling.manifest.json
+  (file last changed in e46eb5847b, 2026-11-25 12:33 +07). Installed
+  mtimes 2026-11-25 15:42 +07 on both hosts — the governed
+  sync-runner-tools.sh path (chaba-repo-sync.timer -> git-safe-pull
+  tail) or _self_update() converged them ~5min before this card was
+  claimed at 15:47. No manual copy was needed or performed; a cp
+  would have been a byte-no-op.
+
+verification:
+  idc02:
+    - "installed == checkout == pin == origin/master (sha256 1514c75c…)"
+    - "runner-agent.service exits 0/SUCCESS every ~60s via timer; last run 15:48:03"
+    - "consumer proof: claimed THIS card at 15:47:46 and spawned this dispatch"
+    - "zero 'drifted from repo' events in 24h journal"
+  tony-dell:
+    - "installed == checkout == pin == origin/master (sha256 1514c75c…)"
+    - "runner-agent.service cycling cleanly (~75s cadence); claimed mn-ha-dev-crash-looped-40x card at 15:47:35"
+    - "zero 'drifted from repo' events in 24h journal"
+  fleet-sweep:
+    - "idc03, mn01, tony-omen, tony-macbook, con01 all CONVERGED (same sha256 triple-match)"
+
+notes: >
+  Card comms showed drift defers fleet-wide through 2026-11-25 07:50
+  (con01) — transient window while e46eb5847b propagated: repo copies
+  updated by chaba-repo-sync pulls (12:43-13:00) but installed
+  snapshots only refreshed at 15:42, so _self_stale_check's byte-compare
+  reported drift in between. This is the known flap pattern — drift
+  flags are a lagging indicator between repo-sync and tool-sync, not
+  a persistent fault. _self_update/sync-runner-tools healed it within
+  one sync cycle as designed.
+
+timer_converge_followup:
+  card: timer-alert-tony-dell-runner-agent-converge
+  symptom: "03:31 run exited status=1/FAILURE; timer sentinel filed an alert card"
+  timeline:
+    - "2026-11-25 03:31:09+07 runner-agent-converge.service exited 1/FAILURE (stale installed snapshot)"
+    - "2026-11-25 11:05:00+07 started again; terminated 11:07:03 by the deploy-runner-agent.yml restart handler during the governed fleet converge — expected, not a new fault"
+    - "2026-11-25 11:07:32+07 re-started and FINISHED successfully at 11:07:56+07"
+    - "next trigger 2026-11-26 03:34:06+07; timer active/enabled, 7h left at check"
+  verified:
+    - "sha256 ~/.local/bin/runner-agent == checkout scripts/board/runner-agent.py == 1514c75c4679a01b486bbffd9f75c5636d023fed528424aed358a970ee3f7210"
+    - "no drift defers for tony-dell in the 24h journal after the converge"
+  card_defect: "card was moved to done without closing through /action, so action.status stayed 'queued' and it counted as a zombie claimable entry"
+  resolution: "/action do=close with evidence comment; queue count 5 -> 4"
+  lesson: "when a timer-alert card is closed by hand, close through /action (or /card-set action.status) so the dispatch queue does not keep a done card claimable"
+
+lessons:
+  - "Drift-defer cards are often already healed by the time a dispatch lands — sha256 BOTH ~/.local/bin/runner-agent and <checkout>/scripts/board/runner-agent.py before touching anything; a manual cp is a byte-no-op on converged hosts."
+  - "Transient drift window = repo-sync pull lands new runner-agent.py before sync-runner-tools/_self_update installs it; expect flap, not persistent drift, after any runner-agent.py commit."

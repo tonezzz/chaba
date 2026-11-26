@@ -93,7 +93,7 @@ say "✓ store 4: omen openclaw sqlite"
 #    Sweep only files still holding the OLD fleet key so per-lane keys
 #    (e.g. kaewta-daily in ada-kk.env) survive rotations. ─────────────
 if [ -n "$OLDKEY" ]; then
-  { printf 'OLDKEY=%q\nNEWKEY=%q\n' "$OLDKEY" "$NEWKEY"; cat <<'SWEEP'
+  { printf 'OLDKEY=%q\nNEWKEY=%q\n' "$OLDKEY" "$KEY"; cat <<'SWEEP'
 for F in ~/.config/secrets/ada-*.env; do
   [ -f "$F" ] || continue
   if grep -qF "$OLDKEY" "$F"; then
@@ -127,30 +127,94 @@ if ssh -o BatchMode=yes "$HOST_IDC03" \
   ssh -o BatchMode=yes "$HOST_IDC03" 'systemctl --user restart litellm' \
     && say "✓ restarted litellm (idc03)"
 fi
-# openclaw-gateway reads the key from sqlite at call time — restart only
-# if it instead sources an env file carrying the key:
-if ssh -o BatchMode=yes "$HOST_OMEN" \
-     'systemctl --user cat openclaw-gateway 2>/dev/null | grep -q "EnvironmentFile.*openrouter"'; then
-  ssh -o BatchMode=yes "$HOST_OMEN" 'systemctl --user restart openclaw-gateway' \
-    && say "✓ restarted openclaw-gateway (env-baked key)"
+# ── openclaw-gateway caches the auth profile key at STARTUP. The sqlite
+#    store changing is not enough: 2026-11-23 all 4 stores were correct but
+#    a live agent turn still 401d until the gateway was restarted. ──────
+ssh -o BatchMode=yes "$HOST_OMEN" 'systemctl --user restart openclaw-gateway' \
+  && say "✓ restarted openclaw-gateway (omen — caches authProfiles.store)"
+
+# systemd reports active ~15s before the loopback listener binds
+# (observed ~30s total warm-up); don't probe a dead socket.
+say "→ waiting for openclaw-gateway on 127.0.0.1:18789"
+GW_READY=0
+for _ in $(seq 1 30); do
+  if ssh -o BatchMode=yes "$HOST_OMEN" \
+       'ss -ltn 2>/dev/null | grep -q "127.0.0.1:18789"'; then
+    GW_READY=1
+    break
+  fi
+  sleep 2
+done
+[ "$GW_READY" -eq 1 ] || die "openclaw-gateway did not bind 127.0.0.1:18789 within 60s"
+say "✓ gateway listener ready"
+
+# ── e2e: :free chat call (free slugs churn — query live list) ───────
+# Two independent failure modes seen 2026-11-24: a single model can 429,
+# and the ACCOUNT-wide free-tier daily quota can be exhausted (then every
+# :free model 429s). google/* free models can also 400 on an invalid
+# upstream Google key — exclude them. Only 401 is a stale-key signature.
+say "→ e2e: :free model call"
+FREE_MODELS=$(curl -sf -m 20 https://openrouter.ai/api/v1/models \
+  -H "Authorization: Bearer $KEY" \
+  | python3 -c "import json,sys; print(' '.join([m['id'] for m in json.load(sys.stdin)['data'] if m['id'].endswith(':free') and not m['id'].startswith('google/')][:5]))") \
+  || die "no :free model found in catalog"
+E2E_OK=0; QUOTA_OUT=0
+for FREE_MODEL in $FREE_MODELS; do
+  [ "$E2E_OK" -eq 1 ] && break
+  say "   trying $FREE_MODEL"
+  # capture body + status separately; -sf would hide the 429 body we need
+  RESP=$(curl -s -m 30 -w '\n%{http_code}' https://openrouter.ai/api/v1/chat/completions \
+    -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+    -d "{\"model\":\"$FREE_MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"reply with the single word ok\"}],\"max_tokens\":128}" 2>/dev/null) \
+    || { say "   network error — next"; continue; }
+  CODE=$(printf '%s' "$RESP" | tail -1)
+  BODY=$(printf '%s' "$RESP" | sed '$d')
+  case "$CODE" in
+    200)
+      # reasoning models burn max_tokens on `reasoning` (content:null)
+      REPLY=$(printf '%s' "$BODY" | python3 -c "import json,sys; m=json.load(sys.stdin)['choices'][0]['message']; print((m.get('content') or m.get('reasoning') or '').strip()[:40] or '(empty)')" 2>/dev/null) \
+        || REPLY='(unparseable)'
+      say "   reply: $REPLY"; E2E_OK=1 ;;
+    401|403) die "e2e auth failure ($CODE) — key not live: $(printf '%s' "$BODY" | head -c 200)" ;;
+    429)
+      printf '%s' "$BODY" | grep -q 'free-models-per-day' && QUOTA_OUT=1
+      say "   upstream rejected $FREE_MODEL (429) — next" ;;
+    *) say "   upstream rejected $FREE_MODEL ($CODE) — next" ;;
+  esac
+done
+if [ "$E2E_OK" -eq 1 ]; then
+  say "✓ e2e direct call OK"
+elif [ "$QUOTA_OUT" -eq 1 ]; then
+  say "· e2e DEFERRED: OR free-tier DAILY quota exhausted (resets 07:00 ICT) — key precheck passed"
 else
-  say "· openclaw-gateway: reads sqlite at call time — no restart needed"
+  die "e2e call failed across all :free models — check per-store files above"
 fi
 
-# ── e2e: one :free chat call (free slugs churn — query live list) ──
-say "→ e2e: :free model call"
-FREE_MODEL=$(curl -sf -m 20 https://openrouter.ai/api/v1/models \
-  -H "Authorization: Bearer $KEY" \
-  | python3 -c "import json,sys; print(next(m['id'] for m in json.load(sys.stdin)['data'] if m['id'].endswith(':free')))") \
-  || die "no :free model found in catalog"
-say "   using $FREE_MODEL"
-# reasoning models (e.g. apodex-mini) burn max_tokens on `reasoning`
-# and return content:null — accept either field, give enough tokens
-# for a real reply.
-curl -sf -m 30 https://openrouter.ai/api/v1/chat/completions \
-  -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
-  -d "{\"model\":\"$FREE_MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"reply with the single word ok\"}],\"max_tokens\":128}" \
-  | python3 -c "import json,sys; m=json.load(sys.stdin)['choices'][0]['message']; print('   reply:', (m.get('content') or m.get('reasoning') or '').strip()[:40] or '(empty)')" \
-  || die "e2e call failed — check per-store files above"
+# A direct HTTP call only proves the KEY works — not that the gateway
+# picked it up. Drive one real agent turn through the gateway as the
+# final gate (throwaway session, no delivery to a channel). Pin an
+# explicit model — the default fallback chain drifts into google/*:free
+# models that 400 on an invalid upstream Google key and burn all retries.
+GW_OK=0
+for FREE_MODEL in $FREE_MODELS; do
+  [ "$GW_OK" -eq 1 ] && break
+  [ "$QUOTA_OUT" -eq 1 ] && { say "· gateway probe skipped: free quota exhausted (resets 07:00 ICT)"; break; }
+  say "→ gateway probe turn: $FREE_MODEL"
+  GW_PROBE=$(ssh -o BatchMode=yes "$HOST_OMEN" \
+     "timeout 100 ~/.npm-global/bin/openclaw agent --session-key agent:main:or-rotation-probe --model 'openrouter/$FREE_MODEL' --message 'Reply with the single word OK.' --json --timeout 80" 2>&1) \
+    || GW_PROBE="${GW_PROBE:-ssh failed}"
+  if printf '%s' "$GW_PROBE" | grep -qE '"status"[[:space:]]*:[[:space:]]*"ok"|"ok"[[:space:]]*:[[:space:]]*true'; then
+    say "✓ gateway probe turn OK ($FREE_MODEL)"; GW_OK=1
+  elif printf '%s' "$GW_PROBE" | grep -qiE '401|invalid.*api.?key|authentication.*fail'; then
+    die "gateway probe turn rejected the key — old key still cached: $(printf '%s' "$GW_PROBE" | head -c 300)"
+  elif printf '%s' "$GW_PROBE" | grep -qiE 'rate limit|429'; then
+    say "   $FREE_MODEL rate-limited — next"
+  else
+    say "   gateway probe inconclusive — next: $(printf '%s' "$GW_PROBE" | head -c 160)"
+  fi
+done
+if [ "$GW_OK" -eq 0 ] && [ "$QUOTA_OUT" -ne 1 ]; then
+  die "gateway probe failed across all :free models — old key may still be cached"
+fi
 
 say "done — $(mask "$KEY") live in all 4 stores"

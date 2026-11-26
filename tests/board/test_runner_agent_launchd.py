@@ -376,7 +376,8 @@ class ClaimableDevinGateTest(LaunchdBase):
     def _card(self, **action):
         a = {"type": "dispatch", "status": "queued"}
         a.update(action)
-        return {"id": "c-gate", "title": "c", "action": a}
+        return {"id": "c-gate", "title": "c", "column": "backlog",
+                "action": a}
 
     def setUp(self):
         super().setUp()

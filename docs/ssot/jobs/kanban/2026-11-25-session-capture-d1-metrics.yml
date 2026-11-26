@@ -1,0 +1,50 @@
+id: session-capture-d1-metrics
+title: Session capture D.1 — repeat-ask/miss/stale-pointer/time-to-find measurement
+card: session-capture-d1-metrics
+date: 2026-11-25
+host: tony-macbook
+status: done
+
+goal: >
+  Measure repeat-ask/miss rate, stale-pointer incidents, and time-to-find;
+  report surface. Read-only report; SSOT thresholds/tuning; no fake events.
+  Depends on the Phase C/D harvester baseline (OPS-0016).
+
+delivered:
+  - reports/capture/metrics-20261125.md: >
+      Fresh read-only capture-metrics.py report. Repeat-ask register
+      unchanged (9 topics / 15 asks / 3 open, last entry 2026-10-22, 34d
+      stale). Miss rate 0 since 2026-11-23 instrumentation. Stale-pointer
+      proxy-only: 35 candidates >30d, no incident log exists. Time-to-find:
+      3 real info_find.py run samples (median 1647ms). Matrix precision on
+      regenerated ledger: 100% (8 kanban creates, 0 filed-artifact creates)
+      vs ~2% pre-fix.
+  - reports/capture/capture-ledger.yml + capture-proposal-20261125T095019.md: >
+      Ledger regenerated in-worktree via harvester.py (3679 proposals,
+      2778 new entries) because the canonical
+      ~/.local/share/chaba/capture/capture-ledger.yml is absent on every
+      reachable host — the 2026-11-23 baseline ledger and its applied:
+      audit block are gone.
+  - docs/ssot/ssot.knowledge-capture.yml: >
+      New "Phase D Refresh (2026-11-25)" section: measured values, the
+      ledger-durability gap, recorded tuning thresholds (repeat-ask >14d
+      stale, misses/week >2, pointer candidates >30, time-to-find
+      median >5000ms or resolved <80% over >=20 runs, matrix precision
+      <90% over >=50 creates), and pointer to OPS-1368.
+  - OPS-1368 (session-capture-d-1-follow-ups-ledger-du-78e13f): >
+      Follow-up card for ledger durable home, pointer-log adoption,
+      resolved_ref semantics (top citation != verified correctness),
+      register freshness check, info_find run adoption (~zero).
+
+verify: >
+  python3 scripts/chaba/capture-metrics.py --ledger
+  reports/capture/capture-ledger.yml --out /tmp/m.md  # regenerates report
+  python3 -c "import yaml; yaml.safe_load(open('docs/ssot/ssot.knowledge-capture.yml'))"
+  python3 scripts/ssot-prose-smell.py  # 0 flagged
+
+notes: >
+  No fake events: the 3 time-to-find samples are real `info_find.py run`
+  invocations by this session; stale-pointer stays labelled proxy; the
+  fresh ledger's missing applied: history is stated as a caveat, not
+  hidden. C.2 router card was still queued at measurement time; metrics
+  read the ledger/SSOT sources, not the router.

@@ -127,3 +127,37 @@ no broad autonomous mutation.
    metric + runner `usage.json` + committed envelope; the pane reads it.
 6. [x] Card note: v2 progress note posted to the card via board-api
    (2026-11-19 — evidence serving + source tags).
+
+## Operational lessons (recorded 2026-11-20, while processing this card)
+
+- **The Board Tony sees:** `https://idc02.taila0626a.ts.net/apps/board2/` —
+  the idc02 public edge proxies `/apps/board2/*` to the `:8099` web
+  (`rootlessport`, serving `/home/tony/web-srv/public/`). The sync chain:
+  Tony's Mac served checkout (`~/CascadeProjects/chaba-tony-dell`) →
+  idc03's copy → `web-sr-sync.timer` (idc02, every :00/15/30/45) →
+  `/home/tony/web-srv/public/` (the `:8099` web root).
+- **The page render (the form Tony asked for):**
+  `ssh tony-dell` → `cd ~/CascadeProjects/chaba-tony-dell && python3
+  scripts/render-board2.py` (force, no `--if-changed` — it skips on a stale
+  state file). Verify the page itself (grep + stat mtime), not just one
+  host's copy: during the saga, tony-dell's copy was old while the web-sr
+  copy was new (and vice versa).
+- **After a fresh render, re-sync to idc03** (the web-sr-sync reads idc03):
+  `ssh tony-dell "scp -r ~/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/board2/
+  idc03:~/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/board2/"` —
+  then `systemctl --user start web-sr-sync.service` on idc02, or wait ≤15
+  min for the timer. Verify:
+  `curl -s https://idc02.taila0626a.ts.net/apps/board2/index.html |
+  grep -c "Card cycle control — read-only (v1)"` → `1`.
+- **The edge caches:** the idc02 edge caches responses (`Cache-Control:
+  public, max-age=3600` on some routes) — the edge's `cards.json` can show
+  the old board (KNB-0229 in `done`) while the served page is new —
+  hard-refresh (Cmd+Shift+R) to see fresh data.
+- **Verify in a browser, not just curl:** curl `http://127.0.0.1:8099/apps/board2/index.html`
+  for the server side is not enough for Tony's view — use playwright on
+  `https://idc02.taila0626a.ts.net/apps/board2/` (currently: `hasControl:
+  true`, `cpSecs: 9`, the KNB-0229 row visible).
+- **board-api /jobs not yet served:** `curl -sk https://idc03.taila0626a.ts.net:10000/jobs?card=kanban-card-cycle-control-pane`
+  → `{"error": "not found"}` — the running board-api predates the new
+  route (its worker code predates the route) — the pane's tokens/cost/queue
+  columns need a board-api restart on idc03.

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-17 18:37 +07",
+  "generated": "2026-11-25 08:02 +07",
   "schema": 1,
   "edges": {
     "tony-dell-web": {
@@ -47,7 +47,8 @@
         "/apps/ha/ada-michael": "http://127.0.0.1:8003",
         "/apps/ha/ada-dev": "http://127.0.0.1:8005",
         "/apps/ha/ada-ha": "http://127.0.0.1:8006",
-        "/apps/ha/ada-kk": "http://127.0.0.1:8007"
+        "/apps/ha/ada-kk": "http://127.0.0.1:8007",
+        "/apps/roster-shim": "http://127.0.0.1:8796"
       }
     }
   },
@@ -77,6 +78,12 @@
       "listen": "127.0.0.1:8006",
       "tailnet": "https://idc03.taila0626a.ts.net/apps/ha/ada-ha"
     },
+    "roster-shim": {
+      "host": "idc03",
+      "listen": "127.0.0.1:8796",
+      "tailnet": "https://idc03.taila0626a.ts.net/apps/roster-shim",
+      "note": "ada-lane ws shim for roster devin+nest contacts — stacks/services/roster-shim, card roster-devin-nest-shims"
+    },
     "ada-pi-pwa": {
       "host": "idc03",
       "listen": "127.0.0.1:8002",
@@ -88,10 +95,10 @@
       "listen": "127.0.0.1:8123",
       "tailnet": "https://tony-omen.taila0626a.ts.net:8123"
     },
-    "michael-dev": {
-      "host": "idc02",
+    "mn-ha-dev": {
+      "host": "mn01",
       "listen": "127.0.0.1:8124",
-      "tailnet": "https://idc02.taila0626a.ts.net:8124"
+      "tailnet": "https://mn01.taila0626a.ts.net:8124"
     },
     "board-api": {
       "host": "idc03",
@@ -151,11 +158,6 @@
       "listen": "100.123.163.11:8092",
       "note": "bserver — migrated from tony-dell 2026-10-18 (OPS-0725 ph3); tailnet-only bind"
     },
-    "helm": {
-      "host": "idc02",
-      "listen": "100.123.163.11:3003",
-      "note": "migrated from tony-dell 2026-10-18 (OPS-0725 ph3); tailnet-only bind"
-    },
     "node-red": {
       "host": "tony-omen",
       "listen": "0.0.0.0:1880",
@@ -175,16 +177,6 @@
       "host": "idc03",
       "listen": "0.0.0.0:8380",
       "tailnet": "http://100.102.134.91:8380"
-    },
-    "websockify-vms": {
-      "host": "idc02",
-      "listen": "100.123.163.11:6082",
-      "note": "websockify -> mn01:5900 — migrated to idc02 2026-10-20 (OPS-0731); tailnet-IP bind"
-    },
-    "websockify-macbook": {
-      "host": "idc02",
-      "listen": "100.123.163.11:6080",
-      "note": "websockify -> kk-macbook:5900 — migrated to idc02 2026-10-20 (OPS-0731); tailnet-IP bind"
     },
     "yomi": {
       "host": "idc03",
@@ -227,6 +219,14 @@
       "tailnet": "http://100.72.146.39:3484",
       "public": "https://cline.surf-thailand.com",
       "auth": "Cloudflare Access JWT verified by the Tailnet proxy"
+    },
+    "netdata": {
+      "host": "tony-omen",
+      "listen": "0.0.0.0:19999",
+      "tailnet": "http://100.75.102.88:19999",
+      "public": "https://netdata.surf-thailand.com",
+      "auth": "Cloudflare Access",
+      "note": "fleet parent — 8 hosts streaming (children -> :19999 over tailnet); docker netdata/netdata:stable in stacks/web, state persisted at ~/netdata/{etc,lib,cache}; edge block added idc02 caddy 2026-11-18"
     },
     "frigate": {
       "host": "tony-dell",
@@ -385,11 +385,17 @@
       "owner": "tony-ha",
       "target": "https://tony-omen.taila0626a.ts.net:8123/"
     },
-    "ha-michael-dev": {
+    "ha-mn-ha-dev": {
+      "kind": "alias",
+      "path": "/apps/ha/mn-ha-dev",
+      "owner": "michael-ha",
+      "target": "https://mn01.taila0626a.ts.net:8124/"
+    },
+    "ha-michael-dev-legacy": {
       "kind": "alias",
       "path": "/apps/ha/michael-dev",
       "owner": "michael-ha",
-      "target": "https://idc02.taila0626a.ts.net:8124/"
+      "target": "https://mn01.taila0626a.ts.net:8124/"
     },
     "ha-michael": {
       "kind": "alias",
@@ -428,32 +434,6 @@
       "kind": "static",
       "path": "/apps/dance2energy",
       "owner": "chaba"
-    },
-    "vnc-ws": {
-      "kind": "proxy",
-      "path": "/apps/vnc/ws",
-      "owner": "vms",
-      "http": "http://100.123.163.11:6082/apps/vnc/ws",
-      "ws": "ws://100.123.163.11:6082/apps/vnc/ws/ws"
-    },
-    "vnc-ws-mn01": {
-      "kind": "proxy",
-      "path": "/apps/vnc/ws-mn01",
-      "owner": "vms",
-      "http": "http://100.123.163.11:6082/apps/vnc/ws-mn01",
-      "ws": "ws://100.123.163.11:6082/apps/vnc/ws-mn01/ws"
-    },
-    "vnc-ws-macbook": {
-      "kind": "proxy",
-      "path": "/apps/vnc/ws-macbook",
-      "owner": "vms",
-      "http": "http://100.123.163.11:6080/apps/vnc/ws-macbook",
-      "ws": "ws://100.123.163.11:6080/apps/vnc/ws-macbook/ws"
-    },
-    "vnc": {
-      "kind": "static",
-      "path": "/apps/vnc",
-      "owner": "vms"
     },
     "vms-snap": {
       "kind": "proxy",
@@ -524,12 +504,6 @@
       "path": "/api",
       "owner": "chaba",
       "http": "https://idc02.taila0626a.ts.net:8000/api"
-    },
-    "helm": {
-      "kind": "proxy",
-      "path": "{/apps/helm,/apps/helm/*}",
-      "owner": "chaba",
-      "http": "https://idc02.taila0626a.ts.net:3003{/apps/helm,/apps/helm/*}"
     },
     "frigate": {
       "kind": "proxy",

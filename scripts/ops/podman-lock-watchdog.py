@@ -313,7 +313,12 @@ def load_state() -> dict:
 def save_state(s: dict) -> None:
     try:
         STATE.parent.mkdir(parents=True, exist_ok=True)
-        STATE.write_text(json.dumps(s, indent=1))
+        tmp = STATE.with_name(STATE.name + ".tmp")
+        with tmp.open("w") as f:
+            f.write(json.dumps(s, indent=1))
+            f.flush()
+            os.fsync(f.fileno())
+        tmp.replace(STATE)
     except OSError:
         pass
 

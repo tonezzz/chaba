@@ -55,14 +55,15 @@ homes:
     public_url: https://ada-ha.surf-thailand.com   # CF Access app 775374be
     voice_backend: null              # lab; ada-dev rides it
   - id: mn-ha-dev
-    label: Michael dev twin (was michael-dev — renamed for mn-ha parity 2026-10-16)
-    host: idc03
-    ha_url: https://idc02.taila0626a.ts.net:8124
+    label: Michael dev twin (was michael-dev — renamed for mn-ha parity 2026-10-16;
+      physical resources renamed michael-dev -> mn-ha-dev 2026-11-24, OPS-0726)
+    host: mn01
+    ha_url: https://mn01.taila0626a.ts.net:8124
     public_url: null                 # tailnet-only by decision 2026-10-07
+      # legacy public alias https://michael-dev.surf-thailand.com still live on
+      # idc02 edge (CF Access) — upstream repointed to mn01 tailnet :8124
+      # 2026-11-25; DNS rename is a separate carded step
     voice_backend: null
-    note: underlying resources still named michael-dev — unit michael-dev.service,
-      container michael-dev, ~/.config/michael-dev, ha-michael-dev.env, ~119 SSOT
-      refs. Physical rename is a carded migration (OPS-0726), not done yet.
   - id: kk-ha-dev
     label: Kaewta dev twin (planned)
     host: idc03
@@ -76,7 +77,7 @@ homes:
     ha_url: http://127.0.0.1:8127
     public_url: null
     voice_backend: null
-    planned: true                    # card ha-dev-instances — blocked; promote-tony.sh uses --from michael-dev meanwhile
+    planned: true                    # card ha-dev-instances — blocked; promote-tony.sh uses --from mn-ha-dev meanwhile
   - id: ada-ha-dev
     label: Ada dev twin (planned)
     host: tony-dell
@@ -138,7 +139,7 @@ edges:
     gate: cloudflare-access            # one self-hosted app per hostname
     tailnet_front:                     # OPS-0725 ph1 — stable internal names; upstreams flip here on migration
       https: "idc02.taila0626a.ts.net (serve -> caddy :8088) — LOCAL web origin since 2026-10-19 (OPS-0731): web.service rootless caddy :8099 serving /apps/*, /api/*; dell passthrough retired 2026-10-20"
-      shadow_ports: "idc02.taila0626a.ts.net:{8123 tony-ha->omen, 8124 michael-dev LOCAL (moved to idc02 2026-10-26; caddy shadow block removed — tailscale serve :8124 is the front), 8125 ada-ha->omen, 8444 ha-live->omen, 8446 RETIRED (mcp-debug-sse), 9230 input-bridge->idc03:3010} — bind tailnet IP, http; 3002 monitoring LOCAL to idc02 (migrated 2026-10-17, MON_HOST=127.0.0.1)"
+      shadow_ports: "idc02.taila0626a.ts.net:{8123 tony-ha->omen, 8125 ada-ha->omen, 8444 ha-live->omen, 8446 RETIRED (mcp-debug-sse), 9230 input-bridge->idc03:3010} — bind tailnet IP, http; 3002 monitoring LOCAL to idc02 (migrated 2026-10-17, MON_HOST=127.0.0.1). 8124 mn-ha-dev MOVED to mn01 2026-11-25 — no longer bound here"
       rule: "internal consumers reference the front, never tony-dell.* — upstreams repoint per migration phase"
   - id: caddy-edge-idc03
     role: api.surf-thailand.com — LINE/TG webhooks, PWA redeem, ada-ws
@@ -226,22 +227,44 @@ data:
 # Prod backend :800N, persona dev backend :801N. Renumber is optional phase.
 # ---------------------------------------------------------------------------
 rename_map:
+  scheme: "<family>-ai-<role>[-dev] — family-first, Tony's decision 2026-10-16
+    (commit aafeadfad) and what ada-ai-kraut deployed as. NOTE: the grand-rename
+    card's spec: field still carries the ORIGINAL persona-first text
+    (member-ai/chaba-ai/kraut-ai…) — stale, never updated after the scheme
+    switch. Reconfirm request raised on the card 2026-11-23; if persona-first
+    is wanted instead, targets become chaba-ai/kraut-ai/ada-ai/kaewta-ai[-dev]."
   units:
-    - {now: ada-ha-tony.service,    to: ada-ai-chaba.service,     port_now: 8002, port_target: 8002}
-    - {now: ada-ha-michael.service, to: ada-ai-kraut.service,     port_now: 8003, port_target: 8003, status: "DONE 2026-10-16 — unit/env/keys.json renamed, ADA_KEYS_FILE pinned, ADA_INSTANCE_ID=michael kept (pins MDDB banks), /ai/kraut alias live, old path kept during transition"}
-    - {now: ada-dev.service,        to: ada-ai-dev.service,       port_now: 8005, port_target: 8005, note: "lab backend — the name finally says what it is"}
-    - {now: ada-kk.service,         to: ada-ai-kaewta.service,    port_now: 8007, port_target: 8004, note: "renumber optional"}
-    - {now: ada-kk-dev.service,     to: ada-ai-kaewta-dev.service, port_now: 8009, port_target: 8014, note: "renumber optional"}
-  paths: {from: "/apps/ha/<name>", to: "/ai/<role>"}   # /ai/chaba, /ai/kraut, /ai/kaewta, /ai/ada (member), /ai/dev
-  env_files: {from: "~/.config/secrets/ada-<x>.env", to: "~/.config/secrets/ada-ai-<role>.env"}
-  key_pools: {from: "~/.config/secrets/ada-ha-<lane>-keys.json", to: "~/.config/secrets/ada-ai-<role>-keys.json"}
-  ha_dev_twins: {michael-dev: mn-ha-dev}   # unit+container+dirs+~119 refs — OPS-0726
+    - {now: ada-ha-tony.service,    to: ada-ai-chaba.service,      port_now: 8002, port_target: 8002, note: "also serves member/guest root — tailscale-serve / -> :8002 since ada-pi-pwa retired 2026-11-17"}
+    - {now: ada-ha-michael.service, to: ada-ai-kraut.service,      port_now: 8003, port_target: 8003, status: "DONE 2026-10-16 — unit/env/keys.json renamed, ADA_KEYS_FILE pinned, ADA_INSTANCE_ID=michael kept (pins MDDB banks), /ai/kraut alias live, old path kept during transition"}
+    - {now: ada-dev.service,        to: ada-ai-dev.service,        port_now: 8005, port_target: 8005, note: "lab backend — the name finally says what it is"}
+    - {now: ada-kk.service,         to: ada-ai-kaewta.service,     port_now: 8007, port_target: 8004, note: "renumber optional; BLOCKED: 127.0.0.1:8004 on idc03 is the chaba-vault obsidian server (tailscale-serve :8443) — move obsidian or keep kaewta on :8007"}
+    - {now: ada-kk-dev.service,     to: ada-ai-kaewta-dev.service, port_now: 8009, port_target: 8014, note: "renumber optional; :8014 free as of 2026-11-23 audit"}
+    - {now: ada-chaba.service,      to: "(keep) ada-chaba.service", port_now: 8008, port_target: 8008, note: "NOT in original map — house/ops-brain for LINE group, already persona-named; renaming to ada-ai-chaba would collide with :8002's target. Recommend keep as-is (role stays 'chaba' on its own lane)."}
+    - {now: ada-ha-ada.service,     to: "(TBD)",                    port_now: 8006, port_target: 8006, note: "NOT in original map — second lab instance, HA-enabled (env ada-ha/backend.env), cloned 2026-10-23. Candidate ada-ai-lab or fold into ada-ai-dev."}
+  paths:
+    from: "/apps/ha/<name>"        # /apps/ha/ada-tony, /apps/ha/ada-michael, /apps/ha/ada-kk, /apps/ha/ada-dev, /apps/ha/ada-ha
+    to: "/ai/<role>"               # /ai/kraut LIVE since 2026-10-16 (alias grace — old path kept)
+    mounts_are: "tailscale serve on idc03 (NOT caddy): https://idc03.taila0626a.ts.net -> /=>:8002, /ai/kraut=>:8003, /apps/ha/{ada-tony=>:8002, ada-michael=>:8003, ada-ha=>:8006, ada-kk=>:8007, ada-dev=>:8005}"
+    consumer_edges:
+      - "idc02 Caddyfile rewrites /chatui* + /ada-ws/{tony,michael,dev,kk} -> /apps/ha/ada-* on idc03 — must change WITH the idc03 mounts or PWAs 404"
+      - "idc03 Caddyfile app.surf-thailand.com handle_path /apps/ha/ada-tony/* -> :8002 (public edge)"
+  env_files:
+    reality: "HA lanes use per-home dirs ~/.config/secrets/<home>/{backend.env,keys.json} (tony-ha, michael-ha, kk-ha, ada-ha) — ADA_KEYS_FILE pins the pool. Flat ada-<x>.env exists only for dev/chaba lanes (ada-dev.env, ada-kk-dev.env, ada-chaba.env, ada-ai-kraut.env — though kraut's unit loads michael-ha/backend.env)."
+    rename: "flat dev/chaba envs ada-<x>.env -> ada-ai-<role>.env; per-home dirs stay keyed by HOME (they're ha-twin-scoped, not lane-scoped) unless we retarget ADA_KEYS_FILE + consumers"
+  key_pools:
+    reality: "live pools are <home>/keys.json per home dir; flat ada-ha-*-keys.json were .bak-roster-star'd in the per-instance-secret-stores migration (2026-10-23). Leftover unreferenced flat files: ada-ha-chaba-keys.json, ada-ha-dev-keys.json, ada-ha-kk-dev-keys.json — dev/chaba lanes use inline ADA_API_KEYS instead. Candidates for cleanup, not rename."
+    stale_spec: "card spec's 'ada-ha-<lane>-keys.json -> <persona>-ai-keys.json' predates the per-home-dir migration"
+  ha_dev_twins: {michael-dev: mn-ha-dev}   # unit+container+dirs+refs — OPS-0726. DONE 2026-11-24: live rename executed on idc02 (mn-ha-dev.service + container + ~/.config/mn-ha-dev + ha-mn-ha-dev.env, :8124 verified); parked copies renamed on idc03/tony-dell/tony-omen; live-state repo refs swept (~80 files), kanban/cards+archive left as history
   future_families: "<family>-ai-<role>[-dev] — e.g. adam-ai-chaba (ChatGPT family), eve-ai-chaba. Ports: new family gets its own block (:81xx adam, :82xx eve…)"
   open_decisions:
     - "RESOLVED kraut — confirmed (sauerkraut, Michael likes Sour Kraut)"
     - "RESOLVED ports — sort to slot convention approved (8007->8004, 8009->8014 when that lane migrates)"
     - "PWA service retired 2026-11-17; member/guest root remains served by ada-ha-tony :8002, with no separate ada-ai unit"
     - "cutover: alias grace chosen in practice (old serve path kept alongside /ai/kraut)"
+    - "OPEN scheme reconfirm — family-first ada-ai-<role> (deployed) vs persona-first <role>-ai (stale card spec); request on card 2026-11-23"
+    - "OPEN ada-chaba :8008 disposition — keep vs re-role under the map (collision with :8002's ada-ai-chaba target)"
+    - "OPEN ada-ha-ada :8006 disposition — second lab, not in original map"
+    - "OPEN kaewta :8004 collision — obsidian vault server occupies it; move obsidian or keep :8007"
 
 notes:
   - "Naming is compositional: <x>-ha / <x>-ha-dev / <x>-ai / <x>-ai-dev.

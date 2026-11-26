@@ -1,0 +1,68 @@
+# SSOT Job: German (any-lang) variants on CMS pages
+# Dispatch worktree dispatch-wt-20261124-150047-support-german-language-varian.
+# Card: support-german-language-variants-on-cms-69ef23 (was KNB-0284,
+# dup of archived expand-cms-language-support-to-german-92f126/KNB-0312).
+# Trigger: Tony asked Ada (voice, 2026-10-09) for a German version of CMS
+# page 'translate-probe'; only EN/TH were reachable.
+
+title: CMS language variants beyond en/th (de proven end-to-end)
+subtitle: chaba-side en/th assumptions removed; live de doc created; ada-voice tool schema is the remaining gate
+icon: news
+status: done   # chaba scope complete; ada-voice follow-up carded separately
+project: chaba
+owner: devin-dispatch
+started: "2026-11-24"
+card: support-german-language-variants-on-cms-69ef23
+
+finding_store_layer: |
+  MDDB itself never restricted lang — /v1/get|add key docs by
+  (collection, key, lang) and accept any code. Verified live:
+  ada-cms-pages/translate-probe now has en+th+de variants; cms-render
+  serves /p/translate-probe?lang=de (lang switcher shows de/en/th).
+  The "only EN/TH" wall was never the store — it was (a) chaba readers
+  that special-cased th, and (b) ada-voice's cms tool surface
+  (cms_publish_page/cms_edit/cms_read in backend/realtime_provider.py +
+  tool declarations — repo ada-voice, NOT chaba).
+
+changes_chaba: |
+  - scripts/lib/cms_index.py index_rows: was `lang == "th" → skip`
+    (de would have emitted a duplicate reports-index row). Now one row
+    per key: en wins when a sibling exists, otherwise first-seen
+    variant emits — th-only/de-only keys surface instead of vanishing.
+  - apps/cms-render/server.py index_rows: same generalization — the
+    th-only skip became "any non-en yields to an en sibling regardless
+    of listing order" (de sorts before en in key+lang listings).
+  - scripts/board/board-api.py /report create: accepts `lang` body param
+    (was hardcoded "en"); doc lang + meta.lang both set. note mode
+    already passed lang through to cms-report-note.py.
+  - Already-generic, no change needed: cms-render resolve()?lang=…,
+    page.html lang switcher, scripts/ada/cms-publish-site.py
+    (<key>.<lang>.html for non-en), cms-report-note.py --lang,
+    kanban-cms.py publish(lang=…), cms-normalize-meta.py, cms-audit.py.
+
+live_verification: |
+  - Wrote ada-cms-pages/translate-probe lang=de via /v1/add
+    (content: "Diese Seite dient zum Testen der Übersetzung. Sie hat
+    einen Satz." — the German text Tony dictated to Ada on 2026-10-05,
+    mirrored from docs/ada-memory/inbox/personal/translate-probe-content.md).
+  - GET back OK; cms-render http://100.102.134.91:8010/p/translate-probe?lang=de
+    renders German content + switcher; default serves EN.
+  - regen_reports_index run from the worktree: translate-probe = 1 row,
+    zero duplicate slugs across 425 rows / 1597 docs.
+
+remaining_gate: |
+  ada-voice cms_publish_page / cms_edit / cms_read `lang` argument —
+  whether an enum in the tool declaration or CMS_INSTRUCTIONS wording,
+  it still tells Ada only en/th exist. Follow-up card filed via
+  board-api /card targeting repo ada-voice. Until that lands, Ada
+  cannot self-serve a de variant by voice; agents can write one via
+  MDDB /v1/add or board-api /report {mode:create, lang:de}.
+
+lessons: |
+  - "only X/Y supported" claims should be verified at the store layer
+    first — MDDB lang was never restricted; the wall was reader
+    special-casing + the ada-voice tool schema.
+  - cms_index.index_rows dropped EVERY th doc (not just mirrors) —
+    th-only keys like gold-report were invisible in reports-index;
+    the new prefer-en dedup surfaces them (both were superseded, so no
+    visible diff today).

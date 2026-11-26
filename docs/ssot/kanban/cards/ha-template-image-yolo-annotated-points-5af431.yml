@@ -1,0 +1,129 @@
+id: ha-template-image-yolo-annotated-points-5af431
+title: HA template image.yolo_annotated points at dead LAN-IP :8780 — repoint to 127.0.0.1
+column: backlog
+updated: 2026-11-26 21:23
+priority: low
+tags:
+- home-assistant
+- yolo
+- tony-omen
+note: 'Found during tony-omen-post-reboot-dead-user-units-pl-9d08a4 (2026-11-25). tony-ha templates.yaml image.yolo_annotated
+  fetches http://192.168.2.86:8780/image — but yolo-detect.service on omen binds 127.0.0.1:8780 only, so the dashboard
+  yolo image is broken. HA runs host-networked so http://127.0.0.1:8780/image should work (verify /image route responds
+  — it returned 404 on a bare GET during the audit; check server.py route params). Alternative: give yolo-detect
+  a second bind on the LAN IP, but th'
+ref: HOM-1383
+comms:
+- at: 2026-11-25 10:37
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-25 10:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:09
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:28
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:40
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:56
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:07
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:36
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:47
+  from: chaba
+  text: 'TRIAGE 2026-11-26: written bounded spec and armed for dispatch (lane=devin).'
+- at: 2026-11-26 20:47
+  from: tony
+  text: queued for processing
+- at: 2026-11-26 20:47
+  from: chaba
+  text: 'tony-dell defers: runner at local cap (3/3) — remote slots unaffected'
+- at: 2026-11-26 20:48
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.09 > 0.7)'
+- at: 2026-11-26 20:48
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-26 20:50
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-26 20:55
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.00 > 1.0)'
+- at: 2026-11-26 21:01
+  from: chaba
+  text: 'mn01 defers: runner at local cap (1/1) — remote slots unaffected'
+- at: 2026-11-26 21:03
+  from: chaba
+  text: 'idc02 defers: runner at local cap (3/3) — remote slots unaffected'
+- at: 2026-11-26 21:03
+  from: chaba
+  text: 'con01 defers: runner at local cap (1/1) — remote slots unaffected'
+- at: 2026-11-26 21:23
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.53 > 1.5)'
+spec: 'Repoint tony-ha templates.yaml image.yolo_annotated from http://192.168.2.86:8780/image to http://127.0.0.1:8780/image
+  (HA is host-networked; yolo-detect.service on tony-omen binds 127.0.0.1:8780 only). First verify the /image route
+  responds with its required params — a bare GET returned 404 during the 2026-11-25 audit, so check server.py route
+  params before concluding. If 127.0.0.1 cannot serve it, document why and apply the minimal alternative. Done:
+  dashboard image renders from the new URL, route verified with params, no new LAN bind added, and the change is
+  recorded in the related post-reboot job doc.'
+action:
+  type: dispatch
+  status: queued
+  lane: devin
+  attempts: 0
+claim: {}

@@ -185,6 +185,7 @@ STRONG_MODELS = [
 PRICE_TABLE = {
     "litellm/gemini-3.5-flash-lite": (0.10, 0.40),
     "litellm/gemini-3.5-flash": (0.30, 2.50),
+    "litellm/ollama-qwen7b": (0.0, 0.0),
     "litellm/claude-fable-5.1": (10.0, 50.0),
     "litellm/or-claude-fable-5.1": (10.0, 50.0),
     "litellm/or-gemini-3.1-pro-preview": (2.0, 12.0),
@@ -229,7 +230,7 @@ STAGES = {
         "classes": ["report", "read_only"],
         "mcp_tools": LANE_MCP_TOOLS,
         "concurrency": 1,
-        "quota": 3,
+        "quota": 15,  # raised 2026-11-25 (OPS-1363 repoint gate run); was 3
         "env_required": {"OPENCODE_LANES": "1"},
         "independent_verifier": False,
         "supervised": True,          # human_minutes must be recorded

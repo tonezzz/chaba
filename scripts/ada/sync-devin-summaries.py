@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import os
 import re
 import time
 import sys
@@ -47,6 +48,14 @@ _art_spec.loader.exec_module(session_artifacts)
 CLI_SUMMARIES = Path.home() / ".local/share/devin/cli/summaries"
 NAMED_SUMMARIES = Path.home() / ".local/share/devin/summaries"
 SESSIONS_DB = Path.home() / ".local/share/devin/cli/sessions.db"
+# T2 archive: grep-able transcript .md dumps written while the session
+# still lives in sessions.db — the local copy the hybrid recall path
+# (scripts/devin/session/session_recall.py) keyword-searches after
+# sessions.db pruning removes the source rows (bench-recall v2:
+# hybrid T1 semantic + T2 transcript keyword = 91.7% hit@3).
+TRANSCRIPT_DIR = Path(os.environ.get(
+    "DEVIN_TRANSCRIPT_DIR",
+    Path.home() / ".local/share/devin/transcripts"))
 COLLECTION = "ada-ha-bank-devin-tony"
 # MDDB drops the connection on very large docs. Oversized files keep the
 # distilled head (structured summary) plus the tail, where the outcome of
@@ -115,6 +124,81 @@ def enriched(body: str, session_name: str) -> str:
             transcript_for(session_name))
     except Exception:
         return body
+
+
+_ARTIFACTS_RE = re.compile(r"\n+## Artifacts")
+
+
+def _artifacts_tail(md: str) -> str:
+    """The "## Artifacts" section (through the next h2 or EOF) of an
+    existing doc — preserved verbatim so syncs that can't re-mine the
+    transcript (session pruned from sessions.db, or a run without
+    --enrich like ada-memory-pull used to do) never strip it. Enrichment
+    is a ratchet: once written it stays until a live transcript refreshes
+    it."""
+    m = _ARTIFACTS_RE.search(md)
+    if not m:
+        return ""
+    j = md.find("\n## ", m.end())
+    return md[m.start():] if j < 0 else md[m.start():j]
+
+
+def session_activity() -> dict[str, tuple[int, str]]:
+    """sessions.db id -> (last_activity_at epoch-sec, title). One read-only
+    query; {} when the db is absent or unreadable."""
+    if not SESSIONS_DB.exists():
+        return {}
+    try:
+        import sqlite3
+        db = sqlite3.connect(f"file:{SESSIONS_DB}?mode=ro", uri=True)
+        rows = db.execute(
+            "select id, last_activity_at, title from sessions").fetchall()
+        db.close()
+        return {r[0]: (int(r[1] or 0), r[2] or "") for r in rows}
+    except Exception:
+        return {}
+
+
+def _safe_name(name: str) -> str:
+    return re.sub(r"[^\w.-]", "_", name)
+
+
+def dump_transcripts(transcript_dir: Path, names,
+                     activity: dict, dry: bool) -> tuple[int, int]:
+    """T2 archive pass: write <transcript_dir>/<name>.md for every
+    devin-session/* session still present in sessions.db, refreshing a
+    dump only when last_activity_at moved past the file's mtime. Runs
+    independent of doc writes — an unchanged summary can still sit on a
+    grown transcript."""
+    dumped = fresh = 0
+    for name in names:
+        act = activity.get(name)
+        if not act:
+            continue  # already pruned — nothing left to extract
+        last_act, title = act
+        path = transcript_dir / f"{_safe_name(name)}.md"
+        try:
+            if path.exists() and path.stat().st_mtime >= last_act:
+                fresh += 1
+                continue
+        except OSError:
+            pass
+        text = transcript_for(name)
+        if not text:
+            continue
+        body = (f"# Devin session {name}\n# title: {title}\n"
+                f"# last_activity: {last_act}\n\n{text}\n")
+        if dry:
+            print(f"  (dry) transcript {path.name} ({len(body)} chars)")
+            dumped += 1
+            continue
+        try:
+            transcript_dir.mkdir(parents=True, exist_ok=True)
+            path.write_text(body)
+            dumped += 1
+        except Exception as exc:
+            print(f"  ! transcript {name} failed ({exc}) — continuing")
+    return dumped, fresh
 
 
 def clip(text: str) -> str:
@@ -202,6 +286,11 @@ def main() -> int:
                     help="append the deterministic Artifacts section to "
                          "devin-session/<name> docs while the session is "
                          "still in sessions.db (v2 T1 template)")
+    ap.add_argument("--no-transcripts", action="store_true",
+                    help="skip the T2 transcript .md dump "
+                         f"({TRANSCRIPT_DIR})")
+    ap.add_argument("--transcript-dir", type=Path, default=TRANSCRIPT_DIR,
+                    help="T2 archive dir for grep-able transcript dumps")
     args = ap.parse_args()
 
     mddb = ada_sync.Mddb(args.mddb, timeout=120)  # large histories embed slowly
@@ -222,6 +311,13 @@ def main() -> int:
             body = enriched(body, key.split("/", 1)[1])
         mtime = datetime.fromtimestamp(f.stat().st_mtime).date().isoformat()
         old = remote.get(key)
+        # Sticky Artifacts: a doc that already carries "## Artifacts" keeps
+        # the section even when this run can't re-mine it — post-delete
+        # syncs and non-enrich runs must never strip it.
+        if old and "## Artifacts" not in body:
+            tail = _artifacts_tail(old.get("contentMd") or "")
+            if tail:
+                body = body.rstrip() + tail
         if old and (old.get("contentMd") or "") == body:
             unchanged += 1
             continue
@@ -256,6 +352,18 @@ def main() -> int:
             if args.write_delay:
                 time.sleep(args.write_delay)
         added += 1
+
+    # T2 archive pass: dump grep-able transcript .md for every
+    # devin-session/* session while it still exists in sessions.db —
+    # session_recall.py keyword-searches this dir after sessions.db is
+    # pruned (hybrid T1/T2 recall, bench-recall v2).
+    if not args.no_transcripts:
+        names = [f.stem for f in NAMED_SUMMARIES.glob("*.md")]
+        activity = session_activity()
+        dumped, fresh = dump_transcripts(
+            args.transcript_dir, names, activity, args.dry_run)
+        print(f"  transcripts: {dumped} dumped, {fresh} fresh "
+              f"-> {args.transcript_dir}")
 
     # Dedupe pass: ancestors of resume chains become superseded — their
     # content is subsumed by the chain tip's summary. Active search then

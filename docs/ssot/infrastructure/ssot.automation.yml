@@ -149,6 +149,11 @@ automation:
     service: systemd/mcp-health-snapshot.service
     log_file: logs/mcp-health-snapshot.log
     alert_dir: docs/ssot/focus-inbox
+    chained_execstart: >-
+      scripts/post-restart-verify.py — check-only post-restart verification,
+      once per boot via boot-id gate (ssot.operations.yml
+      automation.post_restart_verify; reports in ~/var/chaba/health/, findings
+      via board-api /inbox). Added 2026-11-23.
     status: active (2026-08-29)
 
   system_report:
@@ -256,7 +261,8 @@ automation:
       host-services-cms.py:
         status: scheduled
         scheduler: chaba-services-regen.timer — Sun 05:30 tony-dell
-        outputs: ada-cms-pages services-by-host + services-{6 hosts}
+        outputs: ada-cms-pages services-by-host + services-<host> leaves
+          (registry-driven — one per ssot.audit.hosts.yml host)
         on_failure: chaba-services-regen-fail.service (precedent unit)
       flood-news-update.py:
         status: scheduled
@@ -416,7 +422,9 @@ automation:
       (ada-recall-canary, idc03), memory-health-check (ada-memory-health,
       omen), memory-staleness-sweep (ada-memory-staleness, omen),
       backup-mddb-banks (ada-memory-backup, omen), distill-devin-bank
-      (devin-bank-distill, idc02 — STALE DUPLICATE still firing on omen),
+      (devin-bank-distill, con01 — stale omen/dell duplicates removed
+      2026-11-25 after the omen copy failed every run on a dead
+      GEMINI_API_KEY; card devin-bank-distill-oauth-token-type),
       sync-devin-summaries (devin-summaries-sync, dell hourly).
     out_of_scope_manual: >-
       consolidate-memory (human-gated inbox promotion), memory-distill-benchmark,

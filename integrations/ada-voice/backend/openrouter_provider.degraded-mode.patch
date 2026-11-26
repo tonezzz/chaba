@@ -1,0 +1,128 @@
+diff --git a/backend/openrouter_provider.py b/backend/openrouter_provider.py
+index f71a86a..7704425 100644
+--- a/backend/openrouter_provider.py
++++ b/backend/openrouter_provider.py
+@@ -35,6 +35,7 @@ from typing import Any, AsyncIterator
+ 
+ import httpx
+ 
++from . import degraded_mode
+ from . import gemini_pool
+ from .realtime_provider import (
+     ProviderEvent,
+@@ -349,12 +350,13 @@ class OpenRouterTextProvider(RealtimeProvider):
+         started = time.monotonic()
+         reply: str | None = None
+         last_err: Exception | None = None
++        gemini_err: Exception | None = None
+         try:
+             if self.tools_enabled and self._gemini_ok():
+                 try:
+                     reply = await self._gemini_turn()
+                 except Exception as exc:
+-                    last_err = exc
++                    gemini_err = last_err = exc
+                     logger.warning(
+                         "session=%s gemini text turn failed: %s — "
+                         "trying openrouter", self.session_id, exc)
+@@ -362,31 +364,25 @@ class OpenRouterTextProvider(RealtimeProvider):
+                         "text_mode_fallback",
+                         f"gemini REST turn failed: {exc}")
+             if reply is None:
+-                reply = await self._or_turn(last_err)
++                try:
++                    reply = await self._or_turn(last_err)
++                except Exception as exc:
++                    # degraded-mode (kk-ha-degraded-mode-explain-ca):
++                    # every transport down on a sustained credit/quota
++                    # outage earns the defined notice as a normal
++                    # assistant reply instead of silence.
++                    notice = degraded_mode.turn_failure_notice(
++                        gemini_err, exc,
++                        user_text=self._last_user_text())
++                    if notice:
++                        await self._emit_reply(notice, started,
++                                              degraded=True)
++                        return
++                    raise
+             reply = (reply or "").strip()
+             if not reply:
+                 return
+-            self._turns.append({"role": "model",
+-                                "parts": [{"text": reply}]})
+-            if self.conversation is not None:
+-                try:
+-                    self.conversation.add_assistant(reply)
+-                except Exception:
+-                    pass
+-            self._response_active = True
+-            await self._queue.put(ProviderEvent("response_started", {}))
+-            step = 48
+-            for i in range(0, len(reply), step):
+-                if self._closed:
+-                    break
+-                await self._queue.put(ProviderEvent(
+-                    "assistant_transcript_delta", {"text": reply[i:i + step]}))
+-            self._response_active = False
+-            await self._queue.put(ProviderEvent("response_completed", {}))
+-            self._emit_ops_event(
+-                "text_mode_reply" if self.tools_enabled else "or_fallback_reply",
+-                f"text reply via {self._text_model if self.tools_enabled else self.model} "
+-                f"({time.monotonic() - started:.1f}s)")
++            await self._emit_reply(reply, started)
+         except Exception as exc:
+             self._response_active = False
+             logger.warning("session=%s text turn failed: %s",
+@@ -394,6 +390,52 @@ class OpenRouterTextProvider(RealtimeProvider):
+             await self._queue.put(ProviderEvent(
+                 "response_interrupted", {"reason": f"text: {exc}"}))
+ 
++    async def _emit_reply(self, reply: str, started: float,
++                          degraded: bool = False) -> None:
++        """Emit one assistant reply — history append, transcript deltas,
++        response_completed. `degraded` marks the canned degraded-mode
++        notice so ops events stay distinguishable from real replies."""
++        self._turns.append({"role": "model",
++                            "parts": [{"text": reply}]})
++        if self.conversation is not None:
++            try:
++                self.conversation.add_assistant(reply)
++            except Exception:
++                pass
++        self._response_active = True
++        await self._queue.put(ProviderEvent("response_started", {}))
++        step = 48
++        for i in range(0, len(reply), step):
++            if self._closed:
++                break
++            await self._queue.put(ProviderEvent(
++                "assistant_transcript_delta", {"text": reply[i:i + step]}))
++        self._response_active = False
++        await self._queue.put(ProviderEvent("response_completed", {}))
++        self._emit_ops_event(
++            "degraded_mode_reply" if degraded else
++            ("text_mode_reply" if self.tools_enabled
++             else "or_fallback_reply"),
++            f"text reply via "
++            f"{self._text_model if self.tools_enabled else self.model} "
++            f"({time.monotonic() - started:.1f}s)"
++            + (" [degraded-mode]" if degraded else ""))
++
++    def _last_user_text(self) -> str:
++        """Most recent real user text — feeds degraded-notice language
++        detection. Context injections ride role 'system' and tool
++        payloads role 'tool', so the last 'user' turn with text is the
++        speaker's own words."""
++        for t in reversed(self._turns):
++            if t.get("role") != "user":
++                continue
++            text = "".join(p.get("text", "") for p in t.get("parts", [])
++                           if isinstance(p, dict))
++            text = text.strip()
++            if text and not text.startswith("(system"):
++                return text
++        return ""
++
+     # ---- history renderers -------------------------------------------------
+ 
+     def _contents(self) -> list[dict]:

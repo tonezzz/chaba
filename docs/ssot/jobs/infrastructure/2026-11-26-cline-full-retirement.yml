@@ -1,0 +1,89 @@
+id: 2026-11-26-cline-full-retirement
+title: Cline full retirement (Tony approval 2026-11-26)
+date: 2026-11-26
+trigger: >-
+  Tony: "Are we using Cline to do any jobs? what if we retire the Cline for now
+  to save resources." Investigation showed the lane was idle (cline-intake
+  idle 24h, containers 0.13% CPU / ~237MB) and the only running Cline card was
+  a Devin dispatch blocked on the OpenRouter :free quota. Tony selected "Full
+  retire: also drop edge route, HA tab, SSOT declarations" on the decision page.
+decision:
+  scope: full-retire
+  approved_by: tony
+  stop_services: true
+  drop_edge_route: true
+  drop_ha_tab: true
+  drop_ssot_declarations: true
+  close_related_cards: true
+
+preflight:
+  cline_intake: "every 15m tick; last 24h all 'no backlog cards tagged for the cline lane'"
+  containers: "con01 cline-kanban 0.13% CPU 223MB, cline-kanban-proxy 0.00% CPU 14.1MB"
+  prior_assessment: "app-retirement-sweep 2026-11-24 said KEEP (live but idle) — reversed by this approval"
+  ansible_playbook: none — no cline references under ansible/; one-off per-host change with backups
+
+backups:
+  con01_units: /home/tony/.local/share/cline-retire-backup-20261126-160723/
+  con01_unit_hashes:
+    cline-kanban.container: 7bb96bd9853b83f63d64675ae7993c66
+    cline-kanban-proxy.container: 5aa42bb5e621b3101f34ef4e5f5fcb2e
+    cline-kanban.network: 2bfc64dc32937bd4072beea52d714cd2
+    cline-intake.service: 2105b08bc527f8ba59899e26eca35900
+    cline-intake.timer: 522a226232ed1d1b15ea99d5921921fa
+    cline-board-mirror.service: 1ee37a22abf568f9de8a6f2c0db397d8
+    cline-board-mirror.timer: c8a85988d87cf7387df39f5b4568b57f
+  idc02_caddyfile: /home/tony/.config/caddy/Caddyfile.bak-cline-retire-20261126-160723
+  idc02_caddyfile_hash: b199da8fe1af6f6063a8c3d743d70625
+  tony_omen_dashboard: /home/tony/.config/ada-ha/.storage/lovelace.chaba_admin.bak-cline-retire-20261126-160723
+  tony_omen_dashboard_hash: ef4bbe77bbbd7140816e9cf828102772
+
+changes:
+  board:
+    - "responded to openrouter-free-arm-is-hard-blocked-the-7ac805: Cline retired, no further evaluation, no paid arm"
+    - "commented + closed card cline-nest-model-evaluation (was doing/running on idc02)"
+    - "stopped devin-task-20261126-153552-after-knb-0932-is-deployed-and.service before close"
+  con01:
+    - "stopped cline-kanban.service, cline-kanban-proxy.service, cline-kanban-network.service"
+    - "stopped + disabled cline-intake.timer, cline-board-mirror.timer"
+    - "removed installed quadlets and rendered timer/service units from ~/.config/{containers,systemd}/"
+    - "podman rm -f cline-kanban cline-kanban-proxy; port 3484 closed"
+  idc02:
+    - "removed cline.surf-thailand.com site block from ~/.config/caddy/Caddyfile"
+    - "caddy validate: Valid configuration; caddy reload via podman exec caddy-edge"
+  tony_omen:
+    - "removed Cline view from live ada-ha chaba-admin dashboard via lovelace/config/save (views 18 -> 17)"
+    - "repo snapshot docs/home-assistant/dashboards/ada-ha-chaba-admin-current.json regenerated (17 views)"
+  repo:
+    - "ssot.jobs.yml: removed cline-intake + cline-board-mirror jobs and related_files entry"
+    - "docs/ssot/generated/jobs.con01.yml: removed the two generated job entries only"
+    - "ssot.routes.yml: removed cline-kanban service entry and edge comment block"
+    - "ssot.audit.hosts.yml: moved cline services from con01 expected_services to expected_absent with retirement note"
+    - "ssot.home-assistant.dashboards.yml: Cline tab note replaced with retirement note"
+    - "stacks/con01/cline-kanban/stack.yml + stacks/idc02/cline.surf-thailand.com.caddy: marked RETIRED, kept as rollback evidence"
+
+verification:
+  con01_units: "all cline units inactive / not-found; no cline timers listed; no cline containers"
+  con01_port: "ss -lntp: no 3484 listener"
+  idc02_caddy: "no cline vhost; no 3484/100.72.146.39 refs in active Caddyfile; backend http://100.72.146.39:3484 -> curl 000"
+  idc02_caveat: >-
+    curl to https://cline.surf-thailand.com still returns 200 with empty body via
+    the pre-existing surf-thailand.com catch-all vhost — not a Cline route. No
+    reverse_proxy to the retired backend remains.
+  ha: "live .storage/lovelace.chaba_admin grep -i cline -> 0; repo snapshot grep -> 0"
+  ssot: "python3 scripts/render-jobs.py --check -> OK 133 jobs, 8 hosts; 4 edited SSOT YAMLs parse clean"
+  board: "cline-nest-model-evaluation moved to done; request answered"
+
+rollback:
+  - "Restore the backed-up unit files on con01 (cp from backup dir), systemctl --user daemon-reload, enable --now the two timers, then recreate quadlets from stacks/con01/cline-kanban and podman compose up -d."
+  - "Restore ~/.config/caddy/Caddyfile from the .bak file on idc02 and reload caddy-edge (podman exec caddy-edge caddy reload --config /etc/caddy/Caddyfile)."
+  - "Restore the Ada HA dashboard via lovelace/config/save using the JSON in the tony-omen .bak file."
+  - "git revert the scoped SSOT/stack/snapshot changes; re-add jobs to ssot.jobs.yml and re-render."
+  - "Rollback requires a NEW explicit Tony decision — this retirement was intentional."
+
+lessons:
+  - "An idle lane can be fully retired safely: prove idleness from 24h of timer journals and container CPU/mem before stopping anything."
+  - "Rendered units (ssot.jobs.yml -> systemd user) need BOTH the SSOT job removed and the installed unit file deleted; disabling alone leaves stale timers after the next render."
+  - "Quadlet-generated units report enabled=generated; disable is a no-op — remove the source .container/.network files and daemon-reload."
+  - "Ada HA dashboard must be changed through the lovelace websocket API (auth frame carries no id), not by editing .storage directly; HA flushes .storage edits on restart."
+  - "Home Assistant websocket auth: exchange the 'ada-ha-live' refresh token from ~/.config/ada-ha/.storage/auth at /auth/token, then send the auth frame with no id."
+  - "Regenerating all per-host job catalogs surfaces unrelated pre-existing drift; scope regeneration to the affected host or remove only the targeted entries."

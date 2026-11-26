@@ -1,0 +1,72 @@
+id: timer-alert-idc02-embed-lane-banks
+title: Timer embed-lane-banks on idc02 failing
+column: done
+updated: 2026-11-26 20:38
+priority: high
+tags:
+- timer-alert
+- auto
+- by:timer-sentinel
+note: 'Last run (11-26 10:06) of `embed-lane-banks.service` on `idc02` result=timeout — investigate journal: `journalctl
+  --user -u embed-lane-banks.service` on the host. See CMS `timer-timeline-idc02`.'
+ref: MEM-1430
+comms:
+- at: 2026-11-26 10:25
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-26 10:34
+  from: devin
+  text: '[still suspicious] Last run (11-26 10:06) of `embed-lane-banks.service` on `idc02` result=timeout — investigate
+    journal: `journalctl --user -u embed-lane-banks.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-26 13:23
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-26 18:47
+  from: tony
+  text: '[batch A 18:55 +07] Root cause identified (card spec done-condition). This is a **throughput-vs-timeout
+    mismatch**, not an ollama or data-loss incident.
+
+
+    Timeline from `journalctl --user -u embed-lane-banks.service` on idc02:
+
+    - 09:21:25 oneshot started (`Type=oneshot`, `TimeoutStartSec=2700` = 45 min, rendered unit — do not edit in
+    place).
+
+    - 09:21:27–09:22:51 small collections completed cleanly (ada-cms-pages 58/58 copied 0 failed; developer-tony
+    45/45 already present).
+
+    - 09:22:51 hit `ada-ha-ba'
+- at: 2026-11-26 18:47
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 18:55
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-26 18:55
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-26 10:06) of `embed-lane-banks.service` on `idc02` result=timeout
+    — investigate journal: `journalctl --user -u embed-lane-banks.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-26 19:05
+  from: devin
+  text: '[still suspicious] Last run (11-26 10:06) of `embed-lane-banks.service` on `idc02` result=timeout — investigate
+    journal: `journalctl --user -u embed-lane-banks.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-26 19:24
+  from: tony
+  text: '[batch B 19:30 +07] Alert loop explained and cleared. The sentinel (scripts/ada/timer-sentinel.py:120-158)
+    reopens this card whenever the unit''s live `systemctl show ... -p Result` is failed/exit-code/timeout, so my
+    18:47 close was reversed at 18:55 and re-flagged at 19:05. On idc02 I ran `systemctl --user reset-failed embed-lane-banks.service`;
+    live state now Result=success, `is-failed` -> inactive, so the reopen condition is cleared. Root cause of the
+    underlying timeout remains documented in m'
+- at: 2026-11-26 19:24
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+spec: Investigate the timeout failure of `embed-lane-banks.service` on `idc02` by inspecting the systemd user journal
+  via `journalctl --user -u embed-lane-banks.service` and reviewing the CMS entry `timer-timeline-idc02`. Target
+  host is `idc02`. The done-condition is verified when the root cause of the 11-26 10:06 timeout is identified and
+  documented in the card comms.
+action:
+  status: done

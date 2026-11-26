@@ -1,0 +1,118 @@
+id: ada-ocb-context-windowed-excerpts
+title: 'Context pack: window SSOT excerpts around query matches (spec data is mid-doc)'
+column: done
+updated: 2026-11-23 13:35
+brief: 'ada_context_pack excerpts were content[:1200] — the head of each MDDB doc. Host specs (tony-macbook block
+  in host-roles/host-capacity, macbook deep in 116KB audit.hosts) sit mid-doc, so agents got metadata but never
+  the data and re-queried ~15x (seen in ~/.local/share/ada-control/calls.jsonl for ses kind-engine). Fixed via _excerpt_window
+  in opencode/ada_mcp.py. Optional follow-up: ada_ssot_get(collection,key) for full-doc fetch.'
+priority: medium
+program: ada
+tags:
+- openchamber
+- ada-control
+spec: 'DONE in ada-voice 9c96dba: _excerpt_window scores lines by _terms(query) overlap, windows ~1200 chars around
+  best match, head fallback. Verified ''tony-macbook spec cpu memory'' returns host-roles tony-macbook block + mac-address-registry
+  macbook device. Deployed idc03; DevNest bridge synced d79a6b3. Remaining optional: ada_ssot_get tool; monitor
+  calls.jsonl for re-query loops.'
+ref: ADA-0164
+comms:
+- at: 2026-11-17 18:17
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-17 18:23
+  from: devin
+  text: 'Fixed in ada-voice 9c96dba, deployed idc03 (1751 tests pass). _excerpt_window windows ~1200 chars around
+    best query-term line instead of doc head. Verified: ''tony-macbook spec cpu memory'' pack now returns host-roles
+    tony-macbook block (tailnet 100.77.76.1, MacBookPro13,3, Ubuntu 26.04.1) + mac-address-registry macbook device;
+    pack 0.66s ok=true errors=[]. DevNest bridge synced d79a6b3; OpenChamber restarted. Root cause: excerpt was
+    head-only; spec block sits mid-doc in host-roles/host-capacity a'
+- at: 2026-11-17 18:23
+  from: devin
+  text: moved doing -> review
+- at: 2026-11-17 18:34
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:35
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:41
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:44
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 20:44
+  from: tony
+  text: moved review -> done
+- at: 2026-11-17 20:44
+  from: ada
+  text: 'moved review -> done — verified: excerpt-window work is deployed in ada-voice commit 9c96dba. verified
+    ''tony-macbook spec'' pack now returns block.'
+- at: 2026-11-17 21:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:24
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:14
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:16
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:20
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:05
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:02
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:04
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:45
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:35
+  from: tony
+  text: archived (1d in done, board over card cap)
+review_kind: verify
+action:
+  status: done
+claim: {}

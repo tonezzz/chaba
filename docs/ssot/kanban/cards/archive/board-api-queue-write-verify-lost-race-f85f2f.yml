@@ -1,0 +1,480 @@
+id: board-api-queue-write-verify-lost-race-f85f2f
+title: board-api-queue-write-verify-lost-race
+column: done
+updated: 2026-11-26 19:41
+spec: 'Two dispatch-pipeline robustness lessons from 2026-11-18/19 sessions:
+
+
+  1. SILENT WRITE LOSS on /action queue: POST /action {do:queue} returned ''queued — kanban-dispatch will claim
+  it'' at least 3x for OPS-0200 but the card YAML never got action.status=queued (only the create comm existed).
+  Likely lost to kanban-commit''s git-safe-pull rebase window on idc03 (known ~15min race). A later identical call
+  DID persist (commit d631f3dc). Fix options: (a) board-api reads back the card after write and returns the persisted
+  state (fail loudly on mismatch); (b) retry the locked write on pull-rebase conflict instead of dropping; (c) at
+  minimum document ''verify action.status landed'' in docs/kb/board-api-write-door.md.
+
+
+  2. TEST-GATE TIMEOUT is infra flake, not test failure: dispatch merge held twice on ''suite timeout (240s)'' for
+  docs/config-only diffs (OPS-0200, ADA-0201, KNB-0212). Both times manual merge on idc03 served checkout was safe.
+  Fix: dispatch/merge-sweep should distinguish timeout from assertion failure — auto-retry once, or allow merge
+  with ''gate: timeout-override'' flag for docs-only diffs (paths allowlist: docs/, stacks/, *.md).
+
+
+  Done when: queue writes are verified-or-loud, and a docs-only dispatch branch can land without a human merge when
+  the gate times out.'
+ref: KNB-0227
+comms:
+- at: 2026-11-19 10:38
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-19 10:39
+  from: chaba
+  text: classified as codemod (kw:config conf 1.00)
+- at: 2026-11-19 10:39
+  from: tony
+  text: queued for processing
+- at: 2026-11-19 10:39
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 2.09 > 0.85)'
+- at: 2026-11-19 10:39
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 4.61 > 0.85)'
+- at: 2026-11-19 10:40
+  from: idc02
+  text: claimed
+- at: 2026-11-19 10:41
+  from: chaba
+  text: started devin-task-20261119-104100-two-dispatch-pipeline-robustne on idc02 (dispatch)
+- at: 2026-11-19 10:41
+  from: chaba
+  text: 'primer injected 8 lesson(s): [board-api-exec-checkout-mismatch] FIXED 2026-11-06. Root cause was two stacked
+    ; [timer-alert-tony-omen-timer-sentinel] RCA (OPS-1261): not a sentinel bug on ome; [dispatch-zero-commit-sessions-epidemic]
+    merge-sweep: verified gate failed — no ; [idc03-served-checkout-stuck-rebase] Follow-up shipped to master as
+    d40573247b (; runbook docs/kb/board-api-read-door.md: board-api — the read door (card ops-manu; [ada-control-mcp-session-dir-race-9d9284]
+    test gate failed — '
+- at: 2026-11-19 10:45
+  from: devin
+  text: 'in progress — root cause traced: /action write sits dirty in worktree until async commit lands; a git-safe-pull
+    autostash in that window resolves pop conflicts to HEAD and drops the write (only the stash-archive patch survives).
+    Implementing: (a) verify-or-loud — request waits for the queued commit + re-reads the card before answering;
+    (b) autostash pop preserves stage-3 as .local-conflict so reconcile folds the write back; (2) test-gate timeout
+    = infra flake — docs-only diff override + one retr'
+- at: 2026-11-19 10:45
+  from: idc02
+  text: 'finished (failed): exit=1 RE | devin-task-20261119-104100-two-dispatch-pipeline-robustne.service: Failed
+    with result ''exit-code''. | devin-t — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-19 10:45
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261119-104100-two-dispatch-pipeline-robustne (rate limit)
+    — idc02 holds new claims ~30m
+- at: 2026-11-19 10:45
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-19 11:15'
+- at: 2026-11-19 10:46
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261119-104537-extend-wiki-page-door-to-allow)
+    — claims held ~29m'
+- at: 2026-11-19 10:46
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261119-103244-kk-mac-launchd-runner-port-shi)
+    — claims held ~29m'
+- at: 2026-11-19 10:47
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (429 on devin-task-20261119-084806-approved-strategy-b-per-the-bo)
+    — claims held ~29m'
+- at: 2026-11-19 10:48
+  from: mn01
+  text: claimed
+- at: 2026-11-19 10:49
+  from: chaba
+  text: started devin-task-20261119-034906-two-dispatch-pipeline-robustne on mn01 (dispatch)
+- at: 2026-11-19 10:49
+  from: chaba
+  text: 'primer injected 8 lesson(s): [board-api-exec-checkout-mismatch] FIXED 2026-11-06. Root cause was two stacked
+    ; [timer-alert-tony-omen-timer-sentinel] RCA (OPS-1261): not a sentinel bug on ome; [dispatch-zero-commit-sessions-epidemic]
+    merge-sweep: verified gate failed — no ; [idc03-served-checkout-stuck-rebase] Follow-up shipped to master as
+    d40573247b (; runbook docs/kb/board-api-read-door.md: board-api — the read door (card ops-manu; [ada-control-mcp-session-dir-race-9d9284]
+    test gate failed — '
+- at: 2026-11-19 10:49
+  from: mn01
+  text: 'finished (failed): exit=1 evin-task-20261119-034906-two-dispatch-pipeline-robustne.service: Failed with
+    result ''exit-code''. | devin-task-20 — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms
+    it'
+- at: 2026-11-19 10:49
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261119-034906-two-dispatch-pipeline-robustne (rate limit)
+    — mn01 holds new claims ~30m
+- at: 2026-11-19 10:50
+  from: chaba
+  text: 'mn01 retry backoff: fail 1/3 — next claim not before 11-19 04:20'
+- at: 2026-11-19 17:04
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:55
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:05
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 04:36
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (mn01) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
+    or teach a runner the capability'
+- at: 2026-11-21 17:47
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 21:50
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (mn01) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
+    or teach a runner the capability'
+- at: 2026-11-23 14:08
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:21
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:21
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:10
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:10
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:12
+  from: tony
+  text: retry requested
+- at: 2026-11-23 19:12
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.25 > 0.85)'
+- at: 2026-11-23 19:13
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 19:13
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.89 > 1.5)'
+- at: 2026-11-23 19:14
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.34 > 1.0)'
+- at: 2026-11-23 19:15
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 19:16
+  from: tony-omen
+  text: claimed
+- at: 2026-11-23 19:17
+  from: chaba
+  text: 'primer injected 8 lesson(s): chaba merge test gate (240s smoke set) times out on loaded idc03 even for
+    doc-on; [board-api-queue-write-verify-lost-race-f85f2f] finished (failed): exit=1 RE | d; [devnest-queue-consolidation]
+    [verify-fail] Review pass 2026-11-23 (Tony): 2026-; [dispatch-zero-commit-sessions-epidemic] merge-sweep: verified
+    gate failed — no ; [merge-sweep-test-gate-fail-open] merge-sweep: verified gate failed — no deliver; [wiki-page-door-infrastructure-namespace]
+    [verify-fail] Revie'
+- at: 2026-11-23 19:17
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-23 19:18
+  from: devin
+  text: 'attempt 3 starting on tony-omen — prior run died on provider rate-limit before any commits (worktree clean).
+    Re-doing: (a) /action write verify-or-loud, (b) autostash pop preserves lost writes, (c) docs-only timeout-override
+    in merge-sweep.'
+- at: 2026-11-23 19:18
+  from: chaba
+  text: 'merge-sweep: devin-task-20261119-034906-two-dispatch-pipeline-robustne no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-11-23 19:18
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261119-034906-two-dispatch-pipeline-robustne'
+- at: 2026-11-23 19:49
+  from: tony-omen
+  text: 'finished (failed): exit=1 -pipeline-robustne.service: Failed with result ''exit-code''. | devin-task-20261123-191708-two-dispatch-pipeline-ro
+    — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 19:51
+  from: chaba
+  text: 'tony-omen retry backoff: fail 1/3 — next claim not before 11-23 20:21'
+- at: 2026-11-23 19:52
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-192619-fix-the-executor-model-id-mism)
+    — claims held ~29m'
+- at: 2026-11-23 19:52
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-194248-the-goal-is-to-stop-the-tony-u)
+    — claims held ~27m'
+- at: 2026-11-23 19:52
+  from: chaba
+  text: 'mn01 defers: provider rate-limited (rate limit on devin-task-20261123-123122-supersedes-manual-card-wiki-ta)
+    — claims held ~29m'
+- at: 2026-11-23 19:53
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-191504-investigate-and-resolve-the-fa)
+    — claims held ~29m'
+- at: 2026-11-23 19:55
+  from: chaba
+  text: 'idc03 defers: provider rate-limited (rate limit on devin-task-20261123-195341-deploy-the-updated-runner-agen)
+    — claims held ~29m'
+- at: 2026-11-23 19:56
+  from: chaba
+  text: 'idc03 defers: provider rate-limited (rate limit on devin-task-20261123-195436-ada-tool-consolidation-merge-o)
+    — claims held ~29m'
+- at: 2026-11-23 19:57
+  from: chaba
+  text: 'idc03 defers: provider rate-limited (rate limit on devin-task-20261123-195521-goal-address-the-live-voice-to)
+    — claims held ~29m'
+- at: 2026-11-23 20:22
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 20:23
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-23 20:23
+  from: tony-omen
+  text: claimed
+- at: 2026-11-23 20:24
+  from: chaba
+  text: started devin-task-20261123-202449-two-dispatch-pipeline-robustne on tony-omen (dispatch)
+- at: 2026-11-23 20:24
+  from: chaba
+  text: 'primer injected 8 lesson(s): [board-api-queue-write-verify-lost-race-f85f2f] primer injected 8 lesson(s):
+    cha; chaba merge test gate (240s smoke set) times out on loaded idc03 even for doc-on; [board-api-queue-write-verify-lost-race-f85f2f]
+    finished (failed): exit=1 -pipel; [board-api-queue-write-verify-lost-race-f85f2f] finished (failed): exit=1
+    RE | d; [devnest-queue-consolidation] [verify-fail] Review pass 2026-11-23 (Tony): 2026-; [dispatch-zero-commit-sessions-epidemic]
+    merge-sweep: verifie'
+- at: 2026-11-23 20:43
+  from: tony-omen
+  text: 'finished (failed): exit=1 61123-202449-two-dispatch-pipeline-robustne.service: Failed with result ''exit-code''.
+    | devin-task-20261123-202449 — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-23 20:43
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-202449-two-dispatch-pipeline-robustne (rate limit)
+    — tony-omen holds new claims ~30m
+- at: 2026-11-23 20:43
+  from: chaba
+  text: 'tony-omen retry backoff: fail 2/3 — next claim not before 11-23 21:43'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:05
+  from: tony
+  text: retry requested
+- at: 2026-11-24 08:05
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.73 > 1.0)'
+- at: 2026-11-24 08:06
+  from: chaba
+  text: 'idc03 defers: disk headroom 1454MB < 2048MB floor'
+- at: 2026-11-24 08:07
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-24 08:08
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-24 08:08
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 08:09
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-24 08:10
+  from: idc02
+  text: claimed
+- at: 2026-11-24 08:10
+  from: chaba
+  text: started devin-task-20261124-081047-two-dispatch-pipeline-robustne on idc02 (dispatch)
+- at: 2026-11-24 08:10
+  from: chaba
+  text: 'primer injected 8 lesson(s): [board-api-queue-write-verify-lost-race-f85f2f] primer injected 8 lesson(s):
+    [bo; [board-api-queue-write-verify-lost-race-f85f2f] primer injected 8 lesson(s): cha; chaba merge test gate
+    (240s smoke set) times out on loaded idc03 even for doc-on; [board-api-queue-write-verify-lost-race-f85f2f]
+    finished (failed): exit=1 -pipel; [board-api-queue-write-verify-lost-race-f85f2f] finished (failed): exit=1
+    RE | d; [devnest-queue-consolidation] [verify-fail] Review pass 2026-'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:22
+  from: devin
+  text: 'attempt 4 on idc02 — prior runs died on provider rate-limit before commits. RCA confirmed: autostash-pop
+    resolves card conflicts to HEAD dropping the raced board write. Implementing: (1) git-safe-pull preserves stash
+    side as .local-conflict → reconcile folds back; (2) board-api /action verify-or-loud (commit flush + re-read
+    + one re-apply); (3) dispatch_repos gate: timeout retry-once + docs-only timeout-override.'
+- at: 2026-11-24 08:24
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:41
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:43
+  from: devin
+  text: 'done — both robustness fixes landed in worktree dispatch/20261124-081047-two-dispatch-pipeline-robustne.
+    (1) /action do:queue|retry|close|hold is now verify-or-loud: post-flock commit flush + card re-read fingerprint;
+    proven revert re-applies once under flock, unproven answers 503 verified:false (BOARD_API_ACTION_VERIFY_S=8
+    default, 0 disables). git-safe-pull also preserves stage-3 of card autostash-pop conflicts as .local-conflict-*
+    so reconcile folds raced writes back (covers modify/delete + d'
+- at: 2026-11-24 08:51
+  from: idc02
+  text: 'finished (ok): exit=0 re failures), 7+48 board pytest files, all three selftests green. Final card comm
+    posted at 08:43. | devin-task-2'
+- at: 2026-11-24 08:51
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 08:51
+  from: chaba
+  text: banked 264 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 08:51
+  from: chaba
+  text: pushed dispatch/20261124-081047-two-dispatch-pipeline-robustne to origin
+- at: 2026-11-24 08:51
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 143.0s)
+- at: 2026-11-24 08:51
+  from: chaba
+  text: auto-merged 40b4c433 (dispatch/20261124-081047-two-dispatch-pipeline-robustne) → origin/master
+- at: 2026-11-24 08:51
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-081047-two-dispatch-pipeline-robustne,
+    branch dispatch/20261124-081047-two-dispatch-pipeline-robustne'
+- at: 2026-11-24 08:52
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261124-081047-two-dispatch-pipeline-robustne on
+    idc02 — if the work was never pushed it may be gone'
+- at: 2026-11-24 08:53
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:09
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:50
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:06
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:55
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:56
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:56
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: codemod
+  lane_source: kw
+  attempts: 1
+  last_failure: 'exit=1 61123-202449-two-dispatch-pipeline-robustne.service: Failed with result ''exit-code''. |
+    devin-task-20261123-202449-two-dispatch-pipeline-robustne.service: Consumed 2min 15.433s CPU time over 18min
+    32.614s wall clock time, 901.3M memory peak.'
+  sweep:
+    stale_running: 2026-11-23 19:18
+    no_repo: 2026-11-23 19:18
+    session_gone: 2026-11-24 08:52
+  runner: idc02
+  result: 'exit=0 re failures), 7+48 board pytest files, all three selftests green. Final card comm posted at 08:43.
+    | devin-task-20261124-081047-two-dispatch-pipeline-robustne.service: Consumed 4min 20.817s CPU time, 837.2M
+    memory peak, 0B memory swap peak.'
+  verified: true
+claim:
+  since: 2026-11-24 08:10
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 08:53
+  note: verified — evidence checks green, closing itself

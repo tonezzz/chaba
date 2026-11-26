@@ -1,0 +1,10 @@
+[Unit]
+Description=Retry-storm / hot-container watch (podman CPU + log sigs + MDDB queue) (job:retry-storm-watch, rendered from ssot.jobs.yml — do not edit)
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=10min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

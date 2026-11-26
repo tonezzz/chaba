@@ -1,0 +1,101 @@
+title: Flood Hub keyless prep — poll->MDDB fan-out so only idc01 holds the key
+subtitle: >-
+  Pre-builds every consumer of the Google Flood Hub API except the key
+  itself. The API key is IP-restricted to idc01 egress, so idc01 runs the
+  only API caller (flood-hub-poll.py -> ada-cms-automation/
+  flood-hub-status doc); the CMS block, the alert lane, and the
+  michael-dev sensors all read that doc and work keyless.
+icon: waves
+id: 2026-11-24-flood-hub-keyless-prep
+status: committed (install pending — idc01 offline, waitlist approval pending)
+owner: devin-dispatch
+project: chaba
+card: flood-hub-integration
+ref: OPS-0007
+started: "2026-11-24"
+
+context:
+  trigger: >
+    Dispatch pulled card flood-hub-integration from backlog. The card is
+    gated on Google's waitlist approval (submitted 2026-09-30) AND on
+    idc01 being reachable — tailscale showed idc01 offline ~33 days at
+    run time, and no FLOODS_API_KEY exists anywhere yet. Everything that
+    does not need the key was built so approval collapses to: enable API
+    -> create restricted key -> drop file on idc01 -> install one timer.
+  architecture_pivot: >
+    The assessment assumed michael-dev HA REST sensors could call
+    floodforecasting.googleapis.com directly. They cannot — the spec
+    restricts the key to idc01's IP, and widening the restriction was not
+    requested. New topology: idc01 poller -> MDDB status doc -> all
+    consumers. This also survives idc01 outages: consumers see a stale
+    doc and degrade quietly instead of hammering a dead API lane.
+  severity_mapping: >
+    FloodStatus.Severity has no WARNING literal: NO_FLOODING/UNKNOWN/
+    SEVERITY_UNSPECIFIED < ABOVE_NORMAL < SEVERE < EXTREME. The card's
+    ">= WARNING" alert threshold maps to ABOVE_NORMAL and up; CMS block
+    shows ABOVE_NORMAL+ gauges in Thai (เฝ้าระวัง/วิกฤต/วิกฤตสูงสุด).
+
+deliverables:
+  poller: >
+    scripts/ada/flood-hub-poll.py — queries
+    floodStatus:searchLatestFloodStatusByArea per watched basin loop
+    (chao-phraya, nakhon-nayok, saraburi-lopburi), resolves names via
+    gauges:batchGet for alertable gauges only, writes the
+    flood-hub-status doc (ada-cms-automation, same state-doc pattern as
+    flood-alert). Exits 0 quietly while FLOODS_API_KEY is absent.
+    --dry-run fetches + prints without writing.
+  cms_block: >
+    flood-news-update.py gained a <!-- flood-hub:auto --> managed block
+    (render_hub_block/apply_hub_block/strip_hub_block, freshness gate
+    36h). Pages opt in with "hub": true — set on flood-report and
+    flood-report-nongdon-saraburi in flood-news-feeds.json; the
+    ada-cms-automation registry doc can override per page. Stale/missing
+    status doc strips the block rather than showing old gauges.
+  alerts: >
+    flood-alert.py merges select_hub_alerts() into its existing batched
+    push: ABOVE_NORMAL->warning, SEVERE/EXTREME->critical, per-area page
+    mapping (chao-phraya+nakhon-nayok->flood-report,
+    saraburi-lopburi->flood-report-nongdon-saraburi) so the leaf's
+    alert_min=critical still applies. Dedup key hub:<gaugeId>,
+    escalation-only re-alert, --seed arms silently. Push channel stays
+    BOARD_NOTIFY_CHANNEL=ha; LINE delivery = set ha,yomi +
+    BOARD_NOTIFY_YOMI_CHAT once the yomi session is healthy (it was
+    invalid at last check and chat id is unset — one env line, no code).
+  ha_sensors: >
+    michael-dev packages (stacks/tony-dell + stacks/tony-omen
+    a_dev_mocks.yaml): command_line sensor.flood_hub_status polls the
+    MDDB doc every 30min (states EXTREME/SEVERE/ABOVE_NORMAL/none/
+    stale; attributes generated_at, alert_count, top gauges) +
+    template binary_sensor.flood_hub_alert on ABOVE_NORMAL+. NOT
+    mha_mirror_* REST sensors — there is no michael-ha entity to mirror
+    and the API is IP-locked; the MDDB doc is the mirror source.
+  job: >
+    ssot.jobs.yml flood-hub-poll (host idc01, every 1h, exec checkout
+    chaba-vault per config.repo) rendered to
+    systemd/generated/idc01/flood-hub-poll.{service,timer}. Install is
+    deliberately NOT done — idc01 unreachable.
+  tests: >
+    tests/ada/test_flood_hub.py — 15 tests: severity ladder, block
+    render/apply/strip, freshness gate, alert level mapping, dedup +
+    escalation, per-page alert_min. tests/ada/test_flood_alert.py still
+    14/14.
+
+remaining_gates:
+  - "Google waitlist approval email (submitted 2026-09-30; reportedly months)"
+  - "idc01 back online (tailscale last seen ~2026-10-22)"
+  - "On approval — reply with project flood-watch-510211, enable
+    floodforecasting.googleapis.com, key restricted to API + idc01 IP
+    157.85.110.99, write ~/.config/secrets/flood-forecasting.env on idc01"
+  - "Then — chaba-vault checkout on idc01 must carry this commit,
+    render-jobs.py --host idc01 --install, first --dry-run, verify doc
+    lands, confirm CMS block + sensor + alert path live"
+  - "Ada flood_status tool — lives in ada-voice repo (realtime_provider
+    native decl + tools.d manifest); separate dispatch/repo, reads the
+    same flood-hub-status doc or calls flood-hub-check.py"
+  - "GEV KML overlay — optional, unchanged from assessment (serializedPolygons)"
+
+verification:
+  - python3 -m pytest tests/ada/test_flood_hub.py tests/ada/test_flood_alert.py
+  - python3 scripts/ada/flood-hub-poll.py --dry-run  # exits 0 "skipped" pre-key
+  - python3 scripts/ada/flood-news-update.py --page flood-report --dry-run
+  - python3 scripts/render-jobs.py --check

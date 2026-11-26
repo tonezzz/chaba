@@ -24,6 +24,7 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
 | Path | Body | Writes |
 |---|---|---|
 | `/card` | `{id?, title, column?, spec?, report?, action?, queue?, ...}` | new card YAML + commit |
+| **`/card-set`** | `{id, set:{lane?, executor?, tags?}, from, reason}` | routing-field edit on an existing card (see note) |
 | `/comment` | `{id, from, text}` | card comms append |
 | **`/attach`** | `{id, filename, payload|b64|data, from?}` (alias `/upload`) | file/photo evidence → `docs/ssot/kanban/attachments/<id>/<file>` + comms link |
 | `/request` | `{id, ask, options?, suggested?, to?}` | card `requests[]` |
@@ -32,13 +33,46 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
 | `/pipeline` | `{id, opt_in?|pipeline?|stage+status}` | CI status block |
 | `/patch-relay` | `{id, head, branch?, bundle}` | git bundle spool |
 | **`/lesson`** | `{topic, content, level?, source?, next_review?, status?, no_th?, from?}` | WP `lesson` CPT upsert by slug `lesson-<md5(topic)>` + auto-Thai section |
-| **`/job`** | `{slug, title?, status?, comms?|note?, parent?, kind?, host?, pack?, runner?, result_ref?, error?, meta?}` | WP `nest_job` CPT upsert (ada-nest queue mirror) |
+| **`/job`** | `{slug, title?, status?, comms?|note?, parent?, kind?, host?, pack?, runner?, result_ref?, error?, evidence?, verified?, meta?}` | WP `nest_job` CPT upsert (ada-nest queue mirror) — status writes follow `JOB_TRANSITIONS`; `done` requires `result_ref` + verified evidence (OPS-0923) |
 | **`/report`** | `{query}` \| `{slug, note, lang?}` \| `{title|slug, content_md, meta?}` | ada-cms-pages search / session-log append / create |
 | **`/inbox`** | `{text, label?, priority?, tags?, missing_info?, subtasks?, session?, owner?, safe_to_parallel?}` | `docs/ssot/focus-inbox/<ts>-<slug>.yml` + commit |
 | **`/publish`** | canonical `PublicationEvent` (below) \| `{op:"sinks"}` \| `{op:"drain"}` | fan-out to sink adapters: `job`/`lesson`/`report`/`news`/`telegram`/`board`/`json` |
+| **`/opencode-command`** | `{op: preview\|validate\|publish\|sync\|verify, name: ada, content?, confirm?, expect_sha?}` | allowlisted OpenCode command file — canonical write + commit queue + atomic idc02 deploy + sha verify (runbook: `docs/kb/opencode-command-publisher.md`) |
+| **`/wiki/page`** | `{title|wiki_title, wikitext|text, summary?}` | guarded raw wiki page write — `Education:`/`Reports:`/`Infrastructure:` titles + configured support templates only |
+| **`/wiki/extension`** | `{action: list\|install\|enable\|disable, name?, confirm?}` | MediaWiki extension control via wiki-side Springboard — allowlisted names only, `confirm:true` on mutations, Special:Version + receipt per change |
 
 ## Endpoint notes
 
+- **`/card-set` — the routing-field door** (card
+  `board-api-card-lane-executor-edit`): corrects `action.lane`,
+  `action.executor`, and `tags` on an existing card — no other card
+  fields are admitted (workflow fields — `column`, `requests`, `comms`
+  — are human/producer-owned and move via `/action`, `/request`,
+  `/comment`). `lane` must be in the `/card` whitelist
+  (`LANE_MODELS ∪ LANE_EXECUTORS`, minus lanes the catalog
+  `infrastructure/ssot.devnest-lanes.yml` marks removed/retired) —
+  **`devin` is NOT a lane**: `executor=devin` is how you pin devin.
+  `executor` must be in `dr.EXECUTORS`. An empty string clears the
+  field (unpin → the queue-time classifier decides). `tags` takes a
+  list (replace; ≤20, each ≤40 chars) or `{add:[], remove:[]}`. A
+  non-empty `reason` is required — every edit appends
+  `routing edited: <fields> by <from>: <reason>` to comms for audit.
+  Refused (400) while `action.status` is running or a runner holds the
+  claim; the write runs under the card flock so it can't race a claim.
+  An explicit `lane` set drops `lane_source`, making it author-set —
+  it wins over `_apply_classify_at_queue` instead of being
+  re-classified on the next queue. CLI:
+  `board-cli.py card-set CARD --reason "why" [--lane L|''] [--executor E|''] [--tags a,b|--tag-add a --tag-remove b]`.
+- **`action.verify_*` — the held-out verifier contract** (card
+  `doc-draft-verifier-semantic-gap`, 2026-11-24): `/card` admits
+  `verify_contains`, `verify_sections`, `verify_regex`, and
+  `verify_min_terms` on `action` — the doc-draft/artifact-write
+  verify.py fixtures read them live off the card at verify time.
+  Shapes are validated at the door (sentinels/regex = string or ≤20
+  strings ≤300 chars, regexes must compile; `verify_min_terms` =
+  `{terms, at_least}` or a bare term list). Before this they were
+  silently dropped — no card could declare a sentinel via the API
+  (the OPS-1014 miss). See `evals/opencode-lane/PROCEDURE.md`.
 - **`/request` options** — `options[]` entries are strings or dicts
   `{id, label, action?}`. A dict option lets the emitter declare the
   answer's consequence at request time: when the answer picks that
@@ -59,6 +93,30 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
   reason; `GET /queue` reports those separately under `human_waiting`
   (`kind: human|unserved`, `owner`, `next_action`) instead of mixing them
   into claimable `queued` (KNB-0013).
+- **`/action do:queue|retry|close|hold` — verify-or-loud** (card
+  `board-api-queue-write-verify-lost-race-f85f2f`, 2026-11-24): the
+  response no longer fires on write-and-hope. After the flock releases,
+  board-api flushes the queued commit (bounded
+  `BOARD_API_ACTION_VERIFY_S`, default 8s), re-reads the card, and
+  compares a fingerprint of the mutated fields (`column`,
+  `awaiting_action`, `action`, `claim.session`) against both the
+  written state and the pre-write state. Written-state + porcelain-clean
+  → `200 {"verified": true}`. Pre-write state → an autostash pop (or
+  equivalent) already reverted the write: the verb is re-applied once
+  under the flock and re-verified (response notes
+  `write re-applied after pull race`). Anything else — still dirty, a
+  concurrent writer's third state, a failed re-read — answers `503`
+  with `verified:false` so the caller retries instead of believing a
+  `queued` that isn't there. `BOARD_API_ACTION_VERIFY_S=0` restores the
+  old fire-and-forget. Belt-and-suspenders on the git side:
+  `git-safe-pull.sh` now preserves the stash side (stage 3) of card
+  autostash-pop conflicts as `<card>.local-conflict-<ts>` before
+  resolving upstream-wins, and `reconcile-local-conflicts.py` folds it
+  back — modify/modify card conflicts still union-merge inline via the
+  card-union driver; the sidecar covers modify/delete and driver
+  failures. Ops note: a `503` from `/action` means "mutation may or may
+  not have landed — retry"; `queue`/`retry` are idempotent so a retry
+  converges (`already queued` verifies trivially).
 - **`/attach`** — card file/photo evidence
   (`board-attachments-photo-image-evidence`, 2026-11-17). `payload` is
   base64 (a `data:` URI prefix is stripped); `filename` is sanitized to
@@ -82,8 +140,22 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
   cancelled`; `comms`/`note` appends `{at,from,text}` to a JSON log in
   `meta.comms` (cap 200); `parent` accepts a post id or a sibling job slug
   (job trees). `from` accepts actors or daemon/host names (`queue-mgr`,
-  `tony-dell`). queue-mgr on dell mirrors `gdrive:ada-nest` queue/packs
-  state through this — Colab workers and watchers never write.
+  `tony-dell`). queue-mgr (`scripts/ops/queue-mgr.py`, tony-dell
+  `queue-mgr.timer` 5m) mirrors `gdrive:ada-nest` queue/packs state
+  through this — Colab workers and watchers never write.
+  **Lifecycle contract (OPS-0923):** status changes follow
+  `JOB_TRANSITIONS` — terminal `done`/`cancelled` exit only via
+  `queued`/`failed`, and `done` requires `result_ref` plus verified
+  artifact evidence (`evidence[]`, `verified:true`, or
+  `confidence=verified`); violations are HTTP 400 before any WP write.
+  `meta.status` is an alternate carrier for the same field — it is
+  folded into the gated status (a top-level/meta disagreement is a
+  400), so it cannot bypass the contract. queue-mgr sends the pack
+  `done` marker as `evidence[]` on every done write.
+  Accepted evidence persists to `meta.evidence` +
+  `meta.artifact_verified`. Read side: `GET /nest-jobs?slug=&limit=
+  &comms=1` lists the mirror for reconciliation
+  (`scripts/ops/nest-job-reconcile.py`).
 - **`/lesson`** — same semantics old `scripts/lesson-add.py` had (which is
   now a thin CLI client of this endpoint): upsert by topic slug,
   `learned_at`/`next_review`/`status` preserved on re-file, Thai section
@@ -102,6 +174,43 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
 - **`/inbox`** — lands a `docs/ssot/focus-inbox/` YAML in the TEMPLATE
   shape; runs under the card flock with the same atomic-write +
   immediate-commit discipline as cards.
+- **`/wiki/page`** — the escape hatch for support pages the kind-gated
+  sinks can't reach (portal/index/host pages, the Education/Report
+  templates). `WIKI_PAGE_PREFIXES` in board-api allowlists
+  `Education:`/`Reports:`/`Infrastructure:` titles plus the configured
+  template names; everything else (main space, `News/`, `PrivateNews:`,
+  other namespaces) is refused so this can't become a backdoor around
+  the News review gate. Prefixed titles additionally verify via siteinfo
+  that the namespace is really registered — an unregistered prefix is
+  rejected instead of littering main space. `Infrastructure:` (ns 3000)
+  was added 2026-11-20 (card `wiki-page-door-infrastructure-namespace`)
+  for host pages like `Infrastructure:Hosts/tony-dell/Backup-and-Recovery`;
+  it's Lockdown-protected, so the write only succeeds because the door's
+  wiki account sits in the inhouse/sysop group — the allowlist is a
+  guard, not an ACL grant.
+- **`/wiki/extension`** — the controlled extension-management door
+  (card `wiki-extension-control-plane`). `action` is
+  `list|install|enable|disable`; `list` needs no confirm and returns
+  the siteinfo extension table plus the approved-name allowlist
+  (CategoryTree, Mermaid, MsUpload, MultimediaViewer, Cargo, PageForms,
+  Lockdown — Graph/Drawio/arbitrary repos are refused). One extension
+  per call; mutations require `confirm:true` (400 otherwise — list
+  first, then confirm). Springboard stays server-side: callers never
+  pass repo/branch/commit/delete parameters. Each mutation captures
+  Special:Version + the extension table before/after, verifies the
+  change is reflected, and writes a receipt to
+  `~/.local/state/board-api-wiki-ext/` on the service host
+  (`BOARD_API_WIKI_EXT_STATE` overrides). Mutations are idempotent:
+  when the extension is already in the requested state (present for
+  install/enable, absent for disable — siteinfo lists enabled
+  extensions only) the door verifies the end-state and returns
+  `verified:true, no_op:true` with a receipt without calling
+  Springboard. Otherwise Springboard errors or an unverified result
+  surface as 502 — the door never claims an install that didn't
+  happen. Wiki credentials stay in
+  `~/.config/secrets/wiki-h3-gizmo.env` on idc03; agents (Ada voice,
+  ada-ocb `ada_wiki_extension(s)`, OpenCode) reach it only through this
+  endpoint.
 
 ## /publish — the provider-neutral publication door
 
@@ -122,7 +231,25 @@ lesson/report/news), `project`/`job`/`card` refs, `parent`,
 `idempotency_key` (auto-derived if absent — identical events dedupe),
 `sinks[]` (explicit subset; else kind defaults), `force`, `meta{}`
 (provider extras: `job_status`, `topic`, `level`, `report_slug`,
-`tg_thread_id`, …).
+`tg_thread_id`, `qc`, `sha256`, …).
+
+Telegram delivery stays private-first and concise: `TelegramSink` sends
+the rendered text plus `project_id`/`card_ref`/`job_ref` to the DevNest
+relay unless `meta.tg_thread_id` explicitly pins a thread. The relay
+resolves those refs through its project topic registry (manifest-backed),
+so bound project events land in the project forum topic instead of
+General; explicit project/card refs with no active binding are refused,
+while unmatched non-project job refs keep the legacy General behavior.
+A refused delivery retries via the outbox then dead-letters — the fix is
+a binding, not a resend: create a `PRJ <project-id> — <title>` forum
+topic in DevNestHA and a
+`~/.local/share/devnest/projects/<id>/project.json` manifest with a
+`topic{thread_id,…}` block (the relay reconciles it into topics.json);
+card-scoped chaba-board lifecycle events carry `project:"chaba"` and
+land in the `PRJ chaba — board ops` topic (OPS-1386, thread 100).
+Artifact-style events should put Drive/file refs in `media[]` or
+`evidence[]` and QC/hash details in `meta` — the Telegram renderer shows
+short refs/metadata, never source binaries.
 
 **Kind → sinks (defaults):**
 
@@ -134,6 +261,18 @@ lesson/report/news), `project`/`job`/`card` refs, `parent`,
 | lesson | `lesson` | Education CPT |
 | news | `news`, `board`, `telegram` | evidence required |
 | alert | `telegram`, `board`, `job` | |
+
+**Job-sink contract (OPS-0923):** the `job` sink fires only for events
+with an explicit `job` ref — card/project-scoped events audit via the
+`board` sink and never mint `nest_job` posts. Status is never implied
+by kind beyond liveness hints: `progress`→`running`, `alert`→`stalled`,
+`milestone`→no status change (a milestone is a checkpoint, NOT
+terminal evidence). `meta.job_status` is the explicit override; any
+`done` assertion hits the same `result_ref` + verified-evidence gate
+as `/job` — a rejection is a per-sink `skipped` receipt
+(`job status rejected: …`), never outbox-retried, while sibling sinks
+still deliver. `evidence[]` and `confidence=verified` pass through to
+the job write (`result_ref` defaults to `evidence[0]`).
 
 **Guards:** idempotent on `idempotency_key` (deduped replies carry the
 stored receipts); outbox under `~/.local/state/board-api-publish/`

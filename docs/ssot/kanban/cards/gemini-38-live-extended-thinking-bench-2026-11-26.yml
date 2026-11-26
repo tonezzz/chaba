@@ -1,0 +1,100 @@
+id: gemini-38-live-extended-thinking-bench-2026-11-26
+title: Bench gemini-3.8-live-extended-thinking against the 3.8-live pin
+column: done
+updated: 2026-11-26 20:38
+brief: Run the 20-fixture voice bench plus barge-in and soak probes on the extended-thinking Live variant; compare
+  to the promoted 3.8-live baseline before any pin decision.
+priority: medium
+program: devnest
+tags:
+- gemini
+- voice
+- eval
+ref: ADA-1446
+comms:
+- at: 2026-11-26 18:05
+  from: ada
+  text: card captured via board-api
+- at: 2026-11-26 18:16
+  from: chaba
+  text: classified as paid_frontier (kw:bench  conf 1.00)
+- at: 2026-11-26 18:16
+  from: chaba
+  text: queued for processing
+- at: 2026-11-26 18:16
+  from: chaba
+  text: '[auto-dispatch] wave 16 (2026-11-26 18:16): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-26 18:16
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.94 > 0.7)'
+- at: 2026-11-26 18:16
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-26 18:16
+  from: idc02
+  text: claimed
+- at: 2026-11-26 18:17
+  from: chaba
+  text: started devin-task-20261126-181728-bench-gemini-3-8-live-extended on idc02 (dispatch)
+- at: 2026-11-26 18:17
+  from: chaba
+  text: 'primer injected 8 lesson(s): [litellm-key-bench-dead-shadows-chaba] DONE (fix b). shadow_eval.bench_key()
+    now; Card spec said "run against gemini :11027" but :11027 was already migrated to bg; [ada-opencode-v2-upgrade]
+    primer injected 8 lesson(s): [chaba-exec-checkout-idc0; [vcast-auto-yt-live-api] primer injected 8 lesson(s):
+    jev-bench.service on idc02; "Only en/th supported" was never the MDDB store — verify the store layer first;
+    ; LiteLLM per-key model allowlists differ: LITELLM_KEY_BENCH is'
+- at: 2026-11-26 18:19
+  from: devin
+  text: '[devin] dispatch started on idc02. Plan: run scripts/voice-bench gemini-baseline combo with GEMINI_LIVE_MODEL=gemini-3.8-live-extended-thinking
+    (paid key), plus barge-in + session-soak probes mirroring the 2026-11-24 gate; compare vs the recorded 3.8-live
+    baseline (20/20, ttfa ~306-343ms, WER 0.01-0.02, soak 9 turns/507s).'
+- at: 2026-11-26 18:37
+  from: ada
+  text: closed by ada
+- at: 2026-11-26 18:40
+  from: devin
+  text: '[devin] 20-fixture bench DONE on gemini-3.8-live-extended-thinking (thinkingLevel=LOW): 20/20 ok, WER 0.01,
+    tools 8e/6p/0n — vs same-day 3.8-live re-run 20/20, WER 0.01, tools 7e/4p/3n. Extended-thinking round-trip ~10.9s
+    vs ~6.2s (fillers+background reasoning = ~75% slower). ttfa_ms not comparable (anchor artifact ~10ms vs 330ms
+    — inputTranscription final lands with first filler audio). Barge-in + soak probes running; harness gained thinking-mode
+    support (thinkingConfig + NON_BLOCKING + interac'
+- at: 2026-11-26 18:50
+  from: devin
+  text: 'DONE — verdict: keep gemini-3.8-live pinned. Extended-thinking (LOW) passed all gates except latency: ~75%
+    slower round-trip (10.9s vs 6.2s mean), WER tied 0.01, tools 8e/6p/0n vs 7e/4p/3n, barge-in + 9-turn soak green
+    both. Protocol differs (thinkingLevel + NON_BLOCKING + interactionStatus IDLE); harness + probes committed on
+    dispatch/20261126-181728-bench-gemini-3-8-live-extended @ 5d3affcc13. Job doc: docs/ssot/jobs/voice/2026-11-26-gemini-38-live-extended-thinking-eval.yml.
+    Heads-up: shared '
+- at: 2026-11-26 18:52
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-26 18:52
+  from: chaba
+  text: 'session-end checkpoint 24fdfc13: 1 leftover file(s) committed'
+- at: 2026-11-26 18:52
+  from: chaba
+  text: banked 795 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 18:52
+  from: chaba
+  text: pushed dispatch/20261126-181728-bench-gemini-3-8-live-extended to origin
+- at: 2026-11-26 18:52
+  from: chaba
+  text: 'auto-merge conflicts: scripts/voice-bench/results/gemini-live-eval-3.8-live-extended-thinking-low-20261126.json
+    — card stays in review for manual resolution'
+- at: 2026-11-26 18:52
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+action:
+  type: dispatch
+  status: done
+  lane: paid_frontier
+  lane_source: kw
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-26 18:16

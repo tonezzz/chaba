@@ -1,0 +1,14 @@
+[Unit]
+Description=kk-mac ollama tunnel — idc03:11445 -> kk-mac:11434 (loopback-bound adanest ollama)
+After=network-online.target tailscaled.service
+Wants=network-online.target
+
+[Service]
+# forwards to kk-mac loopback — if adanest's OLLAMA_HOST is ever narrowed
+# to the tailnet IP only, change the -L target to 100.108.217.17:11434
+ExecStart=/usr/bin/ssh -o BatchMode=yes -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o StrictHostKeyChecking=accept-new -N -L 127.0.0.1:11445:127.0.0.1:11434 kkkakk@kk-mac
+Restart=always
+RestartSec=15
+
+[Install]
+WantedBy=default.target

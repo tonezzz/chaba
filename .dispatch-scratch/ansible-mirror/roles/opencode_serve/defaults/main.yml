@@ -1,0 +1,13 @@
+---
+opencode_version: "2.4.1"
+opencode_serve_port: 4096
+# Override per host in host_vars with that host's Tailscale IP.
+opencode_serve_host: 127.0.0.1
+opencode_serve_home: /home/tony
+opencode_serve_model: litellm/gemini-3.5-flash-lite
+
+# Controller-side sources. Secrets never leave these 0600 files in plaintext
+# on the controller and are written 0600 on the managed hosts.
+opencode_serve_password_source: /home/tony/.config/secrets/opencode-serve.password
+opencode_litellm_env_source: /home/tony/.config/secrets/litellm-ada.env
+opencode_provider_config_source: /home/tony/.config/opencode/opencode.json

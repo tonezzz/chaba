@@ -1,0 +1,62 @@
+id: ops-tony-dell-ssh-shell-restore
+title: tony-dell - restore SSH shell via local Ansible bootstrap
+column: done
+priority: high
+created: '2026-11-26'
+updated: 2026-11-26 20:37
+brief: sshd has a global ForceCommand internal-sftp; all shell SSH requests answer 'This service allows sftp connections
+  only.' Run the idempotent local Ansible bootstrap from branch ops/restore-ssh-shell on tony-dell itself (the runner
+  is the only remaining shell path) to back up, remove and validate the line, then reload sshd.
+action:
+  type: script
+  status: done
+  host: tony-dell
+  executor: script
+  script:
+    repo: chaba
+    ref: ops/restore-ssh-shell
+    cmd: ANSIBLE_LOCALHOST_WARNING=False ~/.local/bin/ansible-playbook -i localhost, -c local --limit localhost
+      ansible/playbooks/restore-ssh-shell.yml
+    timeout: 600
+  attempts: 1
+  result: 'exit=2 ps-tony-dell-ssh-shell-restore-1795670449.service: Failed with result ''exit-code''. | runner-ops-tony-dell-ssh-shell-restore-1795670449.service:
+    Consumed 3.490s CPU time over 3.894s wall clock time, 119.6M memory peak, 320K memory swap peak.'
+  last_failure: 'exit=2 ps-tony-dell-ssh-shell-restore-1795670449.service: Failed with result ''exit-code''. | runner-ops-tony-dell-ssh-shell-restore-1795670449.service:
+    Consumed 3.490s CPU time over 3.894s wall clock time, 119.6M memory peak, 320K memory swap peak.'
+spec: 'Bootstrap only: run ansible/playbooks/restore-ssh-shell.yml with a local connection on tony-dell. The play
+  removes only the global ForceCommand internal-sftp, keeps the commented Include untouched, takes a timestamped
+  sibling backup, validates with sshd -t, reloads sshd and rolls back on failure. Post a comms result with the backup
+  path and the idempotency check outcome.'
+recoverability: R0
+comms:
+- at: 2026-11-26 12:18
+  from: tony
+  text: queued via direct card file under /tmp/board-api.lock - POST /card still refuses action.type=script. Approved
+    sshd change with rollback copy in the playbook.
+- at: 2026-11-26 12:20
+  from: tony-dell
+  text: claimed
+- at: 2026-11-26 12:21
+  from: chaba
+  text: started runner-ops-tony-dell-ssh-shell-restore-1795670449 on tony-dell (script executor=script)
+- at: 2026-11-26 12:21
+  from: tony-dell
+  text: 'finished (failed): exit=2 ps-tony-dell-ssh-shell-restore-1795670449.service: Failed with result ''exit-code''.
+    | runner-ops-tony-dell-ssh-she — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-26 12:21
+  from: chaba
+  text: 'tony-dell retry backoff: fail 1/3 — next claim not before 11-26 12:51'
+- at: 2026-11-26 12:35
+  from: tony
+  text: 'Superseded: the retry of -fix succeeded with the corrected multiline regex. Global ForceCommand removed
+    from tony-dell via ansible/playbooks/restore-ssh-shell.yml (commit 5a4a5e96c6); backup /etc/ssh/sshd_config.pre-shell-restore.20261126T122845.
+    Closing this earlier attempt so its backoff does not re-queue it.'
+- at: 2026-11-26 12:35
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 20:37
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+claim:
+  since: 2026-11-26 12:20

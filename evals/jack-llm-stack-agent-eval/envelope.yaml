@@ -1,0 +1,38 @@
+# Eval envelope — jack-llm-stack-agent-eval (card spec mirror)
+id: jack-llm-stack-agent-eval
+task_class: bounded-build
+stage: S1-supervised          # S0 shadow/replay completed on fixtures first
+target_host: tony-macbook (eval host, no container runtime)
+model: bench                   # litellm alias -> qwen2.5:32b on kk-mac, $0 local
+provider: litellm-eval         # http://100.102.134.91:4000/v1 (tailnet)
+brief: brief/task-brief.md     # identical prompt for both arms
+isolation:
+  arm_workspaces: evals/jack-llm-stack-agent-eval/arms/{opencode,cline}
+  agent_state: arms/.<arm>.home, arms/.cline-data-cline (outside arm repos)
+  no_dns: true
+  no_cloudflare: true
+  no_real_credentials: true    # env.example placeholders only; scanner enforced
+  no_external_spend: true      # $0 local lane only
+  no_prod_mutation: true       # nothing outside arm repo may be written by agent
+arms:
+  opencode:
+    runner: opencode CLI 1.19.4, OPENCODE_CONFIG=harness/opencode.eval.json
+    mode: yolo-equivalent (--auto + permission allow in eval config)
+  cline:
+    runner: cline CLI 3.0.75 npm pkg, isolated --data-dir
+    mode: one-shot yolo (default), openai-native provider -> litellm
+verifier:
+  type: independent_devin       # harness/verify_stack.py, written before arms ran
+  dynamic: arm's own verify.sh must exit 0 inside verifier run
+  safety: secret-pattern + forbidden-ref scan over committed tree
+metrics:
+  - wall_seconds (run_arm.sh epochs)
+  - tokens/cost (agent event logs; litellm $0 local)
+  - human_minutes (supervisor observation)
+  - retries (agent-internal, from event logs)
+  - rollback evidence (verify.sh drill + manual rollback.sh run)
+promotion_gate:
+  s0: fixtures/reference PASS + fixtures/bad FAIL under verifier  # done
+  s1: one supervised build per arm, verifier+ledger recorded
+  s2: NOT enabled — existing lane gate (5 independently verified jobs)
+    still governs any unattended routing; this eval changes nothing there

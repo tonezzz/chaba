@@ -601,6 +601,128 @@ decisions:
       - 'ada-voice: tests/scenarios-live/{camera_cast_permission,vcast_screen_cast,split_screen,wall_ops,vcast_gesture_ops}.yaml'
       - docs/ssot/chaba/ssot.chaba.memory.yml
 
+  - id: capture-apply-gated-sink-write
+    date: "2026-11-23"
+    title: Keep the capture harvester read-only; sink writes go through a separate key-scoped gated door
+    status: accepted
+    context: >-
+      OPS-0016 shipped a read-only Phase C capture harvester whose ledger held 2220
+      already-filed proposals (0 new on the last run). OPS-0024 asked whether to add
+      --apply to the harvester. A blanket apply would write thousands of low-value
+      artifacts, and the harvester scans focus-inbox/card-comms/dispatch-outcome
+      unattended. Tony approved option (b) "build gated sink writes" (explicit chat
+      approval 2026-11-23).
+    options:
+      - label: Keep harvester permanently read-only
+        pros: [no write surface, zero accidental artifact creation]
+        cons: [no path from proposals to durable sinks]
+      - label: Add --apply to the harvester (bulk-capable)
+        pros: [one script]
+        cons: [bulk writes from an unattended scanner, saturated ledger of dupes, hard to scope]
+      - label: Separate key-scoped gated writer, dry-run default, board-api only first slice
+        pros: [one key per run, reversible sink, explicit retype confirmation, fail-closed gates]
+        cons: [extra script, non-board sinks deferred]
+    chosen: Separate key-scoped gated writer (scripts/chaba/capture-apply.py); harvester stays read-only
+    reasoning: >-
+      The risk is not the write itself but unattended bulk writes against a saturated
+      ledger. A separate door with no bulk mode, dry-run default, --confirm requiring the
+      exact dedupe_key retyped, and allowlisting only kanban/create (reversible by close)
+      keeps the write surface minimal and auditable. board-api via board-cli --ssh idc03
+      respects the single-writer rule; direct canonical file edits and ssot/kb/lesson/
+      oc-note writes are refused rather than improvised.
+    consequences:
+      - scripts/chaba/capture-apply.py: exact-key, allowlist, idempotence, live-source, duplicate, bounded-write, GET-verify, audit gates
+      - harvester.py preserves the ledger `applied:` audit block on every proposal run
+      - first live apply created card OPS-0029 (GET-verified, ledger audit 2026-11-23T07:11:20Z)
+      - re-apply of the same key is blocked by 3 gates; rollback = reason comm + action close
+    related:
+      - OPS-0024 (done)
+      - docs/ssot/ssot.knowledge-capture.yml
+      - scripts/chaba/capture-apply.py
+
+  - id: wiki-h3-pluggableauth-button-label
+    date: "2026-11-23"
+    title: Fix the PluggableAuth "0" login button on wiki.h3.gizmo-thailand.com via buttonLabelMessage
+    status: accepted
+    context: >-
+      OPS-0029 (created by the one approved capture apply) asked to polish the wiki
+      login leftover from the closed OPS-0066 card. Live Special:UserLogin on both
+      h3 and surf-thailand rendered the PluggableAuth submit button with the literal
+      label "0". PluggableAuth 7.5.0 PluggableAuthFactory.php:107-110 falls back to
+      RawMessage(strval($configId)) when a config entry omits buttonLabelMessage.
+    options:
+      - label: Patch the vendor extension source over FTP
+        pros: [direct]
+        cons: [vendor file, lost on upgrade, no audit trail]
+      - label: Add a MediaWiki message page + buttonLabelMessage in LocalSettings.php
+        pros: [supported extension config, auditable message revision, reversible backup]
+        cons: [one canonical file edit on a prod host]
+      - label: Leave as cosmetic
+        pros: [no prod touch]
+        cons: [confusing login UX persists]
+    chosen: MediaWiki:pluggableauth-google-label message + buttonLabelMessage in LocalSettings.php (h3 only)
+    reasoning: >-
+      The extension exposes a first-class config key; using it avoids vendor edits.
+      A dedicated message page (rev 444) keeps the label content auditable. The
+      LocalSettings.php edit used an exact-match assertion plus a named backup, so
+      rollback is a file swap. Surface verification was required before claiming done.
+    consequences:
+      - h3 Special:UserLogin now renders "Sign in with Google" (surface-verified 2x cache-busted)
+      - backup LocalSettings.php.devin-backup-buttonlabel-20261123-075434 on the FTP root
+      - wiki.surf-thailand.com has the same cosmetic defect but was NOT touched (separate host, needs approval)
+      - OPS-0029 item (2) iframe UX remains open as a board request with options
+    related:
+      - OPS-0029 (backlog)
+      - OPS-0066 (done, closed precursor)
+
+  - id: tony-omen-cpu-job-guard-2026-11-25
+    date: "2026-11-25"
+    title: Bound CPU-heavy host jobs and cap open-jev memory on tony-omen
+    status: accepted
+    context: >-
+      2026-11-25 load incident: 1m load ~57-63 on 12 CPUs, swap 16/16 GiB, open-jev
+      OOM-killed (exit 137, 8.8G peak) at 14:21. Two ad-hoc /tmp/resshift-eval
+      inference jobs were orphaned nohup processes from a dead tty session; further
+      jobs kept appearing via an orphaned queue-v1-rsd.sh. Netdata stock load alarms
+      were `to: silent`, so spikes never reached the board inbox.
+    options:
+      - label: Kill every heavy process as it appears
+        pros: [immediate]
+        cons: [discards active work, recurs, no prevention]
+      - label: Add bounded wrapper + aggregate slice + memory cap + alerts
+        pros: [reversible, idempotent via playbook, prevents recurrence]
+        cons: [needs adoption by job launchers]
+    chosen: >-
+      Wrapper run-cpu-job.sh (systemd-run --user --scope inside cpu-jobs.slice,
+      6-thread OMP cap, 2h timeout, nice 10, fixed logs), aggregate cpu-jobs.slice
+      (CPUQuota=600%, MemoryMax=16G), MemoryHigh=4G/MemoryMax=6G on open-jev.service,
+      and Netdata load/RAM alarms via Ansible.
+    reasoning: >-
+      Renicing gave immediate relief without losing work; structural fixes target
+      the three real gaps: the unbounded launch pattern, the lack of any aggregate
+      cap across concurrent jobs, and no notification for stock load alarms
+      (to: silent). Stock used_swap already notifies, so it was not duplicated.
+      A later audit showed both open-jev student services are distinct, actively
+      used lanes, so no service was stopped for memory reclaim.
+    consequences:
+      - open-jev drop-ins 50-MemoryHigh.conf / 50-MemoryMax.conf in ~/.config/systemd/user.control/open-jev.service.d/
+      - wrapper source scripts/ada/run-cpu-job.sh -> deployed /home/tony/.local/bin/run-cpu-job.sh (0755), smoke-tested; now passes --slice=cpu-jobs.slice and accepts CPU_JOB_SLICE
+      - aggregate ~/.config/systemd/user/cpu-jobs.slice with CPUQuota=600% (CPUQuotaPerSecUSec=6s) and MemoryMax=16G; verified a live scope in that cgroup
+      - playbook ansible/playbooks/host-load-guard.yml, --check clean, idempotent (changed=0 on recheck); daemon-reload uses 'systemctl --machine=tony@.host --user' with become because SSH has no user bus
+      - alarms tony_load_1_notify + tony_ram_pressure active, recipient sysadmin -> chaba board-api inbox; load alarm fired CRITICAL at 518.8% of CPU capacity during the incident
+      - swap was 16/16 GiB at incident time; not forced off. zram-swap.service enabled 16:56 +07 via ansible/playbooks/zram-swap.yml (reused existing fleet-standard script: 24 GiB lzo-rle, priority 100); by 18:47 disk swap had fallen to 10.8/16 GiB with 16.2 GiB zram in use, and 1m load fell from ~45/47/54 to ~25/34/45 shortly after enablement
+      - open-jev.service (port 8777, gemma-3-4b-it) CPUQuota tightened 250% -> 200% and restarted 16:57 +07; NRestarts=0, tailnet health/metrics 200 OK resumed, swap-backed memory ~1.5 GiB
+      - follow-up 2026-11-26 08:07 +07: open-jev 8777 restarted after a 15h run accumulated 7.5 GiB VmSwap (4.0 GiB RSS) at the 4G MemoryHigh cap; graceful stop hit systemd's 30s timeout and was SIGKILLed, reclaiming the swap; fresh process healthy (tailnet /health 200), 1m load 93.91 -> 5.74 by 08:14, zram 23.9 -> 18.2 GiB, ~12 GiB RAM available; slow swap accumulation under the cap is the recurring pattern, restart is the safe reclaim, do not swapoff
+      - open-jev-student.service (port 8778) and openjev-student.service (port 8779) audited as distinct active lanes; no reclaim, neither stopped; 13:07-13:15 restart storm ended with status=137 and has been stable since
+      - resshift v1 eval finished rc=0 at 17:14; v3 hit its 2h wrapper timeout at 17:24 with empty output; a CPU rerun launched 18:46 was stopped at 19:26 to avoid output collision with a GPU v3 job launched 18:50 (SR_DEVICE=cuda, 2h timeout), both in cpu-jobs.slice targeting the same empty output dir; GPU job kept, completion check 23:00 +07
+    related:
+      - tony-omen
+      - OPS load incident 2026-11-25
+      - evaluate-resshift-rsd-class-distilled-sr-8d9c80
+      - scripts/ada/run-cpu-job.sh
+      - ansible/playbooks/host-load-guard.yml
+      - ansible/playbooks/zram-swap.yml
+
 related_files:
   - docs/ssot/ssot.focus.decisions.yml
   - docs/ssot/ssot.focus.sessions.yml

@@ -1,0 +1,154 @@
+id: idc02-vps-lane-canary
+title: 'Canary: idc02 vps-label ada-pi dispatch lane'
+column: done
+updated: 2026-11-26 20:36
+brief: 'One-shot canary for card idc02-second-ada-pi-lane: prove a vps-labeled ada-pi dispatch claims, runs, merges,
+  and passes the test gate on idc02.'
+priority: low
+tags:
+- canary
+- ada-pi
+- dispatch
+- idc02-second-ada-pi-lane
+spec: 'Trivial ada-voice change to exercise the dispatch lane end-to-end. In your worktree: create docs/canary/idc02-vps-lane.md
+  containing a single line "idc02 vps-lane canary — " followed by the current UTC date. Commit it with message "canary:
+  idc02 vps dispatch lane". Touch no other file. Do not push. Then write your dispatch-outcome doc per the session
+  rails and stop.'
+action:
+  type: dispatch
+  repo: ada-pi
+  labels:
+  - vps
+  executor: devin
+  lane: free_lane
+  status: done
+ref: OPS-0029
+comms:
+- at: 2026-11-24 15:16
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-24 15:16
+  from: chaba
+  text: 'WARNING: unclaimable by the declared runner fleet — labels [''vps''] satisfied by no declared runner (fleet
+    advertises [''ada'', ''always-home'', ''always-on'', ''arm64'', ''cpu'', ''desktop'', ''edge'', ''gpu'', ''local-8c'',
+    ''low-mem'', ''mac'', ''macbook'', ''push:ada-voice'', ''push:chaba'', ''push:gods-eye-view'', ''push:mddb-fork'',
+    ''push:sunsynk-card'', ''small'', ''ssd'']). Fix action.labels/host pins or teach a runner the capability (RUNNER_LABELS
+    + ssot.kanban.yml runner_fleet)'
+- at: 2026-11-24 15:16
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 15:17
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: labels [''vps''] satisfied by no declared runner
+    (fleet advertises [''ada'', ''always-home'', ''always-on'', ''arm64'', ''cpu'', ''desktop'', ''edge'', ''gpu'',
+    ''local-8c'', ''low-mem'', ''mac'', ''macbook'', ''push:ada-voice'', ''push:chaba'', ''push:gods-eye-view'',
+    ''push:mddb-fork'', ''push:sunsynk-card'', ''small'', ''ssd'']) — fix action.labels/host pins or teach a runner
+    the capability'
+- at: 2026-11-24 15:17
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: labels [''vps''] satisfied by no declared runner
+    (fleet advertises [''ada'', ''always-home'', ''always-on'', ''arm64'', ''cpu'', ''desktop'', ''edge'', ''gpu'',
+    ''local-8c'', ''low-mem'', ''mac'', ''macbook'', ''push:ada-voice'', ''push:chaba'', ''push:gods-eye-view'',
+    ''push:mddb-fork'', ''push:sunsynk-card'', ''small'', ''ssd'']) — fix action.labels/host pins or teach a runner
+    the capability'
+- at: 2026-11-24 15:18
+  from: chaba
+  text: 'con01 defers: unclaimable by the declared runner fleet: labels [''vps''] satisfied by no declared runner
+    (fleet advertises [''ada'', ''always-home'', ''always-on'', ''arm64'', ''cpu'', ''desktop'', ''edge'', ''gpu'',
+    ''local-8c'', ''low-mem'', ''mac'', ''macbook'', ''push:ada-voice'', ''push:chaba'', ''push:gods-eye-view'',
+    ''push:mddb-fork'', ''push:sunsynk-card'', ''small'', ''ssd'']) — fix action.labels/host pins or teach a runner
+    the capability'
+- at: 2026-11-24 15:42
+  from: chaba
+  text: 'tony-dell defers: unclaimable by the declared runner fleet: labels [''vps''] satisfied by no declared runner
+    (fleet advertises [''ada'', ''always-home'', ''always-on'', ''arm64'', ''cpu'', ''desktop'', ''edge'', ''gpu'',
+    ''local-8c'', ''low-mem'', ''mac'', ''macbook'', ''push:ada-voice'', ''push:chaba'', ''push:gods-eye-view'',
+    ''push:mddb-fork'', ''push:sunsynk-card'', ''small'', ''ssd'']) — fix action.labels/host pins or teach a runner
+    the capability'
+- at: 2026-11-24 15:46
+  from: devin
+  text: 'superseded: re-queued as idc02-vps-lane-canary-hv at priority:high — the low-priority card kept sinking
+    in claim order (defer comms refresh updated; ~9 cards ahead on idc02). Closing this one; the -hv card carries
+    the same canary spec.'
+- at: 2026-11-24 15:46
+  from: devin
+  text: closed by devin
+- at: 2026-11-24 16:31
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: labels [''vps''] satisfied by no declared runner
+    (fleet advertises [''ada'', ''always-home'', ''always-on'', ''arm64'', ''cpu'', ''desktop'', ''edge'', ''gpu'',
+    ''local-8c'', ''low-mem'', ''mac'', ''macbook'', ''push:ada-voice'', ''push:chaba'', ''push:gods-eye-view'',
+    ''push:mddb-fork'', ''push:sunsynk-card'', ''small'', ''ssd'']) — fix action.labels/host pins or teach a runner
+    the capability'
+- at: 2026-11-24 17:04
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:53
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:01
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:08
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:28
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:40
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:56
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:07
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:36
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'

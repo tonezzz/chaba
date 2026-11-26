@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Verify all configured MCP servers by attempting a tools/list call."""
+import argparse
 import json
 import os
 import subprocess
@@ -149,12 +150,24 @@ def url_verify(name, url, extra_headers=None):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
+    args = parser.parse_args()
+
     if not CONFIG.exists():
-        print(f"SKIP: no MCP config on this host ({CONFIG})")
+        if args.json:
+            print(json.dumps({"ok": True, "skipped": f"no MCP config on this host ({CONFIG})", "servers": {}, "ok_count": 0, "total": 0}))
+        else:
+            print(f"SKIP: no MCP config on this host ({CONFIG})")
         return 0
+
     config = json.loads(CONFIG.read_text())
     results = {}
-    for name, spec in config["mcpServers"].items():
+    disabled = []
+    for name, spec in config.get("mcpServers", {}).items():
+        if spec.get("disabled"):
+            disabled.append(name)
+            continue
         try:
             if "url" in spec:
                 results[name] = url_verify(name, spec["url"], spec.get("headers"))
@@ -167,15 +180,23 @@ def main():
             results[name] = {"ok": False, "error": f"verify crashed: {e}"}
 
     ok = sum(1 for r in results.values() if r["ok"])
-    print(f"\nVerified {ok}/{len(results)} MCP servers")
-    print("-" * 60)
-    for name, r in sorted(results.items()):
-        if r["ok"]:
-            extra = r.get("tool_count", r.get("status", ""))
-            print(f"  {name}: OK ({extra})")
-        else:
-            print(f"  {name}: FAIL {r.get('error', '')}")
-    return 0 if ok == len(results) else 1
+    total = len(results)
+    all_ok = ok == total
+
+    if args.json:
+        print(json.dumps({"ok": all_ok, "skipped": None, "servers": results, "ok_count": ok, "total": total, "disabled": disabled}, sort_keys=True))
+    else:
+        print(f"\nVerified {ok}/{total} MCP servers")
+        if disabled:
+            print(f"Skipped {len(disabled)} disabled server(s): {', '.join(sorted(disabled))}")
+        print("-" * 60)
+        for name, r in sorted(results.items()):
+            if r["ok"]:
+                extra = r.get("tool_count", r.get("status", ""))
+                print(f"  {name}: OK ({extra})")
+            else:
+                print(f"  {name}: FAIL {r.get('error', '')}")
+    return 0 if all_ok else 1
 
 
 if __name__ == "__main__":

@@ -1,0 +1,29 @@
+id: idc02-exec-checkout-117-staged-files-of-70de51
+title: 'idc02 exec checkout: 117 staged files of autostash-pop residue break repo-sync exit code'
+column: backlog
+updated: 2026-11-26 21:22
+program: infrastructure
+tags:
+- ops
+- infra
+- idc02
+- repo-sync
+spec: 'On idc02, ~/CascadeProjects/chaba carries ~117 staged modifications/deletions (index holds the pre-pull tree)
+  left by the 2026-11-26 20:01 chaba-repo-sync autostash-pop conflict. chaba-repo-sync.service exits 1 every run
+  while HEAD still advances, so exec jobs on idc02 run stale worktree code for everything except the two runner-tooling
+  files already restored to HEAD. Task: (1) inventory the staged set — `git -C ~/CascadeProjects/chaba status --short`
+  + `git diff --cached --stat`; (2) verify no staged path is genuine uncommitted local work (compare against stash@{0..2}
+  autostash entries and *.local-conflict-* sidecars); (3) converge the checkout — `git reset` (mixed) then `git
+  checkout HEAD -- .` or `git restore` for paths confirmed residue, preserving any real local changes as patches;
+  (4) run scripts/git-safe-pull.sh once and confirm exit 0 + `git status` clean-ish; (5) confirm runner-agent.py/manifest
+  stay at pin 4259ca6f. Do NOT touch the served checkout on idc03 or commit anything.'
+note: 'Found during system-report-chain-17h-stale dispatch (2026-11-26). idc02 ~/CascadeProjects/chaba has ~117
+  staged files where index=pre-pull tree vs HEAD=current (autostash-pop residue from the 20:01 chaba-repo-sync conflict;
+  journal: "autostash pop left changes needing manual merge — worktree resolved to HEAD, local sides preserved as
+  .local-conflict-*"). repo-sync.service exits 1 nightly though HEAD still advances; worktree files for non-runner
+  paths stay stale. Scoped fix already applied for sc'
+ref: OPS-1457
+comms:
+- at: 2026-11-26 21:22
+  from: devin
+  text: card captured via board-api

@@ -40,11 +40,26 @@ OPS_MDB = os.environ.get("MDDB_OPS_URL",
 ADA_OPS_MDB = os.environ.get("MDDB_ADA_OPS_URL",
                              "http://100.123.163.11:11025/v1").rstrip("/")
 
-# host-logs is ~260k docs across both DBs — 100-doc pages made the list
-# phase alone take ~30min (0.7s/page). 5000-doc pages stay ~1s even at
-# deep offsets, and /delete-batch collapses the delete phase likewise.
+# host-logs is ~260k+ docs across both DBs — 100-doc pages made the list
+# phase alone take ~30min (0.7s/page). mddb 2.18.x caps /search limit at
+# 1000 (X-Limit header; the loop below honors it), so PAGE_SIZE is now a
+# request ceiling, not the page size. /delete-batch collapses the delete
+# phase into single-transaction chunks.
 PAGE_SIZE = 5000
 DELETE_CHUNK = 1000
+# /v1/search has no keyset/cursor (verified against deployed 2.15.3/2.18.10
+# and upstream ≤2.19.13): offset is the only paging param, and the default
+# sort is updatedAt — which reshuffles under every write, so concurrent
+# bulk writes shift the offset window and stale docs get skipped
+# (sweep-pagination-offset-keyset card). Three mitigations:
+#   sort=key asc      — write-stable order (keys are immutable)
+#   filter {ts: lt}   — server-side meta predicate (mddb ≥2.18; ignored by
+#                       older servers, which fall back to the full scan +
+#                       the same client-side check) so enumeration only
+#                       touches expired docs instead of the whole collection
+#   MAX_PASSES        — re-sweep until a pass deletes nothing, catching
+#                       docs skipped by mid-sweep foreign inserts/deletes
+MAX_PASSES = 5
 
 # collection -> (timestamp meta key, retention days)
 POLICY = {"host-logs": ("ts", 3)}
@@ -68,11 +83,13 @@ def collection_bases(collection: str) -> list[str]:
 
 
 def post(path: str, body: dict, base: str = MDDB,
-         timeout: int = 60) -> object:
+         timeout: int = 60, hdrs: dict | None = None) -> object:
     req = urllib.request.Request(
         f"{base}{path}", data=json.dumps(body).encode(),
         headers={"content-type": "application/json"}, method="POST")
     with urllib.request.urlopen(req, timeout=timeout) as r:
+        if hdrs is not None:
+            hdrs.update(r.headers)
         return json.loads(r.read())
 
 
@@ -80,49 +97,76 @@ def sweep(collection: str, ts_key: str, days: int, dry: bool,
           base: str = MDDB) -> str:
     cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     t0 = time.monotonic()
-    skip, deleted, scanned = 0, 0, 0
-    while True:
-        try:
-            page = post("/search", {"collection": collection, "query": "",
-                                    "limit": PAGE_SIZE, "offset": skip},
-                        base)
-        except Exception as e:
-            return f"{collection}: list failed — {e}"
-        if not page:
-            break
-        scanned += len(page)
-        expired, kept = [], 0
-        for d in page:
-            ts = ((d.get("meta") or {}).get(ts_key) or [""])[0]
-            if ts and ts < cutoff:
-                expired.append(d)
+    deleted, scanned, expired_seen, passes = 0, 0, 0, 0
+    # server-side meta predicate — honored on mddb ≥2.18, ignored (unknown
+    # JSON field) on 2.15.x, where the client-side ts check below still
+    # applies to the full scan
+    meta_filter = {ts_key: {"lt": cutoff}}
+    for _ in range(MAX_PASSES):
+        pass_start = deleted
+        skip = 0
+        while True:
+            hdrs: dict = {}
+            try:
+                page = post("/search", {"collection": collection,
+                                        "query": "", "limit": PAGE_SIZE,
+                                        "offset": skip,
+                                        "sort": "key", "asc": True,
+                                        "filter": meta_filter},
+                            base, hdrs=hdrs)
+            except Exception as e:
+                return f"{collection}: list failed — {e}"
+            if not page:
+                break
+            # the server caps limit (X-Limit, e.g. 1000 on 2.18.x) — a short
+            # page only means "done" relative to the cap, not PAGE_SIZE;
+            # without this the sweep stopped after the first capped page
+            try:
+                xlim = hdrs.get("X-Limit") or hdrs.get("x-limit")
+                eff = min(PAGE_SIZE, int(xlim or PAGE_SIZE))
+            except (TypeError, ValueError):
+                eff = PAGE_SIZE
+            scanned += len(page)
+            expired, kept = [], 0
+            for d in page:
+                ts = ((d.get("meta") or {}).get(ts_key) or [""])[0]
+                if ts and ts < cutoff:
+                    expired.append(d)
+                else:
+                    kept += 1
+            expired_seen += len(expired)
+            if dry:
+                deleted += len(expired)
+                kept += len(expired)
             else:
-                kept += 1
-        if dry:
-            deleted += len(expired)
-            kept += len(expired)
-        else:
-            for i in range(0, len(expired), DELETE_CHUNK):
-                chunk = expired[i:i + DELETE_CHUNK]
-                try:
-                    r = post("/delete-batch",
-                             {"collection": collection,
-                              "documents": [{"key": d["key"],
-                                             "lang": d.get("lang", "en")}
-                                            for d in chunk]},
-                             base, timeout=180)
-                    deleted += r.get("deleted", 0)
-                    kept += len(chunk) - r.get("deleted", 0)
-                except Exception:
-                    kept += len(chunk)
-        if len(page) < PAGE_SIZE:
+                for i in range(0, len(expired), DELETE_CHUNK):
+                    chunk = expired[i:i + DELETE_CHUNK]
+                    try:
+                        r = post("/delete-batch",
+                                 {"collection": collection,
+                                  "documents": [{"key": d["key"],
+                                                 "lang": d.get("lang", "en")}
+                                                for d in chunk]},
+                                 base, timeout=180)
+                        deleted += r.get("deleted", 0)
+                        kept += len(chunk) - r.get("deleted", 0)
+                    except Exception:
+                        kept += len(chunk)
+            if len(page) < eff:
+                break
+            # deleting shifts later docs left — advance only past kept docs
+            skip += kept
+        passes += 1
+        # dry-run counts without deleting; a pass that deleted nothing means
+        # the window stayed stable — no re-sweep needed
+        if dry or deleted == pass_start:
             break
-        # deleting shifts later docs left — advance only past kept docs
-        skip += kept
     verb = "would delete" if dry else "deleted"
     host = base.split("//", 1)[-1].split("/", 1)[0]
-    return (f"{collection}: {verb} {deleted}/{scanned} "
-            f"(>{days}d on {ts_key} @{host}) "
+    return (f"{collection}: expired {expired_seen}, {verb} "
+            f"{deleted}/{scanned} "
+            f"(>{days}d on {ts_key} @{host}, {passes} pass"
+            f"{'es' if passes != 1 else ''}) "
             f"in {time.monotonic() - t0:.0f}s")
 
 

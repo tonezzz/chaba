@@ -1,0 +1,24 @@
+{
+  "question": "What is the standard write path for kanban card mutations from a non-writer host, and which mechanism converges card files that arrive via dispatch worktree merges? Cite the governing docs.",
+  "answer": "The standard write path for kanban card mutations from a non-writer host is through the board-api (specifically `POST /apps/board-api/{card,comment,request,respond,action,pipeline}` on idc03) rather than direct file edits and pushes, as governed by the write-path split rule. Card files that arrive via dispatch worktree merges are converged by the `card-union` git merge driver (`scripts/board/merge-card-yaml.py`), which is bound to `docs/ssot/kanban/cards/*.yml` to automatically union comms and resolve scalar fields using the newer `updated` timestamp instead of producing traditional conflicts.",
+  "citations": [
+    {
+      "path": "AGENTS.md",
+      "note": "Line 24 details the write-path split rule requiring non-writer hosts to use board-api and documents the card-union merge driver binding for docs/ssot/kanban/cards/*.yml."
+    },
+    {
+      "path": "docs/kb/board-api-write-door.md",
+      "note": "Lines 1-20 describe the board-api endpoints and serialization model for non-writer host mutations."
+    },
+    {
+      "path": "docs/ssot/jobs/kanban/2026-10-23-card-union-merge-driver.yml",
+      "note": "Lines 26-33 specify the card-union merge driver implementation details and convergence behavior."
+    }
+  ],
+  "sources_consulted": [
+    "AGENTS.md",
+    "docs/kb/board-api-write-door.md",
+    "docs/ssot/jobs/kanban/2026-10-23-card-union-merge-driver.yml"
+  ],
+  "read_only": true
+}

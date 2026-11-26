@@ -1,0 +1,198 @@
+id: land-stranded-fix-ada-devnest-tab-render-05b20f
+title: Land stranded fix/ada-devnest-tab-render artifacts — missed-job-sweep runbook + devnest-tab mutate script
+  never reached master
+column: done
+updated: 2026-11-26 20:33
+brief: 'Commit dd8a1684d2 (2026-10-29, ''fix(ha): render DevNest report and audit missed jobs'') exists only on
+  origin/fix/ada-devnest-tab-render — it never merged to master. Verified 2026-11-24 during audit-miss-education-lesson-write-timeout:
+  master lacks docs/kb/missed-job-sweep.md, the ssot.procedures.yml missed-job-sweep entry, ssot.repeat-asks.yml
+  updates, the frustration-procedure.md multi-job section, both job SSOT records, scripts/home-assistant/mutate-ada-ha-devnest-tab.py
+  and tests/test_ada_ha_devnest_dashboard.py. The LIVE fix did land: master snapshot docs/home-assistant/dashboards/ada-ha-c'
+priority: medium
+program: audit
+tags:
+- audit
+- merge-debt
+- ssot
+- education
+spec: 'Reconcile origin/fix/ada-devnest-tab-render with master. The branch mixes the wanted dd8a1684d2 file set
+  with unrelated board-api noise and cline-tab work that already landed separately (mutate-ada-ha-cline-tab.py,
+  2026-10-29-cline-ada-ha-tab.yml are on master). Preferred: cherry-pick or re-apply dd8a1684d2''s doc/script/test
+  hunks onto master rather than merging the stale branch wholesale (merge-base is ~530 commits behind; later dashboard
+  mutations may conflict). After landing: verify ssot-prose-smell lint, run tests/test_ada_ha_devnest_dashboard.py,
+  and confirm docs/kb/missed-job-sweep.md + procedures entry are reachable from master. The Education lesson for
+  topic missed-job-sweep-and-safe-opencode-ha-tabs is already filed (lesson-4dd48148b1be) and points at these paths
+  — landing them makes the lesson pointers valid on master.'
+ref: AUD-0044
+comms:
+- at: 2026-11-24 17:31
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:48
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:01
+  from: chaba
+  text: classified as free_lane (kw:try conf 1.00)
+- at: 2026-11-25 09:01
+  from: tony
+  text: queued for processing
+- at: 2026-11-25 09:03
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.84 > 0.85)'
+- at: 2026-11-25 09:03
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 09:03
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 2.25 > 1.0)'
+- at: 2026-11-25 09:03
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 09:03
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-25 09:04
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 09:04
+  from: chaba
+  text: started devin-task-20261125-090440-reconcile-origin-fix-ada-devne on tony-macbook (dispatch)
+- at: 2026-11-25 09:04
+  from: chaba
+  text: 'primer injected 8 lesson(s): [rk600-shutter-go-live] attempt 3: salvaged attempt-2 artifacts onto a fresh
+    bra; Cherry-pick `origin/fix/fleet-jobs-report-accuracy` before editing — Tony''s corr; [audit-miss-ada-chaba-home-snapshot]
+    primer injected 8 lesson(s): [kk-mac-live-m; [audit-miss-education-lesson-write-timeout] DONE. Lesson upsert
+    retried and land; [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f] checkpoint failed: commit: ⚠️ ; [education-maintenance-consolidated-report]
+    SHIPPED on dispat'
+- at: 2026-11-25 09:06
+  from: devin
+  text: 'DONE: cherry-picked dd8a1684d2 onto master as 0bc5ea2657 (11 files: missed-job-sweep.md runbook, devnest
+    tab mutator+test, job records, SSOT updates). Resolved instances.yml conflict by keeping the newer dashboards.yml
+    delegation; dashboard JSON hunk already landed in the 2026-11-24 snapshot regen. Verified: ssot-prose-smell
+    0 flags, test_ada_ha_devnest_dashboard 3/3 OK. Lesson lesson-4dd48148b1be pointers now valid on merge. Outcome
+    doc committed.'
+- at: 2026-11-25 09:08
+  from: tony-macbook
+  text: 'finished (ok): exit=0 0-reconcile-origin-fix-ada-devne.md` and the card got a final comms entry; nothing
+    pushed. | devin-task-20261125-'
+- at: 2026-11-25 09:08
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 09:08
+  from: chaba
+  text: "checkpoint failed: commit: \U0001F50D Validating SSOT files...\n\U0001F4CB Found SSOT files to validate:\ndocs/ssot/ssot.dev-system.assessment.yml\n\U0001F527
+    Checking YAML syntax...\n\e[0;32m✅ YAML syntax valid\e[0m\n\U0001F527 C"
+- at: 2026-11-25 09:08
+  from: chaba
+  text: banked 58 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 09:08
+  from: chaba
+  text: pushed dispatch/20261125-090440-reconcile-origin-fix-ada-devne to origin
+- at: 2026-11-25 09:08
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 09:08
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-25 09:09
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-090440-reconcile-origin-fix-ada-devne no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-25 09:09
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-090440-reconcile-origin-fix-ada-devne on tony-macbook still
+    dirty — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 09:27
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-25): dispatch branch merged into origin/master as 5cba9dd17f18
+    (conflicts resolved where applicable: generated SSOT snapshots kept from master, substantive code from branch).
+    Deliverable: reconcile stranded ada-devnest tab render fix (345d94b, 12 files). Closing.'
+- at: 2026-11-25 09:27
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:01
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:02
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:33
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+action:
+  type: dispatch
+  status: done
+  lane: free_lane
+  lane_source: kw
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
+  result: 'exit=0 0-reconcile-origin-fix-ada-devne.md` and the card got a final comms entry; nothing pushed. | devin-task-20261125-090440-reconcile-origin-fix-ada-devne.service:
+    Consumed 33.878s CPU time over 2min 19.986s wall clock time, 318.1M memory peak.'
+  verified: false
+  sweep:
+    stale_running: 2026-11-25 09:09
+    dirty: 1
+claim:
+  since: 2026-11-25 09:03
+review_kind: verify

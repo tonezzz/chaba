@@ -1,0 +1,68 @@
+title: SCR T1 threshold calibration on real TG voice corpus
+date: 2026-11-24
+card: scr-calibrate-t1-thresholds-on-real-tg-v-8ca63e
+ref: OPS-0919
+status: done
+
+summary: >
+  Calibrated the short-command recognizer's T1 accept/gray thresholds
+  against the real TG voice corpus (28 clips, qwen3-asr-0.6b-q8 hyps +
+  Gemini refs, EN/TH/DE/TL code-switch). All 28 utterances label
+  no_match — the real corpus contains zero in-grammar commands, so
+  wrong-fire rate is the only operative metric. Recommended
+  accept=0.40 / gray_lo=0.25 (was 0.55/0.45); measured wrong-fire
+  0/28 on real data, 0/51 on synthetic at recommended thresholds.
+  tg_relay identified as the first integration surface.
+
+provenance: >
+  The original prototype session (devin-research-short-command-
+  recognition-d948ed, 2026-10-27, tony-macbook) left its deliverables
+  staged-but-uncommitted in its dispatch worktree — they never merged.
+  Recovered verbatim via ssh from
+  tony-macbook:~/CascadeProjects/dispatch-wt-20261027-053435-devin-
+  research-short-command-r/ into this worktree so they land with this
+  card's merge.
+
+corpus:
+  source: >
+    idc03 ~/.local/share/ada-voice-corpus/tg/manifest.jsonl (36 clips)
+    joined with idc02 ~/audio-cpp-eval/refs-all.jsonl (28 refs) and
+    results-qwen3-asr-q8.jsonl (28 hyps) — the STT lane eval assets.
+  shipped: docs/prototypes/short-command/eval/corpus-tg-qwen.jsonl,
+    corpus-tg-ref.jsonl, tg-voice-src/{refs-all,refs,results-qwen3-asr-q8}.jsonl
+  gap: 8 manifest clips (2026-10-25..2026-11-02) have no refs — need
+    gen_refs.py + qwen3 re-run to extend.
+
+measurements:
+  max_non_command_score: 0.216   # synthetic EN negative; real TG max 0.163
+  min_true_t1_command_score: 0.615
+  wrong_fire_real_qwen: "0/28"
+  wrong_fire_real_ratio: "0/28"
+  wrong_fire_synthetic: "0/51"
+  wrong_fire_at_accept_0.20: "2/51 synthetic (accept<=0.20 unsafe)"
+  deflection_real: "0% — no commands present, pass-through is correct"
+  t0_fires_real: 0
+
+recommendation:
+  accept: 0.40
+  gray_lo: 0.25
+  surface_first: tg_relay
+  surface_second: ada-pi command_lane (after tg_relay metrics prove out)
+  rationale: >
+    accept sits mid-gap between worst observed non-command (0.216) and
+    weakest observed true T1 command (0.615); gray band [0.25,0.40)
+    reserves did-you-mean UX. Real-corpus recall unmeasured — zero
+    positive commands in 28 clips; revisit when corpus grows
+    command-shaped utterances.
+
+changes:
+  - "docs/kb/short-command-recognition-research.md: calibration section, question 1 resolved, prototype status updated"
+  - "docs/prototypes/short-command/: recovered prototype + eval corpora"
+  - "docs/prototypes/short-command/scr.py: defaults -> accept 0.40, gray_lo 0.25"
+  - "docs/prototypes/short-command/eval/run_eval.py: --corpus PATH flag"
+  - "docs/prototypes/short-command/README.md: thresholds + corpus usage"
+
+verify: >
+  cd docs/prototypes/short-command &&
+  python3 eval/run_eval.py --corpus eval/corpus-tg-qwen.jsonl
+  (expect n=28, accuracy=1.0, wrong_fire=0) and --sweep for the grid.

@@ -14,6 +14,21 @@
 //   height:   log height (default 260px)
 //   api_key:  <key>   optional — normally unset, card self-mints
 //   member:   <name>  optional — pins the webchat thread id
+//   picker_url: adobe-stock picker-server base — QC panel polls its
+//     /api/session for an undecided candidate and POSTs decisions to
+//     /api/qc-decision (default http://tony-dell.taila0626a.ts.net:8777;
+//     "" disables the panel — needed on https viewers if the picker has
+//     no TLS route, since http:// fetches are mixed-content blocked)
+//   qc_poll_s: QC poll interval seconds (default 60, min 5)
+//
+// Adobe Stock QC panel (card ada-opencode-repair-menu-card / ADA-1130):
+// when the campaign SESSION.json has a landed candidate with no
+// <asset>_qc_decision, the card shows its thumb (/img/<asset>) plus
+// Keep/Reject/Revise/Repair-region buttons. Decisions write
+// SESSION.json + 40-qc-review.md on Drive via picker-server; Repair
+// opens the mask-picker on the candidate (?img=/img/<asset>) whose
+// /submit already auto-lands a repair render (inbox-processor ->
+// land-render.py gemini-image). No Adobe upload anywhere in the loop.
 //
 // Push binding (card ada-chat-card-cannot-receive-pushed-medi): the ws
 // connects with &channel=web&chat_id=web-<member-or-device> so the lane's
@@ -41,6 +56,7 @@ const ACC_DEFAULT_WS = "wss://idc03.taila0626a.ts.net/apps/ha/ada-tony/ws";
 // leaves the page exactly once — receipt is metadata only (path + sha256).
 const ACC_SECRET_HOSTS = ["idc03", "tony-dell", "tony-omen", "idc02"];
 const ACC_SECRET_NAME_RE = /^[a-z0-9._-]{1,64}$/;
+const ACC_DEFAULT_PICKER = "http://tony-dell.taila0626a.ts.net:8777";
 
 // Endpoint resolution order: explicit ws_url config > routes.json
 // (generated from docs/ssot/infrastructure/ssot.routes.yml, served to HA
@@ -113,6 +129,76 @@ class AdaChatCard extends HTMLElement {
     row.append(this._dot, this._status, this._connectBtn, this._disconnectBtn,
                this._yoloBtn, this._secretBtn);
     body.appendChild(row);
+
+    // Adobe Stock QC panel — hidden until a picker-server poll finds a
+    // landed candidate with no recorded QC decision. Sits between the
+    // status row and the transcript so the action surface stays visible.
+    this._qcPanel = document.createElement("div");
+    this._qcPanel.className = "acc-qc";
+    this._qcPanel.style.cssText =
+      "display:none;flex-direction:column;gap:6px;padding:8px 10px;" +
+      "border-radius:10px;" +
+      "border:1px solid color-mix(in srgb,var(--warning-color,#ffc107) 45%,transparent);" +
+      "background:var(--card-background-color,#2b3138)";
+    const qcHead = document.createElement("div");
+    qcHead.style.cssText =
+      "display:flex;align-items:baseline;gap:8px;font-size:.8rem";
+    const qcTitle = document.createElement("span");
+    qcTitle.style.cssText =
+      "font-weight:600;color:var(--warning-color,#ffc107);flex:none";
+    qcTitle.textContent = "🧪 Stock QC";
+    this._qcAsset = document.createElement("span");
+    this._qcAsset.className = "acc-qc-asset";
+    this._qcAsset.style.cssText =
+      "flex:1;font-size:.72rem;color:var(--secondary-text-color);" +
+      "overflow:hidden;text-overflow:ellipsis;white-space:nowrap";
+    this._qcSub = document.createElement("span");
+    this._qcSub.className = "acc-qc-sub";
+    this._qcSub.style.cssText =
+      "font-size:.68rem;color:var(--secondary-text-color);flex:none";
+    qcHead.append(qcTitle, this._qcAsset, this._qcSub);
+    this._qcThumb = document.createElement("img");
+    this._qcThumb.className = "acc-qc-thumb";
+    this._qcThumb.style.cssText =
+      "display:none;max-width:100%;max-height:150px;border-radius:8px;" +
+      "cursor:pointer;align-self:flex-start;background:#000";
+    this._qcNote = document.createElement("input");
+    this._qcNote.className = "acc-qc-note";
+    this._qcNote.type = "text";
+    this._qcNote.placeholder = "note for revise/reject (optional)";
+    this._qcNote.autocomplete = "off";
+    this._qcNote.style.cssText =
+      "padding:6px 8px;min-height:32px;border-radius:8px;" +
+      "border:1px solid var(--divider-color,#444);" +
+      "background:var(--secondary-background-color,#1c2128);" +
+      "color:var(--primary-text-color);font-size:.82rem";
+    const qcRow = document.createElement("div");
+    qcRow.className = "acc-qc-actions";
+    qcRow.style.cssText = "display:flex;gap:6px;flex-wrap:wrap";
+    this._qcBtns = [];
+    const qcBtn = (label, title, fn) => {
+      const b = this._btn(label);
+      b.className = "acc-qc-btn";
+      b.style.cssText += ";padding:6px 10px;min-height:32px;font-size:.8rem;flex:1 1 40%";
+      b.title = title;
+      b.onclick = fn;
+      this._qcBtns.push(b);
+      qcRow.appendChild(b);
+    };
+    qcBtn("✓ Keep", "Approve — records keep in SESSION.json + 40-qc-review.md",
+          () => this._qcDecide("keep"));
+    qcBtn("✗ Reject", "Reject this candidate",
+          () => this._qcDecide("reject"));
+    qcBtn("↻ Revise", "Send back for another pass — note carries instructions",
+          () => this._qcDecide("revise"));
+    qcBtn("🛠 Repair region", "Open mask-picker on this candidate — submit auto-lands a repair render",
+          () => this._qcRepair());
+    this._qcMsg = document.createElement("div");
+    this._qcMsg.className = "acc-qc-msg";
+    this._qcMsg.style.cssText =
+      "min-height:14px;font-size:.72rem;color:var(--secondary-text-color)";
+    this._qcPanel.append(qcHead, this._qcThumb, this._qcNote, qcRow, this._qcMsg);
+    body.appendChild(this._qcPanel);
 
     // transcript log — bubble layout; bubbles handle their own wrapping
     this._log = document.createElement("div");
@@ -260,6 +346,8 @@ class AdaChatCard extends HTMLElement {
 
     this._card.appendChild(body);
     this.appendChild(this._card);
+    this._qcStop();
+    this._qcStart();
   }
 
   set hass(hass) { this._hass = hass; }
@@ -1020,6 +1108,137 @@ class AdaChatCard extends HTMLElement {
     }
   }
 
+  // ---------- adobe stock QC panel ----------
+
+  _qcBase() {
+    const u = this._config ? this._config.picker_url : undefined;
+    if (u === "" || u === null) return "";   // explicit disable
+    return String(u || ACC_DEFAULT_PICKER).replace(/\/+$/, "");
+  }
+
+  // Pending candidate = freshest landed asset without a recorded QC
+  // decision. qc-decision writes comparison[<asset_underscored>_qc_decision];
+  // the baseline candidate_asset_id may carry the legacy
+  // candidate_qc_decision key instead — honor both.
+  _qcPendingAsset(s) {
+    const comp = (s && s.comparison) || {};
+    const dkey = (a) => String(a).replace(/-/g, "_") + "_qc_decision";
+    const cands = [];
+    const ll = comp.last_landed && comp.last_landed.asset_id;
+    if (ll) cands.push({ id: ll });
+    if (comp.candidate_asset_id) {
+      cands.push({ id: comp.candidate_asset_id, legacy: "candidate_qc_decision" });
+    }
+    for (const c of cands) {
+      const id = String(c.id || "").trim();
+      if (!id) continue;
+      if (comp[dkey(id)] || (c.legacy && comp[c.legacy])) continue;
+      return id;
+    }
+    return null;
+  }
+
+  async _qcPoll() {
+    const base = this._qcBase();
+    if (!base || !this._qcPanel || this._qcBusy || this._qcDeciding) return;
+    this._qcBusy = true;
+    try {
+      const r = await fetch(`${base}/api/session`, {
+        cache: "no-store",
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!r.ok) return;
+      const s = await r.json();
+      const asset = this._qcPendingAsset(s);
+      if (asset) this._qcShow(asset, s); else this._qcHide();
+    } catch (_) { /* picker offline — keep last panel state */ }
+    finally { this._qcBusy = false; }
+  }
+
+  _qcShow(asset, s) {
+    const safe = String(asset).replace(/[^A-Za-z0-9._-]/g, "");
+    if (!safe || !this._qcPanel) return;
+    const base = this._qcBase();
+    const ll = ((s && s.comparison) || {}).last_landed || {};
+    const sub = ll.asset_id === safe && (ll.lane || ll.at)
+      ? `lane ${ll.lane || "?"} · landed ${String(ll.at || "").slice(0, 10)}`
+      : "";
+    if (this._qcAssetId === safe && this._qcPanel.style.display !== "none") {
+      this._qcSub.textContent = sub;
+      return;
+    }
+    this._qcAssetId = safe;
+    this._qcAsset.textContent = safe;
+    this._qcSub.textContent = sub;
+    this._qcNote.value = "";
+    this._qcMsg.textContent = "";
+    for (const b of this._qcBtns) b.disabled = false;
+    this._qcThumb.style.display = "none";
+    this._qcThumb.onload = () => { this._qcThumb.style.display = ""; };
+    this._qcThumb.onerror = () => { this._qcThumb.style.display = "none"; };
+    this._qcThumb.src = `${base}/img/${safe}`;
+    this._qcThumb.onclick = () =>
+      window.open(`${base}/img/${safe}`, "_blank", "noopener");
+    this._qcPanel.style.display = "flex";
+  }
+
+  _qcHide() {
+    if (this._qcPanel) this._qcPanel.style.display = "none";
+    this._qcAssetId = null;
+  }
+
+  _qcStart() {
+    if (this._qcTimer || !this._qcPanel || !this._qcBase()) return;
+    this._qcPoll();
+    const secs = Math.max(5, parseInt(this._config.qc_poll_s || "60", 10) || 60);
+    this._qcTimer = setInterval(() => this._qcPoll(), secs * 1000);
+  }
+
+  _qcStop() {
+    if (this._qcTimer) { clearInterval(this._qcTimer); this._qcTimer = null; }
+    this._qcBusy = false;
+    this._qcDeciding = false;
+  }
+
+  async _qcDecide(decision) {
+    const asset = this._qcAssetId, base = this._qcBase();
+    if (!asset || !base || this._qcDeciding) return;
+    const note = (this._qcNote.value || "").trim();
+    this._qcDeciding = true;
+    for (const b of this._qcBtns) b.disabled = true;
+    this._qcMsg.textContent = `recording ${decision}…`;
+    try {
+      const r = await fetch(`${base}/api/qc-decision`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ asset, decision, note }),
+      });
+      const out = await r.json().catch(() => ({}));
+      if (r.ok && out.ok) {
+        this._system(`QC ${asset} → ${decision}${note ? ` — ${note}` : ""}`);
+        this._qcHide();
+      } else {
+        this._qcMsg.textContent =
+          `decision failed: ${out.result || out.error || `HTTP ${r.status}`}`;
+      }
+    } catch (e) {
+      this._qcMsg.textContent = `decision failed: ${e.message || e}`;
+    } finally {
+      this._qcDeciding = false;
+      if (this._qcPanel && this._qcPanel.style.display !== "none")
+        for (const b of this._qcBtns) b.disabled = false;
+    }
+  }
+
+  _qcRepair() {
+    const asset = this._qcAssetId, base = this._qcBase();
+    if (!asset || !base) return;
+    // picker-server serves mask-picker at /; ?img=/img/<asset> loads the
+    // candidate through its Drive pull-through. Submit -> ~/adobe-work/
+    // inbox -> inbox-processor -> land-render gemini-image (auto-land).
+    window.open(`${base}/?img=/img/${asset}`, "_blank", "noopener");
+  }
+
   // ---------- secret drop ----------
 
   _openSecretDrop() {
@@ -1188,6 +1407,7 @@ class AdaChatCard extends HTMLElement {
   }
 
   connectedCallback() {
+    this._qcStart();
     // Auto-connect on view load (default) — chat shouldn't need a Connect
     // click first. autoconnect: false in config restores the manual flow.
     if (this._config && this._config.autoconnect !== false
@@ -1196,6 +1416,7 @@ class AdaChatCard extends HTMLElement {
 
   disconnectedCallback() {
     document.removeEventListener("visibilitychange", this._onVisWake);
+    this._qcStop();
     this._closeYolo();
     this._closeSecretDrop();
     if (this._socket) this._teardown(true);

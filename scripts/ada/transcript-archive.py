@@ -3,9 +3,10 @@
 
 Card ada-transcript-archive-retention, leg 1 of 3. Raw transcripts live at
 ~/.local/share/ada/transcripts/*.md on the ada runtime host (idc03) and are
-local-only — the per-session NotebookLM upload died when notebooklm-rest
-(:3011) was retired (2026-10-26), so nothing copies them off-host. This job
-is the standing backstop: every week it pushes transcripts older than
+local-only — the per-session NotebookLM upload is best-effort REST (it broke
+for weeks while lane envs pointed at the retired dell :3011; repointed to
+idc02 2026-11-25), so this job is the standing deep-archive backstop: every
+week it pushes transcripts older than
 --min-age-hours into the "Ada — Transcript Archive" NotebookLM notebook as
 text sources, so the deep tier keeps the full-fidelity record that MDDB
 extracts only summarize.
@@ -17,7 +18,8 @@ dev). Sessions with no summary doc archive as lane=unknown — they are
 never dropped, only tagged.
 
 Upload path: the nlm CLI lives in the notebooklm-mcp container on mn01
-(notebooklm-rest is retired — ssot.values.yml notebooklm.mcp_host). This
+(REST lives on idc02 — ssot.services.yml notebooklm-rest; MCP/nlm on mn01
+per ssot.values.yml notebooklm.mcp_host). This
 script runs on idc03 and reaches it via
   ssh mn01 'podman exec -i notebooklm-mcp nlm source add ...'
 transcript content goes as --text (files never leave idc03).

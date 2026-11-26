@@ -1,0 +1,39 @@
+{
+  "pack": "kk-mac-mlx-colab-scene1-20261124",
+  "status": "STAGED-ON-APPROVAL — repo definition only, NOT on the Drive queue",
+  "created": "2026-11-24",
+  "card": "kk-mac-video-library-rerender",
+  "lane": "kk-mac-mlx",
+  "old_project": {
+    "id": "colab-scene1 / golden-hour-catch",
+    "old_artifacts": [
+      "gdrive:ada-nest/renders/ltx_s1_shot0_20261022-1236.mp4",
+      "gdrive:ada-nest/renders/ltx_s1_shot1_20261022-1236.mp4",
+      "gdrive:ada-nest/renders/ltx_s1_shot2_20261022-1236.mp4",
+      "gdrive:ada-nest/renders/ltx_s1shot0_cont_20261024-0524.mp4",
+      "gdrive:ada-nest/renders/ltx_s1shot1_cont_20261024-0524.mp4",
+      "gdrive:ada-nest/renders/ltx_s1shot2_cont_20261024-0524.mp4"
+    ],
+    "note": "20261022-1224 rev superseded by 1236 rev; cont shots are last-frame continuations",
+    "old_render_params": {
+      "codec": "h264", "width": 640, "height": 384, "fps": 24,
+      "frames_per_shot": 49, "pipeline": "diffusers LTXImageToVideoPipeline CUDA T4 t2v",
+      "seed": "unrecorded"
+    }
+  },
+  "mlx_render_params": {
+    "model": "LTX-Video 0.9.8-distilled 2B", "port": "baisampayans/ltx-mlx",
+    "checkpoint": "ltxv-2b-0.9.8-distilled.safetensors",
+    "width": 640, "height": 384, "frames": 49, "fps": 24,
+    "steps": 8, "seed": 42,
+    "conditioning": "prompt_embeds injected (T5 weights skipped); t2v"
+  },
+  "inputs": {
+    "shot0.pt": {"sha256": "0733f7cbd41faeefa628539019e50b754bf237e1949c9ea21aab1f8139d2e6f9", "source": "gdrive:ada-nest/renders/ltx-embeds-s1/shot0.pt"},
+    "shot1.pt": {"sha256": "6f88c431e724b8a955b080f3a6606e6753093983b0ae94b1ca8405b619eebcbd", "source": "gdrive:ada-nest/renders/ltx-embeds-s1/shot1.pt"},
+    "shot2.pt": {"sha256": "c913735f42e687c4318527cd3e96cfca89feed3730965fbb77e659ecc994ebaf", "source": "gdrive:ada-nest/renders/ltx-embeds-s1/shot2.pt"}
+  },
+  "stage_instructions": "copy pack dir to gdrive:ada-nest/kk-mac-video-pilot/packs/kk-mac-mlx-colab-scene1-20261124/ and upload the three .pt files to inputs/ (sha256 above); embeds are ~2MB each",
+  "gates": "same as scene0 control pack (owner-use/idle/load/memory/model/apps/disk)",
+  "preserve": "old renders/ MP4s untouched"
+}

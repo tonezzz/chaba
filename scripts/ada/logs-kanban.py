@@ -14,12 +14,17 @@ detached worktree on any host):
   host-logs-state `ship/<host>`  — one doc per shipper run, written by
     log-shipper.py; distinguishes quiet-host from broken-pipe because
     reachable=False/never-shipped shows up
+  host-logs-state `ship-<lane>/<host>` — side lanes (e.g. severe); not
+    used for backlog/coverage, but read for add failures
   host-logs-state `report/24h`   — logs-report's per-host rollup, for
     the severe-count check; ignored when older than 30h
 
 Checks:
   silent       — no state write in >26h (host dropped out of the fleet)
   unreachable  — state.reachable=false (ssh probe failed / ship crashed)
+  add-failed   — state.failed>0 on ANY lane: an MDDB /add was rejected;
+                 the cursor is held so later lines replay, but they never
+                 reach host-logs/the digest until MDDB recovers
   backlog      — matched - shipped >= 200 (500/day cap can't drain it)
   severe spike — >=40 severe lines in the last 24h for a host
   coverage     — one `logs-coverage` card: expected-host matrix vs what
@@ -117,19 +122,29 @@ def _post(path: str, payload: dict, timeout: int = 15):
         return None
 
 
-def ship_states() -> tuple[dict[str, dict], dict[str, dict]]:
-    """-> (host->ship state, host->{total,severe} from report/24h)."""
+def ship_states() -> tuple[dict[str, dict], dict[str, dict],
+                           dict[str, dict]]:
+    """-> (host->ship state, host->{total,severe} from report/24h,
+          "<host>:<lane>"->state for any lane with failed>0).
+
+    Side lanes must not clobber ship/<host> for backlog/coverage, but a
+    failed /add on the severe lane is as blind as one on the full lane,
+    so collect those separately. The read limit is well past the ~50
+    live docs: probe/state growth must never hide a failure doc.
+    """
     docs = _post("/search", {"collection": STATE_COLLECTION,
-                             "query": "", "limit": 100})
+                             "query": "", "limit": 500})
     ships: dict[str, dict] = {}
     severe: dict[str, dict] = {}
+    failures: dict[str, dict] = {}
     report_age_h: float | None = None
     for d in docs or []:
         try:
             st = json.loads(d.get("contentMd") or "{}")
         except json.JSONDecodeError:
             continue
-        if d.get("key") == "report/24h":
+        key = d.get("key", "")
+        if key == "report/24h":
             for h, v in (st.get("hosts") or {}).items():
                 severe[h] = v
             try:
@@ -140,15 +155,24 @@ def ship_states() -> tuple[dict[str, dict], dict[str, dict]]:
             except Exception:
                 pass
             continue
-        if not d.get("key", "").startswith("ship/"):
-            continue  # ship-severe/<host> etc. — side lanes' heartbeats,
-            #           judged separately, must not clobber ship/<host>
         st["_ts"] = (d.get("updatedAt") or 0)
-        host = st.get("host") or d.get("key", "").split("/")[-1]
-        ships[host] = st
+        host = st.get("host") or key.split("/")[-1]
+        if key.startswith("ship/"):
+            ships[host] = st
+            lane = "full"
+        elif key.startswith("ship-") and "/" in key:
+            lane = key.split("/", 1)[0][5:]
+        else:
+            continue  # probes and unrelated state docs
+        try:
+            failed_n = int(st.get("failed") or 0)
+        except (TypeError, ValueError):
+            failed_n = 0
+        if failed_n > 0:
+            failures[f"{host}:{lane}"] = st
     if report_age_h is not None and report_age_h > 30:
         severe = {}  # stale report — don't spike-card on old counts
-    return ships, severe
+    return ships, severe, failures
 
 
 def card_path(slug: str) -> Path:
@@ -224,9 +248,54 @@ def judge(states: dict[str, dict], severe: dict[str, dict],
     return bad
 
 
+def add_failure_cards(failures: dict[str, dict],
+                      expected: list[str]) -> list[dict]:
+    """One card per (host, lane) whose last run recorded failed > 0.
+
+    The shipper now exits 1 on a failed /add, but systemd alone only
+    shows a red unit — this is the tracked-work half of that signal.
+    Cards auto-close via the normal seen_slugs sweep once a clean state
+    doc replaces the failing one.
+    """
+    bad: list[dict] = []
+    for label, st in sorted(failures.items()):
+        host, _, lane = label.partition(":")
+        if host not in expected:
+            continue
+        try:
+            n = int(st.get("failed") or 0)
+        except (TypeError, ValueError):
+            n = 0
+        scope = "full lane" if lane == "full" else f"`{lane}` lane"
+        slug = f"{host}-add-failed" if lane == "full" \
+            else f"{host}-{lane}-add-failed"
+        help_text = (
+            f"Check {MDDB} health and free space, then retry "
+            f"`log-shipper.py --self"
+            + (f" --cursor-tag {lane}" if lane != "full" else "")
+            + f"` on {host}. This card auto-closes when a clean state "
+            "doc lands.")
+        bad.append({
+            "slug": slug, "host": host,
+            "title": f"logs `{host}` MDDB add failed ({lane})",
+            "reason": f"last {scope} run recorded {n} failed /add(s) to "
+                      f"MDDB ({st.get('error') or 'no error recorded'}). "
+                      "The cursor was held at the last confirmed line, so "
+                      "later lines replay next run — but until MDDB "
+                      "recovers they never reach host-logs or the digest.",
+            "help": help_text,
+        })
+    return bad
+
+
 def coverage_note(states: dict[str, dict], expected: list[str],
-                  now: float) -> tuple[list[str], bool]:
-    """-> (matrix lines, any_gap)."""
+                  now: float, failures: dict[str, dict]) \
+        -> tuple[list[str], bool]:
+    """-> (matrix lines, any_gap). Add failures are a coverage gap too."""
+    fail_lanes: dict[str, list[str]] = {}
+    for label in failures:
+        host, _, lane = label.partition(":")
+        fail_lanes.setdefault(host, []).append(lane)
     lines, gap = [], False
     for host in expected:
         st = states.get(host)
@@ -251,7 +320,10 @@ def coverage_note(states: dict[str, dict], expected: list[str],
                        and sum(jr.get(x, 0) for x in want) > 0]
         one_sided = missing[0] if missing else ""
         status = "ok"
-        if not st.get("reachable", True):
+        if fail_lanes.get(host):
+            status = "ADD FAILED (" + ",".join(fail_lanes[host]) + ")"
+            gap = True
+        elif not st.get("reachable", True):
             status, gap = f"UNREACHABLE ({st.get('error')})", True
         elif age_h > SILENT_H:
             status, gap = f"silent {age_h:.0f}h", True
@@ -336,8 +408,9 @@ def main() -> int:
         or _expected_hosts()
     now = time.time()
     today = time.strftime("%Y-%m-%d")
-    states, severe = ship_states()
+    states, severe, failures = ship_states()
     bad = judge(states, severe, expected, now)
+    bad += add_failure_cards(failures, expected)
 
     n_open = n_close = 0
     seen_slugs = set()
@@ -349,7 +422,7 @@ def main() -> int:
             n_open += 1
 
     # coverage card — the "what logs are we missing" audit, one card
-    matrix, has_gap = coverage_note(states, expected, now)
+    matrix, has_gap = coverage_note(states, expected, now, failures)
     cov_path = CARDS / "logs-auto-coverage.yml"
     cov_card = load_card(cov_path)
     if has_gap:

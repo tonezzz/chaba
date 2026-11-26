@@ -1,0 +1,68 @@
+id: timer-alert-tony-omen-mn-ha-dev-parity
+title: Timer mn-ha-dev-parity on tony-omen failing
+column: done
+updated: 2026-11-26 20:37
+priority: high
+tags:
+- timer-alert
+- auto
+- by:timer-sentinel
+note: 'Last run (11-26 06:15) of `mn-ha-dev-parity.service` on `tony-omen` result=exit-code — investigate journal:
+  `journalctl --user -u mn-ha-dev-parity.service` on the host. See CMS `timer-timeline-tony-omen`.'
+ref: HOM-1417
+comms:
+- at: 2026-11-26 06:24
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-26 06:25
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 06:25
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 06:25
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 06:25
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 06:26
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 06:26
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 06:26
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 06:34
+  from: devin
+  text: '[still suspicious] Last run (11-26 06:15) of `mn-ha-dev-parity.service` on `tony-omen` result=exit-code
+    — investigate journal: `journalctl --user -u mn-ha-dev-parity.service` on the host. See CMS `timer-timeline-tony-omen`.'
+- at: 2026-11-26 10:05
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-26 09:46 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-26 10:05
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 10:12
+  from: devin
+  text: 'RESOLVED 2026-11-26: mirror-sweep.py default DEV_URL was plain HTTP on :8124 (400) but HA moved to mn01
+    and :8124 is now HTTPS; :9585 is MCP, not HA API. Repointed default to https://mn01.taila0626a.ts.net:8124 (7a14bc7785),
+    deployed to tony-omen, unit rerun -> Result=success/0, missing on mn-ha-dev: 0.'
+- at: 2026-11-26 10:12
+  from: devin
+  text: closed by devin
+- at: 2026-11-26 20:37
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+action:
+  status: done

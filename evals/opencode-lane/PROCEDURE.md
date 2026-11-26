@@ -93,6 +93,21 @@ write tools, emits the artifact as its final message, and the runner
 writes it to the admitted path; `verify` runs the held-out verifier
 against `runs/<job>-<ts>/` evidence.
 
+Card-declared verify contract (added 2026-11-24, card
+`doc-draft-verifier-semantic-gap` / OPS-1014): the doc-draft and
+artifact-write held-out verifiers read optional `action.verify_*`
+fields off the card at verify time — `verify_contains`/
+`verify_sections` (literal sentinels, all must appear),
+`verify_regex` (patterns, all must match), `verify_min_terms`
+(`{terms, at_least}` keyword coverage, or a bare term list = all
+required). All four keys pass board-api `ACTION_KEYS` with shape
+validation. The contract is **held-out** — verify_* values are never
+injected into the agent prompt, so the spec prose must still state
+what to write; verify_* only enforces it. The checks stay
+**mechanical, not semantic** — spec authors should pick
+sentinels/terms only a correct deliverable contains, and human doc
+review at closeout remains required.
+
 Shipped profiles (2026-10-27):
 
 | profile | scope | status |

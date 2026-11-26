@@ -627,14 +627,86 @@ class Case(unittest.TestCase):
                             for f in res.get("test_failures") or []),
                         res)
         self.assertIn("timed out", res["tests"]["error"])
+        # the timeout ran the configured retry budget before holding
+        self.assertEqual(res["tests"].get("attempts"), 2, res["tests"])
+        self.assertTrue(res["tests"].get("timeout"), res["tests"])
 
-    def test_gate_missing_runner_fails_open(self):
+    # ------------------------------------- timeout = infra flake
+    # Card board-api-queue-write-verify-lost-race-f85f2f: 'suite
+    # timeout (240s)' held merges on docs/config-only diffs three
+    # times (OPS-0200, ADA-0201, KNB-0212) — a loaded merge host, not a
+    # red suite. The gate now retries a timeout once, marks the result
+    # timeout:true, skips the pointless baseline enumeration, and a
+    # docs-only diff (docs/, stacks/, *.md) merges flagged
+    # 'gate: timeout-override'.
+
+    def test_gate_timeout_retries_once_then_passes(self):
+        """A suite that times out once and passes on retry is flake —
+        the merge lands."""
+        commit(self.wt, "feature.py", "x=1\n", "work")
+        count = self.tmp / "gate-runs"
+        # exec so the timeout kill takes the sleeper with it — a bare
+        # `sleep` grandchild would hold the output pipe open
+        self._with_test_gate({
+            "command": f"if [ -f {count} ]; then exit 0; "
+                       f"else touch {count}; exec sleep 30; fi",
+            "timeout": 1})
+        res = dr.close_out(self.card)
+        self.assertTrue(res["merged"], res)
+        self.assertTrue(res["tests"]["ok"], res["tests"])
+        self.assertEqual(res["tests"].get("attempts"), 2, res["tests"])
+        self.assertTrue(self.remote_has("master", "feature.py"))
+
+    def test_gate_timeout_docs_only_merges_flagged(self):
+        """Docs-only diff + exhausted retries -> merge lands flagged
+        'gate: timeout-override' instead of holding for a human."""
+        commit(self.wt, "docs/guide/notes.md", "# notes\n", "docs")
+        self._with_test_gate({"command": "exec sleep 30", "timeout": 1})
+        res = dr.close_out(self.card)
+        self.assertTrue(res["merged"], res)
+        self.assertTrue(res["tests"]["ok"], res["tests"])
+        self.assertTrue(res["tests"].get("timeout_override"),
+                        res["tests"])
+        self.assertTrue(res["tests"].get("timeout"), res["tests"])
+        self.assertTrue(self.remote_has("master", "docs/guide/notes.md"))
+        notes = dr.close_out_notes(res)
+        self.assertTrue(any("timeout-override" in n for n in notes),
+                        notes)
+
+    def test_gate_timeout_mixed_diff_still_holds(self):
+        """docs/ + code in one diff is NOT docs-only — the hold stays."""
+        commit(self.wt, "docs/guide/notes.md", "# notes\n", "docs")
+        commit(self.wt, "feature.py", "x=1\n", "code")
+        self._with_test_gate({"command": "exec sleep 30", "timeout": 1})
+        res = dr.close_out(self.card)
+        self.assertFalse(res["merged"], res)
+        self.assertFalse(res["tests"].get("timeout_override"))
+        self.assertFalse(res["tests"]["ok"])
+
+    def test_docs_only_paths_detector(self):
+        """Unit-level: the allowlist is docs/, stacks/, *.md — anything
+        else (or an empty diff) is not docs-only."""
+        commit(self.wt, "docs/a.md", "a\n", "docs")
+        commit(self.wt, "stacks/svc.yml", "s\n", "stack")
+        commit(self.wt, "README.md", "r\n", "md")
+        commit(self.wt, "docs/ssot/x.yml", "x: 1\n", "ssot doc")
+        self.assertTrue(dr._docs_only_paths(self.wt, "origin/master"))
+        commit(self.wt, "code.py", "x=1\n", "code")
+        self.assertFalse(dr._docs_only_paths(self.wt, "origin/master"))
+
+    def test_gate_missing_runner_fails_closed(self):
+        """OPS-1191: a host without pytest must not merge with zero test
+        evidence. "test gate skipped: pytest unavailable — fail-open"
+        was the bug; the gate is now unrunnable and holds the merge."""
         commit(self.wt, "feature.py", "x=1\n", "work")
         self._with_test_gate(
             {"command": "no-such-pytest-bin-ci-test-gate", "timeout": 10})
         res = dr.close_out(self.card)
-        self.assertTrue(res["merged"], res)
-        self.assertIn("fail-open", res["tests"]["skipped"])
+        self.assertFalse(res["merged"], res)
+        self.assertFalse(res["tests"]["ok"], res)
+        self.assertTrue(res["tests"]["unrunnable"], res)
+        self.assertIn("pytest unavailable", res["tests"]["error"])
+        self.assertFalse(self.remote_has("master", "feature.py"))
 
     def test_gate_no_tests_dir_skips(self):
         bare = self.tmp / "no-tests"
@@ -711,7 +783,7 @@ class Case(unittest.TestCase):
 
     def test_gate_skips_venv_without_pytest(self):
         """A venv whose python can't import pytest must not win —
-        otherwise the gate fail-opens and stops testing entirely."""
+        otherwise the gate can't run and the merge is held unrunnable."""
         self._pin_repos_conf()
         commit(self.wt, "feature.py", "x=1\n", "work")
         # -S drops site-packages: the shim runs but `import pytest` fails
@@ -1082,6 +1154,104 @@ class MergeRetryTest(unittest.TestCase):
             self.assertTrue(any("verified withheld" in c.get("text", "")
                                 for c in card.get("comms") or []),
                             (evidence, card.get("comms")))
+
+
+class PinContractGateTest(unittest.TestCase):
+    """OPS-1326: the merge-sweep pin gate is path-conditional and
+    fail-closed. A merge touching a pinned source or the manifest runs
+    test_runner_tooling_contract.py; an unrelated merge costs nothing.
+    """
+
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.wt = Path(self.td.name)
+        for args in (["git", "init", "-q", "-b", "master", str(self.wt)],
+                     ["git", "-C", str(self.wt), "config", "user.email", "t@t"],
+                     ["git", "-C", str(self.wt), "config", "user.name", "t"]):
+            r = subprocess.run(args, capture_output=True)
+            assert r.returncode == 0, r.stderr
+        self.manifest = dr.PIN_MANIFEST
+        mpath = self.wt / self.manifest
+        mpath.parent.mkdir(parents=True, exist_ok=True)
+        mpath.write_text(json.dumps({"tools": {"tool": {
+            "source": "scripts/board/tool.py", "dest": "tool.py",
+            "sha256": "0" * 64}}}))
+        (self.wt / "scripts/board").mkdir(parents=True, exist_ok=True)
+        (self.wt / "scripts/board/tool.py").write_text("x=1\n")
+        (self.wt / "notes.md").write_text("base\n")
+        subprocess.run(["git", "-C", str(self.wt), "add", "-A"], check=True,
+                       capture_output=True)
+        subprocess.run(["git", "-C", str(self.wt), "commit", "-qm", "base"],
+                       check=True, capture_output=True)
+        self.base = subprocess.run(
+            ["git", "-C", str(self.wt), "rev-parse", "HEAD"],
+            capture_output=True, text=True, check=True).stdout.strip()
+
+    def tearDown(self):
+        self.td.cleanup()
+
+    def _commit_change(self, path, content):
+        p = self.wt / path
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(content)
+        subprocess.run(["git", "-C", str(self.wt), "add", "-A"], check=True,
+                       capture_output=True)
+        subprocess.run(["git", "-C", str(self.wt), "commit", "-qm", "change"],
+                       check=True, capture_output=True)
+
+    @staticmethod
+    def _fake_contract(rc=0, output="OK"):
+        """Let git through, stub only the contract-test subprocess."""
+        real_run = subprocess.run
+
+        def fake(cmd, *args, **kwargs):
+            if isinstance(cmd, list) and cmd[:1] == ["git"]:
+                return real_run(cmd, *args, **kwargs)
+            return subprocess.CompletedProcess(cmd, rc, output, "")
+
+        return mock.patch.object(dr.subprocess, "run", side_effect=fake)
+
+    def test_unrelated_merge_skips_gate(self):
+        self._commit_change("notes.md", "new\n")
+        with self._fake_contract() as patched:
+            result = dr.pin_contract_gate(self.wt, self.base)
+        self.assertFalse(any("unittest" in str(c) for c in patched.call_args_list))
+        self.assertFalse(result["ran"])
+        self.assertTrue(result["ok"])
+
+    def test_pinned_source_change_runs_contract(self):
+        self._commit_change("scripts/board/tool.py", "x=2\n")
+        with self._fake_contract() as patched:
+            result = dr.pin_contract_gate(self.wt, self.base)
+        self.assertTrue(result["ran"])
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["paths"], ["scripts/board/tool.py"])
+        cmd = " ".join(patched.call_args.args[0])
+        self.assertIn("test_runner_tooling_contract.py", cmd)
+
+    def test_manifest_change_runs_contract(self):
+        self._commit_change(self.manifest, '{"tools": {}}')
+        with self._fake_contract():
+            result = dr.pin_contract_gate(self.wt, self.base)
+        self.assertTrue(result["ran"])
+        self.assertEqual(result["paths"], [self.manifest])
+
+    def test_contract_failure_holds_merge(self):
+        self._commit_change("scripts/board/tool.py", "x=2\n")
+        with self._fake_contract(rc=1, output="FAILED test_pin_hashes_match_sources"):
+            result = dr.pin_contract_gate(self.wt, self.base)
+        self.assertFalse(result["ok"])
+        self.assertTrue(result["failed"])
+
+    def test_deleted_manifest_fails_closed(self):
+        (self.wt / self.manifest).unlink()
+        subprocess.run(["git", "-C", str(self.wt), "add", "-A"], check=True,
+                       capture_output=True)
+        subprocess.run(["git", "-C", str(self.wt), "commit", "-qm", "del"],
+                       check=True, capture_output=True)
+        result = dr.pin_contract_gate(self.wt, self.base)
+        self.assertFalse(result["ok"])
+        self.assertIn("deleted", result["error"])
 
 
 if __name__ == "__main__":

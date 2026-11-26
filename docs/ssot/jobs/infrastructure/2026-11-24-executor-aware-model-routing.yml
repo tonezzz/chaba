@@ -1,0 +1,88 @@
+title: Executor-aware model routing — devin CLI ids vs LiteLLM lane aliases
+id: 2026-11-24-executor-aware-model-routing
+kind: infra-change
+card: devin-executor-model-routing
+ref: DEV-0958
+hosts: [all dispatch runners — runner-agent.py + dispatch_repos.py deploy via runner-tooling manifest; devin-dispatch.sh via devin_dispatch pin]
+summary: >-
+  Lane->model picks are now executor-aware. LANE_MODELS keeps the
+  LiteLLM-proxy aliases (litellm/*) which resolve ONLY on the
+  opencode/proxy executor; DEVIN_LANE_MODELS holds the devin-native ids
+  `devin --model` accepts (free_lane -> swe-2-flash-medium, verified
+  against `devin models list` 2026-11-24, cost_tier Free).
+  paid_frontier is deliberately ABSENT from DEVIN_LANE_MODELS: the paid
+  route requires explicit budget approval, so the lane keeps the devin
+  default rather than silently mapping to a billable model. The
+  tony-macbook Cline/Nest dispatch died pre-inference when
+  litellm/or-claude-fable-5.1 reached `devin --model` (Unknown model).
+change:
+  - >-
+    scripts/board/dispatch_repos.py — canonical lane tables +
+    model_valid_for_executor(model, executor) (provider namespace
+    contract: opencode takes provider/model ids, devin/claude take
+    bare ids) + lane_model(lane, executor) ('' executor resolves devin;
+    non-opencode/devin executors get '' — their launch path owns model
+    selection).
+  - >-
+    scripts/board/runner-agent.py — vendored mirrors of both helpers
+    (deploys standalone where dispatch_repos isn't importable) plus
+    rewired start_task (declared pin vs lane pick resolved per resolved
+    executor; bad-namespace declared pins drop to executor default with
+    a card comms note), claim_pass (persists the model the actual route
+    will use — opencode litellm alias vs devin native id), and
+    _start_opencode_lane (skips bare devin ids persisted by earlier
+    claims when picking the opencode model).
+  - >-
+    scripts/board/kanban-dispatch.py — start_pending persists
+    dr.lane_model(lane, "devin") instead of the raw LANE_MODELS litellm
+    id, and the launch env drops any model failing
+    model_valid_for_executor for the resolved executor before
+    DISPATCH_MODEL is set.
+  - >-
+    scripts/board/board-api.py — _apply_classify_at_queue no longer
+    persists a lane-derived action.model at queue time (executor
+    unknown then); lane + lane_source still stamp so claim/launch
+    resolves the pick.
+  - >-
+    scripts/devin/devin-dispatch.sh — _model_preflight validates
+    $DISPATCH_MODEL against `devin models list` (--format json with a
+    plain-text-table fallback) BEFORE systemd-run in both cmd_start and
+    _devin_run: rc 2 rejects an unlisted id, rc 3 refuses when the list
+    itself can't be verified, billable cost_tier ids pass with a stderr
+    note (explicit pin = the budget-approval path). Memoized per
+    process; DEVIN_MODEL_PREFLIGHT=0 is the ops escape hatch.
+  - >-
+    tests/devin/test_model_preflight.py — drives the real script
+    end-to-end against a mocked `devin` binary (json + text-table +
+    broken modes): litellm alias -> exit 2 pre-repo-check, listed free
+    id -> passes gate, paid id -> passes with billable note, broken CLI
+    -> exit 3, preflight=0 bypass works.
+  - >-
+    tests/board/test_runner_agent_lane.py — updated for executor-aware
+    picks: free_lane on devin gets swe-2-flash-medium, paid_frontier on
+    devin persists no model (gated), executor=devin pin still honors a
+    persisted lane for the devin-native pick.
+  - >-
+    scripts/devin/runner-tooling.manifest.json — sha256 pins recomputed
+    for the merged runner-agent.py / dispatch_repos.py /
+    devin-dispatch.sh sources (test_runner_tooling_contract enforces
+    pin==source in the same commit).
+notes: >-
+  Attempt history: the 2026-11-24 08:08 tony-macbook run implemented the
+  full fix on dispatch/20261124-080849-... but auto-merge conflicted on
+  kanban-dispatch.py (lane_source provenance landed on master meanwhile)
+  and runner-tooling.manifest.json (both sides moved pinned sources).
+  This change merges that branch into current master resolving both —
+  lane_source kept AND dr.lane_model() used; manifest pins recomputed
+  against merged content. For the Cline pilot the no-token-cost route
+  remains local qwen3:4b via the Nest adapter (PR #45), not a dispatch
+  lane. Known adjacent bug spotted (pre-existing on master, NOT fixed
+  here): runner-agent start_task has a duplicated nlm_batch dispatch
+  block (~line 3618) — second copy is unreachable dead code.
+verified: >-
+  python3 -m pytest tests/devin/test_model_preflight.py (7 pass),
+  tests/board/test_runner_agent_lane.py + test_runner_tooling_contract.py
+  + test_queue_time_classify.py + test_executor_contract.py +
+  tests/devin/test_unit_exit_status.py (175 pass, 17 subtests).
+  `swe-2-flash-medium` confirmed present in live `devin models list`
+  output (family swe-2-flash, cost_tier Free) on tony-omen 2026-11-24.

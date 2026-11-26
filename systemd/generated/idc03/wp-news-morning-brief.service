@@ -1,0 +1,8 @@
+[Unit]
+Description=AI/model/provider morning brief (private WP page) (job:wp-news-morning-brief, rendered from ssot.jobs.yml — do not edit)
+ConditionPathExists=%h/CascadeProjects/chaba/scripts/ada/news-morning-brief.py
+
+[Service]
+Type=oneshot
+TimeoutStartSec=600
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/news-morning-brief.py brief

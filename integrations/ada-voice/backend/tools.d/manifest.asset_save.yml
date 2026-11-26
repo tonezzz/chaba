@@ -1,0 +1,24 @@
+# manifest.yml snippet — merge under tools: in
+# <ada-voice>/backend/tools.d/manifest.yml.
+#
+# asset_save (2026-11-24, chaba card persona-photo-store): personas
+# could not hold or reshow photos — bank docs were text-only and no
+# tool returned a stored image URL to the relay's _image_msgs path.
+# asset_save stores an inbound LINE image (or any fetchable image URL)
+# under the media archive's persona-assets/ dir — publicly served at
+# /relay-img/arch/persona-assets/ — and upserts an assets/<slug> bank
+# doc carrying meta.image_url. Recall: _doc_to_hit surfaces image_url
+# on hits and ada_memory_search promotes the first image-bearing hit
+# to a top-level image_url the relay attaches automatically.
+#
+# policy: read + secondary_allowed: false — matches the memory-write
+# tier (memory.remember/forget are owner-tier, SECONDARY_BLOCKED); the
+# write itself still rides the ada_remember ACL + staged-writes lane
+# inside run(), and confirmed-policy banks refuse in-tool.
+# 60s — optional remote fetch + archive write + mddb upsert.
+tools:
+  asset_save:
+    module: asset_save
+    policy: read
+    secondary_allowed: false
+    timeout_s: 60

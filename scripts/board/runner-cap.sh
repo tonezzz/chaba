@@ -6,8 +6,16 @@
 # lines (hand-provisioned). This script writes a drop-in override so the
 # base unit stays untouched, reloads, and verifies the effective env.
 #
-#   runner-cap.sh <host> <cap> [max-load-pc]      # e.g. runner-cap.sh idc01 4 0.85
+#   runner-cap.sh <host> <cap> [max-load-pc] [remote-cap]
+#                                             # e.g. runner-cap.sh idc01 4 0.85 6
 #   runner-cap.sh <host> show                     # current cap/labels/gate
+#
+# <cap> is the LOCAL-executor ceiling (RUNNER_CAP — devin/opencode/
+# script/container lanes). <remote-cap> optionally sets RUNNER_REMOTE_CAP
+# for remote-async executors (nlm_batch, kk_mac_local — OPS-1284
+# runner-per-executor-caps): they hold claim slots while doing ~zero
+# local work, so they count separately and are exempt from the
+# RUNNER_MAX_LOAD_PC claim gate.
 #
 # Safety ceiling: a Devin dispatch session costs ~3-4 GB RSS (node +
 # python + tool children); cap is refused above floor(mem_total_gb / 3.5)
@@ -24,6 +32,7 @@ FORCE=0
 HOST="${1:?host required}"; shift
 ACTION="${1:-show}"
 GATE="${2:-}"
+REMOTE="${3:-}"
 
 remote() {
   # Self-ssh is often not provisioned (publickey fails on e.g. idc02);
@@ -59,6 +68,13 @@ if [ -n "$GATE" ]; then
   GATE_LINE="Environment=RUNNER_MAX_LOAD_PC=$GATE"
 fi
 
+REMOTE_LINE=""
+if [ -n "$REMOTE" ]; then
+  [[ "$REMOTE" =~ ^[0-9]+$ ]] || { echo "remote-cap must be a non-negative int" >&2; exit 2; }
+  # remote executors do ~zero local work — no mem safety ceiling
+  REMOTE_LINE="Environment=RUNNER_REMOTE_CAP=$REMOTE"
+fi
+
 remote bash -s <<EOF
 set -euo pipefail
 d="\$HOME/.config/systemd/user/runner-agent.service.d"
@@ -68,6 +84,7 @@ cat > "\$d/cap.conf" <<CONF
 [Service]
 Environment=RUNNER_CAP=$CAP
 $GATE_LINE
+$REMOTE_LINE
 CONF
 systemctl --user daemon-reload
 systemctl --user try-restart runner-agent.timer runner-agent.service 2>/dev/null || true

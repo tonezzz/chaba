@@ -18,7 +18,7 @@ async function runAutoIndex() {
     // Run the main indexing script
     const { stdout, stderr } = await execAsync(
       "node /home/tony/CascadeProjects/chaba/scripts/weaviate/index-ssot.mjs",
-      { timeout: 3600000 } // 1 hour — a full rebuild of the SSOT corpus exceeds 10 min
+      { timeout: 10800000, maxBuffer: 256 * 1024 * 1024 } // 3h; full SSOT rebuild >1h and stdout exceeds Node 1MB default
     );
 
     console.log("Indexing output:", stdout);

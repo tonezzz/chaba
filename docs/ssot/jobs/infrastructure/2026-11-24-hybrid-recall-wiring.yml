@@ -1,0 +1,94 @@
+# SSOT Job Lifecycle: hybrid recall wiring — bench verdict applied to the hook
+# Card: wire-hybrid-recall-t1-semantic-t2-keywor-ef89a0.
+# Builds on: distiller-enrich-productionize (session_recall.py + hook
+# wiring, commit a12b75e91f) and the bench-recall v2 verdict
+# (reports/bench-recall-v2-20261022.md — hybrid T1+T2 = 91.7% hit@3,
+# the only configuration above the 80% AQ for sessions.db prune-to-T0).
+
+title: wire-hybrid-recall — SessionStart hook runs T1 semantic + T2 keyword, <=8KB
+subtitle: sessions.db prune prerequisite — both retrieval lanes verified live post-prune
+icon: database
+
+planning:
+  goal: |
+    Close the gap between the bench-validated hybrid design and the
+    deployed SessionStart hook: (a) T1 semantic_search over the
+    devin-session bank scoped by project/session context, (b) T2
+    keyword over locally grep-able transcript archives, (c) merged
+    top-k injected at <=8KB, fail-open per lane.
+  decisions: |
+    State found: distiller-enrich-productionize had already landed
+    session_recall.py (T1 mddb /v1/vector-search status=active topK6
+    thr0.45 + T2 sqlite FTS5/bm25 over transcripts/ + cli/summaries/ +
+    summaries/) and the notebooklm-recall.sh call site. This dispatch
+    audited it against the card spec and closed two real gaps:
+
+    * Injection budget: memory tail (8000c) + hybrid block (4000c)
+      could reach ~12KB — over the 8KB cap. Rebalanced to 3500c +
+      4300c (~7.9KB worst case including headers).
+
+    * Lane independence: a broken FTS5 index (open_index /
+      index_archives raising) killed the WHOLE recall — T1 semantic
+      was lost with it. Restructured main() so the T2 index opens in
+      its own try; T1 runs regardless, T2 is skipped cleanly when
+      con is None. Also: when both lanes return nothing the hook now
+      emits NO block at all (an empty "# Session recall" header was
+      pure context noise).
+
+    * T1 scoping: card says "devin-session/* bank scoped to recent
+      project/cards". Verified live that ada-ha-bank-devin-tony is
+      100% session docs (576 devin-session-summary + 424
+      devin-session, zero other subjects) — status=active IS the
+      session-bank scope; a subject filter was tested and only
+      perturbed ranking (bench already showed scoped semantic does
+      not improve hit@3). Kept unscoped; query-side scoping via
+      --session title (sessions.db) + --project is the "recent
+      project/cards" signal. No devin-session-v2/* leftovers in bank.
+
+    * Deployment: hook pair still NOT deployed anywhere —
+      ~/.config/devin/scripts/ on tony-dell/tony-omen has an older
+      notebooklm-recall.sh (2683B, no hybrid call) and no
+      session_recall.py; tony-macbook has the flat 1604B version.
+      Repo-side wiring is complete; scp to
+      ~/.config/devin/scripts/ remains the manual step (same pattern
+      as runner-agent redeploys).
+
+  changed:
+    - "scripts/devin/session/notebooklm-recall.sh (8KB budget: 3500c
+      memory tail + 4300c hybrid block)"
+    - "scripts/devin/session/session_recall.py (independent lane
+      fail-open, empty-block suppression, devin-session/* T1 hits
+      surfaced before devin/<hex> raw dumps)"
+    - "tests/devin/test_session_recall.py (+2 fail-open tests)"
+
+verify: |
+  On tony-dell (2026-11-24):
+  - bench-recall --lanes mddb transcript hybrid_t2 rerun live against a
+    corpus rebuilt from the surviving T2 archives (fixture sessions are
+    pruned from every sessions.db; cli/summaries/<name>.md dumps are the
+    post-prune transcript source): hybrid_t2 hit@3 = 91.7% — identical
+    to the v2 verdict; T1 63.9%, T2 66.7%. reports/bench-recall-
+    hybrid-t2-rerun-20261124.{json,md}.
+  - session_recall.py manual recall on 3 known sessions
+    (aluminum-opossum, awake-sheet, confusion-subway): correct session
+    + golden-answer content surfaced via T1 and/or T2 every time.
+  - notebooklm-recall.sh end-to-end SessionStart payload: additional-
+    Context 6292–7915 chars (<=8KB), title-join query confirmed.
+  - Fail-open: mddb URL dead -> T2-only, exit 0; recall script absent
+    -> memory-tail-only, exit 0. T2 index built: 786 files /
+    594,815 chunks at ~/.local/share/devin/session-recall/index.db.
+  - unittest tests/devin/test_session_recall.py: 13 passed (+2 new
+    fail-open tests).
+
+residual: |
+  * Deploy notebooklm-recall.sh + session_recall.py to
+    ~/.config/devin/scripts/ on session hosts (tony-dell, tony-macbook,
+    tony-omen, idc02/03 as desired) — manual scp, then the next
+    SessionStart picks it up. ansible/playbooks/session-capture.yml
+    already stats session_recall.py presence.
+  * First index_archives run per host is budget-bounded (45s/call);
+    tony-dell's ~912MB cli/summaries archive catches up over successive
+    hook fires (pre-warmed once manually during verification).
+  * idc02 lacks a devin-summaries-sync timer — its cli summaries only
+    reach the bank on manual sync runs (carried over from
+    distiller-enrich-productionize residual).

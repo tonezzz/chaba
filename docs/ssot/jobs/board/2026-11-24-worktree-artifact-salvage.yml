@@ -1,0 +1,103 @@
+id: worktree-artifact-salvage-20261124
+title: Salvage uncommitted dispatch-worktree artifacts from tony-macbook
+date: 2026-11-24
+card: audit-miss-uncommitted-worktree-job-artifacts
+ref: AUD-0029
+host: idc02 (dispatch worktree) sourcing tony-macbook ~/CascadeProjects/chaba-wt-*
+status: landed
+
+goal: >
+  AUD-0973 found produced artifacts living only as uncommitted or
+  unmerged-branch files in still-existing worktrees — never reached
+  origin/master. Land them via branch+merge (this dispatch branch),
+  or consciously discard with a recorded reason.
+
+sources:
+  chaba-wt-kk-mac-video-render-probe-20261029:
+    branch: feat/kk-mac-video-render-probe-20261029 (4 commits unmerged, mb d8200e19aa)
+    landed: >
+      6 nest job records (ltx-mps-probe, storyboard-i2v-probe,
+      i2v-fullshot-probe, i2v-shot02-test, nest-dispatch-standard,
+      dance-party-local-render), build-kk-mac-scene-packs.py,
+      kk-mac-i2v-runner.py, 12 colab packs (ltx-mps-probe +
+      storyboard-i2v probe/fullshot01/shot02-10 incl. hash-bound
+      inputs/*.pt ~41MB), 5 tests/colab/test_kk_mac_*.py,
+      docs/kb/colab-mcp-jobs.md KK-Mac section (appended),
+      ssot.procedures.yml nest-kk-mac-pack entry.
+    notes: >
+      inputs/shotNN.pt are declared pack inputs bound by sha256 in the
+      job records; shot01/shot02 exist ONLY in that worktree, shot03-10
+      also have ~/.cache staging copies. Landed whole for
+      self-contained packs — 41MB one-time cost; candidate for later
+      Drive-only extraction if repo size becomes a problem.
+      ssot.dev-system.assessment.yml worktree diff DISCARDED — stale
+      auto-assessment snapshot, master has newer.
+  chaba-wt-kk-pdf-image-audit:
+    branch: feat/kk-pdf-image-audit (5 commits unmerged, mb 3718a3dd6a)
+    landed: >
+      source-audit report, 3 nest job records (image-conditioning,
+      pdf-image-audit, voice-clone probes), 6 colab packs
+      (image-conditioning-probe, pdf-image-audit, pdf-text-diff,
+      r4-preflight, voice-clone-probe), 2 tests, plus 3-way merge of
+      kk-video-c9f99fee6146-preview/pack.yml (kept master hf_repos +
+      took session r4-preflight requires/QC/edge-tts pin) and
+      test_pack_preflight.py.
+    notes: >
+      docs/ssot/jobs/nest/2026-10-29-kk-private-v2-preview.yml
+      DISCARDED — master already carries a NEWER version (dispatch
+      2026-10-29 18:32 re-verification); worktree copy was stale.
+      tests/colab/test_kk_video_preview_v2.py DISCARDED — identical
+      on master. preview-v2 pack already fully on master.
+  chaba-wt-sacred-father-panel-procedure-20261031:
+    branch: docs/sacred-father-panel-cut-procedure-20261031 (5 commits unmerged, mb 30bf7ef64d)
+    landed: >
+      docs/kb/storyboard-panel-to-cut-procedure.md (final worktree
+      version incl. uncommitted edits), nest job record
+      2026-10-31-storyboard-panel-to-cut-procedure.yml,
+      ssot.procedures.yml storyboard-panel-to-cut entry +
+      media/video section header.
+    notes: >
+      docs/kb/nang-sibsong-lxmf-contacts.md NOT FOUND — absent from
+      the worktree, all worktrees, all git objects on tony-macbook,
+      and every reachable host. Card spec entry was phantom; nothing
+      to land.
+  chaba-wt-opencode-first-eval-20261029:
+    branch: eval/opencode-plan-route-first-20261029 (HEAD already on master; all work uncommitted)
+    landed: >
+      devnest job record 2026-10-29-opencode-jev-plan-route-eval.yml,
+      compile_proposal.py, 10 plan-proposal/plan-route job yamls,
+      profiles plan-route-only + proposal-only, 3 eval reports,
+      evals/shadow/task artifacts, tests/devnest/test_plan_compiler.py,
+      3-way merge of lane_gate.py (ollama-qwen7b zero-price),
+      opencode_profiles.py (isolation.project_context=scratch
+      lint+project_dir_for_run+run_opencode+classify_failure_reason,
+      reconciled onto master's v2-standalone/run_profile_process/
+      observer/watch runner), test_lane_gate.py, test_opencode_profiles.py
+      (union imports; profile list = master 11 + 2 new).
+    notes: >
+      evals/opencode-lane/runs/** DISCARDED — gitignored on master
+      (ephemeral per-run output; 65MB/3951 files incl. node_modules).
+      s0-*.yaml job files DISCARDED — master versions newer
+      (idc02 host + or-free-nemotron-ultra routing).
+
+not_found:
+  - docs/ssot/jobs/ops/2026-11-03-ops1037-command-efficiency-apply.yml
+  - docs/ssot/jobs/models/2026-11-03-kk-ltx23-gpu-format-audit.yml
+detail: >
+  Searched every chaba worktree on tony-macbook (git status + git
+  log --all --diff-filter=A), full filesystem find under
+  ~/CascadeProjects and ~, plus idc02/idc03/tony-dell/tony-omen/
+  mn01/con01 ~/CascadeProjects — file exists nowhere reachable and
+  is in no commit in the macbook object store. Owning worktrees
+  were likely cleaned before the audit snapshot. Conscious discard:
+  nothing to land; if the records matter they must be regenerated.
+
+verification:
+  - python3 -m pytest tests/devnest/test_opencode_profiles.py → 89 passed
+  - python3 -m pytest tests/colab/test_pack_preflight.py → 36 passed
+  - pytest tests/colab/test_kk_mac_* test_pdf_image_audit test_kk_voice_clone_probe test_plan_compiler → 34 passed
+  - >
+    tests/devnest/test_lane_gate.py: 58 passed, 1 PRE-EXISTING master
+    failure (Admit.test_s1_requires_opencode_lanes_env — reproduces on
+    clean origin/master, unrelated to this salvage)
+  - python3 -c yaml.safe_load on edited ssot.procedures.yml + pack.yml → OK

@@ -1,0 +1,32 @@
+id: timer-alert-tony-dell-ansible-runner-tool-guard
+title: Timer ansible-runner-tool-guard on tony-dell failing
+column: done
+updated: 2026-11-26 20:38
+priority: high
+tags:
+- timer-alert
+- auto
+- by:timer-sentinel
+note: 'Last run (11-26 12:41) of `ansible-runner-tool-guard.service` on `tony-dell` result=exit-code — investigate
+  journal: `journalctl --user -u ansible-runner-tool-guard.service` on the host. See CMS `timer-timeline-tony-dell`.'
+ref: OPS-1435
+comms:
+- at: 2026-11-26 12:54
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-26 13:04
+  from: devin
+  text: '[still suspicious] Last run (11-26 12:41) of `ansible-runner-tool-guard.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u ansible-runner-tool-guard.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-26 14:04
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-26 13:48 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-26 14:04
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+action:
+  status: done

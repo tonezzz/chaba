@@ -43,7 +43,10 @@ import fcntl
 import hashlib
 import json
 import os
+import queue
 import re
+import threading
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -77,6 +80,15 @@ BODY_MAX = 20000
 LIST_MAX = 20
 LINK_MAX = 500
 
+# Per-sink delivery deadline (card board-api-wedged-8min-on-hung-
+# outbound-h-389be8): one hung sink must not park board-api's WP_LOCK
+# for the whole fan-out. Sized above the slowest legit sink (~5
+# sequential upstream calls at their own socket timeouts); a deadline
+# hit lands in the outbox like any DeliveryError. Env-tunable because
+# the right bound depends on how dead the upstream actually is.
+PUB_SINK_DEADLINE_S = float(os.environ.get(
+    "PUB_SINK_DEADLINE_S", "240"))
+
 
 class PubError(ValueError):
     """Bad event or bad request — surfaces as a 400."""
@@ -89,6 +101,65 @@ class DeliveryError(RuntimeError):
 class Skip(Exception):
     """Adapter declines this event (missing ref, not applicable) —
     recorded as skipped in the receipt, never retried."""
+
+
+class DeadlineError(TimeoutError):
+    """run_bounded deadline hit — the wrapped call keeps running on its
+    daemon thread (its own socket timeouts still apply) but the caller
+    stops waiting. publish_event treats it like any sink failure:
+    outbox retry."""
+
+
+def run_bounded(fn, timeout_s: float, label: str):
+    """Run fn() on a daemon thread; return its result or raise
+    DeadlineError after timeout_s seconds.
+
+    urllib's timeout is per-socket-op, not a deadline — a peer that
+    trickles a byte every <timeout keeps a call alive forever, and a
+    sink chain of sequential API calls (MediaWikiSink does ~5) can hold
+    board-api's WP_LOCK for minutes (card
+    board-api-wedged-8min-on-hung-outbound-h-389be8). On expiry the
+    orphan keeps running under its own per-op socket timeouts but holds
+    no locks, so the write door stays live; sinks are upserts, so a
+    late orphan delivery plus an outbox retry converges instead of
+    duplicating."""
+    box = queue.Queue(maxsize=1)
+
+    def _run():
+        try:
+            box.put((True, fn()))
+        except Exception as e:  # noqa: BLE001 — re-raised caller-side
+            box.put((False, e))
+
+    threading.Thread(target=_run, daemon=True,
+                     name=f"pub-{label}").start()
+    try:
+        ok, val = box.get(timeout=max(0.1, float(timeout_s)))
+    except queue.Empty:
+        raise DeadlineError(
+            f"{label} exceeded {timeout_s:.0f}s deadline")
+    if ok:
+        return val
+    raise val
+
+
+def _flock_bounded(fh, timeout_s: float = 10.0) -> None:
+    """LOCK_EX with a deadline — fcntl.flock blocks in the kernel AND
+    holds the GIL on py<=3.13, so an unbounded acquire here can freeze
+    the whole board-api process behind a stuck lock holder (the
+    2026-11-25 wedge class). These ledger appends only ever contend
+    with this same process, so 10s is generous; expiry raises
+    TimeoutError, which the sink/outbox path treats as a retryable
+    failure instead of parking the interpreter."""
+    t0 = time.monotonic()
+    while True:
+        try:
+            fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            return
+        except BlockingIOError:
+            if time.monotonic() - t0 >= timeout_s:
+                raise TimeoutError(f"flock busy >{timeout_s:.0f}s")
+            time.sleep(0.05)
 
 
 def _str_list(v, name: str) -> list:
@@ -430,7 +501,7 @@ class JsonSink(Sink):
         line = json.dumps({"delivered_at": _now_iso(), "event": ev},
                           ensure_ascii=False)
         with self.path.open("a", encoding="utf-8") as fh:
-            fcntl.flock(fh, fcntl.LOCK_EX)
+            _flock_bounded(fh)
             fh.write(line + "\n")
         return {"ref": f"{self.path.name}#{ev['event_id']}"}
 
@@ -468,8 +539,23 @@ class TelegramSink(Sink):
         bits = [head]
         if ev["body"]:
             bits.append(ev["body"][:220])
+        refs = []
         if ev["kind"] == "news" and ev["evidence"]:
-            bits.append(str(ev["evidence"][0]))
+            refs.append(str(ev["evidence"][0])[:160])
+        refs.extend(
+            str(r)[:160] for r in (ev.get("media") or [])
+            if str(r).strip())
+        if refs:
+            bits.append("refs: " + " · ".join(refs[:3]))
+        meta = ev.get("meta") or {}
+        detail = []
+        for key in ("job_status", "qc", "sha256", "hash",
+                    "artifact", "drive"):
+            val = meta.get(key)
+            if val not in (None, ""):
+                detail.append(f"{key}={str(val)[:120]}")
+        if detail:
+            bits.append(" · ".join(detail[:4])[:300])
         return "\n".join(bits)[:3800]
 
     def publish(self, ev: dict) -> dict:
@@ -477,6 +563,13 @@ class TelegramSink(Sink):
         thread = (ev.get("meta") or {}).get("tg_thread_id")
         if isinstance(thread, int):
             payload["message_thread_id"] = thread
+        else:
+            for key, field in (("project", "project_id"),
+                               ("card", "card_ref"),
+                               ("job", "job_ref")):
+                value = ev.get(key)
+                if value:
+                    payload[field] = value
         r = self._poster(payload)
         if isinstance(r, dict) and r.get("ok") is False:
             raise DeliveryError(f"telegram relay -> {r.get('error')}")
@@ -931,7 +1024,7 @@ class Outbox:
     def _append(self, path: Path, rec: dict) -> None:
         self.dir.mkdir(parents=True, exist_ok=True)
         with path.open("a", encoding="utf-8") as fh:
-            fcntl.flock(fh, fcntl.LOCK_EX)
+            _flock_bounded(fh)
             fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
     def note(self, ev: dict, frm: str, receipts: dict,
@@ -979,13 +1072,26 @@ class Outbox:
         tmp.replace(self.outbox_file)
 
     def drain(self, sinks: dict, now: str | None = None,
-              frm: str = "outbox-drain") -> dict:
+              frm: str = "outbox-drain",
+              budget_s: float | None = None) -> dict:
         """Retry due deliveries; backoff 30s*2^n capped 30m, dead-letter
         after MAX_ATTEMPTS. Returns a small summary — called piggyback
-        on every /publish and by a timer later."""
+        on every /publish and by a timer later.
+
+        budget_s caps how long drain keeps LAUNCHING entries (checked
+        between entries; an in-flight sink.publish finishes): a backlog
+        of hung sinks must not hold WP_LOCK indefinitely — unreached
+        entries stay pending for the next drain."""
         now_e = _epoch(now or _now_iso())
-        keep, res = [], {"delivered": [], "retrying": 0, "dead": 0}
+        t0 = time.monotonic()
+        keep, res = [], {"delivered": [], "retrying": 0, "dead": 0,
+                         "deferred": 0}
         for e in self._pending():
+            if budget_s is not None \
+                    and time.monotonic() - t0 >= budget_s:
+                keep.append(e)
+                res["deferred"] += 1
+                continue
             if e.get("next_at", 0) > now_e:
                 keep.append(e)
                 continue
@@ -996,7 +1102,9 @@ class Outbox:
                     raise Skip(f"unknown sink {e.get('sink')}")
                 if not isinstance(ev, dict) or "kind" not in ev:
                     raise Skip("malformed outbox event")
-                r = sink.publish(ev)
+                r = run_bounded(
+                    lambda s=sink, v=ev: s.publish(v),
+                    PUB_SINK_DEADLINE_S, f"drain:{e.get('sink')}")
             except Skip as ex:          # will never succeed — dead-letter
                 e["last_error"] = str(ex)
                 self._append(self.dead_file, e)
@@ -1075,7 +1183,9 @@ def publish_event(body: dict, sinks: dict, outbox: Outbox,
                                   "reason": reason}
                 continue
         try:
-            r = sink.publish(ev)
+            r = run_bounded(
+                lambda s=sink, v=ev: s.publish(v),
+                PUB_SINK_DEADLINE_S, f"sink:{name}")
             receipts[name] = {"status": "delivered", **dict(r or {})}
             if noise is not None:
                 noise.stamp(name, ev, now=now)

@@ -1,0 +1,117 @@
+title: Bench gemini-3.8-live-extended-thinking against the 3.8-live pin
+id: 2026-11-26-gemini-38-live-extended-thinking-bench
+date: 2026-11-26
+runner: idc03
+kind: bench-result
+card: gemini-38-live-extended-thinking-bench-2026-11-26  # ADA-1446
+
+summary: >
+  Extended-thinking Live runs cleanly once a thinking level is declared, and
+  keeps SLA-level latency and WER, but it emitted zero function calls on all
+  14 tool-bearing fixtures. It is not a drop-in replacement for the promoted
+  gemini-3.8-live voice pin. DO NOT PROMOTE.
+
+setup_requirement:
+  discovery: >
+    First unmodified run closed every websocket with 1007 "Thinking level must
+    be specified for this model." (20/20 error, ~60s per fixture).
+  probe_matrix:
+    - "setup.generationConfig.thinkingConfig.thinkingLevel = LOW -> PASS"
+    - "same with HIGH or MEDIUM -> PASS"
+    - "setup.generationConfig.thinkingLevel -> 1007 unknown field"
+    - "setup.thinkingConfig -> 1007 unknown field"
+    - "thinkingLevel OFF / NONE -> 1007 invalid value"
+    - "setup.toolConfig.functionCallingConfig.mode=ANY -> 1007 unknown field"
+  harness_change: >
+    Only a /tmp copy of scripts/voice-bench was patched to add thinkingConfig
+    to setup when GEMINI_THINKING_LEVEL is set. No upstream harness, pin, key,
+    billing, gateway or service change.
+
+method:
+  key_used: GEMINI_API_KEY_MICHAEL  # free-tier; paid project is spend-capped
+  key_printed: false
+  model: gemini-3.8-live-extended-thinking
+  thinking_level: LOW
+  harness: patched /tmp/opencode/voice-bench-ext (setup-only change)
+  fixtures: 20 (same manifest as the 2026-11-24 3.8-live promotion gate)
+  fixture_timeout_s: 90
+  results:
+    - scripts/voice-bench/results/gemini-live-eval-3.8-live-extended-thinking-low-20261126.json
+    - scripts/voice-bench/results/gemini-live-eval-probes-extended-thinking-20261126.json
+
+comparison:
+  baseline:
+    model: gemini-3.8-live
+    date: 2026-11-24
+    key_var: GEMINI_API_KEY_PAID
+    ok: "20/20"
+    mean_ttfa_ms: 306.2
+    mean_total_ms: 6197.55
+    mean_wer: 0.01
+    tool_call: {exact: 8, partial: 5, none: 1, "n/a": 6}
+  candidate:
+    model: gemini-3.8-live-extended-thinking
+    thinking_level: LOW
+    ok: "20/20"
+    mean_ttfa_ms: 21.35
+    mean_total_ms: 5397.3
+    mean_wer: 0.01
+    tool_call: {exact: 0, partial: 0, none: 14, "n/a": 6}
+
+probes:
+  barge_in:
+    interrupted_events: 1
+    turn_completes: 2
+    second_turn_complete_seen: true
+    tool_calls: []
+    errors: []
+    elapsed_s: 3.44
+  soak_4min:
+    minutes_configured: 4
+    turns: 4
+    turn_completes: 4
+    resumption_updates: 1
+    disconnects: 0
+    errors: []
+    elapsed_s: 240.0
+  prior_soak_20261124:
+    model: gemini-3.8-live_extended
+    minutes_configured: 8
+    turns: 9
+    turn_completes: 9
+    resumption_updates: 1
+    disconnects: 0
+    errors: []
+
+findings:
+  - "Tool use is the blocker: 0 exact / 0 partial / 14 none on tool-bearing fixtures, versus 8 exact / 5 partial / 1 none on the baseline. The model says 'I'll turn those on for you' without calling hass_turn_on."
+  - "A raw BidiGenerateContent dump confirmed no functionCall parts and no toolCall message in the response — the failure is in model behavior, not adapter parsing."
+  - "LOW, MEDIUM and HIGH all failed to call tools on the smoke fixture, so this is not a thinking-budget setting issue."
+  - "Speech recognition and session health are fine: 20/20 ok, WER 0.01, one clean barge-in, two clean soaks (4 min here, 8 min on 2026-11-24)."
+  - "Total round-trip improved from 6198ms to 5397ms, but the reported 21ms mean ttfa is a VAD-anchoring artifact from the model's empty first modelTurn; do not treat it as a real latency win."
+  - "The comparison crosses keys (paid baseline vs free-tier candidate); behavior is comparable, cost/latency under production quota is not measured here."
+
+verdict: >
+  DO NOT PROMOTE. Keep gemini-3.8-live as the sole rview-live and default Live
+  model. Extended-thinking may be usable for tool-free conversational Live
+  turns with an explicit thinking level, but it needs a tool-use fix or a
+  different tool-calling configuration before it can serve HA commands.
+
+guardrails:
+  - "No key, billing, gateway, model-pin or service change."
+  - "No wiki publish in this track."
+  - "Paid key was not retried after its monthly spend cap; free-tier key used."
+
+activation_gate:
+  - "DONE 2026-11-26: card ADA-1446 created in backlog via board-api."
+  - "DONE 2026-11-26: user selected this track from the exploration options."
+  - "DONE 2026-11-26: 20-fixture bench, barge-in probe and 4-minute soak completed."
+
+verify:
+  - "DONE 2026-11-26: baseline and candidate result JSONs stored under scripts/voice-bench/results/."
+  - "DONE 2026-11-26: verdict recorded as DO NOT PROMOTE with no SSOT pin edits."
+
+remaining:
+  - "If revisiting, test a tool-calling-capable Live variant or a different client shape (google-genai SDK) before another full bench."
+  - "Fix the ttfa anchor for models that emit an empty first modelTurn before comparing latency again."
+  - "Re-run on the paid key only after the monthly spend-cap situation is explicitly resolved by Tony."

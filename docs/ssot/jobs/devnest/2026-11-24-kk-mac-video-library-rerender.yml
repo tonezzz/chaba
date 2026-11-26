@@ -1,0 +1,145 @@
+title: KK-Mac video library rerender — inventory, control pack, gated queue
+card: kk-mac-video-library-rerender
+date: 2026-11-24
+session: dispatch-wt-20261124-170535-use-the-proven-kk-mac-mlx-lane (idc02)
+
+summary: >-
+  Re-inventoried the whole old video library at its CURRENT locations
+  (the 2026-10-29 paths are stale — /home/tony/ada-nest-videos was
+  archived into tony-dell's chaba checkout), reclassified every item,
+  proved the Colab golden-hour scenes are MLX-reproducible via the
+  embed-injection lane, staged ONE control pack on the KK-Mac MLX queue
+  with full owner-use/idle/load/memory gates, and left a gated launcher
+  running on kk-mac that fires nest-worker only when the machine is
+  genuinely idle. No full-library enqueue — that waits for the control
+  comparison + KK review per spec.
+
+library_locations:
+  note: /home/tony/ada-nest-videos does NOT exist on any live host; it was moved.
+  local_archive: tony-dell:~/CascadeProjects/tony-chaba-dell/archive/ada-nest-videos/
+  vimax_repo: tony-dell:~/CascadeProjects/tony-chaba-dell/archive/vimax-test/ + tony-omen:~/CascadeProjects/archive/vimax-test/
+  vimax_workdirs: >-
+    kk-mac adanest:~/ViMax/.working_dir/{idea2video-local=Golden Hour Catch
+    (== vimax-run3-scene0 source), idea2video-real=Evening's Catch/Peng
+    (4 descs, 0 videos)}; tony-omen:~/CascadeProjects/archive/vimax-test/
+    ViMax/.working_dir/ (8 fishing-story variant runs, 1 video total)
+  drive_queue: gdrive:ada-nest/kk-mac-video-pilot/{packs,queue,controls,final,comparisons,corrections,inputs,manifests,model-archive,runners}
+  drive_renders: gdrive:ada-nest/renders/ (colab MP4s + ltx-embeds{,-s1} + keyframes + golden-hour-catch-{reference,final})
+  drive_projects: gdrive:ada-nest/projects/kk-video-c9f99fee6146/ (Sacred Father PDF project), gdrive:ada-nest/doc-pilot(+v2)/, gdrive:ada-nest/nasa-2p5d/
+
+inventory:
+  - id: colab-scene0
+    what: golden-hour-catch scene 0 — 4 shots ltx_shot{0-3}_colab_20261022-1151.mp4 + s0shot*_cont continuations
+    old_params: h264 640x384 24fps 49f/shot (~2.04s), diffusers LTXImageToVideoPipeline CUDA T4, t2v
+    inputs_present: ["T5 prompt_embeds .pt x4 (renders/ltx-embeds/shot{0-3}.pt)", "story (vimax-run3-scene0/story.txt)"]
+    missing: ["seed (unrecorded)", "prompt text (embeds only — sufficient for MLX inject lane)"]
+    classification: reproducible
+    evidence: >-
+      .pt files carry the 4-key format (prompt_embeds/prompt_attention_mask/
+      negative_*) the proven kk-video-c9f99fee6146-preview-mac pack injects;
+      Drive keyframes s0shot*_first/last.png are PSNR=inf pixel-identical to
+      rendered first/last frames -> old renders were t2v, no image input.
+  - id: colab-scene1
+    what: golden-hour-catch scene 1 — 3 shots ltx_s1_shot{0-2}_20261022-1236.mp4 (1224 rev superseded) + s1shot*_cont
+    old_params: same 640x384/49f/24fps CUDA T4
+    inputs_present: ["T5 prompt_embeds .pt x3 (renders/ltx-embeds-s1/shot{0-2}.pt)", "story"]
+    missing: ["seed", "prompt text"]
+    classification: reproducible
+  - id: vimax-run3-scene0
+    what: ViMax run3 scene_0 — 2 shots with first_frame.png + video.mp4 (mpeg4 768x512 49f) + final_video.mp4
+    source_of_truth: adanest@kk-mac:~/ViMax/.working_dir/idea2video-local/scene_0 (tony-dell archive is a copy)
+    old_lane: >-
+      /Users/adanest/vimax_gen_video.py on kk-mac — diffusers LTXPipeline
+      t2v (NO image conditioning; first_frame.png is storyboard ref only),
+      torch.float32 + cpu_offload, 768x512/49f/30 steps/24fps, ~11min/shot.
+      ViMax prompt = shot_description.motion_desc + "\n" + audio_desc
+      (script2video_pipeline.py:527) — fully recoverable.
+    inputs_present: ["story.txt", "script.json", "characters.json", "scene_0/storyboard.json", "camera_tree.json", "shot_description.json x2", "first_frame.png refs"]
+    missing: ["seed", "exact diffusers LTX revision (HF default at run time)"]
+    classification: reproducible
+    note: >-
+      best prompt-adherence control candidate — prompt text known verbatim,
+      old render was t2v so MLX rerun is also t2v at 768x512/49f.
+      (colab scene0 control already queued instead: identical embeds isolate
+      pure lane delta; vimax is the natural second control.)
+  - id: vimax-real-run-interrupted
+    what: "'Evening's Catch' (Peng) — 4 shot_descriptions scene_0, shot0 has first+last frames, character portraits"
+    source_of_truth: adanest@kk-mac:~/ViMax/.working_dir/idea2video-real/ (tony-dell archive is a copy)
+    inputs_present: ["story.txt", "script.json", "characters.json", "storyboard.json", "camera_tree.json", "shot_description.json x4", "shot0 frames", "portraits"]
+    missing: ["frames for shots 1-3", "any rendered video", "seed"]
+    classification: partial
+  - id: vimax-omen-working-dirs
+    what: 8 ViMax .working_dir runs on tony-omen (idea2video-omen-test + 6 baks + idea2video-real)
+    inputs_present: ["story/script/characters/storyboards per run", "character portraits", "shot descriptions (0-3 per run)"]
+    outputs: "idea2video-omen-test only: scene_0 shot0 video.mp4 + final_video.mp4; all others 0 videos"
+    classification: partial
+  - id: colab-i2v / ltx-test001 / full_story.mp4 / full_list.txt
+    what: stray MP4s, no manifests
+    classification: final-only
+  - id: ltx-embeds-s1 dir (local archive copy)
+    what: shot{0-2}.pt embeds mirror of Drive renders/ltx-embeds-s1
+    classification: partial (embeds without prompts; covered by colab-scene1 entry)
+  - id: kk-video-c9f99fee6146 (Sacred Father)
+    what: PDF storyboard project — prompt-pack/scene-plan/rights/QC + 10-shot plan
+    status: ALREADY rerendered on MLX — kk-mac-video-pilot final/pdf-final-preview-v1..v4 + canonical-v1, corrections/, comparisons/
+    classification: reproducible — done on this lane
+  - id: doc-pilot / doc-pilot-v2 (sacred-father doc)
+    what: script.yml + storyboard.yml + 18 shot outputs + finals v1-v3 + vo-v2..v5
+    status: ALREADY through doc-* colab packs (vo/embeds/render/assemble) and kk-mac docpilot-v3 MLX packs
+    classification: reproducible-with-assets — done on this lane
+  - id: golden-hour-catch-final / -reference (Drive renders/)
+    what: teaser-v1 final cut (14.3s h264+AAC+TH subs) + full_story-original visual proof archive
+    classification: final-only — archive/QC artifacts; manifests preserved, no re-render claim
+  - id: nasa-2p5d
+    what: earth/saturn 2.5D parallax -> LTX i2v (packs nasa-embeds-ss1 + nasa-i2v, both done)
+    outputs: packs/nasa-i2v/out/nasa-{earth,saturn}-i2v.mp4
+    classification: reproducible — rendered once on CUDA; MLX rerender optional/low priority
+  - id: kk-dance-party-local-20261104-v1/v2
+    what: "i2v continuation proofs on MLX lane already (creative_review rejected v1)"
+    classification: already-MLX — not a rerender candidate
+
+control_pack:
+  name: kk-mac-mlx-colab-scene0-control-20261124
+  staged_at: gdrive:ada-nest/kk-mac-video-pilot/packs/kk-mac-mlx-colab-scene0-control-20261124/
+  repo_mirror: scripts/devnest/video-packs/kk-mac-mlx-colab-scene0-control-20261124/
+  contents: ["pack.yml", "run_scene0.py", "inputs/shot0.pt", "inputs/shot1.pt", "inputs/shot2.pt", "inputs/shot3.pt", "inputs/provenance.json"]
+  render: >-
+    t2v, same embeds as CUDA renders (bit-identical conditioning),
+    640x384 / 49f / 24fps / steps=8 / seed=42, LTX-Video 0.9.8-distilled
+    2B via baisampayans/ltx-mlx on ~/kk-video/ltx-mlx/models/LTX,
+    .venv-mlx python, T5 weights skipped (lp.load_t5_encoder patched).
+  gates: >-
+    pack.yml prep + kk-mac:~/kk-video/run-mlx-control-gated.sh (tmux
+    mlx-control): owner-use HID idle>=600s, AC, memfree>=40%, load1<8,
+    no llama-server >10GB RSS, no creative/video apps, disk>=5GB,
+    inputs+model+venv checks; heartbeat -> queue/heartbeat every ~10min;
+    12h max wait; then nest-worker --once (serial => concurrency=1).
+  state_at_write: "queued on Drive; launcher waiting — KK-Mac owner-active (Chrome audio, HID idle ~0s) at 17:39 ICT"
+  preserve: "old renders/ MP4s + tony-dell archive untouched; pack writes only its own out/"
+
+comparison_plan:
+  tool: scripts/devnest/kk_mac_video_compare.py (new; ffprobe streams + ffmpeg SSIM/PSNR + blackdetect/freezedetect + contact strips -> JSON)
+  metrics: [duration, frames, resolution, fps, codec, SSIM/PSNR vs old, black/freeze events, per-shot seconds vs CUDA ~5min]
+  review: contact strips + batch-result.json land in pack out/ for KK/Tony review; prompt adherence judged on strips (embeds identical => adherence delta is lane/model only)
+
+queue_state:
+  video_pilot_packs: "11 video packs: 9 done / 2 failed / 0 pending before this pack; now +1 pending (the control)"
+  concurrency: 1 (nest-worker serial; --once processes the single pending pack)
+  heartbeat: queue/heartbeat + queue/packs-index events + ~/.cache/nest-worker/status.json
+
+not_done_by_design:
+  - "no full-library enqueue — spec gate: control must pass AND KK review quality first"
+  - "vimax-run3-scene0 MLX pack authored repo-side (t2v, prompts verbatim) — stage to queue only after control passes + KK review"
+  - "MPS port kept as comparison lane only (per spec; MLX won 3-shot + i2v probes OPS-0967)"
+
+followups:
+  - "when control lands: run kk_mac_video_compare.py old-vs-new per shot, post strips to card, request KK review"
+  - "if control passes review: stage colab-scene1 (3 shots, embeds ready), vimax-run3-scene0 t2v (2 shots, prompts verbatim), then evaluate partials (vimax-interrupted t2v, doc-pilot-v2, nasa-i2v)"
+  - "stop gated launcher: ssh kk-mac 'tmux kill-session -t mlx-control'"
+
+lessons_captured:
+  - "/home/tony/ada-nest-videos moved to tony-dell:~/CascadeProjects/tony-chaba-dell/archive/ — always re-verify inventory roots before trusting card text"
+  - "Colab LTX .pt embeds are torch zip+pickle 4-key tensors — injectable into ltx-mlx by monkeypatching pipe.t5/pipe.tokenizer (proven preview-mac pattern); T5 weights never needed"
+  - "Drive keyframes under renders/keyframes/ are extracted FROM renders (PSNR=inf), not ViMax inputs — don't assume they're i2v conditions"
+  - "nest-worker prep exit!=0 marks pack FAILED — long gate waits belong in a wrapper outside the worker, prep keeps only fast re-checks"
+  - "kk-mac has no rclone on PATH (it's ~/.local/bin/rclone) and no tmux on PATH (/opt/homebrew/bin/tmux) — use absolute paths in remote scripts"

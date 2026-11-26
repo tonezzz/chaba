@@ -1,0 +1,140 @@
+id: deploy-ada-sh-services-resurrects-retire-c2346b
+title: deploy-ada.sh SERVICES resurrects retired idc03 dev twins on every ada-voice deploy
+column: doing
+updated: 2026-11-26 21:28
+priority: medium
+tags:
+- idc03
+- ada
+- deploy
+- hygiene
+spec: 'DECISION 2026-11-26 Tony: keep ada-kk-dev (declared kk CMS-only bench target idc03:8009) and remove ONLY
+  ada-dev from SERVICES in ~/.local/bin/deploy-ada.sh on idc03. Back up the script to a timestamped sibling copy
+  before editing. Verify the next deploy does not restart ada-dev and that ada-kk-dev remains manageable by kk-bench-env.py.
+  Record proof in the outcome.'
+action:
+  type: dispatch
+  repo: ada-voice
+  status: running
+  lane: devin
+  attempts: 1
+  runner: tony-dell
+note: follow-up from idc03-ada-hygiene-20261107
+ref: ADA-1395
+comms:
+- at: 2026-11-25 14:35
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-25 14:46
+  from: tony
+  text: queue skipped — action.type=manual — human-owned work, not runner-dispatchable
+- at: 2026-11-25 14:46
+  from: chaba
+  text: action.type=manual — human-owned work, not runner-dispatchable
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:33
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:52
+  from: chaba
+  text: 'TRIAGE 2026-11-26 batch 2: DECISION NEEDED: spec offers (a) remove both ada-dev + ada-kk-dev from SERVICES,
+    or (b) keep ada-kk-dev for the kk CMS-only bench target on idc03:8009. Pick one before dispatch.'
+- at: 2026-11-26 20:59
+  from: chaba
+  text: 'HUMAN CALL 2026-11-26: DECISION 2026-11-26 Tony: keep ada-kk-dev (declared kk CMS-only bench target idc03:8009)
+    and remove ONLY ada-dev from SE'
+- at: 2026-11-26 21:00
+  from: tony
+  text: queued for processing
+- at: 2026-11-26 21:00
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.37 > 0.7)'
+- at: 2026-11-26 21:00
+  from: chaba
+  text: 'tony-dell defers: runner at local cap (3/3) — remote slots unaffected'
+- at: 2026-11-26 21:01
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-26 21:03
+  from: chaba
+  text: 'con01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-26 21:03
+  from: chaba
+  text: 'idc02 defers: runner at local cap (3/3) — remote slots unaffected'
+- at: 2026-11-26 21:22
+  from: tony-dell
+  text: claimed
+- at: 2026-11-26 21:23
+  from: chaba
+  text: started devin-task-20261126-212322-decision-2026-11-26-tony-keep- on tony-dell (dispatch)
+- at: 2026-11-26 21:23
+  from: chaba
+  text: 'primer injected 8 lesson(s): idc03 deploy-ada.sh fetches `origin` = tony-dell''s LOCAL checkout path, not
+    GitH; ada-voice `deploy-ada.sh` verify must treat `activating (start-pre)` as in-fligh; ada-voice pwa_server.py
+    exposes unauthenticated GET /api/health (ok:true + activ; [ada-tool-guide-lesson-sweep] raised request deploy-ada-tool-guide-lesson-sweep:;
+    [ansible-verify-host-software-r7] Full-fleet run 2026-11-23 (controller tony-ome; [kk-cms-only-memory-deploy]
+    deploy gate: FAILED — rc=7 verify'
+- at: 2026-11-26 21:28
+  from: devin
+  text: Dispatch started on tony-dell. SSH to idc03 works direct (ProxyJump=none). Gathering current state of ~/.local/bin/deploy-ada.sh,
+    ada-dev/ada-kk-dev units, and kk-bench-env.py before editing.
+claim:
+  since: 2026-11-26 21:22

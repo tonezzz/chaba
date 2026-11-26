@@ -1,0 +1,46 @@
+title: kk-llm lane worker idle schedule + retry quarantine (OPS-1036)
+date: 2026-11-23
+card: kk-mac-worker-idle-poll-efficiency
+session: dispatch-wt-20261123-183624-investigate-the-live-kk-mac-wo (tony-macbook)
+
+verdict: implemented on branch, awaiting review before deploy — no
+  LaunchAgent change required (script-path identical); rollout = merge +
+  kk-mac exec checkout sync via chaba-repo-sync.
+
+live_state:
+  worker: net.adanest.kk-llm-worker -> kk_mac_lane_worker.py --remote
+    gdrive:ada-nest/kk-llm --host local --max-packs 1 @ StartInterval=60
+    (the card's 15s nest-worker.py text predates the 2026-11-14 lane
+    cutover; verified by fallback-marker reasons only the lane emits)
+  queue_20261123_1838: 167 packs = 155 done / 6 failed / 5 fallback-held
+    / 0 pending — live retry burst in progress (4x memory_pressure_abort
+    ~13%<50%, 1x deterministic invalid_output:fact:launchd)
+  idle_pass_cost: 27 HTTPS reqs, 5.35s, 0.29s CPU per 60s tick
+    (~39k reqs + ~7 CPU-min/day idle); dirs-only probe = 5 reqs / 2.2s
+
+design:
+  idle_schedule: <workdir>/idle.json + dirs-only probe + computed
+    next_scan (min of hold expiries, claim staleness, 900s rescan
+    bound); probe stretches 60->300s on unchanged; error backoff 900s.
+    --no-idle-schedule restores plan-per-pass.
+  retry_policy: retries/<n>-<fault|cond> markers (inventory-visible,
+    zero extra reads); hold escalates 30,30,60,120,240min; quarantine to
+    terminal failed at faults>=2 or total>=6; done purges retries/.
+  mem_gate: local gate adds kk_mac_memory pre-load floor before any
+    remote call; DEVNEST_KK_MAC_MEM_GATE=false opts out.
+  installer_fix: ops-1036 installer rendered a stale payload
+    (nest-worker.py + gdrive:ada-nest-kk-llm) — now byte-identical to
+    the live plist.
+
+evidence:
+  bench: >-
+    evals/kk-mac-lane/idle_schedule_bench.py — identical local fixture,
+    real rclone subprocesses; quiet 12->4 ops/12 ticks, fault-loop 5->2
+    runs (quarantined), cond-loop 14->4 runs over ~6.7h sim. Output
+    evals/kk-mac-lane/out/idle-schedule-bench-20261123.json (gitignored)
+  report: >-
+    docs/kb/kk-mac-worker-idle-schedule.md (measurements, plan,
+    rollback)
+  tests: >-
+    tests/devnest/test_kk_mac_lane_worker.py (45 pass) +
+    tests/ops/test_kk_mac_worker_installer.py (4 pass)

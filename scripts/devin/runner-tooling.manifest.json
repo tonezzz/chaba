@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "updated": "2026-11-26",
+  "purpose": "Content pins for the single-file tools that scripts/devin/sync-runner-tools.sh installs into ~/.local/bin. A change to any source below MUST update its sha256 in the SAME commit: tests/board/test_runner_tooling_contract.py fails CI otherwise, sync-runner-tools.sh refuses to install an unpinned/mismatched source, and runner-fleet-health.py compares every host's installed and checkout copies against these pins read from origin/master (never from the host's possibly-stale checkout).",
+  "tools": {
+    "runner_agent": {
+      "source": "scripts/board/runner-agent.py",
+      "dest": "runner-agent",
+      "sha256": "4259ca6f560551667037c1647f5e283807d4500331ed1632221c0b36ca07b855"
+    },
+    "devin_dispatch": {
+      "source": "scripts/devin/devin-dispatch.sh",
+      "dest": "devin-dispatch",
+      "sha256": "705bfff94f8ae70db1473c54256dd0c88be94dcb65630395b645d1ce02e00221"
+    },
+    "claude_dispatch": {
+      "source": "scripts/devin/claude-dispatch.sh",
+      "dest": "claude-dispatch",
+      "sha256": "70b6709d82bede207c3eacbcfc8d4af8b8b3926b8e9cbdb12fc7a57894918469"
+    },
+    "devin_dispatch_prune": {
+      "source": "scripts/devin/devin-dispatch-prune.sh",
+      "dest": "devin-dispatch-prune",
+      "sha256": "c769a01e41f2c74149e1132481da1bef5f92a2587c1d874f76155f4a67aa28dc"
+    },
+    "dispatch_queue": {
+      "source": "scripts/devin/dispatch-queue.sh",
+      "dest": "dispatch-queue",
+      "sha256": "8e083ef8d05f059f0b38ea5cd517317d6efbd535febba5ad8c30621f302b311a"
+    },
+    "dispatch_repos": {
+      "source": "scripts/board/dispatch_repos.py",
+      "dest": "dispatch_repos.py",
+      "sha256": "bf793805a0f943d22f0abe770ef468cdaa92eb07d1613584feefb419e22f1a9a"
+    },
+    "devin_dispatch_watch": {
+      "source": "scripts/devin/devin-dispatch-watch.sh",
+      "dest": "devin-dispatch-watch",
+      "sha256": "747034f27b06d3bda2a3d11aad7032e3ccb273725a453e60148d38a72b7bd78c"
+    }
+  }
+}

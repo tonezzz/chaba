@@ -1,0 +1,62 @@
+job: timer-failure-batch-20261126
+title: Five failing timer/watch alerts triaged and fixed
+date: 2026-11-26
+domain: ops
+summary: >-
+  Ops timer batch: five cards in doing all root-caused and verified to
+  Result=success. Two watchdog scripts were changed to the OPS-0581 exit
+  contract (completed checks exit 0; findings ride the board inbox), two
+  user units had bad settings repaired, and the OCB smoke got one retry
+  for transient board-api stalls.
+changes:
+  - scripts/ops/netdata-nodes-watch.py — SSH fallback via tony-omen to
+    curl 127.0.0.1:19999 when tailnet TCP/19999 is filtered; OPS-0581
+    exit contract. Deployed to idc03 exec + served checkout; pushed in
+    6d84d98ef5a (served), board card closed with evidence.
+  - scripts/report/system-report-watchdog.py — OPS-0581 exit contract
+    on all alert branches; deployed tony-dell exec + idc03 served,
+    pushed in 6d84d98ef5a.
+  - ~/.config/systemd/user/mddb-embed-probe.service (idc03) — ExecStart
+    corrected to /usr/bin/python3 .../scripts/ada/embed-probe.py
+    (old path pointed to nonexistent mddb-embed-probe.py => 203/EXEC).
+    Backup /tmp/opencode/unit-backup-20261126-175350.
+  - ~/.config/systemd/user/mddb-embed-probe.timer (idc03) —
+    OnCalendar=*/15 * * * * (cron syntax, rejected) -> OnCalendar=*:0/15.
+    systemd-analyze verify clean after daemon-reload.
+  - ~/.config/systemd/user/board-statics-sync.service (tony-dell) —
+    rsync -e direct SSH (ssh -F /dev/null -i ~/.ssh/id_ed25519
+    tony@100.102.134.91) instead of Host idc03 ProxyJump tony-omen;
+    idc03 sshd AllowTcpForwarding no denied the stdio forwarding channel.
+    No sshd change. Backup
+    /tmp/opencode/board-statics-unit-backup-20261126-175412.service.
+  - ada-voice scripts/ocb-smoke.py (idc02 worktree) — _check decorator
+    retries a failed check once after 1s; 8s/15s budgets unchanged,
+    recovered attempts labelled. Local commit 0040254.
+verified:
+  - idc02 ada-ocb-smoke.service Result=success, 6/6 PASS
+    (find_card 4.8s, context_pack 8.0s within its 15s budget).
+  - idc03 mddb-embed-probe.service Result=success; down->up transition
+    filed embed_recovered (3 hits, indexSize=364), reindex triggered.
+  - idc03 netdata-nodes-watch.service Result=success;
+    "ok - 8 expected nodes present" via SSH fallback.
+  - tony-dell board-statics-sync.service Result=success
+    (rsync dry-run rc=0 on direct SSH beforehand).
+  - tony-dell system-report-watchdog.service Result=success
+    ("chain ok", "node alert suppressed (dedupe)").
+  - tony-omen focus-dispatcher auto-recovered (Result=success) and was
+    closed without a fix.
+notes:
+  - >
+    OPS-0581 is now the contract for watchdog checks: alert state is in
+    the board inbox, not the exit code. Do not re-enable "exit 1 when
+    alerting" without reversing that decision.
+  - board-api GET /cards reloads 18MB cards.json and stats 858 card
+    files on every call; concurrent jobs push reads from ~1s to 4-15s.
+    The smoke retry is a consumer-side mitigation; a server-side cache
+    keyed on cards.json signature would be the durable fix (needs a
+    board-api restart = explicit approval).
+  - Netdata's tailnet TCP/19999 is filtered while ICMP and SSH work;
+    the parent watcher must reach the parent over SSH, not direct HTTP.
+  - >
+    Rollback: unit backups above; scripts rolled back by reverting the
+    two committed files in chaba master and redeploying to exec hosts.

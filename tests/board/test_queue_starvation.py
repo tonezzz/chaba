@@ -380,6 +380,20 @@ class FleetCapabilitiesTest(unittest.TestCase):
         self.assertNotIn("container",
                          fleet["tony-macbook"]["types"])
 
+    def test_kkmac_is_declared(self):
+        """OPS-0220: the kk-mac launchd runner was provisioned and
+        e2e-verified 2026-11-19 (script card claimed+finished), but the
+        old _FLEET_HOST_RE matched only tony-*/idc*/mn* — host:kk-mac
+        pins were flagged as naming no declared runner fleet-wide."""
+        fleet = self.dr.fleet_capabilities()
+        self.assertIn("kk-mac", fleet)
+        self.assertIn("desktop", fleet["kk-mac"]["labels"])
+        self.assertIn("script", fleet["kk-mac"]["types"])
+        card = {"action": {"type": "script", "status": "queued",
+                           "host": "kk-mac", "repo": "chaba"}}
+        self.assertEqual(
+            self.dr.unsatisfiable_reasons(card, local_host="nowhere"), [])
+
     def test_ops0790_reason(self):
         """labels:[exec] + target_host:idc03 — the 2026-11-07 starve."""
         card = {"action": {"type": "dispatch", "status": "queued",

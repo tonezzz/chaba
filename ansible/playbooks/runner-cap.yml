@@ -1,0 +1,110 @@
+---
+# runner-cap.yml — manage runner-agent concurrency cap and load gate per host.
+#
+# Writes a drop-in override so the base unit (runner-agent.service) and its
+# other Environment lines stay untouched:
+#   Linux:  ~/.config/systemd/user/runner-agent.service.d/cap.conf
+#   macOS:  RUNNER_CAP / RUNNER_MAX_LOAD_PC in the launchd plist
+#
+# Per-host values come from host_vars/<host>.yml:
+#   runner_cap (int), runner_max_load_pc (float 0..1, 0 disables the gate),
+#   runner_remote_cap (int, optional — RUNNER_REMOTE_CAP for remote-async
+#   executors nlm_batch/kk_mac_local; OPS-1284 runner-per-executor-caps.
+#   Only written when defined so a routine cap run never silently changes
+#   remote-claim behavior fleet-wide.)
+# Defaults (playbook vars): runner_cap=2, runner_max_load_pc=1.0
+#
+# Safety ceiling: cap <= floor(mem_total_gb / 3.5) unless --force
+# (pass -e runner_cap_force=true). ~3.5 GB per Devin session.
+#
+# Usage (from ansible/ on the controller):
+#   ansible-playbook playbooks/runner-cap.yml --check --diff --limit <host>
+#   ansible-playbook playbooks/runner-cap.yml --limit <host>
+#   ansible-playbook playbooks/runner-cap.yml --limit <host> -e runner_cap=4
+#   ansible-playbook playbooks/runner-cap.yml --limit <host> -e runner_cap_force=true
+#
+# kk-mac is included (macOS branch). idc01 stays excluded via `disabled`.
+
+- name: Manage runner-agent concurrency cap and load gate
+  hosts: all:!disabled
+  gather_facts: true
+  become: false
+  vars:
+    runner_cap_force: false
+
+  tasks:
+    # ---- Linux (systemd) ------------------------------------------------
+    - name: Safety ceiling check (Linux)
+      ansible.builtin.assert:
+        that:
+          - (runner_cap | default(2) | int) <= ((ansible_memtotal_mb | int) / 1024 / 3.5) | int or (runner_cap_force | bool)
+        fail_msg: >-
+          cap {{ runner_cap | default(2) }} exceeds ceiling
+          {{ ((ansible_memtotal_mb | int) / 1024 / 3.5) | int }} for
+          {{ (ansible_memtotal_mb / 1024) | round(1) }}GB host (~3.5GB/session).
+          Pass -e runner_cap_force=true to override.
+      when: ansible_facts['system'] != "Darwin"
+
+    - name: Ensure drop-in directory exists (Linux)
+      ansible.builtin.file:
+        path: "{{ ansible_user_dir }}/.config/systemd/user/runner-agent.service.d"
+        state: directory
+        mode: "0755"
+      when: ansible_facts['system'] != "Darwin"
+
+    - name: Write cap.conf drop-in (Linux)
+      ansible.builtin.copy:
+        dest: "{{ ansible_user_dir }}/.config/systemd/user/runner-agent.service.d/cap.conf"
+        content: |
+          # Managed by chaba ansible/playbooks/runner-cap.yml — do not hand-edit.
+          [Service]
+          Environment=RUNNER_CAP={{ runner_cap | default(2) }}
+          Environment=RUNNER_MAX_LOAD_PC={{ runner_max_load_pc | default(1.0) }}
+          {% if runner_remote_cap is defined %}Environment=RUNNER_REMOTE_CAP={{ runner_remote_cap }}{% endif %}
+        mode: "0644"
+      when: ansible_facts['system'] != "Darwin"
+      notify: reload systemd runner
+
+    # ---- macOS (launchd) ------------------------------------------------
+    - name: Update RUNNER_CAP in launchd plist (macOS)
+      ansible.builtin.lineinfile:
+        path: "{{ ansible_user_dir }}/Library/LaunchAgents/ai.chaba.runner-agent.plist"
+        regexp: '<key>RUNNER_CAP</key>\s*<string>[^<]*</string>'
+        line: '        <key>RUNNER_CAP</key><string>{{ runner_cap | default(2) }}</string>'
+        backrefs: true
+      when: ansible_facts['system'] == "Darwin"
+      notify: reload launchd runner
+
+    - name: Update RUNNER_MAX_LOAD_PC in launchd plist (macOS)
+      ansible.builtin.lineinfile:
+        path: "{{ ansible_user_dir }}/Library/LaunchAgents/ai.chaba.runner-agent.plist"
+        regexp: '<key>RUNNER_MAX_LOAD_PC</key>\s*<string>[^<]*</string>'
+        line: '        <key>RUNNER_MAX_LOAD_PC</key><string>{{ runner_max_load_pc | default(1.0) }}</string>'
+        backrefs: true
+      when: ansible_facts['system'] == "Darwin"
+      notify: reload launchd runner
+
+    - name: Update RUNNER_REMOTE_CAP in launchd plist (macOS)
+      ansible.builtin.lineinfile:
+        path: "{{ ansible_user_dir }}/Library/LaunchAgents/ai.chaba.runner-agent.plist"
+        regexp: '<key>RUNNER_REMOTE_CAP</key>\s*<string>[^<]*</string>'
+        line: '        <key>RUNNER_REMOTE_CAP</key><string>{{ runner_remote_cap }}</string>'
+        backrefs: true
+      when:
+        - ansible_facts['system'] == "Darwin"
+        - runner_remote_cap is defined
+      notify: reload launchd runner
+
+  handlers:
+    - name: reload systemd runner
+      ansible.builtin.systemd:
+        name: runner-agent.service
+        daemon_reload: true
+        scope: user
+
+    - name: reload launchd runner
+      ansible.builtin.shell: |
+        uid=$(id -u)
+        launchctl bootout gui/$uid {{ ansible_user_dir }}/Library/LaunchAgents/ai.chaba.runner-agent.plist 2>/dev/null || true
+        launchctl bootstrap gui/$uid {{ ansible_user_dir }}/Library/LaunchAgents/ai.chaba.runner-agent.plist
+      changed_when: true

@@ -6,7 +6,7 @@ import { WebSocket, WebSocketServer } from "ws";
 
 const PORT = parseInt(process.env.GEMINI_MIC_PORT || "3009", 10);
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_LIVE_MODEL = process.env.GEMINI_LIVE_MODEL || "gemini-3.1-flash-live-preview";
+const GEMINI_LIVE_MODEL = process.env.GEMINI_LIVE_MODEL || "gemini-3.8-live";
 
 const GEMINI_WS_URL = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${GEMINI_API_KEY}`;
 

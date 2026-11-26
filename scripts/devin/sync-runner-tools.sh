@@ -13,6 +13,11 @@
 #                                          (update-only: when present it
 #                                          shadows the checkout copy in
 #                                          runner-agent.dr_module())
+#   scripts/devin/devin-dispatch-watch.sh-> ~/.local/bin/devin-dispatch-watch
+#                                          (the job/<id> ledger terminal
+#                                          writer — was NEVER synced, which
+#                                          is how idc02/idc03/con01 ended up
+#                                          with no watcher at all)
 #
 # Nothing converged them when master moved — they drifted until a manual
 # scp (OPS-1026; card runner-tooling-drift-recurs-installed-ru-3aad1e:
@@ -23,17 +28,21 @@
 # runner-agent's _self_update() stays the faster path for its own file.
 #
 # Rules:
+#   * src sha != pinned sha     -> warn + skip (a tool change must bump its
+#                                  pin in runner-tooling.manifest.json in
+#                                  the SAME commit — never hot-patch a pin
+#                                  on a host to make a sync go through)
 #   * dest identical            -> skip
 #   * dest differs, src clean   -> syntax-check src, install -m 0755
 #   * dest newer-mtime + differs-> warn + keep (never downgrade — a manual
 #                                  hotfix snapshot beats a stale repo;
 #                                  the same guard _self_update carries)
-#   * dest missing              -> install only for runner-agent and
-#                                  devin-dispatch, and only when the host
-#                                  shows provisioning evidence (systemd
-#                                  user unit / LaunchAgent / DISPATCH_DIR)
-#                                  — never bootstrap a runner on a plain
-#                                  checkout
+#   * dest missing              -> install only for runner-agent,
+#                                  devin-dispatch and devin-dispatch-watch,
+#                                  and only when the host shows provisioning
+#                                  evidence (systemd user unit / LaunchAgent
+#                                  / DISPATCH_DIR) — never bootstrap a
+#                                  runner on a plain checkout
 #   * repos.conf                -> NEVER overwritten (per-host tables are
 #                                  legitimate — kk-mac ships chaba-only);
 #                                  a differing repo set is reported.
@@ -73,6 +82,30 @@ esac
 BIN="$HOME/.local/bin"
 DISPATCH_DIR="${DISPATCH_DIR:-$HOME/.local/share/devin-dispatch}"
 
+# Content pins — a tool can only be installed when the checkout copy is
+# byte-identical to the hash committed alongside it. This is the gate that
+# stops a half-purge (or a dirty local edit) from being propagated fleet-wide
+# by this very script. Read once; a missing/unreadable manifest fails closed.
+MANIFEST="$REPO/scripts/devin/runner-tooling.manifest.json"
+PINS="$(python3 - "$MANIFEST" <<'PY' 2>/dev/null || true
+import json, sys
+try:
+    for key, val in json.load(open(sys.argv[1])).get("tools", {}).items():
+        print("%s\t%s\t%s" % (key, val.get("source", ""), val.get("sha256", "")))
+except Exception:
+    pass
+PY
+)"
+[ -n "$PINS" ] || warn "no usable content pins in $MANIFEST — all tool syncs skipped until fixed"
+
+_pinned_sha() {
+    local rel="$1" key src sha
+    while IFS=$'\t' read -r key src sha; do
+        [ "$src" = "$rel" ] && { printf '%s' "$sha"; return 0; }
+    done <<< "$PINS"
+    return 1
+}
+
 # src is safe to install: exists, not dirty in the checkout, parses.
 _src_ok() {
     local src="$1" rel="$2"
@@ -103,6 +136,15 @@ _provisioned() {
                 [ -e "$f" ] && return 0
             done
             return 1 ;;
+        devin-dispatch-watch)
+            # The binary is useless without its timer — only install where
+            # the watch units exist (a host that never provisioned the
+            # timer gets nothing; installing the timer is the rollout step).
+            local f
+            for f in "$HOME"/.config/systemd/user/devin-dispatch-watch.*; do
+                [ -e "$f" ] && return 0
+            done
+            return 1 ;;
         *) return 1 ;;   # leaf tools: update-only, never auto-bootstrap
     esac
 }
@@ -112,6 +154,13 @@ _sync_one() {
     local src="$REPO/$rel" name
     name="$(basename "$dest")"
     _src_ok "$src" "$rel" || return 0
+    local want got
+    want="$(_pinned_sha "$rel")" || { warn "$rel has no content pin — skipped"; return 0; }
+    got="$(sha256sum "$src" 2>/dev/null | awk '{print $1}')"
+    if [ "$got" != "$want" ]; then
+        warn "$rel sha $got != pinned $want — source/manifest mismatch, skipped (bump the pin in the same commit; never hand-edit the manifest on a host)"
+        return 0
+    fi
     if [ ! -e "$dest" ]; then
         if _provisioned "$name"; then
             install -m 0755 "$src" "$dest" \
@@ -138,6 +187,7 @@ _sync_one "scripts/devin/claude-dispatch.sh"      "$BIN/claude-dispatch"
 _sync_one "scripts/devin/devin-dispatch-prune.sh" "$BIN/devin-dispatch-prune"
 _sync_one "scripts/devin/dispatch-queue.sh"       "$BIN/dispatch-queue"
 _sync_one "scripts/board/dispatch_repos.py"       "$BIN/dispatch_repos.py"
+_sync_one "scripts/devin/devin-dispatch-watch.sh" "$BIN/devin-dispatch-watch"
 
 # --- repos.conf audit (card: audit dispatch_repos.conf drift in the same
 # pass). The table is per-host — reported, never rewritten.

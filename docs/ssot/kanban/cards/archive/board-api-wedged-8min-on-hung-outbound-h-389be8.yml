@@ -1,0 +1,193 @@
+id: board-api-wedged-8min-on-hung-outbound-h-389be8
+title: board-api wedged ~8min on hung outbound HTTPS while holding wp.lock + card flock — all endpoints timed out
+column: done
+updated: 2026-11-26 19:40
+priority: high
+tags:
+- bug
+- board-api
+- idc03
+- reliability
+spec: '2026-11-25 ~09:59-10:07 idc03: chaba-board-api (pid 767125) held FLOCK WRITE on /tmp/board-api.lock AND /tmp/board-api-wp.lock
+  with an ESTABLISHED outbound HTTPS connection to 103.99.11.249:443 (213KB sent, no response). All 51 threads parked
+  in futex_wait; GET /cards and /health timed out for ~8min until `systemctl --user restart chaba-board-api`. Likely
+  a WP REST or remote call without an effective timeout inside a lock-holding handler (/publish or /lesson fan-out).
+  Fix directions: enforce socket timeouts on all outbound calls in board-api write path, add a lock-hold watchdog/metric
+  (lock held >Ns -> alert + dump stack), consider per-request deadlines so one hung sink cannot wedge the whole
+  write door. Evidence: journalctl -u chaba-board-api.service 09:59:35 last log line before silence; lslocks showed
+  both locks held by board-api pid.'
+ref: KNB-1371
+comms:
+- at: 2026-11-25 10:10
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-25 10:11
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 12:20
+  from: chaba
+  text: classified as devin (fallback conf 0.47)
+- at: 2026-11-25 12:20
+  from: tony
+  text: queued for processing
+- at: 2026-11-25 12:20
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.62 > 0.7)'
+- at: 2026-11-25 12:20
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 12:20
+  from: tony-dell
+  text: claimed
+- at: 2026-11-25 12:20
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 12:20
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 6.63 > 0.8)'
+- at: 2026-11-25 12:22
+  from: chaba
+  text: started devin-task-20261125-122202-2026-11-25-09-59-10-07-idc03-c on tony-dell (dispatch)
+- at: 2026-11-25 12:22
+  from: chaba
+  text: 'primer injected 8 lesson(s): [timer-alert-idc03-chaba-lessons-audit] [reopened — condition recurred] Last
+    run; [timer-alert-idc03-chaba-lessons-audit] [reopened — condition recurred] Last run; [timer-alert-idc03-chaba-lessons-audit]
+    [still suspicious] Last run (11-14 07:50; [timer-alert-idc03-chaba-lessons-audit] [still suspicious] Last run
+    (11-24 07:50; [timer-alert-idc03-chaba-lessons-audit] [still suspicious] Last run (11-11 07:45; [timer-alert-idc03-chaba-lessons-audit]
+    [still suspicious] La'
+- at: 2026-11-25 12:31
+  from: devin
+  text: 'investigating: all urllib write-path calls already carry socket timeouts (20-45s); the freeze signature
+    (all threads futex_wait, both flocks held, /health dead) points at an in-process GIL-holding block, not the
+    socket itself. Found unbounded blocking fcntl.flock(LOCK_EX) in render() (/tmp/board-render.lock, contended
+    by git-safe-pull pull phases + render-guard) and in publication.py outbox/jsonl appends — on py<=3.13 flock
+    holds the GIL, freezing every thread. Fix plan: bounded LOCK_NB everywhe'
+- at: 2026-11-25 12:53
+  from: devin
+  text: 'DONE (dispatch branch, not yet deployed). Root cause: urllib timeouts are per-socket-op not deadlines —
+    /publish drains the whole outbox + /lesson chains wp/wiki/mddb under WP_LOCK, and render()+outbox appends used
+    unbounded flock(LOCK_EX) which holds the GIL on py<=3.13 (frozen /health incl.). Fix: acquire_lock now tracks
+    holds + daemon watchdog dumps all thread stacks to journal past 120s (BOARD_API_LOCK_HOLD_ALERT_S); /lock-stats
+    exposes held_now. render() + all ledger appends use bounded LOC'
+- at: 2026-11-25 12:54
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-122202-2026-11-25-09-59-10-07-idc03-c no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-25 12:54
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-122202-2026-11-25-09-59-10-07-idc03-c on tony-dell still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 13:16
+  from: tony-dell
+  text: 'finished (ok): exit=0 202-2026-11-25-09-59-10-07-idc03-c.md`; card comms posted. | devin-task-20261125-122202-2026-11-25-09-59-10-07-id'
+- at: 2026-11-25 13:16
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 13:16
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261125-122202-2026-11-25-09-59-10-07-idc03-c'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-25 13:16
+  from: chaba
+  text: banked 652 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 13:16
+  from: chaba
+  text: pushed dispatch/20261125-122202-2026-11-25-09-59-10-07-idc03-c to origin
+- at: 2026-11-25 13:16
+  from: chaba
+  text: 'test gate skipped: pre-existing baseline test failure'
+- at: 2026-11-25 13:16
+  from: chaba
+  text: 'test gate: failure(s) identical to base (pre-existing) — not blocking: tests/board/test_runner_tooling_contract.py::ToolingPinTest::test_pin_hashes_match_sources'
+- at: 2026-11-25 13:16
+  from: chaba
+  text: auto-merged fe643fb7 (dispatch/20261125-122202-2026-11-25-09-59-10-07-idc03-c) → origin/master
+- at: 2026-11-25 13:16
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-25 13:24
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:58
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:26
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:38
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:48
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:40
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: devin
+  lane_source: fallback
+  runner: tony-dell
+  attempts: 1
+  sweep:
+    stale_running: 2026-11-25 12:54
+    dirty: 1
+  result: 'exit=0 202-2026-11-25-09-59-10-07-idc03-c.md`; card comms posted. | devin-task-20261125-122202-2026-11-25-09-59-10-07-idc03-c.service:
+    Consumed 16min 16.540s CPU time over 32min 31.020s wall clock time, 994.1M memory peak, 530.6M memory swap peak.'
+  verified: true
+claim:
+  since: 2026-11-25 12:20
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 13:24
+  note: verified — evidence checks green, closing itself

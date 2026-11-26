@@ -1,0 +1,79 @@
+title: tony-omen chaba clone recovery — 663 commits behind, 654 local changes
+subtitle: repeated autostash conflicts stalled the hourly safe-pull; recovered with a preserved backup and locked reset
+icon: refresh
+date: 2026-11-26
+status: deployed
+card: runner-auto-tony-omen
+check: scripts/board/runner-fleet-health.py (clone-stale)
+
+context:
+  symptom: "Fleet health FAIL tony-omen/clone-stale: chaba clone 663 commits
+    behind origin/master (limit 200). HEAD d71b491170, ahead=0."
+  why_the_hourly_sync_failed: "chaba-repo-sync.service runs
+    scripts/git-safe-pull.sh hourly; every run ended with
+    'pull did not complete — upstream not in HEAD' and exit 1. The checkout
+    carried 151 modified tracked files and 503 untracked files, with repeated
+    autostash-pop conflicts (26 retained stash entries, 4 .local-conflict-*
+    sidecars, 30 .local-<timestamp> collision sidecars)."
+  risk_assessment:
+    modified_tracked: "138 of 151 were byte-identical to origin/master —
+      uncommitted copies of changes already upstream. Only 13 differed, all
+      auto-generated alert cards (cms-auto-*, disk-auto-*, logs-auto-*)
+      whose column moves card-column-guard already reverts HEAD-wins."
+    untracked: "447 of 503 were byte-identical to origin/master collision
+      copies. The remaining 52 were conflict/backup sidecars (580 KB, no
+      secrets) — not authored work."
+  blocker: "git reset --hard first failed on root:root scripts/backup (created
+    by an earlier root-run job). The root-owned mddb-tier2-pull.sh inside it
+    matched upstream, so only the directory ownership was changed to tony."
+
+backup:
+  path: /home/tony/.local/share/chaba-omen-recovery-20261126-171744/
+  contents: "old-head.txt (d71b491170efa68922140c3f918ed697bf0b17bd),
+    status-before.txt, modified/differing/local-only path lists, stash-list.txt
+    (26 entries), and backup.tar.gz (147641 bytes) holding all 13 differing
+    tracked files plus 52 local-only untracked files."
+  stash_refs: "all 26 stash entries left in place — nothing dropped."
+
+changes:
+  - "chowned only scripts/backup to tony:tony (its root-owned script untouched)"
+  - "fetched origin/master (cd2e57f533) and ran git reset --hard origin/master
+    under /tmp/board-render.lock then /tmp/board-api.lock, the same lock order
+    git-safe-pull uses"
+  - "52 local-only untracked sidecars left in the worktree as evidence"
+
+verification:
+  checkout: "HEAD=cd2e57f533 == origin/master, behind=0, ahead=0,
+    tracked tree clean (52 untracked sidecars remain by choice)"
+  health_after: "runner-fleet-health.py -> 0 hosts failing, 7 ok, 1 card
+    auto-closed, 0 queued cards unsatisfiable"
+  sync_service: "systemctl --user start chaba-repo-sync.service -> Result=success,
+    ExecMainStatus=0; journal: 'upstream already in HEAD — skipped board lock
+    + pull phase'"
+  consumer: "no service restart was needed; the sync unit itself is the
+    consumer and now completes cleanly"
+
+rollback:
+  - "git reset --hard d71b491170efa68922140c3f918ed697bf0b17bd (state before
+    recovery), then extract backup.tar.gz over the checkout to restore the
+    13 differing cards and 52 local-only files."
+  - "stash refs were never dropped; `git stash list` has the full autostash
+    history if a specific mid-rebase state is needed."
+
+follow_up:
+  - "26 accumulated autostash entries and 52 sidecars are residue; review and
+    prune only after Tony confirms no session needs them."
+  - "scripts/backup was created root-owned by an earlier root-run job — make
+    root jobs chown repo paths they create, or safe-pull will keep hitting
+    permission walls."
+
+lessons:
+  - "A stale clone with hundreds of local changes is not a fetch problem: check
+    whether local files are already identical to upstream before resetting."
+  - "Repeated failed autostash pulls accumulate stash entries and sidecars;
+    a healthy-looking hourly timer can be failing every single run — check
+    unit Result, not just is-active."
+  - "Hold the render lock then the board lock around any worktree reset, in
+    the same order as git-safe-pull, so board-api writes cannot land mid-reset."
+  - "Verify file and directory ownership under the repo before reset --hard;
+    a root-owned directory blocks checkout even when the file itself is absent."

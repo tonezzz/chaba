@@ -1,0 +1,14 @@
+# chaba-board — pinned runtime for the kanban board stack quadlets.
+# python:slim + PyYAML (board-api/card_io/render-board all import yaml) +
+# git/openssh-client (kanban-sync.sh + kanban-commit.sh fetch/push over
+# git@github.com) + curl/bash for the wrapper scripts and health probes.
+FROM docker.io/library/python:3.12-slim
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      git openssh-client ca-certificates curl bash \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir "pyyaml==6.0.2"
+
+# All state lives on bind mounts (/home/tony, /tmp) — nothing to bake in.

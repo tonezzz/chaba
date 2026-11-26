@@ -1,0 +1,48 @@
+{# mcp-verify.j2 — per-host MCP verification report.
+   Context: target, hostvars. #}
+{%- set hv = hostvars[target] -%}
+{%- set probed = hv.mcp_probe is defined -%}
+{%- set ns = namespace(unreachable=false, skipped=false, skip_reason='', ok=true, servers={}, ok_count=0, total=0, parse_error='') -%}
+{%- if not probed -%}
+{%- elif hv.mcp_probe.unreachable | default(false) -%}
+{%-   set ns.unreachable = true -%}
+{%-   set ns.ok = false -%}
+{%- elif hv.mcp_snapshot is defined -%}
+{%-   set snap = hv.mcp_snapshot -%}
+{%-   set ns.skipped = snap.skipped | default(false) -%}
+{%-   set ns.skip_reason = snap.skip_reason | default('') -%}
+{%-   set ns.ok = snap.ok | default(false) -%}
+{%-   set ns.servers = snap.servers | default({}) -%}
+{%-   set ns.ok_count = snap.ok_count | default(0) -%}
+{%-   set ns.total = snap.total | default(0) -%}
+{%-   set ns.parse_error = snap.parse_error | default('') -%}
+{%- else -%}
+{%-   set ns.unreachable = true -%}
+{%-   set ns.ok = false -%}
+{%- endif -%}
+{%- if not probed -%}
+{%-   set summary = "not probed (outside this run's targets)" -%}
+{%- elif ns.unreachable -%}
+{%-   set summary = 'unreachable' -%}
+{%- elif ns.skipped -%}
+{%-   set summary = 'skipped: ' ~ ns.skip_reason -%}
+{%- elif ns.parse_error -%}
+{%-   set summary = 'error: ' ~ ns.parse_error -%}
+{%- elif ns.ok -%}
+{%-   set summary = 'ok (' ~ ns.ok_count ~ '/' ~ ns.total ~ ' servers)' -%}
+{%- else -%}
+{%-   set summary = 'fail (' ~ ns.ok_count ~ '/' ~ ns.total ~ ' servers ok)' -%}
+{%- endif -%}
+host: {{ target }}
+inventory_host: {{ target }}
+probed: {{ probed }}
+unreachable: {{ ns.unreachable }}
+skipped: {{ ns.skipped }}
+skip_reason: {{ ns.skip_reason | to_json }}
+ok: {{ ns.ok }}
+ok_count: {{ ns.ok_count }}
+total: {{ ns.total }}
+summary: {{ summary | to_json }}
+parse_error: {{ ns.parse_error | to_json }}
+servers:
+{{ ns.servers | to_nice_yaml | indent(2, true) }}

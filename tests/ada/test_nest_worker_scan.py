@@ -299,6 +299,37 @@ class TestScanBenchmark(ScanFixtureCase):
               f"{dt * 1000:.0f}ms")
 
 
+class TestIndexEvent(unittest.TestCase):
+    """packs-index event files (ADA-0806): one immutable JSON per state
+    change under <remote>/queue/packs-index/ — best-effort, never blocks."""
+
+    def test_index_event_writes_state_file(self):
+        calls = []
+        old_rcat, old_worker = nw.rcat, nw.WORKER
+        nw.rcat = lambda path, text: calls.append((path, json.loads(text)))
+        nw.WORKER = "test-host-1"
+        try:
+            nw.index_event(REMOTE, "p01-done", "done", "3 files")
+        finally:
+            nw.rcat, nw.WORKER = old_rcat, old_worker
+        self.assertEqual(len(calls), 1)
+        path, ev = calls[0]
+        self.assertIn("queue/packs-index/", path)
+        self.assertTrue(path.endswith("-p01-done-done.json"), path)
+        self.assertEqual(ev["pack"], "p01-done")
+        self.assertEqual(ev["state"], "done")
+        self.assertEqual(ev["worker"], "test-host-1")
+        self.assertEqual(ev["info"], "3 files")
+
+    def test_index_event_swallows_failures(self):
+        old_rcat = nw.rcat
+        nw.rcat = lambda *a, **k: (_ for _ in ()).throw(OSError("down"))
+        try:
+            nw.index_event(REMOTE, "p02", "claim")   # must not raise
+        finally:
+            nw.rcat = old_rcat
+
+
 def live(remote, stale_min):
     """Time real discovery against a Drive queue — read-only."""
     nw.CAPS = {"gpu_gb": 0.0, "disk_gb": 1e6,

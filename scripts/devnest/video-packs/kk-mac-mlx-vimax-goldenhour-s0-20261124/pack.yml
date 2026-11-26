@@ -1,0 +1,67 @@
+name: kk-mac-mlx-vimax-goldenhour-s0-20261124
+# MLX-lane rerender of the ViMax idea2video-local scene_0 shots
+# (Golden Hour Catch) — the TRUE prompt-adherence control: prompt text
+# is recovered verbatim (motion_desc + audio_desc per ViMax
+# script2video_pipeline.py:527) and the old render was t2v, so this is
+# t2v too. Old lane: adanest@kk-mac vimax_gen_video.py, diffusers
+# LTXPipeline fp32+cpu_offload, 768x512/49f/30 steps/24fps ~11min/shot.
+#
+# STAGED-ON-APPROVAL — do NOT copy into gdrive:ada-nest/kk-mac-video-pilot/packs/
+# until the colab scene0 control passes and KK reviews quality.
+#
+# Note: this path uses the real T5 text_encoder (prompt text), unlike
+# the embed-injection packs — heavier (~9.5GB T5) but proven on kk-mac.
+requires: []
+needs:
+  ram_gb: 12
+  disk_gb: 5
+  egress_only_ok: true
+timeout_s: 3600
+artifacts:
+  - packs/kk-mac-mlx-vimax-goldenhour-s0-20261124/out/vimax-s0shot0-mlx.mp4
+  - packs/kk-mac-mlx-vimax-goldenhour-s0-20261124/out/vimax-s0shot1-mlx.mp4
+  - packs/kk-mac-mlx-vimax-goldenhour-s0-20261124/out/batch-result.json
+  - packs/kk-mac-mlx-vimax-goldenhour-s0-20261124/out/verdict.md
+prep: |
+  set -eu
+  # --- owner-use stop gate: KK-Mac is owner-first; require >=10min HID idle
+  IDLE_NS=$(ioreg -c IOHIDSystem 2>/dev/null | awk '/HIDIdleTime/ {print $NF}' | head -1)
+  case "$IDLE_NS" in ''|*[!0-9]*) echo "owner-use gate: HIDIdleTime unreadable"; exit 1;; esac
+  IDLE_S=$((IDLE_NS / 1000000000))
+  [ "$IDLE_S" -ge 600 ] || { echo "owner-use gate: idle ${IDLE_S}s < 600s"; exit 1; }
+  # --- AC power
+  pmset -g batt 2>/dev/null | grep -q "AC Power" || { echo "requires AC power"; exit 1; }
+  # --- memory: T5-XXL + 2B DiT needs ~14GB -> require >=45% free
+  FREE_PCT=$(memory_pressure 2>/dev/null | awk -F'[:%]' '/System-wide memory free percentage:/ {gsub(/[[:space:]]/, "", $2); print $2}')
+  case "$FREE_PCT" in ''|*[!0-9]*) echo "memory gate: free% unreadable"; exit 1;; esac
+  [ "$FREE_PCT" -ge 45 ] || { echo "memory gate: ${FREE_PCT}% < 45%"; exit 1; }
+  # --- no big resident model runner (>10GB RSS; small embeds ok)
+  BIG=$(ps -axo rss=,command= 2>/dev/null | awk '/llama-server/ && $1+0 > 10485760 {n++} END{print n+0}')
+  [ "${BIG:-0}" -eq 0 ] || { echo "model gate: ${BIG} llama-server >10GB resident"; exit 1; }
+  # --- load gate
+  LOAD1=$(sysctl -n vm.loadavg 2>/dev/null | awk '{print $2}')
+  awk -v l="$LOAD1" 'BEGIN{exit !(l+0 < 8.0)}' || { echo "load gate: ${LOAD1} >= 8"; exit 1; }
+  # --- owner workload gate: creative/video apps
+  BUSY=$(ps -axo comm 2>/dev/null | awk '{s=tolower($0); sub(/^.*\//, "", s); if(s ~ /^(ffmpeg|resolve|davinci resolve|premiere pro|adobe premiere pro|final cut pro|after effects|photoshop|blender|unreal editor)$/) n++} END {print n+0}')
+  [ "$BUSY" -eq 0 ] || { echo "owner-use gate: $BUSY creative/video apps"; exit 1; }
+  # --- disk
+  AVAIL_KB=$(df -k "$HOME" 2>/dev/null | awk 'NR==2{print $4}')
+  [ "${AVAIL_KB:-0}" -ge 5242880 ] || { echo "disk gate: ${AVAIL_KB}KB < 5GB"; exit 1; }
+  # --- model + venv (prompt path needs text_encoder + tokenizer)
+  MODEL="$HOME/kk-video/ltx-mlx/models/LTX"
+  for f in "ltxv-2b-0.9.8-distilled.safetensors" "tokenizer/spiece.model"; do
+    test -s "$MODEL/$f" || { echo "missing model file: $f"; exit 1; }
+  done
+  test -s "$MODEL/text_encoder/model.safetensors.index.json" \
+    || ls "$MODEL/text_encoder"/*.safetensors >/dev/null 2>&1 \
+    || { echo "missing T5 text_encoder weights"; exit 1; }
+  PY="$HOME/kk-video/.venv-mlx/bin/python"
+  test -x "$PY"
+  "$PY" - <<'PY'
+  import mlx.core, imageio.v3, numpy
+  print("mlx+imageio+numpy import ok")
+  PY
+run_sh: |
+  set -eu
+  cd "$PACK_DIR"
+  "$HOME/kk-video/.venv-mlx/bin/python" "$PACK_DIR/run_vimax_s0.py"

@@ -84,7 +84,7 @@ hosts:
         critical: true
         verification: pgrep -a devin-desktop
         note: Active unit name is the systemd scope, e.g. app-devin-desktop-<pid>.scope
-      - name: michael-dev.service
+      - name: mn-ha-dev.service
         type: service
         scope: user
         expected_state: absent
@@ -142,8 +142,10 @@ hosts:
         scope: user
         expected_state: active
         critical: false
-        note: "weekly Sun 05:30 — regenerates ada-cms-pages services-by-host + 6
-          leaf pages via scripts/ada/host-services-cms.py; OnFailure ->
+        note: "weekly Sun 05:30 — regenerates ada-cms-pages services-by-host +
+          per-host leaf pages (one per ssot.audit.hosts.yml registry entry,
+          incl. retired idc01 stub) via scripts/ada/host-services-cms.py;
+          OnFailure ->
           chaba-services-regen-fail.service posts comms on the
           cms-services-weekly-regen card (focus-inbox fallback)"
       - name: chaba-jobs.timer
@@ -200,8 +202,24 @@ hosts:
           ~/.local/node24/bin/node (@openchamber/web >=2.7 requires node
           >=24.14) and spawns @opencode/cli serve v2.2.7 (requires >=2.2.4)
           per session on an allocated 127.0.0.1 port. Manual update:
-          `openchamber update` + `npm i -g @opencode/cli` under
-          ~/.local/node24/bin. Debug: `journalctl --user -u
+          node24 npm with explicit prefix —
+          `PATH=~/.local/node24/bin:$PATH npm i -g --prefix=~/.local/node
+          @openchamber/web@<ver> @opencode/cli` (bare `npm i -g` resolves
+          /usr/bin/node v18 and dies EACCES; the package lives under
+          ~/.local/node even though node24 is the runtime). Since
+          2.7.3 the CLI moved bin/cli.js -> build/bin/cli.js — ExecStart
+          points at build/bin/cli.js. node_modules also carries a managed
+          patch (models.status action + /api/openchamber/models/status
+          route, LiteLLM probe) — diff vs pristine in
+          stacks/idc02/openchamber/openchamber-models-status.patch,
+          re-applied by apply-models-status-patch.sh via
+          openchamber-update.service ExecStartPost; card
+          ocb-models-status-patch-durability (OPS-0022). 2026-11-26
+          (OPS-1424, Tony decision B): accepted live @openchamber/web@2.8.0
+          + @opencode/cli@2.4.2 on idc02; patch updated for 2.8.x and
+          re-applied via governed flow. Earlier 2.7.3 pin (2026-11-20)
+          mitigated 2.7.0-2.7.2 TDZ crash-loop; 2.8.x soak accepted.
+          Debug: `journalctl --user -u
           openchamber.service`, `openchamber logs -p 3000`,
           ~/.config/openchamber/logs/. Gotchas: SameSite=Strict session
           cookie => iframe only works when dashboard is opened same-site
@@ -224,7 +242,7 @@ hosts:
       - {name: ms-playwright-mcp-ram-cache.service, type: service, scope: user}
       - {name: ms-playwright-ram-cache.service, type: service, scope: user}
       - {name: npm-cache-ram-cache.service, type: service, scope: user}
-      - {name: raceman-php.service, type: service, scope: user}
+      - {name: raceman-php.service, type: service, scope: user, note: "php-fpm :9001 — canonical raceman course API backend; consumed by omen raceman-web nginx via fastcgi 100.68.142.13:9001 (placement decided 2026-11-25)"}
       - {name: rclone-gdrive.service, type: service, scope: user}
       - {name: weaviate.service, type: service, scope: user}
       - {name: web.service, type: service, scope: user}
@@ -234,7 +252,6 @@ hosts:
       - {name: ada-market-report.timer, type: timer, scope: user}
       - {name: cam-frame-refresh.timer, type: timer, scope: user}
       - {name: cam-wall-cms.timer, type: timer, scope: user}
-      - {name: cam-wall-roster-audit.timer, type: timer, scope: user}
       - {name: chaba-cms-reflect.timer, type: timer, scope: user}
       - {name: chaba-dell-health-agent.timer, type: timer, scope: user}
       - {name: chaba-nag.timer, type: timer, scope: user}
@@ -288,10 +305,10 @@ hosts:
       - {name: chaba-standard-drift.timer, scope: user}
       - {name: chaba-starboard-tracker.timer, scope: user}
       - {name: chaba-tony-ideas.timer, scope: user}
+      - {name: cam-wall-roster-audit.timer, scope: user, note: "retired — unit not-found on dell since 2026-11-12 sweep; roster-audit now parked disabled on tony-omen pending MDDB write-failure review (card cms-auto-cctv-roster)"}
       - {name: daily-brief.timer, scope: user}
       - {name: dev-miniapp-v0.service, scope: user}
       - {name: focus-dispatcher-overnight.timer, scope: user}
-      - {name: helm.service, scope: user}
       - {name: kanban-commit.timer, scope: user}
       - {name: kanban-dispatch.timer, scope: user}
       - {name: kanban-sync.timer, scope: user}
@@ -310,8 +327,6 @@ hosts:
       - {name: status-data-api.service, scope: user}
       - {name: trade-api.service, scope: user}
       - {name: trade-automation.service, scope: user, note: "retired 2026-10-23; no current host in ssot.jobs.yml"}
-      - {name: websockify-macbook.service, scope: user}
-      - {name: websockify-vms-mn01.service, scope: user}
       - {name: yomi-api.service, scope: user}
       - {name: yomi-backup.timer, scope: user}
       - {name: yomi-mddb-digest.timer, scope: user}
@@ -415,7 +430,6 @@ hosts:
       - name: focus-dispatcher-overnight.service
         reason: "03:00 run failed inside its ExecStartPre git pull (exit 128) — script verified clean on a manual run 2026-10-09; next scheduled run verifies"
         action: verify-next-run
-        action: investigate
       - name: cookie-bridge.service
         reason: Cookie bridge service failing on tony-dell; needs restart/investigation
         action: restart
@@ -529,13 +543,12 @@ hosts:
         - gvfs-mtp-volume-monitor.service
         - gvfs-udisks2-volume-monitor.service
         - ha-live.service
-        - helm.service
         - lxqt-seat.service
         - mcp-debug-sse.service
         - mcp-rview-oauth-proxy.service
         - mcp-rview.service
         - mha-state-push.service
-        - michael-dev.service
+        - mn-ha-dev.service
         - michael-ha-mcp-tunnel.service
         - mpris-proxy.service
         - ms-playwright-mcp-ram-cache.service
@@ -568,7 +581,6 @@ hosts:
         - trade-api.service
         - weaviate.service
         - web.service
-        - websockify-macbook.service
         - wireplumber.service
         - workflows-mcp.service
         - xdg-desktop-portal-gtk.service
@@ -822,6 +834,15 @@ hosts:
         critical: false
         note: "Currently disabled 2026-10-11 — pulled from retired idc01,
           permanently broken. Service + timer disabled on tony-omen."
+      - name: cam-wall-roster-audit.timer
+        type: timer
+        scope: user
+        expected_state: inactive
+        critical: false
+        note: "PARKED 2026-11-26 — sole remaining roster-audit host (tony-dell
+          unit retired); disabled after repeated MDDB 'Remote end closed'
+          write failures. Re-enable needs Tony approval — registry doc
+          ada-cms-automation/cctv-roster set enabled:false same day."
       - name: ada-memory-backup.timer
         type: timer
         scope: user
@@ -923,10 +944,12 @@ hosts:
       - {name: log-shipper.timer, type: timer, scope: user}
       - {name: log-shipper-severe.timer, type: timer, scope: user}
       - {name: mcp-health-snapshot.timer, type: timer, scope: user}
-      - {name: michael-dev-parity.timer, type: timer, scope: user}
+      - {name: mn-ha-dev-parity.timer, type: timer, scope: user}
       - {name: notebooklm-kb-sync.timer, type: timer, scope: user}
       - {name: report-ai-edge.timer, type: timer, scope: user}
       - {name: runner-agent.timer, type: timer, scope: user}
+      - {name: runner-agent.service, type: service, scope: user,
+         note: "oneshot claim+execute, cap 3, labels gpu,desktop,cpu (no push:* — live probe at claim). Drop-ins: api.conf (tailnet board-api), claude.conf (CLAUDE_LANES=1), jev-lane.conf (JEV_LANE=1; OPENCODE_LANES commented out 2026-11-09 — intentionally OFF pending fleet lane enablement per ssot.devnest-lanes), kk-mac.conf, nlm.conf. opencode v2.4.1 installed ~/.npm-global/bin/opencode 2026-11-24 (npm i -g @opencode/cli) — binary present, lane flag stays off until the savings-pilot gate opens; drift now probed via ssot.host-software opencode capability"}
       # 2026-11-12 audit: vcast headed-display service is intentional
       # (enabled + running); telemetry service verified posting OK.
       - {name: vcast-real-macbook.service, type: service, scope: user}
@@ -957,18 +980,24 @@ hosts:
       - {name: chaba-guest-lan.service, type: service, scope: user, expected_state: inactive, note: "staged — waits for 192.168.2.67 handoff at dell power-off"}
       - {name: ha-guest-lan.service, type: service, scope: user, expected_state: inactive, note: "staged — waits for 192.168.2.67 handoff"}
       - {name: gemini-ollama-proxy.service, type: service, scope: user, note: ":11435"}
-      - {name: raceman-web.service, type: service, scope: user, note: "nginx :8083 serves yt-live media"}
+      - {name: raceman-web.service, type: service, scope: user, note: ":8083 nginx — raceman app + yt-live media; PHP fastcgi_pass -> 100.68.142.13:9001 (dell)"}
       - {name: playlived.service, type: service, scope: user}
       - {name: playlive-chrome.service, type: service, scope: user}
       - {name: yolo-detect.service, type: service, scope: user}
       - {name: cast-ha-panel.timer, type: timer, scope: user}
       - {name: audit-cast.timer, type: timer, scope: user}
       - {name: wp-cam-snapshot.timer, type: timer, scope: user, note: "rendered from ssot.jobs — host now tony_omen"}
-      - {name: xiaomi-token-refresh.timer, type: timer, scope: user}
+      - {name: xiaomi-token-refresh.timer, type: timer, scope: user, expected_state: inactive, note: "Masked 2026-11-26 (user chose retire over interactive re-login): refresh script had no valid passToken cookie, failing daily with exit-1. Unit files backed up to ~/.config/systemd/user/_retired-20261126/ and both .timer/.service masked to /dev/null. Cameras keep streaming on the stored token until it expires. Unmask only after logging in to account.xiaomi.com in the browser and verifying a fresh token."}
       - {name: update-cam-frame.timer, type: timer, scope: user}
       - {name: ha-config-backup.timer, type: timer, scope: user}
     expected_absent:
-      - name: michael-dev.service
+      - name: raceman-php.service
+        scope: user
+        note: "PHP backend lives on tony-dell (:9001, host network) — omen
+          raceman-web nginx fastcgi_passes to 100.68.142.13:9001; a local
+          php-fpm here would shadow it (placement decided 2026-11-25,
+          card raceman-php-placement-decision)"
+      - name: mn-ha-dev.service
         scope: user
         note: ghost copy — real instance on idc03 since 2026-10-09; omen
           copy disabled 2026-10-12 (container running since 2026-07-28)
@@ -982,6 +1011,14 @@ hosts:
         note: "retired with the suite move — watchdog is undeclared in
           ssot.jobs.yml on every host (suite-freshness coverage now rests on
           card job-health-sweep-consecutive-failure-alerts)"
+      - name: yolo-xiaomi.service
+        scope: user
+        note: "superseded 2026-11-25 — yolo-detect.service owns HA's
+          127.0.0.1:8780 consumer (rest_command.yolo_set_source + /detect
+          sensor); /set-source switches cameras at runtime so a second
+          detector is redundant. Also cannot bind: 0.0.0.0:8780 collides
+          with jev-student.service on 100.75.102.88:8780 (migrated
+          2026-11-18). Unit left installed+disabled on omen."
     known_failed:
       - name: arp-inventory-scan.service
         reason: "Pre-OPS-0581 finding-reporter (exited 1/2 on findings); since 2026-10-13 exits 0 on completed scans — findings via report + focus-inbox (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"
@@ -992,7 +1029,7 @@ hosts:
       - name: f08837a9d0ec269851e88ce856dfdcb130ebec993db3024ad4a93c7d39efbcd6-413857d9606b8a53.service
         reason: Transient session scope with no remaining PIDs
         action: ignore
-      - name: michael-dev-parity.service
+      - name: mn-ha-dev-parity.service
         reason: Michael-dev parity service failing; investigate
         action: investigate
       - name: nvidia-cdi-refresh.service
@@ -1075,8 +1112,8 @@ hosts:
         - gvfs-udisks2-volume-monitor.service
         - mcp-debug-cors.service
         - mddb-tunnel.service
-        - michael-dev-parity.service
-        - michael-dev.service
+        - mn-ha-dev-parity.service
+        - mn-ha-dev.service
         - mpris-proxy.service
         - ms-playwright-ram-cache.service
         - notebooklm-rest-auth-refresh.service
@@ -1108,7 +1145,7 @@ hosts:
         - focus-dispatcher.timer
         - launchpadlib-cache-clean.timer
         - mcp-health-snapshot.timer
-        - michael-dev-parity.timer
+        - mn-ha-dev-parity.timer
         - notebooklm-kb-sync.timer
         - snap.firmware-updater.firmware-notifier.timer
         - ssot-mddb-sync.timer
@@ -1257,7 +1294,7 @@ hosts:
         - yomi-process.timer
       failed_user_services:
         - arp-inventory-scan.service
-        - michael-dev-parity.service
+        - mn-ha-dev-parity.service
         - notebooklm-rest-auth-refresh.service
       failed_system_services:
         - chaba-backup-monitor.service
@@ -1328,6 +1365,29 @@ hosts:
       #     tony-dell: 8G zstd, prio 100 ahead of /swap.img; /tmp tmpfs is
       #     Ubuntu default here, no unit needed) ---
       - {name: zram-swap.service, type: service, scope: system}
+      # 2026-11-24 audit reconcile (audit-auto-macbook / OPS-1296): the four
+      # 2026-11-09 deltas verified resolved — runner-agent.timer re-armed
+      # 11-12, runner-agent.service + zram-swap.service failures cleared by
+      # the 11-14 cold boot, vcast-real-macbook declared 11-12, stick-announce
+      # ghost gone. nest-mgr.service runs intentionally (installed
+      # 2026-11-17, card ops-macbook-nestmgr-install / SYS-0158) — declared.
+      - {name: nest-mgr.service, type: service, scope: user}
+      # 2026-11-25 (tony-macbook-daytime-runner): daytime sleep inhibitor is
+      # NOT a systemd unit — it runs inside the XFCE session via
+      # ~/.config/autostart/macbook-day-awake.desktop ->
+      # ~/.local/bin/macbook-day-awake.sh (repo: scripts/ops/). Block-mode
+      # logind inhibitors need an active/inactive session subject, so a
+      # user-service copy can't hold them; a polkit rule
+      # (/etc/polkit-1/rules.d/50-macbook-day-awake.rules) would let
+      # systemd/macbook-day-awake.service (repo) take over session-free.
+    expected_absent:
+      # stick-announce.service — pre-rebuild ghost (macOS-era carryover /
+      # early-Ubuntu leftover); not installed on the rebuilt host. Its
+      # failed-system flag (2026-11-03/04) cleared after the 11-14 cold
+      # boot; declared absent so a resurrected unit files a delta instead
+      # of slipping through. A *failed* ghost still flags via the
+      # failed-units loop — that tripwire stays armed.
+      - {name: stick-announce.service, scope: system}
     allowed_running:
       - devin-task-*.service    # ephemeral dispatch session units
     known_failed: []
@@ -1412,11 +1472,27 @@ hosts:
       - {name: log-shipper-severe.timer, type: timer, scope: user}
       - {name: mn01-canary.timer, type: timer, scope: user}
       - {name: runner-agent.timer, type: timer, scope: user}
-      # 2026-11-12 audit: vcast headed-display service is intentional
-      # (enabled + running); telemetry service verified posting OK.
-      - {name: vcast-real-macbook.service, type: service, scope: user}
       - {name: device-telemetry.timer, type: timer, scope: user}
+      # 2026-11-24: nest-mgr fleet rollout (stacks/services/nest-mgr) was
+      # never declared here — running+active in daily audits since install.
+      - {name: nest-mgr.service, type: service, scope: user}
+      # 2026-11-25: mn-ha-dev moved idc02 -> mn01 (card michael-dev-migrate-mn01,
+      # commit 5a0601d3) — verified active+running on mn01 via ssh same day;
+      # the migrate commit missed this census.
+      - {name: mn-ha-dev.service, type: service, scope: user, critical: true,
+         note: "real michael-dev HA instance — moved idc02 -> mn01 2026-11-25 (card michael-dev-migrate-mn01); quadlet-generated unit, serves :8124 + MCP tailnet"}
+      - {name: mha-state-push.service, type: service, scope: user,
+         note: "pushes live michael-ha states into mn-ha-dev /api/states — moved idc02 -> mn01 2026-11-25 with the instance it feeds; unit is disabled-but-running (started outside enablement)"}
+    expected_absent:
+      - name: vcast-real-macbook.service
+        scope: user
+        note: "named vcast display unit absent on mn01 (verified
+          list-unit-files 2026-11-25) — stale declaration from the 11-12
+          fleet-wide copy; current displays are vcast-real@N template
+          instances where deployed"
     known_failed:
+      - name: mn01-canary.service
+        reason: "nightly Ada-standby canary exits 1 when it detects an outage — failed 11-25 03:30 on 'idc03 ada services 1/3 active' (real signal, tracked by timer-alert-mn01-mn01-canary); not host drift"
       - name: grub-initrd-fallback.service
         reason: Ubuntu/grub package service that fails on non-EFI fallback; harmless
         action: ignore
@@ -1663,20 +1739,25 @@ hosts:
       - name: kkmac-ollama-tunnel.service
         type: service
         scope: user
-        expected_state: active
+        expected_state: inactive
         critical: false
-        note: "ssh -N -L 127.0.0.1:11445:127.0.0.1:11434 kkkakk@kk-mac —
-          reaches adanest's loopback-bound ollama on kk-mac (OPS-1016);
-          feeds LiteLLM ollama-*-kkmac routes + embed-pool upstream;
-          dies with kk-mac (member device, offline_ok)"
+        note: "DISABLED fallback since 2026-11-19 (card
+          kkmac-ollama-durable-bind): kk-mac ollama now binds the tailnet
+          directly (100.108.217.17:11434) and the admission shim
+          upstreams it — nothing consumes :11445. Unit kept installed
+          (declared in stacks/idc03/litellm/) for a loopback-bind
+          rollback only; it flapped ~19k restarts while enabled.
+          ssh -N -L 127.0.0.1:11445:127.0.0.1:11434 kkkakk@kk-mac"
       - name: kkmac-admission-shim.service
         type: service
         scope: user
         expected_state: active
         critical: false
         note: "Ada Nest admission gate on 127.0.0.1:11447 in front of
-          kkmac-ollama-tunnel :11445 (card kk-mac-gateway-admission-shim,
-          2026-11-14) — 503s instantly when kk-mac heartbeat is stale
+          kk-mac ollama (card kk-mac-gateway-admission-shim,
+          2026-11-14; upstream repointed from tunnel :11445 to direct
+          tailnet 100.108.217.17:11434 on 2026-11-19) — 503s instantly
+          when kk-mac heartbeat is stale
           >900s / temp>60C / disk<20G / busy, so LiteLLM kk-mac legs
           (summary/classify/bench leg-1, chat-local leg-2) fail fast to
           the paid leg. Drain switch: touch
@@ -1688,7 +1769,8 @@ hosts:
         critical: false
         note: "Ollama-shaped /api/embed racing proxy on 100.102.134.91:11436
           (MEM-0805) — hedged fan-out to idc03/idc02/tony-omen/kk-mac ollama
-          bge-m3 (kk-mac via kkmac-ollama-tunnel :11445, added 2026-10-30);
+          bge-m3 (kk-mac via kkmac-admission-shim :11447 -> direct
+          tailnet bind, repointed 2026-11-19; added 2026-10-30);
           first 2xx wins, 8s upstream timeout; fronts mddb-embed embeds"
       - name: mddb-panel.service
         type: service
@@ -1888,15 +1970,33 @@ hosts:
       - name: ada-bench-casting.timer
         type: timer
         scope: user
-        expected_state: active
+        expected_state: inactive
         critical: false
-        note: Daily 02:00 preflight gate -> OnSuccess ada-scenario-casting.service
+        note: "Daily 02:00 preflight gate -> OnSuccess ada-scenario-casting.service.
+          Masked 2026-11-25: preflight-bench.sh's load<2 gate can never pass
+          on idc03 (sustained load 4-8 from mddb/tailscale/board-api), so the
+          unit exited 1 every run and timer-sentinel reopened its card daily
+          even though the gate was correctly refusing to launch the paid
+          casting lane. Lane is parked on prod (bench-off-paid-lanes); the
+          separate Sat ada-scenario-casting.timer still covers the weekly
+          suite. Unmask only when prod-allow-casting is authorized and host
+          load is durably <2."
       - name: ada-embed-bench.timer
         type: timer
         scope: user
         expected_state: active
         critical: false
         note: Weekly Sat 06:00 — embed benchmark (no :8199 lock)
+      - name: scenario-runner-drift-check.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Hourly — sha256 drift check of the copy-on-install
+          ~/.local/share/ada-scenario-runner/ wrapper vs repo source;
+          deduped board-api /inbox alerts (card
+          scenario-runner-deployed-drift-check, rendered from
+          ssot.jobs.yml 2026-11-25)"
       - name: jev-bench.timer
         type: timer
         scope: user
@@ -1983,6 +2083,7 @@ hosts:
         critical: false
         note: Hourly git-safe-pull of ~/CascadeProjects/chaba — installed
           2026-10-09 after checkout drifted 190 commits behind (audit finding)
+      - {name: mcp-fleet-report.timer, type: timer, scope: user, note: "daily 24h — rendered from ssot.jobs.yml 2026-11-20 (card KNB-0019): L1 MCP inventory observation across all declared hosts + L2 rollup -> Reports:Fleet-MCP-Inventory via board-api /publish; deterministic, no LLM"}
       - name: chaba-jobs.timer
         type: timer
         scope: user
@@ -2003,7 +2104,7 @@ hosts:
       - {name: kk-ha.service, type: service, scope: user}
       - {name: litellm.service, type: service, scope: user}
       - {name: litellm-db.service, type: service, scope: user}
-      - {name: michael-dev.service, type: service, scope: user, critical: true,
+      - {name: mn-ha-dev.service, type: service, scope: user, critical: true,
          expected_state: inactive,
          note: PARKED 2026-10-26 — moved to idc02 (capacity-move-michael-dev); masked+stopped 24h rollback window. Quadlet file kept. Unmask+start to restore.}
       - {name: nest-mgr.service, type: service, scope: user}
@@ -2013,11 +2114,13 @@ hosts:
       - {name: ada-memory-gaps.timer, type: timer, scope: user}
       - {name: ada-memory-merge-proposals.timer, type: timer, scope: user, note: "rendered from ssot.jobs.yml 2026-11-18 (card memory-extract-merge-proposals) — Sun 10:30 after ada-memory-distill; recommend-mode merge proposals only"}
       - {name: ada-recall-canary.timer, type: timer, scope: user}
-      - {name: cam-wall-cms-vps.timer, type: timer, scope: user}
+      - {name: cam-wall-cms-vps.timer, type: timer, scope: user, expected_state: inactive, note: "PARKED 2026-11-26 — disabled after repeated MDDB 'Remote end closed' write failures; re-enable needs Tony approval (card cms-auto-cctv-roster / timer-alert-idc03-cam-wall-cms-vps)"}
       - {name: cert-sync.timer, type: timer, scope: user}
       - {name: mddb-memory-standard.timer, type: timer, scope: user}
       - {name: mddb-restart.timer, type: timer, scope: user}
       - {name: runner-agent.timer, type: timer, scope: user}
+      - {name: litellm-ledger.timer, type: timer, scope: user, note: "daily 07:10 +07 — publishes ada-cms-pages/llm-gateway-spend-ledger from LiteLLM_SpendLogs (stacks/idc03/litellm; card litellm-ledger-timer-enable, enabled 2026-11-25)"}
+      - {name: litellm-budget-watch.timer, type: timer, scope: user, note: "hourly — LiteLLM VerificationToken near-cap warn/alert (job litellm-budget-watch in ssot.jobs.yml; card litellm-budget-watch-enable, enabled 2026-11-25)"}
       # 2026-11-12 audit: vcast headed-display service is intentional
       # (enabled + running); telemetry service verified posting OK.
       - {name: vcast-real-macbook.service, type: service, scope: user}
@@ -2042,7 +2145,7 @@ hosts:
       - {name: kanban-sync.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: merge-sweep.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: mha-state-push.service, type: service, scope: user, expected_state: inactive,
-         note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b); moved idc03 -> idc02 2026-10-26 with michael-dev (follows the dev instance it feeds); disabled on idc03"}
+         note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b); moved idc03 -> idc02 2026-10-26 with mn-ha-dev (follows the dev instance it feeds); disabled on idc03"}
       - {name: overnight-assessment.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: qc-scoreboard.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: redis.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
@@ -2155,7 +2258,12 @@ hosts:
         note: "Local-embedding bank on :11028 — same collection names as
           leader, embeds via embed-pool-shim on idc03 (:11436) racing fleet
           ollama bge-m3 (1024d); relocated idc03→idc02 2026-11-12 to offload
-          the hot box (card mddb-embed-relocate-idc03-to-idc02)"
+          the hot box (card mddb-embed-relocate-idc03-to-idc02).
+          GOTCHA: mddb-embed.container lacks [Install] WantedBy=default.target
+          — generated unit does NOT auto-start on boot; was down ~30h after
+          the 2026-11-24 09:20 reboot until manually started 2026-11-25
+          (card idc02-audit-census-reconcile). Add the Install section to
+          prevent recurrence."
       - name: weaviate-embedding.service
         type: service
         scope: user
@@ -2205,46 +2313,83 @@ hosts:
           every repo-exec job on the host (audit finding)
       # --- census 2026-10-12 (drift-reconcile OPS-0521) ---
       - {name: ada-lab.service, type: service, scope: user}
-      - {name: caddy-edge.service, type: service, scope: user, note: "michael-dev.surf-thailand.com + /apps/ha/michael-dev* now upstream https://idc02...:8124 (local); http://:8124 tailnet-IP shadow block removed 2026-10-26 — tailscale serve owns :8124"}
-      - {name: michael-dev.service, type: service, scope: user, critical: true,
-         note: "real instance — moved idc03 -> idc02 2026-10-26 (capacity-move-michael-dev), serves :8124 + MCP :9585 tailnet; quadlet stacks/idc02/michael-dev/"}
-      - {name: mha-state-push.service, type: service, scope: user,
-         note: "moved idc03 -> idc02 2026-10-26 with the dev instance it feeds (live michael-ha states -> michael-dev /api/states)"}
+      - {name: caddy-edge.service, type: service, scope: user, note: "michael-dev.surf-thailand.com + /apps/ha/mn-ha-dev* now upstream https://idc02...:8124 (local); http://:8124 tailnet-IP shadow block removed 2026-10-26 — tailscale serve owns :8124"}
       - {name: camwall-edge.service, type: service, scope: user}
       - {name: mddb-ops.service, type: service, scope: user}
+      # --- census 2026-11-25 (idc02-audit-census-reconcile): OPS-0725/0731
+      #     migration adds + 2026-11-24 quadlet retirements, verified live ---
+      - {name: gesture-relay.service, type: service, scope: user,
+         note: "Gesture relay — WS fan-out; migrated tony-dell -> idc02 2026-10-19 (OPS-0725), quadlet container"}
+      - {name: gpu-queue.service, type: service, scope: user,
+         note: "GPU Queue Manager; migrated tony-dell -> idc02 2026-10-19 (OPS-0725), quadlet container"}
+      - {name: gpu-queue-processor.service, type: service, scope: user,
+         note: "GPU Queue Processor; migrated tony-dell -> idc02 2026-10-19 (OPS-0725), quadlet container"}
+      - {name: weaviate.service, type: service, scope: user,
+         note: "weaviate vector DB; migrated tony-dell -> idc02 2026-10-19 (OPS-0725), quadlet container"}
+      - {name: web.service, type: service, scope: user,
+         note: "web origin — chaba /apps stack; migrated tony-dell -> idc02 2026-10-19 (OPS-0725/0731), quadlet container"}
+      - {name: opencode-serve.service, type: service, scope: user,
+         note: "OpenCode API server on idc02 (enabled unit)"}
+      - {name: ollama.service, type: service, scope: user,
+         note: "Ollama local LLM — free-lane compute for LiteLLM chat-local (qwen2.5:7b, nomic-embed); quadlet-generated unit"}
+      - {name: mddb-lab.service, type: service, scope: user,
+         note: "mddb lab replica container — RUNNING but unit is masked (masked 2026-11-24 during mddb-lab-pull wind-down; container survives until reboot/stop). Reconcile mask-vs-running when lab retirement decision lands (timer-alert-idc02-mddb-lab-pull was closed 11-24)"}
       # --- timer census 2026-10-13 (OPS-0531 sweep): live fleet timers declared so drift-reconcile flags disabled/missing ticks ---
       - {name: cam-wall-pull-vps.timer, type: timer, scope: user}
-      - {name: camwall-render-check.timer, type: timer, scope: user}
       - {name: cms-publish-site.timer, type: timer, scope: user}
       - {name: dispatch-wt-clean.timer, type: timer, scope: user, note: "weekly worktree GC (~/bin/git-worktree-gc.sh, retain 7d, salvage dirty) — armed fleet-wide 2026-11-13"}
       - {name: jev-bench.timer, type: timer, scope: user}
       - {name: jev-retrain.timer, type: timer, scope: user}
       - {name: log-shipper.timer, type: timer, scope: user}
       - {name: log-shipper-severe.timer, type: timer, scope: user}
-      - {name: mddb-lab-pull.timer, type: timer, scope: user}
       - {name: mddb-watchdog.timer, type: timer, scope: user}
-      - {name: runner-agent.timer, type: timer, scope: user}
-      # 2026-11-12 audit: vcast headed-display service is intentional
-      # (enabled + running); telemetry service verified posting OK.
-      - {name: vcast-real-macbook.service, type: service, scope: user}
+      - {name: runner-agent.timer, type: timer, scope: user,
+         note: "60s claim timer — RUNNER_LABELS=ssd,always-on,cpu,small,push:chaba,push:ada-voice,vps via runner-agent.service.d/vps-lane.conf (2026-11-24, card idc02-second-ada-pi-lane): 'vps' is the fleet-unique ada-pi/ada-voice failover opt-in, push:ada-voice declared after live push --dry-run (github-ada-pi ssh -> GitHub rename-redirect to ada-voice). 29 prior ada-pi/ada-voice dispatch tasks on this host."}
+      - {name: runner-agent.service, type: oneshot, scope: user,
+         note: "oneshot claim+execute every 60s via runner-agent.timer, cap 3, RUNNER_MAX_LOAD_PC=1.5 (load-gate.conf), JEV_LANE=1+OPENCODE_LANES=1 (jev-lane.conf), OPENCODE_BIN pinned ~/.opencode/bin/opencode (opencode-v2.conf), RUNNER_API=tailnet board-api (api.conf). type:oneshot — legitimately inactive/unloaded between fires; audit checks unit-file presence, not running state"}
+      - {name: kanban-dispatch.service, type: oneshot, scope: user,
+         note: "manual drain only (no timer) — drop-in vps-lane.conf (2026-11-24) repointed ExecStart off the stale chaba-tony-dell scripts/-only scaffold onto exec checkout ~/CascadeProjects/chaba/scripts/board/kanban-dispatch.py, set BOARD_API=tailnet route (script default 127.0.0.1:8787 has no listener here) + KANBAN_HOST_LABELS mirroring runner-agent. Linked unit file lives in runner-agent scratch clone ~/.local/share/runner-agent/repos/chaba/systemd/ — do not edit it there, it resets on script claims. type:oneshot — stays unloaded until manually started"}
       - {name: device-telemetry.timer, type: timer, scope: user}
       - {name: bserver.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: openchamber.service, type: service, scope: user,
          note: "OpenChamber ada-ocb pane — migrated tony-dell -> idc02 2026-11-18
           (card openchamber-migrate-tony-dell-to-idc02). Same recipe as dell:
-          node24 (~/.local/node24/bin/node) running @openchamber/web@2.7.0 +
-          @opencode/cli@2.3.2 installed under ~/.local/node prefix, binds
-          127.0.0.1:3000, managed opencode child per session. startup.env
+          node24 (~/.local/node24/bin/node) running @openchamber/web@2.8.0 +
+          @opencode/cli@2.4.2 installed under ~/.local/node prefix, binds
+          127.0.0.1:3000, managed opencode child per session. CLI pin moved
+          2.3.2 -> 2.4.1 on 2026-11-24 (Tony decision, card ocb-cli-pin-drift)
+          and 2.4.1 -> 2.4.2 accepted 2026-11-26 (OPS-1424 decision B)
+          after live upgrade; opencode --version = 2.4.2, pane healthy.
+          Carries a
+          hand-patch adding models.status action +
+          /api/openchamber/models/status (LiteLLM gateway liveness probe;
+          needs LITELLM_URL/LITELLM_KEY from litellm-ada.env) — durable
+          re-application via openchamber-update.service ExecStartPost,
+          patch in stacks/idc02/openchamber/ (card
+          ocb-models-status-patch-durability, refreshed for 2.8.x 2026-11-26).
+          startup.env
           mode 600 (OPENCHAMBER_UI_PASSWORD, OPENCHAMBER_FRAME_ANCESTORS,
           OPENCODE_BINARY=~/.local/node/bin/opencode); drop-in
           10-litellm-env.conf loads %h/.config/secrets/litellm-ada.env.
           Public edge ada-ocb.surf-thailand.com now proxies to local :3000
           (was dell tailscale :8443). claude-agent lane pending interactive
-          `claude auth login` on this host."}
-      - {name: openchamber-update.service, type: service, scope: user,
-         note: "oneshot — npm i -g @openchamber/web @opencode/cli then restarts
+          `claude auth login` on this host. Verified 2026-11-26 by
+          ansible/playbooks/ada-ocb-verify.yml after OPS-1424 prep/plan gate."}
+      - {name: openchamber-update.service, type: oneshot, scope: user,
+         note: "oneshot — npm i -g @openchamber/web @opencode/cli, then
+          ExecStartPost apply-models-status-patch.sh, then restarts
           openchamber.service; fired by openchamber-update.timer (migrated
-          with the pane 2026-11-18)"}
+          with the pane 2026-11-18). The patch step (added 2026-11-20, card
+          ocb-models-status-patch-durability) re-applies the models.status
+          feature patch — ~/CascadeProjects/chaba/stacks/idc02/openchamber/
+          openchamber-models-status.patch — because npm i -g restores
+          pristine node_modules. No '-' prefix on purpose: if the patch
+          stops applying on a new upstream version the unit FAILS instead
+          of silently dropping /api/openchamber/models/status (and the
+          restart is skipped, leaving the old process serving). ExecStart
+          pins web@2.8.0 but installs @opencode/cli bare — accepted 2026-11-26
+          (OPS-1424 decision B) rather than changed; cli float is expected
+          here and the declared pin tracks the installed 2.4.2."}
       - {name: openchamber-update.timer, type: timer, scope: user,
          note: "monthly 1st 06:30 OpenChamber+opencode update cadence
           (migrated tony-dell -> idc02 2026-11-18)"}
@@ -2255,26 +2400,23 @@ hosts:
           Tests the local MCP bridge, not the OpenChamber pane."}
       - {name: chaba-monitoring-dashboard.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: chaba-report-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
-      - {name: helm.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: mcp-link-monitor.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: mddb-gdrive-tier.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: notebooklm-mcp.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: notebooklm-rest.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: secrets-console.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: status-data-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
-      - {name: websockify-macbook.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
-      - {name: websockify-vms-mn01.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: gev-gemini.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-19 (GEV constellation, moved by parallel session)"}
       - {name: gods-eye-view-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-19 (GEV constellation)"}
       - {name: gev-cmd-relay.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-19"}
-      # --- ada-code control-plane (ADA-1225 rename; formerly ada-opencode/ada-enroll quadlets) ---
-      - {name: ada-code.service, type: service, scope: user, note: "Ada OpenCode responder backend (quadlet, ada-code container on ada-code podnet) — renamed from ada-opencode.service 2026-11-08"}
-      - {name: ada-code-enroll.service, type: service, scope: user, note: "CF-Access JWT gateway :8378 for ada-code.surf-thailand.com — renamed from ada-enroll.service 2026-11-08"}
-      - {name: ada-code-network.service, type: service, scope: user, note: "podnet for the ada-code pair — renamed from ada-opencode.network 2026-11-08"}
-      - {name: jack-opencode.service, type: service, scope: user, note: "Jack isolated OpenCode IDE (rootless podman)"}
-      - {name: jack-enroll.service, type: service, scope: user, note: "Jack IDE enroll gateway"}
-      - {name: jack-ide-network.service, type: service, scope: user, note: "podnet for the jack-ide pair"}
-      - {name: ada-stt.service, type: service, scope: user, note: "Ada local STT (audio.cpp Qwen3-ASR, CPU)"}
+      # --- ada-code/jack quadlets RETIRED 2026-11-24 (files renamed
+      #     *.retired-20261124 in ~/.config/containers/systemd/) — moved to
+      #     expected_absent; stale generated .network units stopped same day
+      - {name: ada-stt.service, type: service, scope: user, expected_state: inactive,
+         note: "Ada local STT (audio.cpp Qwen3-ASR, CPU) — unit disabled, parked (loopback :8914 lane per docs/kb/msg-lane-standard.md). expected_state:inactive = installed-but-off; audit flags only if it starts running"}
+      # 2026-11-24: nest-mgr fleet rollout (stacks/services/nest-mgr) was
+      # never declared here — running+active in daily audits since install.
+      - {name: nest-mgr.service, type: service, scope: user}
     expected_absent:
       - name: chaba-audit.timer
         scope: user
@@ -2300,6 +2442,52 @@ hosts:
       - name: devin-bank-distill.timer
         scope: user
         note: "shed to con01 2026-10-26 (jobs b221da077) — unit removed from idc02"
+      # --- census 2026-11-25 reconcile (idc02-audit-census-reconcile) ---
+      - name: mn-ha-dev.service
+        scope: user
+        note: "moved idc02 -> mn01 2026-11-25 (card michael-dev-migrate-mn01,
+          commit 5a0601d3) — unit masked on idc02 as 24h rollback park"
+      - name: mha-state-push.service
+        scope: user
+        note: "moved idc02 -> mn01 2026-11-25 with mn-ha-dev (verified active
+          on mn01); idc02 unit left disabled"
+      - name: camwall-render-check.timer
+        scope: user
+        note: "retired 2026-11-25 Phase 2 camwall-retire-to-wiki (Tony:
+          ada-snapshot-only) — render-check producer stopped, data plane
+          (pull-vps + camwall-edge) intentionally kept"
+      - name: vcast-real-macbook.service
+        scope: user
+        note: "named vcast display unit gone from idc02 — superseded by
+          vcast-real@.service template instances @6/@7 (declared above);
+          unit file never existed under this name on idc02"
+      - name: ada-code.service
+        scope: user
+        note: "quadlet retired 2026-11-24 (*.container.retired-20261124)"
+      - name: ada-code-enroll.service
+        scope: user
+        note: "quadlet retired 2026-11-24 (*.container.retired-20261124)"
+      - name: ada-code-network.service
+        scope: user
+        note: "quadlet network retired 2026-11-24; stale generated unit
+          stopped 2026-11-25 (podman network 'ada-code' bridge left behind,
+          unused)"
+      - name: jack-opencode.service
+        scope: user
+        note: "quadlet retired 2026-11-24 (*.container.retired-20261124)"
+      - name: jack-enroll.service
+        scope: user
+        note: "quadlet retired 2026-11-24 (*.container.retired-20261124)"
+      - name: jack-ide-network.service
+        scope: user
+        note: "quadlet network retired 2026-11-24; stale generated unit
+          stopped 2026-11-25 (podman network 'jack-ide' bridge left behind,
+          unused)"
+      - name: mddb-lab-pull.timer
+        scope: user
+        note: "masked 2026-11-24 during mddb-lab-pull wind-down ('Unit to
+          trigger vanished' — job removed from ssot.jobs.yml render); lab
+          replica container still running under masked mddb-lab.service"
     known_failed:
       - name: chaba-audit.service
         reason: "Pre-OPS-0581 finding-reporter (exited nonzero on error findings — findings tracked in card fix-idc02-audit-suite); since 2026-10-13 exits 0 on completed runs — findings via reports/audits/summary.* + focus-inbox (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"
@@ -2307,6 +2495,23 @@ hosts:
       - name: chaba-audit-full.service
         reason: "Pre-OPS-0581 finding-reporter (exited nonzero on error findings — findings tracked in card fix-idc02-audit-suite); since 2026-10-13 exits 0 on completed runs — findings via reports/audits/summary.* + focus-inbox (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"
         action: card-fix-idc02-audit-suite
+      # --- census 2026-11-25: failed oneshots already tracked by
+      #     timer-alert-idc02-* cards — whitelisted so audit-hosts doesn't
+      #     double-report; the timer-sentinel cards remain the signal ---
+      - name: ada-ocb-eval.service
+        reason: "6-hourly answer-quality eval exits 1 on any scenario FAIL — benchmark signal written to ada-ha-scenario-reports, not host drift; tracked by timer-alert-idc02-ada-ocb-eval"
+      - name: ada-ocb-smoke.service
+        reason: "hourly bridge smoke exits 1 on FAIL — benchmark signal in ada-ha-scenario-reports; currently failing on find_card ADA-0172 234-card ambiguity + ada_context_pack; tracked by timer-alert-idc02-ada-ocb-smoke"
+      - name: ada-ocb-agent-runner-converge.service
+        reason: "RETIRED 2026-11-26: this nightly converge deployed a stale, untracked playbook from an ada-ocb feature branch and re-broke fleet runner-agent drift (installed 8c28da6b vs pin 1514c75c). Timer stopped+disabled via ansible/playbooks/disable-legacy-runner-converge.yml; canonical path is tony-dell runner-agent-converge.timer -> deploy-runner-agent.yml. Historical failure: 216/GROUP (User=tony inside a --user unit); tracked by timer-alert-idc02-ada-ocb-agent-runner-converge (ADA-1340)"
+      - name: fleet-restic-backup.service
+        reason: "daily restic to tony-dell sdb — snapshot SAVES then fails on stale repo lock (PID 645571, created 11-24 14:14); needs restic unlock on repo; tracked by timer-alert-idc02-fleet-restic-backup"
+      - name: kk-mac-model-status.service
+        reason: "orphaned oneshot — ExecStart script scripts/devnest/kk_mac_model_status.py never existed in repo (root-caused 11-25); tracked by timer-alert-idc02-kk-mac-model-status (OPS-1348)"
+      - name: mddb-backup.service
+        reason: "nightly backup failed 11-25 04:10 because container mddb-embed did not exist (service down since 09:20 reboot — missing quadlet [Install]); mddb-embed restored 11-25, expect clean next run; tracked by timer-alert-idc02-mddb-backup"
+      - name: wp-backup-pull.service
+        reason: "WP plugin-dump pull gets HTTP 404 from Plesk host — endpoint drift, not host drift; tracked by timer-alert-idc02-wp-backup-pull (OPS-1344)"
   con01:
     tailscale_ip: 100.72.146.39
     description: "Public VPS — Contabo Cloud VPS 8, EU region (8 vCPU/23G/290G,
@@ -2387,40 +2592,6 @@ hosts:
           stacks/con01/mddb-follower, 100.72.146.39:11123/:11124,
           localhost/mddb:2.15.4-lsn) — warm-DR promote target replacing
           retired idc01 (OPS-0763)"
-      - name: cline-kanban.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: "Disposable Cline Kanban v0.1.70 app on private
-          cline-kanban.network; backend port 3485 is not published. No
-          production repo or model key."
-      - name: cline-kanban-proxy.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: "Separate rootless proxy container publishes only Tailnet TCP
-          3484; Basic Auth secret is mounted only here, not into the Cline
-          app container."
-      - name: cline-kanban-network.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: "Dedicated rootless bridge network shared only by the Cline app
-          and proxy; backend port 3485 is not published to the host."
-      - name: cline-intake.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-        note: "Cline lane intake (ssot.jobs.yml cline-intake, 15m) — scans
-          backlog cards tagged cline + cline: config, runs ONE card/tick
-          through kanban-nest-bridge on con01, comments + moves card to
-          review. Declared 2026-10-30; enablement on con01 unverified —
-          proposal pilot saw no pickup in >70min (report
-          docs/reports/2026-10-30-cline-proposal-pilot.md)."
       # batch timers shed from idc02 2026-10-25 (idc02 contract review —
       # con01 is the declared absorber; all rendered via ssot.jobs.yml)
       - {name: ssot-optimization-snapshot.timer, type: timer, scope: user}
@@ -2431,7 +2602,21 @@ hosts:
       - {name: ada-flood-news.timer, type: timer, scope: user}
       - {name: report-distill.timer, type: timer, scope: user}
       - {name: devin-bank-distill.timer, type: timer, scope: user}
+      # 2026-11-24: nest-mgr fleet rollout (stacks/services/nest-mgr) was
+      # never declared here — running+active in daily audits since install.
+      - {name: nest-mgr.service, type: service, scope: user}
     expected_absent:
+      # 2026-11-26: Cline fully retired (Tony approval). con01 app/proxy/
+      # network quadlets and cline-intake/board-mirror rendered timers removed;
+      # edge route, HA tab and ssot.jobs.yml declarations dropped same day.
+      - name: cline-kanban.service
+        note: "retired — Cline full retirement 2026-11-26"
+      - name: cline-kanban-proxy.service
+        note: "retired — Cline full retirement 2026-11-26"
+      - name: cline-kanban-network.service
+        note: "retired — Cline full retirement 2026-11-26"
+      - name: cline-intake.timer
+        note: "retired — Cline full retirement 2026-11-26"
       - name: qemu-guest-agent.service
         note: "purged 2026-10-22 — Contabo hypervisor exposes no virtio
           guest-agent channel; open-vm-tools installed instead (platform
@@ -2459,22 +2644,94 @@ hosts:
       - apple-silicon
       - member-device
       - ada-nest
-    notes: "host-loads probe only — not in audit-hosts.py HOSTS (macOS, no
-      systemctl). SSH: Host kk-mac stanza on tony-dell -> kkkakk +
-      id_ed25519 (dell key seeded into authorized_keys 2026-10-22;
-      remaining fleet keys + adanest user pending KK sign-off per
-      docs/kb/ada-nest-kk-mac-onboarding.md)."
+    expected_services:
+      - name: net.adanest.ollama
+        type: service
+        scope: system
+        expected_state: active
+        critical: true
+        procs:
+          - "/opt/homebrew/bin/ollama serve*"
+          - "*ollama/llama-server*"
+        note: "LaunchDaemon /Library/LaunchDaemons/net.adanest.ollama.plist
+          running as adanest, loopback :11434 — THE OPS-1018 blind spot:
+          invisible to `launchctl list` as kkkakk. audit-hosts.py now
+          enumerates /Library/LaunchDaemons + prints system/<label>
+          unprivileged, plus a fleet-process ps scan. (Drift: onboard
+          script kk-mac-onboard.sh writes label ai.adanest.ollama —
+          deployed label is net.adanest.ollama.)"
+      - name: net.adanest.heartbeat
+        type: service
+        scope: system
+        expected_state: active
+        procs:
+          - "*ada-nest-heartbeat*"
+        note: "LaunchDaemon net.adanest.heartbeat — member-device
+          phone-home to MDDB ada-nest-heartbeats (300s interval; shows
+          loaded/not-running between ticks, which is normal)."
+      - name: net.adanest.kk-llm-worker
+        type: service
+        scope: user
+        expected_state: active
+        procs:
+          - "*kk_mac_lane_worker*"
+          - "*nest-worker*"
+        note: "LaunchAgent in kkkakk gui domain (gui/501), StartInterval=60
+          — interval agent, 'loaded' between ticks is normal."
+      - name: ai.chaba.runner-agent
+        type: service
+        scope: user
+        expected_state: active
+        procs:
+          - "*runner-agent*"
+        note: "LaunchAgent ai.chaba.runner-agent in kkkakk gui domain —
+          60s dispatch poller (card kk-mac-launchd-runner-port)."
+      - name: sh.brew.tailscale
+        type: service
+        scope: system
+        expected_state: active
+        note: "brew services tailscale LaunchDaemon — the tailnet client
+          the whole fleet reaches this host through."
+    allowed_running:
+      - "Adobe_*"    # Adobe Genuine Integrity etc. — vendor daemons
+    allowed_processes:
+      - "*runner-agent/launchd/*"   # transient dispatch task wrappers
+    notes: "Audited by audit-hosts.py since 2026-11-24 (card
+      audit-hosts-macos-blindspot / OPS-1018): macOS branch enumerates
+      launchd across system domain (/Library/LaunchDaemons + print),
+      /Library/LaunchAgents, every user's ~/Library/LaunchAgents (dscl
+      user list), the caller's gui domain, and a fleet-process ps scan —
+      `launchctl list` alone only sees the caller's domain, which is how
+      adanest's ollama ran undeclared. Other users' gui domains are
+      plist-on-disk state only unless the ssh user has passwordless
+      sudo (kkkakk does not). SSH: Host kk-mac stanza on tony-dell ->
+      kkkakk + id_ed25519 (dell key seeded 2026-10-22; tony-omen key
+      verified working 2026-11-24; con01 still needs ssh-keyscan
+      kk-mac — host key not yet accepted). adanest user exists (uid
+      502, created by kk-mac-onboard.sh)."
     capabilities:
       ollama:
         note: "ollama serve under adanest user (launchd
-          net.adanest.ollama.plist), loopback bind only — reachable via
-          kkmac-ollama-tunnel.service on idc03 (ssh -L 11445 -> :11434).
-          KK approved full fleet use 2026-10-30. Models: qwen2.5:32b,
+          net.adanest.ollama.plist, /Library/LaunchDaemons — root:wheel)
+          binds 0.0.0.0 since 2026-11-19 — reachable directly on tailnet
+          100.108.217.17:11434 AND LAN 192.168.0.101:11434 +
+          192.168.2.90:11434 (verified answering 2026-11-24; LAN
+          exposure pending narrow-to-tailnet — SEC-0985 intent is
+          tailnet-only, needs KK sudo on kk-mac, card
+          kkmac-ollama-durable-bind). Fleet path: idc03
+          kkmac-admission-shim :11447 -> tailnet bind; idc03
+          kkmac-ollama-tunnel :11445 is a disabled fallback (installed,
+          never enabled — ~19k flaps before disable 2026-11-17). KK
+          approved full fleet use 2026-10-30. Models: qwen2.5:32b,
           qwen3:8b, qwen2.5vl:7b, llama3.2:3b. LiteLLM routes:
-          ollama-*-kkmac. Audit blind spot: services in other users'
-          launchd domains are invisible to launchctl list — adanest
-          ollama ran undeclared until 2026-10-30 (OPS-1018)."
-        upstream: "http://127.0.0.1:11445 (idc03 tunnel) / 127.0.0.1:11434 (kk-mac)"
+          ollama-*-kkmac. Audit blind spot CLOSED 2026-11-24
+          (audit-hosts-macos-blindspot): the daemon is declared in
+          expected_services above and the audit enumerates all launchd
+          domains + fleet processes. Bind durability VERIFIED
+          2026-11-24: OLLAMA_HOST=0.0.0.0:11434 is in the LaunchDaemon
+          plist EnvironmentVariables (launchctl print system/
+          net.adanest.ollama) — survives reboot by construction."
+        upstream: "http://100.108.217.17:11434 (kk-mac tailnet) via idc03 kkmac-admission-shim :11447"
       kk_llm_worker:
         note: "net.adanest.kk-llm-worker LaunchAgent (kkkakk domain,
           StartInterval=60) — dedicated bounded LLM pack consumer for

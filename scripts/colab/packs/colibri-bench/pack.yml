@@ -1,57 +1,139 @@
 # colibri-bench — Qwen3.6-35B-A3B via Colibri on omen (BEN-0814).
 # Colibri streams MoE experts from disk; the 35B-A3B fits omen's
-# 30GB RAM + 83GB free disk, and its CUDA build (~30 tok/s on the
-# 1650) would beat gpt-oss:20b's 5 tok/s CPU by ~6x — this pack
-# answers whether the local lane's gap was latency or capability
-# (same question as edu-agent-bench/eval-code-lane, bigger ceiling).
-# Benchmark: bench-edu-manage.py's hermes lane via OLLAMA_URL ->
-# Colibri's OpenAI-compatible :8000/v1.
+# 30GB RAM + disk, and its CUDA build (~30 tok/s on the 1650) would
+# beat gpt-oss:20b's 5 tok/s CPU by ~6x — this pack answers whether
+# the local lane's gap was latency or capability (same question as
+# edu-agent-bench/eval-code-lane, bigger ceiling).
+#
+# Benchmark: bench-edu-manage.py's local-colibri lane — the same
+# OpenClaw-shaped agent surface as the hermes/clawbot lanes, driven at
+# colibri's OpenAI-compatible :8000/v1 via --openai-base/--model.
+# colibri's server 404s unless the request's `model` equals the served
+# --model-id, so prep serves with --model-id qwen3.6-35b and run asks
+# for exactly that.
+#
+# Lane steering: gpu_gb 3 keeps CPU-only fleet hosts out — any host
+# that fits could otherwise claim the pack and burn a 3h slot on a
+# ~5 tok/s CPU run (the fallback exists for omen itself when the 1650
+# lacks a CUDA toolkit, not to invite pure-CPU claimants). Omen's 1650
+# (~4GB) and a Colab T4 both fit; on Colab the model lands on $HOME,
+# not the Drive mount — $PACK_DIR is FUSE there and nest-worker pushes
+# everything under it back to the store, which would mean a 23GB
+# upload of weights that are not artifacts.
+#
+# inputs/chaba/ vendors the bench script + corpus + ada deps — the pack
+# is hash-bound to this bench version (the local-colibri lane) and
+# needs no chaba clone at run time.
 name: colibri-bench
 needs:
-  gpu_gb: 3          # 1650 CUDA build when the toolkit exists; setup self-falls-back
-  ram_gb: 20         # qwen3.6-35B dense+experts in RAM
-  disk_gb: 35        # model ~23GB + colibri + bench staging
+  gpu_gb: 3          # omen's 1650 (~4GB) or a Colab T4; CPU-only hosts skip
+  ram_gb: 20         # qwen36-35b ram_good (min 10 — tighter hosts still fit)
+  disk_gb: 35        # model ~23GB + colibri build + bench staging
 venv: true
-timeout_s: 10800     # install + ~23GB download (resume) + 13-task bench
+timeout_s: 10800     # install + ~23GB download (resumable) + 13-task bench
 artifacts:
   - packs/colibri-bench/out/colibri-bench-*.json
   - packs/colibri-bench/out/colibri-bench-*.md
 prep: |
   set -e
-  # engine + model live under $HOME (omen /tmp is small+flaky); the model
-  # dir lands in the pack workdir so the artifact path stays self-contained
+  # engine + model live under $HOME — pack dir is Drive-FUSE on Colab and
+  # gets pushed back wholesale by nest-worker on fleet hosts; omen /tmp is
+  # small+flaky so build temp goes to home too
   CLB=$HOME/colibri
+  MODELS=$HOME/colibri-models
+  MODEL_DIR=$MODELS/qwen36-35b
+  export TMPDIR=$HOME/tmp && mkdir -p $TMPDIR
   [ -d $CLB/.git ] || git clone --depth 1 https://github.com/JustVugg/colibri $CLB
   cd $CLB
-  mkdir -p $PACK_DIR/model
-  # omen /tmp is small+flaky — build temp goes to home
-  export TMPDIR=$HOME/tmp && mkdir -p $TMPDIR
-  ./start-here.sh --yes --model qwen3.6-colibri --backend cuda --dir $PACK_DIR/model 2>&1 | tail -15 \
-    || ./start-here.sh --yes --model qwen3.6-colibri --backend cpu --dir $PACK_DIR/model 2>&1 | tail -15
-  # 2) make sure the OpenAI-compatible server is up
-  ./c/coli stop >/dev/null 2>&1 || true
-  nohup ./c/coli serve > $HOME/colibri-serve.log 2>&1 &
-  sleep 30
-  curl -sf http://127.0.0.1:8000/v1/models >/dev/null \
-    && echo COLIBRI-SERVE-OK || tail -20 $HOME/colibri-serve.log
-  # 3) bench script + corpus (shallow clone; corpus rides in the repo)
-  [ -d $HOME/chaba-bench/.git ] || git clone --depth 1 https://github.com/tonezzz/chaba $HOME/chaba-bench
+  # --no-start: we serve ourselves (API only, no chat web UI);
+  # --no-browser: headless worker. cuda first, cpu fallback per card spec —
+  # setup also self-falls-back a failed build, this covers other nonzero exits.
+  # Log to a file: /bin/sh here is dash (no pipefail) and `cmd | tail` would
+  # hide a setup failure behind tail's exit code.
+  ./start-here.sh --yes --no-start --no-browser --model qwen36-35b \
+      --backend cuda --dir $MODELS > $HOME/colibri-setup.log 2>&1 \
+    || { echo "cuda setup failed — retrying cpu"; \
+         tail -15 $HOME/colibri-setup.log; \
+         ./start-here.sh --yes --no-start --no-browser --model qwen36-35b \
+           --backend cpu --dir $MODELS >> $HOME/colibri-setup.log 2>&1; } \
+    || { tail -15 $HOME/colibri-setup.log; exit 1; }
+  tail -5 $HOME/colibri-setup.log
+  # the OpenAI-compatible server, pinned to the id the bench asks for
+  python3 ./c/coli stop >/dev/null 2>&1 || true
+  nohup python3 ./c/coli serve --model $MODEL_DIR --model-id qwen3.6-35b \
+      > $HOME/colibri-serve.log 2>&1 &
+  for i in $(seq 1 120); do
+    curl -sf http://127.0.0.1:8000/v1/models >/dev/null 2>&1 && break
+    sleep 5
+  done
+  curl -sf http://127.0.0.1:8000/v1/models \
+    && echo COLIBRI-SERVE-OK || { tail -20 $HOME/colibri-serve.log; exit 1; }
 run: |
-  import os, subprocess, time, json
+  import json, os, subprocess, time, urllib.request
+  from pathlib import Path
+  bench = os.path.join(PACK_DIR, 'inputs', 'chaba')
   prefix = f"{PACK_DIR}/out/colibri-bench-{time.strftime('%Y-%m-%d')}"
   os.makedirs(f"{PACK_DIR}/out", exist_ok=True)
-  env = dict(os.environ,
-             OLLAMA_URL="http://127.0.0.1:8000",
-             OLLAMA_MODEL="qwen3.6-colibri")
-  cmd = ["python3", os.path.expanduser("~/chaba-bench/scripts/bench-edu-manage.py"),
-         "--lanes", "hermes", "--ollama-model", "qwen3.6-colibri",
-         "--ollama-timeout", "600", "--no-judge", "--out", prefix]
+  cmd = ["python3", f"{bench}/scripts/bench-edu-manage.py",
+         "--lanes", "local-colibri",
+         "--openai-base", "http://127.0.0.1:8000/v1",
+         "--model", "qwen3.6-35b",
+         "--openai-timeout", "600", "--no-judge",
+         "--out", prefix]
   print('bench:', ' '.join(cmd), flush=True)
   t0 = time.time()
-  r = subprocess.run(cmd, cwd=os.path.expanduser("~/chaba-bench"), env=env,
+  r = subprocess.run(cmd, cwd=bench,
                      timeout=int(os.environ.get("TIMEOUT_S", "9000")))
-  dt = time.time() - t0
-  print(f"bench rc={r.returncode} in {dt:.0f}s", flush=True)
+  print(f"bench rc={r.returncode} in {time.time()-t0:.0f}s", flush=True)
   if r.returncode != 0:
-      raise SystemExit(f"bench rc={r.returncode}")
+      # curl-based mini-bench (spec fallback): when the agent lane fails
+      # the pack still lands latency/tok-s evidence — "the model cannot
+      # drive the tool loop" is itself the card's capability answer.
+      # Artifacts are verified remote-side only after run returns, so a
+      # raise here would lose them.
+      def probe(prompt, max_tokens=128):
+          body = json.dumps({"model": "qwen3.6-35b", "messages":
+                             [{"role": "user", "content": prompt}],
+                             "max_tokens": max_tokens,
+                             "temperature": 0.2}).encode()
+          req = urllib.request.Request(
+              "http://127.0.0.1:8000/v1/chat/completions", data=body,
+              headers={"Content-Type": "application/json"})
+          t = time.time()
+          with urllib.request.urlopen(req, timeout=600) as resp:
+              d = json.loads(resp.read())
+          dt = time.time() - t
+          u = d.get("usage") or {}
+          ch = (d.get("choices") or [{}])[0]
+          ct = u.get("completion_tokens") or 0
+          return {"prompt": prompt[:60], "seconds": round(dt, 1),
+                  "completion_tokens": ct,
+                  "tok_s": round(ct / dt, 1) if dt else None,
+                  "finish": ch.get("finish_reason"),
+                  "text": ((ch.get("message") or {}).get("content")
+                           or "")[:300]}
+      probes = [probe(p) for p in (
+          "Say hello in one sentence.",
+          "In two sentences, what is a mixture-of-experts model?",
+          'Reply with only this JSON: {"name": "store.list", '
+          '"arguments": {}}')]
+      mini = {"date": time.strftime("%Y-%m-%d"),
+              "lane": "local-colibri-minibench",
+              "model": "qwen3.6-35b",
+              "base": "http://127.0.0.1:8000/v1",
+              "agent_bench_rc": r.returncode,
+              "note": "bench-edu-manage.py --lanes local-colibri failed; "
+                      "raw /chat/completions probes only",
+              "probes": probes}
+      Path(f"{prefix}-minibench.json").write_text(
+          json.dumps(mini, indent=1, ensure_ascii=False))
+      toks = [p["tok_s"] for p in probes if p["tok_s"]]
+      Path(f"{prefix}-minibench.md").write_text(
+          f"# colibri-bench mini-bench {mini['date']}\n\n"
+          f"agent-lane bench rc={r.returncode} — probes only.\n\n"
+          f"median tok/s: {sorted(toks)[len(toks)//2] if toks else 'n/a'}\n\n"
+          + "\n".join(f"- {p['prompt']!r}: {p['seconds']}s "
+                      f"{p['completion_tokens']}tok {p['tok_s']}tok/s"
+                      for p in probes) + "\n")
+      print(f"agent lane failed — wrote {prefix}-minibench.*", flush=True)
   print('colibri-bench complete', flush=True)

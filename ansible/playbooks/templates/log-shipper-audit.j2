@@ -1,0 +1,76 @@
+{# log-shipper-audit.j2 — per-host verdict from a single read-only probe.
+   Context: target, hostvars, audit_ssot, ssot_key_map, digest_ssot,
+   bar_host_map, repo_script_sha, probe_ts. #}
+{% set probe = hostvars[target].ship_probe | default({}) -%}
+{% set expected = hostvars[target].shipper_expected | default([]) -%}
+{% set hs = (audit_ssot['hosts'] | default({})).get(ssot_key_map.get(target, target)) or {} -%}
+{% set unreachable = probe.error is defined -%}
+{% set findings = (probe.findings | default([])) | list -%}
+{# Fold per-unit findings into the top-level list too, so a stale unit or
+   a failed last run changes the host summary, not just units[].findings. #}
+{% for unit in (probe.units | default([])) -%}
+{%   for f in (unit.findings | default([])) -%}
+{%     set _ = findings.append(f ~ ' (' ~ unit.unit ~ ')') -%}
+{%   endfor -%}
+{% endfor -%}
+{% set lanes = [] -%}
+{% for e in expected -%}
+{%   set _ = lanes.append({'id': e.id,
+                            'timeout_sec': e.timeout_sec,
+                            'cadence_sec': e.cadence_sec,
+                            'exec': e.exec_cmd,
+                            'env': e.env_expected}) -%}
+{% endfor -%}
+{% if unreachable -%}
+{%   if hs.get('offline_ok') -%}
+{%     set _ = findings.insert(0, '[warn] unreachable (offline_ok in ssot.audit.hosts.yml): ' ~ probe.error) -%}
+{%   else -%}
+{%     set _ = findings.insert(0, '[fail] probe failed: ' ~ probe.error) -%}
+{%   endif -%}
+{% else -%}
+{%   if probe.script_sha256 is defined and probe.script_sha256 != repo_script_sha -%}
+{%     set _ = findings.append('[warn] shipper script differs from repo copy (live=' ~ (probe.script_sha256 or 'missing') ~ ' repo=' ~ repo_script_sha ~ ')') -%}
+{%   endif -%}
+{%   if not (probe.linger | default(false)) -%}
+{%     set _ = findings.append('[fail] user linger is off — user timers will not run while logged out') -%}
+{%   endif -%}
+{%   for scope, status in (probe.journals | default({})).items() -%}
+{%     if status != 'ok' -%}
+{%       set _ = findings.append('[warn] journal leg ' ~ scope ~ '=' ~ status) -%}
+{%     endif -%}
+{%   endfor -%}
+{% endif -%}
+{% if lanes | length > 0 and target not in bar_mapped_hosts -%}
+{%   set _ = findings.append('[warn] ships logs but absent from ssot.log-digest-standard.yml bars.fleet.hosts') -%}
+{% endif -%}
+{% if target in bar_mapped_hosts and lanes | length == 0 -%}
+{%   set _ = findings.append('[fail] declared in bars.fleet.hosts but no shipper job in ssot.jobs.yml') -%}
+{% endif -%}
+{% set ns = namespace(fail=false) -%}
+{% for f in findings -%}
+{%   if f.startswith('[fail]') -%}
+{%     set ns.fail = true -%}
+{%   endif -%}
+{% endfor -%}
+{% if unreachable and hs.get('offline_ok') -%}
+{%   set summary = 'offline-ok' -%}
+{% elif ns.fail -%}
+{%   set summary = 'fail' -%}
+{% elif findings | length > 0 -%}
+{%   set summary = 'drift' -%}
+{% else -%}
+{%   set summary = 'ok' -%}
+{% endif -%}
+{{ {'host': target,
+     'ts': probe_ts,
+     'summary': summary,
+     'reachable': not unreachable,
+     'offline_ok': hs.get('offline_ok', false) | bool,
+     'user': probe.user | default(''),
+     'expected_lanes': lanes,
+     'units': probe.units | default([]),
+     'linger': probe.linger | default(false),
+     'script_sha256': probe.script_sha256 | default(''),
+     'repo_script_sha256': repo_script_sha,
+     'journals': probe.journals | default({}),
+     'findings': findings} | to_nice_yaml(indent=2, sort_keys=False) }}

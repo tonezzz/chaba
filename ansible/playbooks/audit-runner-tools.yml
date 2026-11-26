@@ -1,0 +1,303 @@
+---
+# audit-runner-tools.yml — fleet drift audit for ~/.local/bin runner tools.
+#
+# Read-only companion to scripts/devin/sync-runner-tools.sh (job
+# 2026-11-18-runner-tooling-selfheal-sync, OPS-1026). For each host it
+# compares sha256 of the installed snapshot against the canonical copy
+# in that host's chaba checkout (~/CascadeProjects/chaba, kept current
+# by chaba-repo-sync). Prints one line per tool:
+#   OK / DRIFT / MISSING-DEST / MISSING-SRC / NO-CHECKOUT
+#
+# Usage (from ansible/ on the controller):
+#   ansible-playbook playbooks/audit-runner-tools.yml
+#   ansible-playbook playbooks/audit-runner-tools.yml --limit tony-dell
+#
+# kk-mac is included (read-only; chaba-only lane per dispatch-repos.conf).
+# idc01 stays excluded via the disabled group.
+
+- name: Audit runner-tool snapshots vs chaba checkout
+  hosts: all:!disabled
+  gather_facts: false
+  become: false  # read-only audit of the login user's files — no sudo
+  vars:
+    runner_tools:
+      - src: scripts/board/runner-agent.py
+        dest: runner-agent
+      - src: scripts/devin/devin-dispatch.sh
+        dest: devin-dispatch
+      - src: scripts/devin/claude-dispatch.sh
+        dest: claude-dispatch
+      - src: scripts/devin/devin-dispatch-prune.sh
+        dest: devin-dispatch-prune
+      - src: scripts/devin/dispatch-queue.sh
+        dest: dispatch-queue
+      - src: scripts/board/dispatch_repos.py
+        dest: dispatch_repos.py
+
+  tasks:
+    - name: Compare installed tools against checkout sources
+      ansible.builtin.shell: |
+        set -u
+        co="$HOME/CascadeProjects/chaba"
+        if [ ! -d "$co/.git" ]; then echo "NO-CHECKOUT $co"; exit 0; fi
+        cd "$co" || exit 0
+        python3 - "$co" <<'PYEOF'
+        import hashlib, os, sys
+        co = sys.argv[1]
+        tools = {{ runner_tools | to_json }}
+        for t in tools:
+            src = os.path.join(co, t["src"])
+            dst = os.path.expanduser("~/.local/bin/" + t["dest"])
+            if not os.path.isfile(src):
+                print(f"MISSING-SRC {t['dest']} ({t['src']})")
+                continue
+            if not os.path.isfile(dst):
+                print(f"MISSING-DEST {t['dest']}")
+                continue
+            h = lambda p: hashlib.sha256(open(p, 'rb').read()).hexdigest()[:12]
+            s, d = h(src), h(dst)
+            print(("OK     " if s == d else "DRIFT  ") + f"{t['dest']} src={s} inst={d}")
+        PYEOF
+      args:
+        executable: /bin/bash
+      register: audit
+      changed_when: false
+      failed_when: false
+
+    - name: Show audit lines
+      ansible.builtin.debug:
+        msg: "{{ audit.stdout_lines | default(['(no output)']) }}"
+      when: audit.stdout_lines is defined
+
+# ---------------------------------------------------------------- sync mode
+# Opt-in enforcement: -e sync_mode=true. Converges ~/.local/bin/<tool>
+# onto the CONTROLLER's repo copy — a different convergence model than
+# sync-runner-tools.sh (which syncs against each host's own
+# ~/CascadeProjects/chaba checkout and carries pin/mtime never-downgrade
+# guards the copy module lacks). ALWAYS preview first:
+#   ansible-playbook playbooks/audit-runner-tools.yml --check --diff -e sync_mode=true
+# dispatch_repos.py is intentionally excluded below — per-host
+# repos.conf tables are legitimate drift (kk-mac ships chaba-only), the
+# shell script reports-but-never-overwrites it; keep the same rule here.
+
+- name: Converge runner tools onto the controller's repo copies
+  hosts: all:!disabled:!macos
+  gather_facts: false
+  become: false
+  vars:
+    sync_tools:
+      - src: scripts/board/runner-agent.py
+        dest: runner-agent
+      - src: scripts/devin/devin-dispatch.sh
+        dest: devin-dispatch
+      - src: scripts/devin/claude-dispatch.sh
+        dest: claude-dispatch
+      - src: scripts/devin/devin-dispatch-prune.sh
+        dest: devin-dispatch-prune
+      - src: scripts/devin/dispatch-queue.sh
+        dest: dispatch-queue
+
+  tasks:
+    - name: Install/update tool snapshot (no-op without -e sync_mode=true)
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../..{{ '/' ~ item.src }}"
+        dest: "~/.local/bin/{{ item.dest }}"
+        mode: "0755"
+      loop: "{{ sync_tools }}"
+      when: sync_mode | default(false) | bool
+
+# ---------------------------------------------------------------- kanban notify
+# Optional read-only board-api notification. Never edits card YAML directly.
+# Hosts: all:!disabled:!macos + delegate_to localhost/run_once so --limit on
+# a subset of hosts still runs the controller notify/report play.
+- name: Report runner-tool drift to kanban (optional)
+  hosts: all:!disabled:!macos
+  gather_facts: false
+  become: false
+  vars:
+    board_notify: false
+    board_api_base: "https://idc03.taila0626a.ts.net:10000"
+    board_from: "devin"
+    audited_hosts: "{{ groups['all'] | difference(groups['disabled'] | default([])) | sort }}"
+  tasks:
+    - name: Compute drift hosts and fingerprint
+      ansible.builtin.set_fact:
+        runner_drift_hosts: >-
+          {%- set out = [] -%}
+          {%- for h in audited_hosts -%}
+            {%- set lines = (hostvars[h].audit.stdout_lines | default([])) if (h in hostvars and hostvars[h].audit is defined) else [] -%}
+            {%- set bad = lines | select('match', '^(DRIFT|MISSING-DEST|MISSING-SRC|NO-CHECKOUT)') | list -%}
+            {%- if bad | length > 0 -%}{%- set _ = out.append({'host': h, 'issues': bad}) -%}{%- endif -%}
+          {%- endfor -%}
+          {{ out }}
+        runner_drift_fingerprint: >-
+          {%- set out = [] -%}
+          {%- for h in audited_hosts -%}
+            {%- set lines = (hostvars[h].audit.stdout_lines | default([])) if (h in hostvars and hostvars[h].audit is defined) else [] -%}
+            {%- set bad = lines | select('match', '^(DRIFT|MISSING-DEST|MISSING-SRC|NO-CHECKOUT)') | list -%}
+            {%- if bad | length > 0 -%}{%- set _ = out.append(h ~ ':' ~ (bad | length)) -%}{%- endif -%}
+          {%- endfor -%}
+          {{ out | join('|') }}
+      delegate_to: localhost
+      run_once: true
+
+    - name: Create/update drift card
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card"
+        method: POST
+        body_format: json
+        status_code: [200, 201, 400]
+        return_content: true
+        body:
+          id: ansible-runner-tools-drift
+          title: "Ansible audit: runner tool drift detected"
+          column: backlog
+          action: {type: manual}
+          from: "{{ board_from }}"
+          spec: >-
+            Read-only ansible audit-runner-tools detected drift/missing runner tools.
+            Re-run playbooks/audit-runner-tools.yml; inspect reports or stdout; converge via approved sync flow.
+      when:
+        - board_notify | bool
+        - (runner_drift_hosts | length) > 0
+      register: runner_drift_card
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fail on unexpected drift card create error
+      ansible.builtin.fail:
+        msg: "board-api /card create failed: {{ runner_drift_card.content | default('') }}"
+      when:
+        - board_notify | bool
+        - (runner_drift_hosts | length) > 0
+        - runner_drift_card.status not in [200, 201]
+        - "'already exists' not in (runner_drift_card.content | default(''))"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fetch drift card for comment dedupe
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card/ansible-runner-tools-drift"
+        method: GET
+        return_content: true
+        status_code: [200, 404]
+      register: runner_drift_card_for_comment
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (runner_drift_hosts | length) > 0
+
+    - name: Compute drift comment dedupe
+      ansible.builtin.set_fact:
+        runner_drift_comment_text: >-
+          ansible audit-runner-tools: {{ runner_drift_hosts | length }} host(s) with drift/missing tools.
+          fp={{ runner_drift_fingerprint }}. {{ runner_drift_hosts | to_json }}
+        runner_drift_comment_is_dup: >-
+          {{
+            (runner_drift_card_for_comment.status | default(404)) == 200
+            and (
+              ((runner_drift_card_for_comment.json.card.comms | default([]))
+                | selectattr('from', 'equalto', board_from)
+                | selectattr('text', 'defined')
+                | selectattr('text', 'search', 'fp=' ~ (runner_drift_fingerprint | regex_escape))
+                | list | length) > 0
+            )
+          }}
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (runner_drift_hosts | length) > 0
+
+    - name: Comment drift summary
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/comment"
+        method: POST
+        body_format: json
+        status_code: [200, 201]
+        body:
+          id: ansible-runner-tools-drift
+          from: "{{ board_from }}"
+          text: "{{ runner_drift_comment_text }}"
+      when:
+        - board_notify | bool
+        - (runner_drift_hosts | length) > 0
+        - not (runner_drift_comment_is_dup | default(false) | bool)
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fetch runner drift card for cleared check
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card/ansible-runner-tools-drift"
+        method: GET
+        return_content: true
+        status_code: [200, 404]
+      register: runner_drift_card_for_cleared
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (runner_drift_hosts | length) == 0
+
+    - name: Compute runner drift cleared comment
+      ansible.builtin.set_fact:
+        runner_drift_cleared_comment: >-
+          ansible audit-runner-tools: all clear, no drift hosts. fp=cleared.
+        runner_drift_cleared_needed: >-
+          {{
+            (runner_drift_card_for_cleared.status | default(404)) == 200
+            and (
+              (
+                (runner_drift_card_for_cleared.json.card.comms | default([]))
+                | selectattr('from', 'equalto', board_from)
+                | selectattr('text', 'defined')
+                | selectattr('text', 'search', 'fp=')
+                | list
+              ) | length > 0
+            )
+            and (
+              'fp=cleared' not in (
+                (
+                  (runner_drift_card_for_cleared.json.card.comms | default([]))
+                  | selectattr('from', 'equalto', board_from)
+                  | selectattr('text', 'defined')
+                  | selectattr('text', 'search', 'fp=')
+                  | list | last
+                ).text | default('')
+              )
+            )
+          }}
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (runner_drift_hosts | length) == 0
+
+    - name: Comment runner drift cleared
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/comment"
+        method: POST
+        body_format: json
+        status_code: [200, 201]
+        body:
+          id: ansible-runner-tools-drift
+          from: "{{ board_from }}"
+          text: "{{ runner_drift_cleared_comment }}"
+      when:
+        - board_notify | bool
+        - (runner_drift_hosts | length) == 0
+        - runner_drift_cleared_needed | default(false) | bool
+      delegate_to: localhost
+      run_once: true
+
+    - name: Show kanban notify summary
+      ansible.builtin.debug:
+        msg:
+          board_notify: "{{ board_notify }}"
+          drift_hosts: "{{ runner_drift_hosts | map(attribute='host') | list }}"
+          comment_skipped_as_dup: "{{ runner_drift_comment_is_dup | default(false) }}"
+          cleared_comment_posted: "{{ runner_drift_cleared_needed | default(false) }}"
+      when: board_notify | bool
+      delegate_to: localhost
+      run_once: true

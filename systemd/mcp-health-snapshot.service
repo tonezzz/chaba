@@ -4,6 +4,12 @@ After=network-online.target
 
 [Service]
 Type=oneshot
+# Check-only post-restart verification, once per boot (boot-id gated inside
+# the script; see ssot.operations.yml automation.post_restart_verify).
+# Runs FIRST and '-'-prefixed: a failing snapshot ExecStart would otherwise
+# abort later ExecStarts for a oneshot unit, and findings are never a unit
+# failure.
+ExecStart=-/usr/bin/python3 /home/tony/CascadeProjects/chaba/scripts/post-restart-verify.py
 ExecStart=/usr/bin/node /home/tony/CascadeProjects/chaba/scripts/mcp-health-snapshot.mjs
 WorkingDirectory=/home/tony/CascadeProjects/chaba
 # Script logs directly to /home/tony/CascadeProjects/chaba/logs/mcp-health-snapshot.log

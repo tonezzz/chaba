@@ -1,0 +1,111 @@
+title: Inference-provider iter-2 — queued experiments status + ops-corpus re-bench
+subtitle: DeepSeek V4 Flash 4/4 @$0.0034/run on ops tasks; cf-* dead on neuron cap; Zen free hit its own quota; Groq re-probed (still TPM-capped)
+icon: flask
+version: 1
+
+card: inference-provider-watch
+ref: OPS-0850
+date: 2026-11-24
+dispatch: 20261124-155724-queued-experiments-from-iter-1
+
+question: |
+  Work the five experiments queued in the iter-1 living doc
+  (devin-kb/docs/tools/inference-provider-market.md): (1) groq-free
+  model group -> LiteLLM + ops comparison, (2) OpenCode Zen free promo
+  runner, (3) $10 OpenRouter credit -> 1000/day :free + DeepSeek V4
+  Flash paid bench, (4) Mistral Experiment tier -> Codestral, (5)
+  Groq/Cerebras TTFT for ada voice-aux.
+
+method: |
+  Verified live state first, then ran what was runnable.
+  - LiteLLM route inventory per virtual key (idc03:4000 /v1/models,
+    BENCH/CHABA/ADA keys — allowlists differ).
+  - Groq direct probe from idc03 (model list, streamed TTFT x3,
+    rate-limit headers).
+  - OpenRouter account state via /api/v1/auth/key + /api/v1/credits.
+  - agent-cost-bench cli-compare on tony-dell, config.devnest-iter2.yaml:
+    4 lanes x o1-o4 ops tasks, opencode surface, 20min timeout.
+    cli_base_args use the opencode v2 positional-workspace form
+    (`run --format json --model {model} --auto {workspace} {prompt}`) —
+    the old `--dir` flag is dead in opencode 2.4.1.
+
+measured: |
+  Groq (direct, idc03 -> api.groq.com, 2026-11-24):
+    models live: openai/gpt-oss-120b, openai/gpt-oss-20b,
+    qwen/qwen3.8-27b (+ whisper, prompt-guard, orpheus TTS).
+    TTFT x3 voice-aux-sized prompt:
+      qwen3.8-27b   726-2849ms (first call cold)
+      gpt-oss-120b  272-482ms
+      gpt-oss-20b   257-426ms
+    rate-limit headers (gpt-oss-120b): 1000 RPD, 8000 TPM — unchanged
+    since iter-1d; one mid-session opencode request is ~7.7-11.9k
+    input tokens, i.e. still ABOVE the free TPM cap. Agent-loop
+    verdict stands: Groq free = small-prompt/latency lane only.
+    NOTE: groq deployments are gone from live litellm config.yaml
+    (iter-1d added them live-only; a later deploy.sh sync from
+    stacks/idc03/litellm/config.yaml dropped them). groq.env key
+    still on idc03.
+
+  OpenRouter account (idc03 key sk-or-v1-74d...f6c):
+    total_credits $225, total_usage $157.91 — account funded.
+    free_model_daily_requests: 1000/day cap ACTIVE (50->1000 uplift
+    proves the approved $10 credit was purchased), used 1001/1000
+    today — :free lane exhausted for today by fleet traffic.
+    key self-limit $1/week, $0.69 remaining (resets 2026-11-30).
+
+  agent-cost-bench run 20261124_090941_c6e97c (tony-dell, o1-o4 ops,
+  16 runs, 777s wall, results/20261124_090941_c6e97c.{json,html}):
+
+    lane                     pass  cost/run  avg latency  notes
+    oc-ds-v4-flash (OR paid)  4/4   $0.0034   29.6s        flawless; total $0.0135
+    oc-zen-ds (Zen free)      3/4   —         26.0s        o3 died on provider.free-limit
+    oc-bench (flash-lite)     1/4   $0.0051   4.7s         3 real content fails (miscounts)
+    oc-cf-oss120b (CF free)   0/4   —         383.5s       429 neuron cap -> ~7min retry loops
+
+  Prior same-day/corpus data points:
+    20261123_115202_3d02ec (code corpus t1+m1-behavioral):
+      or-deepseek-v4-flash 2/2 pass, $0.039 total (m1 725s, t1 53s)
+      gemini-3.5-flash-lite 2/2 pass but $0.30 + $1.05 reported cost
+    This session ops corpus: ds-v4-flash 4/4 @ $0.0135 total.
+    Combined: DeepSeek V4 Flash 6/6 tasks, ~$0.05 total spend —
+    inside the predicted $0.05-0.11/session band.
+
+verdict: |
+  1. groq-free group: SUPERSEDED. The free models it targeted
+     (gpt-oss-120b, qwen3.8-27b) now exist as cf-* Cloudflare routes
+     in repo config + opencode maps, and Groq itself was re-probed
+     today: still free, still fast (TTFT ~0.3-0.5s), still TPM-capped
+     below one agent request. Do NOT re-add groq to LiteLLM for agent
+     loops; keep it for voice-aux/classify single-turn fallback
+     (verification card llm-provider-verification-2026-11 step 2
+     still wants the clean groq/* route decision).
+  2. Zen free: alive but quota'd — 3/4 pass then provider.free-limit
+     on the 4th task. Promo lane, not an always-on brain.
+  3. OpenRouter: $10 credit confirmed purchased (1000/day :free cap
+     live, already consumed today). DeepSeek V4 Flash paid bench is
+     DONE and excellent — 6/6 across ops+code corpora at ~$0.05 total.
+     It is the cheap paid code brain the doc predicted.
+  4. Mistral Codestral + Cerebras: BLOCKED — no API keys exist on any
+     host. Board request raised on the card.
+  5. TTFT voice-aux: Groq numbers refreshed (gpt-oss-120b ~0.3-0.5s,
+     qwen3.8-27b ~0.7-2.8s cold-ish); Cerebras leg key-blocked with
+     Mistral.
+
+  Cross-cutting finding: EVERY free lane is now quota-shaped, not
+  price-shaped. CF = 10K neurons/day account-wide (consumed by fleet
+  before this bench even ran); Zen = promo session cap; OR :free =
+  1000/day account-wide (consumed today); Groq = 8K TPM/model.
+  bench/gemini-3.5-flash-lite remains the only lane that went 4/4
+  historically, but today it went 1/4 on careful-count ops tasks —
+  worth watching whether that's quota pressure or model drift.
+
+followups: |
+  - devin-kb/docs/tools/inference-provider-market.md iteration log
+    needs the iter-2 entry (this file + card comms have the text;
+    devin-kb lives on tony-dell outside this dispatch worktree).
+  - Re-run config.devnest-iter2.yaml cf-* lanes after CF neuron reset
+    (00:00 UTC) to get a clean cf-gpt-oss-120b agent-loop verdict —
+    pairs with llm-provider-verification-2026-11 step 1.
+  - bench lane 1/4 today vs 4/4 on 2026-10-25 — check whether
+    gemini-3.5-flash-lite free-tier quota is degrading ops-task
+    reliability before trusting it as baseline.

@@ -1,0 +1,456 @@
+{
+  "fixture": "model-efficiency-v1",
+  "suite": "local",
+  "started": "2026-11-24T10:08:18Z",
+  "finished": "2026-11-24T10:14:44Z",
+  "warm_repeats": 2,
+  "runs": [
+    {
+      "alias": "ollama-omen-llama3.2-3b",
+      "provider": "openai",
+      "model": "llama3.2:3b",
+      "suite": "local",
+      "fixture": "model-efficiency-v1",
+      "meta": {
+        "license": "model-card license; self-hosted, no third-party egress",
+        "data_policy": "local inference only — prompts never leave tony-omen",
+        "hardware_fit": "tony-omen Ollama (GPU-assisted); fits consumer GPU/CPU",
+        "cost_class": "electricity only; $0 marginal",
+        "notes": "cold call includes model load after `ollama stop`"
+      },
+      "api_key_env": null,
+      "cases": [
+        {
+          "name": "qa_japan",
+          "ok": true,
+          "check_ok": true,
+          "s": 14.662,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 36,
+            "completion_tokens": 4,
+            "total_tokens": 40
+          },
+          "tool_calls": null,
+          "text_preview": "Tokyo.",
+          "resolved_model": "llama3.2:3b"
+        },
+        {
+          "name": "json_extract",
+          "ok": true,
+          "check_ok": true,
+          "s": 3.569,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 59,
+            "completion_tokens": 29,
+            "total_tokens": 88
+          },
+          "tool_calls": null,
+          "text_preview": "```\n{\n  \"name\": \"Ada\",\n  \"role\": \"engineer\",\n  \"city\": \"Bangkok\"\n}\n```",
+          "resolved_model": "llama3.2:3b"
+        },
+        {
+          "name": "tool_weather",
+          "ok": true,
+          "check_ok": true,
+          "s": 2.538,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 166,
+            "completion_tokens": 14,
+            "total_tokens": 180
+          },
+          "tool_calls": [
+            {
+              "name": "get_weather",
+              "arguments": {
+                "city": "Bangkok"
+              }
+            }
+          ],
+          "text_preview": "",
+          "resolved_model": "llama3.2:3b"
+        },
+        {
+          "name": "thai_capital",
+          "ok": true,
+          "check_ok": true,
+          "s": 2.767,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 47,
+            "completion_tokens": 15,
+            "total_tokens": 62
+          },
+          "tool_calls": null,
+          "text_preview": "เมืองหลวงของญี่ปุ่นคือ โตเกียว",
+          "resolved_model": "llama3.2:3b"
+        },
+        {
+          "name": "gen_bottle",
+          "ok": true,
+          "check_ok": true,
+          "s": 13.572,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 41,
+            "completion_tokens": 114,
+            "total_tokens": 155
+          },
+          "tool_calls": null,
+          "text_preview": "Stay hydrated and on top of your game with the HydraTrack smart water bottle. This innovative bottle tracks your daily hydration levels, providing personalized ",
+          "resolved_model": "llama3.2:3b"
+        },
+        {
+          "name": "vision_colors",
+          "skipped": "no_vision"
+        }
+      ],
+      "warm": [
+        {
+          "s": 0.425,
+          "ok": true,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 36,
+            "completion_tokens": 4,
+            "total_tokens": 40
+          }
+        },
+        {
+          "s": 0.481,
+          "ok": true,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 36,
+            "completion_tokens": 4,
+            "total_tokens": 40
+          }
+        }
+      ],
+      "status": "ok",
+      "summary": {
+        "cold_s": 14.662,
+        "case_p50_s": 3.569,
+        "warm_p50_s": 0.453,
+        "warm_n": 2,
+        "prompt_tokens": 349,
+        "completion_tokens": 176,
+        "total_tokens": 525,
+        "errors": 0,
+        "http_429": 0,
+        "error_rate": 0.0,
+        "checks_passed": 5,
+        "checks_total": 5,
+        "est_cost_usd": null
+      }
+    },
+    {
+      "alias": "ollama-omen-qwen3-4b",
+      "provider": "openai",
+      "model": "qwen3:4b",
+      "suite": "local",
+      "fixture": "model-efficiency-v1",
+      "meta": {
+        "license": "model-card license; self-hosted, no third-party egress",
+        "data_policy": "local inference only — prompts never leave tony-omen",
+        "hardware_fit": "tony-omen Ollama (GPU-assisted); fits consumer GPU/CPU",
+        "cost_class": "electricity only; $0 marginal",
+        "notes": "cold call includes model load after `ollama stop`"
+      },
+      "api_key_env": null,
+      "cases": [
+        {
+          "name": "qa_japan",
+          "ok": true,
+          "check_ok": false,
+          "s": 17.039,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 21,
+            "completion_tokens": 16,
+            "total_tokens": 37
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "resolved_model": "qwen3:4b"
+        },
+        {
+          "name": "json_extract",
+          "ok": true,
+          "check_ok": false,
+          "s": 26.421,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 49,
+            "completion_tokens": 96,
+            "total_tokens": 145
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "resolved_model": "qwen3:4b"
+        },
+        {
+          "name": "tool_weather",
+          "ok": true,
+          "check_ok": false,
+          "s": 23.25,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 149,
+            "completion_tokens": 128,
+            "total_tokens": 277
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "resolved_model": "qwen3:4b"
+        },
+        {
+          "name": "thai_capital",
+          "ok": true,
+          "check_ok": false,
+          "s": 5.345,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 35,
+            "completion_tokens": 32,
+            "total_tokens": 67
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "resolved_model": "qwen3:4b"
+        },
+        {
+          "name": "gen_bottle",
+          "ok": true,
+          "check_ok": false,
+          "s": 36.611,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 28,
+            "completion_tokens": 220,
+            "total_tokens": 248
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "resolved_model": "qwen3:4b"
+        },
+        {
+          "name": "vision_colors",
+          "skipped": "no_vision"
+        }
+      ],
+      "warm": [
+        {
+          "s": 3.099,
+          "ok": true,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 21,
+            "completion_tokens": 16,
+            "total_tokens": 37
+          }
+        },
+        {
+          "s": 18.832,
+          "ok": true,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 21,
+            "completion_tokens": 16,
+            "total_tokens": 37
+          }
+        }
+      ],
+      "status": "ok",
+      "summary": {
+        "cold_s": 17.039,
+        "case_p50_s": 23.25,
+        "warm_p50_s": 10.966,
+        "warm_n": 2,
+        "prompt_tokens": 282,
+        "completion_tokens": 492,
+        "total_tokens": 774,
+        "errors": 0,
+        "http_429": 0,
+        "error_rate": 0.0,
+        "checks_passed": 0,
+        "checks_total": 5,
+        "est_cost_usd": null
+      }
+    },
+    {
+      "alias": "ollama-omen-gemma3-4b",
+      "provider": "openai",
+      "model": "gemma3:4b",
+      "suite": "local",
+      "fixture": "model-efficiency-v1",
+      "meta": {
+        "license": "model-card license; self-hosted, no third-party egress",
+        "data_policy": "local inference only — prompts never leave tony-omen",
+        "hardware_fit": "tony-omen Ollama (GPU-assisted); fits consumer GPU/CPU",
+        "cost_class": "electricity only; $0 marginal",
+        "notes": "cold call includes model load after `ollama stop`"
+      },
+      "api_key_env": null,
+      "cases": [
+        {
+          "name": "qa_japan",
+          "ok": true,
+          "check_ok": true,
+          "s": 51.999,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 21,
+            "completion_tokens": 2,
+            "total_tokens": 23
+          },
+          "tool_calls": null,
+          "text_preview": "Tokyo",
+          "resolved_model": "gemma3:4b"
+        },
+        {
+          "name": "json_extract",
+          "ok": true,
+          "check_ok": true,
+          "s": 6.134,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 50,
+            "completion_tokens": 35,
+            "total_tokens": 85
+          },
+          "tool_calls": null,
+          "text_preview": "```json\n{\n  \"name\": \"Ada\",\n  \"role\": \"engineer\",\n  \"city\": \"Bangkok\"\n}\n```\n",
+          "resolved_model": "gemma3:4b"
+        },
+        {
+          "name": "tool_weather",
+          "ok": false,
+          "check_ok": false,
+          "s": 0.009,
+          "status": 400,
+          "error": "HTTP 400",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "registry.ollama.ai/library/gemma3:4b does not support tools",
+            "type": "invalid_request_error",
+            "param": null,
+            "code": null
+          }
+        },
+        {
+          "name": "thai_capital",
+          "ok": true,
+          "check_ok": true,
+          "s": 2.081,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 24,
+            "completion_tokens": 4,
+            "total_tokens": 28
+          },
+          "tool_calls": null,
+          "text_preview": "โตเกียว",
+          "resolved_model": "gemma3:4b"
+        },
+        {
+          "name": "gen_bottle",
+          "ok": true,
+          "check_ok": true,
+          "s": 40.416,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 29,
+            "completion_tokens": 172,
+            "total_tokens": 201
+          },
+          "tool_calls": null,
+          "text_preview": "Okay, here's a 120-word product description for a smart water bottle that tracks hydration, aiming for an engaging and informative tone:\n\n**Stay Hydrated, Stay ",
+          "resolved_model": "gemma3:4b"
+        },
+        {
+          "name": "vision_colors",
+          "ok": true,
+          "check_ok": true,
+          "s": 107.458,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 320,
+            "completion_tokens": 19,
+            "total_tokens": 339
+          },
+          "tool_calls": null,
+          "text_preview": "```json\n{\"left_color\":\"red\",\"right_color\":\"blue\"}\n```",
+          "resolved_model": "gemma3:4b"
+        }
+      ],
+      "warm": [
+        {
+          "s": 0.557,
+          "ok": true,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 21,
+            "completion_tokens": 2,
+            "total_tokens": 23
+          }
+        },
+        {
+          "s": 0.643,
+          "ok": true,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 21,
+            "completion_tokens": 2,
+            "total_tokens": 23
+          }
+        }
+      ],
+      "status": "partial_errors",
+      "summary": {
+        "cold_s": 51.999,
+        "case_p50_s": 40.416,
+        "warm_p50_s": 0.6,
+        "warm_n": 2,
+        "prompt_tokens": 444,
+        "completion_tokens": 232,
+        "total_tokens": 676,
+        "errors": 1,
+        "http_429": 0,
+        "error_rate": 0.167,
+        "checks_passed": 5,
+        "checks_total": 6,
+        "est_cost_usd": null
+      }
+    }
+  ]
+}

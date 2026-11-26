@@ -1,0 +1,49 @@
+icon: shield
+title: Fix ha-auth-watch dedupe state eviction loop
+date: 2026-11-26
+card: timer-alert-tony-dell-ha-auth-watch
+context: >-
+  After the 14:18 crash-loop fix the service stopped failing, but it still
+  emitted two focus-inbox alerts every 15 minutes for log lines dated
+  25 Nov 17:08Z and 26 Nov 02:50Z. The dedupe state at
+  ~/.local/state/chaba/ha-auth-watch.json held 500 legacy keys with ISO
+  timestamps in slot 3 (8–13 Nov), while current keys use a numeric epoch.
+  `save_state()` capped with `sorted(seen)[-500:]`, so every new key sorted
+  before the legacy block and was discarded on write — the watcher re-alerted
+  on the same two lines forever.
+changes:
+  - "Added `_current_key()`: only keys whose third component parses as a
+    float can match a current failure. `load_state()` now drops legacy
+    ISO-format keys on read and preserves file order."
+  - "`save_state()` caps the newest 500 by insertion order
+    (`list(dict.fromkeys(seen))[-500:]`) instead of lexicographic order."
+  - "`main()` keeps a `seen_keys` set for membership while appending new
+    keys to the ordered list, and increments `suppressed` on a state hit so
+    the poll line reports real dedupe counts on non-writer checkouts."
+verification:
+  - "`python3 -m py_compile` passed."
+  - "Harness with a 500-key legacy state file: `load_state()` returned 0;
+    run 1 reported `1 new ... (0 deduped)`, run 2 reported
+    `0 new ... (1 deduped)`; state then held exactly 1 current-format key."
+  - "Live consumer proof on tony-dell (master 05d31b6527, synced): ran the
+    exact service command twice. Run 1: `2 new ... (0 deduped)` and state
+    reseeded to 2 current keys. Run 2: `0 new ... (2 deduped)`. State file
+    now holds exactly those 2 keys, so the 14:33:40 scheduled tick and
+    later ones stay silent."
+rollback: >-
+  Revert the single script file. The state file is rewritten on the next
+  tick; keep a copy of ~/.local/state/chaba/ha-auth-watch.json if the old
+  (broken) dedupe behaviour must be restored.
+residual: >-
+  The repeated auth lines themselves are stale ad-hoc probes, not a live
+  intrusion: tony-ha shows curl/8.18.0 from localhost hitting /api/,
+  /api/states/switch.mac_plug and /api/services/automation/reload on
+  23–26 Nov, plus one Python-urllib probe from idc03. michael-ha's
+  /api/error_log returned 404 through the local token, so its single
+  25 Nov source (4.141.251.23.bc.googleusercontent.com) could not be
+  attributed further. No token rotation or HA config change was made.
+lesson: >-
+  Never cap a dedupe ledger with `sorted(...)[-N:]` when key formats can
+  change — lexicographic order is not recency. Preserve insertion order,
+  validate keys on load, and make the dedupe counter visible in the poll
+  line so a broken state file shows up as "0 deduped" instead of silence.

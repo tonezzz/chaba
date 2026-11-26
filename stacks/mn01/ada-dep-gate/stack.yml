@@ -1,0 +1,28 @@
+id: ada-dep-gate
+host: mn01
+description: >-
+  Dependency health gate for the mn01 ada standby lanes (ada-ha-tony,
+  ada-ha-michael — disabled-but-running warm standby, old lane naming).
+  Both env files carry NOTEBOOKLM_REST_BASE_URL and the lanes had no
+  drop-ins. dep-gate.conf adds an ExecStartPre that waits fail-closed
+  until both hard runtime deps answer their unauthenticated /health
+  endpoints: MDDB leader http://100.102.134.91:11023/health and
+  notebooklm-rest http://100.123.163.11:3011/health (idc02 —
+  ConversationMemory -> NotebooklmClient). Companion to
+  stacks/idc03/ada-dep-gate.
+verify: >-
+  systemctl --user cat ada-ha-tony.service | grep -q '3011/health' &&
+  systemctl --user cat ada-ha-michael.service | grep -q '3011/health'
+files:
+  - "~/.config/systemd/user/<unit>.service.d/dep-gate.conf — dual-dep ExecStartPre gate + TimeoutStartSec=300"
+units:
+  - ada-ha-tony
+  - ada-ha-michael
+notes: >-
+  Units stay disabled (warm standby) — the gate only matters on crash
+  restart or manual start. No stagger.conf on mn01; TimeoutStartSec=300
+  in dep-gate.conf is the effective start budget. install.sh is the
+  canonical writer; do not hand-edit live drop-ins.
+related_cards: [ada-lane-health-gate-misses-notebooklm-dep]
+status: deployed
+deployed: 2026-11-25

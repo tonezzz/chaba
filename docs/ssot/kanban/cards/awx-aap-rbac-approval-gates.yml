@@ -1,0 +1,188 @@
+id: awx-aap-rbac-approval-gates
+title: AWX/AAP integration for RBAC and approval gates
+column: done
+updated: 2026-11-26 20:39
+brief: Evaluate and wire an AWX/AAP front end onto the existing dispatch queue so job submission is RBAC-controlled
+  and can require approval before dispatch. Done when a decision record and, if adopted, a gated playbook path exist
+  without breaking the current scheduler.
+priority: low
+tags:
+- dispatch
+- ops
+- awx
+spec: 'Context: /home/tony/ansible — dispatch_job.yml, queue_manager.py, scheduler.py. Today any local user can
+  enqueue via the CLI; there is no per-user authorization or approval step.
+
+
+  Scope:
+
+  1. Survey available AWX/AAP deployment on the fleet (host, version, credentials via secrets, no credentials in
+  cards).
+
+  2. Map queue users/projects to AWX organizations/teams and define which job templates map to dispatch_job.yml.
+
+  3. Define approval gate semantics: who approves, where the signal lands (card request, AWX approval, or Redis
+  field), and how the scheduler observes it before dequeue.
+
+  4. Produce a written decision: adopt with a minimal integration, or stay CLI-only with reasons. If adopted, implement
+  a dry-run-gated path and verify one approved + one rejected job.
+
+
+  Constraints: no new secrets in repo/cards; respect the board-api write door for any card/comment mutation; do
+  not replace the scheduler unless the integration proves necessary.'
+action:
+  type: dispatch
+  status: done
+  lane: free_lane
+  lane_source: kw
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
+  result: 'exit=0 , outcome written to `dispatch-outcome-20261125-210313-context-home-tony-ansible-disp.md`. | devin-task-20261125-210313-context-home-tony-ansible-disp.service:
+    Consumed 31.115s CPU time over 2min 28.774s wall clock time, 555.4M memory peak.'
+  verified: false
+  sweep:
+    dirty: 1
+comms:
+- at: 2026-11-25 20:13
+  from: chaba
+  text: classified as free_lane (kw:evaluate conf 1.00)
+- at: 2026-11-25 20:13
+  from: chaba
+  text: card captured via board-api
+- at: 2026-11-25 20:13
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.69 > 0.7)'
+- at: 2026-11-25 20:13
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 20:13
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 20:13
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.95 > 1.5)'
+- at: 2026-11-25 20:13
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 20:13
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-25 20:14
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 4.30 > 0.8)'
+- at: 2026-11-25 20:18
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (4/4)'
+- at: 2026-11-25 20:24
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 3.96 > 1.0)'
+- at: 2026-11-25 20:30
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 20:37
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-25 20:57
+  from: chaba
+  text: 'mn01 defers: provider rate-limited (throttl on devin-task-20261125-125447-goal-generated-writes-from-non)
+    — claims held ~28m'
+- at: 2026-11-25 21:02
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-25 21:03
+  from: chaba
+  text: started devin-task-20261125-210313-context-home-tony-ansible-disp on tony-macbook (dispatch)
+- at: 2026-11-25 21:03
+  from: chaba
+  text: 'primer injected 8 lesson(s): [camwall-retire-to-wiki] primer injected 8 lesson(s): no chaba-audit.service/cha;
+    [michael-lane-context-window] primer injected 8 lesson(s): [ansible-verify-host-; [nest-percussion] primer injected
+    8 lesson(s): [devnest-queue-consolidation] VER; [board-cli-request-ask-field] primer injected 8 lesson(s): board-api
+    /comment an; [camwall-retire-to-wiki] primer injected 8 lesson(s): no chaba-audit.service/cha; [devnest-queue-consolidation]
+    VERIFY COMPLETE (attempt 2, ton'
+- at: 2026-11-25 21:04
+  from: devin
+  text: 'Survey done: dispatch system lives at /home/tony/ansible on idc02 (Redis queue + scheduler.py + dispatch_job.yml,
+    untracked prototype, no git remote). No AWX/AAP/Tower found on idc02/idc03/con01/mn01/tony-dell/tony-omen (docker+podman+systemd
+    clean). Writing decision record now.'
+- at: 2026-11-25 21:05
+  from: devin
+  text: 'DONE — decision: do-not-adopt-AWX-now. Survey: zero AWX/AAP on fleet (6 hosts checked); dispatch queue
+    is an untracked prototype at /home/tony/ansible on idc02, scheduler running, Redis queue open to any Tailscale
+    host. Deliverable: docs/ssot/jobs/infrastructure/2026-11-25-awx-aap-rbac-approval-gates-decision.yml (survey
+    + hypothetical AWX org/team/template map + approval-gate semantics + revisit criteria). Follow-up implementation
+    card filed: OPS-1411 dispatch-queue-approval-gate (backlog) — in'
+- at: 2026-11-25 21:08
+  from: tony-macbook
+  text: 'finished (ok): exit=0 , outcome written to `dispatch-outcome-20261125-210313-context-home-tony-ansible-disp.md`.
+    | devin-task-20261125-'
+- at: 2026-11-25 21:08
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 21:08
+  from: chaba
+  text: "checkpoint failed: commit: \U0001F50D Validating SSOT files...\n\U0001F4CB Found SSOT files to validate:\ndocs/ssot/ssot.dev-system.assessment.yml\n\U0001F527
+    Checking YAML syntax...\n\e[0;32m✅ YAML syntax valid\e[0m\n\U0001F527 C"
+- at: 2026-11-25 21:08
+  from: chaba
+  text: banked 713 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 21:08
+  from: chaba
+  text: pushed dispatch/20261125-210313-context-home-tony-ansible-disp to origin
+- at: 2026-11-25 21:08
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 21:08
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-25 21:09
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-210313-context-home-tony-ansible-disp on tony-macbook still
+    dirty — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-26 03:58
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:58
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:08
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 08:35
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-26): dispatch branch merged into origin/master as 3c07b98cb582
+    (generated SSOT snapshots kept from master, substantive code from branch). Deliverable: AWX/AAP RBAC approval-gates
+    job SSOT. Closing to clear the >10 verify brake.'
+- at: 2026-11-26 08:35
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 20:39
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+ref: OPS-1408
+claim:
+  since: 2026-11-25 21:02
+review_kind: verify

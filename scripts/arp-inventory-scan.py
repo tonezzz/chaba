@@ -25,6 +25,15 @@ from pathlib import Path
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT / "scripts" / "lib"))
+try:
+    from inbox_door import local_writable, post_inbox
+except ImportError:
+    def local_writable(repo):  # noqa: ANN001
+        return True
+
+    def post_inbox(**kw):  # noqa: ANN003
+        return False
 MAC_SSOT = REPO_ROOT / "docs/ssot/infrastructure/ssot.mac-address-registry.yml"
 IP_SSOT = REPO_ROOT / "docs/ssot/infrastructure/ssot.ip-address-registry.yml"
 REPORTS_DIR = REPO_ROOT / "reports"
@@ -431,8 +440,42 @@ def should_alert(results):
     return False
 
 
+def _alert_text(results, ts):
+    lines = [
+        "ARP inventory scan found changes compared to the MAC/IP registries.",
+        "",
+        f"- New devices: {len(results.get('new_devices', []))}",
+        f"- New IP for known device: {len(results.get('new_ip_for_known_device', []))}",
+        f"- MAC changed: {len(results.get('mac_changed', []))}",
+        f"- Conflicts: {len(results.get('conflict', []))}",
+        f"- Duplicate MACs in scan: {len(results.get('duplicate_macs', []))}",
+        "",
+        f"Report: reports/network-inventory-scan-{ts}.json",
+    ]
+    for key in ("new_devices", "new_ip_for_known_device", "mac_changed",
+                "conflict", "duplicate_macs"):
+        for item in results.get(key, []):
+            bits = [str(v) for v in item.values() if v]
+            lines.append(f"- {key}: {' / '.join(bits[:4])}")
+    return "\n".join(lines)
+
+
 def write_focus_inbox(results, ts):
     """Create a focus-inbox YAML for review."""
+    if not local_writable(REPO_ROOT):
+        # Non-writer checkout — land the alert on the served checkout via
+        # board-api /inbox instead of a dead local file.
+        if post_inbox(
+                text=_alert_text(results, ts),
+                label="ARP inventory scan changes detected",
+                priority="medium" if (results.get("duplicate_macs")
+                                      or results.get("conflict")) else "low",
+                tags=["network", "arp", "inventory", "mac-registry"],
+                owner="tony", session="arp-inventory-scan"):
+            print(f"Focus inbox alert posted via /inbox ({ts})", file=sys.stderr)
+            return
+        print("Focus inbox /inbox post failed; alert dropped", file=sys.stderr)
+        return
     FOCUS_INBOX_DIR.mkdir(parents=True, exist_ok=True)
     filename = f"{ts}-arp-inventory-alert.yml"
     path = FOCUS_INBOX_DIR / filename

@@ -1,0 +1,136 @@
+title: CMS-plane BGE golden-set eval — recall@5/@10 + MRR, gemini vs bge-m3
+subtitle: 69 labeled queries across 14 collections; bge-m3 within ~5% of
+  gemini-embedding-2 — provider GO; live index has ~250 unembedded docs
+  (coverage gap, separate issue)
+type: eval
+status: done
+card: cms-plane-bge-golden-set-eval-measure-re-cad4f4
+ref: MEM-0193 (spike), MEM-0204
+repo: chaba
+branch: dispatch/20261124-223607-follow-up-to-mem-0193-spike-pr
+host: tony-omen
+date: 2026-11-24
+
+summary: >-
+  Built a 69-query golden set with hand-verified relevant doc keys across
+  all mddb-cms :11027 collections and scored three arms: the LIVE bge-m3
+  index (prod /v1/vector-search), doc-level cosine vs gemini-embedding-2
+  (via gemini-ollama-proxy :11435 on idc03), and doc-level cosine vs
+  bge-m3 (local ollama on tony-omen — embed-pool-shim :11436 was
+  degraded at eval time). Result: bge-m3 is statistically at parity with
+  gemini-embedding-2 (recall@5 0.911 vs 0.954, recall@10 0.952 vs 0.957,
+  MRR 0.937 vs 0.942 — pooled-candidate methodology, same as the
+  2026-10-15 bank eval). VERDICT: GO on the embed-provider decision —
+  and note :11027 already migrated to bge-m3 on 2026-11-19, so this eval
+  validates the shipped state rather than gating a future cutover.
+  Separate finding: the live index has ~250 docs with no vectors
+  (embed-queue drops during pool-degraded windows) plus meta-only
+  collections (devin-kb, ssot.focus) that can never embed — prod
+  recall@5 is 0.54 overall / 0.68 on fully-covered collections vs the
+  ~0.91 doc-level ceiling. Needs a non-force vector-reindex + drop
+  investigation, NOT a provider rollback.
+
+context_drift: >-
+  Card spec assumed gemini still served :11027 — stale. Card comms
+  2026-11-19 13:06 record the env swap + force reindex already happened
+  (19/19 collections). No gemini-embedded CMS index exists anywhere to
+  A/B against, so the gemini arm is doc-level cosine over the same
+  candidate pools (the validated methodology from
+  docs/ssot/jobs/ada/2026-10-15-embed-space-eval.yml, which found
+  mddb-prod within 3% of doc-cosine on banks).
+
+method: >-
+  golden_set.json: 69 queries, hand-labeled relevant keys (lang-
+  agnostic), stratified across chaba-lessons(8) kb-features(8)
+  kb-operations(8) ada-cms-pages(10) infrastructure-ssot(7)
+  chaba-docs(5) documents(5) devin-kb(4) kb-system(4) kb-development(4)
+  chaba-architecture(2) chaba-archive(2) chaba-glossary(1) ssot(1).
+  Includes one Thai query (nut-summary) — bge-m3 handles it fine.
+  Pool per query = :11027 vector-search top-12 + qrel keys; doccos arms
+  rank within pool (pooled-eval caveat: absolute numbers optimistic,
+  arm-vs-arm deltas valid). Doc text = meta-title + contentMd[:1500]
+  (mddb chunkSize=1500). prod arm = live index top-10, full-collection
+  ranking — the honest production number.
+  golden_eval.py caches embeddings (.embed_cache.json, gitignored
+  candidate) so reruns are cheap.
+
+key_numbers:
+  overall_n: 69
+  recall_at_5: {prod_bge_index: 0.539, gemini_doccos: 0.954, bge_doccos: 0.911}
+  recall_at_10: {prod_bge_index: 0.546, gemini_doccos: 0.957, bge_doccos: 0.952}
+  mrr: {prod_bge_index: 0.541, gemini_doccos: 0.942, bge_doccos: 0.937}
+  full_coverage_subset_n: 49
+  full_coverage_recall_at_5: {prod_bge_index: 0.677, gemini_doccos: 0.935, bge_doccos: 0.874}
+  bge_vs_gemini_delta: "recall@5 -4.5%rel, recall@10 -0.5%rel, MRR -0.5%rel"
+  prod_zero_but_doccos_full_rows: 26
+
+per_collection_recall_at_5:
+  ada-cms-pages: {prod: 0.867, gemini: 1.0, bge: 0.867, n: 10}
+  chaba-architecture: {prod: 1.0, gemini: 1.0, bge: 1.0, n: 2}
+  chaba-archive: {prod: 0.0, gemini: 1.0, bge: 1.0, n: 2, note: "2/14 docs embedded"}
+  chaba-docs: {prod: 0.2, gemini: 1.0, bge: 1.0, n: 5, note: "25/40 embedded"}
+  chaba-glossary: {prod: 1.0, gemini: 1.0, bge: 1.0, n: 1}
+  chaba-lessons: {prod: 0.563, gemini: 1.0, bge: 0.938, n: 8}
+  devin-kb: {prod: 0.0, gemini: 1.0, bge: 1.0, n: 4, note: "0/9 embedded — meta-only docs, empty contentMd"}
+  documents: {prod: 0.3, gemini: 0.96, bge: 0.833, n: 5}
+  infrastructure-ssot: {prod: 0.857, gemini: 0.857, bge: 0.857, n: 7}
+  kb-development: {prod: 0.5, gemini: 1.0, bge: 1.0, n: 4, note: "7/20 embedded"}
+  kb-features: {prod: 0.625, gemini: 0.875, bge: 0.875, n: 8}
+  kb-operations: {prod: 0.563, gemini: 0.875, bge: 0.813, n: 8}
+  kb-system: {prod: 0.25, gemini: 1.0, bge: 1.0, n: 4, note: "20/34 embedded"}
+  ssot: {prod: 0.0, gemini: 1.0, bge: 1.0, n: 1, note: "0/1 embedded"}
+
+findings:
+  - "bge-m3 ≈ gemini-embedding-2 on CMS content: -4.5% recall@5 / -0.5%
+    recall@10 / -0.5% MRR on identical pools. Thai query handled. The
+    2026-11-19 migration to bge-m3 on :11027 is validated — GO (already
+    shipped; this is post-hoc confirmation, not a gate)."
+  - "prod-index recall (0.54 r@5) is far below the doc-level ceiling
+    (~0.91) — NOT an embedding-space problem. Causes: (a) ~250 docs
+    have no vectors — vector-stats embedded_documents < total_documents
+    in chaba-archive 2/14, chaba-docs 25/40, chaba-lessons 206/207,
+    devin-kb 0/9, documents 274/275, infrastructure-ssot 8450/8611,
+    kb-development 7/20, kb-features 134/145, kb-operations 277/289,
+    kb-system 20/34, ssot 0/1; queue stats show dropped=910, retried=753;
+    (b) meta-only docs (devin-kb/*, ssot.focus) have empty contentMd and
+    can never embed — vector search over those collections is structurally
+    dead unless content is backfilled."
+  - "Verified per-doc: qrel misses like kb-features/secret-rotation.md,
+    vcast-failure-report.md, lesson-9559d7a3e16e have contentMd but rank
+    below top-50/absent in vector-search — consistent with missing
+    vectors, not bad ranking."
+  - "embed-pool-shim :11436 was degraded during eval (504 'no upstream
+    answered in time' on 1500-char batches; single short embeds OK) —
+    the known cold-model/ambient-load gotcha from the spike. Used
+    tony-omen local ollama bge-m3:latest instead (same model). Prod
+    :11027 queue was still draining (depth 325)."
+
+recommendation: >-
+  GO — keep bge-m3 on mddb-cms :11027 (already live since 2026-11-19).
+  Follow-ups (not done here — prod changes): (1) run non-force
+  POST /v1/vector-reindex per affected collection to embed the ~250
+  missing docs (safe: only adds vectors; schedule low-traffic);
+  (2) investigate queue dropped=910 — drops during pool-degraded windows
+  silently remove docs from vector search; consider alerting on
+  dropped>0; (3) decide whether meta-only collections (devin-kb,
+  ssot.focus) should get contentMd backfilled or be declared
+  keyword-only; (4) warm-ping cron for bge-m3 upstreams per spike
+  gotcha. No provider rollback indicated — gemini would not have fixed
+  the coverage gap either.
+
+artifacts:
+  - scripts/mddb/spike-cms-bge/golden_set.json — 69 queries + qrels
+  - scripts/mddb/spike-cms-bge/golden_eval.py — 3-arm eval harness
+    (prod-index / gemini-doccos / bge-doccos), resumable via
+    .embed_cache.json
+  - scripts/mddb/spike-cms-bge/dump_corpus.py — corpus dump helper used
+    for qrel authoring
+  - scripts/mddb/spike-cms-bge/golden_eval_results.json — raw per-query
+    rankings + metrics
+  - /tmp/golden_eval3.log on tony-omen — run log (ephemeral)
+
+verify: >-
+  python3 scripts/mddb/spike-cms-bge/golden_eval.py --skip-doccos
+  reproduces the prod arm; full rerun is cheap (embeddings cached).
+  Live spot-check: curl -X POST :11027/v1/vector-search with any
+  golden_set.json query returns the labeled keys for covered docs.

@@ -45,6 +45,18 @@
           background: rgba(0,0,0,.45); border-radius: 4px; padding: 4px 7px;
           user-select: none; }
     .pane.zoomed .pz { z-index: 61; }
+    /* honest-fail — a pane that cannot render must say so on-screen
+       instead of staying black: .pfail covers the dead surface until
+       real content, a new cast, or teardown clears it (z below .pz so
+       the zoom affordance stays reachable) */
+    .pfail { position: absolute; inset: 0; z-index: 4; display: none;
+             flex-direction: column; align-items: center; justify-content: center;
+             gap: .55rem; text-align: center; padding: 1rem;
+             background: #180b10; color: var(--text); pointer-events: none; }
+    .pfail .pi { font-size: 2rem; }
+    .pfail .pm { font-size: .95rem; font-weight: 700; color: #fca5a5; }
+    .pfail .pu { font-size: .72rem; color: var(--muted); max-width: 90%;
+             overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     #idle, #pair, #boot {
       position: fixed; inset: 0; display: none; flex-direction: column;
       align-items: center; justify-content: center; gap: 1.5rem; text-align: center; padding: 2rem;
@@ -121,6 +133,7 @@
       <img id="img" alt="">
       <iframe id="frame" allow="autoplay; fullscreen"></iframe>
       <div class="pz">⤢</div>
+      <div class="pfail"></div>
     </div>
   </div>
 
@@ -220,24 +233,33 @@
         el.innerHTML =
           `<video playsinline></video><img alt="">` +
           `<iframe allow="autoplay; fullscreen"></iframe>` +
-          `<div class="pz">⤢</div>`;
+          `<div class="pz">⤢</div><div class="pfail"></div>`;
         stage.appendChild(el);
       }
       const p = {
         el, video: el.querySelector("video"), img: el.querySelector("img"),
-        frame: el.querySelector("iframe"), hls: null, imgTimer: null,
+        frame: el.querySelector("iframe"), fail: el.querySelector(".pfail"),
+        hls: null, imgTimer: null,
         frameOk: false,
         // hls drop-recovery state (see attachHls/nativeHlsReload)
         hlsUrl: "", hlsRetries: 0, hlsMediaRecoveries: 0, hlsRetryT: null,
+        // honest-fail timers: media stall watchdog, frame load watchdog,
+        // same-origin in-frame render-fail probe
+        stallT: null, frameT: null, probeT: null,
       };
-      p.video.addEventListener("playing", () => resetHlsRetry(p));
+      p.video.addEventListener("playing", () => { resetHlsRetry(p); paneOk(p); });
       // native-HLS path (Safari): a dropped producer ends the element with
       // a MEDIA_ERR_* (or 'ended' on a live playlist) — reload with the
       // same backoff instead of freezing on the last frame
       p.video.addEventListener("error", () => {
-        if (!p.hlsUrl || p.hls) return;   // hls.js path self-recovers
-        sendState("hls-retry", `native reload #${p.hlsRetries + 1}`);
-        armHlsRetry(p, () => nativeHlsReload(p));
+        if (p.hlsUrl && !p.hls) {   // native-HLS path (Safari): reload w/ backoff
+          sendState("hls-retry", `native reload #${p.hlsRetries + 1}`);
+          armHlsRetry(p, () => nativeHlsReload(p));
+          return;
+        }
+        if (p.hls) return;          // hls.js path self-recovers
+        // plain <video src>: no retry path — surface it on the pane
+        paneFail(p, `video failed — ${videoErr(p.video)}`);
       });
       p.video.addEventListener("ended", () => {
         if (!p.hlsUrl || p.hls || !isLiveVideo(p.video)) return;
@@ -247,6 +269,8 @@
       p.frame.addEventListener("load", () => {
         if (p.frame.src && p.frame.src !== "about:blank") {
           p.frameOk = true;
+          paneOk(p);
+          armFrameProbe(p);
           sendState(lastState, lastDetail);
         }
       });
@@ -285,6 +309,7 @@
       sendState("layout", `${n} pane${n > 1 ? "s" : ""}${pip ? " (pip)" : ""}`);
     }
     function paneTeardown(p) {
+      paneOk(p);
       resetHlsRetry(p); p.hlsUrl = "";
       if (p.hls) { try { p.hls.destroy(); } catch (e) {} p.hls = null; }
       p.video.pause(); p.video.removeAttribute("src"); p.video.load();
@@ -295,6 +320,76 @@
       p.frameOk = false; p.url = "";
       clearInterval(p.imgTimer); p.imgTimer = null;
     }
+
+    // -- honest fail: a pane that cannot render must say so on the pane
+    //    itself — a black rectangle is indistinguishable from "loading"
+    //    or a dark scene. paneFail() covers the dead surface with .pfail
+    //    AND reports state "pane-fail" so /displays + snap consumers see
+    //    it; paneOk() clears on real content, new casts, or teardown.
+    //    quiet=true draws the overlay without the state report (used when
+    //    a truer state like "hls-retry" already carries the situation). --
+    function paneFail(p, msg, quiet) {
+      if (!p || !p.fail) return;
+      const url = p.url || p.hlsUrl || p.img.src || p.video.src || "";
+      p.fail.innerHTML =
+        `<div class="pi">⚠</div><div class="pm">${esc(msg)}</div>` +
+        (url ? `<div class="pu">${esc(String(url).slice(0, 140))}</div>` : "");
+      p.fail.style.display = "flex";
+      if (quiet) return;
+      const i = panes.indexOf(p);
+      const detail = `p${i} ${msg}` + (url ? ` ${url}` : "");
+      // dedupe: refresh-interval errors re-fire onerror each tick —
+      // only re-report when the failure actually changed
+      if (lastState === "pane-fail" && lastDetail === detail) return;
+      sendState("pane-fail", detail);
+    }
+    function paneOk(p) {
+      if (!p) return;
+      if (p.fail) p.fail.style.display = "none";
+      clearTimeout(p.stallT); p.stallT = null;
+      clearTimeout(p.frameT); p.frameT = null;
+      clearInterval(p.probeT); p.probeT = null;
+    }
+    function esc(s) {
+      return String(s).replace(/[&<>"]/g,
+        c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    }
+    function videoErr(v) {
+      const e = v && v.error;
+      if (!e) return "playback error";
+      return ({ 1: "load aborted", 2: "network error",
+                3: "decode error", 4: "source not supported" })[e.code]
+             || `error ${e.code}`;
+    }
+    // In-frame honest-fail: a same-origin app (e.g. GEV with
+    // honest-fail.js injected) flags its own render failure on
+    // window.__gevHonestFail; cross-origin frames post
+    // {type:"gev-honest-fail"} instead (listener below). Probe runs while
+    // the frame owns the pane so a delayed app-side failure still lands.
+    function armFrameProbe(p) {
+      clearInterval(p.probeT);
+      p.probeT = setInterval(() => {
+        if (p.frame.style.display === "none" || !p.frameOk) return;
+        try {
+          const w = p.frame.contentWindow;
+          if (!w) return;
+          if (w.__gevHonestFail) {
+            paneFail(p, `app can't render — ${w.__gevHonestFail}`);
+          } else if (w.__gevRenderOk && p.fail.style.display !== "none") {
+            paneOk(p);
+          }
+        } catch (e) { /* cross-origin — postMessage is the channel */ }
+      }, 3000);
+    }
+    window.addEventListener("message", (e) => {
+      const d = e.data;
+      if (!d || (d.type !== "gev-honest-fail" && d.type !== "gev-honest-ok")) return;
+      const p = panes.find(q => q && q.frame.contentWindow === e.source);
+      if (!p || p.frame.style.display === "none") return;
+      if (d.type === "gev-honest-fail")
+        paneFail(p, `app can't render — ${d.reason || "render failure"}`);
+      else paneOk(p);
+    });
 
     function setHud(text, on) {
       hudText.textContent = text + (audioOK ? "" : " · tap 🔊");
@@ -524,6 +619,14 @@
       } else {
         video.src = mediaUrl(url);
       }
+      // stall watchdog — a video that never decodes a frame reads as a
+      // black pane; say so unless an HLS retry is still in flight
+      clearTimeout(p.stallT);
+      p.stallT = setTimeout(() => {
+        if (!video.videoWidth && video.style.display !== "none" &&
+            !p.hlsRetryT)
+          paneFail(p, "video did not start — no frames after 20s");
+      }, 20000);
       video.play().catch(() => showToast("tap for playback"));
       setHud(`screen ${screenNum} · video`, true);
       sendState("playing", `${pi || 0}:${url}`);
@@ -543,6 +646,10 @@
     function armHlsRetry(p, fn) {
       clearTimeout(p.hlsRetryT);
       const n = ++p.hlsRetries;
+      // past a handful of retries the pane is still black — say so
+      // on-screen while the recovery loop keeps working (quiet: the
+      // hls-retry state reports already carry the truer story)
+      if (n >= 5) paneFail(p, `stream offline — still retrying (#${n})`, true);
       p.hlsRetryT = setTimeout(fn, Math.min(15000, 1500 * Math.pow(2, n - 1)));
     }
     function isLiveVideo(v) {
@@ -597,10 +704,13 @@
           showToast("image failed — " + url.slice(0, 120), 5000);
         }
         sendState("image-load-failed", url);
+        paneFail(p, "image failed to load");
       };
       img.onload = () => {
         setHud(`screen ${screenNum} · image`, true);
-        if (lastState === "image-load-failed") sendState("image", url);
+        paneOk(p);
+        if (lastState === "image-load-failed" || lastState === "pane-fail")
+          sendState("image", url);
       };
       // never append cache-busters to data: URLs — it corrupts the payload
       const mkSrc = () => url.startsWith("data:") ? url
@@ -629,6 +739,14 @@
         }
       } catch { /* keep src */ }
       frame.src = src;
+      // load watchdog — a frame that never fires 'load' is a black pane
+      // (XFO refusals still fire it, so this only catches dead/unreachable
+      // targets; in-frame render failure is the probe/postMessage path)
+      clearTimeout(p.frameT);
+      p.frameT = setTimeout(() => {
+        if (!p.frameOk && frame.style.display !== "none")
+          paneFail(p, "page did not load");
+      }, 25000);
       setHud(`screen ${screenNum} · web`, true);
       sendState("nav", `${pi || 0}:${url}`);
     }

@@ -45,7 +45,9 @@ video, DevNest, eval packs all ride the same runner in the same VM.
 ## Watching / stopping
 
 - Fleet-side: `rclone cat gdrive:ada-nest/queue/run-<ts>.out.log`,
-  `queue/heartbeat`, `queue/done/`, `packs/<name>/done`,
+  `queue/lease` (unified liveness `{worker,epoch,ts,job,phase}`;
+  `queue/heartbeat` is the retired legacy file), `queue/done/`,
+  `packs/<name>/done`, `queue/packs-index/`,
   `queue/runtime-sessions/*.json`, `queue/runner.id`.
 - In-notebook diagnostics are safe any time (the runner is detached):
   `!nvidia-smi`, `!df -h`, etc.

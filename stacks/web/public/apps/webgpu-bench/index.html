@@ -3,7 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>WebGPU bench — lab-iphone-webgpu-worker</title>
+<meta name="theme-color" content="#0d1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GPU Worker">
+<link rel="manifest" href="manifest.webgpu.json">
+<link rel="apple-touch-icon" href="/apps/icon-192.png">
+<title>WebGPU worker — lab-iphone-webgpu-worker</title>
 <style>
   :root { color-scheme: dark; }
   body { font: 15px/1.5 system-ui, sans-serif; margin: 0; background: #0d1117; color: #e6edf3; }
@@ -29,7 +36,9 @@
     <button id="bPost" class="alt" onclick="postResults()" disabled>4 · Post results to kanban card</button>
     <button id="bWork" class="alt" onclick="toggleWorker()" disabled>5 · Worker mode — poll job queue</button>
     <button id="bBge" class="alt" onclick="runBgeCompat()" disabled>6 · bge-m3 compat — bank-space vector test</button>
+    <button id="bPool" class="alt" onclick="togglePoolWorker()" disabled>7 · Pool worker — join embed pool (bge-m3)</button>
   </div>
+  <div class="card"><span id="workerState" class="dim">worker: off</span> <span id="poolState" class="dim"></span></div>
   <div class="card"><pre id="out">tap step 1 — results accumulate here
 </pre></div>
 </main>
@@ -68,6 +77,7 @@ async function runProbe() {
     document.getElementById('bEmb').disabled = false;
     document.getElementById('bWork').disabled = false;
     document.getElementById('bBge').disabled = false;
+    document.getElementById('bPool').disabled = false;
   } catch (e) { results.probe_error = String(e); log('✗ ' + e, 'bad'); }
   document.getElementById('bProbe').disabled = false;
 }
@@ -163,17 +173,40 @@ async function getPipe() {
 
 function cosine(a, b) { let d = 0; for (let i = 0; i < a.length; i++) d += a[i] * b[i]; return d; }
 
-async function toggleWorker() {
-  workerOn = !workerOn;
+const JOB_TTL_MS = 12 * 3600 * 1000;   // skip jobs staged >12h ago
+const WORKER_KEY = 'wgpu-worker-on';
+
+function workerState(s) {
+  document.getElementById('workerState').textContent = 'worker: ' + s;
+}
+
+async function toggleWorker(force) {
+  if (force !== undefined && force === workerOn) return;
+  workerOn = force !== undefined ? force : !workerOn;
+  try { localStorage.setItem(WORKER_KEY, workerOn ? '1' : '0'); } catch (e) {}
   document.getElementById('bWork').textContent = workerOn
     ? '5 · Worker mode ON — polling job.json (tap to stop)' : '5 · Worker mode — poll job queue';
+  workerState(workerOn ? 'on — polling job.json every 4s' : 'off');
   log(workerOn ? '  worker mode on — polling job.json every 4s' : '  worker mode off', 'dim');
+  let fails = 0;
   while (workerOn) {
     try {
-      if (!workerBusy) { workerBusy = true; await pollJob(); workerBusy = false; }
-    } catch (e) { log('✗ poll: ' + e, 'bad'); workerBusy = false; }
+      if (!workerBusy) { workerBusy = true; await pollJob(); workerBusy = false; fails = 0; }
+    } catch (e) {
+      workerBusy = false; fails++;
+      log('✗ poll: ' + e + (fails > 3 ? ' — backing off 30s' : ''), 'bad');
+      workerState('on — poll errors x' + fails);
+      if (fails > 3) { await new Promise(r => setTimeout(r, 30000)); fails = 0; }
+    }
     await new Promise(r => setTimeout(r, 4000));
   }
+  workerState('off');
+}
+
+function jobFresh(job) {
+  if (!job.created) return true;                    // legacy jobs: no timestamp
+  const age = Date.now() - new Date(job.created).getTime();
+  return isFinite(age) && age >= 0 && age < JOB_TTL_MS;
 }
 
 async function pollJob() {
@@ -181,6 +214,11 @@ async function pollJob() {
   if (!r.ok) return;
   const job = await r.json();
   if (!job.id || job.status !== 'pending' || doneJobs.has(job.id)) return;
+  if (!jobFresh(job)) {
+    doneJobs.add(job.id);
+    log('  job ' + job.id + ' is stale (>12h) — skipped', 'dim');
+    return;
+  }
   doneJobs.add(job.id);
   log('  picked up job ' + job.id + ' — ' + job.docs.length + ' docs vs query…');
   const pipe = await getPipe();
@@ -281,6 +319,113 @@ async function postResults() {
   }
   document.getElementById('bPost').disabled = false;
 }
+
+// ------------------------------------------------- pool worker (lane B)
+// Joins the mddb embed pool as an opportunistic worker: long-polls
+// /apps/embed-nest/v1/job (Caddy -> embed-nest-bridge on idc03), embeds
+// each text with bge-m3 cls-pooling (bank-compatible per the compat
+// test), posts vectors back. The pool only calls the bridge after its
+// fleet upstreams are slow, so the phone burns cycles only on slack.
+const POOL = '/apps/embed-nest';
+const POOL_KEY = 'wgpu-pool-on';
+let poolOn = false, bgePipe = null;
+const poolWorkerId = 'iphone-' + Math.random().toString(36).slice(2, 8);
+
+function poolState(s) {
+  document.getElementById('poolState').textContent = 'pool: ' + s;
+}
+
+async function getBgePipe() {
+  if (bgePipe) return bgePipe;
+  const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.6');
+  bgePipe = await pipeline('feature-extraction', 'Xenova/bge-m3',
+    { device: 'webgpu', dtype: 'q4' });
+  return bgePipe;
+}
+
+async function togglePoolWorker(force) {
+  if (force !== undefined && force === poolOn) return;
+  poolOn = force !== undefined ? force : !poolOn;
+  try { localStorage.setItem(POOL_KEY, poolOn ? '1' : '0'); } catch (e) {}
+  document.getElementById('bPool').textContent = poolOn
+    ? '7 · Pool worker ON — bge-m3 (tap to stop)' : '7 · Pool worker — join embed pool (bge-m3)';
+  poolState(poolOn ? 'on — claiming jobs as ' + poolWorkerId : 'off');
+  log(poolOn ? '  pool worker on — long-polling ' + POOL + '/v1/job'
+             : '  pool worker off', 'dim');
+  let fails = 0;
+  while (poolOn) {
+    try {
+      const r = await fetch(POOL + '/v1/job?model=bge-m3&w=' + poolWorkerId +
+                            '&wait=25', { cache: 'no-store' });
+      if (r.status === 204) { fails = 0; }
+      else if (r.ok) {
+        const job = await r.json();
+        fails = 0;
+        await runPoolJob(job);
+      } else {
+        throw new Error('claim http ' + r.status);
+      }
+    } catch (e) {
+      fails++;
+      log('✗ pool poll: ' + e + (fails > 3 ? ' — backing off 30s' : ''), 'bad');
+      poolState('on — poll errors x' + fails);
+      if (fails > 3) { await new Promise(r => setTimeout(r, 30000)); fails = 0; }
+    }
+    if (poolOn) await new Promise(r => setTimeout(r, 500));
+  }
+  poolState('off');
+}
+
+async function runPoolJob(job) {
+  const t0 = performance.now();
+  log('  pool job ' + job.job_id + ' — ' + job.texts.length +
+      ' texts, model ' + job.model, 'dim');
+  try {
+    const pipe = await getBgePipe();
+    const embeddings = [];
+    for (const text of job.texts) {
+      const out = await pipe(String(text).slice(0, 8000),
+        { pooling: 'cls', normalize: true });
+      embeddings.push(Array.from(out.data));
+    }
+    const ms = Math.round(performance.now() - t0);
+    const resp = await fetch(POOL + '/v1/result', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ job_id: job.job_id, worker: poolWorkerId,
+                             embeddings }),
+    });
+    log(resp.ok
+      ? '✓ pool job ' + job.job_id + ' — ' + job.texts.length +
+        ' embeddings in ' + ms + 'ms'
+      : '✗ pool result post failed: ' + resp.status,
+      resp.ok ? 'ok' : 'bad');
+    poolState('on — ' + poolWorkerId + ' — last job ' + ms + 'ms');
+  } catch (e) {
+    log('✗ pool job ' + job.job_id + ': ' + e, 'bad');
+    // tell the bridge so the waiter fails fast instead of riding the lease
+    fetch(POOL + '/v1/result', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ job_id: job.job_id, worker: poolWorkerId,
+                             error: String(e).slice(0, 400) }),
+    }).catch(() => {});
+    poolState('on — ' + poolWorkerId + ' — job error');
+  }
+}
+
+// Opportunistic-worker boot: ?worker=1 / ?pool=1 (or remembered toggles)
+// probe the GPU then start the loops — the home-screen PWA icon lands here.
+(async () => {
+  const q = new URLSearchParams(location.search);
+  let wantJob = q.has('worker'), wantPool = q.has('pool');
+  try {
+    wantJob = wantJob || localStorage.getItem(WORKER_KEY) === '1';
+    wantPool = wantPool || localStorage.getItem(POOL_KEY) === '1';
+  } catch (e) {}
+  await runProbe();
+  if (!adapter) return;
+  if (wantJob) toggleWorker(true);
+  if (wantPool) togglePoolWorker(true);
+})();
 </script>
 </body>
 </html>

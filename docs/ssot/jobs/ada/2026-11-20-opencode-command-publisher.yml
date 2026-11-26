@@ -1,0 +1,92 @@
+date: 2026-11-20
+title: "/opencode-command — narrow allowlisted publisher for the ada-code
+  command files (canonical chaba source, confirm+sha gates, atomic idc02
+  sync, hash verify)"
+domain: ada
+job: "card ada-opencode-command-publisher-20261108 (ADA-1224); scope
+  answer: narrow"
+host: idc02
+repo: chaba
+branch: dispatch/20261120-132007-canonicalize-the-opencode-ada- (committed,
+  NOT pushed — dispatcher merge path)
+
+summary: >
+  The /ada sweep native-menu block was added live 2026-11-08/09 and
+  silently lost in the ADA0186 live edit 2026-11-19 — the workspace
+  command file had no canonical source. This job makes it durable:
+  canonical at stacks/idc02/ada-code/commands/ada.md (menu-restored,
+  sha 077aaff3), a fixed-allowlist publisher module, a board-api
+  /opencode-command door (preview/validate/publish/sync/verify under
+  WP_LOCK), a Devin thin client, 24 unit tests, and a real-fixture
+  byte bench vs the manual shell baseline. No arbitrary paths, no
+  caller shell/git — publish commits ride board-api's commit worker
+  into kanban-commit safe-pull+push; sync is fixed-argv ssh with
+  tmp+mv atomicity and post-landing sha verify.
+
+live_state_verified:
+  workspace: "~/.local/share/ada-code/workspace/.opencode/commands/ada.md
+    — deployed 10,007B sha 29c878cc = pre-menu content"
+  drift: "ada.md.bak-ADA0186-20261119-152809 carries the Sweep Verdicts
+    native-question block (the only diff vs live) — canonical seeded
+    from it, sha 077aaff3"
+  bridge: "ada-code opencode.json loads ada_mcp.py from
+    ~/CascadeProjects/ada-bridge (ada-voice ff-only worktree) — the
+    workspace .opencode/ada_mcp.py copy is stale and unused"
+  ssh_note: "sync op uses fixed-argv ssh to deploy_host idc02 from the
+    board-api host (idc03); local mode auto-detects on idc02 — both
+    paths unit-tested, ssh argv mocked-tested"
+
+implemented:
+  - "stacks/idc02/ada-code/commands/ada.md — canonical command file
+    with the /ada sweep native-menu (Sweep Verdicts question) block"
+  - "scripts/board/opencode_command.py — COMMANDS allowlist, ops
+    preview/validate/publish/sync/verify, confirm+expect_sha gates,
+    required-markers validation, local+ssh atomic deploy, compact
+    receipts"
+  - "scripts/board/board-api.py — /opencode-command in
+    REMOTE_WRITE_PATHS (WP_LOCK), do_opencode_command maps
+    PublishError->UpstreamError and wires _queue_commit"
+  - "scripts/board/opencode-command.py — Devin thin client
+    (preview/validate/publish/sync/verify, --confirm gate, --via local)"
+  - "tests/board/test_opencode_command.py — 24 tests (validation,
+    gates, idempotency, atomicity, ssh argv shape, door mapping)"
+  - "scripts/board/opencode_command_bench.py +
+    docs/reports/opencode-command-bench-2026-11-20.{md,json} — real
+    fixture, both lanes: publish-update 8->5 calls, 11.9KB->2.3KB
+    response bytes (~74% tok-est); drift-repair 6->3 calls (~76%);
+    evidence equal"
+  - "docs/kb/opencode-command-publisher.md — runbook incl. activation
+    checklist + ada-voice MCP wrapper spec"
+  - "docs/kb/board-api-write-door.md — endpoint table row"
+
+not_done_gates:
+  - "ada-voice MCP wrapper (ada_command_publish tool) — follow-up card
+    ada-voice-ada-command-publish-mcp-tool-f-949f50 (backlog);
+    ada_mcp.py is canonical in tonezzz/ada-voice, not chaba"
+  - "/ada publish-command section in canonical ada.md — add after the
+    MCP wrapper lands (first real use of the door)"
+
+post_merge_verification:
+  date: 2026-11-23
+  merged: "auto-merged to origin/master 2026-11-23 11:12 (68e53950,
+    via dispatch/20261123-105931)"
+  endpoint_live: "POST /opencode-command on idc03 board-api answered a
+    real verify op — the service reload gate is cleared"
+  sync_gate: "verify via the live door AND direct sha256 on idc02:
+    deployed == canonical 077aaff3 (10,790B), menu block present —
+    the first-real-sync gate resolved as a verified no-op"
+  tests: "pytest tests/board/test_opencode_command.py — 24 passed
+    (re-run on merged master, idc02)"
+
+measurement:
+  bench: docs/reports/opencode-command-bench-2026-11-20.md
+  caveat: "no savings claimed without data — the 74-80% figures are
+    ingested-context bytes on the real fixture; authoring the candidate
+    (~10.8KB) is identical in both lanes and excluded"
+
+tests:
+  - "pytest tests/board/test_opencode_command.py — 24 passed"
+  - "board-api.py --selftest — ok"
+  - "tests/board suite — 166 passed, 1 pre-existing fixture failure
+    (test_control_pane_projection expects a live card in doing; it is
+    done — unrelated drift)"

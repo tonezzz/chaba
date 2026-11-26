@@ -1,0 +1,160 @@
+--- a/build/server/runtime.js	2026-11-26 15:33:51.136104417 +0700
++++ b/build/server/runtime.js	2026-11-26 15:34:44.608248114 +0700
+@@ -1503,6 +1503,8 @@
+         sessionLead.registerRoutes(app, options.express, options.agentToolRuntime.authorizeRequest);
+     },
+     express,
++    // Resolved lazily: the control service is created later in this module.
++    get controlService() { return openChamberControlService; },
+ });
+ const tunnelWiringRuntime = createTunnelWiringRuntime({
+     crypto,
+--- a/build/server/lib/server-frame/bootstrap-runtime.js	2026-11-26 15:33:51.920135848 +0700
++++ b/build/server/lib/server-frame/bootstrap-runtime.js	2026-11-26 15:35:08.391201572 +0700
+@@ -96,6 +96,7 @@
+             getCachedZenModels,
+             desktopUpdater,
+             getOpenCodeCompatibility,
++            controlService: dependencies.controlService,
+         });
+         registerExternalBridgeRoutes?.(app);
+         return {
+--- a/build/server/lib/openchamber-control/service.js	2026-11-26 15:33:52.705167320 +0700
++++ b/build/server/lib/openchamber-control/service.js	2026-11-26 15:35:58.039191958 +0700
+@@ -31,6 +31,8 @@
+ const WAIT_POLL_INTERVAL_MS = 500;
+ const CONTROL_ACTIONS = new Set(OPENCHAMBER_ALL_ACTIONS);
+ const PREFERENCE_BY_RANK = { 2: 'favorite', 1: 'recent' };
++const MODELS_STATUS_PROVIDER_ID = 'litellm';
++const MODELS_STATUS_PROBE_TIMEOUT_MS = 10_000;
+ const SCHEDULE_TASK_ID_ACTIONS = new Set([
+     'schedule.update',
+     'schedule.run',
+@@ -103,6 +105,24 @@
+         schedule.timezone = timezone;
+     return schedule;
+ };
++// Live liveness of one gateway model: a minimal completion answers whether
++// the upstream provider served the model, without spending a real generation.
++const probeGatewayModel = async ({ url, apiKey, modelID, timeoutMs = MODELS_STATUS_PROBE_TIMEOUT_MS }) => {
++    const base = String(url ?? '').replace(/\/+$/, '');
++    try {
++        const response = await fetch(`${base}/chat/completions`, {
++            method: 'POST',
++            headers: { authorization: `Bearer ${apiKey ?? ''}`, 'content-type': 'application/json' },
++            body: JSON.stringify({ model: modelID, messages: [{ role: 'user', content: 'ok' }], max_tokens: 1 }),
++            signal: AbortSignal.timeout(timeoutMs),
++        });
++        if (response.ok) return { status: 'active', detail: null };
++        const body = await response.json().catch(() => ({}));
++        return { status: 'unavailable', detail: String((body && body.error && body.error.message) || body?.error || response.status) };
++    } catch (error) {
++        return { status: 'error', detail: error instanceof Error ? error.message : String(error) };
++    }
++};
+ const assertWorktreeIsolation = (input, targetSessionId) => {
+     for (const field of ['runInWorktree', 'cleanupWorktree']) {
+         if (input[field] !== undefined && !isBoolean(input[field])) {
+@@ -436,6 +456,50 @@
+             next: offset + limit < matching.length ? offset + limit : null,
+         };
+     };
++    const modelsStatus = async (input, contextDirectory) => {
++        const client = await getClient(asNonEmptyString(input.directory) || asNonEmptyString(contextDirectory) || '');
++        const [catalog, providerList] = await Promise.all([
++            client.model.list(),
++            client.provider.list(),
++        ]);
++        const providerNames = new Map(providerList.data.map((provider) => [provider.id, provider.name]));
++        const providerFilter = asNonEmptyString(input.provider)?.toLowerCase();
++        const gateway = {
++            url: (asNonEmptyString(process.env.LITELLM_URL) ?? 'http://127.0.0.1:4000/v1').replace(/\/+$/, ''),
++            apiKey: asNonEmptyString(process.env.LITELLM_KEY) ?? '',
++        };
++        const models = [];
++        const seen = new Set();
++        for (const model of catalog.data) {
++            const providerID = String(model.providerID ?? '');
++            const modelID = String(model.id ?? '');
++            const modelName = String(model.name ?? modelID);
++            const providerName = String(providerNames.get(model.providerID) ?? '').toLowerCase();
++            const providerMatches = !providerFilter || providerID.toLowerCase() === providerFilter || providerName === providerFilter;
++            if (!providerMatches) continue;
++            const key = `${providerID}/${modelID}`;
++            if (seen.has(key)) continue;
++            seen.add(key);
++            const probe = providerID.toLowerCase() === MODELS_STATUS_PROVIDER_ID
++                ? await probeGatewayModel({ ...gateway, modelID })
++                : { status: String(model.status ?? 'active') };
++            models.push({
++                providerID,
++                modelID,
++                name: modelName,
++                status: probe.status,
++                detail: probe.detail ?? null,
++                catalogStatus: String(model.status ?? 'active'),
++            });
++        }
++        const summary = {
++            total: models.length,
++            unavailable: models.filter((model) => model.status === 'unavailable').length,
++            error: models.filter((model) => model.status === 'error').length,
++            active: models.filter((model) => model.status === 'active').length,
++        };
++        return { models, summary, provider: providerFilter };
++    };
+     const activeSessions = async (client) => {
+         const statuses = await client.session.active();
+         if (!isRecord(statuses)) {
+@@ -1112,6 +1176,8 @@
+                 return models();
+             if (action === 'models.search')
+                 return searchModels(input, contextDirectory);
++            if (action === 'models.status')
++                return await modelsStatus(input, contextDirectory);
+             if (action === 'schedule.status')
+                 return scheduledTaskService.status();
+             if (action.startsWith('schedule.')) {
+--- a/build/server/lib/openchamber-control/actions.js	2026-11-26 15:33:53.520199995 +0700
++++ b/build/server/lib/openchamber-control/actions.js	2026-11-26 15:34:24.017422628 +0700
+@@ -2,6 +2,7 @@
+     { action: 'projects.list', title: 'List session destinations', description: 'Projects and Chats; use an id as projectId for session.create. No parameters' },
+     { action: 'models.list', title: 'Show model preferences', description: 'Default, favorite and recent models; no parameters' },
+     { action: 'models.search', title: 'Search models', description: 'The model catalog, favorites and recent models first; optional query, provider, all, limit, offset' },
++    { action: 'models.status', title: 'Model status', description: 'Live availability of models through the LiteLLM gateway: which answer and which are unavailable; optional provider. An unavailable model is an upstream outage or quota exhaustion, not a catalog state' },
+     { action: 'session.list', title: 'List sessions', description: 'Newest top-level sessions here; each has inWork (in the sidebar\'s In work) and doneSuggested (its last turn looks finished). Filters inWork, busy (running now), mine (sessions you created with ownWork, with their status), query (title words); inWork, busy and mine span every project unless scoped and return all matches. Optional limit, all, children, withStatus (status as in session.status)' },
+     { action: 'session.archive', title: 'Archive a session', description: 'Archive sessionId, a session you created with ownWork, once you used its result. Restoring one is the user\'s' },
+     { action: 'session.markDone', title: 'Mark a session done', description: 'Take sessionId (default: this session) out of In work, as the Done button does. Only on the user\'s word; a later message puts it back' },
+--- a/build/server/lib/self-update/openchamber-routes.js	2026-11-26 15:33:54.335232670 +0700
++++ b/build/server/lib/self-update/openchamber-routes.js	2026-11-26 15:34:24.018422668 +0700
+@@ -41,7 +41,7 @@
+     '',
+ ].join('\r\n');
+ export const registerOpenChamberRoutes = (app, dependencies) => {
+-    const { fs, os, path, process, server, cliEntry = webPackagePaths.cliEntry, openchamberDataDir, modelsDevApiUrl, modelsMetadataCacheTtl, readSettingsFromDiskMigrated: _readSettingsFromDiskMigrated, fetchFreeZenModels, getCachedZenModels, desktopUpdater, getOpenCodeCompatibility, } = dependencies;
++    const { fs, os, path, process, server, cliEntry = webPackagePaths.cliEntry, openchamberDataDir, modelsDevApiUrl, modelsMetadataCacheTtl, readSettingsFromDiskMigrated: _readSettingsFromDiskMigrated, fetchFreeZenModels, getCachedZenModels, desktopUpdater, getOpenCodeCompatibility, controlService, } = dependencies;
+     let desktopRestartError = null;
+     const readOpenCodeShortfall = async (version) => {
+         const { fetchRequiredOpenCodeVersion } = await import('../package-manager.js');
+@@ -475,6 +475,21 @@
+             res.status(statusCode).json({ error: 'Failed to retrieve model metadata' });
+         }
+     });
++    app.get('/api/openchamber/models/status', async (req, res) => {
++        if (!controlService) {
++            return res.status(503).json({ error: 'Model status is not available on this server' });
++        }
++        try {
++            const input = (req.query && typeof req.query === 'object' && !Array.isArray(req.query)) ? req.query : {};
++            const data = await controlService.execute('models.status', input, '');
++            return res.json(data);
++        }
++        catch (error) {
++            console.warn('Failed to read model status via server:', error);
++            const statusCode = hasErrorName(error) && (error.name === 'TimeoutError' || error.name === 'AbortError') ? 504 : 502;
++            return res.status(statusCode).json({ error: 'Failed to retrieve model status' });
++        }
++    });
+     app.get('/api/zen/models', async (_req, res) => {
+         try {
+             const models = await fetchFreeZenModels();

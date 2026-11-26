@@ -1,0 +1,70 @@
+diff --git a/scripts/scenario-live.py b/scripts/scenario-live.py
+--- a/scripts/scenario-live.py
++++ b/scripts/scenario-live.py
+@@ -177,9 +177,14 @@
+   - vcast_display: {action: drop}    ws closes and stays down; asserts
+       the registry marks the screen offline promptly (no stale room).
+   - vcast_display: {action: reattach}  reconnects; lastCast replays.
+-  - vcast_display: {action: pub, url: ...}  driver-side nav cast into the
+-      display's room — while down it exercises the relay's
+-      remember-and-replay-on-reconnect path (delivered:0, lastCast set).
++  - vcast_display: {action: pub, url: ..., type: nav|play|image,
++      pane: N}  driver-side cast into the display's room — while down it
++      exercises the relay's remember-and-replay-on-reconnect path
++      (delivered:0, lastCast set). type/pane cover every pane type.
++  - vcast_display: {action: report, state: ..., detail: ...}  emit a
++      state like the real page's sendState — e.g. pane-fail from the
++      honest-fail overlay — so a scenario can prove the relay surfaces
++      the failure states a real display emits.
+   - vcast_display: {action: release}   unclaims the name + revokes the
+       issued ada key; also auto-run in cleanup if a display is held.
+   The fake display applies play/image/nav/stop/layout msgs and
+@@ -914,14 +919,30 @@
+         return (f"reattached as screen {self.screen}, "
+                 f"replayed {len(self.replays)} msg(s)")
+ 
+-    async def pub(self, url: str) -> str:
++    async def pub(self, url: str, mtype: str = "nav",
++                  pane: int | None = None) -> str:
+         """Driver-side cast into the display's room — while the display is
+         down this exercises the relay's remember-and-replay-on-reconnect
+-        path (delivered:0 but lastCast stored)."""
++        path (delivered:0 but lastCast stored). `mtype` covers every pane
++        type: nav (iframe), play (video), image (img), plus stop/layout.
++        `pane` targets a sub-pane like the real tools do."""
++        msg = {"type": mtype, "url": url}
++        if pane is not None:
++            msg["pane"] = pane
+         out = await asyncio.to_thread(
+             self._post, "/pub",
+-            {"screen": self.screen, "msg": {"type": "nav", "url": url}})
+-        return f"pub {url} → delivered={out.get('delivered')}"
++            {"screen": self.screen, "msg": msg})
++        return f"pub {mtype} {url} → delivered={out.get('delivered')}"
++
++    async def report(self, state: str, detail: str = "") -> str:
++        """Emit a state exactly like the real display page's sendState —
++        e.g. `pane-fail` from the honest-fail overlay when a pane cannot
++        render. Lets a scenario prove the relay + /displays surface the
++        failure state a real display would emit."""
++        self.state, self.detail = state, detail
++        await self._send({"type": "state", "state": state,
++                          "detail": detail})
++        return f"reported state={state} detail={detail!r}"
+ 
+     async def release(self) -> str:
+         name = self.name
+@@ -959,7 +980,12 @@
+     if action == "reattach":
+         return disp, await disp.reattach()
+     if action == "pub":
+-        return disp, await disp.pub(str(spec["url"]))
++        return disp, await disp.pub(str(spec["url"]),
++                                    str(spec.get("type") or "nav"),
++                                    spec.get("pane"))
++    if action == "report":
++        return disp, await disp.report(str(spec["state"]),
++                                       str(spec.get("detail") or ""))
+     if action == "release":
+         return None, await disp.release()
+     raise RuntimeError(f"unknown vcast_display action {action!r}")

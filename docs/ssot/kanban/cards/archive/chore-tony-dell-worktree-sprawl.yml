@@ -1,0 +1,215 @@
+id: chore-tony-dell-worktree-sprawl
+title: tony-dell chaba worktree/branch sprawl cleanup
+column: done
+updated: 2026-11-23 13:34
+brief: CascadeProjects on tony-dell has ~24 linked worktrees and ~75 branches ahead of master (ssot.dev-system.assessment
+  flags this high-severity). Triage each worktree against its owning kanban card, then remove verified-safe ones.
+priority: medium
+tags:
+- chore
+- tony-dell
+- git-hygiene
+spec: 'Context: 2026-11-13 home-dir cleanup on tony-dell reclaimed ~42G. During it, merged worktrees chaba-nest-health-kk
+  and dispatch-wt-embed-free-first were removed; card-wt-knb-0065 was kept because it holds uncommitted work (reports/card-runner/lifecycle-test.md
+  + .gitignore change not in master — preserve or commit first).
+
+
+  Remaining linked worktrees on ~/CascadeProjects/chaba (branch, last commit, dirty count):
+
+  - feat/ada-envelope-transitions 11-06 clean; fix/s0-jobs-target-idc02 11-08 dirty=1; fix/lesson-translation-cache
+  11-07 clean; feat/devin-memory-pointers 11-05 clean; feat/ada-access-auto-enroll 11-08 dirty=8; fix/knb-1257-request-field
+  11-12 dirty=1; feat/ada-opencode-dashboard-tab 11-06 clean; fix/ops-1255-requalification 11-12 dirty=1; detached
+  chaba-pack-manifest 11-07; ops/private-news-lane 11-06 clean; feat/r7-gpu-cap 11-08 clean; fix/mddb-reindex-retries
+  11-09 clean; feat/bge-rerank-server 11-08 clean; fix/lessons-shadow-retry 11-08 clean; fix/bge-rerank-unit 11-08
+  clean; fix/education-shadow-timeout 11-08 clean; fix/metno-rain-units 11-12 dirty=1; dispatch/devin-token-efficiency
+  11-09 dirty=1; feat/devin-ada-card-ops-efficiency 11-09 clean; detached chaba-wt-memguard-verify 11-06; consult-bench
+  11-12 dirty=1; feat/card-run-lifecycle 11-12 clean (THIS IS THE ACTIVE DEVIN WORKSPACE - keep).
+
+
+  Merged into master (worktree+branch safe to remove): card/knb-0065*, nest-health-kk*, dispatch/mddb-embed-free-first*
+  (*worktrees already removed; branches still exist).
+
+
+  Task: for each remaining worktree, look up the owning kanban card / PR status, check whether the branch is merged
+  or superseded, inspect dirty files for uncommitted work product, then produce a keep/remove/archive table. Remove
+  only verified-safe worktrees (git worktree remove; --force only after confirming dirty content is regenerable).
+  Anything ambiguous gets a card comm or request, not a silent delete. Also sweep stale LOCAL branches that are
+  merged into master (git branch --merged).
+
+
+  Constraints: tony-dell ~/CascadeProjects/chaba is role=exec - no commits there; card mutations via board-api.
+  Do not touch ~/CascadeProjects/chaba (exec checkout) or chaba-tony-dell (readonly mirror).'
+ref: OPS-0078
+comms:
+- at: 2026-11-13 11:58
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-13 12:09
+  from: devin
+  text: re-spawned from report page
+- at: 2026-11-13 12:10
+  from: mn01
+  text: claimed
+- at: 2026-11-13 12:10
+  from: chaba
+  text: started devin-task-20261113-051009-context-2026-11-13-home-dir-cl on mn01 (dispatch)
+- at: 2026-11-13 12:10
+  from: devin
+  text: '[dispatch] auditing 24 linked worktrees on tony-dell: dirty state, merge status vs master, card/PR mapping.
+    Removals only after verification.'
+- at: 2026-11-13 12:18
+  from: devin
+  text: 'SWEEP DONE. tony-dell ~/CascadeProjects/chaba: 24 linked worktrees -> 2 kept. REMOVED 21 (all branch refs/commits
+    preserved by git). KEPT: chaba-ops1255-review (card doing, review draft referenced in comms) + feat/card-run-lifecycle
+    dispatch-wt (active workspace). BRANCHES DELETED: 5 ancestor-merged (card/knb-0065, nest-health-kk, dispatch/mddb-embed-free-first,
+    ops-embed-relocate, ops-mn01-embed-relocate) + 4 cherry-verified content-merged (fix/mddb-reindex-retries, dispatch/devin-token-efficie'
+- at: 2026-11-13 12:20
+  from: mn01
+  text: 'finished (ok): exit=0 6-11-13-home-dir-cl.md`, and the summary posted to card `chore-tony-dell-worktree-sprawl`.
+    | devin-task-20261113-'
+- at: 2026-11-13 12:21
+  from: chaba
+  text: 'session-end checkpoint 0378b73a: 2 leftover file(s) committed'
+- at: 2026-11-13 12:21
+  from: chaba
+  text: banked 61 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-13 12:21
+  from: chaba
+  text: pushed dispatch/20261113-051009-context-2026-11-13-home-dir-cl to origin
+- at: 2026-11-13 12:21
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-13 12:21
+  from: chaba
+  text: auto-merged 9a2947a1 (dispatch/20261113-051009-context-2026-11-13-home-dir-cl) → origin/master
+- at: 2026-11-13 12:21
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261113-051009-context-2026-11-13-home-dir-cl,
+    branch dispatch/20261113-051009-context-2026-11-13-home-dir-cl'
+- at: 2026-11-13 12:23
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-14 14:13
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:23
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:39
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:42
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 19:59
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (mn01) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
+    or teach a runner the capability'
+- at: 2026-11-17 21:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 02:10
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (mn01) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
+    or teach a runner the capability'
+- at: 2026-11-18 08:11
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (mn01) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
+    or teach a runner the capability'
+- at: 2026-11-18 14:16
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (mn01) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
+    or teach a runner the capability'
+- at: 2026-11-18 17:29
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:15
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:17
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:21
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:07
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:02
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:04
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 04:36
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (mn01) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
+    or teach a runner the capability'
+- at: 2026-11-21 17:46
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 21:49
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (mn01) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
+    or teach a runner the capability'
+- at: 2026-11-23 13:34
+  from: tony
+  text: archived (1d in done, verified)
+action:
+  type: dispatch
+  lane: free_lane
+  status: done
+  model: litellm/gemini-3.5-flash-lite
+  runner: mn01
+  result: 'exit=0 6-11-13-home-dir-cl.md`, and the summary posted to card `chore-tony-dell-worktree-sprawl`. | devin-task-20261113-051009-context-2026-11-13-home-dir-cl.service:
+    Consumed 25.577s CPU time over 8min 11.083s wall clock time, 600.1M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-13 12:23
+  note: verified — evidence checks green, closing itself

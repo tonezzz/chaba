@@ -15,6 +15,9 @@ verify: >-
 secrets:
   - "~/.config/secrets/jack-ide.env — OPENCODE_SERVER_PASSWORD + LITELLM_KEY (600)"
   - "~/.config/secrets/jack-enroll.env — JACK_ADMIN_TOKEN + JACK_UPSTREAM_PASSWORD (600)"
+  - "~/.config/secrets/jack-git.env — JACK_GIT_TOKEN fine-grained PAT scoped
+     to pilot repos (Contents+PR RW); host-side only, never container-mounted"
+  - "~/.config/jack-ide/repos.json — jack-task import allowlist (see lane/repos.example.json)"
   - "~/.local/share/jack-ide/opencode-home/.local/share/opencode/auth.json —
      LiteLLM key in the container auth store (600). NOT in opencode.json:
      /config echoes resolved apiKey to the browser (leak found+fixed
@@ -28,9 +31,14 @@ requires:
   - "svc:litellm gateway 100.102.134.91:4000 — model calls from opencode"
 state:
   - "~/.local/share/jack-ide/state — state.json (sha256 codes/sessions) + audit.jsonl"
-  - "~/.local/share/jack-ide/workspace — Jack scratch git workspace (RW)"
+  - "~/.local/share/jack-ide/workspace — shared /workspace: repos/, worktrees/,
+     shared/, incoming/, outputs/ (incl. outputs/lane/ jack-task state)"
+  - "~/.local/share/jack-ide/tony-workspace — Tony supervised-test drop dir,
+     mounted at /workspace/tony-workspace"
   - "~/.local/share/jack-ide/opencode-home — disposable opencode config/session data"
   - "~/.config/jack-ide/opencode.json — IDE config (litellm provider, no MCP)"
+  - "~/.config/jack-ide/repos.json — repo import allowlist for jack-task"
+  - "~/.local/bin/jack-task — operator promotion lane CLI (lane/jack-task.py)"
   - "tailscaled serve config — https:8448 listener (persistent in tailscaled state)"
 ports:
   - "127.0.0.1:8377 — jack-enroll gateway (loopback only)"

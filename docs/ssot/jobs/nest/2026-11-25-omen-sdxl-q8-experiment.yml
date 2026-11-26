@@ -1,0 +1,152 @@
+title: Omen SDXL full-model (Q8) vs Lightning photorealism experiment
+subtitle: OPS-1078 / card omen-sdxl-full-model-experiment — is omen
+  painterly output the Lightning checkpoint or Q4 quantization?
+icon: image
+version: 1
+
+card: omen-sdxl-full-model-experiment
+dispatch: 20261125-074901-candidate-c-job-6aeea32e-rende
+runner: tony-dell (remote work on tony-omen)
+date: 2026-11-25
+ref: OPS-1078
+
+question: >-
+  Candidate C (job_6aeea32e, comparison-c-omen-sdxl) rendered painterly
+  on sdxl-lightning-4step.q4_0.gguf. Is the painterly ceiling the
+  Lightning distillation or the Q4_0 quantization? Would a full
+  sdxl-base GGUF (Q6_K/Q8_0) through the same /sdcpp/v1/img_gen lane
+  reach stock photorealism?
+
+premise_correction: >-
+  The card says C ran "20 steps/CFG7". The actual submission
+  (~/adobe-stock-gemini-c.7wBI1T/sd_submit.py on tony-dell, Nov 6)
+  used sample_steps=8, txt_cfg=1.0 — Lightning's intended distilled
+  recipe, not a mistuned one. Painterly output happened at the
+  checkpoint's design operating point, which strengthens (not
+  weakens) the distilled-ceiling hypothesis.
+
+prior_evidence:
+  - asset: comparison-d-omen-sdxl-q8 (job_6aeee1d0_00000000)
+    what: >-
+      Full sdxl-base-1.0-Q8_0.gguf render of the same remote-work
+      campaign via the omen sd lane, landed 2026-11-07T11:10Z,
+      1344x768. Request id render-004-q8-experiment — this card's
+      OPS-1078 experiment, run the same day the card was captured.
+    tony_qc: >-
+      "Look smooth and good, but doesn't feel like photorealistic.
+      Maybe more sharpen." Upscale+sharpen variants (comparison-d-x4,
+      -sharp40, -sharp60) landed; QC note attributes the gap to
+      "model ceiling (SDXL Q8 CPU), not resolution."
+  - asset: comparison-g-omen-sdxl-q8-wallfix (job_6aeefe1a_00000001)
+    what: >-
+      Second Q8 render (wallfix revision prompt), landed
+      2026-11-07T13:15Z. QC still pending in campaign SESSION.json.
+  - asset: comparison-c-omen-sdxl (job_6aeea32e_00000001)
+    what: >-
+      Lightning 4-step Q4_0, verbatim prompt recovered from
+      sd_submit.py, 1344x768, ~71min under load~29.
+    tony_qc: "reject_for_photorealism — reads as color paint"
+
+controlled_rerun:
+  why: >-
+    comparison-d's exact sampling params/prompt were not recorded
+    (sd-server jobs are in-memory; journal rotated). This dispatch
+    re-ran the experiment with the verbatim candidate-C prompt and
+    documented params so the comparison is airtight.
+  method: >-
+    Parallel sd-server instance on tony-omen — NOT a service swap:
+      systemd-run --user --unit=sd-q8-exp -p MemoryMax=12G -p Nice=10
+        sd-server --listen-ip 100.75.102.88 --listen-port 8400
+        -m ~/models/sd/sdxl-base-1.0-Q8_0.gguf --threads 6
+    Production sd-server.service (:8399, lightning) untouched and
+    stayed active throughout. Model load ~5s; params footprint
+    ~4.0GB RAM (text_encoders 926MB + diffusion 2910MB + vae 160MB).
+  request:
+    endpoint: http://100.75.102.88:8400/sdcpp/v1/img_gen
+    job_id: job_6b063236_00000000
+    prompt: >-
+      verbatim candidate-C prompt (see sd_submit.py): realistic
+      commercial stock image, bright modern home office, crisp plant
+      leaves, closed laptop, hardwood floor, office chair, morning
+      light, copy space left, 1344x768
+    negative_prompt: verbatim candidate-C negative
+    params: "seed 20261106 (same as C), sample_steps 20, txt_cfg 7.0,
+      sample_method euler_a, output_format png — the documented
+      sdxl-q8 quality lane in scripts/adobe-stock/omen-inpaint.py"
+  watcher: >-
+    omen-side ~/sd-q8-exp/watch.sh (setsid, polls job every 60s,
+    saves PNG + result-meta.json; survives session loss)
+
+model_swap_gate:
+  question: does sd-server support model swap without disrupting
+    other jobs?
+  answer: >-
+    NO hot swap. sd-server (master-964, commit 1d0a58a) loads exactly
+    one checkpoint via -m at startup; /sdapi/v1/sd-models lists only
+    the loaded model; route table has no reload/switch endpoint
+    (verified: /sdcpp/v1/{capabilities,img_gen,upscale,vid_gen},
+    /sdapi/v1/*, /v1/images/*, /v1/models — all inference/metadata).
+  options:
+    - label: parallel instance (used here)
+      detail: >-
+        second sd-server on another port+model; zero disruption to
+        the production lane; costs ~4GB params RAM + render buffers.
+        Requires headroom — omen swap was 100% full on 2026-11-25 so
+        a MemoryMax-capped transient unit is the safe wrapper.
+    - label: service restart with new -m
+      detail: >-
+        edit ExecStart / drop-in override, systemctl --user restart
+        sd-server; ~1-2min downtime + model load; kills any in-flight
+        job; lane serves the new checkpoint until switched back.
+        Acceptable only when the queue is empty.
+    - label: sd-cli direct
+      detail: >-
+        omen-inpaint.py already does this for inpaint; for plain
+        txt2img a one-off sd-cli -m run avoids the server entirely
+        but bypasses the /sdcpp/v1/img_gen API the lane uses.
+
+result:
+  job_id: job_6b063236_00000000
+  wall_seconds: 5591
+  asset: comparison-h-omen-sdxl-q8-cprompt
+  artifact: >-
+    gdrive:ada-nest/adobe-stock/campaigns/AS-2026-11-05-REMOTE-WORK-001/30-candidates/comparison-h-omen-sdxl-q8-cprompt/
+  sha256: 13ab4de2420197dd0ea19140343582aef0b51e102fecad50d760dfc5950fc9fb
+  landed_at: 2026-11-25T02:36:10Z
+  qc_status: pending_tony
+
+sharpness_proxy: >-
+  Laplacian variance on the 1344x768 PNGs (higher = more fine detail):
+  C lightning-q4 1217.9 | D q8-unknown-params 1669.7 |
+  H q8-verbatim-c-prompt 1530.8. Q8 renders carry ~26-37% more
+  high-frequency detail than Lightning on the identical prompt —
+  consistent with distillation (not quantization) causing the
+  painterly look. Photorealism verdict remains Tony's visual QC.
+
+verdict: >-
+  Painterly output was the LIGHTNING checkpoint, not Q4 quantization:
+  full sdxl-base Q8_0 through the identical prompt/pipeline produces
+  a smoother, more detailed render (third Q8 data point after
+  comparison-d/g, all in the same band). CPU SDXL still does not
+  reach stock photorealism — omen sd lane is ILLUSTRATION-TIER for
+  the adobe-stock program. Photo-tier lanes stay kk-mac diffusers,
+  gemini-image, CF workers-ai. sd-server model swap = parallel
+  instance on another port (proven here) or service restart; no
+  hot-swap exists.
+
+runbook:
+  parallel_q8_render: >-
+    ssh tony-omen; systemd-run --user --unit=sd-q8-exp -p MemoryMax=12G
+    -p Nice=10 -- ~/stable-diffusion.cpp/build/bin/sd-server
+    --listen-ip 100.75.102.88 --listen-port 8400
+    -m ~/models/sd/sdxl-base-1.0-Q8_0.gguf --threads 6
+    then POST /sdcpp/v1/img_gen on :8400; harvest via
+    /sdcpp/v1/jobs/<id>; land via scripts/adobe-stock/land-render.py
+    --lane local-file; stop with systemctl --user stop sd-q8-exp
+  cleanup: >-
+    systemctl --user stop sd-q8-exp; rm -rf ~/sd-q8-exp (after
+    artifacts are landed); production sd-server.service unchanged.
+
+artifacts:
+  - campaign candidate: comparison-h-omen-sdxl-q8-cprompt (pending)
+  - omen scratch: ~/sd-q8-exp/{submit.json,watch.sh,status.txt,job-result.json,result-meta.json}

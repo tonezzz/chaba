@@ -1,0 +1,217 @@
+id: knowledge-capture-harvester-guards-phase-c-d-64d812ef
+title: Knowledge capture Phase C/D - harvester, router, measurement guards
+column: done
+updated: 2026-11-26 20:33
+brief: 'Follow-on to DEV-0038 (closed). Phase C: idempotent capture-router + harvester/index-refresh jobs. Phase
+  D: measure repeat-ask/miss rate, stale-pointer incidents, time-to-find; tune matrix + promotion thresholds in
+  SSOT. Spec source: docs/ssot/ssot.knowledge-capture.yml (Automation Implementation Notes, Phase C/D).'
+priority: medium
+tags:
+- ssot
+- knowledge-capture
+- automation
+- phase-c
+- phase-d
+spec: 'Goal: implement remaining automation phases from docs/ssot/ssot.knowledge-capture.yml (~lines 256-259). Phase
+  C - idempotent capture-router and harvester/index-refresh jobs writing ONLY to approved sinks (SSOT, board-api,
+  /lesson, docs/kb, evidence surfaces, OpenChamber notes) with audit metadata and stable dedupe keys; no Ada personal-memory
+  (ada-*) writes; respect single-writer/served-checkout and checkout-role rules and the board-api mutation door.
+  Phase D - measure repeat-ask/miss rate, stale-pointer incidents, and time-to-find; use results to tune the routing
+  matrix and promotion thresholds in SSOT. Constraints: pointer-first captures (refs + as_of + refresh recipe, not
+  copied SSOT bodies or volatile snapshots); verify by surface (producer AND consumer); fail loud/bounded evidence,
+  bounded retries, advisory components degrade (per DEV-0253 error-handling standard for any unattended lane). Done-condition:
+  jobs run idempotently with auditable dedupe, metrics reported, SSOT tuned. Out of scope / already decided: focus
+  parity (mcp_focus/logs) was raised on DEV-0038 and answered ''card-only'' by Tony 2026-11-21 — do not re-open
+  unless Tony asks. Phase B+ hooks and ansible playbook already landed; do not duplicate.'
+ref: OPS-0016
+comms:
+- at: 2026-11-23 07:01
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-23 07:02
+  from: devin
+  text: 'routing edited: tags by devin: normalize tags created via card --tag (raw string) into proper list'
+- at: 2026-11-23 08:40
+  from: devin
+  text: '[2026-11-23 opencode] Phase C design DRAFT (pending Tony approval of 4 choices). Grounded in ssot.knowledge-capture.yml:
+    7-row Capture Matrix, pointer-note template (required fields + dedupe rule), Guardrails, and deterministic precedent
+    (tony-ideas harvester + report-distill: no LLM, upsert by stable key, registry last_run, managed blocks preserve
+    curation). SHAPE: two deterministic scripts under scripts/chaba/. (1) capture-router.py classifies a candidate
+    against the 7-row matrix and emits {so'
+- at: 2026-11-23 09:41
+  from: devin
+  text: '[2026-11-23 opencode] Tony APPROVED the Phase C design (all 4 recommendations): (1) posture = read-only
+    propose — router + harvester emit proposals/report + append-only ledger, NO sink writes; --apply stays a separate
+    later gate. (2) sources = card comms + focus-inbox + dispatch-outcome artifacts (tony-ideas precedent). (3)
+    dedupe = sink-native stable keys (SSOT key / card id / topic slug / note domain / artifact id), upsert-in-place,
+    never fork. (4) cadence = on-demand CLI only for the first sl'
+- at: 2026-11-23 09:47
+  from: devin
+  text: '[2026-11-23 opencode] Phase C READ-ONLY slice implemented + landed (424e97f5c6). Added scripts/chaba/capture-router.py
+    (7-row matrix keyword scorer, sink-native dedupe keys, audit metadata, zero writes) and scripts/chaba/harvester.py
+    (3 approved sources: card-comms/focus-inbox/dispatch-outcome; proposal report + append-only ledger; no --apply,
+    no timer). Deterministic/no-LLM, DEV-0253 posture. Verification: py_compile OK; router self-test 7/7, harvester
+    self-test 4/4; full scan 2906 proposals (2'
+- at: 2026-11-23 10:59
+  from: devin
+  text: '[2026-11-23 opencode] Precision fix landed (778903e435): card-comms candidates routing to kanban now use
+    the parent card id from source_id (<slug>#comms[i]) as the native dedupe key and force action=link (upsert in
+    place, never fork) instead of a hashed key + new-card create. Regression check added to capture-router self-test
+    (8/8). Fresh-outdir re-review: card-comm kanban creates 61 -> 0; all 61 now link to their parent card (e.g.
+    ada-kk-cms-traffic#comms[4] -> link kanban:ada-kk-cms-traffic). '
+- at: 2026-11-23 11:29
+  from: devin
+  text: '[2026-11-23 opencode] Canonical evidence refreshed. Pre-fix ledger + 2 reports archived to ~/.local/share/chaba/capture/pre-fix-20261123/
+    (kept for audit, no longer cited). Regenerated fresh from clean worktree at master tip 104e40d2d1: report capture-proposal-20261123T112751.md
+    + capture-ledger.yml in ~/.local/share/chaba/capture/. Review: 2921 proposals (2201 new, 720 within-run dups);
+    0 kanban creates from existing card comms (50 card-comm kanban proposals all action=link, all parent-card-sha'
+- at: 2026-11-23 11:50
+  from: devin
+  text: '[2026-11-23 opencode] Phase D baseline landed (92fc6f92ae). SCOPE (approved via decision): baseline from
+    existing durable sources only — measure repeat-ask rate from ssot.repeat-asks.yml; label miss rate, stale-pointer
+    incidents and time-to-find as unmeasurable where no durable source exists, each with a proposal for where to
+    add one; a proxy may be reported only as a proxy, never as measured incidents. Tune the matrix from measured
+    precision evidence; --apply stays a separate gated decision. RE'
+- at: 2026-11-23 13:25
+  from: devin
+  text: '[2026-11-23 opencode] Miss-rate signal instrumented (2fc668b306). Chosen as the smallest reversible of
+    the three missing signals. New durable source: `misses:` block in docs/ssot/ssot.repeat-asks.yml (instrumented
+    2026-11-23, empty at instrumentation so 0 so far is not evidence of no misses). New read-only-preserving writer
+    scripts/chaba/miss-add.py: textual comment-preserving append, dedupe by (topic, at, location, should-have-been),
+    atomic replace, newest-first; self-test 7/7. capture-metrics.'
+- at: 2026-11-23 13:42
+  from: devin
+  text: '[2026-11-23 opencode] Phase D COMPLETE — all four signals measured. Final commit 1426cfed36 (rebased from
+    62e207abf8). Time-to-find: info_find.py already carried per-source elapsed_ms in its session cache; added total_elapsed_ms,
+    elapsed_by_source, source_sequence and resolved_ref to the run audit, plus a read-only aggregator in capture-metrics.py.
+    Stale-pointer incidents: new local pointer-stale-add.py (dedupe by pointer_ref+canonical_ref+found_at, --init
+    schema, 7/7 self-test) writing pointer-'
+- at: 2026-11-23 13:42
+  from: devin
+  text: closed by devin
+- at: 2026-11-23 14:09
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:20
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:17
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:06
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:07
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:23
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:32
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:40
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:06
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:47
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:01
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:02
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:33
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+action:
+  status: done

@@ -1,142 +1,105 @@
 id: timer-alert-idc02-camwall-render-check
-title: Timer camwall-render-check on idc02 failing
+title: Timer camwall-render-check on idc02 disabled
 column: done
-updated: 2026-11-19 20:03
+updated: 2026-11-26 20:31
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-09 06:41) of `camwall-render-check.service` on `idc02` result=exit-code — investigate journal:
-  `journalctl --user -u camwall-render-check.service` on the host. See CMS `timer-timeline-idc02`.'
-ref: MED-1242
+note: '`camwall-render-check.timer` on `idc02` is disabled but expected active (audit census / critical list). Deliberate?
+  If not: `systemctl --user enable --now camwall-render-check.timer`. See CMS `timer-timeline`.'
+ref: MED-1351
 comms:
-- at: 2026-11-09 07:00
+- at: 2026-11-25 08:44
   from: devin
   text: card captured via board-api
-- at: 2026-11-09 07:10
-  from: devin
-  text: '[still suspicious] Last run (11-09 06:41) of `camwall-render-check.service` on `idc02` result=exit-code
-    — investigate journal: `journalctl --user -u camwall-render-check.service` on the host. See CMS `timer-timeline-idc02`.'
-- at: 2026-11-09 07:21
-  from: devin
-  text: '[still suspicious] Last run (11-09 06:41) of `camwall-render-check.service` on `idc02` result=exit-code
-    — investigate journal: `journalctl --user -u camwall-render-check.service` on the host. See CMS `timer-timeline-idc02`.'
-- at: 2026-11-09 13:36
-  from: devin
-  text: '[auto-resolved] last run result=success at 11-09 13:12 — closing (timer-sentinel KNB-0577)'
-- at: 2026-11-09 13:36
-  from: tony
-  text: closed by tony
-- at: 2026-11-09 13:40
-  from: devin
-  text: '[auto-resolved] last run result=success at 11-09 13:12 — closing (timer-sentinel KNB-0577)'
-- at: 2026-11-09 13:40
-  from: tony
-  text: closed by tony
-- at: 2026-11-09 13:51
-  from: devin
-  text: '[auto-resolved] last run result=success at 11-09 13:12 — closing (timer-sentinel KNB-0577)'
-- at: 2026-11-09 13:51
-  from: tony
-  text: closed by tony
-- at: 2026-11-14 14:08
+- at: 2026-11-25 08:45
   from: chaba
-  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-14 14:08
+- at: 2026-11-25 09:04
+  from: devin
+  text: '[still suspicious] `camwall-render-check.timer` on `idc02` is disabled but expected active (audit census
+    / critical list). Deliberate? If not: `systemctl --user enable --now camwall-render-check.timer`. See CMS `timer-timeline`.'
+- at: 2026-11-25 14:16
+  from: tony
+  text: '2026-11-25 14:2x (+07): TRIAGE: policy decision, not a job bug. Unit is disabled by design (census entry
+    has no explicit expected_state, so sentinel treats absence as ''active''). MED-1351 was already auto-resolved/closed
+    once on 11-25 and reopened on the disabled condition. Need Tony to decide: either add expected_state: inactive
+    to the census, or enable the timer.'
+- at: 2026-11-25 14:50
+  from: tony
+  text: '2026-11-25 14:52 (+07): CONFIRMED INTENTIONAL OFF. `camwall-render-check.timer` on idc02 was stopped+disabled
+    2026-11-25 08:36 by camwall-retire-to-wiki Phase 2 (ada-snapshot-only) — live data plane is cam-wall-pull-vps
+    + camwall-edge :8380 feeding /apps/camwall/data/*. Census updated with `expected_state: inactive` + rationale;
+    sentinel patched to honour it. Do NOT re-enable.'
+- at: 2026-11-25 14:50
+  from: devin
+  text: '[auto-resolved] camwall-render-check.timer intentionally inactive per audit census (expected_state: inactive)
+    — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-25 14:50
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 16:49
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-15 09:55
-  from: tony
-  text: moved done -> backlog
-- at: 2026-11-15 09:55
-  from: devin
-  text: '[reopened — condition recurred] Last run (11-15 09:46) of `camwall-render-check.service` on `idc02` result=exit-code
-    — investigate journal: `journalctl --user -u camwall-render-check.service` on the host. See CMS `timer-timeline-idc02`.'
-- at: 2026-11-15 10:09
-  from: devin
-  text: '[still suspicious] Last run (11-15 09:46) of `camwall-render-check.service` on `idc02` result=exit-code
-    — investigate journal: `journalctl --user -u camwall-render-check.service` on the host. See CMS `timer-timeline-idc02`.'
-- at: 2026-11-15 13:20
-  from: backlog-spec-enrich
-  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
-- at: 2026-11-16 10:26
-  from: devin
-  text: '[auto-resolved] last run result=success at 11-16 10:16 — closing (timer-sentinel KNB-0577)'
-- at: 2026-11-16 10:36
-  from: devin
-  text: '[auto-resolved] last run result=success at 11-16 10:16 — closing (timer-sentinel KNB-0577)'
-- at: 2026-11-16 10:45
-  from: devin
-  text: '[auto-resolved] last run result=success at 11-16 10:16 — closing (timer-sentinel KNB-0577)'
-- at: 2026-11-16 10:45
-  from: tony
-  text: closed by tony
-- at: 2026-11-17 18:07
-  from: chaba
-  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-17 18:16
-  from: chaba
-  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-17 18:37
+- at: 2026-11-25 16:51
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-17 18:39
-  from: chaba
-  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-17 21:06
-  from: chaba
-  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-18 17:17
-  from: chaba
-  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-18 18:05
-  from: chaba
-  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-18 18:06
+- at: 2026-11-25 16:57
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-18 21:17
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-18 22:02
+- at: 2026-11-25 17:26
   from: chaba
-  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-18 22:06
-  from: chaba
-  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-19 17:01
+- at: 2026-11-25 17:38
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-19 18:53
+- at: 2026-11-26 03:48
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-19 19:08
+- at: 2026-11-26 03:49
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-19 20:03
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:31
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
-spec: Investigate the failure of the user systemd service `camwall-render-check.service` on host `idc02` which exited
-  with an error code on the last run. Access the host to inspect the logs using `journalctl --user -u camwall-render-check.service`
-  and review the CMS entry `timer-timeline-idc02`. Fix the underlying issue causing the service failure and ensure
-  subsequent runs complete successfully.

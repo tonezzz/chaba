@@ -1,0 +1,83 @@
+id: proposal-only
+version: 1
+status: enabled
+unattended: false
+description: Synthetic proposal-only evaluation; no routing or permission authority.
+task_classes: [shadow_replay]
+stages: [S0]
+target_host:
+  required: true
+  allowed: []
+model:
+  tier: cheap
+  default: ollama/qwen2.5:7b-instruct
+  allowed: [ollama/qwen2.5:7b-instruct]
+providers: [ollama]
+agent:
+  mode: primary
+tools:
+  read: false
+  grep: false
+  glob: false
+  list: false
+  todoread: false
+  todowrite: false
+  bash: false
+  write: false
+  edit: false
+  patch: false
+  task: false
+  webfetch: false
+permission:
+  '*': deny
+  bash: deny
+  edit: deny
+  external_directory: deny
+  patch: deny
+  question: deny
+  read: deny
+  task: deny
+  webfetch: deny
+  write: deny
+mcp:
+  allowed: []
+  denied:
+    - mcp_debug
+    - mcp_health
+    - mcp_get_file
+    - mcp_read_ssot
+    - mcp_search_ssot
+    - mcp_ssot_query
+    - mcp_ssot_get
+    - mcp_mddb_doc
+    - mcp_raw
+    - mcp_put_file
+    - mcp_remediate
+    - mcp_ssot_append
+allowed_paths:
+  - evals/shadow/task/
+artifact:
+  mode: message
+  format: json
+  dirs:
+    - evals/shadow/task/
+  schema: evals/opencode-lane/profiles/proposal-only/fixture/task.yaml#contract.required_fields
+verifier:
+  type: held_out_py
+  ref: evals/opencode-lane/profiles/proposal-only/fixture/verify.py
+escalation:
+  on_fail: hold
+  allowed_on_fail: [hold, manual]
+  max_retries: 0
+rollback:
+  kind: none
+rails: >-
+  This profile creates a review proposal only. Do not create an executable
+  job envelope or choose an execution lane. Do not output task_class,
+  target_host, allowed_paths, mcp_allowlist, execution_allowed, or
+  human_gate_required; JEV and the deterministic policy compiler own those
+  fields. You have no repository or SSOT context, so mark matching work as
+  not_evaluated and do not invent matches. Use concise but useful viewpoints
+  and options. No tools, MCP, external data, or execution are available.
+isolation:
+  project_context: scratch

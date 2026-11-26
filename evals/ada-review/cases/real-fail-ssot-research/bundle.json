@@ -1,0 +1,80 @@
+{
+ "bundle_schema": "ada-review-bundle/1",
+ "case": {
+  "case_id": "real-fail-ssot-research",
+  "card_id": "opencode-task-agent-profiles",
+  "job_id": "p1-ssot-research-idc02",
+  "snapshot_at": "2026-10-27T13:20:53.956397+00:00",
+  "source_commit": null
+ },
+ "request": {
+  "objective": "What is the standard write path for kanban card mutations from a non-writer host, and which mechanism converges card files that arrive via dispatch worktree merges? Cite the governing docs.",
+  "task_class": "read_only",
+  "target_host": "idc02",
+  "acceptance_criteria": [],
+  "prompt": "What is the standard write path for kanban card mutations from a non-writer host, and which mechanism converges card files that arrive via dispatch worktree merges? Cite the governing docs.\n\nYou are the ssot-research profile agent. Answer ONLY from the repo's SSOT (docs/ssot/, AGENTS.md, docs/kb/) and SSOT MCP tools — never from memory. Every factual claim must cite a file path (with a line range when possible). If the sources do not contain the answer, say so in the answer field instead of guessing. You may not write, run shell commands, or read anything under ~/.config/secrets. Emit ONLY the JSON artifact as your final message.\n\n## Lane rails (enforced — violations fail the job)\n- Job p1-ssot-research-idc02 / card opencode-task-agent-profiles on idc02 — stay inside declared scope; denied tool calls and scope violations are recorded.\n- The artifact lands at `evals/opencode-lane/out/p1-ssot-research-answer.json` (schema `evals/opencode-lane/profiles/ssot-research/fixture/task.yaml #contract.required_fields`) — emit it exactly per contract.\n- Do not read evals/opencode-lane/profiles/*/fixture/verify.py or evals/shadow/fixtures — grading is held out.\n- No commits, pushes, merges, worktree ops, service changes, package installs, or deletions.\n- When the artifact content is complete, output it and stop."
+ },
+ "result": {
+  "artifacts": [
+   {
+    "path": "evals/ada-review/cases/real-fail-ssot-research/artifact.json",
+    "sha256": "778a5db370ea25d545fed34c089233c8f500789cdb05b8c37105576e2f7f1855",
+    "bytes": 1038,
+    "present": true,
+    "content": "{\n \"answer\": \"The standard write path for kanban card mutations from a non-writer host is through the board-api (`POST /apps/board-api/{card,comment,request,respond,action,pipeline}` on idc03), rather than direct file edits and pushes. This is governed by the write-path split rule documented in AGENTS.md (line 24) and further detailed in `docs/kb/board-api-write-door.md` (lines 1-14).\\n\\nCard files that arrive via dispatch worktree merges are converged using the `card-union` git merge driver (`scripts/board/merge-card-yaml.py`), which is bound to `docs/ssot/kanban/cards/*.yml` (as recorded in AGENTS.md line 24 and `docs/ssot/jobs/kanban/2026-10-23-card-union-merge-driver.yml` lines 26-33). Concurrent card writes union-merge (comms are unioned and deduped, and scalars are won by the newer `updated` timestamp) instead of causing traditional conflicts.\",\n \"citations\": [\n  \"AGENTS.md (line 24)\",\n  \"docs/kb/board-api-write-door.md (lines 1-14)\",\n  \"docs/ssot/jobs/kanban/2026-10-23-card-union-merge-driver.yml (lines 26-33)\"\n ]\n}"
+   }
+  ],
+  "source": {
+   "changed_files": [],
+   "diff_ref": null,
+   "commit": null
+  },
+  "tests": {
+   "exit_code": 0,
+   "verifier": {
+    "type": "held_out_py",
+    "ref": "evals/opencode-lane/profiles/ssot-research/fixture/verify.py",
+    "verdict": "fail",
+    "checks": {
+     "required fields": false,
+     "read_only true": false,
+     "answer non-empty": true,
+     "citations >= 2": true,
+     "citations are {path,note} objects": false,
+     "every cited path exists": false,
+     "no bare/outside citations": true,
+     "bad citations": false,
+     "sources under docs/": false,
+     "consulted paths exist": false,
+     "question echoed": false
+    }
+   }
+  },
+  "tool_audit": {
+   "tool_calls": 6,
+   "tools": {
+    "glob": 1,
+    "grep": 3,
+    "read": 2
+   },
+   "denials": 0,
+   "write_attempts": 0,
+   "mutating_commands": 0,
+   "verifier_peeks": 0,
+   "scope_violations": 0
+  },
+  "claims": {
+   "claimed_status": "fail",
+   "summary_md": null
+  }
+ },
+ "excluded": [
+  "events.jsonl raw trace (only a summarized tool-call audit is included)",
+  "stderr.log",
+  "opencode.json rendered config",
+  "verifier source code (verify.py / held-out labels stay held out)",
+  "expected labels / seeded-defect metadata (evals/ada-review only)",
+  "secrets, env files, API keys",
+  "git worktree contents / uncommitted diff for message-mode runs"
+ ]
+}

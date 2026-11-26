@@ -1,0 +1,37 @@
+id: ada-line-relay
+host: con01
+description: >-
+  Warm-standby copy of the idc03-only LINE webhook relay (:8912), installed as
+  an INERT file (ada-line-relay.service.standby) under
+  ~/.config/systemd/user/standby/ with the canonical service name masked to
+  /dev/null. Pairs with the con01 ada-ha-tony standby; caddy-edge already has
+  /webhook/line and /relay-img/* routes pointing at local 127.0.0.1:8912.
+  Normal state: zero traffic — DNS never points at con01.
+verify: >-
+  Before activation: test -L ~/.config/systemd/user/ada-line-relay.service &&
+  [ "$(readlink ~/.config/systemd/user/ada-line-relay.service)" = /dev/null ] &&
+  test -f ~/.config/systemd/user/standby/ada-line-relay.service.standby
+  After activation: ss -ltnp | grep ':8912' and a signed POST to
+  https://api.surf-thailand.com/webhook/line returns 200 (not 502).
+secrets:
+  - "~/.config/secrets/line-bot.env — LINE channel secret/token, restored from
+     idc03's daily age-encrypted secrets-backup tarball; never in git"
+  - "~/.config/secrets/tony-ha/backend.env — ADA_API_KEY / ADA_WS_URL"
+requires:
+  - "tool:python3 + venv at ~/CascadeProjects/ada-voice/.venv — NOT PRESENT on
+     con01 yet; provisioning is an approved failover step"
+  - "tcp:127.0.0.1:8002 — con01 ada-ha-tony standby must be healthy first"
+  - "caddy-edge /webhook/line -> 127.0.0.1:8912 route (Caddyfile present;
+     caddy-edge.service was inactive on con01 as of 2026-11-26)"
+state:
+  - "~/.config/systemd/user/standby/ada-line-relay.service.standby — inert source"
+  - "~/.config/systemd/user/ada-line-relay.service -> /dev/null — mask"
+ports:
+  - "127.0.0.1:8912 — LINE webhook relay (inactive until promoted)"
+restore: >-
+  Restore the two env files from the latest secrets-backup tarball, provision
+  the venv, start ada-ha-tony first, then unmask + enable --now this unit.
+  Full commands and rollback: docs/kb/con01-ada-lane-warm-standby.md
+related_cards: [con01-ada-lane-warm-standby, idc04-contabo-vps8-provision]
+status: deployed-masked
+deployed: 2026-11-26

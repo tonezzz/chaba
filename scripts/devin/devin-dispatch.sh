@@ -52,6 +52,115 @@ PERMISSION_MODE="${DISPATCH_PERMISSION_MODE:-smart}"
 # `devin -p --model <id>` (e.g. swe-2-medium; see `devin models list`).
 MODEL="${DISPATCH_MODEL:-}"
 
+# Executor/model contract (devin-executor-model-routing, DEV-0958): the
+# devin CLI accepts only ids listed by `devin models list` — a litellm/*
+# alias or stale pin dies inside the unit at launch ('Unknown model'),
+# burning a claim and minutes of wall clock (the 2026-10-28 tony-macbook
+# Cline/Nest dispatch died on litellm/or-claude-fable-5.1 pre-inference).
+# _model_preflight validates BEFORE systemd-run so an unsupported string
+# fails the claim fast, with the reason. DEVIN_MODEL_PREFLIGHT=0 is the
+# ops escape hatch. Memoized per process (_MODEL_OK).
+_MODEL_OK=""
+_model_preflight() { # $1 = model id; rc 0 accept / 2 reject / 3 unverifiable
+  local model="$1"
+  [[ -z $model || $_MODEL_OK == "$model" ]] && return 0
+  MODEL="$model" DEVIN_BIN="$DEVIN_BIN" python3 - <<'PY'
+import json, os, re, subprocess, sys
+model = os.environ.get("MODEL", "").strip()
+binpath = os.environ.get("DEVIN_BIN") or "devin"
+
+def _run(args):
+    try:
+        return subprocess.run([binpath] + args, capture_output=True,
+                              text=True, timeout=90)
+    except Exception:
+        return None
+
+def _accepted_from_json(text):
+    """`devin models list --format json` -> (accepted ids, uid->tier)."""
+    try:
+        d = json.loads(text)
+    except Exception:
+        return None
+    fams = d.get("families") if isinstance(d, dict) else None
+    if not isinstance(fams, list):
+        return None
+    ok, tiers = set(), {}
+    for f in fams:
+        if not isinstance(f, dict):
+            continue
+        slug = str(f.get("slug") or "").strip()
+        if slug:
+            ok.add(slug)
+        for al in f.get("aliases") or []:
+            al = str(al).strip()
+            if al:
+                ok.add(al)
+        for v in f.get("variants") or []:
+            if not isinstance(v, dict):
+                continue
+            uid = str(v.get("model_uid") or "").strip()
+            if uid:
+                ok.add(uid)
+                tiers[uid] = str(v.get("cost_tier") or "")
+    return ok, tiers
+
+def _accepted_from_text(text):
+    """Text-table fallback for CLIs without --format json: family
+    slugs from 'Name (slug)' headers, 'aliases:' lines, and the uid
+    column of variant rows."""
+    ok = set()
+    for line in text.splitlines():
+        m = re.match(r"^\S.*\(([^)\s]+)\)\s*$", line)
+        if m:
+            ok.add(m.group(1))
+            continue
+        m = re.match(r"^\s+aliases?:\s*(.+?)\s*$", line)
+        if m:
+            ok.update(x.strip() for x in m.group(1).split(",")
+                      if x.strip())
+            continue
+        m = re.match(r"^\s{2,}([A-Za-z0-9][A-Za-z0-9._-]*)\s{2,}\S", line)
+        if m:
+            ok.add(m.group(1))
+    return ok, {}
+
+parsed = None
+r = _run(["models", "list", "--format", "json"])
+if r is not None and r.returncode == 0 and r.stdout.strip():
+    parsed = _accepted_from_json(r.stdout)
+if parsed is None:
+    r = _run(["models", "list"])
+    if r is None or r.returncode != 0 or not r.stdout.strip():
+        sys.stderr.write(
+            "devin-dispatch: cannot verify model %r — `%s models list` "
+            "failed; refusing before systemd-run (DEVIN_MODEL_PREFLIGHT=0 "
+            "overrides)\n" % (model, binpath))
+        sys.exit(3)
+    accepted, tiers = _accepted_from_text(r.stdout)
+else:
+    accepted, tiers = parsed
+if model in accepted:
+    tier = tiers.get(model, "")
+    if tier and tier != "Free":
+        sys.stderr.write(
+            "devin-dispatch: note — %s is a billable devin model "
+            "(cost_tier=%s); lane routing never auto-maps paid routes, "
+            "so an explicit pin is the budget-approval path\n"
+            % (model, tier))
+    sys.exit(0)
+sys.stderr.write(
+    "devin-dispatch: model %r is not accepted by the devin CLI — "
+    "`devin models list` has no such id (litellm/* aliases belong to "
+    "the opencode/proxy executor). Refusing before systemd-run; fix "
+    "action.model or the lane table.\n" % model)
+sys.exit(2)
+PY
+  local rc=$?
+  [[ $rc -eq 0 ]] && _MODEL_OK="$model"
+  return "$rc"
+}
+
 # Fallback whitelist — canonical table is $DISPATCH_DIR/repos.conf
 # (name path default_branch). Keep both in sync.
 declare -A REPOS REPO_DEFAULT_BRANCH
@@ -69,13 +178,11 @@ _load_repos() {
     REPOS=(
       [chaba]="$HOME/CascadeProjects/chaba"
       [ada-voice]="$HOME/CascadeProjects/ada-voice"
-      # legacy alias — cards still naming the pre-rename repo resolve here
-      [ada-pi]="$HOME/CascadeProjects/ada-voice"
       [sunsynk-card]="$HOME/CascadeProjects/sunsynk-power-flow-card"
       [mddb-fork]="$HOME/CascadeProjects/mddb-fork"
     )
     REPO_DEFAULT_BRANCH=(
-      [chaba]="master" [ada-voice]="main" [ada-pi]="main"
+      [chaba]="master" [ada-voice]="main"
       [sunsynk-card]="main" [mddb-fork]="main"
     )
   fi
@@ -89,7 +196,8 @@ _slug() { tr '[:upper:]' '[:lower:]' <<<"$1" | tr -cs 'a-z0-9' '-' | sed 's/^-//
 mddb_job() { # id status summary question
   local id="$1" st="$2" summ="${3:-}" q="${4:-}"
   ID="$id" ST="$st" SUMM="$summ" Q="$q" HOSTN="$(hostname)" python3 - <<'PY' \
-    | curl -sf -m 15 -X POST -H "Content-Type: application/json" -d @- \
+    | curl -sf -m 30 --retry 2 --retry-delay 2 -X POST \
+      -H "Content-Type: application/json" -d @- \
       "${MDDB_URL:-http://100.102.134.91:11023/v1}/add" >/dev/null 2>&1
 import json, os
 from datetime import datetime, timezone
@@ -155,6 +263,13 @@ PY
 
 _devin_run() { # unit worktree prompt_file extra-args...
   local unit="$1" wt="$2" prompt="$3"; shift 3
+  # Model preflight BEFORE systemd-run (devin-executor-model-routing):
+  # an id `devin models list` doesn't know dies inside the unit at
+  # launch — refuse the claim fast instead. DEVIN_MODEL_PREFLIGHT=0
+  # is the ops escape hatch.
+  if [[ -n ${MODEL:-} && ${DEVIN_MODEL_PREFLIGHT:-1} != 0 ]]; then
+    _model_preflight "$MODEL" || exit $?
+  fi
   # No positional PATH arg: --print mode rejects it; --working-directory
   # already sets the session workspace.
   # The unit runs under --collect: when it finishes, systemd unloads it and
@@ -164,6 +279,10 @@ _devin_run() { # unit worktree prompt_file extra-args...
   # DISPATCH_UNIT_PROPS: extra systemd-run properties, e.g.
   #   "--property=CPUWeight=30 --property=IOWeight=30" to deprioritize
   #   sessions on an interactive host (keeps the desktop responsive).
+  # systemd expands ${VAR} in ExecStart itself — ${PIPESTATUS[0]} was
+  # swallowed here ("Invalid environment variable name ... PIPESTATUS[0]")
+  # so the real pipeline status was lost. Use pipefail + $? instead
+  # (probe-verified on idc02 2026-11-21: a failing pipeline yields rc=7).
   # shellcheck disable=SC2086
   systemd-run --user --unit="$unit" --working-directory="$wt" --collect \
     ${DISPATCH_UNIT_PROPS:-} \
@@ -171,9 +290,24 @@ _devin_run() { # unit worktree prompt_file extra-args...
     --setenv=DEVIN_BIN="$DEVIN_BIN" --setenv=PERMISSION_MODE="$PERMISSION_MODE" \
     ${MODEL:+--setenv=DEVIN_MODEL="$MODEL"} \
     --setenv=PROMPT="$prompt" --setenv=TASK_DIR="$(dirname "$prompt")" \
-    /bin/bash -c 'rc=0; "$DEVIN_BIN" -p --permission-mode "$PERMISSION_MODE" \
-      ${DEVIN_MODEL:+--model "$DEVIN_MODEL"} \
-      --respect-workspace-trust false --prompt-file "$PROMPT" "$@" || rc=$?; \
+    ${DISPATCH_RETRY_MAX:+--setenv=DISPATCH_RETRY_MAX="$DISPATCH_RETRY_MAX"} \
+    ${DISPATCH_RETRY_SLEEP:+--setenv=DISPATCH_RETRY_SLEEP="$DISPATCH_RETRY_SLEEP"} \
+    /bin/bash -c 'set -o pipefail; attempt=1; max="${DISPATCH_RETRY_MAX:-3}"; \
+      while :; do \
+        rc=0; \
+        "$DEVIN_BIN" -p --permission-mode "$PERMISSION_MODE" \
+          ${DEVIN_MODEL:+--model "$DEVIN_MODEL"} \
+          --respect-workspace-trust false --prompt-file "$PROMPT" "$@" \
+          2>&1 | tee "$TASK_DIR/run.$attempt.log"; \
+        rc=$?; \
+        [ "$rc" -eq 0 ] && break; \
+        if [ "$attempt" -ge "$max" ] || \
+           ! grep -qiE "rate.?limit|retryable\" *: *true|errorKind\" *: *\"unavailable\"" \
+             "$TASK_DIR/run.$attempt.log" 2>/dev/null; then break; fi; \
+        attempt=$((attempt+1)); \
+        echo "devin-dispatch: transient provider error — retry $attempt/$max in ${DISPATCH_RETRY_SLEEP:-45}s" >&2; \
+        sleep "${DISPATCH_RETRY_SLEEP:-45}"; \
+      done; \
       echo "$rc" > "$TASK_DIR/exit_code"; exit "$rc"' _ "$@"
 }
 
@@ -181,6 +315,11 @@ cmd_start() {
   local repo="${1:?repo required}"; shift
   local task="$*"
   [[ -n $task ]] || { echo "usage: devin-dispatch start <repo> \"<task>\"" >&2; exit 2; }
+  # Preflight before the worktree exists — a rejected model must not
+  # leave a stray dispatch-wt-*/dispatch/* pair behind.
+  if [[ -n ${MODEL:-} && ${DEVIN_MODEL_PREFLIGHT:-1} != 0 ]]; then
+    _model_preflight "$MODEL" || exit $?
+  fi
   local root="${REPOS[$repo]:-}"
   [[ -n $root && -d $root ]] || { echo "unknown repo '$repo' (allowed: ${!REPOS[*]})" >&2; exit 1; }
   # Canonical base: origin/<default_branch>, never the checkout's current

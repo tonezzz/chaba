@@ -146,6 +146,22 @@ if [ "${CHABA_PRECOMMIT_TESTS:-1}" != "0" ]; then
     fi
 fi
 
+# --- Runner-tooling pin gate (OPS-1326) ----------------------------------
+# Shared with pre-merge-commit via scripts/board/tooling_pin_gate.py: a
+# pinned source may only change in the same commit that bumps its sha256
+# in the manifest. Compares STAGED blobs (git show :path) so partial
+# staging can't slip a worktree-only pin through; only pairs THIS commit
+# touches are checked (inherited master breakage must not block).
+# Opt out: CHABA_PRECOMMIT_PINS=0 (or git commit --no-verify).
+if [ "${CHABA_PRECOMMIT_PINS:-1}" != "0" ] \
+   && git diff --cached --name-only --diff-filter=ACM | grep -q '^scripts/'; then
+    if ! python3 scripts/board/tooling_pin_gate.py; then
+        echo "❌ runner-tooling pin check failed — see above." >&2
+        echo "   Bypass: git commit --no-verify (or CHABA_PRECOMMIT_PINS=0)." >&2
+        exit 1
+    fi
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -250,11 +266,10 @@ if [ -f scripts/ssot-optimize.mjs ] && [ -f scripts/ssot-optimize-gate.mjs ]; th
     WARNINGS_FILE="reports/SSOT_OPTIMIZATION_WARNINGS.json"
     # Snapshot the baseline file's state before the optimizer rewrites it, so
     # we can restore it afterwards and keep the working tree clean.
-    warnings_existed=0; warnings_tracked=0; warnings_dirty=0; warnings_staged=0
+    warnings_existed=0; warnings_tracked=0; warnings_staged=0
     [ -f "$WARNINGS_FILE" ] && warnings_existed=1
     if git cat-file -e "HEAD:$WARNINGS_FILE" 2>/dev/null; then
         warnings_tracked=1
-        git diff --quiet HEAD -- "$WARNINGS_FILE" 2>/dev/null || warnings_dirty=1
     fi
     git diff --cached --quiet -- "$WARNINGS_FILE" 2>/dev/null || warnings_staged=1
 
@@ -271,8 +286,15 @@ if [ -f scripts/ssot-optimize.mjs ] && [ -f scripts/ssot-optimize-gate.mjs ]; th
     if [ "$warnings_staged" -eq 1 ]; then
         # Baseline update is part of this commit — align worktree to the index.
         git show ":$WARNINGS_FILE" > "$WARNINGS_FILE" 2>/dev/null || true
-    elif [ "$warnings_tracked" -eq 1 ] && [ "$warnings_dirty" -eq 0 ]; then
-        # Untouched baseline: restore committed copy (optimizer rewrote it).
+    elif [ "$warnings_tracked" -eq 1 ]; then
+        # ALWAYS restore the committed baseline unless it was explicitly staged.
+        # The optimizer above runs with --staged, so its rewrite is a PARTIAL
+        # baseline (often empty). Previously this restore was skipped when the
+        # worktree copy was already dirty — an auto-committer that left full-run
+        # output in the worktree therefore committed the partial rewrite, and
+        # CI saw every warning as new debt (2026-11-24, commit cff69ee46f).
+        # An intentional refresh must be a full `node scripts/ssot-optimize.mjs`
+        # run followed by `git add reports/SSOT_OPTIMIZATION_WARNINGS.json`.
         git show "HEAD:$WARNINGS_FILE" > "$WARNINGS_FILE" 2>/dev/null || true
     elif [ "$warnings_tracked" -eq 0 ] && [ "$warnings_existed" -eq 0 ]; then
         # No baseline on this branch and no prior file — drop the scratch output.

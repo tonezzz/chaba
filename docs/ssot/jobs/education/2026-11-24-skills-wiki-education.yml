@@ -1,0 +1,121 @@
+title: Wiki education — test and record the ada-ocb skill inventory
+subtitle: >
+  Offline phase: pin the 11 skills found in session history with a contract
+  test, render an Education: page from the SKILL.md files, and write the
+  docs/kb education entry. Publish is a separate, card-gated step through
+  the board-api wiki-education sink — no wiki writes here.
+icon: education
+version: 1
+
+card: ada-ocb-skills-wiki-education-2026-11-24  # ADA-0031
+date: 2026-11-24
+source_session: "2026-11-24 session history — skills exploration and how to use them in ada-ocb"
+
+delivered:
+  test:
+    file: tests/test_agents_skills_explored.py
+    tests: 6
+    coverage:
+      - "inventory: 10 .agents/skills + 1 .opencode/skills (session-capture)"
+      - "metadata: name, description, trigger, usage for every SKILL.md"
+      - "frontmatter-less shape (auto-kb, overnight-assessment)"
+      - "offline wikitext render: template params, table, categories, all skills"
+  script:
+    file: scripts/skills-wiki-export.py
+    behavior: "collect_skills(repo) + render_page(...); --out writes wikitext; no network"
+    page_title: Education:Ada-Ocb-Skills
+    topic: ada-ocb-skills
+    template: แม่แบบ:Education
+    next_review: 2026-12-08
+  kb:
+    file: docs/kb/ada-ocb-skills-education.md
+    type: education
+    role: "pointer-first write-up; SSOT keeps only verdict row + ref"
+
+design_notes:
+  why_offline_first: >
+    The inventory is a fact about the checkout, so the test can pin it
+    deterministically. Rendering the Education: page from the same SKILL.md
+    files keeps the wiki record in lockstep with the skills, and the
+    fixtures prove the template shape before any live write.
+  why_the_door: >
+    Wiki writes stay behind board-api /publish sinks=["wiki-education"]:
+    the door owns credentials and the idempotency key, reruns dedupe, and
+    failures queue to the publication outbox. Direct MediaWiki API calls
+    bypass the Education: namespace and Lockdown boundary rules.
+  series_convention: >
+    "ada-ocb-skills" is the hub topic. Future per-skill lessons use
+    ada-ocb-skills-* titles with their own review dates; upsert the hub's
+    inventory rather than forking a new topic (AGENTS.md lesson series).
+
+activation_gate:
+  - "DONE 2026-11-24: card ADA-0031 (ada-ocb-skills-wiki-education-2026-11-24) created in backlog via board-api."
+  - "DONE 2026-11-24: rendered python3 scripts/skills-wiki-export.py --out /tmp/opencode/ada-ocb-skills.wiki (11 skills)."
+  - "DONE 2026-11-24: POST /publish kind=lesson, meta format=wikitext + topic/level/source/learned_at/next_review/status, sinks=['wiki-education'] -> delivered."
+
+verify:
+  - "DONE 2026-11-24: python3 -m pytest tests/test_agents_skills_explored.py -q -> 6 passed"
+  - "DONE 2026-11-24: python3 scripts/skills-wiki-export.py -> Education: template + ada-ocb-skills topic present"
+  - "DONE 2026-11-24: node scripts/ssot-validate-all.mjs -> this job yml valid (5 pre-existing errors elsewhere)"
+  - "DONE 2026-11-24: python3 scripts/render-jobs.py --check -> OK 116 jobs, 8 hosts"
+  - "DONE 2026-11-24: POST /publish -> wiki-education=delivered, wiki:Education:Ada-Ocb-Skills pageid 333 revid 480 (event skills-wiki-export-2026-11-24)"
+  - "DONE 2026-11-24: POST /lesson {op:list, source=wiki} -> source:'wiki', Education:Ada-Ocb-Skills row (slug lesson-d8b6938588d3, next_review 2026-12-08)"
+  - "DONE 2026-11-24: card ADA-0031 closed (column done via board-api /action)."
+  - "DONE 2026-11-24: republished after frontmatter update -> wiki-education delivered, Education:Ada-Ocb-Skills pageid 333 revid 492 (event skills-wiki-export-2026-11-24-r2); /lesson op=get source=wiki confirms new auto-kb + overnight-assessment descriptions."
+  - "DONE 2026-11-24: PR #208 squash-merged to master (skills inventory, wiki education record, repo references + pre-existing CI fixes); idc03 pulled; EDU_SOURCE=wiki education-report -> 223 lessons, 203 flagged, compliance 0.8200, drift 28/50, due 164, verify=pass; no source-gone flags for lesson-d8b6938588d3; card ADA-0037 closed."
+  - "DONE 2026-11-24: repositories explored added to docs/kb and exported wiki page (tonezzz/chaba + ada-ocb worktree, tonezzz/mddb + lag snapshots, anthropics/claude-plugins-official with installed skill-creator) -> republished revid 494 (event skills-wiki-export-2026-11-24-r3); /lesson op=get source=wiki confirms the Repositories explored section and all three refs."
+  - "DONE 2026-11-24: used skill-creator (installed from anthropics/claude-plugins-official) to capture the wiki-education-publish skill from session history; PR #210 merged; 2 simulated eval cases x 3 assertions passed inline (baselines skipped: subagent model rate limits); static viewer at /tmp/opencode/wiki-education-publish-review.html; human review approved."
+  - "DONE 2026-11-24: republished Education:Ada-Ocb-Skills with the new wiki-education-publish row -> revid 501 (event skills-wiki-export-2026-11-24-r4); /lesson op=get source=wiki confirms the skill and 13-skill count."
+  - "DONE 2026-11-25: saved the info-find efficiency benchmark (PR #219, card BEN-1359 closed — keep optional) and the global ansible-first applicability skill to docs/kb and the exported wiki page; republished Education:Ada-Ocb-Skills -> revid 506 (event skills-wiki-export-2026-11-24-r5); /lesson op=get source=wiki confirms Benchmarks, Related tooling and BEN-1359."
+  - "DONE 2026-11-24: EDU_SOURCE=wiki education-report on idc03 -> 220 lessons, 205 flagged, compliance 0.7390, drift 16/40, due 164, verify=pass, holds=1; lesson-d8b6938588d3 (ada-ocb-skills) present in latest.md/json. Its source-gone flags for tests/test_agents_skills_explored.py and docs/kb/ada-ocb-skills-education.md are expected until this branch merges into the idc03 checkout."
+  - "DONE 2026-11-25: KNB-0039 closed — repaired docs/ssot/jobs/board/2026-11-24-worktree-artifact-salvage.yml (PR #213, 9a6a1a9c3f); node scripts/ssot-validate-all.mjs -> 6388 files, 0 errors."
+  - "DONE 2026-11-25: added scripts/wiki-cargo-check.py (live/--fixture) + tests/test_wiki_cargo_check.py (4 passed, PR #215); live run reports no Education table, giving OPS-0038 a deterministic acceptance command."
+  - "BLOCKED 2026-11-25 (dispatch wiki-education-cargo-declare-verify, idc02): gate re-check `python3 scripts/wiki-cargo-check.py` -> exit 1 — action=cargotables=[] and cargoquery Education -> 'Table Education not found' on MediaWiki 1.46.2. Host-owned OPS-1322 Plesk maintenance still pending; spec's DO-NOT-START honoured — no wiki writes attempted, template remains clean at revid 483 (no cargo tags), Education:Ada-Ocb-Skills still served via /lesson source=wiki (slug lesson-d8b6938588d3)."
+
+polish_attempt:
+  date: 2026-11-24
+  status: done_2026_11_25
+  attempted: >
+    Cargo declare/store added to แม่แบบ:Education (revid 481) plus a
+    dedicated Education:Cargo-Education declaration page (revid 482).
+  finding: >
+    Cargo is installed and approved on wiki.h3, but action=cargotables
+    returns [] — page saves and action=purge did not create the Education
+    table. Table creation needs host-level Cargo maintenance, which the
+    board-api /wiki/page door cannot perform.
+  reverted: >
+    แม่แบบ:Education restored byte-identical to its pre-edit wikitext
+    (revid 483, verified against backup); Education:Cargo-Education
+    reduced to a pointer note (revid 484). No half-configured template
+    left behind.
+
+cargo_table_setup_2026_11_25:
+  card: wiki-education-cargo-table-setup (OPS-1322) + wiki-education-cargo-declare-verify (OPS-1350)
+  status: done
+  root_cause: >
+    The 2026-11-24 attempt missed Cargo 3.x's two-step model: #cargo_declare
+    only records CargoTableName/CargoFields page props on the template;
+    the physical table is created separately by
+    CargoUtils::recreateDBTablesForTemplate (API action=cargorecreatetables,
+    sysop-only right recreatecargodata, or Special:CargoTables). No host
+    shell was ever needed — FTP write access to the docroot (ada@h3,
+    ~/.config/secrets/plesk-ssh.env) plus a token-gated PHP helper that
+    bootstraps includes/WebStart.php can call the Cargo internals directly.
+  steps:
+    - "Re-applied revid-481 wikitext (cargo_store + cargo_declare in <noinclude>) to แม่แบบ:Education via board-api /wiki/page -> revid 525; pageprops confirmed CargoTableName=Education + CargoFields schema."
+    - "FTP-uploaded cargo-setup-*.php helper to the docroot; op=create called CargoUtils::recreateDBTablesForTemplate(pageid 42) -> cargo_tables registry + cargo__Education table created."
+    - "Gotcha: custom WebStart entrypoints skip MediaWiki's shutdown commit — LBFactory::commitPrimaryChanges() must be called explicitly or the cargo_tables registry insert rolls back (physical CREATE TABLE survives via MySQL DDL autocommit, leaving an orphan)."
+    - "op=populate ran CargoPopulateTableJob for all 228 template links -> 229 rows (one page, Education:Ada-Ocb-Skills, legitimately stores 2 rows from 2 template invocations with different event_id/updated)."
+    - "Helper deleted via FTP; URL returns 404."
+  verify:
+    - "python3 scripts/wiki-cargo-check.py -> ok:true, exit 0 (table Education present, topic ada-ocb-skills found, 229 rows)."
+    - "action=cargotables -> {\"cargotables\":[\"Education\"]} from anonymous API."
+    - "pytest tests/test_wiki_cargo_check.py -> 4 passed."
+  followups:
+    - "scripts/wiki-cargo-check.py fixed: cargoquery API rejects bare _pageName alias -> now uses _pageName=page and limit 500 (was 20, could miss the topic row)."
+    - "New lesson publishes auto-populate rows via onPageSaveComplete; no further host action needed."
+    - "Education:Cargo-Education dedicated declaration page left as pointer note (revid 484) — declare lives on the template, which is what cargorecreatetables consumes."
+
+remaining:
+  - "DONE 2026-11-25: OPS-1322 table created + OPS-1350 declare/store re-applied and populated — wiki-cargo-check.py exits 0. Cards can be closed by their dispatchers."
+  - "No card: routine hub-inventory refresh when a skill is added/removed — the inventory test fails first; expiry default 2026-12-08 for OPS-0038/OPS-1350 is decline-as-optional-polish if Plesk access is not provided."

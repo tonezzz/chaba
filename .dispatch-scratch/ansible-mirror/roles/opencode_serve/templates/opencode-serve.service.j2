@@ -1,0 +1,16 @@
+[Unit]
+Description=OpenCode API server on {{ inventory_hostname }}
+After=network-online.target
+
+[Service]
+Type=simple
+Environment=HOME={{ opencode_serve_home }}
+Environment=OPENCODE_CONFIG={{ opencode_serve_home }}/.config/opencode-serve/opencode.json
+EnvironmentFile={{ opencode_serve_home }}/.config/opencode-serve.env
+ExecStart={{ opencode_bin }} serve --hostname {{ opencode_serve_host }} --port {{ opencode_serve_port }}
+Restart=always
+RestartSec=5
+TimeoutStopSec=15
+
+[Install]
+WantedBy=default.target

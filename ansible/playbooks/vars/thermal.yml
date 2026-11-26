@@ -1,0 +1,15 @@
+---
+# Thermal policy — the ONE place to adjust thresholds.
+#
+# Re-run with an explicit limit to push a change:
+#   ansible-playbook playbooks/host-load-guard.yml --check --diff --limit tony-omen
+#   ansible-playbook playbooks/host-load-guard.yml --limit tony-omen
+#
+# kk-mac is deliberately absent: it is a macOS member device with its own
+# stricter 55C gate (scripts/devnest/kk_mac_admission.py, resume at 50C) and
+# is excluded from this playbook by the `!macos` host pattern.
+thermal_gate_c: 60
+thermal_resume_c: 55
+thermal_warn_c: 80
+thermal_excluded_hosts:
+  - kk-mac

@@ -1,0 +1,93 @@
+{
+  "arm_repo": "/home/tony/CascadeProjects/dispatch-wt-20261124-170743-compare-opencode-and-cline-on-/evals/jack-llm-stack-agent-eval/arms/opencode",
+  "pass": true,
+  "failed": [],
+  "checks": [
+    {
+      "id": "committed-artifact",
+      "status": "pass",
+      "evidence": "git_repo=True commits=2 dirty_entries=0"
+    },
+    {
+      "id": "opencode-provider-config",
+      "status": "pass",
+      "evidence": "files=['opencode.json']"
+    },
+    {
+      "id": "opencode-config-content",
+      "status": "pass",
+      "evidence": "provider+endpoint+model keys present"
+    },
+    {
+      "id": "litellm-routing-config",
+      "status": "pass",
+      "evidence": "files=['litellm_config.yaml'] content_ok=True"
+    },
+    {
+      "id": "env-example",
+      "status": "pass",
+      "evidence": "files=['env.example']"
+    },
+    {
+      "id": "healthcheck-script",
+      "status": "pass",
+      "evidence": "files=['healthcheck.sh'] shebang=True"
+    },
+    {
+      "id": "rollback-script",
+      "status": "pass",
+      "evidence": "files=['rollback.sh']"
+    },
+    {
+      "id": "rollback-content",
+      "status": "pass",
+      "evidence": "teardown+restore markers"
+    },
+    {
+      "id": "runbook",
+      "status": "pass",
+      "evidence": "files=['RUNBOOK.md'] sections=['deploy', 'rollback', 'health']"
+    },
+    {
+      "id": "tests-present",
+      "status": "pass",
+      "evidence": "files=['tests/test_stack.py']"
+    },
+    {
+      "id": "resource-limits",
+      "status": "pass",
+      "evidence": "limit keywords found"
+    },
+    {
+      "id": "ollama-small-model",
+      "status": "pass",
+      "evidence": "model=qwen2.5:1.5b"
+    },
+    {
+      "id": "mock-deploy-path",
+      "status": "pass",
+      "evidence": "mock/127.0.0.1 references present"
+    },
+    {
+      "id": "verify-sh",
+      "status": "pass",
+      "evidence": "files=['verify.sh'] executable=True"
+    },
+    {
+      "id": "safety-scan",
+      "status": "pass",
+      "evidence": "violations=0 warnings=3"
+    },
+    {
+      "id": "verify-sh-run",
+      "status": "pass",
+      "evidence": "rc=0 4.2s"
+    }
+  ],
+  "run": {
+    "rc": 0,
+    "seconds": 4.2,
+    "tail": "[*] Running unit tests...\n[*] Starting mock servers...\n[*] Running health checks against mock servers...\n[*] Checking Ollama reachability and model...\nOllama tags response: {\"models\": [{\"name\": \"qwen2.5:1.5b-instruct-q4_K_M\"}]}\n[+] Ollama is healthy and model is present.\n[*] Checking LiteLLM liveness...\nLiteLLM liveness response: {\"status\": \"healthy\"}\n[*] Performing LiteLLM chat completion round-trip...\nCompletion response: {\"choices\": [{\"message\": {\"role\": \"assistant\", \"content\": \"jack-local-coder response\"}}], \"model\": \"jack-local-coder\"}\n[+] LiteLLM chat completion round-trip successful.\n[*] Verifying OpenCode provider configuration...\n[+] OpenCode configuration parsed successfully and validated.\n[+] All health checks passed successfully!\n[*] Testing failure injection...\n[*] Checking Ollama reachability and model...\n[+] Failure injection correctly detected service outage.\n[*] Testing rollback script...\nDocker not available, skipping container teardown.\n[+] Verify script completed successfully!\n....\n----------------------------------------------------------------------\nRan 4 tests in 0.000s\n\nOK\n127.0.0.1 - - [24/Nov/2026 19:07:57] \"GET /api/tags HTTP/1.1\" 200 -\ncurl: (7) Failed to connect to 127.0.0.1 port 11434 after 0 ms: Could not connect to server\n"
+  },
+  "scanned_files": 10
+}

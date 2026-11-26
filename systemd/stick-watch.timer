@@ -1,0 +1,11 @@
+[Unit]
+Description=stick-watch — tony-usb stick detector every 5min + on boot
+
+[Timer]
+# 5-min cadence: the stick's cloned nodekey steals mn01's session for
+# as long as it stays booted — detection latency IS the theft window.
+OnBootSec=2min
+OnUnitActiveSec=5min
+
+[Install]
+WantedBy=timers.target

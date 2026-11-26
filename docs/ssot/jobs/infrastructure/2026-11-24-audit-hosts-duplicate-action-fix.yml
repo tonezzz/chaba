@@ -1,0 +1,64 @@
+id: audit-hosts-duplicate-action-fix
+title: ssot.audit.hosts.yml — resolve duplicate action key on tony-dell focus-dispatcher-overnight
+host: tony-dell
+date: 2026-11-24
+card: ansible-benchmark-ssot-duplicate-action-430
+status: done
+
+trigger: >
+  Benchmark finding from docs/reports/ansible-vs-legacy-benchmark-2026-11-21.md:
+  ssot.audit.hosts.yml carried two `action:` keys on the same known_failed
+  list item (tony-dell / focus-dispatcher-overnight.service); YAML last-wins
+  silently discarded the first.
+
+finding:
+  location: docs/ssot/infrastructure/ssot.audit.hosts.yml, tony-dell
+    known_failed, focus-dispatcher-overnight.service (was lines 430-431)
+  duplicate: 'action: verify-next-run + action: investigate on one item'
+  effective_value_before_fix: investigate (last key wins under SafeLoader)
+  consumers: >
+    None read `action` — audit-hosts.py:535 and
+    ansible/playbooks/templates/service-audit-deltas.j2:32 consume only
+    `name`; wiki-infra-hosts.py copies the entry verbatim. The field is
+    documentation for the human/agent triaging known_failed.
+
+decision:
+  kept: verify-next-run
+  dropped: investigate
+  rationale:
+    - >-
+      reason text ends "next scheduled run verifies" — that IS the
+      verify-next-run semantic; the entry's own prose names the action.
+    - >-
+      diagnosis already complete: 03:00 run failed in ExecStartPre git
+      pull (exit 128); script verified clean on a manual run 2026-10-09.
+      Nothing left to "investigate" per the recorded state.
+    - >-
+      tony-omen carries the same unit in known_failed with an analogous
+      reason ("checkout pulled clean 2026-10-09; next scheduled run
+      verifies") and action: verify-next-run — fleet-consistent.
+    - >-
+      git blame: both action lines share one commit (962fc698331,
+      board-api bulk snapshot 2026-11-09) — a same-edit artifact, not a
+      deliberate two-stage intent.
+
+side_observation:
+  - >
+    focus-dispatcher-overnight.{service,timer} on tony-dell are .parked in
+    ~/.config/systemd/user/ and systemctl reports the unit "could not be
+    found"; the timer migrated to idc03 2026-10-16/19 (OPS-0725, declared
+    in ssot.audit.hosts.yml idc03 expected_services note). The whole
+    tony-dell known_failed entry is likely stale — parked units never
+    appear in failed lists so the entry suppresses nothing. Left in
+    place (out of card scope); candidate for a follow-up hygiene pass
+    alongside the other parked/migrated entries.
+
+verification:
+  - "yaml.safe_load + custom dup-key loader: file parses, 0 duplicate keys
+    (was exactly 1: action @ known_failed item)"
+  - "scripts/ssot-validate-all.mjs: 6282 files, 0 errors; infrastructure/
+    ssot.audit.hosts.yml explicitly Valid"
+  - "scripts/ssot-validate-refs.py: 6287 files parsed, no broken refs"
+  - "scripts/audit-hosts.py --host tony-dell --no-ssh: ran end-to-end
+    against the edited SSOT, normal drift deltas only (pre-existing,
+    unrelated — action field is not consumed by the differ)"

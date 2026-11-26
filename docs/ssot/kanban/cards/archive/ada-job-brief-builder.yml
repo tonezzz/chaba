@@ -1,0 +1,190 @@
+id: ada-job-brief-builder
+title: Ada job-brief builder — card->context bundle (SSOT+KB+similar-card outcomes) for her lanes
+column: done
+updated: 2026-11-23 13:33
+priority: high
+tags:
+- ada
+- t4
+- context
+- mddb
+- verify-lane
+spec: 'Give Ada job-scoped context like Devin gets: standing memory + card + on-demand pull. Build a brief builder:
+  card -> context bundle assembled BEFORE her turn = related SSOT, KB lessons, and TOP-3 similar done-cards with
+  their proven-right outcomes (the card-judgment corpus is literally a similarity index). Retrieval via mddb semantic_search
+  + ssot-search + corpus nearest-neighbors. Consumers: verify_worker decision turn, cleanup sweep, future lanes.
+  Why: the T3 defer failures are judgment-calibration — evidence of past outcomes beats instinct. JevTeam can host
+  the loop but is not the missing piece; retrieval is. Done: verify_worker --with-brief flag scores a real card
+  and shows the bundle contents; bench delta on the defer boundary measured.'
+ref: ADA-1132
+comms:
+- at: 2026-11-08 10:28
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-08 12:33
+  from: tony
+  text: queued for processing
+- at: 2026-11-08 12:35
+  from: idc02
+  text: claimed
+- at: 2026-11-08 12:35
+  from: chaba
+  text: started devin-task-20261108-123515-give-ada-job-scoped-context-li on idc02 (dispatch)
+- at: 2026-11-08 12:37
+  from: devin
+  text: '[dispatch] picked up on idc02 — exploring retrieval paths (mddb content-plane :11027 vector-search + corpus.jsonl
+    nearest-neighbors), then building brief_builder + verify_worker --with-brief + bench delta'
+- at: 2026-11-08 13:05
+  from: devin
+  text: '[done-candidate] brief_builder landed + verify_worker --with-brief proven on real card ada-verify-probe-job-brief
+    (she closed it, top-2 neighbors were the sibling probe cards). Bench delta (98 cases, ada entity): flash-lite
+    acc 0.49->0.61 / deference 0.51->0.61 / precision ->1.0 — fact-case over-deferral 47->38 AND defer recall 29/30->30/30.
+    chat brain flat (0.908->0.908, no regression). Retrieval calibrates the boundary where it was weak. Artifacts:
+    run11-14 + briefs.json + jobs/ada/2026-11-08 '
+- at: 2026-11-08 13:08
+  from: idc02
+  text: 'finished (ok): exit=0 f-llama-70b is ACL''d out for the chaba litellm key — the production-brain delta
+    needs a rerun on idc03. | devin-t'
+- at: 2026-11-08 13:08
+  from: chaba
+  text: pushed dispatch/20261108-123515-give-ada-job-scoped-context-li to origin
+- at: 2026-11-08 13:08
+  from: chaba
+  text: 'auto-merge conflicts: scripts/ada-jobs/brief_builder.py, scripts/ada-jobs/verify_worker.py, scripts/bench/card-judgment/score.py
+    — card stays in review for manual resolution'
+- at: 2026-11-08 13:08
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-08 13:08
+  from: chaba
+  text: restarted zombie claim as devin-task-20261108-130829-give-ada-job-scoped-context-li on idc02 — claim committed
+    but the response was lost (OPS-1071)
+- at: 2026-11-08 13:10
+  from: devin
+  text: 'v1 scaffold (precedents only) already landed 12:36-12:49. Extending to full bundle: mddb :11027 semantic_search
+    confirmed reachable from idc02 — infrastructure-ssot + chaba-lessons + chaba-docs collections all live. LITELLM_KEY_BENCH
+    over budget ($2/$2); LITELLM_KEY_ADA works on tool-call/bench/gemini-3.5-flash-lite — using it for the verify
+    probe + defer-boundary bench.'
+- at: 2026-11-08 13:14
+  from: devin
+  text: '[session 2] Resolved the auto-merge conflict that held the card: merged dispatch/20261108-123515 (fe405f258
+    — full builder + run11-14 bench + job record) into this worktree over the master scaffold; resolution = sibling
+    version. Re-verified on idc02: verify_worker --sweep cleanup --card ada-docs-search-drift --with-brief --dry-run
+    printed the full bundle (ssot+lessons+kb via mddb vector-search, top-3 precedents led by starboard-windsurf-catalogs)
+    -> skip/alive. Delta (flash-lite): acc .49->.61, '
+- at: 2026-11-08 13:15
+  from: chaba
+  text: pushed dispatch/20261108-130829-give-ada-job-scoped-context-li to origin
+- at: 2026-11-08 13:15
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-08 13:15
+  from: chaba
+  text: auto-merged 915454ce (dispatch/20261108-130829-give-ada-job-scoped-context-li) → origin/master
+- at: 2026-11-08 13:15
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261108-130829-give-ada-job-scoped-context-li,
+    branch dispatch/20261108-130829-give-ada-job-scoped-context-li'
+- at: 2026-11-08 13:19
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261108-123515-give-ada-job-scoped-context-li,
+    branch dispatch/20261108-123515-give-ada-job-scoped-context-li on idc02'
+- at: 2026-11-08 13:19
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261108-123515-give-ada-job-scoped-context-li,
+    branch dispatch/20261108-123515-give-ada-job-scoped-context-li on idc02'
+- at: 2026-11-08 13:20
+  from: chaba
+  text: 'merge-sweep: dispatch/20261108-123515-give-ada-job-scoped-context-li already in origin/master — marked
+    verified (exit_code=0; outcome doc dispatch-outcome-20261108-123515-give-ada-job-scoped-context-li.md) — auto-closed'
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:06
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:35
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:36
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:04
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:01
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:14
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:18
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:02
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:06
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:41
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:33
+  from: tony
+  text: archived (1d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: paid_frontier
+  model: litellm/gemini-2.5-flash
+  runner: idc02
+  result: 'exit=0 f-llama-70b is ACL''d out for the chaba litellm key — the production-brain delta needs a rerun
+    on idc03. | devin-task-20261108-123515-give-ada-job-scoped-context-li.service: Consumed 55.904s CPU time, 267.5M
+    memory peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-08 13:20
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261108-123515-give-ada-job-scoped-context-li.md

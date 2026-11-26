@@ -82,6 +82,28 @@ class ProducerTests(unittest.TestCase):
             ("gdrive:x/kk-llm/inbox/task-a.json",
              "gdrive:x/kk-llm/inbox/done/task-a.json"), moves)
 
+    def test_held_class_spec_quarantined(self):
+        # operator_brief/safe_route are unadmitted pending re-eval
+        # (kk-mac-admitted-classes-narrow) — a held-class spec must be
+        # quarantined like any other contract violation, not staged
+        inbox = {"brief.json": {**_spec("brief"),
+                                "task_class": "operator_brief"},
+                 "route.json": {**_spec("route"),
+                                "task_class": "safe_route"},
+                 "task-a.json": _spec("task-a")}
+        result, cats, moves = self._produce([], inbox)
+        self.assertEqual(result["staged"], ["kk-mac-task-task-a"])
+        # load_task cats every spec before class validation rejects it
+        self.assertEqual(cats, [
+            "gdrive:x/kk-llm/inbox/brief.json",
+            "gdrive:x/kk-llm/inbox/route.json",
+            "gdrive:x/kk-llm/inbox/task-a.json"])
+        for name in ("brief.json", "route.json"):
+            self.assertIn(f"{name}:ValueError", result["skipped"])
+            self.assertIn(
+                (f"gdrive:x/kk-llm/inbox/{name}",
+                 f"gdrive:x/kk-llm/inbox/quarantine/{name}"), moves)
+
     def test_dry_run_moves_nothing(self):
         inbox = {"task-a.json": _spec("task-a")}
         result, _, moves = self._produce([], inbox, dry_run=True)

@@ -34,23 +34,29 @@ instances:
       household: "/home/tony/.config/home-assistant/household.yml  # canonical, in HA config dir — people/rooms/roles of this home"
       native: "/home/tony/.config/home-assistant/secrets.yaml      # HA !secret store — stays native per instance"
       status: active               # migrated 2026-10-23 (card per-instance-secret-stores-migration); mn01 keeps standby copies
+    cold_standby:
+      status: documented-not-armed # runbook 2026-11-24 (HOM-0855); no sync timer installed yet
+      runbook: docs/runbooks/tony-ha-cold-standby.md
+      sync: "standby-side pull via scripts/home-assistant/ha-standby-sync.sh (rsync ~/.config/home-assistant mirror + optional sqlite DB snapshot; split-brain guarded)"
+      candidates: [mn01, idc02, tony-dell]   # mn01 recommended (home LAN); idc02 = degraded no-LAN mode
+      pending: "tony-ha-prod-placement-26f033 may retarget standby to the loser of the prod decision"
     status: active
 
-  michael-dev:
-    id: michael-dev
+  mn-ha-dev:
+    id: mn-ha-dev
     base: michael
-    host: idc02     # migrated tony-dell -> idc03 2026-10-09 -> idc02 2026-10-26 (capacity)
+    host: mn01     # migrated tony-dell -> idc03 2026-10-09 -> idc02 2026-10-26 -> mn01 2026-11-25 (card michael-dev-migrate-mn01)
     runtime: rootless podman
     network: podman (was host-net on tony-dell)
-    container: michael-dev
+    container: mn-ha-dev
     image: docker.io/homeassistant/home-assistant:2026.9.0
     port: 8124
     host_port: 127.0.0.1:8124
-    config: /home/tony/.config/michael-dev    # now on idc02
+    config: /home/tony/.config/mn-ha-dev    # now on mn01
     url:
       local: http://127.0.0.1:8124
-      tailscale: https://idc02.taila0626a.ts.net:8124
-      public: https://michael-dev.surf-thailand.com   # idc02 edge -> local :8124 + CF Access gate
+      tailscale: https://mn01.taila0626a.ts.net:8124
+      public: https://michael-dev.surf-thailand.com   # idc02 edge -> mn01 tailnet :8124 + CF Access gate
     migration_notes: >-
       .storage/http had server_port 8124 (host-net legacy) — quadlet maps
       8124->8124 (not :8123). server_host was 127.0.0.1 — removed so the
@@ -61,13 +67,25 @@ instances:
       on both hosts (values::paths.podman_bridge_subnet) so trusted_proxies
       carried over unchanged. idc03 quadlet
       masked+stopped — parked 24h for rollback (unmask+start to restore).
-    ssot: docs/ssot/infrastructure/ssot.home-assistant.michael.dev.yml
-    mcp: infrastructure/ssot.home-assistant.mcp.yml#servers.michael_dev
+      2026-11-25 mn01 move: same recipe — config rsynced whole idc02->mn01,
+      internal_url patched to https://mn01.taila0626a.ts.net:8124, tailscale
+      serve --https=8124 on mn01. GOTCHA hit live: the quadlet must NOT
+      PublishPort the tailnet IP for :8124 — tailscale serve binds
+      100.x:8124 itself and the podman publish conflicts (bind: address
+      already in use crash-loop). idc02's https://...:8124 had in fact been
+      dead since the 2026-11-24 tailnet-IP :8124 publish was added (serve
+      mount lost the port) — only http://idc02:8124 worked; mn01 restores
+      real HTTPS via serve. 9585 keeps its tailnet-IP publish (no serve).
+      podman bridge subnet identical again (10.88.0.0/16) — trusted_proxies
+      unchanged. idc02 unit masked+stopped, parked for rollback
+      (unmask+start + Caddyfile restore to restore).
+    ssot: docs/ssot/infrastructure/ssot.home-assistant.mn-ha-dev.yml
+    mcp: infrastructure/ssot.home-assistant.mcp.yml#servers.mn_ha_dev
     dashboards:
       tony-test:
         ssot: docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml
         active_view: PF4
-    service_unit: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
+    service_unit: infrastructure/ssot.services.yml#tony-dell.mn-ha-dev.quadlet.service_unit
     status: active
 
   ada-ha:
@@ -90,7 +108,7 @@ instances:
     url:
       local: http://127.0.0.1:8125
       tailscale: https://tony-omen.taila0626a.ts.net:8125
-      note: 'Dev/lab tier — bottom rung of ada-ha -> michael-dev -> tony-ha
+      note: 'Dev/lab tier — bottom rung of ada-ha -> mn-ha-dev -> tony-ha
         promotion ladder. NOTE (audit 2026-10-10): no longer a fresh config —
         has organically grown to 340 entities/25 integrations incl. TONY-IP +
         Watch mobile_app, TONY-TV remote, sonoff/tuya/xiaomi/cozylife LAN
@@ -118,7 +136,12 @@ instances:
           calendar card. Auth: mint LLAT JWT from .storage/auth
           (client_name ada-ha-live, jwt_key-signed iss=<id>) — the stored
           token field is NOT the JWT itself. Snapshot:
-          docs/home-assistant/dashboards/ada-ha-chaba-home-current.json.
+          docs/home-assistant/dashboards/ada-ha-chaba-home-current.json
+          (regenerated 2026-11-24 via sync-ssot-from-live.sh --instance
+          ada-ha — sanitized {views} format like chaba-admin, NOT the raw
+          .storage envelope; the 2026-10-20 deletion in 86ae90671 was a
+          false "dashboard gone" call — live dashboard verified present
+          with the same six views).
       chaba-ai:
         note: >-
           Storage dashboard (url_path chaba-ai, title "Chaba AI") — the
@@ -283,6 +306,7 @@ status:
   notes: |
     tony-ha HA core container is healthy on port 8123 on tony-omen, bound to 127.0.0.1:8123
     and exposed via Tailscale HTTPS at https://tony-omen.taila0626a.ts.net:8123 (evacuated
-    tony-dell 2026-10-19/20; michael-dev's stale omen container was parked for the :8123 port).
-    michael-dev HA core container is healthy on port 8124 on idc02, exposed via
-    Tailscale HTTPS at https://idc02.taila0626a.ts.net:8124 (moved from idc03 2026-10-26).
+    tony-dell 2026-10-19/20; mn-ha-dev's stale omen container was parked for the :8123 port).
+    mn-ha-dev HA core container is healthy on port 8124 on mn01, exposed via
+    Tailscale HTTPS at https://mn01.taila0626a.ts.net:8124 (moved idc02 -> mn01
+    2026-11-25; idc02 copy parked masked+stopped for rollback).

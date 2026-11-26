@@ -1,0 +1,29 @@
+#!/bin/bash
+# OPS-1326: runner-tooling pin gate for merges.
+#
+# Fires when `git merge --no-ff` (dispatch close-out / merge-sweep) has
+# the merged tree staged in the index. The ops-1036 conflict shape —
+# pinned sources taken from one parent, runner-tooling.manifest.json
+# pins from the other — merges cleanly but leaves the fleet on old
+# builds. The shared gate compares the merged index to HEAD (first
+# parent) and blocks the merge commit when a touched pin pair no longer
+# matches its source.
+#
+# Husky may exec hooks via /bin/sh despite the shebang — re-exec under
+# bash before the constructs below are reached.
+[ -z "${BASH_VERSION:-}" ] && exec bash "$0" "$@"
+
+if [ "${CHABA_PRECOMMIT_PINS:-1}" = "0" ]; then
+    exit 0
+fi
+
+# During a merge the index holds the merged result; --cached compares it
+# to HEAD (the first parent) — exactly the pair set we must validate.
+if git diff --cached --name-only --diff-filter=ACM | grep -q '^scripts/'; then
+    if ! python3 scripts/board/tooling_pin_gate.py; then
+        echo "❌ runner-tooling pin check failed in merge — see above." >&2
+        echo "   Bypass: git merge --no-verify (or CHABA_PRECOMMIT_PINS=0)." >&2
+        exit 1
+    fi
+fi
+exit 0

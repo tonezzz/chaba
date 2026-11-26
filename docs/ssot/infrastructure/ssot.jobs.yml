@@ -146,6 +146,23 @@ jobs:
     links). Runs after the hand-installed ada-memory-distill.timer
     (Sun 09:45) in the Sunday ada-memory pipeline; deterministic, no
     LLM env needed.'
+- id: bank-inspect
+  name: Memory-inspect pages — per-lane bank snapshots into CMS (daily)
+  host: tony_dell
+  dispatch: systemd
+  on_calendar: '*-*-* 05:40:00'
+  persistent: true
+  timeout: 15m
+  condition_path: '%h/CascadeProjects/chaba/scripts/ada/bank-inspect.py'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/bank-inspect.py
+  note: 'card memory-inspect-pages (MEM-0745) — dumps each lane-visible
+    ada-ha-bank-* collection (memory plane :11023) as subject->attr->
+    kind/value+modified into memory-inspect index+leaf pages in THAT
+    lane''s cms_collection (:11027): tony->ada-cms-pages, kk->-kk,
+    michael->-mn, kk-dev->-kk-dev (ro mounts via instances_readonly).
+    Secret-keyed entries redacted at write time; read-only snapshots
+    keep the memory->CMS direction one-way. Renders via chaba-cms-render
+    kind=memory-inspect.'
 - id: overnight-assessment
   name: Overnight Assessment
   host: idc03   # moved 2026-10-16/17 OPS-0725
@@ -228,7 +245,7 @@ jobs:
   on_calendar: '*-*-* 06:45:00'
   persistent: true
   timeout: 15m
-  exec: /bin/bash -c 'cd /home/tony/CascadeProjects/chaba && for h in tony-dell tony-omen mn01 idc03 con01 macbook;
+  exec: /bin/bash -c 'cd /home/tony/CascadeProjects/chaba && for h in tony-dell tony-omen mn01 idc03 con01 macbook kk-mac;
     do /usr/bin/python3 scripts/audit-hosts.py --host "$h" || true; done; /usr/bin/python3 scripts/audit-hosts.py
     --consolidate; /bin/bash scripts/report/pull-report-metas.sh; /usr/bin/python3 scripts/report-system.py && scp -q
     stacks/web/public/apps/system-report/data/system-report.yml
@@ -249,7 +266,12 @@ jobs:
     'missing'. The pull step rsyncs meta*.yml (-u newest-wins, recursive) from every producer
     checkout (idc03 served+exec+kanban-sync, idc02, tony-dell x2, tony-omen, mn01, idc01) plus
     tony-dell's ~/var/chaba/health/meta.yml before the render; all soft-fail so an unreachable
-    host never blocks the report.
+    host never blocks the report. kk-mac added 2026-11-24 (audit-hosts-macos-blindspot) —
+    macOS branch of audit-hosts.py; offline_ok absorbs member-device sleep. PREREQ — con01
+    has not yet accepted kk-mac's host key — run `ssh-keyscan kk-mac >> ~/.ssh/known_hosts`
+    on con01 once or the probe reports unreachable (silent, offline_ok). The --cards drift
+    cards come from the tony-dell `audit-hosts.py --all --cards` chain instead, which
+    reaches kk-mac today."
 - id: chaba-host-loads
   name: Host-loads sampler (fleet load/mem/disk -> system-report monitor page)
   host: idc02
@@ -558,13 +580,32 @@ jobs:
     svc-chaba-scripts token 401'd every run and the chaba-admin hosts card went
     'entity not found'). Stale beacon docs set fresh=off without zeroing sensors —
     asleep/off-net is quiet. Card macbook-battery-swell; added 2026-10-21.
+- id: telemetry-ha-push-ada
+  name: Device telemetry -> ada-ha sensor mirror
+  host: tony_omen
+  dispatch: systemd
+  on_calendar: '*:0/5'
+  persistent: true
+  timeout: 60s
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/home-assistant/telemetry-ha-push.py
+  env:
+    TELEMETRY_DEVICES: tony-dell,tony-omen,tony-macbook,kk-mac,idc02,idc03,mn01,con01
+    TELEMETRY_MDBB: http://100.102.134.91:11026/v1
+    HA_URL: http://127.0.0.1:8125
+    HA_TOKEN_FILE: '%h/.config/secrets/ada-ha-token.env'
+  note: same mirror as telemetry-ha-push but targeting ada-ha (HA lab, loopback
+    :8125 on tony-omen) so the chaba-nest hosts/services views can render native
+    entities cards instead of iframing CF-Access-gated tony-ha. Token =
+    ada-ha-token.env LLAT (verified POST /api/states 2026-11-17). Entities appear
+    on first POST — no ada-ha-side config needed.
+    Card chaba-nest-hosts-view-replace-tony-ha-if; added 2026-11-17.
 - id: device-telemetry-prune
   name: Device telemetry retention prune (7d)
   host: idc03
   dispatch: systemd
   on_calendar: '*-*-* 04:20:00'
   persistent: true
-  timeout: 5m
+  timeout: 30m
   exec: /usr/bin/python3 %h/.local/share/device-telemetry/prune.py
   env:
     DEVICE_TELEMETRY_RETENTION_DAYS: '7'
@@ -699,6 +740,25 @@ jobs:
     health — the OPS-1074 divergence sat for days before surfacing as
     >60s writes. Alerts deduped 12h; state
     ~/.local/state/served-checkout-watchdog.json.'
+- id: scenario-runner-drift-check
+  name: Ada scenario-runner deployed drift check (idc03)
+  host: idc03
+  dispatch: systemd
+  on_calendar: 'hourly'
+  persistent: true
+  timeout: 2m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/scenario-runner-drift-check.py
+  note: 'card scenario-runner-deployed-drift-check — the copy-on-install
+    isolation (install.sh -> ~/.local/share/ada-scenario-runner/) means
+    repo fixes never reach the wrapper until install.sh re-runs; the
+    OPS-0581 exit-contract fix sat undeployed 24 days and the Oct 30 +
+    Nov 6 weekly runs completed but alerted as exit-code (2026-11-08
+    incident). Hourly sha256 compare of each installed payload file vs
+    the exec-checkout source; missing/not-executable/content-drift
+    files a deduped board-api /inbox entry (6h repeat per condition).
+    Exit 0 on completed checks per the OPS-0581 contract — findings
+    ride the inbox, not the exit code. State
+    ~/.local/state/scenario-runner-drift-check.json.'
 - id: netdata-nodes-watch
   name: Netdata fleet nodes watchdog (streaming child drop-out)
   host: idc03
@@ -714,6 +774,76 @@ jobs:
     State ~/.local/state/netdata-nodes-watch.json; alerts deduped 12h.
     Expected node list defaults to the 8-node fleet — edit --nodes or
     this note if the fleet changes.'
+- id: retry-storm-watch
+  name: Retry-storm / hot-container watch (podman CPU + log sigs + MDDB queue)
+  host: idc03
+  dispatch: systemd
+  every: 10min
+  persistent: true
+  timeout: 4m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/retry-storm-watch.py
+  env:
+    MDDB_WATCH_URLS: http://127.0.0.1:11023,http://127.0.0.1:11027
+  note: 'card ops-retry-storm-detection (MEM-1192) — the mddb-embed
+    OpenRouter retry storm ran ~6h unnoticed. Checks: (a) podman stats
+    stream -> container >50% CPU sustained >=30min (state-tracked),
+    (b) podman logs 60m -> identical WARN/ERROR signature x30+ per
+    container, (c) MDDB /v1/vector-stats + /metrics drop/error/retry
+    counter deltas >=10 since last tick (idc03 only, via
+    MDDB_WATCH_URLS: primary :11023 + cms :11027). Findings -> deduped
+    board-api /inbox 6h per condition, never Telegram. State
+    ~/.local/state/retry-storm-watch.json. Trail doc
+    docs/ssot/jobs/monitoring/2026-11-25-retry-storm-watch.yml.'
+- id: retry-storm-watch
+  name: Retry-storm / hot-container watch (podman CPU + log sigs)
+  host: idc02
+  dispatch: systemd
+  every: 10min
+  persistent: true
+  timeout: 4m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/retry-storm-watch.py --checks cpu,logs
+  note: 'card ops-retry-storm-detection — container checks only; MDDB
+    queue leg runs on idc03 where the leader lives.'
+- id: retry-storm-watch
+  name: Retry-storm / hot-container watch (podman CPU + log sigs)
+  host: tony_dell
+  dispatch: systemd
+  every: 10min
+  persistent: true
+  timeout: 4m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/retry-storm-watch.py --checks cpu,logs
+  note: 'card ops-retry-storm-detection — container checks only; MDDB
+    queue leg runs on idc03 where the leader lives.'
+- id: retry-storm-watch
+  name: Retry-storm / hot-container watch (podman CPU + log sigs)
+  host: tony_omen
+  dispatch: systemd
+  every: 10min
+  persistent: true
+  timeout: 4m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/retry-storm-watch.py --checks cpu,logs
+  note: 'card ops-retry-storm-detection — container checks only; MDDB
+    queue leg runs on idc03 where the leader lives.'
+- id: retry-storm-watch
+  name: Retry-storm / hot-container watch (podman CPU + log sigs)
+  host: mn01
+  dispatch: systemd
+  every: 10min
+  persistent: true
+  timeout: 4m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/retry-storm-watch.py --checks cpu,logs
+  note: 'card ops-retry-storm-detection — container checks only; MDDB
+    queue leg runs on idc03 where the leader lives.'
+- id: retry-storm-watch
+  name: Retry-storm / hot-container watch (podman CPU + log sigs)
+  host: con01
+  dispatch: systemd
+  every: 10min
+  persistent: true
+  timeout: 4m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/retry-storm-watch.py --checks cpu,logs
+  note: 'card ops-retry-storm-detection — container checks only; MDDB
+    queue leg runs on idc03 where the leader lives.'
 - id: timer-timeline-update
   name: Timer timeline sweep (collects all hosts' timer/service states)
   host: tony_omen
@@ -794,6 +924,15 @@ jobs:
   persistent: true
   timeout: 10m
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/sync-devin-summaries.py --enrich
+  note: 'card distiller-enrich-productionize (2026-11-24): --enrich is now
+    on every invocation (this job, systemd/devin-summaries-sync.service,
+    ada-memory-pull.service). The script also dumps grep-able transcript
+    .md to ~/.local/share/devin/transcripts/ (T2 archive for hybrid
+    recall) and preserves any existing ## Artifacts section even when a
+    run cannot re-mine it (sticky enrichment). Recall side:
+    scripts/devin/session/session_recall.py — T1 mddb vector-search +
+    T2 sqlite FTS5 over the transcript/summaries dirs, wired into
+    notebooklm-recall.sh (deploy both to ~/.config/devin/scripts/).'
 - id: session-audit
   name: Ada session audit (transcripts -> friction -> CMS/focus/corpus)
   host: tony_omen
@@ -842,11 +981,20 @@ jobs:
   persistent: true
   timeout: 15m
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/backlog-spec-enrich.py
+  env_file: '%h/.config/secrets/litellm-chaba.env'
+  env:
+    LITELLM_URL: http://100.102.134.91:4000/v1
+    ENRICH_PROVIDER: litellm
   note: 'added 2026-10-23 (Tony): the board is spec-bound — ~75 of 121 backlog cards are title-only captures no
-    dispatch can safely take. Each run ranks the thinnest (priority then age), calls gemini-3.5-flash-lite for
+    dispatch can safely take. Each run ranks the thinnest (priority then age), calls the enrich model for
     spec|ask|skip, writes drafts into card spec: or raises requests: for owner calls, marks each card in comms so
     it never reprocesses. 4 cards/run default -> pool drains in ~3 days. Runs on idc03 (live-writer host) — CARD_DIR
-    defaults to the served checkout, kanban-commit persists the writes.'
+    defaults to the served checkout, kanban-commit persists the writes. Routed through LiteLLM 2026-11-24
+    (ops-1037/OPS-1316): ENRICH_PROVIDER=litellm -> OpenAI /chat/completions on the gateway with the chaba virtual
+    key (env_file litellm-chaba.env) — SpendLogs attribution via x-litellm tags, per-key budget, registered fallback
+    chains; gemini-3.5-flash-lite default, ENRICH_MODEL accepts any gateway model_name (e.g. ollama-qwen38b-kkmac
+    for free local drafts). gemini_rest direct path kept as fallback (ENRICH_PROVIDER=gemini or automatic on a
+    failed litellm reply for gemini-* models).'
 - id: yomi-backup
   name: Yomi + PostgreSQL Backup
   host: idc03
@@ -986,6 +1134,23 @@ jobs:
     Pure-CMS producer: writes ada-cms-automation/flood-alert state doc via flood-news-update machinery only;
     MDDB_BASE_URL repointed :11023 -> :11027 2026-10-22 (cms-11023-parked-writers). Was rendered from this manifest
     under commit 120a10896 but the jobs entry was lost; restored 2026-10-22 to match the deployed unit.'
+- id: flood-hub-poll
+  name: Flood Hub gauge status poll -> MDDB (idc01, key IP-locked)
+  host: idc01
+  dispatch: systemd
+  every: 1h
+  persistent: true
+  timeout: 10m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba-vault/scripts/ada/flood-hub-poll.py
+  env:
+    MDDB_BASE_URL: http://100.102.134.91:11027/v1
+  note: 'card flood-hub-integration (OPS-0007). Declared 2026-11-24 ahead of waitlist approval — the FLOODS_API_KEY
+    lives in ~/.config/secrets/flood-forecasting.env on idc01 and the key is IP-restricted to idc01 egress, so this
+    poller is the ONLY Flood Hub API caller; every consumer (flood-hub:auto CMS block, flood-alert hub severities,
+    mn-ha-dev flood_hub_* sensors) reads the ada-cms-automation/flood-hub-status doc it publishes. Script exits 0
+    quietly while the key is absent. idc01 was offline ~33d at declaration — install with
+    render-jobs.py --host idc01 --install once the host is back AND the key file exists. exec checkout for idc01 is
+    chaba-vault per config.repo.'
 - id: chaba-kb-audit
   name: KB audit chain (weekly)
   host: con01
@@ -1035,7 +1200,7 @@ jobs:
   host: tony_dell
   dispatch: systemd
   every: 1h
-  timeout: 10m
+  timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --max-docs 2000
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
@@ -1048,7 +1213,7 @@ jobs:
   host: tony_omen
   dispatch: systemd
   every: 1h
-  timeout: 10m
+  timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --max-docs 2000
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
@@ -1058,7 +1223,8 @@ jobs:
   host: idc02
   dispatch: systemd
   every: 1h
-  timeout: 10m
+  timeout: 45m
+  note: '2026-11-23 — 10m too tight: 09:11 run needed 9m47s and later runs were TERM-killed at 10m; OPS-1197.'
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --max-docs 2000
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
@@ -1068,7 +1234,7 @@ jobs:
   host: idc03
   dispatch: systemd
   every: 1h
-  timeout: 10m
+  timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --max-docs 2000
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
@@ -1080,7 +1246,7 @@ jobs:
   host: mn01
   dispatch: systemd
   every: 1h
-  timeout: 10m
+  timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --max-docs 2000
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
@@ -1090,7 +1256,7 @@ jobs:
   host: con01
   dispatch: systemd
   every: 1h
-  timeout: 10m
+  timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --max-docs 2000
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
@@ -1101,7 +1267,7 @@ jobs:
   host: tony_dell
   dispatch: systemd
   every: 1h
-  timeout: 10m
+  timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --hosts michael-ha
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
@@ -1115,7 +1281,7 @@ jobs:
   host: tony_dell
   dispatch: systemd
   every: 1h
-  timeout: 10m
+  timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --severe
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
@@ -1125,7 +1291,7 @@ jobs:
   host: tony_omen
   dispatch: systemd
   every: 1h
-  timeout: 10m
+  timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --severe
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
@@ -1135,7 +1301,8 @@ jobs:
   host: idc02
   dispatch: systemd
   every: 1h
-  timeout: 10m
+  timeout: 45m
+  note: '2026-11-23 — 10m too tight: 09:11 run needed 7m53s and later runs were TERM-killed at 10m; OPS-1198.'
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --severe
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
@@ -1145,7 +1312,7 @@ jobs:
   host: idc03
   dispatch: systemd
   every: 1h
-  timeout: 10m
+  timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --severe
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
@@ -1157,7 +1324,7 @@ jobs:
   host: mn01
   dispatch: systemd
   every: 1h
-  timeout: 10m
+  timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --severe
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
@@ -1167,7 +1334,7 @@ jobs:
   host: con01
   dispatch: systemd
   every: 1h
-  timeout: 10m
+  timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --severe
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
@@ -1178,7 +1345,7 @@ jobs:
   host: tony_dell
   dispatch: systemd
   every: 1h
-  timeout: 10m
+  timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --hosts michael-ha --severe
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
@@ -1294,6 +1461,39 @@ jobs:
     only by schedule; small/medium/large and remote cells are run on demand
     with --targets scripts/bench/targets.full.yml. Tiers + host ceilings:
     docs/ssot/infrastructure/ssot.model-tiers.yml. Added 2026-10-14.'
+- id: opencode-models-sync
+  name: OpenCode models sync — provider map + profile allowlist drift check
+  host: idc02
+  dispatch: systemd
+  on_calendar: '*-*-* *:37:00'
+  persistent: true
+  timeout: 5m
+  cwd: '%h/CascadeProjects/chaba'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/sync-opencode-models.py --from-config %h/CascadeProjects/chaba/stacks/idc03/litellm/config.yaml --opencode %h/.config/opencode/opencode.json --profiles-root %h/CascadeProjects/chaba/evals/opencode-lane/profiles --write --alert
+  note: 'card model-route-registration-unify (OPS-1020) — hourly: adds
+    missing LiteLLM routes to this host''s opencode provider map
+    (additive only; stale entries reported, --prune stays manual) and
+    fails + files a deduped board-api /inbox alert when a profile
+    allowlist names a route LiteLLM doesn''t serve. Route truth =
+    repo config.yaml, NOT live /v1/models: virtual keys return a
+    per-key-filtered model list (OPS-1020 KNOWN_PITFALLS) which would
+    false-flag routes other keys can call; config.yaml is what
+    deploy.sh pushes live. --write refuses when the provider block
+    lacks options.baseURL (map would be dead config). First seen
+    needed 2026-11-23 (or-deepseek-v4-flash, tony-dell).'
+- id: opencode-models-sync
+  name: OpenCode models sync — provider map + profile allowlist drift check
+  host: tony_dell
+  dispatch: systemd
+  on_calendar: '*-*-* *:41:00'
+  persistent: true
+  timeout: 5m
+  cwd: '%h/CascadeProjects/chaba'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/sync-opencode-models.py --from-config %h/CascadeProjects/chaba/stacks/idc03/litellm/config.yaml --opencode %h/.config/opencode/opencode.json --profiles-root %h/CascadeProjects/chaba/evals/opencode-lane/profiles --write --alert
+  note: 'card model-route-registration-unify (OPS-1020) — same job as
+    idc02, staggered :41. tony-dell carries a litellm provider map in
+    ~/.config/opencode/opencode.json (apiKey via {file:...} — the sync
+    only touches provider.litellm.models, never options).'
 - id: chaba-lessons-due
   name: Education due-review queue + index -> wiki Education:Due/Index + WP page
   host: idc03
@@ -1324,14 +1524,26 @@ jobs:
   timeout: 10m
   cwd: '%h/CascadeProjects/chaba-tony-dell'
   exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/lessons-audit.py
-  note: 'card lesson-polish-nest-pack (OPS-0829) + AUD-0831 — deterministic
-    scan of the lesson CPT against policy (R1 review dates, R3 split-rule
-    pointers, R4 series hubs). Prints + persists an audit JSON; a violation
-    over threshold should queue the Fable polish pass. Runs 10 min after the
-    lessons-due refresh so both education surfaces are current. Requires
-    scripts/lessons-audit.py in the served checkout. Kept running alongside
-    chaba-education-report (2026-10-27) — the consolidated report is the
-    observability layer, this stays the standalone component + its control.'
+  note: 'card lesson-polish-nest-pack (OPS-0829) + AUD-0831 +
+    lesson-audit-scheduled — deterministic scan of the lesson store
+    against policy (R1 review dates, R3 split-rule pointers, R4 series
+    hubs, +R2/R5 report-only). One op:list{content:1} call returns all
+    lesson bodies (board-api wiki bulk read — per-slug op:get rescans
+    the whole namespace, the real 10m-timeout cause; parallel gets
+    remain as fallback for wp/mddb sources); report lands in
+    docs/reports/lesson-audit/{<date>,latest}.json (kanban-commit
+    sweeps the dir) + a one-line comms on card lesson-audit-scheduled.
+    When R1/R3/R4 flags exist the script re-arms the standing
+    lesson-polish-run dispatch card (POST /card on_exists=queue,
+    executor=devin) — the Fable polish pass — with the flagged list in
+    card comms; flag-signature dedup + 20h min-interval bound re-arms
+    (LESSON_POLISH_* env knobs; runbook
+    docs/ssot/jobs/education/2026-11-24-lesson-audit-schedule.yml).
+    Runs 10 min after the lessons-due refresh so both education
+    surfaces are current. Requires scripts/lessons-audit.py in the
+    served checkout. Kept running alongside chaba-education-report
+    (2026-10-27) — the consolidated report is the observability layer,
+    this stays the standalone component + its control.'
 - id: chaba-education-report
   name: Education consolidated maintenance report (audit+drift+due+trend)
   host: idc03
@@ -1465,7 +1677,7 @@ jobs:
     condition_path keeps the unit skipped until the script lands in the
     served checkout on merge. Added 2026-10-23.'
 - id: wp-comment-sync
-  name: WP member comments -> suggestion lanes
+  name: WP member comments -> suggestion lanes + dev-board classify
   host: idc03
   dispatch: systemd
   every: 15m
@@ -1473,14 +1685,20 @@ jobs:
   timeout: 2m
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/wp-comment-sync.py
   condition_path: '%h/CascadeProjects/chaba/scripts/ada/wp-comment-sync.py'
-  note: 'card wp-comment-sync-suggestion-inbox — poll /wp/v2/comments?after=<cursor>
-    on boards.surf-thailand.com; route by post type (memory-mirror ->
-    ~/.local/share/ada/memory-pending staged suggestion; asset/place/trip ->
-    record-corrections queue; cam/bench/render_job -> digest only); in-thread
-    REST reply as ack; state-file cursor + processed-ids dedup. Suggestions
-    only — never writes MDDB or edits posts. condition_path keeps the unit
-    skipped until the script lands in the served checkout on merge.
-    Added 2026-10-15.'
+  note: 'card wp-comment-sync-suggestion-inbox + lesson-comments-dev-board —
+    poll /wp/v2/comments?after=<cursor> on boards.surf-thailand.com; route by
+    post type (memory-mirror -> ~/.local/share/ada/memory-pending staged
+    suggestion; asset/place/trip -> record-corrections queue; news ->
+    situation lane). Digest-bound comments (lesson/CMS/cam/bench/etc.) get a
+    chat-local classify: actionable -> kanban card wpc-<cid> via board-api
+    POST /card (backlog), question -> focus-inbox via POST /inbox (+ local
+    questions/ record), discussion -> digest. In-thread REST ack posts as
+    the chaba agent identity when
+    ~/.config/secrets/wp-agent-users.env exists; agent-authored comments are
+    never re-routed. Runbook: docs/ssot/jobs/wordpress/2026-11-26-comment-
+    dev-board.yml. Suggestions only — never writes MDDB or edits posts.
+    condition_path keeps the unit skipped until the script lands in the
+    served checkout on merge. Added 2026-10-15; dev-board lane 2026-11-26.'
 - id: wp-lane-timeline
   name: Ada lane transcripts -> WP timeline (mn-ha)
   host: idc03
@@ -1512,6 +1730,27 @@ jobs:
     wp-news-fetch (:00) and wp-news-digest (:20). Member-ask promotion is
     interactive: news-situation.py ask "<text>" or comment pin/unpin via
     wp-comment-sync. Added 2026-10-15.'
+- id: wp-news-morning-brief
+  name: AI/model/provider morning brief (private WP page)
+  host: idc03
+  dispatch: systemd
+  on_calendar: '*-*-* 08:00:00'
+  persistent: true
+  timeout: 10m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/news-morning-brief.py brief
+  condition_path: '%h/CascadeProjects/chaba/scripts/ada/news-morning-brief.py'
+  note: 'card ai-news-education-morning-brief — daily 08:00 ICT run of the
+    ai-news-to-education procedure (docs/kb/ai-news-to-education-procedure.md).
+    Reads the news CPT written by wp-news-fetch/wp-news-digest (AI feeds
+    gn-ai-*/hf-blog in news-feeds.json, tagged ai), drafts the fixed-section
+    brief via chat-local LiteLLM with gemini fallback, publishes the private
+    page slug ai-morning-brief (consumer https://boards.surf-thailand.com/wp/
+    ai-morning-brief/ — editor login), appends dated News-watch blocks to
+    matched existing Education lessons via the /lesson door (max 2/run,
+    update-only, never creates), and renders a deterministic fallback page
+    when every LLM lane fails so the timer never blocks. On-demand query:
+    news-morning-brief.py ask "<text>". verify subcommand confirms the page.
+    Added 2026-11-24.'
 - id: usage-feed-push
   name: Usage feed exporter -> idc02 edge
   host: idc03
@@ -1533,6 +1772,29 @@ jobs:
     unit exactly. env_file supplies LITELLM_* for the SpendLogs admin-API
     fallback; USAGE_FEED_* overrides (target, token) live in
     ~/.config/secrets/usage-feed.env.'
+- id: litellm-budget-watch
+  name: LiteLLM budget watch — near-cap warn/alert per virtual key
+  host: idc03
+  dispatch: systemd
+  every: 1h
+  persistent: true
+  timeout: 5m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/litellm/budget-watch.py
+  cwd: '%h/CascadeProjects/chaba'
+  env_file: '%h/.config/secrets/litellm.env'
+  condition_path: '%h/CascadeProjects/chaba/scripts/litellm/budget-watch.py'
+  note: 'SEC-0962 / card litellm-budget-watch-enable (born of the 2026-10-24
+    chaba-key $5-cap 422 storm, model-key-usage-control audit pending item 6).
+    Reads LiteLLM_VerificationToken via `podman exec litellm-db psql`
+    (LiteLLM spend/cap/reset per key_alias) with /key/list admin-API fallback
+    via LITELLM_MASTER_KEY from env_file; judges warn >=80% / alert >=100%
+    (BUDGET_WATCH_WARN_PCT), uncapped keys noted not judged. Sinks: one
+    kind=ops-event doc per run in ada-ha-events-tony (mddb-ops :11025),
+    LINE push via ada-line-relay :8912/send (quiet 00-07 ICT, 240min resend
+    dedup by key+level hash), incident card via board-api on alert only.
+    Script live-smoked on idc03 2026-10-28 (verdict alert: bench at cap,
+    chaba 99%); timer installed 2026-11-25. Hourly cadence — psql read is
+    one query; LINE noise bounded by the resend gap.'
 - id: consumer-canary
   name: Consumer canary — retired-hostname audit of live surfaces
   host: idc03
@@ -1547,7 +1809,12 @@ jobs:
     con01/idc03, live HA dashboards via websocket — for RETIRED_HOSTS
     (default tony-dell.taila0626a.ts.net). Findings post to the canary card
     via board-api; clean runs are stdout-only. ssh''s out from idc03.
-    Added 2026-10-20.'
+    Added 2026-10-20. 2026-11-24: surfaces that can''t be audited (dead ssh,
+    grep error, dashboard SKIP) report as UNAUDITABLE findings — a blind grep
+    no longer reads as clean. Exit 0 on completed audits incl. findings
+    (board-api comms are the alert channel; exit-1-on-findings used to trip
+    timer-sentinel — see jobs/monitoring/2026-11-08-consumer-canary-timer-alert.yml);
+    exit 1 only when findings exist but the board-api post failed.'
 - id: jevnest-kk-mac-capacity-producer
   name: JevNest KK-Mac capacity producer
   host: tony_dell
@@ -1626,6 +1893,25 @@ jobs:
     general queue plus kk-llm pack counts, kk-mac-video-pilot pack counts,
     and the KK-Mac worker heartbeat from MDDB ada-nest-heartbeats. Read-only;
     always exits 0.'
+- id: queue-mgr
+  name: Queue mgr — mirror ada-nest Drive queue to WP nest_job
+  host: tony_dell
+  dispatch: systemd
+  every: 5m
+  timeout: 3m
+  persistent: false
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/queue-mgr.py
+  note: 'OPS-0759 leg 2 — the missing queue-mgr: one-shot poller that reads
+    gdrive:ada-nest queue/packs state via rclone (tony-dell holds the
+    remote) and upserts WP nest_job posts through board-api POST /job on
+    idc03 — watchers watch, one door writes; no WP creds on this host.
+    Root post ada-nest-queue (kind=queue) derives status from children;
+    packs -> kind=pack, JOBS.py manifest entries -> job-<name> kind=sub.
+    Delta-only: per-slug fingerprint in ~/.local/state/queue-mgr.json,
+    comms appended on transitions only; failed POSTs retry next tick.
+    OFF SWITCH: `touch ~/.config/queue-mgr.off` on tony-dell (or
+    QUEUE_MGR=off) — every tick exits silently. --dry-run prints the
+    derived plan with zero writes.'
 - id: devnest-report-feed
   name: DevNest durable report feed
   host: tony_dell
@@ -1638,6 +1924,22 @@ jobs:
     bounded KK-Mac summary specs. Uses source markers for idempotency, excludes
     KK-Mac self-reports to avoid feedback loops, and never creates synthetic
     work. The shared capacity broker routes the resulting specs.'
+- id: jevnest-kk-llm-metrics
+  name: JevNest KK-LLM lane metrics rollup
+  host: tony_dell
+  dispatch: systemd
+  every: 15m
+  timeout: 5m
+  persistent: false
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/kk_mac_metrics.py --tokens --publish --window-days 7 --budget-s 240
+  note: 'OPS-1001 evidence leg — L0 raw pack artifacts already live on
+    gdrive:ada-nest/kk-llm; this rollup is the L1 producer for report
+    node nest-lanes/kk-llm (ssot.reports.yml), feeding chaba-nest L2 ->
+    SYSTEM-REPORT L3 and the weekly JevTeam lane review. The 7d window
+    scopes result.json cats so pack-history depth cannot blow the
+    budget; lifetime pack counts stay listing-only. Read-only — a
+    failed run leaves the last meta in place and report-watch marks the
+    node stale/error.'
 - id: nest-queue-watch
   name: Nest queue watch — TG notify on pack claim/done/fail
   host: idc03
@@ -1697,41 +1999,29 @@ jobs:
     all card mutations, board-api and file-write alike). First tick
     records position without replaying history. OFF SWITCH:
     `touch ~/.config/kanban-notify.off` (each tick exits silently).'
-- id: cline-intake
-  name: Cline lane intake — backlog cards tagged cline -> kanban-nest-bridge
-  host: con01
+- id: devin-dispatch-tg-watch
+  name: Devin dispatch watch — TG notify on job-ledger state changes
+  host: idc03
   dispatch: systemd
-  every: 15m
-  persistent: true
-  timeout: 20m
-  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/colab/packs/cline-kanban-nest-bridge/intake.py --execute --limit 1
-  note: 'Tony ask 2026-10-29 — card->task intake for the Cline lane. Scans
-    backlog cards for tag `cline` + a `cline:` config block (or
-    `cline-deliverable:`/`cline-sentinel:`/`cline-model:` spec lines),
-    synthesizes a validated bridge envelope, runs ONE card per tick
-    through bridge.py on con01 (disposable /workspace, no repo access,
-    auto-review off), posts the patch summary via board-api /comment and
-    moves the card to review on success; failure leaves the card in
-    backlog with an error comment. Patches land under
-    scripts/colab/packs/cline-kanban-nest-bridge/out/intake/<job_key>/.
-    Provider default ollama/qwen2.5:7b; openrouter/or-free-* also
-    whitelisted. Serial by design — one card per tick.'
-- id: cline-board-mirror
-  name: Cline board mirror — Chaba queue/lifecycle -> con01 kanban projection
-  host: con01
-  dispatch: systemd
-  every: 2min
-  timeout: 3m
-  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/cline-board-mirror.py
-  note: 'KNB-1008 — READ-ONLY projection of the Chaba pipeline onto the
-    cline-kanban board (cline.surf-thailand.com). Reads GET /queue +
-    /cards from board-api, applies moves/creates/deletes to
-    board.json under the app''s own atomic write convention (spike
-    2026-10-30: direct locked edit is live to task list + UI; no agent
-    session is spawned). Only tasks carrying [CARD:<id>] markers are
-    touched — pilot + cline-intake execution tasks are never modified.
-    Chaba stays the source of truth; Cline state is rebuildable
-    display data. Requires runner verdicts flowing (KNB-1007 /ready).'
+  every: 5m
+  timeout: 60s
+  env:
+    BOARD_NOTIFY_CHANNEL: tg
+    BOARD_NOTIFY_TG_CHAT_ID: '-5410424865'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/devin-dispatch-tg-watch.py
+  note: 'Card implement-and-track-devin-telegram-repor-fc0dc7 (DEV-0368)
+    — Tony picked the chaba lane 2026-10-26: board_notify tg, nest-queue
+    pattern, group targeting. One-shot poller: reads the shared dispatch
+    job ledger (job/* + answer/* docs in MDDB ada-ha-bank-devin-handoff,
+    written by devin-dispatch/devin-dispatch-watch/job-run on every
+    runner host) and pushes one TG message per new state — started /
+    done / FAILED / needs input / answered — to the ada-ha group via the
+    relay /send on idc03 loopback :8911. Runs on idc03 because the relay
+    is loopback-only and the MDDB leader lives there; one watcher covers
+    the whole fleet. First tick primes silently (no history replay);
+    DEVIN_TG_WATCH_CATCHUP_MIN=<n> re-admits recent docs on that tick.
+    OFF SWITCH: `touch ~/.config/devin-dispatch-tg-watch.off` (each tick
+    exits silently), rm to resume — or pull this job entry.'
 - id: adobe-stock-reindex-sync
   name: Adobe Stock index rebuild + idc02 workspace sync
   host: tony_dell
@@ -1752,7 +2042,29 @@ jobs:
   dispatch: systemd
   every: 4h
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/fleet-jobs-report.py
-  note: 'deterministic — no LLM'
+  note: 'deterministic — no LLM. Reads timer-timeline CMS rollup (MDDB),
+    board-api /queue + /cards, LiteLLM ledger, lane-savings, generated
+    jobs.*.yml; writes reports/fleet-jobs-<date>.md + L2 meta and upserts
+    the fleet-jobs-report ada-cms-pages page via board-api /report (the
+    artifact Ada''s report verb reads — docs/kb/ada-report-verb-contract.md).
+    Declare only — install with render-jobs.py --host idc03 --install.'
+- id: mcp-fleet-report
+  name: Fleet MCP inventory observation + L2 rollup
+  host: idc03
+  dispatch: systemd
+  every: 24h
+  exec:
+  - /usr/bin/python3 %h/CascadeProjects/chaba/scripts/mcp-inventory.py --all
+  - /usr/bin/python3 %h/CascadeProjects/chaba/scripts/mcp-inventory.py --consolidate --publish
+  note: 'Card KNB-0019. Deterministic — no LLM. Writes append-only L0 artifacts
+    plus per-host metas under reports/mcp-inventory/, renders the L2
+    reports/mcp-fleet/MCP-FLEET-REPORT.{md,wiki}, then upserts one stable
+    Reports:Fleet-MCP-Inventory page via board-api /publish with
+    sinks=[wiki-reports,board]. Durable lessons are filed once via POST /lesson
+    to Education:. Infrastructure: writes go through the board-api
+    /wiki/page door (prefix allowlisted 2026-11-20, card
+    wiki-page-door-infrastructure-namespace). Declare only — install
+    the unit with render-jobs.py --host idc03 --install after review.'
 - id: chaba-pytest-suite
   name: chaba full pytest suite (nightly)
   host: tony_omen
@@ -1774,8 +2086,9 @@ jobs:
   timeout: 1h
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/transcript-archive.py
   note: 'card ada-transcript-archive-retention leg 1 — raw transcripts are
-    local-only on idc03 and the per-session NotebookLM upload died with
-    notebooklm-rest (:3011) retirement, so this weekly job pushes
+    local-only on idc03 and the per-session NotebookLM upload is best-effort
+    (REST lives on idc02 :3011; lane envs pointed at dead dell :3011 until
+    repointed 2026-11-25), so this weekly job pushes
     >48h-old transcripts to the "Ada — Transcript Archive" notebook via
     nlm on mn01 (--text, files never leave idc03). Lane tags come from
     ada-ha-recall-summary-<instance> session-* keys; unattributed archive
@@ -1802,9 +2115,86 @@ jobs:
     job). 07:35 lands after daily-brief (07:05) + narration and the
     lessons-due refresh (07:30). --print renders without sending.
     Added 2026-11-20.'
+- id: wiki-talk-watch
+  name: Wiki talk-page watch — classify + signed Ada auto-reply
+  host: idc03
+  dispatch: systemd
+  on_calendar: '*-*-* *:07/15:00'
+  persistent: true
+  timeout: 20m
+  cwd: '%h/CascadeProjects/chaba'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/wiki/wiki-talk-watch.py
+  env_file: '%h/.config/secrets/wiki-h3-gizmo.env'
+  condition_path: '%h/CascadeProjects/chaba/scripts/wiki/wiki-talk-watch.py'
+  note: 'card wiki-talk-watch-auto-reply-to-wiki-talk-a9f107 (OPS-0074,
+    supersedes OPS-0073 manual spec). Polls api.php recentchanges over
+    talk ns 1,3,5,7,9,11,13,15 (public) + 3001/3003 (private) +
+    3005/3007 (members), watermark=max rcid in
+    ~/.local/state/wiki-talk-watch/ (idempotent, first run baselines —
+    never replies to history). Skips own-bot/minor/bot-flagged edits;
+    extracts the comment by diffing revid vs old_revid. v1 JevTeam
+    stand-in: LiteLLM gemini-3.5-flash-lite via the :4000 gateway ->
+    lane=ada-code|no-response; draft via opencode when the binary
+    resolves else the same LiteLLM lane (opencode is NOT installed on
+    idc03 as of 2026-11-24 — auto-falls back). Posts action=edit
+    appendtext inside the commenter''s section (fallback section=new),
+    signed — Ada (ada-code) ~~~~~. Visibility guard scans the draft
+    against the talk page''s tier so protected content never lands on a
+    more-public talk page. Failures -> deduped board-api /inbox flags,
+    MAX_ATTEMPTS=3 per rcid, no blind retries. :07/15 phase offsets the
+    tick ~7min from kanban-commit''s drifting 15-min cycle. Install:
+    render-jobs.py --host idc03 --ids wiki-talk-watch --install after
+    merge.'
+- id: chaba-capture-harvest
+  name: Capture ledger harvest + Phase D metrics refresh (daily)
+  host: idc02
+  dispatch: systemd
+  on_calendar: '*-*-* 05:30:00'
+  persistent: true
+  timeout: 10m
+  exec:
+  - /usr/bin/python3 %h/CascadeProjects/chaba/scripts/chaba/harvester.py
+  - /usr/bin/python3 %h/CascadeProjects/chaba/scripts/chaba/capture-metrics.py --out %h/.local/share/chaba/capture/metrics-latest.md
+  note: 'card session-capture-d-1-follow-ups-ledger-du-78e13f (OPS-1368) —
+    declares the durable home + regeneration job for the capture ledger.
+    Correction to the d1 sweep: the 2026-11-23 baseline ledger AND its
+    applied: block were never lost — they live on idc02 at
+    ~/.local/share/chaba/capture/ (2220 entries + the wiki-login-polish
+    apply record); the measuring session checked 6 hosts but not idc02.
+    Decision: idc02 is the declared canonical capture host — entries[]
+    are regenerable but applied[] history already lives here, so no
+    migration. This job keeps the canonical copy fresh (harvest ->
+    capture-metrics --out metrics-latest.md, chained ExecStart so metrics
+    only runs after a successful harvest) and makes the home explicit.
+    capture-apply.py now also mirrors each apply to a card comm, so the
+    board is the durable audit even if this host-local ledger is lost.
+    Runs in the job-exec checkout (%h/CascadeProjects/chaba, kept current
+    by chaba-repo-sync). 05:30 is clear of the daily jobs. Declare +
+    render only — install with render-jobs.py --host idc02 --ids
+    chaba-capture-harvest --install after merge.'
+- id: ansible-runner-tool-guard
+  name: Ansible runner-tool drift guard (read-only fleet check)
+  host: tony_dell
+  dispatch: systemd
+  on_calendar: '*-*-* 07:10:00'
+  persistent: true
+  timeout: 15m
+  cwd: '%h/CascadeProjects/chaba/ansible'
+  condition_path: '%h/CascadeProjects/chaba/ansible/playbooks/verify-runner-tools-sync.yml'
+  exec: /usr/bin/ansible-playbook playbooks/verify-runner-tools-sync.yml
+  note: 'Daily read-only guard for the required runner tools (runner-agent,
+    devin-dispatch) on the four runner hosts tony-dell/tony-omen/idc02/idc03.
+    Complements playbooks/audit-runner-tools.yml and disk-headroom.yml as the
+    Ansible "instant fleet guard" lane. Leaf tools are report-only and con01
+    (absorber tier, no dispatch provisioning) is excluded from the play pattern.
+    Runs with become:false and rsync --dry-run — nothing is written on any host.
+    Requires the collections from ansible/requirements.yml on the controller.
+    Decision + evidence: Education:Ansible-Galaxy-Collections-For-Chaba-Efficiency
+    (sections 7-10). Declare + render + install with
+    render-jobs.py --host tony_dell --ids ansible-runner-tool-guard --install.'
+
 related_files:
 - scripts/render-jobs.py
-- scripts/ops/cline-board-mirror.py
 - scripts/job-dispatcher.py
 - systemd/generated/
 - docs/ssot/infrastructure/ssot.night-jobs.tony-dell.yml

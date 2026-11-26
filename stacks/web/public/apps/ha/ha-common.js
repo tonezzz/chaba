@@ -6,7 +6,7 @@ class HaDevicesApp {
     this.tabs = [
       { id: "tony-ha", label: "Tony HA" },
       { id: "michael-ha", label: "Michael HA" },
-      { id: "michael-dev", label: "Michael Dev" },
+      { id: "mn-ha-dev", label: "MN HA Dev" },
       { id: "dossier", label: "DOSSIER" },
     ];
     this.init();

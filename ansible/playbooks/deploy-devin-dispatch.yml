@@ -1,0 +1,91 @@
+---
+# deploy-devin-dispatch.yml — force-pinned convergence of the devin CLI wrapper.
+#
+# Why a separate playbook: sync-runner-tools.sh keeps a manual hotfix when the
+# installed copy is merely newer by mtime. That guard saved a real hotfix on
+# other hosts but stranded con01 on a 2026-11-24 copy whose `${PIPESTATUS[0]}`
+# was expanded by systemd into an empty environment variable — the task body
+# succeeded while the unit exited 2/INVALIDARGUMENT with an empty exit_code
+# file (card con01-runner-pilot-smoke-2, 2026-11-26 05:11 CET).
+#
+# This play trusts CONTENT, not mtime: the controller source must match the
+# sha256 in scripts/devin/runner-tooling.manifest.json, and any installed copy
+# that differs is replaced from that pinned source. Always use --limit.
+#
+# Usage:
+#   ansible-playbook playbooks/deploy-devin-dispatch.yml --check --diff --limit con01
+#   ansible-playbook playbooks/deploy-devin-dispatch.yml --limit con01
+#
+# No handler: devin-dispatch is invoked per task by runner-agent, not a long
+# running service. A change takes effect on the next claim; an in-flight
+# devin-task keeps the old wrapper until it exits.
+
+- name: Converge pinned devin-dispatch on selected runners
+  hosts: all:!macos:!disabled
+  gather_facts: true
+  become: false
+
+  vars:
+    tool_manifest: "{{ playbook_dir }}/../../scripts/devin/runner-tooling.manifest.json"
+    tool_meta: "{{ (lookup('file', tool_manifest) | from_json).tools.devin_dispatch }}"
+    tool_src: "{{ playbook_dir }}/../../{{ tool_meta.source }}"
+    tool_dest: "{{ ansible_user_dir }}/.local/bin/{{ tool_meta.dest }}"
+    tool_pin: "{{ tool_meta.sha256 }}"
+
+  tasks:
+    - name: Stat pinned source on the controller
+      ansible.builtin.stat:
+        path: "{{ tool_src }}"
+        get_checksum: true
+        checksum_algorithm: sha256
+      register: source_stat
+      run_once: true
+      delegate_to: localhost
+
+    - name: Fail if the controller source is not the manifest pin
+      ansible.builtin.assert:
+        that:
+          - source_stat.stat.checksum == tool_pin
+        fail_msg: >-
+          {{ tool_src }} does not match manifest pin {{ tool_pin }} —
+          update the pin in the same commit as the tool change
+      run_once: true
+      delegate_to: localhost
+
+    - name: Ensure ~/.local/bin exists
+      ansible.builtin.file:
+        path: "{{ ansible_user_dir }}/.local/bin"
+        state: directory
+        mode: "0755"
+
+    - name: Deploy pinned devin-dispatch (overrides newer stale hotfix)
+      ansible.builtin.copy:
+        src: "{{ tool_src }}"
+        dest: "{{ tool_dest }}"
+        mode: "0755"
+        backup: true
+      register: deploy
+
+    - name: Verify installed devin-dispatch hash
+      ansible.builtin.stat:
+        path: "{{ tool_dest }}"
+        get_checksum: true
+        checksum_algorithm: sha256
+      register: installed
+      when: not ansible_check_mode
+
+    - name: Fail if installed hash is not the pin
+      ansible.builtin.assert:
+        that:
+          - installed.stat.checksum == tool_pin
+        fail_msg: >-
+          {{ inventory_hostname }}: {{ tool_dest }} hash
+          {{ installed.stat.checksum }} != pin {{ tool_pin }}
+      when: not ansible_check_mode
+
+    - name: Report convergence result
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }}:
+          {{ 'REDEPLOYED' if (deploy.changed | default(false)) else 'in-sync' }}
+          (backup {{ deploy.backup_file | default('none') }})

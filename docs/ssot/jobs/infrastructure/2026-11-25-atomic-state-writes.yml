@@ -1,0 +1,85 @@
+title: Atomic state writes for chaba-nag, line-chat-timeline, rika-wx-alert
+subtitle: >-
+  Three idc03 services crash-looped on 0-byte JSON state files — open(...,"w")
+  truncates before json.dump, so a SIGKILL/timeout mid-write left a file that
+  exists-checks pass but json.load dies on. Fixed with tmp+fsync+os.replace
+  writes and tolerant loads; rika-wx-alert.py brought under version control.
+id: 2026-11-25-atomic-state-writes
+status: done
+owner: devin-dispatch
+project: chaba
+card: state-write-atomic-truncate-crash-loop
+branch: dispatch/20261125-092859-fix-non-atomic-state-writes-ac
+started: "2026-11-25"
+
+incident:
+  discovered: "2026-11-12 sweep — card note; verified live 2026-11-25"
+  affected:
+    - host: idc03
+      unit: chaba-nag.service (timer 30min)
+      state: ~/.local/state/chaba-nag.json — 0 bytes since Nov 24
+      code: ~/CascadeProjects/chaba-tony-dell/scripts/chaba-nag.py
+        (served checkout; repo canonical scripts/chaba-nag.py)
+    - host: idc03
+      unit: line-chat-timeline.service (timer ~5min)
+      state: ~/.local/share/ada/line-media/wp-timeline-state.json —
+        0 bytes since Nov 19
+      code: ~/.local/bin/line-chat-timeline.py — was a STALE Oct-14 copy
+        missing the activity-dedupe feature; repo canonical
+        scripts/ada/line-chat-timeline.py deployed over it
+    - host: idc03
+      unit: rika-wx-alert.service (timer 60s)
+      state: ~/.local/state/rika-wx-alert/state.json — 0 bytes since Nov 19
+      code: ~/.local/bin/rika-wx-alert.py — was UNVERSIONED (no repo copy);
+        now canonical at scripts/rika-wx-alert.py
+  mechanism: >
+    json.dump(obj, open(STATE, "w")) truncates STATE immediately; a kill
+    before dump finishes leaves 0 bytes. Next run's exists-check passes,
+    json.load raises JSONDecodeError, unit fails — every run, forever.
+    chaba-nag additionally had a bare json.load(open(STATE)) with no
+    try/guard; line-chat-timeline had exists-check-then-bare-load (the
+    exact trap the card describes).
+
+fix:
+  pattern: >
+    save_state(): write STATE.tmp in the same dir -> flush + os.fsync ->
+    os.replace onto STATE (atomic rename; a kill can only leave the .tmp).
+    load_state(): try/except + isinstance(dict) -> default; a 0-byte or
+    corrupt state can never kill the run before it rewrites it.
+    fsync-before-rename covers the delayed-allocation/ENOSPC mode
+    documented in scripts/board/card_io.py (2026-11-19 disk-full incident).
+  files:
+    - scripts/chaba-nag.py — load_state/save_state helpers; main() uses them
+    - scripts/ada/line-chat-timeline.py — same helpers; state["media"]
+      shape re-validated on load
+    - scripts/rika-wx-alert.py — NEW repo file (was idc03-only);
+      load_state/save_state + torn token.txt now falls back to re-login
+      instead of crashing on UnicodeDecodeError
+  deployed:
+    - idc03:~/.local/bin/line-chat-timeline.py = repo copy (md5-verified)
+    - idc03:~/.local/bin/rika-wx-alert.py = repo copy (md5-verified)
+    - backups: "*.bak-20261125 alongside; 0-byte states parked as
+      *.0byte-20261125"
+    - chaba-nag.service runs from the served checkout — picks up the repo
+      fix on next git-safe-pull after merge (kanban-commit.timer cadence)
+
+verification:
+  - "systemctl --user start on all three units -> Result=success,
+    ExecMainStatus=0 (2026-11-25 09:37-09:38 ICT)"
+  - "all three state files re-written as valid JSON dicts
+    (chaba-nag.json 100B, wp-timeline-state.json 2.8KB,
+    rika-wx-alert/state.json 164B)"
+  - "line-chat-timeline journal: kk-ha 207 / tony-ha 98 / ada-ha 0 /
+    ops 1723 items, all WP updates 200 — first clean run since Nov 19"
+  - "chaba-nag journal: 'LINE push: ok' — first clean run since Nov 24"
+  - "rika-wx-alert: clean 60s cadence runs, no state errors"
+  - "find ~/.local/state ~/.local/share/ada -name '*.json' -size 0 on
+    idc03 -> only the 3 known files (now parked)"
+
+followups:
+  - "card OPS-1364 (systemic-sweep-non-atomic-state-write-te-040822):
+    ~20 more scripts share STATE.write_text(json.dumps()) — all have
+    tolerant loads (no crash-loop) but can still tear state on kill."
+  - "chaba-nag.service on idc03 still runs pre-merge code until the served
+    checkout pulls; parked 0-byte state means it already recovered, and
+    the atomic write lands with the merge."

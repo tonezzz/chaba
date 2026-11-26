@@ -1,0 +1,141 @@
+title: persona photo store — asset_save + image-bearing memory hits let personas hold and reshow photos
+id: 2026-11-24-persona-photo-store
+card: persona-photo-store
+date: 2026-11-24
+status: implemented-in-worktree (ada-voice side staged as drop 22 under
+  integrations/ada-voice/; merge + deploy-ada.sh is a separate Tony gate;
+  chaba SSOT schema row + tools.yml row land with this worktree)
+summary: |
+  Personas could not hold or reshow photos: bank docs were text-only
+  and no tool returned a stored image URL to the relay's _images_from
+  path (the relay already re-hosts any fetchable URL publicly —
+  verified working). Driver: kaewta re-showing kk's car photo on
+  request. The drop adds a served asset store, a memory-search path
+  that surfaces meta.image_url into tool_result images, and ingestion
+  of in-group LINE images as persona assets — all on existing rails.
+
+problem:
+  - "Bank docs are text-only: ada_remember has no image_url meta field,
+    so 'remember this photo' could only store a description."
+  - "No tool_result ever carried an image URL a memory hit owned —
+    _images_from only saw cast_url/image_url/url on camera/render/drive
+    results, so recall could describe a photo but never re-show it."
+  - "Ingestion: LINE inbound images already archive under
+    /relay-img/arch/ and reach the persona as image turns whose
+    caption carries media_url:, but nothing persisted them as named,
+    searchable persona assets."
+
+what_landed:
+  ada_voice_drop: integrations/ada-voice/ (drop 22, README section
+    'Drop 22 — persona photo store')
+  files:
+    - path: integrations/ada-voice/backend/tools.d/asset_save.py
+      what: |
+        New tool. Resolves the image (explicit media_url= — the
+        /relay-img/arch/ URL from a photo turn, an archive path, or any
+        fetchable image URL — else this chat's latest kind=image entry
+        in manifest.jsonl via session_chat_id), verifies magic bytes
+        (jpeg/png/gif/webp), stores under
+        <LINE_MEDIA_ARCHIVE_DIR>/persona-assets/ with content-hash
+        dedupe, and upserts assets/<slug> via
+        memory_ops.asset_remember. Public URL =
+        <ADA_RELAY_PUBLIC_BASE|LINE_PUBLIC_IMG_BASE>/arch/persona-assets/<file>
+        — served by the relay's existing /relay-img/arch/{rest:path}
+        route, no new hosting.
+    - path: integrations/ada-voice/backend/tools.d/manifest.asset_save.yml
+      what: |
+        Manifest snippet — policy: read, secondary_allowed: false
+        (the memory-write tier; memory.remember/forget are
+        SECONDARY_BLOCKED), timeout 60s.
+    - path: integrations/ada-voice/backend/memory_ops.persona-photo-store.patch
+      what: |
+        _doc_to_hit gains "image_url": _meta_first(meta, "image_url");
+        new asset_remember() — deterministic assets/<slug> upsert
+        (create/correct, no vector dedupe), written_by=['asset_save'],
+        meta.image_url, riding acl_decision(tool='ada_remember').
+    - path: integrations/ada-voice/backend/tool_runner.memory.persona-photo-store.patch
+      what: |
+        ada_memory_search promotes the FIRST usable image-bearing hit
+        to a top-level image_url + image_note ("already attached, do
+        NOT resend"). _safe_args keeps scalars so the relay's
+        _images_from sees it; draft/archival hits never auto-attach.
+    - path: integrations/ada-voice/backend/memory_pending.persona-photo-store.patch
+      what: |
+        Pending route 'asset' — non-admin callers' asset saves stage
+        for approval exactly like bank writes; approve replays through
+        memory_ops.asset_remember (the image file already landed at
+        stage time — it's already public via /relay-img/arch/).
+    - path: integrations/ada-voice/scripts/ada.memory-pending.persona-photo-store.patch
+      what: _runtime builds mddb+registry for route 'asset' on approve.
+    - path: integrations/ada-voice/backend/tool_guide.persona-photo-store.patch
+      what: asset_save guide entry — when to call, staged-result
+        phrasing ("kept for review", never "saved"), personal-bank
+        default.
+    - path: integrations/ada-voice/ssot.tool-surface.persona-photo-store.patch
+      what: asset_save into coverage_debt until a live scenario lands.
+  chaba_repo:
+    - path: docs/ssot/apps/ssot.apps.ada-memory-schema.yml
+      what: meta_schema.fields.image_url registered (type url) —
+        render-memory-banks.py refresh stops the warn-only drift log.
+    - path: docs/ssot/infrastructure/ssot.tools.yml
+      what: memory.asset_save row (sig name,description,media_url,bank;
+        secondary false; notes the ACL+staging+promotion chain).
+    - path: tests/ada/test_persona_photo_store.py
+      what: 18 tests — patch gate vs live ada-voice HEAD, asset_save
+        standalone (resolve/sniff/latest-image/dedupe/stage/ACL/
+        confirmed-bank refusal), _doc_to_hit image_url,
+        asset_remember create+correct+ACL-deny, search promotion +
+        draft/archival skip.
+
+design_notes:
+  storage_choice: |
+    Reused the LINE media archive instead of a new object store: inbound
+    images already land under ~/.local/share/ada/line-media/<chat>/ with
+    durable public /relay-img/arch/ URLs, and the relay's arch route
+    serves nested paths — persona-assets/ is just another subtree.
+    scripts/lib/media_store.py (S3) stays available if assets ever need
+    cross-host durability; not needed for v1.
+  recall_path: |
+    Top-level promotion (not per-hit only) because _images_from reads
+    res.get("image_url") at the tool_result top level — hits are nested
+    dicts that _safe_args stringifies. One image per reply max; the
+    model still sees per-hit image_url for deliberate chat_send resends.
+  write_safety: |
+    asset_save is NOT in MEMORY_WRITE_TOOLS (it's a tools.d dynamic
+    tool), so run() replicates the dispatch-layer gates itself:
+    _check_memory_write_allowed('ada_remember', ...) for the unified
+    ACL (allowed_tools inherited — bank configs list ada_remember),
+    confirmed-policy banks refuse honestly (tools.d confirmed args are
+    consumed upstream and never reach run()), then
+    _scan_memory_write + _memory_staging_required/_stage_memory_write —
+    identical pipeline to ada_remember bank writes.
+  slug_edge: |
+    memory_banks._slug falls back to 'note' for Thai-only descriptions —
+    generic slugs ('note'/'asset') get an asset-<sha8> suffix so unnamed
+    saves don't collide on assets/note.
+
+verify:
+  - "/tmp/pps-venv/bin/python -m pytest tests/ada/test_persona_photo_store.py -x -q (18 passed)"
+  - "cd /tmp/pps-ada && python3 scripts/tool-lint.py (clean)"
+  - "cd /tmp/pps-ada && .venv pytest tests/ -x -q — 1646 passed; 3
+    pre-existing fastapi-stub env failures in line_relay/tg_relay
+    TestClient tests, unrelated to this change"
+  - "tools_loader.load() resolves asset_save DynamicTool (policy=read,
+    secondary_allowed=False, timeout 60)"
+
+gap_remaining:
+  - |
+    ada-voice merge + idc03 deploy is a separate Tony gate
+    (deploy-ada.sh). Until merged, personas still can't hold photos.
+  - |
+    chaba side needs `python3 scripts/ada/render-memory-banks.py` run on
+    a host with the secrets env so the bank-registry JSON picks up
+    schema.fields.image_url (warn-only until then).
+  - |
+    persona-assets/ files are as durable as the LINE media archive —
+    if the archive is ever pruned, asset docs keep a dead image_url.
+    A sweep could mark such docs expired; not built.
+  - |
+    TG relay inbound photos are not archived to line-media — asset_save
+    on a TG lane resolves only explicit media_url= (fetchable URL)
+    since session_chat_id(runner,'line') returns ''.

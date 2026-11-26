@@ -1,0 +1,85 @@
+title: Michael-lane context-window bump — ADA_CONTEXT_TRIGGER/TARGET 49k/37k on kraut + mn01 standby
+date: 2026-11-24
+card: michael-lane-context-window
+dispatch: dispatch-wt-20261124-152314-same-fix-as-live-session-token
+status: shipped-live   # env applied + both instances restarted and verified
+
+summary: |
+  Same fix as live-session-token-diet (OPS-0509) on the michael lane. The
+  card spec was written 2026-10-13, before the grand-rename migration —
+  on idc03 the lane now runs as ada-ai-kraut.service (ADA_INSTANCE_ID=michael,
+  127.0.0.1:8003, env ~/.config/secrets/michael-ha/backend.env). A standby
+  copy still runs on mn01 as ada-ha-michael.service (0.0.0.0:8003,
+  env ~/.config/secrets/ada-ha-michael.env, unit disabled). Both got
+  ADA_CONTEXT_TRIGGER_TOKENS=49000 / ADA_CONTEXT_TARGET_TOKENS=37000.
+
+changes:
+  - host: idc03
+    file: ~/.config/secrets/michael-ha/backend.env
+    backup: backend.env.bak-pre-context-20261124
+    unit: ada-ai-kraut.service (restarted, active, MainPID verified)
+  - host: mn01
+    file: ~/.config/secrets/ada-ha-michael.env
+    backup: ada-ha-michael.env.bak-pre-context-20261124
+    unit: ada-ha-michael.service (restarted, active, :8003 listening)
+
+verification:
+  - >-
+    /proc/<MainPID>/environ on both hosts shows
+    ADA_CONTEXT_TRIGGER_TOKENS=49000 + ADA_CONTEXT_TARGET_TOKENS=37000
+    (previously unset → defaults 32000/24000).
+  - >-
+    idc03 scenario-live date_echo.yaml vs ws://127.0.0.1:8003/ws: session
+    c7fd4e9b73 completed all 3 turns, tool calls flowed (tasks
+    confirm-gate correctly denied unconfirmed write). Turn-2 wording
+    assertion FAILED — Thai confirm-gate restatement said "พรุ่งนี้ เช้า"
+    without absolute date tokens; same pre-existing lane-general
+    instruction-routing class as OPS-0585, unrelated to this change.
+  - >-
+    Fresh floor measurement: first turn in=20388 (text 17233 + audio
+    201) — the real michael-lane floor is ~20.4k, NOT the ~28.9k the
+    card spec assumed (that figure was tony's pre-keep-list surface).
+    Applied ratios: trigger 2.40x / target 1.81x floor — comfortably over
+    policy (>=1.7x / >=1.25x). Trigger 49000 > rotation budget 45000, so
+    compression is bypassed and the lane is rotation-bounded — identical
+    end-state to the tony lane, accepted by design.
+  - >-
+    mn01: "Application startup complete", "Uvicorn running on
+    http://0.0.0.0:8003". Pre-existing mddb search/add_document errors
+    unchanged (MDDB unreachable from mn01 — same as before restart).
+
+findings:
+  - id: stale-venv-shebangs
+    detail: |
+      Root-caused two live faults while restarting kraut.
+      ~/CascadeProjects/ada-voice/.venv on idc03 AND mn01 was created at
+      ~/CascadeProjects/ada-pi/.venv then moved; every console script in
+      .venv/bin had shebang #!.../ada-pi/.venv/bin/python. ada-pi was
+      deleted after the 2026-11-23 fleet restart, so (a) any lane restart
+      would fail 203/EXEC, and (b) every RUNNING lane process still
+      executes on the deleted venv's in-memory site-packages — lazy
+      imports fail FileNotFoundError. Observed on ada-ai-kraut: each ws
+      session died in ConversationMemory -> NotebooklmClient -> httpx ->
+      ssl.create_default_context (certifi.where() into the deleted
+      tree). Repaired shebangs in .venv/bin (idc03 41 scripts, mn01 21).
+      Residual: other running lanes (idc03 tony/ada/kk/chaba, mn01
+      tony) remain on the stale in-memory venv until their next restart
+      — carded ADA-0033 (restart each at a low-traffic window).
+  - id: floor-lower-than-spec
+    detail: |
+      Card spec sized 49k/37k for a ~28.9k floor; measured first-turn is
+      ~20.4k on the current decl surface (ADA_EXCLUDED_TOOLS trims 11
+      seats). Values still correct — ratios exceed policy and match the
+      tony lane's rotation-bounded end-state.
+
+artifacts:
+  - ~/.config/secrets/michael-ha/backend.env on idc03 (LIVE)
+  - ~/.config/secrets/ada-ha-michael.env on mn01 (LIVE, standby)
+  - ~/.config/secrets/michael-ha/backend.env.bak-pre-context-20261124
+  - ~/.config/secrets/ada-ha-michael.env.bak-pre-context-20261124
+  - card ADA-0033 ada-lanes-run-on-deleted-ada-pi-venv-res-df9c81
+
+related_files:
+  - docs/ssot/ssot.tokens.policy.yml
+  - docs/ssot/jobs/ada/2026-10-13-tony-lane-tool-profile.yml
+  - docs/ssot/kanban/cards/michael-lane-context-window.yml

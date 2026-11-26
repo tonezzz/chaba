@@ -1,0 +1,136 @@
+id: or-spend-observability-realtime-spend-ho-134232
+title: OR spend observability — realtime spend hook + OR panel report
+column: done
+updated: 2026-11-23 13:34
+priority: high
+tags:
+- litellm
+- openrouter
+- observability
+- idc03
+spec: 'Tony: OR credits drain fast, wants per-call observability. Design: (1) LiteLLM success/failure webhook callback
+  -> tiny receiver on idc03 appending spend-events.jsonl; (2) hourly OR /auth/key credits poller to expose gateway-bypass
+  consumers (credit delta minus gateway spend); (3) near-realtime report page ''or-panel'' in ada-cms-pages (per
+  key_alias x model x hour + unexplained-credit line), 15-min refresh timer; (4) burn-rate alert -> LINE push per
+  budget-watch pattern. Done-condition: Tony gets a working URL showing realtime OR spend per consumer + unexplained
+  credit leakage.'
+ref: OPS-0044
+comms:
+- at: 2026-11-12 13:37
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-12 13:53
+  from: devin
+  text: 'SHIPPED + VERIFIED 2026-11-12. Panel: https://tony-dell.taila0626a.ts.net/apps/or-panel/ (tailnet). Data:
+    https://idc03.taila0626a.ts.net:18443/or-panel.json. Pipeline live: (1) litellm generic_api success+failure
+    callback -> litellm-spend-hook.service (127.0.0.1:18001) -> events.jsonl; verified real event e2e incl. batched
+    json_array fix. (2) or-credits-poll.timer hourly -> or-credits.jsonl (OR /auth/key). (3) panel JSON joins SpendLogs
+    x VerificationToken for key-alias attribution + unexplaine'
+- at: 2026-11-12 13:53
+  from: tony
+  text: closed by tony
+- at: 2026-11-12 14:07
+  from: devin
+  text: 'OR panel deployed as first tab of ada-ha chaba-nest dashboard (lovelace config/save via websocket; view
+    order now: or-panel, board, nest, ... all 12 views preserved). Panel served same-origin at https://tony-ha.surf-thailand.com/apps/or-panel/
+    ; data flows via new caddy route /apps/or-panel/api/* -> idc03 ts-serve :18443 -> spend-hook :18001. Route declared
+    in ssot.routes.yml (or-panel-api). Fixed stale Caddyfile bind-mount inode by restarting web.service on tony-dell
+    (had to recreate missing yt'
+- at: 2026-11-12 14:07
+  from: devin
+  text: 'OR panel deployed as first tab of ada-ha chaba-nest dashboard (view order: or-panel, board, nest... all
+    12 views preserved). Panel same-origin at https://tony-ha.surf-thailand.com/apps/or-panel/ ; data via new caddy
+    route /apps/or-panel/api/* -> idc03 ts-serve :18443 -> spend-hook :18001. Declared in ssot.routes.yml as or-panel-api.
+    Fixed stale Caddyfile bind-mount by restarting web.service (recreated missing yt-live-media mountpoints). Dashboard
+    spec gained extra_views + build support so --appl'
+- at: 2026-11-12 14:08
+  from: devin
+  text: OR panel now first tab of ada-ha chaba-nest (12 views preserved). Same-origin at tony-ha.surf-thailand.com/apps/or-panel/
+    via new caddy route /apps/or-panel/api/* -> idc03:18443 -> spend-hook:18001. Declared in ssot.routes.yml; spec
+    gained extra_views so --apply preserves or-panel+board. Fixed stale Caddyfile bind-mount via web.service restart.
+- at: 2026-11-12 14:08
+  from: devin
+  text: OR panel now first tab of ada-ha chaba-nest (12 views preserved). Same-origin at tony-ha.surf-thailand.com/apps/or-panel/
+    via new caddy route /apps/or-panel/api/* -> idc03:18443 -> spend-hook:18001. Declared in ssot.routes.yml; spec
+    gained extra_views so --apply preserves or-panel+board. Fixed stale Caddyfile bind-mount via web.service restart.
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:06
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:15
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:36
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:37
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:05
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:15
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:02
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:17
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:02
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:06
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:42
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:34
+  from: tony
+  text: archived (1d in done, board over card cap)
+action:
+  status: done

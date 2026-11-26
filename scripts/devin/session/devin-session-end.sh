@@ -105,6 +105,55 @@ try:
 except Exception as e:
     print('session-end hook: recent-event error:', e, file=sys.stderr)
 
+# Capture-router event (Phase C.3, OPS-1356): emit a focus_session router
+# event so the knowledge-capture pipeline sees the session boundary. The
+# emitter is dry-run only — events.jsonl/audit.jsonl under
+# ~/.local/share/chaba/capture, deduped by dedupe_key, never a canonical
+# sink write (gated writes stay behind capture-apply.py). Open items pinned
+# via immediate-pin.py ride along as --open-ask so they reach the router.
+# Best-effort but loud: failures print to stderr, never silently pass.
+try:
+    ce_script = pathlib.Path(PROJECT_DIR) / 'scripts/chaba/capture-event.py'
+    if ce_script.exists():
+        cmd = ['python3', str(ce_script),
+               '--type', 'focus_session', '--source', 'devin',
+               '--session', str(session_id),
+               '--actor', 'devin-session-end-hook',
+               '--summary', f'Session {session_id} ended (reason: {reason}).',
+               '--ref', f'devin-session:{session_id}']
+        pin_info = {}
+        try:
+            import yaml as _yaml
+            imm = pathlib.Path.home() / '.local/share/chaba/immediate.yml'
+            if imm.exists():
+                imm_doc = _yaml.safe_load(imm.read_text(encoding='utf-8')) or {}
+                for e in imm_doc.get('entries') or []:
+                    if isinstance(e, dict) and e.get('session') == session_id:
+                        pin_info = e
+                        break
+        except Exception as pin_exc:
+            print('session-end hook: immediate-pin read failed:', pin_exc,
+                  file=sys.stderr)
+        payload = {'reason': reason, 'hook': 'devin-session-end.sh'}
+        if checkpoint_msg:
+            payload['git_checkpoint'] = checkpoint_msg[:300]
+        for k in ('task', 'next', 'branch', 'last_commit'):
+            if pin_info.get(k):
+                payload[k] = pin_info[k]
+        if pin_info.get('open'):
+            payload['open'] = [str(o)[:300] for o in pin_info['open'][:10]]
+            for item in payload['open'][:5]:
+                cmd += ['--open-ask', f'{item} -> devin']
+        cmd += ['--payload-json', json.dumps(payload, ensure_ascii=False)]
+        ce = subprocess.run(cmd, capture_output=True, text=True, timeout=60,
+                            encoding='utf-8', errors='replace', check=False)
+        if ce.returncode != 0:
+            print('session-end hook: capture-event rc=%s: %s'
+                  % (ce.returncode, (ce.stderr or ce.stdout).strip()[:300]),
+                  file=sys.stderr)
+except Exception as e:
+    print('session-end hook: capture-event error:', e, file=sys.stderr)
+
 # Surface a concise finish message to the agent.
 parts = [f"Session ended ({reason})."]
 if checkpoint_msg:

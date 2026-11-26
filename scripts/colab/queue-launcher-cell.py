@@ -15,9 +15,10 @@
 #      recorded boot_id equals THIS VM's — a stale Drive record can name a
 #      PID that happens to be alive locally on a different VM, and killing
 #      it would be a PID-collision kill (OPS-0872 lesson). Foreign/stale
-#      records are left alone; a fresh heartbeat from another boot means the
-#      queue is already running elsewhere and we refuse.
-# Rerun-safe: a live same-VM runner is reported, a stale-heartbeat same-VM
+#      records are left alone; a fresh liveness ts (queue/lease, with
+#      queue/heartbeat fallback) from another boot means the queue is
+#      already running elsewhere and we refuse.
+# Rerun-safe: a live same-VM runner is reported, a stale-liveness same-VM
 # zombie is reaped, anything else spawns a fresh detached runner.
 import subprocess, os, sys, time, json
 
@@ -36,11 +37,25 @@ def _boot_id():
         return 'noboot-' + time.strftime('%Y%m%d-%H%M')
 
 
-def _heartbeat_age(q):
+def _liveness_ts(q):
+    """Liveness epoch: queue/lease ts (the unified liveness file,
+    ADA-0806) with fallback to the legacy queue/heartbeat first token
+    for pre-unification runners. 0.0 when neither parses."""
     try:
-        return time.time() - float(open(f'{q}/heartbeat').read().split()[0])
+        ts = float(json.loads(open(f'{q}/lease').read()).get('ts') or 0)
+        if ts:
+            return ts
     except Exception:
-        return float('inf')
+        pass
+    try:
+        return float(open(f'{q}/heartbeat').read().split()[0])
+    except Exception:
+        return 0.0
+
+
+def _heartbeat_age(q):
+    ts = _liveness_ts(q)
+    return time.time() - ts if ts else float('inf')
 
 
 def _read_runner_id(q):
@@ -154,7 +169,7 @@ def main():
         spawn(q)
 
     print('watch from fleet: rclone cat gdrive:ada-nest/queue/run-<ts>.out.log')
-    print('  heartbeat: queue/heartbeat | done: queue/done/ | preps: queue/prep-*.log')
+    print('  liveness: queue/lease | done: queue/done/ | preps: queue/prep-*.log')
     print('  identity:  queue/runner.id | runtime-sessions: queue/runtime-sessions/')
     print('  stop it:   Runtime > interrupt execution (kills this VM only)')
 

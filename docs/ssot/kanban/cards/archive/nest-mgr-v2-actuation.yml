@@ -1,0 +1,602 @@
+id: nest-mgr-v2-actuation
+title: Spec + pilot nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
+column: done
+updated: 2026-11-26 19:41
+brief: Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes
+  eligible queued work to idle hosts — without bypassing owner/quota/leash gates. Build on the v1 census and the
+  devnest-capacity-aware-dispatch lane machinery.
+priority: medium
+program: ai-workforce
+tags:
+- devnest
+- nest-mgr
+- efficiency
+- actuation
+- rebalancing
+ref: nest-manager-node
+spec: "GOAL\nImprove DevNest throughput by acting on v1 census data in a bounded,\nauditable way. v1 measures; v2
+  acts — but only through allowlisted,\ngated actions.\n\nNON-GOALS\n- No parallel queue: work routing stays with\n
+  \ devnest-capacity-aware-dispatch / devnest_capacity_broker; nest-mgr\n  is a signal source and actuator, not
+  a new scheduler.\n- No synthetic work generation, no bypassing owner/quota gates.\n- No actuation on production
+  lanes without separate approval\n  (leash principle — ssot.nest-training.yml promotion_gate still binds).\n- tony-macbook
+  excluded until nest-mgr is actually installed there\n  (host was offline at install attempt).\n\nACTION MODES
+  (config flag, default monitor-only)\n  monitor   - v1 behavior, unchanged (detect + report only)\n  recommend
+  - compute actions, log + publish to CMS/state, execute nothing\n  guarded   - execute allowlisted actions only
+  (below), per-host opt-in\n\nGUARDED AUTO-RESTART POLICY\nEligible: allowlisted units only (explicit NEST_RESTART_OK=1
+  env on\nthe unit, or allowlist file ~/.local/share/nest/restart-allowlist).\nNever restart: units with owner card:<id>,
+  NEST_OWNER=none/unmanaged,\nnest-mgr itself, units in \"manual\" state file, production lanes\nunless separately
+  approved.\nConditions (all required):\n  - state==failed on >=3 consecutive ticks (cooldown 5 min between\n    attempts;
+  max 2 restarts/hour/unit)\n  - no active owner lock (check card claims + state file)\n  - unit's Restart= policy
+  respected; only systemctl --user restart\nEvery action logged: {ts, host, unit, prior_state, action, reason,\noutcome}
+  appended to manager-state.json actions[] and surfaced in the\nnest-<host> CMS page + Services card attributes.\n\nWORK-STEALING
+  / REBALANCING (phase 2, after restart pilot proves out)\nOnly for work already normalized by the capacity broker
+  (task_id /\ntask_class / lane / model / artifact fields). nest-mgr never invents\njobs.\nEligible queued packages
+  may be re-offered to idle hosts when:\n  - target host has free capacity (load/mem/disk headroom from\n    device-telemetry)
+  and compatible runtime/model\n  - claim via lease file in MDDB (idempotent key = task_id+attempt)\n    to prevent
+  duplicate dispatch; lease TTL + release on ack\n  - owner/quota gates pass (same gates as broker)\n  - not production
+  side-effects without explicit approval\nPilot subset first: idc02 + con01 + mn01 (fresh installs, currently\n0-2
+  active nodes — safe testbed). Do not touch tony-omen/idc03 until\npilot metrics look clean.\n\nCIRCUIT BREAKERS
+  / ROLLBACK\n- Per-unit: after 2 failed restarts in an hour -> mark unit\n  \"circuit-open\", stop retrying, alert
+  via CMS page.\n- Per-host: >5 actions/hour -> host circuit-open, fall back to\n  monitor mode until manually reset
+  (rm state file flag).\n- Global kill switch: env NEST_MGR_MODE=monitor on unit drop-in +\n  daemon-reload; also
+  a flag file ~/.local/share/nest/actuation.off\n  checked every tick.\n- Rollback = revert to v1 binary; v1 never
+  depended on action state.\n\nAUDIT TRAIL\nAll recommendations and actions append to manager-state.json\n(actions[]
+  ring buffer, last 200) AND published into the nest-<host>\nCMS page (\"Actions\" section) AND mirrored to HA via
+  the existing\ntelemetry pipeline (svc_nest_mgr attribute rows). Nothing acts\nsilently.\n\nSUCCESS METRICS (prove
+  efficiency, not vibes)\n- queue wait time (package -> first run), productive time per host,\n  verified success
+  rate, fallback rate, restart success rate,\n  cost/GPU-time delta — reuse the broker's existing metric set.\n-
+  Compare 7-day windows before/after enabling guarded mode on pilot\n  hosts. Report on the nest-<host> page + a
+  card comm.\n\nROLLOUT\nPhase 0 (this card): spec + dry-run/recommend-mode implementation on\n  pilot hosts only,
+  state-file logging, zero execution.\nPhase 1: guarded auto-restart allowlist on pilot hosts, 1 week soak.\nPhase
+  2: work-stealing for broker-normalized packages on pilot hosts.\nPhase 3: evaluate expansion to omen/idc03/dell;
+  per-host opt-in only.\n\nINTEGRATION POINTS\n- stacks/services/nest-mgr/nest-mgr.py (v1 census/probe/classify)\n-
+  scripts/devnest/devnest_capacity_broker.py + gdrive inbox/packs\n  (normalized package format + lease store)\n-
+  device-telemetry agent services probe (host capacity signals)\n- telemetry-ha-push.py svc_nest_mgr sensors (visibility)\n-
+  kanban card claims (nest_nodes:) as ownership gate\n"
+related_cards:
+- devnest-capacity-aware-dispatch
+- nest-manager-node
+comms:
+- at: 2026-11-17
+  from: devin
+  text: 'Spec captured from chat. v1 (observer-governor, deployed on idc02/idc03/con01/mn01/tony-omen/tony-dell)
+    only observes — it discovers nodes, adopts ownerless ones, health-checks, publishes nest-<host> CMS pages. This
+    card is the v2 proposal: controlled actuation for real DevNest efficiency gains. Tony asked to spec it; explicitly
+    NOT to deploy actuation — design + dry-run/recommend mode first. board-api write path was timing out; filed
+    via dispatch worktree card-file fallback.'
+- at: 2026-11-17 18:34
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:35
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:41
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:44
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:10
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 16:16
+  from: devin
+  text: 'APPROVED by Tony (2026-11-18): spec accepted as written — monitor→recommend→guarded progression, allowlisted
+    auto-restart (≥3 failed ticks, cooldown, ≤2/hour), broker-normalized work-stealing on pilot hosts idc02/con01/mn01,
+    per-unit/per-host/global circuit breakers + actuation.off kill switch + NEST_MGR_MODE=monitor rollback, full
+    audit trail, phased rollout starting recommend-only. Ready for dispatch/implementation planning.'
+- at: 2026-11-18 17:29
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:15
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:18
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:01
+  from: chaba
+  text: classified as codemod (kw:cap conf 1.00)
+- at: 2026-11-18 21:01
+  from: tony
+  text: queued for processing
+- at: 2026-11-18 21:02
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.11 > 1.0)'
+- at: 2026-11-18 21:02
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.88 > 0.85)'
+- at: 2026-11-18 21:02
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.64 > 0.85)'
+- at: 2026-11-18 21:02
+  from: tony-omen
+  text: claimed
+- at: 2026-11-18 21:02
+  from: chaba
+  text: started devin-task-20261118-210246-goal-improve-devnest-throughpu on tony-omen (dispatch)
+- at: 2026-11-18 21:03
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-18 21:07
+  from: devin
+  text: 'dispatch picked up (tony-omen). Implementing Phase 0: mode machinery (monitor/recommend/guarded), restart
+    gates + circuits + actions[] audit in nest-mgr.py, device-telemetry svc attrs, spec doc. Zero execution — recommend
+    is the ceiling this card ships.'
+- at: 2026-11-18 21:16
+  from: devin
+  text: 'Phase 0 implemented in dispatch worktree (no deploy). nest-mgr.py v2: monitor/recommend/guarded modes w/
+    flag-file control surface (actuation.off kill, actuation.on opt-in, host+unit circuit flags, manual-units, restart-allowlist);
+    restart planner w/ never-list>allowlist>throttle ordering; actions[] audit ring (200) + CMS Actuation section
+    + mode-change/held/circuit events; guarded path implemented but inert until per-host opt-in. device-telemetry
+    surfaces mode/act_1h/circuit/last -> svc_nest_mg'
+- at: 2026-11-18 21:21
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:26
+  from: chaba
+  text: 'merge-sweep: devin-task-20261118-210246-goal-improve-devnest-throughpu no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-11-18 21:26
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261118-210246-goal-improve-devnest-throughpu on tony-omen still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-18 21:31
+  from: tony-omen
+  text: 'finished (ok): exit=0 01 (lands monitor), then `echo recommend > ~/.local/share/nest/mode` per pilot host.
+    | devin-task-20261118-210246'
+- at: 2026-11-18 21:31
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-18 21:31
+  from: chaba
+  text: 'session-end checkpoint f687f3f5: 3 leftover file(s) committed'
+- at: 2026-11-18 21:31
+  from: chaba
+  text: banked 64 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-18 21:31
+  from: chaba
+  text: pushed dispatch/20261118-210246-goal-improve-devnest-throughpu to origin
+- at: 2026-11-18 21:31
+  from: chaba
+  text: 'test gate failed — merge held: suite timeout (240s)'
+- at: 2026-11-18 21:31
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-18 21:34
+  from: chaba
+  text: restarted zombie claim as devin-task-20261118-213418-goal-improve-devnest-throughpu on tony-omen — claim
+    committed but the response was lost (OPS-1071)
+- at: 2026-11-18 21:37
+  from: devin
+  text: 'Phase 0 re-verified in dispatch worktree 213418 (prior checkpoint cherry-picked clean): 21/21 gate-matrix
+    tests pass (test-actuation.py added — every mode/gate/circuit path, tempdir-isolated fake systemctl), job spec
+    docs/ssot/jobs/devnest/2026-11-18-nest-mgr-v2-actuation.yml written. Still zero execution — guarded ships inert
+    pending per-host actuation.on + deploy approval.'
+- at: 2026-11-18 21:55
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-18 21:55
+  from: chaba
+  text: 'session-end checkpoint 29bcc413: 2 leftover file(s) committed'
+- at: 2026-11-18 21:55
+  from: chaba
+  text: pushed dispatch/20261118-213418-goal-improve-devnest-throughpu to origin
+- at: 2026-11-18 21:55
+  from: chaba
+  text: 'test gate failed — merge held: suite timeout (240s)'
+- at: 2026-11-18 21:55
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-18 22:08
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 08:47
+  from: devin
+  text: 'Phase 0 landed on origin/master as c4a7ab375bb. Salvaged both held dispatch branches (210246 + 213418):
+    nest-mgr v2 monitor/recommend/guarded machinery, gated restart planner, unit/host circuits, actions[] audit,
+    CMS Actuation section, device-telemetry svc attrs, README/install/verify updates, plus both test suites and
+    job-trail docs. Verified locally: test-actuation.py 21/21, pytest tests/nest_mgr 27/27, py_compile/bash -n/YAML
+    clean, --once --dry-run state-only. No deploy and no mode flip: gua'
+- at: 2026-11-19 10:45
+  from: devin
+  text: 'pilot deployed 2026-11-19 ~10:10 ICT: install.sh pushed v2 to idc02/con01/mn01; all three verified `manager
+    nest-mgr v2`, mode monitor after install, then flipped to `recommend` via ~/.local/share/nest/mode. No actuation.on/actuation.off/host-circuit
+    flags created; actions[] shows only mode-change monitor->recommend and held/not-allowlisted proposals (e.g.
+    idc02 ada-code.service restart held). Guarded remains inert.'
+- at: 2026-11-19 17:04
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:05
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:52
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:46
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:05
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:20
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:17
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:06
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:07
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:23
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:40
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:06
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 18:09
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261118-213418-goal-improve-devnest-throughpu'
+- at: 2026-11-24 20:07
+  from: tony
+  text: 'triage (design): v2 spec is drafted (monitor/recommend/guarded modes, allowlisted restarts only) but the
+    dispatch is not landed — action.status=done, verified=False, merge-sweep 2026-11-24 18:09: no served checkout
+    for repo ''?''. v1 nest-mgr on tony-dell is stopped (08:03 today). Holding in backlog with evidence: re-route
+    the dispatch with an explicit repo and decide monitor vs guarded pilot.'
+- at: 2026-11-24 20:07
+  from: tony
+  text: put on hold
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:48
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:01
+  from: chaba
+  text: classified as devin (fallback conf 0.13)
+- at: 2026-11-25 09:01
+  from: tony
+  text: queued for processing
+- at: 2026-11-25 09:03
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.84 > 0.85)'
+- at: 2026-11-25 09:03
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 09:03
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 2.25 > 1.0)'
+- at: 2026-11-25 09:03
+  from: tony-dell
+  text: claimed
+- at: 2026-11-25 09:04
+  from: chaba
+  text: started devin-task-20261125-090427-goal-improve-devnest-throughpu on tony-dell (dispatch)
+- at: 2026-11-25 09:04
+  from: chaba
+  text: 'primer injected 8 lesson(s): [nest-mgr-v2-actuation] APPROVED by Tony (2026-11-18): spec accepted as written
+    ; [nest-mgr-v2-actuation] Phase 0 implemented in dispatch worktree (no deploy). ne; idc02''s kanban-dispatch.service
+    was a linked unit running a stale scripts/-only ; [devnest-queue-consolidation] VERIFY COMPLETE (attempt 2,
+    tony-omen). Done-condi; [devin-session-audit-2026-10-29] AUD-0973 independent re-check (dispatch 201613 ; SSOT
+    `known_failed[].action` is documentation-only — audit-ho'
+- at: 2026-11-25 09:09
+  from: devin
+  text: 'dispatch picked up (tony-dell). Phase 0 verified intact: c4a7ab375bb is ancestor, installed binary on idc02/con01/mn01
+    == landed commit exactly (md5 affd0aeb, no drift), all in recommend mode. Harvested ~6d soak: idc02 135 held
+    + kk-mac-model-status genuinely failed (orphaned unit, script missing — separate card OPS-1348); con01 15 held
+    (jev-bench, now parked); mn01 quiet. Found+fixed v2 defect: actuation.units never pruned — ghost ada-code.service
+    on idc02 + stale held residue. Ghost-prune + he'
+- at: 2026-11-25 09:10
+  from: devin
+  text: 'raised request phase-0-soak-review-done-6d-idc02-con01-d5e260: Phase-0 soak review done (6d, idc02/con01/mn01,
+    recommend mode): detection/gating/audit all correct, zero executions by '
+- at: 2026-11-25 09:12
+  from: devin
+  text: 'dispatch done (tony-dell). Deliverables in worktree commit 0e8730d0e8e (not pushed): ghost-prune fix in
+    nest-mgr.py (actuation.units now drops units absent from discovery >30 ticks; held clears on recovery) + 4 tests
+    (31/31 pytest, 21/21 gate) + soak evidence doc docs/ssot/jobs/devnest/2026-11-25-nest-mgr-v2-recommend-soak.yml
+    + dispatch-outcome md. Soak verdict: recommend mode healthy on all 3 pilots, zero drift, gates correct; guarded
+    is currently a no-op (nothing allowlisted). Decision reques'
+- at: 2026-11-25 09:27
+  from: tony-dell
+  text: 'finished (ok): exit=0 atch-outcome-20261125-090427-goal-improve-devnest-throughpu.md`. | devin-task-20261125-090427-goal-improve-devnes'
+- at: 2026-11-25 09:27
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 09:27
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261125-090427-goal-improve-devnest-throughpu'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 2 le'
+- at: 2026-11-25 09:27
+  from: chaba
+  text: banked 187 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 09:27
+  from: chaba
+  text: pushed dispatch/20261125-090427-goal-improve-devnest-throughpu to origin
+- at: 2026-11-25 09:27
+  from: chaba
+  text: "auto-merge not done: push: To https://github.com/tonezzz/chaba.git\n ! [rejected]                HEAD ->
+    master (fetch first)\nerror: failed to push some refs to 'https://github.com/tonezzz/chaba.git'\nhint: Updates
+    were rejected  — close will block until merged"
+- at: 2026-11-25 09:27
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
+- at: 2026-11-25 09:31
+  from: tony
+  text: 'answered phase-0-soak-review-done-6d-idc02-con01-d5e260: stay-recommend — Stay recommend (recommended)'
+- at: 2026-11-25 09:31
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-25 09:39
+  from: chaba
+  text: 'answer-sweep: executed ''stay-recommend — Stay recommend (recommended)'' -> put on hold'
+- at: 2026-11-25 10:08
+  from: chaba
+  text: classified as devin (fallback conf 0.13)
+- at: 2026-11-25 10:08
+  from: chaba
+  text: queued for processing
+- at: 2026-11-25 10:09
+  from: chaba
+  text: '[auto-dispatch] wave 2 (2026-11-25 10:09): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-25 10:09
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 10:11
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (4/4)'
+- at: 2026-11-25 10:13
+  from: idc02
+  text: claimed
+- at: 2026-11-25 10:13
+  from: chaba
+  text: started devin-task-20261125-101355-goal-improve-devnest-throughpu on idc02 (dispatch)
+- at: 2026-11-25 10:13
+  from: chaba
+  text: 'primer injected 8 lesson(s): [nest-mgr-v2-actuation] APPROVED by Tony (2026-11-18): spec accepted as written
+    ; [nest-mgr-v2-actuation] Phase 0 implemented in dispatch worktree (no deploy). ne; [nest-mgr-v2-actuation]
+    dispatch picked up (tony-dell). Phase 0 verified intact:; idc02''s kanban-dispatch.service was a linked unit
+    running a stale scripts/-only ; [devnest-queue-consolidation] VERIFY COMPLETE (attempt 2, tony-omen). Done-condi;
+    [runner-load-cap-per-claim-type] primer injected 8 lesson(s):'
+- at: 2026-11-25 10:17
+  from: devin
+  text: 'attempt 2 done (idc02). Recovered attempt-1 stranded commit: cherry-picked 0e8730d0e8e -> c0b7265cd3 (ghost-prune
+    fix + soak evidence doc + 4 tests; 31/31 pytest, 21/21 gate matrix pass on merged master). Recorded Tony''s
+    stay-recommend decision in the soak doc (a2bc839931). Re-verified pilots live ~10:20 ICT: idc02/con01/mn01 all
+    recommend mode, installed md5 affd0aeb == c4a7ab375bb, zero drift, 137 actions on idc02 all held/not-allowlisted,
+    zero executions. Phase 0 complete; Phase 1 deferred pe'
+- at: 2026-11-25 10:22
+  from: idc02
+  text: 'finished (ok): exit=0 e commits on `dispatch/20261125-101355-goal-improve-devnest-throughpu` and `dispatch-outcome-20261125-101355-goal'
+- at: 2026-11-25 10:22
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 10:22
+  from: chaba
+  text: banked 133 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 10:22
+  from: chaba
+  text: pushed dispatch/20261125-101355-goal-improve-devnest-throughpu to origin
+- at: 2026-11-25 10:22
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 10:22
+  from: chaba
+  text: auto-merged b9de96d6 (dispatch/20261125-101355-goal-improve-devnest-throughpu) → origin/master
+- at: 2026-11-25 10:22
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-101355-goal-improve-devnest-throughpu,
+    branch dispatch/20261125-101355-goal-improve-devnest-throughpu'
+- at: 2026-11-25 10:24
+  from: chaba
+  text: 'merge-sweep: verified — held in review (review_kind=design — human-gated)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:01
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:03
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 09:30
+  from: tony
+  text: '[triage 2026-11-26] Human-gated design card, left for your decision. Dispatch b9de96d6 auto-merged to origin/master
+    with test gate green; held in review by review_kind=design. Please review the actuation spec and either approve
+    (close) or send back.'
+- at: 2026-11-26 13:35
+  from: tony
+  text: '[design review 2026-11-26] Phase-0 soak is sound: recommend mode, zero executions, detection/gating/audit
+    correct. Do NOT enable guarded yet — zero units are restart-allowlisted fleet-wide, so guarded is a no-op; the
+    only persistent failure (kk-mac-model-status on idc02) is an orphaned unit missing its script and cannot be
+    fixed by a restart (OPS-1348). Recommend: keep monitor/recommend mode, allowlist only real restart-repairable
+    units via NEST_RESTART_OK=1, then re-soak 7d. Hold the Phase-1 as'
+- at: 2026-11-26 15:24
+  from: tony
+  text: '[approved 15:25 +07] Full actuation approved by Tony (override of the 13:35 keep-held recommendation).
+    Phases 1+2 enabled on the three pilot hosts only (idc02/con01/mn01): mode file -> guarded and actuation.on created
+    at ~15:22 with backups in ~/.local/share/nest/backups/approve-full-actuation-20261126-1522*. Verified after
+    one 60s tick (15:24): requested=guarded, effective=guarded, opted_in=true, zero executions on all three. Safety
+    gates intact: no kill switch, no host/unit circuits, restart-a'
+- at: 2026-11-26 15:24
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 15:49
+  from: devin
+  text: 'pub news: nest-mgr v2 actuation enabled on pilot fleet — DevNest can now self-heal — Tony approved full
+    actuation 2026-11-26 ~15:25 +07. nest-mgr moved from observer/recommend mode to guarded actuation on the three
+    pilot hosts (idc02, con01, mn0 [evt-nw-nestmgr-v2-actuation-20261126]'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: devin
+  lane_source: fallback
+  sweep:
+    stale_running: 2026-11-18 21:27
+    dirty: 1
+    no_repo: 2026-11-24 18:09
+    close_held: 2026-11-25 10:24
+  result: 'exit=0 e commits on `dispatch/20261125-101355-goal-improve-devnest-throughpu` and `dispatch-outcome-20261125-101355-goal-improve-devnest-throughpu.md`.
+    | devin-task-20261125-101355-goal-improve-devnest-throughpu.service: Consumed 17.963s CPU time.'
+  attempts: 2
+  runner: idc02
+  verified: true
+review_kind: design
+claim:
+  since: 2026-11-25 10:13
+requests:
+- id: phase-0-soak-review-done-6d-idc02-con01-d5e260
+  ask: 'Phase-0 soak review done (6d, idc02/con01/mn01, recommend mode): detection/gating/audit all correct, zero
+    executions by design. But guarded today would be a no-op — zero units fleet-wide are restart-allowlisted, so
+    every candidate holds at not-allowlisted. The only persistent real failure found (kk-mac-model-status on idc02)
+    is an orphaned unit missing its script — restart cannot fix it (already carded OPS-1348). How to proceed to
+    Phase 1?'
+  status: answered
+  at: 2026-11-25 09:10
+  from: devin
+  options:
+  - id: stay-recommend
+    label: Stay recommend (recommended)
+    d: Keep recommend on all pilots; land the ghost-prune fix on next nest-mgr deploy; resolve OPS-1348; revisit
+      guarded once you name 1-2 allowlist candidates per host.
+  - id: guarded-mn01
+    label: Guarded on mn01 only
+    d: 'Quietest pilot (sole node: runner-agent). Needs actuation.on + mode=guarded + restart-allowlist entries
+      to act — cleanest signal, slowest proof.'
+  - id: guarded-idc02
+    label: Guarded on idc02
+    d: Where real failures occur, but its only persistent failure is the orphaned unit a restart cannot fix — guarded
+      would just trip that unit circuit.
+  - id: guarded-all-pilots
+    label: Guarded on all 3 pilots
+    d: Fastest soak coverage, widest blast radius if a gate is wrong; still needs allowlist entries to do anything.
+  suggested: stay-recommend
+  answer: stay-recommend — Stay recommend (recommended)
+  executed: 2026-11-25 hold

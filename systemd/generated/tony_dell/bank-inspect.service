@@ -1,0 +1,8 @@
+[Unit]
+Description=Memory-inspect pages — per-lane bank snapshots into CMS (daily) (job:bank-inspect, rendered from ssot.jobs.yml — do not edit)
+ConditionPathExists=%h/CascadeProjects/chaba/scripts/ada/bank-inspect.py
+
+[Service]
+Type=oneshot
+TimeoutStartSec=900
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/bank-inspect.py

@@ -1,0 +1,115 @@
+title: "Session capture C.4 — bounded harvester/index-refresh job"
+subtitle: >-
+  Implements the Phase C.1 "Harvester/index-refresh contract" as
+  scripts/chaba/capture-harvest.py: bounded scan of approved capture
+  sources emits normalized events; checkpointed cursors; append-only
+  audit JSONL; dedupe-keyed pointer index; dry-run by default; focus
+  parity + pointer-index checks. No canonical sink writes.
+icon: 🧺
+id: 2026-11-25-session-capture-c4-harvester
+status: done
+owner: devin-dispatch
+project: chaba
+card: session-capture-c4-harvester
+ref: OPS-1358
+started: "2026-11-25"
+completed: "2026-11-25"
+
+context:
+  ask: >-
+    Card spec: "idempotent, bounded harvester/index-refresh for pointer
+    indexes/focus parity checks. Depends: C.1-spec, C.2-router.
+    Acceptance: rerun-safe; checkpointed; audit records; no canonical
+    duplication; dry-run mode."
+  dependency_state: >-
+    C.1-spec contract lives in PR #218 (OPEN, unmerged) — implemented
+    against its text. C.2-router has no implementation yet; the existing
+    scripts/chaba/capture-router.py is the OPS-0016 read-only proposal
+    router, not the envelope router. capture-harvest.py therefore emits
+    normalized events per the C.1 envelope and does NOT depend on a
+    router API — it is the producer side the C.2 router will consume.
+  precedent: >-
+    OPS-0016 (knowledge-capture-harvester-guards-phase-c-d-64d812ef):
+    capture-router.py + harvester.py + capture-apply.py landed
+    2026-11-23; posture stayed read-mostly with sink writes behind
+    explicit gates. This job keeps that posture: only local artifacts
+    under --out-dir (default reports/session-capture/, gitignored).
+
+changes:
+  - scripts/chaba/capture-harvest.py: >-
+      New job. Stream sources card-comms / focus-inbox /
+      dispatch-outcome emit normalized events (C.1 envelope:
+      event_id/event_type/as_of/source/source_id/actor/subject/summary/
+      refs/dedupe_key/volatility/sink_hint/evidence/provenance);
+      event_id is a deterministic sha1 of dedupe_key so replays are
+      idempotent. dispatch-outcome uses a local path-keyed scanner so
+      same-named files under docs/ cannot collide on dedupe keys.
+      event_type v0 classifier: outcome / open_ask|discovery (inbox by
+      already_filed) / decision|open_ask|lesson|discovery (card comms
+      keywords). Check sources: pointer-index (path:/file: refs in
+      ssot.index.yml, ssot.procedures-index.yml, ssot.focus.current.yml
+      sources[] must resolve; compound 'a + b' and label+path refs
+      resolved via path-token extraction under repo/, docs/ssot/,
+      docs/ roots) and focus-parity (sessions/decisions required fields,
+      append-only date order, session decisions[].id cross-checked
+      against ssot.technical-decisions.yml; cue-action rows exempt from
+      the request field per the CUE_RE convention). Artifacts (only
+      with --write): events.jsonl (append-only, dedupe_key unique),
+      audit.jsonl (run record + per-new-event records in the C.1 audit
+      shape), index.json (pointer/index refresh, upsert by dedupe_key,
+      first_seen/last_seen), checkpoint.json (per-source resume cursors,
+      never regresses under --full/--since/--limit),
+      report-<run>.md. Dry-run is the DEFAULT — nothing is written
+      without --write. --since/--limit/--source bound the scan;
+      --full ignores cursors (dedupe still protects); --no-checks
+      skips check sources; --stdout prints events JSON; --self-test
+      15/15.
+  - scripts/chaba/harvester.py: >-
+      One-char fix: dispatch-outcome as_of slice [16:24] -> [17:25];
+      the old slice produced '-2026112' (dash + truncated date) instead
+      of '20261125'.
+
+verify:
+  self_test: >-
+    capture-harvest.py --self-test 15/15; harvester.py --self-test 5/5;
+    capture-router.py --self-test 13/13 (no regressions).
+  dry_run: >-
+    Default mode scanned 120 stream candidates (--limit 40/source) +
+    checks in ~34s, printed summary, created no files.
+  write_idempotent: >-
+    /tmp run sequence: --write --limit 30 (95 new) -> incremental run
+    (90 new next window) -> --full rerun (0 new, 95 dup) ->
+    --full --limit 20 after --limit 40 confirmed checkpoint cursor does
+    not regress (stayed at scan position 60). events.jsonl grew only by
+    genuinely new dedupe_keys; index.json upserted last_seen on dups.
+  checks_live: >-
+    First live check pass found 5 real findings: 2 dangling refs in
+    ssot.index.yml (ssot.mcp-debug.baselines.yml,
+    ssot.apps.imagen2.yml), 1 focus session missing ISO date
+    (sessions[14]), 2 info-level session decision ids absent from
+    ssot.technical-decisions.yml.
+
+notes:
+  - >-
+    "Pointer indexes" interpreted as the SSOT pointer surfaces
+    (ssot.index.yml / ssot.procedures-index.yml / focus sources[]) —
+    the job verifies their refs resolve and maintains a generated
+    pointer index artifact; it does not rewrite canonical index files.
+  - Focus parity = schema/order/cross-ref consistency of
+    ssot.focus.sessions.yml + ssot.focus.decisions.yml (the logs the
+    session-capture sweep appends to), not rendered-memory parity —
+    the latter was answered 'card-only' on DEV-0038.
+  - Runtime artifacts default to reports/session-capture/ (gitignored)
+    or CHABA_CAPTURE_HARVEST_OUT; a future timer would pass --write.
+  - C.2-router and C.3-hooks remain unimplemented; when C.2 lands, its
+    router can consume events.jsonl/index.json directly.
+
+lessons:
+  - "harvester.py dispatch-outcome as_of used stem[16:24] which yields
+    '-2026112' — off-by-one slice; filename date starts at index 17."
+  - "Checkpoint cursors must compare against the STORED cursor, not the
+    resume cursor — --full nulls the resume cursor and would otherwise
+    regress the checkpoint on bounded rescans."
+  - "ssot.procedures-index.yml file: values are not all single paths —
+    compound 'a + b' refs and 'AGENTS.md duties' label+path strings need
+    path-token resolution, not exists() on the whole string."

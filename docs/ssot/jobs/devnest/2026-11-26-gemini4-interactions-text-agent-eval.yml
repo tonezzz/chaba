@@ -1,0 +1,258 @@
+title: Gemini 4 + Interactions text-agent eval (partial — Gemini 4 access blocked)
+id: 2026-11-26-gemini4-interactions-text-agent-eval
+date: 2026-11-26
+runner: idc03
+kind: eval-result
+card: gemini4-interactions-text-agent-eval-2026-11-26  # ADA-1451
+
+summary: >
+  Gemini 4 could not be exercised: free-tier keys have a zero-token rate limit
+  for every Gemini 4 model, and the shared paid project is monthly-cap blocked.
+  The Interactions API itself was evaluated with gemini-3.5-flash-lite on six
+  synthetic multi-turn tool-and-recall tasks. Stateful and stateless both scored
+  6/6 tool calls and 6/6 cross-turn recall; stateful used ~2% fewer input tokens
+  and was ~2.5x slower. The legacy generateContent arm hit free-tier quota after
+  two tasks and lost both recall checks.
+
+access_blocker:
+  probed_via: "REST POST /v1beta/interactions, one minimal text turn per model/key"
+  key_names_only: true
+  key_values_logged: false
+  results:
+    - "GEMINI_API_KEY_MICHAEL / GEMINI_API_KEY_FREE: HTTP 429, 'limit: 0 input tokens per minute on Free Tier' for gemini-4-neon, gemini-4-carbon, gemini-4-argon"
+    - "gemini-4-hydrogen: HTTP 503 'currently experiencing high demand' on free-tier keys"
+    - "GEMINI_API_KEY_PAID / GEMINI_API_KEY_TONY / GEMINI_API_KEY_KK: HTTP 429 'project has exceeded its monthly spending cap'"
+    - "gemini-3.8-flash: HTTP 503 high demand on free tier; gemini-3.6-flash: HTTP 429 20 requests/day already used"
+    - "gemini-3.5-flash-lite and gemini-3.1-flash-lite: HTTP 200 on Interactions API"
+  no_action_taken: "No key, billing, cap, gateway, or model-pin change; no retry of the capped paid project."
+
+method:
+  key_used: GEMINI_API_KEY_MICHAEL
+  model: gemini-3.5-flash-lite
+  harness: scripts/voice-bench/g4-interactions-eval.py (google-genai 3.6.1)
+  tasks: "6 synthetic 4-turn tasks: remember a fact, schedule a meeting via one function tool, return the tool result, then recall both the fact and the meeting detail"
+  arms:
+    - interactions_stateful: "previous_interaction_id chains; tools + system_instruction re-sent every turn"
+    - interactions_stateless: "store=False; full step history replayed in input, including thought/function_call steps"
+    - legacy_generatecontent: "client.models.generate_content with client-held contents and preserved thought_signature"
+  grading:
+    tool: "exact tool name, attendees, date, time; topic accepted with minor phrasing normalization (the/a prefix and parentheticals removed)"
+    recall: "all expected fact/date/time groups present in the final answer (date variants accepted)"
+  result_json: scripts/voice-bench/results/gemini4-interactions-eval-20261126.json
+
+results:
+  interactions_stateful:
+    completed: "6/6"
+    tool_exact: "6/6"
+    recall: "6/6"
+    both: "6/6"
+    input_tokens: 5868
+    output_tokens: 747
+    mean_elapsed_s: 27.92
+    turn1_input_tokens: [161, 161, 162, 160, 161, 161]
+    turn4_input_tokens: [340, 325, 339, 324, 327, 296]
+  interactions_stateless:
+    completed: "6/6"
+    tool_exact: "6/6"
+    recall: "6/6"
+    both: "6/6"
+    input_tokens: 5968
+    output_tokens: 735
+    mean_elapsed_s: 11.26
+    turn1_input_tokens: [161, 161, 162, 160, 161, 161]
+    turn4_input_tokens: [325, 348, 345, 351, 363, 320]
+  legacy_generatecontent:
+    completed: "2/6"
+    tool_exact: "2/2 completed"
+    recall: "0/2 completed"
+    input_tokens: 1295
+    output_tokens: 200
+    mean_elapsed_s: 11.73
+    note: "HTTP 429 quota exhausted on tasks 2-5; incomplete arm, not a reliable baseline score"
+
+findings:
+  - "Interactions API is usable on the free tier with gemini-3.5-flash-lite, and both stateful and stateless modes completed the tool-plus-recall loop perfectly on this small set."
+  - "Server-side state gave only ~1.7% fewer total input tokens (5868 vs 5968) and ~7% fewer turn-4 input tokens on average. On short sessions the caching benefit is not meaningful."
+  - "Stateful calls were much slower here (27.9s vs 11.3s mean per 4-call task). Treat as free-tier/environment noise until repeated on a paid key; it is not evidence that state is faster."
+  - "Legacy generateContent lost the remembered fact on both completed tasks (0/2 recall) while Interactions scored 6/6. Suggestive but underpowered: 4 of 6 legacy tasks failed on free-tier quota."
+  - "Interaction-scoped parameters (tools, system_instruction, generation_config) must be re-sent on every turn, including turns using previous_interaction_id."
+  - "Stateless mode requires replaying thought and function_call steps verbatim; legacy generateContent requires preserving thought_signature on function_call parts or the next request returns HTTP 400."
+  - "Strict topic exact-match produced 4/6 on both Interactions arms; all six were correct once minor phrasing differences ('migration' vs 'the migration', 'Rollout (Comet)' vs 'rollout') were normalized. The rubric, not the model, was the initial problem."
+
+long_session_followup:
+  reason: "User chose the free-tier continuation after the Gemini 4 access blocker."
+  harness: scripts/voice-bench/g4-long-session-eval.py
+  result_json: scripts/voice-bench/results/g4-long-session-result-20261126.json
+  design: "20 turns per arm: 8 codename facts, 4 tool calls with function results, 4 filler turns, 1 final recall. Same model and task text in both arms."
+  stateful:
+    calls: 20
+    input_tokens: 9424
+    output_tokens: 479
+    first_input_tokens: 140
+    last_input_tokens: 826
+    recall_codenames: "7/8"
+    recall_dates: "4/4"
+    elapsed_s: 127.18
+  stateless:
+    calls: 20
+    input_tokens: 9679
+    output_tokens: 479
+    first_input_tokens: 148
+    last_input_tokens: 839
+    recall_codenames: "8/8"
+    recall_dates: "4/4"
+    elapsed_s: 116.78
+  finding: >
+    Input tokens still grew from ~140 to ~830 in both arms. Stateful saved only
+    255 input tokens over 20 turns (2.6%) and was slower (127s vs 117s). On
+    short synthetic sessions, previous_interaction_id is a convenience for
+    history management, not a meaningful token-cost win.
+
+free_tier_surface_probe:
+  reason: "User chose 'Keep testing free tier' after the Gemini 4 access blocker."
+  harness: scripts/voice-bench/g4-interactions-surfaces.py
+  result_json: scripts/voice-bench/results/g4-interactions-surfaces-20261126.json
+  model: gemini-3.5-flash-lite
+  results:
+    streaming_text:
+      ok: true
+      events: "interaction.created, status_update, 2x step.start/delta/stop, interaction.completed"
+      delta_types: [thought_signature, text]
+      text: "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12"
+      usage: "17 input, 37 output, 0 cached, 0 thought tokens"
+    streaming_tool:
+      ok: true
+      first_turn_status: requires_action
+      accumulated_args: '{"location":"Paris, France"}'
+      resume: "second stream with previous_interaction_id + function_result returned final weather text"
+      note: "Function arguments arrive as arguments_delta chunks and must be accumulated; step.start carries the call id and name."
+    structured_nonstream:
+      ok: true
+      schema_valid: true
+      raw: '{"sentiment":"positive","summary":"The new UI is exceptionally intuitive and easy to use."}'
+    structured_stream:
+      ok: true
+      schema_valid: true
+      note: "Text deltas concatenate into a valid JSON object; thought_signature deltas can be ignored."
+    background:
+      ok: true
+      statuses: [in_progress, in_progress, completed]
+      steps: [user_input, thought, model_output]
+      note: "background=true worked on gemini-3.5-flash-lite even though the official doc lists support only for Gemini 4 and gemini-3.8-flash. Polling via interactions.get reached completed in ~8s."
+    retrieve_steps:
+      ok: true
+      note: "Stored interaction retrievable with interactions.get (status, output_text, full steps incl. thought signature, usage) and removable with interactions.delete."
+  findings:
+    - "All six Interactions surfaces tested work on the free-tier lite model: text streaming, streamed function calling with resume, structured output (streaming and non-streaming), background execution with polling, and stored-interaction get/delete."
+    - "The documented model support list for background execution is conservative: it worked on gemini-3.5-flash-lite in this run."
+    - "Even with total_thought_tokens=0, thought steps emit a thought_signature delta that must be preserved when replaying history."
+    - "Every interaction in this probe reported total_cached_tokens=0; no server-side cache hit was observed on free tier."
+
+advanced_surface_probe:
+  reason: "Second free-tier batch after the user chose to keep testing."
+  harness: scripts/voice-bench/g4-interactions-advanced.py
+  result_json: scripts/voice-bench/results/g4-interactions-advanced-20261126.json
+  model: gemini-3.5-flash-lite
+  results:
+    flex_tier:
+      ok: true
+      elapsed_s: 4.79
+      service_tier_echoed: flex
+      text: TIEROK
+      note: "service_tier='flex' accepted on free-tier lite model and echoed in the response."
+    priority_tier:
+      ok: true
+      elapsed_s: 4.03
+      service_tier_echoed: standard
+      text: TIEROK
+      note: "service_tier='priority' was accepted but the response reported 'standard' — silently downgraded on free tier. Do not assume Priority is active without checking the echoed field."
+    code_execution:
+      ok: true
+      elapsed_s: 56.93
+      text: "6765"
+      steps: [thought, code_execution_call, code_execution_result, thought, model_output]
+      usage: "19 input, 66 output, 84 tool-use tokens"
+      note: "Server-side code execution ran and returned the correct 20th Fibonacci number. Tool-use tokens are billed separately from input/output."
+    google_search:
+      ok: false
+      error: "429 RateLimitError: current quota exceeded"
+      note: "Grounding with Google Search is unavailable on this free-tier key; not a capability judgment."
+    implicit_cache:
+      ok: true
+      prefix_chars: 34560
+      call_1: "6017 input tokens, 0 cached"
+      call_2: "6017 input tokens, 0 cached"
+      note: "Two calls sharing a ~6k-token prefix produced zero total_cached_tokens. The official caching table lists 4096-token minimums for Gemini 4/3.8/3.6 but not flash-lite, so no implicit cache hits are expected on this model."
+  findings:
+    - "Flex inference works on gemini-3.5-flash-lite and is reflected in the response; Priority is silently downgraded to standard on free tier."
+    - "Code execution is a usable server-side tool on free tier, with a distinct billed tool-use token bucket and ~57s latency for one call."
+    - "Google Search grounding is quota-blocked on the free-tier key."
+    - "Implicit caching produced zero hits even with a 6k-token shared prefix; the model is absent from the documented minimum-token table."
+
+model_comparison:
+  reason: "User asked to explore gemini-3.1-flash-lite as a comparison model."
+  harnesses:
+    - scripts/voice-bench/g4-model-compare.py
+    - scripts/voice-bench/g4-interactions-eval.py (reused graded stateful loop)
+  result_jsons:
+    - scripts/voice-bench/results/g4-model-compare-20261126.json
+    - scripts/voice-bench/results/g4-model-latency-20261126.json
+  design: "Same 4 synthetic multi-turn tool-and-recall tasks, stateful Interactions arm, both models in one run; 5 surface checks per model; 3 single-call latency trials per model."
+  agent_loop:
+    gemini-3.1-flash-lite:
+      completed: "4/4"
+      tool_strict: "0/4"
+      tool_relaxed: "4/4"
+      recall: "4/4"
+      input_tokens: 3951
+      output_tokens: 543
+      mean_elapsed_s: 111.99
+      note: "Strict tool misses were all topic enrichment, e.g. 'Q3 planning for project Lighthouse' instead of 'Q3 planning'; attendees, date and time were exact on 4/4."
+    gemini-3.5-flash-lite:
+      completed: "4/4"
+      tool_strict: "3/4"
+      tool_relaxed: "4/4"
+      recall: "4/4"
+      input_tokens: 3904
+      output_tokens: 510
+      mean_elapsed_s: 22.99
+  surfaces:
+    both_models_pass: [streaming_text, structured_output, background_execution, flex_tier, code_execution]
+    note: "code_execution returned Fibonacci(20)=6765 with the same step sequence on both; flex echoed 'flex' on both."
+  single_call_latency_s:
+    gemini-3.1-flash-lite: [136.43, 2.86, 69.08]
+    gemini-3.5-flash-lite: [5.67, 6.38, 3.14]
+  findings:
+    - "Functionally the two lite models are equivalent on this small set: both scored 4/4 relaxed tool calls and 4/4 recall, with nearly identical token use (~3.9k input, ~0.5k output)."
+    - "Strict topic matching penalised 3.1 because it enriches tool arguments with recalled context. That is a rubric artifact; on the fields that matter for scheduling (attendees, date, time) it was exact on 4/4."
+    - "3.1 was much slower and wildly variable (136s / 2.9s / 69s on identical calls vs 3-6s for 3.5). Treat this as free-tier queueing/throttling, not an inherent model-speed result; do not use it for model selection without a paid-tier repeat."
+    - "All five Interactions surfaces work on both models, so surface availability does not differentiate them."
+
+verdict: >
+  Interactions API is a viable stateful text-agent primitive and is worth a
+  paid-tier trial with a Gemini 4 model, but this run cannot validate the
+  Gemini 4 half of the track. Server-side state showed only a ~2-3% input-token
+  saving on a 20-turn session, no cache hits were observed on free tier, and
+  gemini-3.1-flash-lite showed severe free-tier latency variance without any
+  accuracy advantage. Do not change the production agent path on this evidence.
+
+guardrails:
+  - "No key, billing, gateway, model-pin or production agent change."
+  - "No wiki publish in this track."
+  - "Synthetic task text only; no customer or secret material sent."
+
+activation_gate:
+  - "DONE 2026-11-26: card ADA-1451 created in backlog via board-api."
+  - "DONE 2026-11-26: fetched Interactions and function-calling docs before writing API code (per gemini-api-dev skill)."
+  - "DONE 2026-11-26: access probe across all five existing key names, values never displayed."
+  - "DONE 2026-11-26: partial eval completed on the accessible lite model."
+
+verify:
+  - "DONE 2026-11-26: result JSON stored under scripts/voice-bench/results/."
+  - "DONE 2026-11-26: strict and normalized tool grades both recorded."
+
+remaining:
+  - "Needs Tony's explicit go-ahead on the paid-project monthly cap or another paid project before Gemini 4 can be tested."
+  - "Re-run the same six tasks on Gemini 4 Neon/Carbon/Hydrogen and on gemini-3.8-flash once access exists; keep the model fixed across arms."
+  - "DONE 2026-11-26: 20-turn free-tier run found only a 2.6% input-token saving; do not claim a token-cost benefit from previous_interaction_id on this evidence."
+  - "Re-run the legacy arm on a paid quota to replace the 2/6 partial baseline."

@@ -4,6 +4,8 @@
 # verdict in probe-result.md EITHER WAY — OOM is a deliverable, not a
 # job failure. Uses the s1 shot0 embeds already staged on Drive.
 name: ltx-probe-77f
+hf_repos:                # selective restore-hf-cache (ADA-0806)
+  - Lightricks/LTX-Video
 needs:
   gpu_gb: 14
   disk_gb: 30
@@ -34,7 +36,7 @@ prep: |
   fi
 run: |
   import os, torch, time, datetime, gc
-  for _v in ('model', 'pipe'):
+  for _v in ('model', 'pipe', 'enc', 'tok'):
       globals().pop(_v, None)
   gc.collect(); torch.cuda.empty_cache()
   from diffusers import LTXPipeline

@@ -1,0 +1,103 @@
+id: jobs/bench/2026-11-24-jev-code-decision-layer
+title: Jev code-decision layer — phase-1 service + agent skill + eval pack (OPS-0825)
+card: jev-code-decision-layer-construct-templa-77e184
+ref: OPS-0825
+date: 2026-11-24
+host: tony-omen (dispatch worktree)
+session: devin-dispatch 20261124-154245-architecture-1-code-decision-s
+status: delivered
+
+deliverables:
+  service:
+    path: scripts/jev/code-decision.py
+    what: >-
+      Decision door for code changes. Input {task, code, constraints[],
+      candidates{name: rubric}} -> Choice(which construct/template/library)
+      + three Noul gates scoped to the winner (semantics preserved,
+      convention match, minimality). Wire shape /v1/systemone — same as
+      decision-arena/jev-student/real Jev API. CLI (stdin JSON or flags),
+      importable decide(), and stdlib --serve mode (POST /decide,
+      GET /health; default port 8890 — 8790 is a voice service on
+      tony-omen).
+    backends: >-
+      Per-question-type routing, first healthy wins. Choice:
+      $JEV_API_URL+$JEV_API_KEY -> jevos ($JEVOS_URL) -> jev-student
+      ($JEV_STUDENT_URL). Noul: jev-api -> jev-student -> jevos. Stub
+      detection: student choice head returns confidence=0.0 -> reported
+      degraded, never trusted. assume_winner lets the caller's own pick
+      be gated when choice is down.
+  agent_skill:
+    path: .agents/skills/code-decision/SKILL.md
+    what: >-
+      When/how to call the door before applying construct/template/
+      library/replacement choices; candidate-rubric rules (2-6 options,
+      rubric text not bare names); verdict table (accept / re-propose /
+      gated-unverified-choice / gates-ood-suspect / choice-only /
+      no-choice-backend); live-verdict logging to
+      evals/results/jev/code-decision-live.jsonl for corpus growth.
+  eval_pack:
+    corpus:
+      path: scripts/jev/code-decision-corpus.jsonl
+      contents: >-
+        19 human-verified cases: 13 choice (construct 5, template 5,
+        library 3 — verdict_source repo-convention, grounded in measured
+        repo idiom counts: urllib 261 vs requests 6, pathlib 353,
+        f-string 510, argparse 322, yaml.safe_load 181, subprocess 221,
+        os.system 0, datetime 249/dateutil 0, tempfile 54) + 6 gate
+        (semantics/convention/minimality x pass/fail, hand-labeled).
+    runner:
+      path: scripts/jev/code-decision-eval.py
+      flags: "--corpus-only verifier | --backend NAME | --out records.jsonl | --limit N"
+      scoring: >-
+        choice cases score backend Choice vs human verdict; gate cases
+        ask all three Nouls on the HUMAN winner and score the named gate
+        (isolates gate quality from choice quality).
+    results_20261124:
+      artifacts:
+        - evals/results/jev/code-decision-eval-20261124.jsonl
+        - evals/results/jev/code-decision-eval-20261124.jsonl.summary.json
+      backends_live: "jev-student only (jevos down fleet-wide, no JEV_API_KEY)"
+      jev-student: {choice: "0/13 (all stubs, confidence=0)", gate: "3/6 — MEANINGLESS, all 6 ood_suspect"}
+      finding: >-
+        Confirmed the design doc's Phase-0 probe on the code-decision
+        domain: jev-student's noul head ignores question text and returns
+        p≈0.004-0.005 for EVERY gate regardless of content (all 6 gate
+        cases flagged ood_suspect; the 3 'correct' are expected=false
+        cases matching the universal low-p). Choice head dead as known.
+        The door detects this collapse and reports gates-ood-suspect
+        instead of a fake re-propose.
+
+verification:
+  - "python3 scripts/jev/code-decision-eval.py --corpus-only -> 19 cases, 0 errors"
+  - "live decide() run: verdict no-choice-backend w/ honest degraded[] (student stub + jevos conn-refused)"
+  - "live decide(assume_winner=...) run: gates answered by jev-student, collapse detected -> gates-ood-suspect"
+  - "--serve smoke: GET /health + POST /decide on :8890 both correct"
+
+backend_reality_2026-11-24:
+  jev-api: "api.typesafe.ai/v1/systemone — NO KEY (KNB-0822 still open). Set JEV_API_KEY+JEV_API_URL to unlock both heads."
+  jev-student: "tony-omen:8780 live — noul-only AND OOD-fragile (confirm-gate domain only)"
+  jevos: "choice-capable per arena-50 (tool .812, stag .917) but DOWN fleet-wide — was ad-hoc ./jev serve on idc03:8017, never declared a unit"
+  laya: "down on tony-omen"
+
+honest_verdict: >-
+  The layer's SHAPE is delivered and verified: service door, agent
+  skill, eval pack, collapse detection, honest degradation. But NO live
+  backend can currently make a real code-decision — choice needs the
+  real Jev API key (KNB-0822) or a declared jevos unit; noul fallback
+  collapses OOD (now detected, not silent). Phase-2 of the design doc
+  ("every decision slot needs the real Jev API") holds for this domain
+  too. The eval pack is the instrument that scores the real API the day
+  the key lands — rerun: python3 scripts/jev/code-decision-eval.py
+  --out evals/results/jev/code-decision-eval-<date>.jsonl
+
+followups:
+  - "KNB-0822 real Jev API key — unblocks choice AND in-domain noul; then rerun eval for the real verdict"
+  - "declare jevos serve as a proper unit (idc03 or tony-omen) or mark bench-only — host hygiene; would give a local choice head meanwhile"
+  - "grow code-decision-live.jsonl from real agent runs (skill instructs logging) — corpus v2 from production verdicts"
+  - "optional: board-api /decide door op once the service proves out — kept as script for now (board-api is the mutation door; this is read-only-ish decision)"
+
+references:
+  - docs/kb/jev-code-decision.md (design doc — phase-1 gate was this card)
+  - scripts/ops/decision-arena.py (wire-shape sibling, corpus pattern)
+  - evals/results/jev/decision-arena-50-20261123.json (backend landscape)
+  - docs/ssot/jobs/bench/2026-11-23-decision-arena-3way.yml

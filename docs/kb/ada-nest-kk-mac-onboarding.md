@@ -63,7 +63,7 @@ Steps (each idempotent, individually selectable):
 | power | `pmset -a sleep 0 disksleep 0 displaysleep 15 womp 1 powernap 0` | yes |
 | user | create `adanest` — standard, hidden, `Password '*'`, ssh group | yes |
 | keys | seed FLEET_KEYS_FILE into adanest (+kkkakk if SEED_KKKAKK=1) | yes |
-| ollama-daemon | `/Library/LaunchDaemons/ai.adanest.ollama.plist` → `ollama serve` as adanest, KeepAlive+RunAtLoad; ditto-migrates kkkakk's `~/.ollama` so the 3b pull survives; stops the nohup server | yes |
+| ollama-daemon | `/Library/LaunchDaemons/net.adanest.ollama.plist` → `ollama serve` as adanest (system domain, root:wheel), KeepAlive+RunAtLoad; ditto-migrates kkkakk's `~/.ollama` so the 3b pull survives; stops the nohup server | yes |
 | tailscale | `brew install --cask tailscale` + prints the GUI steps | partial |
 | models | `ollama pull` as adanest — default `llama3.1:8b qwen3:14b` (~14 GB; override MODELS=) | via adanest |
 | verify | pmset, `id adanest`, `launchctl print`, `/api/tags`, tailscale status | mixed |
@@ -110,8 +110,12 @@ desktop power policy, and remove the tailnet node in the admin console.
   Wired en0 (.80) is primary; en0:22 is intermittently filtered —
   prefer .92 for SSH.
 - Script is bash-3.2-safe (macOS ships 3.2 as /bin/bash).
-- Ollama binds 127.0.0.1 by design — LAN/tailnet exposure is a separate,
-  explicit decision (`OLLAMA_BIND=` + a note in host-roles).
+- Ollama now binds `0.0.0.0` via `OLLAMA_HOST` in the LaunchDaemon
+  plist (changed 2026-11-19, card kkmac-ollama-durable-bind) — tailnet
+  AND LAN reachable; narrowing to the tailnet IP is still pending KK
+  sudo (SEC-0985 tailnet-only intent). Loopback-only was the original
+  design; exposure is an explicit decision (`OLLAMA_HOST=` + a note in
+  host-roles).
 - Machine travels with KK → Tailscale is what makes it a node rather
   than a desk ornament; without it, treat every remote capability as
   home-hours-only.

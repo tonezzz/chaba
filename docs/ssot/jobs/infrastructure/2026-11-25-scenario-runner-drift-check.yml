@@ -1,0 +1,89 @@
+title: scenario-runner deployed drift check — hourly idc03 watchdog for the copy-on-install wrapper
+subtitle: closes the detection gap behind the 2026-11-08 OPS-0581 exit-code incident — installed
+  ~/.local/share/ada-scenario-runner/ payload vs repo source, deduped board-api /inbox alerts
+icon: radar
+
+date: 2026-11-25
+card: scenario-runner-deployed-drift-check
+ref: OPS-1160
+status: deployed
+
+context:
+  trigger: "Card scenario-runner-deployed-drift-check (OPS-1160). Incident
+    2026-11-08 (card timer-alert-idc03-ada-scenario-tools): the OPS-0581
+    exit-code contract shipped to the repo Oct 13, but
+    scenario-suite-run.sh is deliberately copy-on-install — install.sh
+    copies it to ~/.local/share/ada-scenario-runner/ so a stale checkout
+    can never break the weekly suites. Nobody re-ran install.sh for 24
+    days; Oct 30 + Nov 6 weekly runs completed but alerted as exit-code
+    anyway. The isolation design is correct — the DETECTION gap was not."
+  design:
+    - "Keep copy-on-install isolation unchanged (no self-update, no
+      checkout dependency at run time)."
+    - "Add a light scheduled check that compares installed payload bytes
+      against the repo source and flags divergence through the normal
+      findings channel — never through the exit code (OPS-0581
+      contract)."
+
+changes:
+  - "scripts/ops/scenario-runner-drift-check.py — new stdlib-only check.
+    PAYLOAD manifest maps each installed file under ~ to its
+    repo-relative source (currently one pair:
+    ~/.local/share/ada-scenario-runner/scenario-suite-run.sh <-
+    stacks/services/ada-scenario-runner/scenario-suite-run.sh).
+    Conditions: missing / not-executable / content-drift (sha256) /
+    reference-missing (checkout lacks the source — check is blind).
+    Runtime state in the same dir (gate-state.json, prod-allow-*
+    sentinels) is not payload and is never compared."
+  - "docs/ssot/infrastructure/ssot.jobs.yml — job
+    scenario-runner-drift-check, host idc03, hourly OnCalendar,
+    Persistent, timeout 2m, exec the checkout copy of the script."
+  - "systemd/generated/idc03/scenario-runner-drift-check.{service,timer}
+    — rendered; installed on idc03 at ~/.config/systemd/user/."
+  - "docs/ssot/infrastructure/ssot.audit.hosts.yml — idc03
+    expected_services census entry for the new timer (timer-expectations
+    hardening rule: declare in the same commit that installs it)."
+  - "docs/ssot/generated/jobs.*.yml — catalog regen (also caught up
+    pre-existing manifest drift: ada-memory-merge-proposals,
+    ada-morning-brief, ada-transcript-archive on idc03;
+    opencode-models-sync on idc02/tony_dell; bank-inspect, queue-mgr on
+    tony_dell; jobs.idc01.yml newly rendered)."
+
+alerting:
+  channel: "board-api POST /inbox — deduped focus-inbox entry, priority
+    high, tags ops/monitor/ada-scenario-runner/drift-check, owner tony."
+  dedupe: "per condition key (cond:filename), at most once per 6h
+    (--repeat-h); recovery is silent + journaled; state
+    ~/.local/state/scenario-runner-drift-check.json."
+  exit_code: "0 on any completed evaluation — findings ride the inbox,
+    not the exit code (OPS-0581 contract). Non-zero only on an
+    unevaluated run. Sibling watchdogs served-checkout-watchdog /
+    netdata-nodes-watch exit 1 on alert, which red-flags the
+    timer-sentinel on findings (timer-alert-idc03-served-checkout-
+    watchdog card is the noise example) — deliberately not copied."
+  fix_hint: "inbox text points at the remedy: cd
+    ~/CascadeProjects/chaba/stacks/services/ada-scenario-runner &&
+    ./install.sh on idc03."
+
+verification:
+  - "Local: clean payload -> 'ok', rc=0; doctored installed copy ->
+    content-drift ALERT naming both shas, rc=0; second run deduped via
+    state file; missing install -> 'missing' ALERT, rc=0."
+  - "idc03 live: script placed in ~/CascadeProjects/chaba/scripts/ops/
+    (untracked until the dispatch merge lands — git-safe-pull resolves
+    the identical untracked collision upstream-wins), rendered units in
+    ~/.config/systemd/user/, daemon-reload + enable --now; manual
+    service run verified."
+
+residuals:
+  - "PAYLOAD covers only scenario-suite-run.sh — the sole file
+    install.sh drops into ~/.local/share/ada-scenario-runner/ today.
+    container-suite-run.sh is baked into the image via Containerfile
+    COPY (image drift is a podman-build concern, not this check); the
+    copied unit/quadlet files under ~/.config/{systemd,user,
+    containers/systemd} are a possible follow-up pair set — extend
+    PAYLOAD one line per file if wanted."
+  - "Reference is the exec checkout ~/CascadeProjects/chaba (ssot
+    config.repo.idc03). If that checkout is stale the check compares
+    against stale source — chaba-repo-sync.timer (15min) keeps it
+    current; a broken sync is its own alert class."

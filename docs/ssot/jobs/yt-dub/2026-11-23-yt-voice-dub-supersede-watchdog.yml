@@ -1,0 +1,50 @@
+title: YT voice dub — supersede watchdog for detached renders
+subtitle: kanban card yt-voice-dub-mode — dispatch re-run 2026-11-23 (attempt 2)
+icon: shield
+
+planning:
+  goal: |
+    Re-dispatch audit of the merged voice-dub wiring (724240b884). The
+    prior session (tony-macbook, lost to a provider rate-limit exit)
+    reported one real gap: a superseded dub render kept burning
+    edge-tts for up to 90min alongside the new run's dub. Land that
+    fix without regressing the merged voice=off path.
+  out_of_scope: |
+    Re-verifying the whole dub pipeline on a real TV (needs tony-dell +
+    edge-tts + HA); that stays a live-check follow-up.
+
+processing:
+  status: completed
+  last_updated: "2026-11-23"
+
+findings:
+  already_merged: |
+    POST /cast voice=off|th|en -> yt-live.sh arg3 (400 otherwise),
+    detached __dub worker -> yt-vtt-dub.py -> sidechain-ducked dub.mp4
+    -> codec-copy remux to dub.m3u8 -> mid-play TV upgrade, voice-aware
+    media-cache keys (<base>.<voice>), /status dub {voice,phase}.
+    All present and intact in master; voice=off path untouched.
+  the_gap: |
+    dub_job ran `timeout 5400 yt-vtt-dub.py` synchronously and only
+    checked the .gen-<pid> token AFTER the render returned — up to 90min
+    of orphaned edge-tts per superseded cast.
+  the_fix: |
+    The render now runs backgrounded under the same `timeout 5400`, and
+    a watchdog subshell polls the gen token every 10s. On supersede it
+    resolves the render's live pgid and pkill -9 -g's it, then kills the
+    __dub process group. Key subtlety found by live test: GNU timeout
+    leads its OWN process group for the managed command, so the render
+    tree does NOT share the __dub pgid — killing only the worker's
+    group leaves the render orphaned (verified empirically).
+
+verification:
+  - "bash -n clean; python3 -m py_compile clean on all three files"
+  - "sandbox __dub run (fake YT_VTT_DUB + stub ffmpeg, fake HOME): normal path -> th:done, dub.m3u8 + dseg produced, upgrade attempted"
+  - "supersede run: gen removed mid-render -> render tree SIGKILLed ~5s later (one 10s poll tick), __dub gone, dub.state frozen at th:rendering, zero dub artifacts — previously it would have run the full 300s fake / up to 90min real"
+  - "watchdog arming gated on pgid==$$ so a manual __dub invocation cannot group-kill a caller's process group; watchdog self-exits when render or worker dies"
+  - "API smoke on test port: voice=fr/de -> 400, voice=TH -> normalized th, omitted -> off, /status exposes dub"
+
+lessons:
+  - "GNU timeout puts the managed command in its own process group (pgid = timeout's pid) — group-killing the caller's pgid does NOT reach the render tree; resolve the child's pgid live via ps"
+  - "pgrep -f patterns inside a bash -c command self-match the wrapper's own cmdline — put monitors in a script file"
+  - "pkill -f with a pattern present in your own command line kills your own shell"

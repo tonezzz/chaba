@@ -1,0 +1,81 @@
+---
+# ada-ocb-audit.yml — read-only surface audit of the OpenChamber pane.
+#
+# Probes idc02 (canonical) and tony-dell (soak fallback) with one JSON
+# round-trip each, then probes the public edge from the controller and writes
+# a durable report per host under reports/ada-ocb/. Nothing is written on
+# any target host; --check still produces real evidence (probe check_mode: no).
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/ada-ocb-audit.yml
+#   ansible-playbook playbooks/ada-ocb-audit.yml --limit idc02
+#
+# This is observability, not enforcement — ada-ocb-verify.yml is the gate.
+
+- name: Probe ada-ocb pane hosts (read-only)
+  hosts: ocb_pane:!disabled
+  gather_facts: false
+  become: false
+
+  tasks:
+    - name: Include the shared pane probe
+      ansible.builtin.include_tasks: tasks/ada-ocb-probe.yml
+
+- name: Render audit artifacts (controller-side)
+  hosts: localhost
+  gather_facts: false
+  become: false
+  vars:
+    audit_out: "{{ playbook_dir }}/../../reports/ada-ocb"
+
+  tasks:
+    - name: Load the declared pane contract
+      ansible.builtin.include_vars: ../inventory/group_vars/ocb_pane.yml
+
+    - name: Include the public-edge probe
+      ansible.builtin.include_tasks: tasks/ada-ocb-edge-probe.yml
+
+    - name: Ensure the report directory exists
+      ansible.builtin.file:
+        path: "{{ audit_out }}"
+        state: directory
+        mode: "0755"
+
+    - name: Render one report per pane host
+      ansible.builtin.template:
+        src: ada-ocb-audit.j2
+        dest: "{{ audit_out }}/{{ target }}.yml"
+        mode: "0644"
+      loop: "{{ groups['ocb_pane'] }}"
+      loop_control:
+        loop_var: target
+      when: >-
+        hostvars[target].ocb_probe is defined
+        and hostvars[target].ocb_probe.error is not defined
+
+    - name: Show the one-line verdict per host
+      ansible.builtin.debug:
+        msg: >-
+          {{ item }}: web={{ hostvars[item].ocb_probe.web_version }}
+          cli={{ hostvars[item].ocb_probe.cli_version }}
+          local={{ hostvars[item].ocb_probe.local_http }}
+          patch={{ hostvars[item].ocb_probe.patch_present }}
+          edge={{ ocb_edge.http }}
+      loop: "{{ groups['ocb_pane'] }}"
+      loop_control:
+        loop_var: item
+      when: >-
+        hostvars[item].ocb_probe is defined
+        and hostvars[item].ocb_probe.error is not defined
+
+    - name: Name pane hosts skipped for lack of a probe
+      ansible.builtin.debug:
+        msg: >-
+          {{ item }}: no usable ocb_probe (excluded by --limit or
+          unreachable) — no audit report rendered.
+      loop: "{{ groups['ocb_pane'] }}"
+      loop_control:
+        loop_var: item
+      when: >-
+        hostvars[item].ocb_probe is not defined
+        or hostvars[item].ocb_probe.error is defined

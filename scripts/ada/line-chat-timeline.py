@@ -18,6 +18,35 @@ STATE = os.path.join(MEDIA_ROOT, "wp-timeline-state.json")
 OPS_EVENTS = os.path.join(MEDIA_ROOT, "ops-events.jsonl")
 MAX_ITEMS = 200
 
+
+def load_state():
+    """Missing/empty/corrupt state -> fresh cache — a 0-byte STATE must not
+    kill the run before it can rewrite it (card
+    state-write-atomic-truncate-crash-loop)."""
+    try:
+        st = json.load(open(STATE))
+    except Exception:
+        st = {}
+    if not isinstance(st, dict):
+        st = {}
+    if not isinstance(st.get("media"), dict):
+        st["media"] = {}
+    return st
+
+
+def save_state(st):
+    """tmp + fsync + os.replace — a kill mid-write leaves STATE.tmp, never
+    a torn STATE (0-byte state -> json.load crash-loop; card
+    state-write-atomic-truncate-crash-loop)."""
+    os.makedirs(MEDIA_ROOT, exist_ok=True)
+    tmp = STATE + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(st, f, indent=1)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, STATE)
+
+
 env = {}
 for l in open(os.path.expanduser("~/.config/secrets/wp-boards.env")):
     if "=" in l:
@@ -45,7 +74,7 @@ def api(method, route, data=None, raw=None, ctype="application/json", filename=N
         try: return e.code, json.loads(e.read())
         except Exception: return e.code, {"raw": e.read()[:200].decode(errors="replace")}
 
-state = json.load(open(STATE)) if os.path.exists(STATE) else {"media": {}}
+state = load_state()
 
 # --- activity CPT dedupe (card wp-activity-cpt-timeline-links) ----------
 # Tool executions (renders/translate) are durable `activity` posts — a
@@ -263,4 +292,4 @@ for lane, (chat_id, post_id) in LANES.items():
     s2, res = api("POST", f"timeline_block/{post_id}", {"content": content})
     print(f"{lane}: items={len(items)} update={s2} modified={res.get('modified', '?')}")
 
-json.dump(state, open(STATE, "w"), indent=1)
+save_state(state)

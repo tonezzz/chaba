@@ -1,0 +1,204 @@
+id: 2026-11-12-155922-wiki-login-polish
+title: wiki-login-polish wiki polish leftovers from wiki-login-broken card (closed)
+column: done
+updated: 2026-11-26 20:32
+brief: 'wiki-login-polish wiki polish leftovers from wiki-login-broken card (closed): (1) PluggableAuth Google button
+  still renders label "0" on Special:UserLogin — give it a real label (e.g. "Sign in with Google") via $wgPluggableAuth_Config
+  in LocalSettings.php, FTP path same as members edit, backup first'
+priority: medium
+tags:
+- capture-harvester
+spec: 'Provenance (capture-apply, OPS-0024):
+
+  - source: focus-inbox / 2026-11-12-155922-wiki-login-polish
+
+  - dedupe_key: kanban:065d94f97e90
+
+  - rule: n/a | confidence: 0.8
+
+  - proposal run: 20261123T114654
+
+
+  Trigger from focus-inbox:
+
+  wiki-login-polish wiki polish leftovers from wiki-login-broken card (closed): (1) PluggableAuth Google button
+  still renders label "0" on Special:UserLogin — give it a real label (e.g. "Sign in with Google") via $wgPluggableAuth_Config
+  in LocalSettings.php, FTP path same as members edit, backup first; (2) login can never complete inside the ada-ha
+  chaba-admin/wiki HA iframe (Google X-Frame-Options DENY) — consider an open-wiki-in-new-tab weblink card or a
+  userloginprompt note so users are not confused again.'
+ref: OPS-0029
+comms:
+- at: 2026-11-23 14:11
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-23 14:20
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:55
+  from: devin
+  text: 'raised request ops-0029-item-2-decision-needed-google-s-3917cf: OPS-0029 item (2) — decision needed: Google
+    sign-in cannot complete inside the ada-ha chaba-admin/wiki HA iframe because'
+- at: 2026-11-23 14:55
+  from: devin
+  text: 'OPS-0029 item (1) FIXED + surface-verified. Root cause: PluggableAuth 7.5.0 PluggableAuthFactory.php:107-110
+    falls back to RawMessage(strval(configId)) when buttonLabelMessage is unset -> literal 0. On wiki.h3.gizmo-thailand.com:
+    (a) created MediaWiki:pluggableauth-google-label = ''Sign in with Google'' via bot API (rev 444); (b) FTP origin
+    103.99.11.249 added buttonLabelMessage => pluggableauth-google-label to wgPluggableAuth_Config[0] in LocalSettings.php;
+    backup LocalSettings.php.devin-backup-b'
+- at: 2026-11-23 15:53
+  from: ada
+  text: 'answered ops-0029-item-2-decision-needed-google-s-3917cf: open-in-new-tab weblink card (recommended)'
+- at: 2026-11-23 15:53
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-23 16:06
+  from: devin
+  text: 'Tony said ''proceed as recommended'' in-session (2026-11-23). Treating as approval of option (a): add open-in-new-tab
+    link to chaba-admin wiki view. I attempted board respond via board-cli but got HTTP 400; leaving request open
+    in board state and noting the in-session decision here. Will not push to live HA without explicit same-session
+    approval.'
+- at: 2026-11-23 16:18
+  from: devin
+  text: 'OPS-0029 item (2) resolved (option a, Tony approved live push in-session 2026-11-23, incl. private-wiki).
+    Mutated ada-ha chaba-admin via push-dashboard.py websocket (lovelace/config/save, no restart): wiki + private-wiki
+    now have markdown note ''Google sign-in can’t complete inside this embedded page (Google blocks iframes). [Open
+    ... in new tab](...)'' above the iframe; panel->normal view to allow 2 cards. Synced snapshot to docs/home-assistant/dashboards/ada-ha-chaba-admin-current.json.
+    Committe'
+- at: 2026-11-23 16:18
+  from: devin
+  text: closed by devin
+- at: 2026-11-23 16:19
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:08
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:09
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:13
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:22
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:32
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:39
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:02
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:45
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:00
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:32
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+requests:
+- id: ops-0029-item-2-decision-needed-google-s-3917cf
+  ask: 'OPS-0029 item (2) — decision needed: Google sign-in cannot complete inside the ada-ha chaba-admin/wiki HA
+    iframe because Google sends X-Frame-Options DENY (no technical workaround; must open outside the iframe). Pick
+    a UX treatment: (a) add an ''Open wiki in new tab'' weblink/button card to the chaba-admin wiki view [RECOMMENDED
+    — smallest change, solves the confusion directly]; (b) add a userloginprompt note on the wiki login page telling
+    iframe users to open in a new tab; (c) defer/close as cosmetic edge case. Dashboard pushes to live HA need same-session
+    approval.'
+  status: answered
+  at: 2026-11-23 14:55
+  from: devin
+  options:
+  - open-in-new-tab weblink card (recommended)
+  - userloginprompt note on wiki login page
+  - defer - close as cosmetic
+  answer: open-in-new-tab weblink card (recommended)
+action:
+  status: done

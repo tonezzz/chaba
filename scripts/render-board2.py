@@ -774,6 +774,8 @@ function cpPane(c) {
     {k: 'executor', v: a.executor || '—', muted: !a.executor, src: a.executor ? SRC_LIVE : SRC_CARD},
     {k: 'lane', v: a.lane || '—', muted: !a.lane, src: a.lane ? SRC_LIVE : SRC_CARD},
     {k: 'model', v: a.model || '—', muted: !a.model, src: a.model ? SRC_LIVE : SRC_CARD},
+    {k: 'provider', v: ev.provider || '—', muted: !ev.provider,
+     src: ev.provider ? SRC_METRIC : undefined},
     {k: 'profile', v: a.agent_profile || a.profile || '—',
      muted: !(a.agent_profile || a.profile),
      src: (a.agent_profile || a.profile) ? SRC_LIVE : SRC_CARD},
@@ -1312,11 +1314,10 @@ def main():
     adir = card_dir / "archive"
     if adir.is_dir():
         for p in sorted(adir.glob("*.yml")):
-            c = yaml.load(p.read_text(), Loader=_rb._YAML_LOADER)
-            if not isinstance(c, dict):
-                c = {}
-            c.setdefault("id", p.stem)
-            archive_cards.append(c)
+            archive_cards.append(_rb._load_card_file(p))
+    # persist the parse cache BEFORE compute_checks stamps 'checks' on
+    # the card dicts — the cache must hold pristine parses only
+    _rb._flush_cards_cache()
     archive_cards.sort(
         key=lambda c: str(c.get("updated") or ""), reverse=True)
     rank = {"high": 0, "medium": 1, "low": 3}
@@ -1353,6 +1354,7 @@ def main():
     out_path.write_text(page)
     if state_hash is not None:
         STATE.write_text(state_hash + "\n")
+    _rb._flush_mcache()
     print(f"wrote {out_path} + cards.json ({len(cards)} cards, v{ver}"
           + (f", {n_att} attachments mirrored" if n_att else "") + ")")
     return 0

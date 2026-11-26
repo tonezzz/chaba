@@ -1,0 +1,133 @@
+# Video render dispatcher — inventory layer + controlled dispatcher (OPS-1042)
+title: Video render dispatcher — read-only inventory + controlled dispatcher
+card: video-render-dispatcher
+date: 2026-11-24
+session: dispatch-wt-20261124-185802-implement-a-read-only-inventor (tony-omen)
+hosts_touched: none (read-only Drive audit + repo artifacts only)
+
+summary: >-
+  Refreshed the read-only queue inventory to the card spec's full
+  classification (every pack on both roots, render/support kind,
+  queued/running/stale/done/failed/retired states), wrote the fresh
+  queue status report, verified and repaired the Sacred Father canonical
+  final-preview manifest, and implemented the controlled dispatcher
+  (scripts/devnest/video_dispatch.py) with plan/apply/verify over
+  video-dispatch/v1 manifests. No packs were dispatched, no claims made,
+  no Drive writes — apply is gated on approved manifests.
+
+inventory_layer:
+  tool: scripts/devnest/video_queue_status.py (extended)
+  changes: >-
+    Now inventories ALL packs under each queue's packs/ root (was:
+    video-name filter only). Two-axis classification: state per
+    docs/kb/video-queue-claim-lifecycle-procedure.md
+    (done/failed/retired/running/stale/queued) and kind
+    (render/support — the spec's "support/other" bucket). Claim files
+    on terminal packs are reported as residual_claims, not stale work.
+    VIDEO regex extended (mlx|vimax|i2v|doc-vo|doc-v2|nasa|embed|vo-)
+    so MLX-lane packs are no longer invisible to the audit.
+  remote_note: >-
+    Spec's "gdrive:ada-nest-kk-mac-video-pilot" does not exist as an
+    rclone path; the real root is gdrive:ada-nest/kk-mac-video-pilot.
+    Verified via rclone lsf 2026-11-24 — recorded in the tool docstring.
+  fresh_audit_2026-11-24:
+    gdrive:ada-nest/kk-mac-video-pilot:
+      packages: 14 (12 render / 2 support)
+      states: "11 done, 1 queued, 2 failed"
+      queued: kk-mac-mlx-colab-scene0-control-20261124 (MLX control, gated launcher waiting)
+      claims: "0 active, 0 stale, 2 residual on done packs"
+    gdrive:ada-nest:
+      packages: 79 (30 render / 49 support)
+      states: "60 done, 19 queued"
+      queued_render_notable: >-
+        doc-v2-{delivery,music-bed,rerender-shots,shot-qc,subs,vo-earcheck}
+        (doc-pilot-v2 pipeline chain), kk-video-c9f99fee6146-preview-v2,
+        kk-mac-video-probes
+      claims: "0 active, 0 stale on live packs, 37 residual on done packs"
+    interpretation: >-
+      Queues are idle — zero live claims anywhere. The 19 queued
+      ada-nest packs are mostly never-run support/eval packs plus the
+      doc-v2 chain; nothing is moving without an approved dispatch.
+  report: reports/video-queue-status-2026-11-24.json
+
+dispatcher:
+  tool: scripts/devnest/video_dispatch.py (new)
+  manifests: scripts/devnest/video-manifests/*.yml (schema video-dispatch/v1)
+  commands:
+    plan: >-
+      Read-only. Per stage: staging completeness (pack.yml + runner +
+      artifacts + declared inputs present/fetchable), lane resolution
+      (mlx|colab|auto), queue state on both roots, KK-Mac admission gate
+      snapshot, decision (stage|skip-*|deferred|blocked) + reasons.
+    apply: >-
+      Refuses unless manifest approved:true. For decision=stage only:
+      rclone copy source->queue packs/, rclone check (complete-staging
+      proof), fetch declared inputs store->pack with sha256 verify,
+      purge+rollback on input failure, dispatch event to
+      <remote>/queue/dispatch-events/. Never overwrites an existing pack.
+    verify: >-
+      Final-artifact QC — every declared artifact glob must exist with
+      size>0 on the resolved queue remote; {shot} expands per shot id.
+  invariants_preserved:
+    one_writer_one_runner: >-
+      Dispatcher only places pack dirs on queue roots; execution stays
+      with nest-worker (ada-nest) / gated nest-worker (kk-mac pilot).
+      First-writer-wins claim protocol untouched.
+    idempotent_shot_ids: >-
+      stages declare shots:; verify expands {shot} artifact globs;
+      packs already done/queued/claimed are skip-*, never re-dispatched.
+    review_vs_clean: >-
+      variant: field carried through plan/apply/dispatch-event.
+    no_historical_rerun: >-
+      only manifest-named stages are touched; terminal/queued queue
+      entries are inventory only.
+  routing:
+    mlx: >-
+      KK-Mac pilot queue only when kk_mac_admission.snapshot() eligible
+      (heartbeat fresh, ollama ok, disk>=20G, load<=4, idle, temp<=60C).
+      Gates fail -> deferred; MLX packs never silently reroute to Colab.
+    colab: >-
+      ada-nest queue only after staging_check ok + rclone check +
+      declared inputs fetched (complete staging).
+    auto: mlx if pack looks MLX-routed and gates pass, else colab.
+  live_gate_sample_2026-11-24: >-
+    KK-Mac heartbeat fresh (1.5s), disk 57G free, but load_1m=8.94 ->
+    gate denied load_high; scene1/vimax stages correctly deferred.
+
+sacred_father:
+  canonical_manifest: reports/sacred-father-canonical-manifest-20261103.yml
+  fixes: >-
+    artifact paths repointed from nonexistent
+    gdrive:ada-nest-kk-mac-video-pilot to gdrive:ada-nest/kk-mac-video-pilot;
+    added verified: block (sha256 9a0e3722…, 2497219 bytes, ffprobe
+    h264 640x384/720f/59.92s/aac). Drive copy at
+    kk-mac-video-pilot/manifests/ still has old paths — needs re-publish
+    on next approved Drive write (this session is repo-only).
+  dispatch_manifest: scripts/devnest/video-manifests/sacred-father-final-preview.yml
+  qc_verified: >-
+    video_dispatch.py verify -> qc_pass true on all 3 artifacts
+    (mp4 + th/en srt) against the live pilot queue.
+  open_question: >-
+    final/pdf-final-preview-canonical-v1.mp4 (2026-11-04, different
+    encode, PSNR~14dB vs v4-clean) is on the same final/ root but NOT in
+    the canonical manifest — needs Tony/KK decision whether it is a
+    later canonical cut or a stray alternate.
+
+verification:
+  - "python3 -m py_compile scripts/devnest/video_queue_status.py scripts/devnest/video_dispatch.py"
+  - "python3 scripts/devnest/video_queue_status.py > reports/video-queue-status-2026-11-24.json"
+  - "python3 scripts/devnest/video_dispatch.py plan --manifest scripts/devnest/video-manifests/sacred-father-final-preview.yml  # skip-done"
+  - "python3 scripts/devnest/video_dispatch.py verify --manifest scripts/devnest/video-manifests/sacred-father-final-preview.yml  # verified:true"
+  - "python3 scripts/devnest/video_dispatch.py plan --manifest scripts/devnest/video-manifests/kk-mac-mlx-controls.yml  # scene0 skip-queued, scene1/vimax deferred on load_high"
+  - "sha256 of all three ltx-embeds-s1 .pt inputs verified against provenance.json"
+
+not_done_by_design:
+  - "no apply run — no manifest is approved; dispatcher writes only on approved:true"
+  - "no Drive writes — manifests/ copy of the canonical manifest still stale (flagged)"
+  - "canonical-v1.mp4 canonical-or-stray decision is Tony/KK's, not the dispatcher's"
+
+followups:
+  - "when KK reviews scene0 control: flip kk-mac-mlx-controls.yml approved:true + approved_by, run video_dispatch.py apply"
+  - "re-publish corrected canonical manifest to gdrive:ada-nest/kk-mac-video-pilot/manifests/ on next approved write"
+  - "decide canonical-v1.mp4 status (canonical cut vs stray) — visual review"
+  - "optionally schedule video_queue_status.py as a read-only job (ssot.jobs.yml) once the format settles"

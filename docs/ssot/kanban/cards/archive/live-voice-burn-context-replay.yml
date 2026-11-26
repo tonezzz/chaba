@@ -1,0 +1,615 @@
+id: live-voice-burn-context-replay
+title: 'Live voice burn: context replay dominates (~85% text-in); ada-dev = 63% of fleet in-tokens'
+column: done
+updated: 2026-11-26 19:41
+note: 'Findings from the 2026-10-14 overnight dig (usage.jsonl + journald, 24h):
+
+
+  Burn shape: 310 sessions, ~45.7M in / ~300K out. **~85% of input is TEXT, not audio** — context/system-prompt
+  replay on every turn, not speech. Median session 40s / 89K in-tok; reconnect churn re-primes ~16K text each connect.
+
+
+  Per-lane attribution (session_ids via journald):
+
+  - ada-dev      1381 turns  28.7M in  (~63% — bench/dev lane is the whale)
+
+  - TEST-POLLUTION (t-ctx)  4.7M — unit tests writing real usage.jsonl rows;'
+ref: ADA-0631
+comms:
+- at: 2026-10-14 06:16
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-27 01:21
+  from: backlog-spec-enrich
+  text: raised a decision request — spec needs owner input
+- at: 2026-10-27 05:33
+  from: tony
+  text: 'answered overnight-usage-analysis-shows-928d43: ★ Use repo ada-voice on host tony-dell to implement prompt-caching
+    and fix TEST-POLLUTION usage logging'
+- at: 2026-10-27 05:33
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:25
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:43
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:45
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 19:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:14
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 23:31
+  from: chaba
+  text: classified as devin (fallback conf 0.40)
+- at: 2026-11-17 23:31
+  from: tony
+  text: re-spawned from report page
+- at: 2026-11-17 23:32
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.45 > 0.85)'
+- at: 2026-11-17 23:32
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.58 > 1.5)'
+- at: 2026-11-17 23:32
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.24 > 1.0)'
+- at: 2026-11-17 23:32
+  from: tony-omen
+  text: claimed
+- at: 2026-11-17 23:33
+  from: chaba
+  text: started devin-task-20261117-233258-live-voice-burn-context-replay on tony-omen (dispatch)
+- at: 2026-11-17 23:33
+  from: devin
+  text: '[devin] picked up card — mapping usage.jsonl write path, context-replay/priming path, and t-ctx test pollution
+    before proposing fixes'
+- at: 2026-11-17 23:34
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 0.92 > 0.85)'
+- at: 2026-11-17 23:35
+  from: tony-omen
+  text: 'finished (failed): exit=1 -task-20261117-233258-live-voice-burn-context-replay.service: Failed with result
+    ''exit-code''. | devin-task-202611'
+- at: 2026-11-17 23:35
+  from: chaba
+  text: 'tony-omen retry backoff: fail 1/3 — next claim not before 11-18 00:05'
+- at: 2026-11-17 23:40
+  from: chaba
+  text: 'merge-sweep: devin-task-20261117-233258-live-voice-burn-context-replay failed — its branch isn''t auto-merged
+    (unverified partial work). Retry the card or merge dispatch/20261117-233258-live-voice-burn-context-replay by
+    hand.'
+- at: 2026-11-18 17:30
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:18
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:19
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:21
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:09
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:11
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 08:59
+  from: chaba
+  text: 'stalled-claim reaper: moved doing -> backlog — status=failed with no live claim — /action do=retry re-arms
+    it'
+- at: 2026-11-19 17:04
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:55
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:05
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:47
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-22 13:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-23 14:07
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:20
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:21
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:11
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:11
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:42
+  from: chaba
+  text: classified as devin (kw:host conf 1.00)
+- at: 2026-11-23 19:42
+  from: tony
+  text: queued for processing
+- at: 2026-11-23 19:42
+  from: tony
+  text: retry requested
+- at: 2026-11-23 19:42
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 4.20 > 0.85)'
+- at: 2026-11-23 19:42
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-23 19:42
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-23 19:43
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 19:43
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.00 > 1.5)'
+- at: 2026-11-23 19:43
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 19:52
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-192619-fix-the-executor-model-id-mism)
+    — claims held ~29m'
+- at: 2026-11-23 19:52
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-194248-the-goal-is-to-stop-the-tony-u)
+    — claims held ~27m'
+- at: 2026-11-23 19:52
+  from: chaba
+  text: 'mn01 defers: provider rate-limited (rate limit on devin-task-20261123-123122-supersedes-manual-card-wiki-ta)
+    — claims held ~29m'
+- at: 2026-11-23 19:53
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-191504-investigate-and-resolve-the-fa)
+    — claims held ~29m'
+- at: 2026-11-23 19:54
+  from: idc03
+  text: claimed
+- at: 2026-11-23 19:55
+  from: chaba
+  text: started devin-task-20261123-195521-goal-address-the-live-voice-to on idc03 (dispatch)
+- at: 2026-11-23 19:55
+  from: chaba
+  text: 'primer injected 8 lesson(s): runbook docs/kb/chaba-lab.md: Chaba Lab — evaluation platform for Ada — Date:
+    20; [live-session-token-diet] test gate failed — merge held: tests/ada/test_line_fil; [live-voice-burn-context-replay]
+    finished (failed): exit=1 -task-20261117-233258; [live-voice-burn-context-replay] merge-sweep: devin-task-20261117-233258-live-vo;
+    [live-voice-burn-context-replay] stalled-claim reaper: moved doing -> backlog — ; [speed-probe] Overnight sweep
+    2026-11-19: parked in backlog. '
+- at: 2026-11-23 19:57
+  from: idc03
+  text: 'finished (failed): exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261123-195521-goal-address-the-live-voice-to.service:
+    — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 19:57
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-195521-goal-address-the-live-voice-to (rate limit)
+    — idc03 holds new claims ~30m
+- at: 2026-11-23 19:57
+  from: chaba
+  text: 'idc03 retry backoff: fail 1/3 — next claim not before 11-23 20:27'
+- at: 2026-11-23 19:57
+  from: chaba
+  text: 'idc03 defers: provider rate-limited (rate limit on devin-task-20261123-195521-goal-address-the-live-voice-to)
+    — claims held ~29m'
+- at: 2026-11-23 20:22
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 20:23
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-23 20:26
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-23 20:26
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 20:27
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.38 > 0.85)'
+- at: 2026-11-23 20:44
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-202451-ada-tool-consolidation-merge-o)
+    — claims held ~29m'
+- at: 2026-11-23 20:44
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-203733-fix-the-phantom-state-issue-in)
+    — claims held ~29m'
+- at: 2026-11-23 20:44
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-202551-fix-the-executor-model-id-mism)
+    — claims held ~29m'
+- at: 2026-11-23 20:46
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-202527-corpus-18-jev-bench-cases-4-pi)
+    — claims held ~29m'
+- at: 2026-11-23 20:47
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-202348-investigate-and-resolve-the-fa)
+    — claims held ~28m'
+- at: 2026-11-23 21:16
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 21:17
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-23 21:19
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 21:23
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 21:34
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-211532-productionize-the-enriched-t1-)
+    — claims held ~29m'
+- at: 2026-11-23 21:34
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-211800-kk-mac-classes-eval-2026-11-19)
+    — claims held ~29m'
+- at: 2026-11-23 21:34
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-211710-corpus-18-jev-bench-cases-4-pi)
+    — claims held ~29m'
+- at: 2026-11-23 21:35
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-211558-fix-the-phantom-state-issue-in)
+    — claims held ~29m'
+- at: 2026-11-23 21:35
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-211859-kk-mac-launchd-runner-port-shi)
+    — claims held ~29m'
+- at: 2026-11-23 21:37
+  from: chaba
+  text: 'mn01 defers: provider rate-limited (rate limit on devin-task-20261123-142345-redeploy-the-drifted-runner-ag)
+    — claims held ~29m'
+- at: 2026-11-23 22:06
+  from: tony-dell
+  text: claimed
+- at: 2026-11-23 22:07
+  from: chaba
+  text: 'merge-sweep: devin-task-20261123-142345-redeploy-the-drifted-runner-ag no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-23 22:07
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261123-142345-redeploy-the-drifted-runner-ag on
+    tony-dell — if the work was never pushed it may be gone'
+- at: 2026-11-23 22:07
+  from: chaba
+  text: started devin-task-20261123-220709-goal-address-the-live-voice-to on tony-dell (dispatch)
+- at: 2026-11-23 22:07
+  from: chaba
+  text: 'primer injected 8 lesson(s): [live-voice-burn-context-replay] primer injected 8 lesson(s): runbook docs/kb/ch;
+    [live-voice-burn-context-replay] finished (failed): exit=1 rocess exited, code=e; runbook docs/kb/chaba-lab.md:
+    Chaba Lab — evaluation platform for Ada — Date: 20; [live-session-token-diet] test gate failed — merge held:
+    tests/ada/test_line_fil; [live-voice-burn-context-replay] finished (failed): exit=1 -task-20261117-233258; [live-voice-burn-context-replay]
+    merge-sweep: devin-task-2026'
+- at: 2026-11-23 22:31
+  from: tony-dell
+  text: 'finished (failed): exit=1 s-the-live-voice-to.service: Failed with result ''exit-code''. | devin-task-20261123-220709-goal-address-the-live-v
+    — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-23 22:31
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-220709-goal-address-the-live-voice-to (rate limit)
+    — tony-dell holds new claims ~30m
+- at: 2026-11-23 22:31
+  from: chaba
+  text: 'tony-dell retry backoff: fail 1/3 — next claim not before 11-23 23:01'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 07:52
+  from: chaba
+  text: classified as devin (kw:host conf 1.00)
+- at: 2026-11-24 07:52
+  from: tony
+  text: queued for processing
+- at: 2026-11-24 07:53
+  from: tony
+  text: retry requested
+- at: 2026-11-24 07:53
+  from: chaba
+  text: 'idc03 defers: disk headroom 1382MB < 2048MB floor'
+- at: 2026-11-24 07:53
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.09 > 1.0)'
+- at: 2026-11-24 07:54
+  from: tony-omen
+  text: claimed
+- at: 2026-11-24 07:55
+  from: chaba
+  text: started devin-task-20261124-075500-goal-address-the-live-voice-to on tony-omen (dispatch)
+- at: 2026-11-24 07:55
+  from: chaba
+  text: 'primer injected 8 lesson(s): [live-voice-burn-context-replay] primer injected 8 lesson(s): runbook docs/kb/ch;
+    [live-voice-burn-context-replay] finished (failed): exit=1 rocess exited, code=e; [live-voice-burn-context-replay]
+    finished (failed): exit=1 s-the-live-voice-to.s; [live-voice-burn-context-replay] merge-sweep: no session/worktree
+    found for devi; runbook docs/kb/chaba-lab.md: Chaba Lab — evaluation platform for Ada — Date: 20; [rebuild-gesture-controls-using-yolo-190356]
+    DONE (attempt on'
+- at: 2026-11-24 07:55
+  from: devin
+  text: 'picked up on tony-omen — mapping usage.jsonl write path, context-replay priming, and t-ctx test pollution;
+    Tony''s answer says: prompt-caching + fix TEST-POLLUTION usage logging in ada-voice'
+- at: 2026-11-24 07:58
+  from: tony
+  text: retry requested
+- at: 2026-11-24 07:59
+  from: idc02
+  text: claimed
+- at: 2026-11-24 08:00
+  from: chaba
+  text: started devin-task-20261124-080026-goal-address-the-live-voice-to on idc02 (dispatch)
+- at: 2026-11-24 08:00
+  from: chaba
+  text: 'primer injected 8 lesson(s): [live-voice-burn-context-replay] primer injected 8 lesson(s): runbook docs/kb/ch;
+    [live-voice-burn-context-replay] finished (failed): exit=1 rocess exited, code=e; [live-voice-burn-context-replay]
+    finished (failed): exit=1 s-the-live-voice-to.s; [live-voice-burn-context-replay] merge-sweep: no session/worktree
+    found for devi; runbook docs/kb/chaba-lab.md: Chaba Lab — evaluation platform for Ada — Date: 20; [live-session-token-diet]
+    test gate failed — merge held: test'
+- at: 2026-11-24 08:08
+  from: devin
+  text: 'DONE (branch dispatch/20261124-075500, commit ca86138, not pushed). Re-measured idc03 usage.jsonl: ada-dev
+    whale already collapsed (28.7M dig-day -> 0-5.5M/day residual = ~42 short Live scenario sessions/day; smoke
+    44/47 text). TEST-POLLUTION recurred via non-pytest runner (t-ctx daily 10-17..11-09, ~4.36M) — FIXED: usage_tracker
+    implicit default now persists only with ADA_INSTANCE_ID lane + env pin in test_context_budget.py + new gate
+    test; full pytest 1927 pass; direct-run repro writes zero fi'
+- at: 2026-11-24 08:12
+  from: devin
+  text: 'analysis done: Live API has NO prompt/context caching (Google-confirmed, cachedContentTokenCount always
+    0) — static prefix measured ~19.3K tok (8K instr + 11.3K decls) re-billed EVERY turn. Shipped: tests/__init__.py
+    closes unittest-path t-ctx pollution; ADA_PRIME_AS_CONTEXT=1 opt-in makes session prime a turn_complete=False
+    context note (~19K+greeting saved per fresh connect, ~13% of fleet in at dig rates). SSOT doc: docs/ssot/jobs/ada/2026-11-24-live-voice-token-burn.yml'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 08:12
+  from: chaba
+  text: banked 66 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 08:12
+  from: chaba
+  text: pushed dispatch/20261124-075500-goal-address-the-live-voice-to to origin
+- at: 2026-11-24 08:12
+  from: chaba
+  text: test gate passed (/home/tony/CascadeProjects/ada-voice/.venv/bin/python -m pytest tests -k 'not slow' -x
+    -q, 219.7s)
+- at: 2026-11-24 08:12
+  from: chaba
+  text: auto-merged e4b7dc88 (dispatch/20261124-075500-goal-address-the-live-voice-to) → origin/main
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-075500-goal-address-the-live-voice-to,
+    branch dispatch/20261124-075500-goal-address-the-live-voice-to'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:24
+  from: devin
+  text: 'DONE (attempt idc02). Merged origin/main mid-run — the tony-omen attempt had already landed the stronger
+    t-ctx fix (usage_tracker lane gate, covers ALL non-pytest runners) + live re-measure (ada-dev whale collapsed
+    to 0-5.5M/day residual). My complement, committed on dispatch/20261124-080026 (f15491f+3d8f2de): (1) prompt-caching
+    verdict confirmed impossible on Live API — prefix instead measured at ~19.3K tok re-billed EVERY turn; (2) shipped
+    ADA_PRIME_AS_CONTEXT=1 opt-in — session prime becomes '
+- at: 2026-11-24 08:24
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:30
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261124-080026-goal-address-the-live-voice-to.service:
+    Failed to ope'
+- at: 2026-11-24 08:30
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 08:30
+  from: chaba
+  text: banked 67 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 08:30
+  from: chaba
+  text: pushed dispatch/20261124-080026-goal-address-the-live-voice-to to origin
+- at: 2026-11-24 08:30
+  from: chaba
+  text: test gate passed (/home/tony/CascadeProjects/ada-voice/.venv/bin/python -m pytest tests -k 'not slow' -x
+    -q, 286.6s)
+- at: 2026-11-24 08:30
+  from: chaba
+  text: auto-merged 87836bff (dispatch/20261124-080026-goal-address-the-live-voice-to) → origin/main
+- at: 2026-11-24 08:30
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-080026-goal-address-the-live-voice-to,
+    branch dispatch/20261124-080026-goal-address-the-live-voice-to'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:37
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-24 08:41
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:10
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:51
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:06
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:28
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:40
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:55
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:58
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:58
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:06
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+requests:
+- id: overnight-usage-analysis-shows-928d43
+  ask: Overnight usage analysis shows live voice burn is heavily dominated by text-in context replay (~85%, with
+    ada-dev representing 63% of fleet input tokens and TEST-POLLUTION writing 4.7M to usage.jsonl), but the card
+    specifies no target host, repo, or mitigation strategy to address this reconnect churn and test pollution.
+  options:
+  - ★ Use repo ada-voice on host tony-dell to implement prompt-caching and fix TEST-POLLUTION usage logging
+  - Use repo ada-pi on host tony-omen to optimize system-prompt replay overhead
+  - Postpone mitigation until further usage data is gathered
+  status: answered
+  at: 2026-10-27 01:21
+  from: backlog-spec-enrich
+  answer: ★ Use repo ada-voice on host tony-dell to implement prompt-caching and fix TEST-POLLUTION usage logging
+action:
+  type: dispatch
+  repo: ada-voice
+  status: done
+  lane: devin
+  lane_source: kw
+  sweep:
+    failed_noted: 2026-11-17 23:40
+    stale_running: 2026-11-23 22:07
+    session_gone: 2026-11-23 22:07
+  last_failure: 'exit=1 s-the-live-voice-to.service: Failed with result ''exit-code''. | devin-task-20261123-220709-goal-address-the-live-voice-to.service:
+    Consumed 1min 6.268s CPU time over 24min 17.945s wall clock time, 915.8M memory peak, 230.8M memory swap peak.'
+  attempts: 1
+  runner: idc02
+  result: 'exit=0 ice: No such file or directory | devin-task-20261124-080026-goal-address-the-live-voice-to.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261124-080026-goal-address-the-live-voice-to.service:
+    No such file or directory'
+  verified: true
+spec: 'Goal: Address the live voice token burn where context replay dominates input tokens and ada-dev accounts
+  for 63% of fleet in-tokens, based on the 2026-10-14 overnight dig. Host and repo: chaba repo on host tony-dell
+  (noting recent runner-agent drift across idc03, tony-macbook, idc02, and tony-dell). Constraints: Rely strictly
+  on usage.jsonl and journald findings showing 310 sessions with ~85% text input and reconnect churn re-priming
+  ~16K text each connect. Testable done-condition: A documented analysis or fix addressing the ada-dev whale and
+  test pollution (t-ctx writing real usage.jsonl rows) verified against the recorded token metrics.'
+claim:
+  since: 2026-11-24 07:59
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 08:37
+  note: verified — evidence checks green, closing itself

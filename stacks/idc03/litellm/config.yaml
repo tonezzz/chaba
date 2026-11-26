@@ -3,6 +3,7 @@
 # Env (all via ~/.config/secrets on idc03, never committed):
 #   GEMINI_API_KEY_PAID / GEMINI_API_KEY_FREE  (gemini-keys.env)
 #   OPENROUTER_API_KEY                          (mddb-gemini.env)
+#   OPENROUTER_BENCH_API_KEY                   (litellm.env — bench/eval or-* chat routes)
 #   LITELLM_MASTER_KEY / DATABASE_URL           (litellm.env)
 
 model_list:
@@ -13,28 +14,23 @@ model_list:
     litellm_params:
       model: gemini/gemini-2.5-flash
       api_key: os.environ/GEMINI_API_KEY_PAID
-  - model_name: gemini-2.5-flash-free
-    litellm_params:
-      model: gemini/gemini-2.5-flash
-      api_key: os.environ/GEMINI_API_KEY_FREE
+  # gemini-2.5-flash-free removed 2026-11-20: the free-key project gets
+  # 404 "no longer available to new users" for the 2.5 family. The free
+  # tier now lives on gemini-3.5-flash-lite-free only.
   - model_name: or-gemini-2.5-flash
     litellm_params:
       model: openrouter/google/gemini-2.5-flash
-      api_key: os.environ/OPENROUTER_API_KEY
+      api_key: os.environ/OPENROUTER_BENCH_API_KEY
       api_base: https://openrouter.ai/api/v1
 
   - model_name: gemini-2.5-flash-lite
     litellm_params:
       model: gemini/gemini-2.5-flash-lite
       api_key: os.environ/GEMINI_API_KEY_PAID
-  - model_name: gemini-2.5-flash-lite-free
-    litellm_params:
-      model: gemini/gemini-2.5-flash-lite
-      api_key: os.environ/GEMINI_API_KEY_FREE
   - model_name: or-gemini-2.5-flash-lite
     litellm_params:
       model: openrouter/google/gemini-2.5-flash-lite
-      api_key: os.environ/OPENROUTER_API_KEY
+      api_key: os.environ/OPENROUTER_BENCH_API_KEY
       api_base: https://openrouter.ai/api/v1
 
   - model_name: gemini-3.5-flash
@@ -48,7 +44,7 @@ model_list:
   - model_name: or-gemini-3.5-flash
     litellm_params:
       model: openrouter/google/gemini-3.5-flash
-      api_key: os.environ/OPENROUTER_API_KEY
+      api_key: os.environ/OPENROUTER_BENCH_API_KEY
       api_base: https://openrouter.ai/api/v1
   - model_name: gemini-3.5-flash-lite
     litellm_params:
@@ -61,19 +57,19 @@ model_list:
   - model_name: or-gemini-3.5-flash-lite
     litellm_params:
       model: openrouter/google/gemini-3.5-flash-lite
-      api_key: os.environ/OPENROUTER_API_KEY
+      api_key: os.environ/OPENROUTER_BENCH_API_KEY
       api_base: https://openrouter.ai/api/v1
 
   # ── supervised strong-model benchmark routes ────────────────────
   - model_name: or-claude-fable-5.1
     litellm_params:
       model: openrouter/anthropic/claude-fable-5.1
-      api_key: os.environ/OPENROUTER_API_KEY
+      api_key: os.environ/OPENROUTER_BENCH_API_KEY
       api_base: https://openrouter.ai/api/v1
   - model_name: or-gemini-3.1-pro-preview
     litellm_params:
       model: openrouter/google/gemini-3.1-pro-preview
-      api_key: os.environ/OPENROUTER_API_KEY
+      api_key: os.environ/OPENROUTER_BENCH_API_KEY
       api_base: https://openrouter.ai/api/v1
   # native Gemini strong-tier (OPS-1039 answered route: gemini-3-pro) —
   # paid key primary, free key fallback variant, OR variant above.
@@ -99,14 +95,15 @@ model_list:
   # idc02 ollama removed from LiteLLM routing 2026-11-07 (SYS-1082):
   # chat-local/qwen7b -> tony-dell tunnel, nomic-embed LB leg ->
   # tony-dell; idc02 ollama stays up for direct/local consumers only.
-  # kk-mac ollama via declared ssh tunnel unit on idc03
-  # (kkmac-ollama-tunnel.service: 127.0.0.1:11445 -> kk-mac:11434,
-  # loopback-bound adanest ollama; free local compute, member device —
-  # route dies with the host). api_base points at
-  # kkmac-admission-shim.service (:11447) — an Ada Nest healthcheck gate
-  # that 503s instantly when kk-mac is stale/hot/busy so the router
+  # kk-mac ollama binds 0.0.0.0 on the tailnet (100.108.217.17:11434)
+  # since 2026-11-19 — adanest net.adanest.ollama.plist; free local
+  # compute, member device — route dies with the host. api_base points
+  # at kkmac-admission-shim.service (:11447) — an Ada Nest healthcheck
+  # gate that 503s instantly when kk-mac is stale/hot/busy so the router
   # fails fast to the paid leg instead of queueing on a busy member
-  # device (card kk-mac-gateway-admission-shim, 2026-11-14).
+  # device (card kk-mac-gateway-admission-shim, 2026-11-14). Fallback:
+  # kkmac-ollama-tunnel.service (:11445 ssh -L -> kk-mac:11434) stays
+  # installed-but-disabled — only for a loopback-bind rollback.
   - model_name: ollama-qwen32b-kkmac
     litellm_params:
       model: ollama_chat/qwen2.5:32b
@@ -116,6 +113,16 @@ model_list:
     litellm_params:
       model: ollama_chat/qwen3:8b
       api_base: http://127.0.0.1:11447
+  - model_name: ollama-qwen330b-a3b-kkmac
+    litellm_params:
+      model: ollama_chat/qwen3:30b-a3b
+      api_base: http://127.0.0.1:11447
+      timeout: 120
+  - model_name: ollama-gptoss20b-kkmac
+    litellm_params:
+      model: ollama_chat/gpt-oss:20b
+      api_base: http://127.0.0.1:11447
+      timeout: 120
   - model_name: ollama-qwen25vl7b-kkmac
     litellm_params:
       model: ollama_chat/qwen2.5vl:7b
@@ -131,6 +138,17 @@ model_list:
     litellm_params:
       model: ollama_chat/qwen2.5:7b-instruct
       api_base: http://127.0.0.1:11446
+
+  # -- agent-local — OPS-1363: free_lane agentic dispatch alias (GATE PASS
+  # 2026-11-25, p1-info-find-agent-local-test 16/16 @ $0). kk-mac leg-1 via
+  # the admission shim, fast-fail 15s — thermally throttled 32b previously
+  # burned the full 120s timeout before fallthrough (AGENTS.md 81KB system
+  # prompt inflation; see job doc post_gate_tuning_2026_11_25).
+  - model_name: agent-local
+    litellm_params:
+      model: ollama_chat/qwen2.5:32b
+      api_base: http://127.0.0.1:11447
+      timeout: 15  # fail fast: kkmac thermally throttled -> fallback qwen7b
 
   # ── OpenRouter :free tier (KNB-0932 Cline lane — zero-cost upstreams) ──
   - model_name: or-free-nemotron-nano
@@ -181,6 +199,8 @@ model_list:
       model: openrouter/google/gemini-embedding-2
       api_key: os.environ/OPENROUTER_API_KEY
       api_base: https://openrouter.ai/api/v1
+      extra_body:
+        provider: {order: ["Google"], allow_fallbacks: false}
   - model_name: ollama-nomic-embed
     litellm_params:
       model: ollama/nomic-embed-text
@@ -199,6 +219,21 @@ model_list:
     litellm_params:
       model: gemini/gemini-3.5-flash
       api_key: os.environ/GEMINI_API_KEY_PAID
+  # Isolated Ada consult aliases. Each has exactly one provider target and
+  # deliberately has no router_settings fallback entry.
+  - model_name: consult-flash
+    litellm_params:
+      model: gemini/gemini-3.5-flash
+      api_key: os.environ/GEMINI_API_KEY_PAID
+  - model_name: consult-pro
+    litellm_params:
+      model: gemini/gemini-3.1-pro-preview
+      api_key: os.environ/GEMINI_API_KEY_PAID
+  - model_name: consult-claude
+    litellm_params:
+      model: openrouter/anthropic/claude-fable-5.1
+      api_key: os.environ/OPENROUTER_API_KEY
+      api_base: https://openrouter.ai/api/v1
   - model_name: summary
     litellm_params:
       model: ollama_chat/qwen2.5:32b
@@ -237,11 +272,17 @@ model_list:
       model: openrouter/google/gemini-embedding-2
       api_key: os.environ/OPENROUTER_API_KEY
       api_base: https://openrouter.ai/api/v1
+      extra_body:
+        provider: {order: ["Google"], allow_fallbacks: false}
 
   # ── Cloudflare Workers AI — free neuron tier (added 2026-11-13) ──
   # OpenAI-compatible endpoint; CF_API_WORKER_TOKEN + CF_API_ACCOUNT_ID
   # in cloudflare.env. Reasoning models emit reasoning_content — merged
   # into content so opencode/clients see plain text.
+  # 2026-11-20 upstream deprecation wave: llama-3.1-8b-instruct-fp8,
+  # qwen3-30b-a3b-fp8 and nemotron-3-120b-a12b now answer 410. The three
+  # routes below are repointed to replacements probed live the same day
+  # and renamed to the real model they serve.
   - model_name: cf-llama-70b
     litellm_params:
       model: openai/@cf/meta/llama-3.3-70b-instruct-fp8-fast
@@ -250,15 +291,15 @@ model_list:
     model_info:
       max_input_tokens: 24000
       max_output_tokens: 8192
-  - model_name: cf-qwen3-30b
+  - model_name: cf-qwen38-27b
     litellm_params:
-      model: openai/@cf/qwen/qwen3-30b-a3b-fp8
+      model: openai/@cf/qwen/qwen3.8-27b
       api_base: https://api.cloudflare.com/client/v4/accounts/ea384314a1d3abf699998fe0b4b2adad/ai/v1
       api_key: os.environ/CF_API_WORKER_TOKEN
-    model_info:
-      max_input_tokens: 32768
-      max_output_tokens: 8192
       merge_reasoning_content_in_choices: true
+    model_info:
+      max_input_tokens: 262144
+      max_output_tokens: 8192
   - model_name: cf-gpt-oss-120b
     litellm_params:
       model: openai/@cf/openai/gpt-oss-120b
@@ -269,13 +310,13 @@ model_list:
       max_output_tokens: 8192
       merge_reasoning_content_in_choices: true
 
-  - model_name: cf-llama-8b
+  - model_name: cf-llama4-scout
     litellm_params:
-      model: openai/@cf/meta/llama-3.1-8b-instruct-fp8
+      model: openai/@cf/meta/llama-4-scout-17b-16e-instruct
       api_base: https://api.cloudflare.com/client/v4/accounts/ea384314a1d3abf699998fe0b4b2adad/ai/v1
       api_key: os.environ/CF_API_WORKER_TOKEN
     model_info:
-      max_input_tokens: 32000
+      max_input_tokens: 131000
       max_output_tokens: 8192
   - model_name: cf-embed-m3
     litellm_params:
@@ -291,9 +332,9 @@ model_list:
     model_info:
       max_input_tokens: 128000
       max_output_tokens: 8192
-  - model_name: cf-nemotron-120b
+  - model_name: cf-gemma4-26b
     litellm_params:
-      model: openai/@cf/nvidia/nemotron-3-120b-a12b
+      model: openai/@cf/google/gemma-4-26b-a4b-it
       api_base: https://api.cloudflare.com/client/v4/accounts/ea384314a1d3abf699998fe0b4b2adad/ai/v1
       api_key: os.environ/CF_API_WORKER_TOKEN
       merge_reasoning_content_in_choices: true
@@ -312,23 +353,32 @@ model_list:
       model: openrouter/nvidia/nemotron-3.5-lightning:free
       api_key: os.environ/OPENROUTER_API_KEY
       api_base: https://openrouter.ai/api/v1
-  - model_name: or-free-north-code
+  # or-free-north-code removed 2026-11-20: OpenRouter 404s it ("no
+  # provider serves this model anymore").
+
+  # ── OpenRouter paid cheap-code lane (OPS-1256, card ───────────────
+  # rainy-day-spend-decisions): DeepSeek V4 Flash as the cheap code
+  # brain — $0.09/M in, $0.18/M out (~$0.05-0.11 per bench session).
+  # Called explicitly (litellm/or-deepseek-v4-flash) by the
+  # agent-cost-bench config.* corpus; not in any job-class chain.
+  - model_name: or-deepseek-v4-flash
     litellm_params:
-      model: openrouter/cohere/north-mini-code:free
-      api_key: os.environ/OPENROUTER_API_KEY
+      model: openrouter/deepseek/deepseek-v4-flash
+      api_key: os.environ/OPENROUTER_BENCH_API_KEY
       api_base: https://openrouter.ai/api/v1
 
 router_settings:
   # ordered fallbacks per deployed model_name — paid first, free-tier
   # second, OpenRouter third, local ollama last for text-only classes.
   fallbacks:
-    - gemini-2.5-flash: [gemini-2.5-flash-free, or-gemini-2.5-flash]
-    - tool-call: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
+    - gemini-2.5-flash: [or-gemini-2.5-flash]
+    - tool-call: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, ollama-llama32-3b-kkmac, colab-gemma3, ollama-llama3.2]
+    - agent-local: [gemini-3.5-flash-lite-free, ollama-qwen7b, ollama-llama3.2, colab-gemma3, gemini-3.5-flash-lite, or-gemini-3.5-flash-lite]  # free-lite first: local legs 265s+ / no S1 tool-call artifact (OPS-1363)
     - chat: [gemini-3.5-flash-free, or-gemini-3.5-flash, gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
     - gemini-3.5-flash-lite: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
     - summary: [gemini-3.5-flash-lite, gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
     - voice-aux: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
-    - gemini-2.5-flash-lite: [gemini-2.5-flash-lite-free, or-gemini-2.5-flash-lite, colab-gemma3, ollama-llama3.2]
+    - gemini-2.5-flash-lite: [or-gemini-2.5-flash-lite, colab-gemma3, ollama-llama3.2]
     - classify: [gemini-3.5-flash-lite, gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
     - chat-local: [ollama-qwen32b-kkmac, ollama-llama3.2, colab-gemma3]
     - bench: [gemini-3.5-flash-lite, gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
@@ -351,5 +401,5 @@ litellm_settings:
   drop_params: true
   callbacks: ["custom_callbacks.proxy_handler_instance", "custom_callbacks.cf_content_handler_instance"]
   # proxy-wide spend cap — belt over the per-virtual-key budgets
-  max_budget: 50
+  max_budget: 120
   budget_duration: 30d

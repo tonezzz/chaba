@@ -1,0 +1,387 @@
+id: colibri-bench-qwen3-6-35b-on-omen-vs-gpt-8ea5a0
+title: 'colibri-bench: Qwen3.6-35B on omen vs gpt-oss:20b lanes'
+column: done
+updated: 2026-11-26 19:41
+brief: 'Tony ask 2026-10-24. Colibri (JustVugg/colibri) runs MoE models with experts streamed from disk; Qwen3.6-35B-A3B
+  fits omen (30GB RAM, 83GB free disk, CUDA 1650 build ~30 tok/s vs gpt-oss:20b''s 5 tok/s CPU). Test: install colibri
+  + qwen36-35b on omen, run the edu-manage corpus through its OpenAI endpoint (:8000/v1), compare p50 latency +
+  task completion vs gpt-oss:20b on T4 (p50 14.7s) and omen CPU (78s).'
+tags:
+- llm
+- bench
+- colibri
+- fleet
+- local-lane
+spec: 'Pack: packs/colibri-bench — needs gpu_gb 0 (CPU) or 3 (CUDA 1650), disk_gb 35, venv:true. Prep: clone colibri,
+  run start-here.sh --model qwen36-35b --yes --backend cuda (fallback cpu), start serve. Run: bench-edu-manage.py
+  --lanes local-colibri --openai-base http://127.0.0.1:8000/v1 --model qwen3.6-35b (or curl-based mini-bench if
+  the bench script lacks OpenAI-base support). Artifacts: out/colibri-bench-*.json + .md. First bench when the pack
+  lands on Drive + omen worker picks it up (~30-60 min for install+download).'
+ref: BEN-0814
+comms:
+- at: 2026-10-24 12:44
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-25 08:11
+  from: devin
+  text: 'REAL JOB PLAN (Omen HOLD): currently unsafe — /data has only 38G free vs the card''s ~83G requirement.
+    First reclaim/expand data tier or lower the model artifact; do not start the pull. When unblocked: same edu-manage
+    corpus, p50/p95, tok/s, RAM, quality gate.'
+- at: 2026-11-07 19:07
+  from: tony
+  text: queued for processing
+- at: 2026-11-07 19:08
+  from: idc02
+  text: claimed
+- at: 2026-11-07 19:08
+  from: chaba
+  text: started devin-task-colibri-bench-qwen3-6-35b-on-omen-vs-gpt-8ea5a0-17940 on idc02 (dispatch)
+- at: 2026-11-07 19:10
+  from: idc02
+  text: 'finished (ok): exit=0 MJw6Sk","type":"step-finish","tokens":{"total":50633,"input":3579,"output":288,"reasoning":0,"cache":{"write":0,"'
+- at: 2026-11-07 19:10
+  from: chaba
+  text: no action.artifact declared — closeout evidence is exit code + event audit only
+- at: 2026-11-07 19:10
+  from: chaba
+  text: ran under executor=opencode:free_lane provider=litellm model=litellm/gemini-3.5-flash-lite profile=ops-readonly
+- at: 2026-11-07 19:10
+  from: chaba
+  text: pushed dispatch/colibri-bench-qwen3-6-35b-on-omen-vs-gpt-8ea5a0-17940 to origin
+- at: 2026-11-07 19:10
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-07 19:10
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-colibri-bench-qwen3-6-35b-on-omen-vs-gpt-8ea5a0-17940,
+    branch dispatch/colibri-bench-qwen3-6-35b-on-omen-vs-gpt-8ea5a0-17940'
+- at: 2026-11-07 19:10
+  from: chaba
+  text: restarted zombie claim as devin-task-colibri-bench-qwen3-6-35b-on-omen-vs-gpt-8ea5a0-17940 on idc02 — claim
+    committed but the response was lost (OPS-1071)
+- at: 2026-11-07 19:11
+  from: chaba
+  text: no action.artifact declared — closeout evidence is exit code + event audit only
+- at: 2026-11-07 19:11
+  from: chaba
+  text: ran under executor=opencode:free_lane provider=litellm model=litellm/gemini-3.5-flash-lite profile=ops-readonly
+- at: 2026-11-07 19:11
+  from: chaba
+  text: pushed dispatch/colibri-bench-qwen3-6-35b-on-omen-vs-gpt-8ea5a0-17940 to origin
+- at: 2026-11-07 19:11
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-07 19:11
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-colibri-bench-qwen3-6-35b-on-omen-vs-gpt-8ea5a0-17940,
+    branch dispatch/colibri-bench-qwen3-6-35b-on-omen-vs-gpt-8ea5a0-17940'
+- at: 2026-11-08 10:58
+  from: devin
+  text: '[sweep] 2026-11-07 dispatch produced zero commits (branch head = old base; merge-sweep marked it a failed
+    attempt). Work not done — returning to backlog for re-dispatch.'
+- at: 2026-11-08 10:58
+  from: tony
+  text: moved review -> backlog
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:25
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:42
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:45
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 19:01
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:25
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:16
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:18
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:21
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:09
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:11
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:02
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:05
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:47
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:07
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:20
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:10
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:10
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:24
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:41
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:09
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:50
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:06
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:28
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:56
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:56
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 13:54
+  from: devin
+  text: 'Triage 2026-11-26: action.status=done is WRONG. Comms: ''session produced no commits ... NOT verified'',
+    ''[sweep] 2026-11-07 dispatch produced zero commits ... Work not done - returning to backlog for re-dispatch''.
+    Also note the earlier HOLD (only 38G free on /data vs ~83G required). Runner only claims status=queued; left
+    open for your re-queue decision after capacity check.'
+- at: 2026-11-26 15:00
+  from: devin
+  text: queued for processing
+- at: 2026-11-26 15:00
+  from: devin
+  text: 'Re-queued 2026-11-26 after pilot success. Capacity blocker cleared: /data on tony-omen is 170G free (was
+    38G vs ~83G required). Previous 2026-11-07 dispatch produced zero commits; verify real commits/results this
+    time.'
+- at: 2026-11-26 15:01
+  from: con01
+  text: claimed
+- at: 2026-11-26 15:02
+  from: chaba
+  text: model litellm/gemini-3.5-flash-lite dropped — provider namespace doesn't match executor=devin; running the
+    executor default
+- at: 2026-11-26 15:03
+  from: chaba
+  text: started devin-task-20261126-150303-pack-packs-colibri-bench-needs on con01 (dispatch)
+- at: 2026-11-26 15:03
+  from: chaba
+  text: 'primer injected 8 lesson(s): [colibri-bench-qwen3-6-35b-on-omen-vs-gpt-8ea5a0] REAL JOB PLAN (Omen HOLD):
+    cur; `test -d /content` in prep is the cheap way to pin a pack to the Colab lane; fle; mn01 lacks pytest entirely
+    — dispatch merges originating there fail-closed at th; [dispatch-triage-arbiter-label-pass] primer injected
+    8 lesson(s): [devnest-info-; Cloudflare Workers AI free tier is 10K neurons/day ACCOUNT-wide and shared acros;
+    On tony-omen, tony-ha runs host-network in rootless podman; `'
+- at: 2026-11-26 15:12
+  from: devin
+  text: 'pack rework: local-colibri lane added to bench-edu-manage.py (--openai-base/--model/--openai-timeout);
+    pack now serves colibri with --model-id qwen3.6-35b (colibri 404s on served-id mismatch), catalog id fixed to
+    qwen36-35b, model moved out of PACK_DIR (avoids 23GB Drive push-back), bench tree vendored under inputs/, curl
+    mini-bench fallback on lane failure. E2E-verified vs a stub /v1.'
+- at: 2026-11-26 15:13
+  from: devin
+  text: 'DONE (dispatch 20261126-150303): pack reworked + committed a757e31a87c. bench-edu-manage.py now has a `local-colibri`
+    lane (--openai-base/--model), pack serves colibri --model-id qwen3.6-35b (its /v1 404s on id mismatch), catalog
+    id fixed to qwen36-35b, model moved off $PACK_DIR (23GB push-back avoided), bench tree vendored under inputs/,
+    curl mini-bench fallback preserves evidence on lane failure. needs gpu_gb kept at 3 (spec allowed 0 or 3) so
+    CPU-only fleet hosts can''t claim a 3h slot. Valida'
+- at: 2026-11-26 15:25
+  from: chaba
+  text: 'merge-sweep: devin-task-20261126-150303-pack-packs-colibri-bench-needs no longer active on con01 but card
+    still says running — sweeping its branch'
+- at: 2026-11-26 15:25
+  from: chaba
+  text: 'merge-sweep: merged c8de94a0 (dispatch/20261126-150303-pack-packs-colibri-bench-needs from con01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261126-150303-pack-packs-colibri-bench-needs.md)
+    — auto-closed'
+- at: 2026-11-26 15:25
+  from: local
+  text: 'pub milestone: card verified: colibri-bench-qwen3-6-35b-on-omen-vs-gpt-8ea5a0 on idc03 — merged c8de94a0
+    (dispatch/20261126-150303-pack-packs-colibri-bench-needs from con01) -> origin/master — verified — auto- — merged
+    c8de94a0 (dispatch/20261126-150303-pack-packs-colibri-bench-needs from con01) -> origin/master — verified —
+    auto-closed [evt-a9328b109d74ce2d]'
+- at: 2026-11-26 15:26
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261126-150303-pack-packs-colibri-bench-needs,
+    branch dispatch/20261126-150303-pack-packs-colibri-bench-needs on con01'
+- at: 2026-11-26 15:28
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-26 15:28
+  from: chaba
+  text: 'session-end checkpoint 50e080ed: 1 leftover file(s) committed'
+- at: 2026-11-26 15:28
+  from: chaba
+  text: banked 760 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 15:28
+  from: chaba
+  text: pushed dispatch/20261126-150303-pack-packs-colibri-bench-needs to origin
+- at: 2026-11-26 15:28
+  from: chaba
+  text: 'test gate skipped: pre-existing baseline test failure'
+- at: 2026-11-26 15:28
+  from: chaba
+  text: "auto-merge not done: push: Authorized access only. All activity may be monitored and reported.\nremote:
+    error: refusing to update checked out branch: refs/heads/master        \nremote: error: By default, updating
+    the current bran — close will block until merged"
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: free_lane
+  model: litellm/gemini-3.5-flash-lite
+  result: 'exit=0 MJw6Sk","type":"step-finish","tokens":{"total":50633,"input":3579,"output":288,"reasoning":0,"cache":{"write":0,"read":46766}},"cost":0}}
+    | devin-task-colibri-bench-qwen3-6-35b-on-omen-vs-gpt-8ea5a0-17940.service: Consumed 25.732s CPU time.'
+  runner: con01
+  attempts: 1
+  sweep:
+    stale_running: 2026-11-26 15:25
+  verified: true
+review_kind: verify
+claim:
+  since: 2026-11-26 15:01
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 15:25
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261126-150303-pack-packs-colibri-bench-needs.md

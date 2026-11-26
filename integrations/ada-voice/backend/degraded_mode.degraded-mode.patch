@@ -1,0 +1,270 @@
+diff --git a/backend/degraded_mode.py b/backend/degraded_mode.py
+new file mode 100644
+index 0000000..1f65597
+--- /dev/null
++++ b/backend/degraded_mode.py
+@@ -0,0 +1,264 @@
++"""Degraded-mode notices — the defined reply when a lane's LLM credits die.
++
++(card kk-ha-degraded-mode-explain-capabilities-000d8b, 2026-11-24 —
++KK's live depletion is the learning case for future member lanes)
++
++2026-10-14 KK's lane burned its OpenRouter credit mid-day: every reply
++transport failed and the lane answered with silence —
++response_interrupted with no words — while voice connects died on a
++bare provider_cap error. The member-lane contract this module owns:
++
++- is_credit_failure(): the sustained-outage classifier — billing caps,
++  depleted credits/quota, unavailable models. Transient rate-limits and
++  ordinary errors return False so they keep the existing retry /
++  interruption behavior instead of false-alarming the user.
++- turn_failure_notice(): the canned reply a text session emits when
++  EVERY transport is down — bilingual (Thai script in the triggering
++  user text picks Thai), env-tunable, and honest about what still works.
++- connect_notice(): the same contract for voice connects held by
++  lane_budget — delivered as a 'degraded' ws frame before the socket
++  closes so the client can show or speak the explanation.
++
++Env knobs (per-lane, all optional):
++  ADA_DEGRADED_LANG       en|th|auto — default auto: Thai script in the
++                          triggering text picks the Thai notice
++  ADA_DEGRADED_CONTACT    who to ask for a top-up (default "Tony")
++  ADA_DEGRADED_PARTICLE   Thai polite particle (default "ค่ะ") — the
++                          Thai template assumes a female-polite persona
++                          register; other registers should set
++                          ADA_DEGRADED_NOTICE_TH instead
++  ADA_DEGRADED_NOTICE_EN / ADA_DEGRADED_NOTICE_TH
++                          full-template overrides ({contact} {particle})
++
++Stdlib-only at import time; gemini_pool is reached lazily so the module
++also loads standalone (chaba-side tests, tooling).
++"""
++from __future__ import annotations
++
++import os
++import re
++import time
++from typing import Any
++
++# ---------------------------------------------------------------------------
++# sustained-outage classifier
++# ---------------------------------------------------------------------------
++#
++# Mirrors gemini_pool's quota taxonomy: daily/billing parks are sustained,
++# per-minute rate limits and explicit short retry hints are transient.
++# Keep the patterns in sync with backend/gemini_pool.py (_QUOTA_*_RE)
++# and backend/lane_budget.py (_BILLING_CAP_RE).
++
++# Verbatim copies of gemini_pool's quota taxonomy (origin/main) — the
++# classifier must split sustained-vs-transient exactly the way the pool
++# parks keys, so drift here would mean notices on rpm blips or silence
++# on real outages.
++_QUOTA_SHAPED_RE = re.compile(
++    r"\b429\b|resource_exhausted|rate.?limit|too many requests|quota",
++    re.I)
++_QUOTA_DAILY_RE = re.compile(r"per.?day|daily|day.?quota", re.I)
++_QUOTA_SHORT_RE = re.compile(
++    r"per.?minute|\brpm\b|rate.?limit|too many requests|max.?parallel|"
++    r"overload", re.I)
++_QUOTA_RETRY_S_RE = re.compile(r"retry[^\d]{0,16}(\d{1,4})\s*s", re.I)
++
++# Billing/model-gone text — deliberately NO bare 'quota' clause: quota-
++# shaped errors belong to the daily/short/retry taxonomy below, which
++# is the only thing that can tell a drained daily cap from an rpm blip.
++_BILLING_RE = re.compile(
++    r"insufficient.{0,10}credits?|credits?.{0,15}"
++    r"(deplet|exhaust|out|limit|balance|remaining)|"
++    r"prepayment|spending cap|billing|add funds|top.?up|"
++    r"budget.{0,20}(exceed|exhaust|deplet|reach|limit)|"
++    r"key limit exceeded|payment required|requires? more credits?",
++    re.I)
++
++_MODEL_GONE_RE = re.compile(
++    r"model.{0,40}(not found|unavailable|does not exist|no longer "
++    r"available|access|invalid)|key_model_access_denied|"
++    r"no available channel", re.I)
++
++_SUSTAINED_HORIZON_S = 600.0
++_THAI_RE = re.compile(r"[฀-๿]")
++
++
++def _status_code(exc: BaseException) -> int | None:
++    for attr in ("status_code", "code", "status"):
++        try:
++            v = int(getattr(exc, attr, None))
++        except (TypeError, ValueError):
++            continue
++        if v:
++            return v
++    try:
++        v = int(getattr(getattr(exc, "response", None),
++                        "status_code", None) or 0)
++        return v or None
++    except (TypeError, ValueError):
++        return None
++
++
++def _is_lane_hold(exc: BaseException) -> bool:
++    """lane_budget's billing holds are sustained by construction —
++    name/code check so this works without importing the module."""
++    return (getattr(exc, "code", None) in ("lane_budget", "provider_cap")
++            or type(exc).__name__ in ("LaneBudgetExceeded",
++                                      "ProviderCapLatched"))
++
++
++def _is_quota_exhausted(exc: BaseException) -> bool:
++    if type(exc).__name__ == "QuotaExhaustedError":
++        return True
++    try:
++        from backend import gemini_pool
++        return isinstance(exc, gemini_pool.QuotaExhaustedError)
++    except Exception:
++        return False
++
++
++def _quota_exhausted_sustained(exc: BaseException) -> bool:
++    """QuotaExhaustedError means 'all keys drained' — sustained only when
++    the parks outlive the short-rate-limit window. The pool's own
++    daily-vs-short wording is the first signal; the live park table is
++    the tiebreaker for the ambiguous 'already exhausted' variant."""
++    s = str(exc)
++    if "daily boundary" in s or "quota is spent" in s:
++        return True
++    try:
++        from backend import gemini_pool
++        horizon = time.time() + _SUSTAINED_HORIZON_S
++        with gemini_pool._lock:
++            gemini_pool._prune()
++            return any(u > horizon for u in gemini_pool._exhausted.values())
++    except Exception:
++        return False
++
++
++def _response_body(exc: BaseException) -> str:
++    """httpx.HTTPStatusError keeps the provider body on .response —
++    raise_for_status loses it from str(exc), so scan it directly."""
++    try:
++        return str(getattr(getattr(exc, "response", None),
++                           "text", "") or "")[:4000]
++    except Exception:
++        return ""
++
++
++def _text_is_sustained_credit(text: str) -> bool:
++    """String-level classifier — shared by str(exc) and response bodies.
++    Order mirrors gemini_pool._park_until: billing/model-gone first
++    (they never clear on a retry hint), then daily quota wins, an
++    explicit retry hint is transient (the pool caps those parks at
++    900s), the short rate-limit markers are transient, and only the
++    ambiguous quota shape falls through — which the pool parks as
++    daily."""
++    s = text or ""
++    if _MODEL_GONE_RE.search(s) or _BILLING_RE.search(s):
++        return True
++    if _QUOTA_DAILY_RE.search(s):
++        return True
++    if _QUOTA_RETRY_S_RE.search(s):
++        return False
++    if _QUOTA_SHORT_RE.search(s):
++        return False
++    return bool(_QUOTA_SHAPED_RE.search(s))
++
++
++def is_credit_failure(*errs: Any) -> bool:
++    """True when any error is a sustained credit/quota/billing outage or
++    a gone model — the class that earns the degraded-mode notice.
++    Transient rate-limits and ordinary failures return False."""
++    for exc in errs:
++        if exc is None:
++            continue
++        if _is_lane_hold(exc):
++            return True
++        if _is_quota_exhausted(exc):
++            # its message embeds 'the daily quota' even on the short
++            # variant — never let the generic text scan see it
++            if _quota_exhausted_sustained(exc):
++                return True
++            continue
++        if _status_code(exc) == 402:
++            return True
++        if _text_is_sustained_credit(str(exc)):
++            return True
++        body = _response_body(exc)
++        if body and _text_is_sustained_credit(body):
++            return True
++    return False
++
++
++# ---------------------------------------------------------------------------
++# canned notices — what happened, what still works, what to do
++# ---------------------------------------------------------------------------
++
++_TEMPLATES = {
++    # Every reply transport failed — the lane can only send this notice.
++    "turn": {
++        "en": ("Sorry — my AI credits just ran out, so I can't think or "
++               "use my tools right now. This notice is the only thing "
++               "still answering on my side; timers, cameras and "
++               "smart-home routines keep running normally. Please ask "
++               "{contact} to top up the lane — I'll be back as soon as "
++               "they land."),
++        "th": ("ขอโทษ{particle} ตอนนี้เครดิต AI ของลานี้หมดแล้ว{particle} "
++               "หนูคิดคำตอบไม่ได้และใช้เครื่องมือไม่ได้ชั่วคราวนะ{particle} "
++               "มีแค่ข้อความนี้ที่ยังตอบได้นะ{particle} — timer กล้อง "
++               "และระบบบ้านยังทำงานปกติ{particle} รบกวน {contact} ช่วยเติม"
++               "เครดิตให้ลานี้ด้วยนะ{particle} เดี๋ยวหนูกลับมาตอบเหมือนเดิม"
++               "{particle}"),
++    },
++    # Voice connect held by lane_budget/provider cap — text lane may
++    # still be alive, so the notice points there instead of declaring
++    # a full outage.
++    "connect": {
++        "en": ("My voice is paused — the AI credits behind it ran out. "
++               "You can still reach me by text (LINE or the chat app) "
++               "while the text lane is alive; timers, cameras and house "
++               "routines are unaffected. Please ask {contact} to top "
++               "up — voice comes back as soon as they land."),
++        "th": ("เสียงของหนูหยุดชั่วคราว{particle} เพราะเครดิต AI หมดแล้ว"
++               "{particle} — ลองคุยกับหนูทางข้อความดูได้นะ{particle} "
++               "ถ้าลานข้อความยังอยู่ timer กล้อง และระบบบ้านยังทำงาน"
++               "ปกติ{particle} รบกวน {contact} เติมเครดิตด้วยนะ{particle}"),
++    },
++}
++
++
++def _lang(user_text: str) -> str:
++    env = (os.environ.get("ADA_DEGRADED_LANG") or "auto").strip().lower()
++    if env in ("en", "th"):
++        return env
++    return "th" if _THAI_RE.search(user_text or "") else "en"
++
++
++def notice(kind: str, *, user_text: str = "") -> str:
++    """The canned degraded-mode reply for `kind` ('turn' | 'connect'),
++    in the detected/configured language."""
++    lang = _lang(user_text)
++    tmpl = (os.environ.get(f"ADA_DEGRADED_NOTICE_{lang.upper()}")
++            or _TEMPLATES[kind][lang])
++    return tmpl.format(
++        contact=(os.environ.get("ADA_DEGRADED_CONTACT") or "").strip()
++        or "Tony",
++        particle=(os.environ.get("ADA_DEGRADED_PARTICLE") or "").strip()
++        or "ค่ะ")
++
++
++def turn_failure_notice(primary: Any, final: Any, *,
++                        user_text: str = "") -> str | None:
++    """The canned reply for a fully-dead text turn, or None when the
++    failure isn't credit/model-shaped (caller keeps
++    response_interrupted)."""
++    if not is_credit_failure(primary, final):
++        return None
++    return notice("turn", user_text=user_text)
++
++
++def connect_notice(exc: Any, *, channel: str | None = None) -> str | None:
++    """The canned explanation for a billing-class provider connect
++    failure, or None for ordinary connect errors."""
++    if exc is None or not is_credit_failure(exc):
++        return None
++    return notice("connect")

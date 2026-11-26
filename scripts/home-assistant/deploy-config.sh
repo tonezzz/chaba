@@ -4,7 +4,7 @@
 # Usage:
 #   deploy-config.sh --host dev|ha|all [--check]
 #
-#   --host dev   rsync repo config -> michael-dev (tony-dell) + reload
+#   --host dev   rsync repo config -> mn-ha-dev (mn01) + reload
 #   --host ha    rsync repo config -> michael-ha + reload
 #   --host all   both, dev first
 #   --check      dry-run: diff repo config vs each target without deploying
@@ -25,7 +25,7 @@ while [ $# -gt 0 ]; do
 done
 [ -n "$HOST" ] || { echo "usage: deploy-config.sh --host dev|ha|all [--check]"; exit 2; }
 
-DEV_CONFIG_SSH='idc02:/home/tony/.config/michael-dev/'
+DEV_CONFIG_SSH='mn01:/home/tony/.config/mn-ha-dev/'
 HA_CONFIG_SSH='michael-ha:/config/'
 # dev is reached over ssh because this script may run from any host
 
@@ -50,8 +50,8 @@ if [ "$CHECK" -eq 1 ]; then
 fi
 
 case "$HOST" in
-  dev) "$SCRIPT_DIR/deploy-michael-dev.sh" ;;
+  dev) "$SCRIPT_DIR/deploy-mn-ha-dev.sh" ;;
   ha)  "$SCRIPT_DIR/deploy-michael.sh" ;;
-  all) "$SCRIPT_DIR/deploy-michael-dev.sh" && "$SCRIPT_DIR/deploy-michael.sh" ;;
+  all) "$SCRIPT_DIR/deploy-mn-ha-dev.sh" && "$SCRIPT_DIR/deploy-michael.sh" ;;
   *) echo "unknown host: $HOST"; exit 2 ;;
 esac

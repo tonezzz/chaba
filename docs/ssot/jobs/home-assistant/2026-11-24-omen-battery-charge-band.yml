@@ -1,0 +1,348 @@
+title: omen battery charge band — smart-plug hysteresis on tony-ha (automation deployed, awaiting plug)
+subtitle: HP Omen 15-BC has no OS-level charge limit; battery telemetry is
+  already live in tony-ha; the 85/45 hysteresis automation is DEPLOYED as a
+  managed package and goes live automatically once switch.omen_plug is paired
+icon: 🔋
+id: 2026-11-24-omen-battery-charge-band
+status: deployed-dormant-awaiting-plug
+owner: devin-dispatch
+project: chaba
+started: "2026-11-24"
+card: omen-battery-charge-policy
+ref: OPS-0742
+
+deployed_2026_11_24:
+  decision: "Tony picked option A (plug + automation now) via board request omen-charge-policy-a-vs-b at 15:48"
+  automation:
+    entity_id: automation.omen_plug_charge_band_85_45
+    state: on
+    location: /config/packages/system-managed.yaml (host ~/.config/home-assistant/packages/)
+    ha_config_git_commit: bd17c99
+    group: managed
+    dormant_design: >-
+      Every plug action is guarded by a template condition
+      states('switch.omen_plug') in ['on','off'] — the automation is inert
+      (no error spam) until the plug entity exists, then activates
+      automatically on the next trigger/watchdog tick. Battery critical/low
+      notifications fire regardless of plug presence.
+  verified: >-
+    automation.reload via websocket (admin token) returned success;
+    entity present state=on; manual automation.trigger ran clean — no
+    template errors, no plug calls (expected while switch.omen_plug absent).
+  auth_note: >-
+    ~/.config/secrets/home-assistant-token.env on omen is svc-chaba-scripts
+    (is_admin=false) — GET /api/states works but ALL service calls return
+    401/Unauthorized (REST POST and websocket call_service alike).
+    ~/.config/secrets/telemetry-ha-push.env HA_LONG_LIVED_TOKEN is Tony
+    (is_admin/is_owner) — use it for service calls. (export the var before
+    python; the env file has no `export`.)
+  plug_integration_paths_observed_2026_11_24:
+    - platform: cozylife_local
+      example: switch.mac_plug (ex-fan plug, config entry 01M1R458)
+      note: >-
+        RECOMMENDED for the new plug — fully local, native
+        select.*_power_on_state failsafe, mac_plug precedent. Pair in the
+        CozyLife app on the same account.
+    - platform: command_line + tinytuya
+      example: switch.plakkaaaef_local / switch.plalhawetiiyng_local (coffee/bedside)
+      note: >-
+        Works but heavier: needs local key in devices.json + command_line
+        block in configuration.yaml. NOTE tuya-control.py status polls were
+        returning exit 2 in the HA log at deploy time — path looks degraded.
+    - platform: sonoff
+      example: switch.plug_tv
+      note: eWeLink local — viable but least documented here.
+
+context: |
+  Card goal: keep tony-omen battery in the 40-80% band instead of sitting at
+  100% on permanent AC (macbook-swell lesson). HP Omen exposes no
+  charge_control_* on Linux (card says verified 2026-10-18).
+
+investigation:
+  verified_live_2026_11_24:
+    - id: no-kernel-charge-control
+      detail: >
+        Re-verified on omen over ssh: /sys/class/power_supply has only
+        ADP1 (Mains, online=1) and BAT0 (Battery). BAT0 exposes capacity,
+        status, charge_*, cycle_count etc. but NO charge_control_* or
+        charge_threshold attributes. hp_bioscfg module is loaded but
+        /sys/class/firmware-attributes/hp-bioscfg/attributes contains only
+        Sure_Start — the BIOS publishes no battery settings to the OS.
+        Machine: HP Omen 15-BC (product_name 15-BC), BIOS F.19 2023-04-17.
+    - id: battery-telemetry-live
+      detail: >
+        MDDB device-telemetry/tony-omen/latest is fresh (beacon every 5min
+        on omen): battery pct=61, status="Not charging", health_pct=100.0,
+        charge_full==design 2816000uAh, cycle_count=0 (gauge does not
+        report real cycles). telemetry-ha-push mirrors it into tony-ha.
+    - id: ha-entities-live
+      detail: >
+        Verified via HA REST on tony-omen 127.0.0.1:8123:
+        sensor.tony_omen_battery_level=61 (device_class battery),
+        sensor.tony_omen_battery_state="Not charging",
+        sensor.tony_omen_battery=61, binary_sensor.tony_omen_telemetry_fresh=on,
+        binary_sensor.tony_omen_online=on — all updated seconds before check.
+        NOTE: sensor.tony_omen_battery_level has TWO producers — the
+        command_line sensor (ssh->sysfs, 60s poll, unique_id
+        laptop_tony_omen_battery_level, predates telemetry) and the
+        telemetry-ha-push REST mirror (5min). Both read the same sysfs
+        capacity so values agree; command_line is the fresher source.
+        binary_sensor.tony_omen_telemetry_fresh tracks only the beacon
+        path, so beacon-death still trips the fail-open path.
+    - id: precedent-automation
+      detail: >
+        automation.mac_plug_charge_band_80_60 is LIVE on tony-ha
+        (automations.yaml on omen): battery_level>80 + telemetry fresh ->
+        switch.mac_plug off; <60 -> on; telemetry_fresh off >10min ->
+        fail-open ON; */5min watchdog forces ON if sensor last_updated
+        >15min. mac_plug = repurposed fan plug (CozyLife, was
+        switch.plakphadlom). Its switch entity currently reports
+        'unavailable' (plug offline — macbook likely away); the pattern
+        itself is proven.
+    - id: no-spare-plug
+      detail: >
+        Full switch.* census on tony-ha: every controllable plug is in
+        use — switch.plakkaaaef_local (coffee), switch.plalhawetiiyng_local
+        (bedside), switch.mac_plug (macbook charger, ex-fan),
+        switch.plug_tv (TV). No documented spare. Option A needs a new
+        Tuya/CozyLife plug (~THB 200-400) paired to the same ecosystem.
+
+options_analysis:
+  A_smart_plug:
+    verdict: recommended
+    cost: "~THB 250 plug + pairing; automation YAML already staged below"
+    pros:
+      - >-
+        proven in this house (mac_plug band automation live since
+        2026-10-20)
+      - >-
+        all HA-side dependencies verified live today
+      - >-
+        band fully tunable; failsafes specified in card spec
+    cons:
+      - >-
+        omen drains battery between 45-85% — under GPU/llama load a cycle
+        may be ~1-2h of plug switching (fine for relay life, noisy in
+        logbook)
+      - >-
+        residual risk — HA automation engine dead while plug=off -> omen
+        discharges to empty and stays off (plug still off). Narrow window:
+        plug only turns off at >=85% charge; HA on omen is the same host
+        so omen-off already trips the stale-sensor fail-open.
+      - >-
+        omen powered OFF -> no telemetry -> stale -> plug ON -> battery
+        still floats to 100% while shut down (inherent; needs manual
+        unplug for long off periods)
+  B_bios:
+    verdict: almost certainly absent on this model
+    cost: "zero hardware; needs Tony at the machine for one F10 reboot"
+    evidence:
+      - >-
+        HP support (2026) — Omen 16 owner told 'notebook does not support
+        an 80% charging limit; only higher-end HP business class
+        notebooks have that capability'
+      - >-
+        Omen 15 AMD thread — 'HP does not supply this work in BIOS of
+        consumer notebooks'
+      - >-
+        Omen 16-xf0000 (2025, newest) — Battery Health Manager missing in
+        BIOS even after updates; only 'Battery Optimizer' which does NOT
+        cap charge
+      - >-
+        omen is a 2018 consumer 15-BC — older than every negative report
+    residual_value: >-
+      free to check at next natural reboot anyway; if a 'Battery Care
+      Function'/'Battery Health Manager' option exists under F10 >
+      Advanced/Power, it beats the plug (hardware-level, no HA dep)
+
+staged_automation: |
+  # DEPLOYED 2026-11-24 as automation.omen_plug_charge_band_85_45 in
+  # packages/system-managed.yaml — this block is the pre-deploy draft kept
+  # for reference; the live version adds entity-exists guards (dormant-safe)
+  # and uses new-style triggers:/actions: keys. Original draft:
+  # omen-plug charge band (85/45) — clone of automation.mac_plug_charge_band_80_60
+  # Deploy: append to ~/.config/home-assistant/automations.yaml on tony-omen
+  # (or drop into /config/packages/ as a managed package — safety guard
+  # belongs in managed group per ssot.home-assistant.automations.yml).
+  # BEFORE ENABLING: replace switch.omen_plug with the real entity_id of the
+  # new plug's command_line/cozylife switch, and set the plug's power-on
+  # state to ON (failsafe #1 — see runbook).
+  - alias: omen-plug charge band (85/45)
+    id: omen_plug_charge_band
+    mode: single
+    trigger:
+    - platform: numeric_state
+      entity_id: sensor.tony_omen_battery_level
+      above: 85
+      id: high
+    - platform: numeric_state
+      entity_id: sensor.tony_omen_battery_level
+      below: 45
+      id: low
+    - platform: numeric_state
+      entity_id: sensor.tony_omen_battery_level
+      below: 20
+      id: critical
+    - platform: numeric_state
+      entity_id: sensor.tony_omen_battery_level
+      below: 25
+      for: 00:15:00
+      id: low_alert
+    - platform: state
+      entity_id: binary_sensor.tony_omen_telemetry_fresh
+      to: 'off'
+      for: 00:10:00
+      id: stale
+    - platform: time_pattern
+      minutes: /5
+      id: watchdog
+    action:
+    - choose:
+      - conditions:
+        - "{{ trigger.id == 'high' }}"
+        - condition: state
+          entity_id: binary_sensor.tony_omen_telemetry_fresh
+          state: 'on'
+        sequence:
+        - service: switch.turn_off
+          target: {entity_id: switch.omen_plug}
+        - action: logbook.log
+          data:
+            name: omen-plug
+            entity_id: switch.omen_plug
+            message: 'charge-band OFF (omen battery >= 85)'
+      - conditions: "{{ trigger.id == 'low' }}"
+        sequence:
+        - service: switch.turn_on
+          target: {entity_id: switch.omen_plug}
+        - action: logbook.log
+          data:
+            name: omen-plug
+            entity_id: switch.omen_plug
+            message: 'charge-band ON (omen battery <= 45)'
+      - conditions: "{{ trigger.id == 'critical' }}"
+        sequence:
+        - service: switch.turn_on
+          target: {entity_id: switch.omen_plug}
+        - action: persistent_notification.create
+          data:
+            title: omen battery CRITICAL
+            message: 'battery <20% — charger plug forced ON'
+        - action: notify.mobile_app_tony_ip
+          data:
+            title: omen battery CRITICAL
+            message: 'battery <20% — charger plug forced ON'
+      - conditions: "{{ trigger.id == 'low_alert' }}"
+        sequence:
+        - action: persistent_notification.create
+          data:
+            title: omen battery low
+            message: 'battery <25% for 15min — check omen charger plug'
+        - action: notify.mobile_app_tony_ip
+          data:
+            title: omen battery low
+            message: 'battery <25% for 15min — check omen charger plug'
+      - conditions: "{{ trigger.id == 'stale' }}"
+        sequence:
+        - service: switch.turn_on
+          target: {entity_id: switch.omen_plug}
+        - action: logbook.log
+          data:
+            name: omen-plug
+            entity_id: switch.omen_plug
+            message: 'fail-open ON (omen telemetry stale >10m)'
+      - conditions:
+        - "{{ trigger.id == 'watchdog' }}"
+        - "{{ states('switch.omen_plug') != 'on' }}"
+        - "{{ (now() - states.sensor.tony_omen_battery_level.last_updated).total_seconds() > 900 or (states('sensor.tony_omen_battery_level') | float(101) < 20) }}"
+        sequence:
+        - service: switch.turn_on
+          target: {entity_id: switch.omen_plug}
+        - action: logbook.log
+          data:
+            name: omen-plug
+            entity_id: switch.omen_plug
+            message: 'fail-open ON (sensor stale >15m or battery <20%)'
+      - conditions:
+        - "{{ trigger.id == 'watchdog' }}"
+        - condition: state
+          entity_id: binary_sensor.tony_omen_telemetry_fresh
+          state: 'on'
+        - "{{ states('switch.omen_plug') == 'on' }}"
+        - "{{ states('sensor.tony_omen_battery_level') | float(-1) >= 85 }}"
+        sequence:
+        - service: switch.turn_off
+          target: {entity_id: switch.omen_plug}
+        - action: logbook.log
+          data:
+            name: omen-plug
+            entity_id: switch.omen_plug
+            message: 'watchdog OFF (battery >=85 while plug still on)'
+
+runbook_option_a:
+  hardware: |
+    Buy a Tuya Smart Life smart plug (same Tuye-10A / category-cz class as
+    the coffee+bedside plugs is proven for local TinyTuya control; any
+    Smart Life plug works). Plug the Omen's AC adapter brick into it.
+    Pair in the Smart Life app on the same account as the existing plugs.
+  ha_integration: |
+    Two proven paths, pick whichever matches the new device's app:
+    a) Smart Life/Tuya -> clone the command_line block in
+       ~/.config/home-assistant/configuration.yaml (tony-omen):
+       name it e.g. "Omen Charger" -> entity switch.omen_charger;
+       tuya-control.py gains an `omen` key in devices.json
+       (~/.local/share/tuya on the HA host / /config/tuya in container).
+       Fetch the local key with tinytuya wizard or project creds
+       (same flow as coffee/bedside — see ssot.tuya-smart-plug.yml).
+    b) CozyLife -> cozylife_local integration (same as fan/mac_plug).
+    Then set the plug's power-on state to ON (cozylife select
+    *_power_on_state, or Tuya app 'power-on behavior' = restore/ON) —
+    failsafe #1 so a plug reboot never leaves omen unplugged.
+  deploy: |
+    DONE 2026-11-24 (dispatch attempt 2): automation live as
+    automation.omen_plug_charge_band_85_45 in packages/system-managed.yaml
+    (managed group), dormant-safe until switch.omen_plug exists.
+    Remaining when the plug arrives:
+    1. Integrate the plug so its switch entity_id is exactly
+       switch.omen_plug (cozylife_local: rename device/entity in HA;
+       command_line: name: omen_plug in configuration.yaml).
+    2. Set plug power-on state ON (cozylife select *_power_on_state, or
+       Tuya app 'power-on behavior') — failsafe #1.
+    3. Move the Omen AC adapter brick onto the plug; plug it IN (state on).
+    4. Watch one full cycle: plug off at >=85, omen status -> Discharging,
+       plug on at <=45, status -> Charging. Battery level currently 61 —
+       first action will be plug ON only if it ever drops <=45 while
+       telemetry fresh/stale logic demands; above-band watchdog will pull
+       it OFF once >=85.
+  verify: |
+    sensor.tony_omen_battery_level in 45-85 band over 48h;
+    logbook shows charge-band entries; no CRITICAL/low alerts.
+
+runbook_option_b:
+  steps: |
+    At next natural reboot: F10 at HP logo -> Advanced/Power Management
+    Options -> look for 'Battery Health Manager' or 'Battery Care
+    Function'. If present with an ~80% cap option, enable it and option A
+    becomes unnecessary (remove/return the plug). Expected: absent on
+    Omen 15-BC — HP reserves charge-limit for business-class machines.
+
+notes:
+  - >
+    Staged automation improves on the macbook original in two ways:
+    (a) watchdog band-check — every 5min, if telemetry fresh AND battery
+    >=85 AND plug still on -> turn plug OFF. Covers the gap where omen
+    boots/shuts down with battery already above the band (numeric_state
+    'above' only fires on upward crossings, so a host that was off while
+    the plug fail-open-charged it to 100% would otherwise stay plugged
+    forever). (b) plug-state guards on watchdog branches prevent
+    turn_on/turn_off + logbook spam every 5min while already in the
+    wanted state. mac_plug_charge_band_80_60 has gap (a) — worth the same
+    watchdog band-check if Tony wants symmetry.
+  - >
+    Optional hardening (not required): omen-side systemd failsafe that
+    force-turns the plug ON via local Tuya when BAT0 capacity <20%,
+    covering the HA-dead residual. Needs the plug's local key on omen.
+  - >
+    switch.mac_plug currently 'unavailable' on tony-ha (plug offline) —
+    macbook charge-band automation cannot act until it returns; separate
+    issue, flagged for awareness.

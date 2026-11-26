@@ -1,0 +1,299 @@
+id: adobe-stock-upscaler-eval
+title: Evaluate open-source upscalers for stock pipeline
+column: done
+updated: 2026-11-23 13:33
+brief: Benchmark Real-ESRGAN, SwinIR, SeeSR/OSEDiff on campaign assets; pick pipeline upscaler.
+priority: high
+program: adobe-stock
+tags:
+- adobe-stock
+- image-quality
+- eval
+spec: 'Goal: choose the standard upscale step for the Nest Adobe Stock pipeline. Candidates: Real-ESRGAN (fast,
+  deterministic, CPU-viable, -dn denoise), SwinIR/HAT (lightweight SOTA), SeeSR/OSEDiff (diffusion prior, semantics-aware,
+  hallucination risk), SUPIR (best open quality, GPU-heavy). Test on AS-2026-11-05-REMOTE-WORK-001 assets (comparison-b
+  1024x576 photographic). Metrics: sharpness, artifact rate, semantic drift vs source, wall time, host fit (KK-Mac
+  MLX / idc03 CPU / omen GPU). Deliverable: eval report + recommended default + worker integration plan. Education:
+  lesson ai-image-quality-ladder-upscaling-restoration (post 4130).'
+ref: OPS-1077
+comms:
+- at: 2026-11-07 12:32
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-07 18:39
+  from: devin
+  text: 'Scaffold landed on feat/ops-1077-upscaler-eval: scripts/adobe-stock/upscale-eval.py — backend=real esrgan-ncnn
+    (ncnn binary, CPU/Vulkan), metrics = laplacian sharpness + roundtrip PSNR/SSIM (self-consistency; no ground
+    truth for generated images) + optional --unsharp post-pass + JSON receipt. Metric fns verified (blur < roundtrip
+    ordering correct). Live dogfood in progress: realesrgan-x4plus x4 on comparison-d running on tony-dell (~70min
+    CPU). Still TODO: spandrel/diffusion backends (SeeSR/SUPI'
+- at: 2026-11-07 19:25
+  from: devin
+  text: 'Dogfood done: realesrgan-ncnn x4plus x4 on comparison-d via upscale-eval metrics — output 5376x3072 (16.5MP),
+    roundtrip PSNR 29.3dB / SSIM 0.916. Note: raw x4 laplacian var DROPPED vs source (SR nets smooth); unsharp40/60
+    post-pass restores sharpness (lap 1259/1571 vs src 1583). Landed comparison-d-x4 + -sharp40 + -sharp60 to Drive
+    for Tony QC. Honest read: resolution 4x''d but realism ceiling unchanged — expect ''sharper but still not photo''.'
+- at: 2026-11-08 20:43
+  from: tony
+  text: queued for processing
+- at: 2026-11-09 09:08
+  from: tony-omen
+  text: claimed
+- at: 2026-11-09 09:08
+  from: chaba
+  text: started devin-task-20261109-090841-goal-choose-the-standard-upsca on tony-omen (dispatch)
+- at: 2026-11-09 09:10
+  from: devin
+  text: Picked up on tony-omen (GTX1650 4GB). Prior scaffold upscale-eval.py + comparison-d dogfood found; now fetching
+    comparison-b from gdrive:ada-nest-adobe-stock and measuring classical-SR backends. Diffusion candidates (SeeSR/OSEDiff/SUPIR)
+    will be scored analytically — 4GB VRAM cannot run them, which is itself host-fit data.
+- at: 2026-11-09 09:31
+  from: tony-omen
+  text: 'finished (failed): exit=1 e-the-standard-upsca.service: Failed with result ''exit-code''. | devin-task-20261109-090841-goal-choose-the-standa'
+- at: 2026-11-09 09:31
+  from: chaba
+  text: restarted zombie claim as devin-task-20261109-093122-goal-choose-the-standard-upsca on tony-omen — claim
+    committed but the response was lost (OPS-1071)
+- at: 2026-11-09 09:33
+  from: chaba
+  text: 'merge-sweep: devin-task-20261109-090841-goal-choose-the-standard-upsca failed — its branch isn''t auto-merged
+    (unverified partial work). Retry the card or merge dispatch/20261109-090841-goal-choose-the-standard-upsca by
+    hand.'
+- at: 2026-11-12 06:21
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 09:12
+  from: tony
+  text: retry requested
+- at: 2026-11-17 09:19
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-17 09:19
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 0.94 > 0.85)'
+- at: 2026-11-17 09:20
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-17 09:20
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.80 > 0.85)'
+- at: 2026-11-17 09:20
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-17 09:24
+  from: tony-dell
+  text: claimed
+- at: 2026-11-17 09:24
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-17 09:25
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.16 > 1.0)'
+- at: 2026-11-17 09:39
+  from: chaba
+  text: 'merge-sweep: devin-task-20261109-090841-goal-choose-the-standard-upsca no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-17 09:39
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261109-090841-goal-choose-the-standard-upsca'
+- at: 2026-11-17 09:43
+  from: chaba
+  text: restarted zombie claim as devin-task-20261117-094320-goal-choose-the-standard-upsca on tony-dell — claim
+    committed but the response was lost (OPS-1071)
+- at: 2026-11-17 09:44
+  from: tony-dell
+  text: 'finished (failed): exit=1 in-task-20261117-094320-goal-choose-the-standard-upsca.service: Failed with result
+    ''exit-code''. | devin-task-2026'
+- at: 2026-11-17 18:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:18
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:38
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:40
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:06
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 22:11
+  from: devin
+  text: moved doing -> backlog
+- at: 2026-11-18 17:19
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:08
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:18
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:02
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:06
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:11
+  from: tony
+  text: queued for processing
+- at: 2026-11-18 22:12
+  from: tony-omen
+  text: claimed
+- at: 2026-11-18 22:12
+  from: chaba
+  text: started devin-task-20261118-221239-goal-choose-the-standard-upsca on tony-omen (dispatch)
+- at: 2026-11-18 22:12
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.79 > 1.0)'
+- at: 2026-11-18 22:14
+  from: devin
+  text: 'Reclaimed on tony-omen. Adopted v2 harness from prior dispatch branch (spandrel+bicubic+dn+flat-region
+    metric). comp-b 1024x576 fetched from gdrive. Now: deps + ncnn binary + SwinIR/HAT weights, then run matrix
+    on omen GPU/CPU.'
+- at: 2026-11-18 22:20
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.16 > 0.85)'
+- at: 2026-11-18 22:27
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261109-090841-goal-choose-the-standard-upsca on
+    tony-omen — if the work was never pushed it may be gone'
+- at: 2026-11-18 23:14
+  from: devin
+  text: 'Eval complete on comparison-b x4 (tony-omen). Measured: realesrgan-ncnn Vulkan 32s (PSNR 32.2/CLIP .97,
+    texture invention = desired for stock), llvmpipe CPU fallback 19min same output, SwinIR-M 480s (46.9dB/.999
+    — fidelity champion but reads clean-resize), HAT-S 45.4dB crop (OOMs full-frame under cgroup), Real-HAT-GAN
+    ≈RE profile, diffusion SR (OSEDiff 9GB/SeeSR 12GB/SUPIR 12-30GB VRAM) no fleet host. RECOMMENDATION: realesrgan-x4plus
+    x4 via ncnn-vulkan = pipeline default; SwinIR as fidelity alt'
+- at: 2026-11-18 23:14
+  from: devin
+  text: 'raised request confirm-pipeline-default-from-eval-1-rea-f33c6d: Confirm pipeline default from eval: (1)
+    ★ Real-ESRGAN x4plus x4 via ncnn-vulkan — fast, deterministic, texture invention'
+- at: 2026-11-18 23:24
+  from: tony-omen
+  text: 'finished (ok): exit=0  SR, all committed on the dispatch branch — nothing pushed. | devin-task-20261118-221239-goal-choose-the-standard'
+- at: 2026-11-18 23:24
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-18 23:24
+  from: chaba
+  text: 'session-end checkpoint ed146d1b: 1 leftover file(s) committed'
+- at: 2026-11-18 23:24
+  from: chaba
+  text: banked 65 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-18 23:24
+  from: chaba
+  text: pushed dispatch/20261118-221239-goal-choose-the-standard-upsca to origin
+- at: 2026-11-18 23:24
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 165.5s)
+- at: 2026-11-18 23:24
+  from: chaba
+  text: auto-merged 484887c5 (dispatch/20261118-221239-goal-choose-the-standard-upsca) → origin/master
+- at: 2026-11-18 23:24
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-18 23:27
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''confirm-pipeline-default-from-''] block close)'
+- at: 2026-11-19 07:03
+  from: tony
+  text: 'answered confirm-pipeline-default-from-eval-1-rea-f33c6d: 1'
+- at: 2026-11-19 07:03
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-19 07:04
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-19 17:03
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:41
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:33
+  from: tony
+  text: archived (1d in done, verified)
+action:
+  type: dispatch
+  status: done
+  sweep:
+    failed_noted: 2026-11-09 09:33
+    stale_running: 2026-11-17 09:39
+    no_repo: 2026-11-17 09:39
+    session_gone: 2026-11-18 22:27
+    close_held: 2026-11-18 23:27
+  last_failure: 'exit=1 e-the-standard-upsca.service: Failed with result ''exit-code''. | devin-task-20261109-090841-goal-choose-the-standard-upsca.service:
+    Consumed 34min 41.818s CPU time over 21min 47.609s wall clock time, 11.3G memory peak, 1.1G memory swap peak.'
+  attempts: 1
+  lane: paid_frontier
+  model: litellm/gemini-2.5-flash
+  result: 'exit=0  SR, all committed on the dispatch branch — nothing pushed. | devin-task-20261118-221239-goal-choose-the-standard-upsca.service:
+    Consumed 4h 31min 15.493s CPU time over 1h 4min 2.317s wall clock time, 18G memory peak, 1.4G memory swap peak.'
+  runner: tony-omen
+  verified: true
+requests:
+- id: confirm-pipeline-default-from-eval-1-rea-f33c6d
+  ask: 'Confirm pipeline default from eval: (1) ★ Real-ESRGAN x4plus x4 via ncnn-vulkan — fast, deterministic, texture
+    invention suits stock QC (recommended); (2) SwinIR-M x4 — max fidelity 46.9dB but clean-resize look, 8x slower,
+    CPU-torch only; (3) hold for diffusion SR once a >8GB GPU host exists. QC images in campaign 60-upscale-eval/
+    on Drive.'
+  status: answered
+  at: 2026-11-18 23:14
+  from: devin
+  options:
+  - proceed
+  - hold
+  answer: '1'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-19 07:04
+  note: verified — evidence checks green, closing itself

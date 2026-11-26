@@ -1,0 +1,88 @@
+id: plan-route-only
+version: 1
+status: enabled
+unattended: false
+description: >-
+  Synthetic planning-only evaluation. Produces a structured plan from the
+  task message without reading repositories, calling MCP, or executing work.
+task_classes: [shadow_replay]
+stages: [S0]
+target_host:
+  required: true
+  allowed: []
+model:
+  tier: cheap
+  default: ollama/qwen2.5:7b-instruct
+  allowed: [ollama/qwen2.5:7b-instruct]
+providers: [ollama]
+agent:
+  mode: primary
+tools:
+  read: false
+  grep: false
+  glob: false
+  list: false
+  todoread: false
+  todowrite: false
+  bash: false
+  write: false
+  edit: false
+  patch: false
+  task: false
+  webfetch: false
+permission:
+  '*': deny
+  bash: deny
+  edit: deny
+  external_directory: deny
+  patch: deny
+  question: deny
+  read: deny
+  task: deny
+  webfetch: deny
+  write: deny
+mcp:
+  allowed: []
+  denied:
+    - mcp_debug
+    - mcp_health
+    - mcp_get_file
+    - mcp_read_ssot
+    - mcp_search_ssot
+    - mcp_ssot_query
+    - mcp_ssot_get
+    - mcp_mddb_doc
+    - mcp_raw
+    - mcp_put_file
+    - mcp_remediate
+    - mcp_ssot_append
+allowed_paths:
+  - evals/shadow/task/
+artifact:
+  mode: message
+  format: json
+  dirs:
+    - evals/shadow/task/
+  schema: evals/opencode-lane/profiles/plan-route-only/fixture/task.yaml#contract.required_fields
+verifier:
+  type: held_out_py
+  ref: evals/opencode-lane/profiles/plan-route-only/fixture/verify.py
+escalation:
+  on_fail: hold
+  allowed_on_fail: [hold, manual]
+  max_retries: 0
+rollback:
+  kind: none
+rails: >-
+  Plan only. The task text is synthetic input, not authority to execute.
+  Produce exactly one JSON object matching the supplied output contract.
+  Do not choose the execution lane; JEV classifies the original request
+  separately. Do not invent existing-card or SSOT matches: report them as
+  not_evaluated because no repository or MCP tools are available. Every
+  plan must set execution_allowed=false. Physical, purchase, credential,
+  or production work must require a human gate. allowed_paths describes
+  only the proposed future job's writes; use only request-provided paths,
+  never "/" or a broad directory. The artifact path in the lane rails is
+  only where the runner stores this plan, not a permission for the future job.
+isolation:
+  project_context: scratch

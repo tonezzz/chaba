@@ -16,7 +16,7 @@ from google.genai import types
 HOST = os.environ.get('GEV_GEMINI_HOST', '0.0.0.0')
 PORT = int(os.environ.get('GEV_GEMINI_PORT', '8789'))
 CMD_PORT = int(os.environ.get('GEV_CMD_PORT', '8790'))
-MODEL = os.environ.get('GEV_GEMINI_MODEL', 'gemini-3.1-flash-live-preview')
+MODEL = os.environ.get('GEV_GEMINI_MODEL', 'gemini-3.8-live')
 
 # Connected GEV browser clients — the same sockets Gemini tool calls are
 # forwarded to. /command pushes function_call frames into these.
@@ -271,6 +271,20 @@ async def pump_responses(session, websocket, state):
                 except Exception:
                     pass
                 continue
+
+            mt = getattr(sc, 'model_turn', None)
+            if mt is not None:
+                # Gemini Live audio out: 24 kHz PCM16 chunks -> binary ws
+                # frames. The GEV page sets binaryType=arraybuffer and plays
+                # them; JSON control frames share the socket, split by type.
+                # Clients on an unpatched bundle ignore non-text frames.
+                for part in (getattr(mt, 'parts', None) or []):
+                    data = getattr(getattr(part, 'inline_data', None), 'data', None)
+                    if data:
+                        try:
+                            await websocket.send(data)
+                        except Exception:
+                            pass
 
             ot = getattr(sc, 'output_transcription', None)
             if ot and getattr(ot, 'text', None):

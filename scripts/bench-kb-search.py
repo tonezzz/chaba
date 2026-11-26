@@ -18,7 +18,7 @@ QUESTIONS = [
     "What is the nlm-add workflow for adding SSOT sources to NotebookLM?",
     "How do I fix devin-desktop after a crash on tony-dell?",
     "Which Home Assistant token file should I use for michael-ha?",
-    "How do I deploy a new card bundle to michael-dev?",
+    "How do I deploy a new card bundle to mn-ha-dev?",
     "How do I add a new app to the public apps page on tony-dell?",
 ]
 

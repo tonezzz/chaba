@@ -288,14 +288,6 @@ CUSTOM_BLOCKS = {
 		reverse_proxy 100.102.134.91:11023
 	}
 """,
-    "helm": """
-	@apps_helm path /apps/helm /apps/helm/*
-	handle @apps_helm {
-		reverse_proxy idc02.taila0626a.ts.net:3003 {
-			header_up Host localhost
-		}
-	}
-""",
     "trade": """
 	handle_path /apps/trade/* {
 		root * /srv/public/apps/trade

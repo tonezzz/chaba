@@ -1,0 +1,256 @@
+id: ncm-code-blocks-detail-composer
+title: NCM code-block composer — detail by layer (Variant B, review)
+column: review
+updated: 2026-11-26 20:39
+brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
+  by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
+  for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
+priority: medium
+tags:
+- ncm
+- code-generation
+- nest
+- blocks
+- design
+- research
+spec: 'Per docs/kb/ncm-code-blocks-design.md. Variant B: keep Jev/nest as the block-sequence decision plane (deterministic
+  compat gate), use NCM only as detail generator — given a chosen skeleton, refine L1 contracts -> L2 wiring ->
+  L3 code/pack.yml + tests. P0 (offline, no GPU): freeze corpus of real pipelines/diffs, define level encoding (L0
+  = block IDs, higher = code tokens), hand-label L0, verify deterministic decoder emits schema-valid pack; gate
+  = replayable from manifest.json, zero provider calls, zero authority violations. P1: CPU/micro tokenizer+generator
+  toy, reuse ncm-thai loops, stop if reconstruction gate fails. P2: benchmark Jev+nest+LLM glue vs Jev+nest+NCM
+  detail vs full NCM, 3 paired reps, deterministic verifier primary / LLM judge secondary. P3: shadow then promotion
+  only behind pre-registered floor. Guardrails: generated code never sets allowed_paths/tools/credentials/human
+  gates; Nest owns queue; no paid GPU/API or account-tier change without explicit approval. Reject absent verifier-backed
+  gain over the existing lane.'
+note: 'Design doc: docs/kb/ncm-code-blocks-design.md. Related: docs/kb/ncm-jev-nest-exploration-procedure.md, docs/kb/jev-code-decision.md.
+  Honest limit: NCM levels currently span token positions, not code structure — the L0 block-ID encoding is the
+  crux; if it fails, feed NCM a fixed L0 from Jev and train only detail levels.'
+ref: OPS-1325
+comms:
+- at: 2026-11-24 20:41
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-24 20:52
+  from: devin
+  text: 'P0′ offline feasibility done — gate PASS. experiments/ncm-code-blocks-p0: 42 rows (7 cases x 3 arms x seeds
+    {42,7}), 0 schema errors, replay ok from manifest.json, 0 authority-guard violations, 0 provider calls; verdict
+    watch. gold_decode 10 pass / 4 escalate (mean 0.771); ncm_detail_standin 10 / 4 (0.737, fidelity 0.80-1.00);
+    skeleton_template 6 pass / 4 fail / 4 escalate (0.616). Both real commit diff cases escalate: no changed path
+    maps to the 152-block catalog (staleness finding). Job record'
+- at: 2026-11-24 20:58
+  from: devin
+  text: 'P1′ CPU reconstruction toy done — pre-registered gate FAIL, verdict stop. 48 real packs; like-for-like
+    diagnostic: coarse conditioning adds NO transferable signal (conditional minus global-prior control: L2 -0.353,
+    L3 -0.006) because every block name is unique, so a held-out block has no training example. Primary held-out
+    L3 F1 0.600 >= 0.30 passed; monotonicity 0.600 < 0.821 at L1 failed. torch is unavailable, so this is a stdlib
+    level-mapping toy, NOT NCM VQ-VAE training. Run 1 was invalidated'
+- at: 2026-11-24 21:06
+  from: devin
+  text: 'P1′ v2 revision done — gate also FAIL, verdict stays stop. Chosen revision: L0 = 24 functional block roles
+    over 54 real packs (repeated examples) + like-for-like gate pre-registered before run. Result: held-out L3 F1
+    0.541 (>= 0.30 floor), L1 conditional - control +0.056 (coarse signal now real), but L2 -0.169 and L3 -0.074
+    vs global-prior control, so the like-for-like conditions failed. v1 packet preserved in packet/, v2 in packet-v2/.
+    Honest limitation: the toy generates levels sequentially, c'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:22
+  from: devin
+  text: 'P1″ level-parallel CPU toy done — pre-registered gate PASS, verdict watch. Fixing the P1′ architecture
+    flaw changed the result: nested corruption + all-level parallel denoising (54 packs, 24 block roles, dim 48)
+    beats both like-for-like controls on held-out packs — L3 F1 0.925 vs identity 0.664 and global 0.615; L2 0.873
+    vs 0.461/0.447 (parallel minus identity +0.412 at L2, +0.261 at L3). So the P1′ failures were largely sequential
+    error cascade, not evidence against the level mapping. Two imple'
+- at: 2026-11-24 21:34
+  from: devin
+  text: 'P2′ Phase A done — plan approved with template-glue proxy, +0.10 floor, Phase B deferred. 144 rows (12
+    frozen tasks x 4 arms x seeds 42/7/13), 0 schema errors, replay PASS (0 identity mismatches, 0 provider calls,
+    0 guard hits). A_jev_llm_glue template floor 0/36 pass (mean fidelity 0.037); B_jev_ncm_detail 36/36 pass (0.959);
+    C_full_ncm 36 escalated; D_gold_control 36/36 (1.0). Median B-A delta +1.000 vs floor +0.10, zero guard violations,
+    escalation delta 0.0 -> verdict watch, NOT adopt: basel'
+- at: 2026-11-25 07:49
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:46
+  from: devin
+  text: 'P2′ Phase B done with JevTeam local lane (no hosted key, $0 paid spend). v1 was invalidated: qwen3:4b without
+    JSON mode gave prose glue, 16/36 timeouts, all 36 baseline cells escalated — that verdict was an artifact. v2
+    fixed it with qwen3:0.6b digest 7df6b6e0... + format:json: 36/36 parseable glue, 9/12 Jev Choice ok (3 local
+    4b CPU timeouts fell back to hand-labelled block, recorded). 144 rows, replay PASS (0 identity mismatches, 0
+    provider calls at replay), 0 guard violations. A_jev_llm_glue '
+- at: 2026-11-25 15:35
+  from: devin
+  text: 'Baseline robustness check done — INCONCLUSIVE. Re-ran arm A at seed 42 with pinned qwen3:4b (digest 359d7dd4...)
+    + JSON mode, num_predict 128: 11/12 calls hit the 180s cap on the local CPU host; the single completed call
+    scored fidelity 0.5368 vs 0.467 for qwen3:0.6b — both far below the 0.75 floor. So there is no evidence a stronger
+    local model would close the gap, but n=1 cannot validate the Phase B +1.000 delta. Recommendation: treat Phase
+    B as watch/unvalidated; do NOT cite +1.000 as an NCM '
+- at: 2026-11-25 15:53
+  from: devin
+  text: 'Baseline robustness follow-up with pinned llama3.2:3b (digest a80c4f17...) aborted: 2 consecutive 240s
+    timeouts and one 165s completion before manual stop. Root cause is host saturation, not model quality: tony-omen
+    load average 43-52, 15Gi swap fully used, ~1Gi free RAM of 30Gi. Previously qwen3:4b hit 180s cap on 11/12 calls;
+    only qwen3:0.6b is runnable there today. Conclusion: the stronger-baseline check cannot be completed on this
+    host under current load; Phase B stays watch/unvalidated and '
+- at: 2026-11-25 16:15
+  from: devin
+  text: 'External research precedent for OPS-1325 (Google/GitHub, 2026-11-25; full citations in docs/kb/ncm-code-blocks-external-ideas.md).
+    Top ideas, cheap-first: (1) MBR / verifier-best-of-k — sample k skeletons from the P1″ denoiser and pick by
+    the deterministic verifier; NCM authors cite MBR as their test-time scaling win. (2) Adaptive depth — accept
+    at L1 when verifier passes, refine to L3 only on rejection; authors explicitly call for computation adapted
+    to difficulty. (3) Per-level error compoundi'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:24
+  from: devin
+  text: 'Status: external repo resets deleted the NCM harnesses/packets a second time; the surviving work was moved
+    to a stable workspace at /home/tony/tony-projects/ncm-code-blocks/ (README, external-ideas doc, self-contained
+    bestofk.py). The cheap best-of-k/adaptive-depth probe was attempted there but aborted after 7 Ollama calls:
+    tony-omen load average reached 75.9, pinned qwen3:0.6b took 38-120s and 4/7 calls hit the cap. No result claimed;
+    script resumes from corpus/live.json when the host is quiet.'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 19:01
+  from: devin
+  text: 'Best-of-k + adaptive depth probe (stable workspace /home/tony/tony-projects/ncm-code-blocks) ran to completion
+    but is INCOMPLETE: 36 local glue calls made (34 ok, 2 timeout), 21 returned empty content under host load, so
+    only 5/12 tasks were analysable. On that n=5 subset: A glue fidelity 0.411 / pass 0.000; B detail fidelity 1.000
+    / pass 1.000; per-level A L1 0.503 L2 0.217 L3 0.513 vs B 1.0 throughout. Delta +1.000 at both k=1 and k=3;
+    adaptive L1 accept 5/5. Best-of-k changed nothing because '
+- at: 2026-11-25 19:06
+  from: devin
+  text: 'Structure/content split toy done locally (ChainCoder ICML2023 precedent; 71 real packs, 0 provider calls,
+    $0 spend). Hand-designed split: structure = block role + need-key/artifact-kind presence + schema flags + timeout
+    bucket; content = quantized need values + timeout + count flags. Single-stage all-bits denoiser: structure F1
+    0.7743, content 0.5404. Two-stage outline→details: structure 0.8707 (+0.0964) but content 0.5087 (-0.0317).
+    So generating the outline first helps the outline, while the d'
+- at: 2026-11-25 19:11
+  from: devin
+  text: 'Next-detail ordering toy done (DetailFlow-style, local-only: 71 packs, 57 tokens, 0 provider calls/$0).
+    L0 role given, not generated. Learned order = role-token mutual information as resolution proxy; fixed = L1
+    needs -> L2 kinds -> L3 schema -> content values. Token-set F1: learned 0.6159 vs fixed 0.6106 (marginal +0.0053).
+    Mixed: learned recovers the timeout group (0.437 vs 0.000 in fixed, where it is emitted last and lost to cascade)
+    but degrades first-token hit (0.437 vs 0.732) and schema F1'
+- at: 2026-11-25 19:27
+  from: devin
+  text: 'Depth ablation done locally (71 packs, 57 detail tokens, 0 provider calls/$0): token-set F1 = 0.6600 for
+    1 group (all parallel), 0.6538 for 2 groups (structure→content), 0.6665 for 4 groups (needs→kinds→schema→content).
+    My hypothesis that a shallower hierarchy reduces error was NOT supported: differences are tiny (<=0.013) and
+    4 groups is slightly best on nearly every per-group F1 (need 0.756, schema 0.703). Likely because only 4 levels
+    and early groups are high precision, so the hcr-core-style '
+- at: 2026-11-25 20:30
+  from: devin
+  text: 'Alternate-host rerun done (no waiting on tony-omen): glue moved to qwen2.5:7b-instruct on tony-dell (load
+    2.4), Choice attempted via JevTeam jevos on idc02 (12/12 timed out - idc02 load 16, 301MiB free - recorded as
+    fallbacks, no fabricated choices). 31/36 glue calls ok with 0 empty outputs; 11/12 tasks analysable (doc-embeds-ss1
+    lost all 3). Stronger baseline result: A fidelity 0.520 at k=1 / 0.532 at k=3 (up from 0.467 with qwen3:0.6b)
+    but still 0/11 passes and far below the 0.75 floor; B 1.00'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:54
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:55
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:56
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 08:28
+  from: devin
+  text: 'JevOS supervision + Choice rerun done (Tony approved 2026-11-26). Correction from read-only diagnosis:
+    the idc02:8777 endpoint we used earlier was open-jev (gemma-3-4b), NOT JevOS; real JevOS was the ad-hoc ''./jev
+    serve'' on idc03:8017 (jevos-v5 OpenVINO int8). No existing playbook, so added ansible/playbooks/jevos-service.yml:
+    check mode ok=3 changed=1 unreachable=0 failed=0; converge ok=8 changed=1; user systemd unit active MainPID
+    4168893, health 200 after ~15s; idempotency recheck changed=0. '
+- at: 2026-11-26 08:52
+  from: devin
+  text: 'Real CPU-trained NCM toy attempted (Tony approved 2026-11-26). Self-contained venv torch 2.15.0+cpu in
+    /home/tony/tony-projects/ncm-code-blocks/ncm-trained, copied tracked ncmthai trainers + ncm-upstream, 3000 Sudoku
+    boards, pre-registered gate: reconstruction accuracy >= 0.50 before any generator training. Stage 1 = REAL multiscale
+    residual VQ-VAE (14.90M params, 120 updates @ batch32, CPU 302s): recon CE fell to 1.4422 but held-out-style
+    token accuracy 0.29702 < 0.50 -> gate FAILED, verdict st'
+- at: 2026-11-26 09:30
+  from: tony
+  text: '[triage 2026-11-26] Active work: Devin logged JevOS supervision + Choice rerun (08:28) and a CPU-trained
+    NCM toy attempt (08:52), both Tony-approved. Design doc docs/kb/ncm-code-blocks-design.md. Awaiting your review
+    of the L0 block-ID encoding result — not closed.'
+- at: 2026-11-26 11:55
+  from: devin
+  text: 'Real NCM Stage 2 on frozen v2 tokenizer done — gate PASS, verdict watch. Pre-registration written before
+    training (loss must decrease + Sudoku wellformed >= 0.05 on 100 boards). Real level-parallel transformer (3.28M
+    params) on frozen VQ-VAE (recon 0.803): 200 updates / batch64, CPU 9271s; loss 2.966 -> 0.641, code acc 0.047
+    -> 0.730. Eval n=100: wellformed 1.000, valid 0.000, solved 0.000 — gates test learning, not Sudoku competence;
+    no adoption. First orchestrated launch died with signal 4 aft'
+- at: 2026-11-26 11:55
+  from: devin
+  text: 'Backfill (board-api was down when this landed): budget-matched real NCM Stage 1 v2 gate PASS — pre-registration
+    before training (250 updates/batch64/12k boards, 0.50 floor, 0.90 target); VQ-VAE recon CE 2.89 -> 0.2829, token
+    accuracy 0.80343 on 200 boards -> PASS (0.90 target NOT reached). v1''s 0.297 was budget-bound. Stage 2 was
+    out of scope in that run. Packet ncm-trained/packet-v2/.'
+- at: 2026-11-26 13:35
+  from: tony
+  text: '[design review 2026-11-26] Evidence: P0 replay PASS (42 rows, 0 schema errors); P1/P2 gains are watch-only
+    and oracle-style; JevOS rerun left Δ +1.000 unchanged; real CPU NCM Stage 1 v2 recon 0.80343 (gate PASS, 0.90
+    target missed) and Stage 2 loss 2.966→0.641 but valid/solved 0.000 on Sudoku. The L0 crux is still untested
+    on code — toy L0 roles are given, not generated from block IDs. No verifier-backed gain over the existing lane
+    under the card rule. Recommend: keep watch/no adoption; next ste'
+- at: 2026-11-26 13:47
+  from: tony
+  text: '[decision 2026-11-26] Keep in review / watch. No adoption or P2/P3 promotion until a frozen real-pipeline
+    corpus validates deterministic L0 block-ID encoding with manifest replay and zero authority violations.'
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:39
+  from: tony
+  text: '[processed 2026-11-26] Design review recorded as watch / no adoption (evidence: docs/ssot/jobs/experiments/2026-11-26-ncm-code-blocks-design-review.yml).
+    P0 replay PASS but oracle-style; real CPU NCM Stage 1 v2 recon 0.80343 (0.90 target missed), Stage 2 valid/solved
+    0.000; JevOS rerun delta +1.000 unchanged; L0 block-ID encoding still untested on real code. Stays in review,
+    no P2/P3 promotion. Re-entry gate: frozen real-pipeline corpus + deterministic generated L0 block IDs + manifest
+    replay + '

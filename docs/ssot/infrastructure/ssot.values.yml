@@ -36,7 +36,7 @@ hosts:
     name: mn01
     tailscale: mn01.taila0626a.ts.net
     tailscale_ip: "100.106.196.22"
-    note: "Portable Ubuntu PC in mn-home (192.168.1.0/24). Planned local IP 192.168.1.200; Tailscale subnet router for mn-home."
+    note: "Portable Ubuntu PC in mn-home (192.168.1.0/24). Planned local IP 192.168.1.200; Tailscale subnet router for mn-home. Hosts mn-ha-dev since 2026-11-25 (moved off idc02)."
   idc01:
     name: idc01
     tailscale: idc01.taila0626a.ts.net
@@ -44,7 +44,7 @@ hosts:
     note: "Siamdata VPS, Bangkok — returned 2026-10-06 (2vCPU/31G/96G). New role: warm-DR node — mddb follower #2 (mddb-follower.service :11123/:11124, data ~/.config/containers/mddb-follower/), standby caddy-edge (public IP answers, pinned synced cert), ada stack installed-stopped, secrets-backup target. Old leader data retired to data.leader-retired-20261006 — mddb.service stays masked. Public IP masked per data-isolation."
   idc02:
     name: idc02
-    note: "Siamdata-class public VPS — lab/offload node + public edge (caddy-edge, surf-thailand.com fronts). Hosts michael-dev since 2026-10-26. Public IP masked per data-isolation."
+    note: "Siamdata-class public VPS — lab/offload node + public edge (caddy-edge, surf-thailand.com fronts). Public IP masked per data-isolation."
     tailscale: idc02.taila0626a.ts.net
     tailscale_ip: 100.123.163.11
   idc03:
@@ -66,9 +66,9 @@ ports:
   chaba_funnel: 8082 # decommissioned 2026-08-28; do not use for new services
   ha_live_public: 8444
   ha_tony: 8123
-  ha_michael_dev: 8124
+  ha_mn_ha_dev: 8124
   ha_mcp_tony: 9584
-  ha_mcp_michael_dev: 9585
+  ha_mcp_mn_ha_dev: 9585
   ada_ha_tony: 8002
   ada_ha_michael: 8003
   notebooklm_rest: 3011
@@ -105,7 +105,9 @@ notebooklm:
   account: tonezzzz@gmail.com
   mcp_host: mn01
   mcp_host_note: notebooklm-mcp container + nlm CLI exec on mn01 since 2026-10-26
-    (dead-mcp-servers-triage); dell quadlets masked. notebooklm-rest (:3011) retired.
+    (dead-mcp-servers-triage); dell quadlets masked. notebooklm-rest (:3011)
+    is NOT retired — it migrated to idc02 (tailnet http://100.123.163.11:3011/v1,
+    see ssot.services.yml notebooklm-rest); lane envs repointed 2026-11-25.
   rclone_remote: gdrive
   drive_root: notebooklm
   drive_root_id: 1beIctIVvLYKwsLwRNap7UXi3ZbFnS0xG

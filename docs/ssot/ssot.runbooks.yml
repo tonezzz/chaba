@@ -156,12 +156,26 @@ runbooks:
       - docs/ssot/jobs/gev/2026-10-06-gev-tours-format.yml
     note: Live-verified 2026-10-06 — world-landmarks played end-to-end on vcast-real-6 (relay screen 1), 7/7 checkpoints in order in 70.5s. No gods-eye-view change needed — rides the existing /command relay + fly_to_location waitForArrival.
 
+  tony-ha-cold-standby:
+    path: docs/runbooks/tony-ha-cold-standby.md
+    type: markdown
+    status: partial
+    last_verified: 2026-11-24
+    scope: tony-ha prod instance (tony-omen) — cold-standby config mirror + promotion to mn01/idc02/dell
+    related:
+      - scripts/home-assistant/ha-standby-sync.sh
+      - stacks/tony-dell/tony-ha/tony-ha.container
+      - stacks/idc02/tailnet-front.caddy
+      - docs/ssot/jobs/home-assistant/2026-10-26-tony-ha-prod-placement-decision.yml
+      - docs/kb/host-migration-tony-dell.md
+    note: Sync script + units documented but not yet installed on a standby host; first live install is the verification. Standby host choice pending tony-ha-prod-placement decision (mn01 recommended — home LAN).
+
   # ── Tier 2: SSOT-embedded runbooks ────────────────────────────────────────
   home-assistant-howto:
     path: docs/ssot/infrastructure/ssot.home-assistant.howto.yml
     type: ssot-embedded
     status: verified
-    scope: michael-dev / michael-ha / tony-ha dashboards, cards, auth
+    scope: mn-ha-dev / michael-ha / tony-ha dashboards, cards, auth
     note: |
       ~30 named runbooks embedded under `runbooks:` — dashboard mutation,
       card build/deploy, token/auth, promotion, troubleshooting.
@@ -177,7 +191,7 @@ runbooks:
       stale_local_asset_404, ha_ui_login_headless, tokens_and_auth,
       bundle_parity_worktrees, pfg_charts_modular, pfg_3d_charts,
       deployment_policy, promote_tony_ha, build_typecheck,
-      michael_dev_playlive_visual_verify.
+      mn_ha_dev_playlive_visual_verify.
 
   devin-maintenance-runbooks:
     path: docs/ssot/infrastructure/ssot.devin.maintenance.yml
@@ -201,7 +215,7 @@ runbooks:
     path: docs/kb/home-assistant/pf3-runbook.md
     type: kb
     status: verified
-    scope: sunsynk-power-flow-card + tony-test dashboard on michael-dev
+    scope: sunsynk-power-flow-card + tony-test dashboard on mn-ha-dev
 
   rview-tony-dell-operations:
     path: docs/kb/rview-tony-dell-operations.md

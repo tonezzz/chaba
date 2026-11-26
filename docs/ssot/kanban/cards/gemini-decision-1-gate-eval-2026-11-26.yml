@@ -1,0 +1,30 @@
+id: gemini-decision-1-gate-eval-2026-11-26
+title: Evaluate gemini-decision-1 as a cheap dispatch-readiness gate
+column: done
+updated: 2026-11-26 20:38
+brief: Grade calibrated noul decisions on 10 real kanban briefs against a reproducible spec-present label, measure
+  confidence and token use, decide whether to replace a full-model yes/no judgment.
+priority: medium
+program: devnest
+tags:
+- gemini
+- eval
+- efficiency
+spec: 'Read-only: build 10 briefs from existing cards (5 with spec, 5 without) via local SSOT; POST /v1beta/decisions
+  with up to 10 questions in one pass using the existing key on idc03; record labels, confidence, agreement, token
+  usage. No key/billing/gateway/pin changes. Record in a docs/ssot/jobs/devnest job yml, commit/push, no wiki publish
+  without separate go-ahead.'
+ref: ADA-1445
+comms:
+- at: 2026-11-26 17:54
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-26 17:58
+  from: ada
+  text: closed by ada
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+action:
+  status: done

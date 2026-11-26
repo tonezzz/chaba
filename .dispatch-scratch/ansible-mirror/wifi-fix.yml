@@ -1,0 +1,74 @@
+- name: Restore MacBook WiFi and connect to the best available network
+  hosts: macbook
+  gather_facts: false
+  become: false
+
+  tasks:
+    - name: Persist brcmfmac_wcc plugin in modules-load.d
+      ansible.builtin.shell: echo brcmfmac_wcc | sudo /usr/bin/tee /etc/modules-load.d/brcmfmac-wcc.conf
+      changed_when: false
+
+    - name: Load brcmfmac_wcc plugin
+      ansible.builtin.command: sudo /usr/sbin/modprobe brcmfmac_wcc
+      changed_when: false
+
+    - name: Check whether wlp3s0 already exists
+      ansible.builtin.stat:
+        path: /sys/class/net/wlp3s0
+      register: wlan_initial
+
+    - name: Enable the BCM43602 PCI device if it is disabled
+      ansible.builtin.shell: |
+        if [ "$(cat /sys/bus/pci/devices/0000:03:00.0/enable 2>/dev/null)" = "0" ]; then
+          echo 1 | sudo /usr/bin/tee /sys/bus/pci/devices/0000:03:00.0/enable || true
+        fi
+      when: not wlan_initial.stat.exists
+      changed_when: false
+
+    - name: Force a fresh PCI probe with brcmfmac_wcc available
+      ansible.builtin.shell: |
+        echo 1 | sudo /usr/bin/tee /sys/bus/pci/devices/0000:03:00.0/remove
+        sleep 2
+        echo 1 | sudo /usr/bin/tee /sys/bus/pci/rescan
+      when: not wlan_initial.stat.exists
+      changed_when: false
+
+    - name: Wait for wlp3s0 to appear
+      ansible.builtin.stat:
+        path: /sys/class/net/wlp3s0
+      register: wlan
+      until: wlan.stat.exists
+      retries: 12
+      delay: 2
+      ignore_errors: true
+
+    - name: Fail clearly if the interface never came back
+      ansible.builtin.fail:
+        msg: "wlp3s0 did not appear - check journalctl -k for brcmfmac errors"
+      when: not wlan.stat.exists
+
+    - name: Try to connect to TONY-IP if it is available
+      ansible.builtin.command: sudo /usr/bin/nmcli connection up TONY-IP
+      register: conn
+      changed_when: false
+      failed_when: false
+
+    - name: Fall back to TONY-WIFI_5G if TONY-IP was unavailable
+      ansible.builtin.command: sudo /usr/bin/nmcli connection up TONY-WIFI_5G
+      register: fallback
+      changed_when: false
+      when: conn.rc != 0
+
+    - name: Verify wlp3s0 is connected
+      ansible.builtin.shell: nmcli -t -f GENERAL.STATE device show wlp3s0
+      register: state
+      changed_when: false
+
+    - name: Fail if the interface is still not connected
+      ansible.builtin.fail:
+        msg: "wlp3s0 is not connected - {{ state.stdout | trim }}"
+      when: "'connected' not in state.stdout"
+
+    - name: Show the active connection
+      ansible.builtin.debug:
+        msg: "wlp3s0 connected via {{ 'TONY-IP' if conn.rc == 0 else 'TONY-WIFI_5G' }}"

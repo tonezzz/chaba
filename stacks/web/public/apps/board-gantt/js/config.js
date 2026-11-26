@@ -1,26 +1,30 @@
 // config.js — all tunables for the board gantt view.
-// Add a project = append one GROUPS entry; the rest of the app is generic.
+//
+// Grouping (decided 2026-11-09): rows group by the card's `project: <slug>`
+// tag/field (ssot.project-lifecycle.yml convention); slug 'a/b' nests 'b'
+// as a sub-group under 'a'. Cards with no project tag fall back to
+// PROJECT_ALIASES (legacy matchers, e.g. the bare `adobe-stock` tag that
+// predates the project: convention); still unmatched -> 'unfiled'.
 
-// Ordered project registry. A card joins the FIRST group whose match()
-// returns true. match(card) receives a normalized card (see data.js).
-// Membership signals available on a card: c.id, c.title, c.column,
-// c.tags (array), c.program, c.project (explicit field/tag value).
-export const GROUPS = [
+export const UNGROUPED_ID = 'unfiled';
+export const UNGROUPED_LABEL = 'Unfiled';
+
+// Ordered fallback matchers — consulted ONLY when a card carries no
+// explicit project slug. First match wins; the matcher's id becomes the
+// group id (and the first slug segment for sub-path purposes).
+export const PROJECT_ALIASES = [
   {
     id: 'adobe-stock',
     label: 'Adobe Stock',
     match: (c) =>
       (c.tags || []).includes('adobe-stock') ||
       c.program === 'adobe-stock' ||
-      (c.project || '').split('/')[0] === 'adobe-stock' ||
       c.id.startsWith('adobe-stock-'),
   },
-  // future projects go here — e.g.
+  // future aliases go here — e.g.
   // { id: 'chaba-ci', label: 'Chaba CI',
   //   match: (c) => c.program === 'chaba-ci' || (c.tags||[]).includes('chaba-ci') },
 ];
-
-// Cards matching no GROUPS entry are not charted (v1: opt-in projects only).
 
 // Column -> gantt progress (0-100) and custom_class suffix.
 // custom_class lands on the bar wrapper; css/theme.css colors it.

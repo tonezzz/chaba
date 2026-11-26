@@ -1,0 +1,84 @@
+title: Model efficiency refresh — fixed fixture across Ollama/Colab/OR/Gemini/DeepSeek
+subtitle: deepseek-flash (OR deepseek-v4.1-flash) warm p50 0.97s @$0.00028/run; OR :free quota-dead; laguna-s-2.1 delisted; Colab tunnel down
+icon: flask
+version: 1
+
+card: model-efficiency-refresh-deepseek-flint-providers
+ref: OPS-0878
+date: 2026-11-24
+dispatch: 20261124-164544-run-a-fixed-efficiency-fixture
+
+question: |
+  Run a fixed efficiency fixture across local Ollama, Colab burst,
+  OpenRouter pinned free models, Gemini gateway/direct, and DeepSeek API
+  when credentials exist. Include warm/cold latency, tokens, error/429
+  rate, structured/tool correctness, vision where supported,
+  cost/quota, license/data policy, and hardware fit. Add DeepSeek V4.1
+  Flash as deepseek-flash and pin Flint separately. Publish raw JSON +
+  report; update model routing only after verifier review.
+
+method: |
+  New stdlib-only harness scripts/bench/model-efficiency.py
+  (fixture model-efficiency-v1): 6 fixed cases — qa_japan, json_extract,
+  tool_weather (tools/functionDeclarations), thai_capital, gen_bottle,
+  vision_colors (generated 64x64 red/blue PNG) — plus 2 warm qa_japan
+  probes. Cold = first call after `ollama stop` (local) / first call of
+  run (API). Ran --suite local on tony-omen and --suite remote on idc03
+  with secrets sourced from ~/.config/secrets (env names only in
+  artifacts). OR account quota probed via /api/v1/auth/key + /credits
+  before/after.
+
+measured: |
+  reports/model-efficiency-2026-11-24{,-local,-remote}.json +
+  reports/model-efficiency-2026-11-24.md. Headline rows:
+
+    deepseek-flash (OR deepseek/deepseek-v4.1-flash, reasoning_effort=low)
+      warm p50 0.97s, case p50 1.9s, 1174 tok, 0 err, 3/6 checks
+      (json/tool/vision pass; open-ended short prompts empty under
+      small max_tokens), est $0.00028/run
+    gemini-3.5-flash-lite gateway vs direct
+      p50 0.82s vs 0.69s, both 5/5 checks — gateway tax ~0.1s
+    ollama-omen-llama3.2-3b   cold 14.7s warm 0.45s 5/5 — best local lane
+    ollama-idc03-llama3.2-3b  cold 34.1s p50 16.4s 5/5 — CPU batch only
+    ollama-omen-gemma3-4b     vision OK (107s call) but tools 400, gen slow
+    ollama-idc03-moondream    0/6 checks, 40-80s/call — unusable for agents
+    ollama-omen-qwen3-4b      HTTP-ok but empty content all cases
+      (thinking budget eats max_tokens; think:false/reasoning_effort=low
+      via OpenAI-compat did not help)
+    colab-gemma3              all_failed — LiteLLM 500 cannot connect
+      :11434; tunnel down, all managed runtimes stale
+    or-flint / nemotron-super-vl / nemotron-lightning :free
+      all HTTP 429 free-models-per-day-high-balance (1000/day, remaining 0)
+    or-laguna-s-2.1:free      HTTP 404 delisted — drop from allowlists
+    deepseek-flash-official   no_credentials — no DEEPSEEK_API_KEY on
+      tony-omen/idc03/tony-dell
+
+  OR account: $225 credits, usage $157.9105 -> $157.9112 (+$0.00069 this
+  session, both deepseek-flash runs; :free legs spent $0 on 429s).
+  Key self-limit $1/week, $0.689 remaining (resets 2026-11-30).
+
+verdict: |
+  1. deepseek-flash is the card's requested addition and it measures
+     well: fast, cheap, correct on structured/tool/vision — but it is a
+     reasoning model, so chat lanes need real max_tokens headroom or
+     empty-content responses (same failure shape as local qwen3:4b).
+  2. Every OR :free leg is quota-shaped again today (1000/day account
+     cap consumed by fleet). Flint could not be re-measured; prior
+     scorecard (comp 85.0, p50 1.3s) stands until the cap resets.
+  3. laguna-s-2.1:free is delisted — remove from any allowlist/router.
+  4. Colab burst lane is dead until a fresh managed T4 registers and the
+     reverse tunnel is restored; colab-gemma3 fallback currently 500s.
+  5. No model routing changes applied — gated on verifier review per
+     card. Suggested reviewer notes in the report's Routing impact
+     section.
+
+followups: |
+  - Verifier review, then (if approved) add `deepseek-flash` route
+    (openrouter/deepseek/deepseek-v4.1-flash) and drop
+    or-free/laguna-s-2.1 references in stacks/idc03/litellm/config.yaml.
+  - Re-run --suite remote after OR :free daily reset to re-measure
+    Flint/nemotron legs; fixture is deterministic and cheap.
+  - Mint DEEPSEEK_API_KEY if the official api.deepseek.com leg is wanted
+    (currently only measured via OpenRouter).
+  - qwen3/moondream/deepseek reasoning-starvation is a fixture-wide
+    caveat: small max_tokens budgets under-measure thinking models.

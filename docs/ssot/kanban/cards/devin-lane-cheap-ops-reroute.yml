@@ -1,0 +1,497 @@
+id: devin-lane-cheap-ops-reroute
+title: 'Devin lane: re-route ops/infra task shapes away from devin burn'
+column: done
+updated: 2026-11-26 20:33
+brief: '2026-11-23 devin-lane audit: 36 devin-lane cards seen; explicit=16, kw=7, fallback=9 (conf 0.00). High-confidence
+  devin keyword hits: kw:host (ansible-disk-headure/disk-guard/storage-rebalance/report-graph/render-job-writer)
+  and kw:diagnos (ada-printer-diagnostics).'
+priority: medium
+program: devnest
+tags:
+- devin
+- lane-routing
+- usage
+spec: 'FINDINGS (2026-11-23, from board cards fetch + dispatch_repos.classify_lane over devin-lane set): of the
+  devin-lane cards observed, final lane devin dominated by (a) explicit action.lane pins — timer-alert-*/card-runner/tony-usb/vcast/ada-*
+  ops lifecycle shapes; (b) keyword hits — kw:host (disk/storage/ansible/report-graph/render-job-writer/ansible-disk-headroom),
+  kw:diagnos (ada-printer-diagnostics-safe-repair), kw:protocol, kw:drift, kw:script (2), kw:lock (1). Only 9 cards
+  fell to devin via classifier fallback (conf 0.00) — genuinely ambiguous.
+
+
+  REDUCTION LEVERS ON THIS: (1) shift ops/infra monitoring+triage shapes that have deterministic/script surfaces
+  off devin (disk-guard/storage-rebalance -> script; report-graph -> script); (2) keep devin fallback only for ambiguous/multi-step;
+  (3) prefer explicit free_lane/opencode for bounded read-only ops (lane contract OPS-0869/kanban-free-lane-routing-contract).
+
+
+  NEXT: pick which shapes to re-route first (Tony decision per lane contract), implement keyword/guard changes with
+  tests green, re-measure burn.'
+ref: DEV-0045
+comms:
+- at: 2026-11-23 19:12
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-23 19:16
+  from: devin
+  text: '2026-11-23 audit (this session): fetched 624 cards via board get --limit 1000; filtered action.lane=devin
+    -> 36 cards. classify_lane sources: explicit=16, kw=7 (kw:host x5, kw:diagnos x1, kw:protocol x1, kw:drift x1,
+    kw:script x2 incl. req-47d7dd, kw:lock x1), fallback=9 (conf 0.00 -> devin). Final lanes: devin 32 / codemod
+    4. High-confidence devin keyword hits: kw:host (ansible-disk-headroom-harden, disk-guard-ssot-enforce, storage-rebalance-underused,
+    report-graph-producer-metas, render-job-wr'
+- at: 2026-11-23 20:25
+  from: devin
+  text: '2026-11-23: first re-route slice IMPLEMENTED in working tree (scripts/board/dispatch_repos.py + tests/board/test_queue_time_classify.py).
+    Changes: (1) removed over-broad standalone ''host'' from LANE_KW[''devin''] (audit: 5 devin-lane cards routed
+    purely by kw:host); (2) lane keyword evaluation order now paid_frontier -> codemod -> free_lane -> devin (cheapest-capable-first
+    per lane catalog; old order let a broad devin keyword pre-empt a cheap lane); devin remains fail-closed fallback
+    for ambiguous '
+- at: 2026-11-23 20:30
+  from: devin
+  text: 'raised request dev-0045-next-slice-decision-the-audit-f-70570c: DEV-0045 next slice decision: the audit
+    found 7 timer-alert-* cards explicitly pinned action.lane=devin (idc03 ada-memor'
+- at: 2026-11-23 20:37
+  from: tony
+  text: '1'
+- at: 2026-11-23 20:37
+  from: chaba
+  text: classified as devin (kw:host conf 1.00)
+- at: 2026-11-23 20:37
+  from: tony
+  text: queued for processing
+- at: 2026-11-23 20:37
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.22 > 0.85)'
+- at: 2026-11-23 20:38
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.34 > 1.5)'
+- at: 2026-11-23 20:38
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 20:38
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 20:38
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-23 20:38
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 20:39
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-23 20:42
+  from: devin
+  text: put on hold
+- at: 2026-11-23 20:42
+  from: devin
+  text: '2026-11-23 verification: card was queued at 20:37 with lane=devin lane_source=kw — stamped by the served
+    host''s OLD classifier (this session''s fix is still uncommitted/undeployed). Held it to avoid a devin session
+    being dispatched to reduce devin usage. Also note: request dev-0045-next-slice-decision-...-70570c is STILL
+    OPEN (which timer-alert slice to do). Re-queue only after either (a) the classifier fix lands on runner hosts
+    and the card is re-classified, or (b) Tony explicitly answers with t'
+- at: 2026-11-23 21:00
+  from: tony
+  text: 'answered dev-0045-next-slice-decision-the-audit-f-70570c: re-pin 7 timer-alert cards to free_lane (recommended)'
+- at: 2026-11-23 21:00
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-23 21:15
+  from: devin
+  text: '2026-11-23 final: Tony answered option (1) and it is recorded on request dev-0045-next-slice-decision-...-70570c.
+    Verification found the chosen slice''s premise stale: only 6 audited timer-alert cards carried explicit lane=devin
+    (not 7), and all 6 are now done/auto-resolved by timer-sentinel KNB-0577 (5 explicitly closed at 19:13/21:03,
+    1 stale status=done) — re-pinning them would reopen finished work, so NO card mutations were made. Durable fix
+    instead: dispatch_repos.classify_lane now pins card'
+- at: 2026-11-24 00:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:05
+  from: chaba
+  text: classified as devin (kw:host conf 1.00)
+- at: 2026-11-24 08:05
+  from: tony
+  text: queued for processing
+- at: 2026-11-24 08:06
+  from: chaba
+  text: 'idc03 defers: disk headroom 1454MB < 2048MB floor'
+- at: 2026-11-24 08:07
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-24 08:07
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-24 08:07
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.98 > 1.0)'
+- at: 2026-11-24 08:07
+  from: devin
+  text: '2026-11-24 DEPLOYED: classifier fix committed on fix/devin-lane-reroute (ae45a7ac22, pushed to origin)
+    and cherry-picked onto idc03 served checkout master as 1669935847c under /tmp/board-api.lock; chaba-board-api.service
+    restarted (active, /health=200). Verified live on the served checkout: timer-sentinel alert -> free_lane (source
+    timer-alert), ops/report text with host/failing -> free_lane (kw:report), ordinary failing pipeline -> devin
+    (unchanged). Changed files clean on served checkout. Note'
+- at: 2026-11-24 08:08
+  from: chaba
+  text: started devin-task-20261124-080808-findings-2026-11-23-from-board on tony-macbook (dispatch)
+- at: 2026-11-24 08:08
+  from: chaba
+  text: 'primer injected 8 lesson(s): [disk-guard-ssot-enforce] primer injected 8 lesson(s): [ansible-vs-legacy-fleet-;
+    [jev-pilot-decision-layer-for-card-triage-d47b53] CLASSIFIER ITERATION DONE (202; [kk-mac-usage-to-lane-savings]
+    [verify-fail] Review pass 2026-11-23 (Tony): 2026; [ansible-vs-legacy-fleet-benchmark] MANUAL LANDING (devin
+    session, tony-dell con; [dispatch-lane-classifier-codemod-keyword-false-positive] finished (failed): exi; [dispatch-lane-classifier-codemod-keyword-false-positive]
+    fin'
+- at: 2026-11-24 08:10
+  from: devin
+  text: '2026-11-24 fleet parity done: installed runner-agent.py synced (verbatim, sha256 d633fa52...) from the
+    committed branch to ~/.local/bin on idc02, idc03, tony-dell, tony-omen, mn01 — all checksum-verified MATCH,
+    python syntax OK, backups of prior copies left in /tmp/runner-agent.pre-fix-<ts>. tony-omen also had an installed
+    dispatch_repos.py shadow copy; synced + verified (only host with that file). tony-macbook SSH denied (publickey/password)
+    — not updated. board-api on idc03 already restarted w'
+- at: 2026-11-24 08:11
+  from: devin
+  text: '2026-11-24 session: found prior slice safe on origin/fix/devin-lane-reroute (ae45a7ac22) + cherry-picked
+    on idc03 served, but never merged to master — landing it via this dispatch branch, then re-measuring burn.'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:13
+  from: devin
+  text: '2026-11-24: tony-macbook is the only runner still stale. SSH from idc02 is denied (publickey/password)
+    despite user confirmation of access, so the exact raw-GitHub sync command was handed to Tony to run locally
+    on the Mac (sha256 d633fa52... expected). Others (idc02, idc03, tony-dell, tony-omen, mn01) are checksum-verified
+    fixed. Update this card once Tony confirms the Mac install.'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:16
+  from: devin
+  text: '2026-11-24 Mac sync verification: SSH from idc02, tony-dell, tony-omen and idc03 to tony-macbook ALL still
+    denied (publickey/password), so remote checksum verification is impossible from the fleet. The handed command
+    has set -e + sha256 assertion, so its ''tony-macbook runner tools FIXED'' output is the verification proof;
+    ask Tony to confirm that line. Ansible path for future: ansible/playbooks/agent-runner.yml already deploys ~/.local/bin/runner-agent
+    with backup:true + version stamp to the agen'
+- at: 2026-11-24 08:18
+  from: devin
+  text: '2026-11-24 Ansible correction: playbook lives in THIS checkout at ~/CascadeProjects/ada-ocb/ansible/playbooks/agent-runner.yml
+    (chaba checkout has no agent-runner.yml), so the first attempted cd failed. Correct invocation from idc02: cd
+    ~/CascadeProjects/ada-ocb/ansible && ansible-playbook playbooks/agent-runner.yml --limit tony-macbook --check
+    --diff -e runner_agent_controller_src=/home/tony/CascadeProjects/chaba-wt-lane-reroute/scripts/board/runner-agent.py.
+    ansible tony-macbook -m ping from i'
+- at: 2026-11-24 08:21
+  from: devin
+  text: '2026-11-24 final parity + Ansible verified: SSH from idc02 to tony-macbook now works; installed ~/.local/bin/runner-agent
+    sha256=d633fa5261a4c93cc7eed177862b5d1048525a55864dacf21db41e0dd2b4bfbe (exact match to committed source), grep
+    timer-sentinel FIXED. dispatch_repos.py not installed on Mac (not needed; only tony-omen carries a shadow copy).
+    Ansible automation verified from idc02: cd ~/CascadeProjects/ada-ocb/ansible && ansible-playbook playbooks/agent-runner.yml
+    --limit tony-macbook --check '
+- at: 2026-11-24 08:22
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-080808-findings-2026-11-23-from-board no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-24 08:22
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261124-080808-findings-2026-11-23-from-board'
+- at: 2026-11-24 08:24
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:24
+  from: devin
+  text: 'raised request dev-0045-slice-2-decision-measurement-in-4cbe90: DEV-0045 slice-2 decision (measurement
+    inside): claim-time lane stamps now carry lane_source (this dispatch, tests green'
+- at: 2026-11-24 08:24
+  from: devin
+  text: '2026-11-24 upstream: PR tonezzz/chaba#199 opened (fix/devin-lane-reroute -> master) with verification summary;
+    linked to this session. origin/master does not yet contain the fix, so keep using the -e runner_agent_controller_src
+    override in the Ansible command until PR #199 merges. Once merged, rerun normal repo sync and the plain playbook
+    path works.'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:36
+  from: devin
+  text: '2026-11-24 DONE (dispatch 080808): (1) landed prior slice — merged origin/fix/devin-lane-reroute ae45a7ac22
+    into this branch (it was pushed+cherry-picked on idc03 served but never reached master; close-out lands it).
+    (2) NEW root cause fixed: claim-time lane stamps carried no lane_source — do_claim persisted body lane verbatim,
+    runner-agent claim body had no source field, kanban-dispatch JEV_LANE path wrote lane bare — so classifier-stamped
+    lanes read as author pins FOREVER and a fixed classifie'
+- at: 2026-11-24 08:38
+  from: tony-macbook
+  text: 'finished (ok): exit=0 posted the final card comms. No push, no deploy — changes await dispatch close-out.
+    | devin-task-20261124-080808-'
+- at: 2026-11-24 08:38
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 08:38
+  from: chaba
+  text: banked 260 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 08:38
+  from: chaba
+  text: pushed dispatch/20261124-080808-findings-2026-11-23-from-board to origin
+- at: 2026-11-24 08:38
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-24 08:38
+  from: chaba
+  text: auto-merged eae954f4 (dispatch/20261124-080808-findings-2026-11-23-from-board) → origin/master
+- at: 2026-11-24 08:38
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-080808-findings-2026-11-23-from-board,
+    branch dispatch/20261124-080808-findings-2026-11-23-from-board'
+- at: 2026-11-24 08:41
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:53
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''dev-0045-slice-2-decision-meas''] block close)'
+- at: 2026-11-24 09:02
+  from: tony
+  text: 'answered dev-0045-slice-2-decision-measurement-in-4cbe90: proceed'
+- at: 2026-11-24 09:02
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-24 09:02
+  from: chaba
+  text: classified as free_lane (kw:report conf 1.00)
+- at: 2026-11-24 09:02
+  from: tony
+  text: queued for processing
+- at: 2026-11-24 09:03
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-24 09:03
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-24 09:03
+  from: tony-omen
+  text: claimed
+- at: 2026-11-24 09:03
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 09:04
+  from: chaba
+  text: started devin-task-20261124-090439-findings-2026-11-23-from-board on tony-omen (dispatch)
+- at: 2026-11-24 09:04
+  from: chaba
+  text: 'primer injected 8 lesson(s): [devin-lane-cheap-ops-reroute] primer injected 8 lesson(s): [disk-guard-ssot-enf;
+    [disk-guard-ssot-enforce] primer injected 8 lesson(s): [ansible-vs-legacy-fleet-; [jev-pilot-decision-layer-for-card-triage-d47b53]
+    CLASSIFIER ITERATION DONE (202; [kk-mac-usage-to-lane-savings] [verify-fail] Review pass 2026-11-23 (Tony):
+    2026; [ansible-verify-host-software-r7] Full-fleet run 2026-11-23 (controller tony-ome; [ansible-vs-legacy-fleet-benchmark]
+    MANUAL LANDING (devin ses'
+- at: 2026-11-24 09:07
+  from: chaba
+  text: 'answer-sweep: 1 answered request(s) still unmapped — stays flagged'
+- at: 2026-11-24 09:18
+  from: devin
+  text: '2026-11-24 slice-3 (proceed): re-measured burn over 339 open cards — free_lane 159 / devin 117 / paid_frontier
+    40 / codemod 21 / manual 2 (sources: kw 183, fallback 96, timer-alert 45, explicit 15); consistent with post-flip
+    steady state. Implemented the watch: kanban-stats.py now emits a lane x lane_source matrix on open cards (15m
+    cadence, system-report) so misroute cohorts stay visible. Also fixed a pre-existing master break: dispatch_repos
+    pin was stale after the 081047 dispatch merge — bump'
+- at: 2026-11-24 09:39
+  from: devin
+  text: '2026-11-24 DONE (dispatch 090439, slice 3 — proceed): (1) re-measured burn over 339 open cards: free_lane
+    159 / devin 117 / paid_frontier 40 / codemod 21 / manual 2 (kw 183 / fallback 96 / timer-alert 45 / explicit
+    15) — consistent with post-flip steady state. (2) Watch implemented: kanban-stats.py emits a lane x lane_source
+    matrix on open cards every 15m via kanban-sync.timer -> system-report, so misroute cohorts stay visible without
+    manual audits. (3) Misroute spot-check recorded on job doc do'
+- at: 2026-11-24 09:43
+  from: tony-omen
+  text: 'finished (ok): exit=0 on3 scripts/board/kanban-stats.py --check` rendering the matrix on live card YAMLs.
+    | devin-task-20261124-090439-'
+- at: 2026-11-24 09:43
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 09:43
+  from: chaba
+  text: banked 281 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 09:43
+  from: chaba
+  text: pushed dispatch/20261124-090439-findings-2026-11-23-from-board to origin
+- at: 2026-11-24 09:43
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 79.1s)
+- at: 2026-11-24 09:43
+  from: chaba
+  text: auto-merged d7fa35be (dispatch/20261124-090439-findings-2026-11-23-from-board) → origin/master
+- at: 2026-11-24 09:43
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-090439-findings-2026-11-23-from-board,
+    branch dispatch/20261124-090439-findings-2026-11-23-from-board'
+- at: 2026-11-24 09:45
+  from: chaba
+  text: classified as free_lane (kw:report conf 1.00)
+- at: 2026-11-24 09:45
+  from: tony
+  text: queued for processing
+- at: 2026-11-24 09:46
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.04 > 0.85)'
+- at: 2026-11-24 10:38
+  from: devin
+  text: '2026-11-24: PR tonezzz/chaba#199 is MERGED — fix is now on origin/master, so the -e runner_agent_controller_src
+    override is no longer required for normal Ansible runs. Fleet installs were already verified fixed.'
+- at: 2026-11-24 11:24
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.50 > 1.5)'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:44
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 0.86 > 0.85)'
+- at: 2026-11-24 12:09
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:23
+  from: chaba
+  text: 'kk-mac defers: host overloaded (5m load/core 1.15 > 1.0)'
+- at: 2026-11-24 12:55
+  from: tony
+  text: '[verify] DEV-0045 close-out on merged evidence (Tony 2026-11-24): lane-routing watch landed in kanban-stats
+    (commit 8afa13918dd, ''board: lane-routing watch in kanban-stats (DEV-0045 slice 3)''), claim-time lane_source
+    provenance landed in commit 33553f1168d, and the card''s own 2026-11-24 10:38 comm confirms PR tonezzz/chaba#199
+    merged with fleet installs verified fixed. No verify: criterion declared.'
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:46
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:56
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:00
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:33
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+requests:
+- id: dev-0045-next-slice-decision-the-audit-f-70570c
+  ask: 'DEV-0045 next slice decision: the audit found 7 timer-alert-* cards explicitly pinned action.lane=devin
+    (idc03 ada-memory-sync / ada-scenario-smoke / log-shipper / log-shipper-severe / mddb-embed-probe, tony-omen
+    focus-dispatcher-overnight, etc.). These are ops-failure diagnoses with deterministic/read-only surfaces; the
+    OPS-1025 remote-read smoke proved an ops-readonly free_lane (litellm/or-free-nemotron-nano, envelope, max_retries
+    0). First slice already landed (free_lane before devin; host keyword removed; 93 tests green). Which next? (a)
+    re-pin the 7 timer-alert cards to free_lane ops-readonly with held-out verifier + 0 retries — recommended, saves
+    devin burn; (b) keep devin pins (these need judgment) and target remaining broad devin keywords instead; (c)
+    hold until the runner-timer resume decision is settled.'
+  status: answered
+  at: 2026-11-23 20:30
+  from: devin
+  options:
+  - re-pin 7 timer-alert cards to free_lane (recommended)
+  - keep devin pins, target broad keywords
+  - hold until runner-timer resume
+  answer: re-pin 7 timer-alert cards to free_lane (recommended)
+- id: dev-0045-slice-2-decision-measurement-in-4cbe90
+  ask: 'DEV-0045 slice-2 decision (measurement inside): claim-time lane stamps now carry lane_source (this dispatch,
+    tests green) so classifier-routed lanes re-evaluate on re-queue instead of reading as author pins forever. Re-measure
+    over 350 open cards: new classifier flips devin 220->126, free_lane 64->161. ~50 flips are backlog timer-alert-*
+    cards (tag guard, intended). ~44 flips are free_lane-before-devin ordering hits — spot-check shows false-cheaps
+    (ai-video-quality-control-plane multi-stage epic -> free_lane via stray kw; ops-retry-storm-detection; mddb-cms-embed-quota-stall).
+    Mitigation: free_lane only saves burn on OPENCODE_LANES hosts; unstaged-envelope cards hold at claim; non-opencode
+    hosts strip litellm model and burn devin anyway. Which next? (a) keep free_lane-first as deployed, watch misroute
+    rate [recommended — contract cheapest-first, bounded blast radius]; (b) narrow: scope broad free_lane kws (try/plan/install/launch/report/evaluate/probe)
+    to TITLE hits like manual/codemod already do; (c) restore devin-before-devin order, keep host-kw removal + timer-alert
+    guard only.'
+  status: answered
+  at: 2026-11-24 08:24
+  from: devin
+  options:
+  - proceed
+  - hold
+  answer: proceed
+  executed: 2026-11-24 queue (already running)
+action:
+  type: dispatch
+  status: done
+  lane: free_lane
+  lane_source: kw
+  attempts: 2
+  sweep:
+    stale_running: 2026-11-24 08:22
+    no_repo: 2026-11-24 08:22
+    close_held: 2026-11-24 08:53
+  result: 'exit=0 on3 scripts/board/kanban-stats.py --check` rendering the matrix on live card YAMLs. | devin-task-20261124-090439-findings-2026-11-23-from-board.service:
+    Consumed 19min 39.718s CPU time over 34min 44.990s wall clock time, 934.5M memory peak.'
+  model: litellm/gemini-3.5-flash-lite
+claim:
+  since: 2026-11-24 09:03
+review_kind: verify

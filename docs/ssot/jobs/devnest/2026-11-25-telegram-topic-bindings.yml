@@ -1,0 +1,96 @@
+# Telegram topic bindings for publish outbox (card
+# telegram-topic-binding-publish-outbox / OPS-1386)
+#
+# 2026-11-25 incident: board-api's publish outbox filled with telegram-sink
+# deliveries failing "404 no active topic bound". Root cause + fix + the
+# durable producer change.
+title: Telegram topic bindings — publish outbox drain
+job: telegram-topic-binding-publish-outbox
+date: 2026-11-25
+host: idc03 (devnest-tg-relay.service, chaba-board-api.service)
+card: telegram-topic-binding-publish-outbox
+ref: OPS-1386
+
+root_cause:
+  - >-
+    Commit e4bf0d6096 (2026-11-24, kk-video-devnest-topic-event-feed)
+    made TelegramSink forward event project/card/job refs to the relay
+    /send door. The relay resolves explicit refs ONLY through active
+    project topic bindings (kind=project registry entries backed by
+    ~/.local/share/devnest/projects/<id>/project.json manifests) and
+    fails closed with 404 otherwise — deliberate, "never a silent post
+    to General".
+  - >-
+    Lifecycle producers emit card-scoped events with NO project ref:
+    runner-agent._publish and waiting_cards.publish (used by
+    kanban-dispatch._notify and merge-sweep._verdict_notify via
+    notify_lifecycle) send {card: <id>} only. Before e4bf0d6 those
+    events carried no refs and landed in General; after it they 404,
+    retry 5x, and dead-letter. Same for project=chaba (unattended-report
+    digest) and project=education (trade-docs news) — no manifests
+    existed for either project.
+  - >-
+    Observed 2026-11-25: outbox.jsonl 9 retrying + dead.jsonl 24, all
+    sink=telegram, all "no active topic bound".
+
+fix_live_state:
+  host: idc03
+  steps:
+    - >-
+      Created two forum topics in DevNestHA (-1003998821809) via
+      createForumTopic with the relay bot token: thread_id=100
+      'PRJ chaba — board ops', thread_id=101 'PRJ education — lessons'.
+    - >-
+      Wrote manifests ~/.local/share/devnest/projects/{chaba,education}/
+      project.json with topic{thread_id,chat_id,name,lane:project,
+      visibility:project,status:active,bound_at}. The relay's
+      _reconcile_topics registered both into topics.json on next lookup
+      (verified: registry keys 33, 100, 101).
+    - >-
+      Backed up state again to
+      /tmp/opencode/board-api-publish-backup-20261125-devin/ (the
+      morning backup at .../board-api-publish-backup-20261125/ also
+      exists), then patched outbox.jsonl + dead.jsonl: events with empty
+      project got project=chaba (they are all chaba-board lifecycle
+      events); project=education/chaba events left as-is; dead entries
+      requeued into outbox.jsonl with attempts=0, next_at=0 (dead.jsonl
+      kept as history).
+    - >-
+      POST /publish {op:drain} on 127.0.0.1:8787 -> 33 delivered,
+      0 retrying, 0 dead, 0 pending. Receipts ref tg:100 (chaba ops
+      topic) and tg:101 (education lessons). outbox.jsonl now empty.
+
+fix_code:
+  - >-
+    scripts/board/waiting_cards.py publish(): event gains "project": "chaba" —
+    covers notify_lifecycle callers (kanban-dispatch, merge-sweep).
+  - >-
+    scripts/board/runner-agent.py _publish(): same field — runner-agent deploys
+    standalone and cannot import waiting_cards.
+  - >-
+    tests/board/test_waiting_cards.py: new test_publish_tags_chaba_project
+    locks the contract (27/27 pass).
+  - >-
+    Side benefit: topic_key collapses from per-card to 'chaba', so the
+    telegram 10-minute noise floor now actually throttles lifecycle
+    spam instead of every card being its own topic.
+
+residual:
+  - >-
+    Producers outside this repo (or future ones) that emit project=/card=
+    refs with no manifest binding will still 404 -> outbox -> dead-letter.
+    That is the designed alarm; bind a PRJ topic + manifest to fix.
+  - >-
+    job=-only events still take the legacy General path (unchanged).
+  - >-
+    The two new topics are real Telegram topics — they cannot be deleted
+    (relay policy); rollback = status rolled_back on the registry entry.
+
+verification:
+  - >-
+    Live: drain receipt 33 delivered / 0 pending; relay /send returned
+    200s; topics.json holds 33/100/101; manifests on disk.
+  - >-
+    python3 -m unittest tests.board.test_waiting_cards — 27/27 OK.
+  - >-
+    python3 -m py_compile on all touched files clean.

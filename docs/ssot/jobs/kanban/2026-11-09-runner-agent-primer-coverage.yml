@@ -1,0 +1,67 @@
+title: "runner-agent primer coverage — shared devin-path task
+        composition (dispatch_task.py)"
+card: runner-agent-primer-coverage
+ref: OPS-1280
+summary: >
+  The 2026-11-09 primer-efficacy measurement found only
+  kanban-dispatch.build_task injected KNOWN_PITFALLS — 15/41
+  dispatches post-launch — while runner-agent's devin path (~96% of
+  claims) built a bare spec+RAILS with no primer, no RETRY_RAILS, and
+  no `lessons:` seeding bullet, so the lesson loop effectively never
+  fired. Option A from the card: task composition was extracted into
+  scripts/board/dispatch_task.py (single source for TASK_RAILS,
+  RETRY_RAILS, REPORT_RAILS, primer injection, and the comms note);
+  kanban-dispatch delegates, and runner-agent's devin path resolves it
+  lazily via dt_module() — the same candidate-dir pattern as
+  dr_module() ($DISPATCH_REPOS_DIR -> installed-file dir ->
+  ~/CascadeProjects/chaba/scripts/board).
+artifacts:
+  - scripts/board/dispatch_task.py          (new — shared composer)
+  - scripts/board/kanban-dispatch.py        (delegates; name aliases kept)
+  - scripts/board/runner-agent.py           (dt_module, devin_task_text,
+                                           primer-note comms post)
+  - tests/board/test_runner_agent_primer.py (new)
+  - tests/board/test_runner_agent_lane.py   (dt_module stubbed in lane tests)
+decisions:
+  - "Option A over B: both callers now share one composition, so future
+    rail/primer changes land in both lanes by construction."
+  - "Scope held: devin path only. opencode/kk_mac/jules/nlm lanes keep
+    bounded profile contracts — the composer is never consulted there
+    (test-pinned: dt_module call count == 0 on the opencode route)."
+  - "lesson_primer import inside dispatch_task is optional: runner
+    hosts may lack PyYAML (dispatch_repos' lazy-yaml rule), and a hard
+    import failure would have dropped RETRY/REPORT rails too. With lp
+    absent the rails still compose and only the primer blocks skip."
+  - "RAILS text unified on kanban-dispatch's TASK_RAILS verbatim —
+    the runner lane additionally gains the worktree note, kind:'comment'
+    answers.jsonl guidance, the CI-pipeline bullet, REPORT_RAILS, and
+    the `lessons:` seeding bullet (the loop's input side, not just the
+    primer output side)."
+verify:
+  - "python3 -m unittest tests.board.test_runner_agent_primer
+    test_build_task_regressions test_kanban_dispatch_rails — 22/22 ok"
+  - "full tests/board discovery — 497 tests, 1 pre-existing env error
+    (test_ada_job_envelope needs pytest, not installed on idc02), rest ok"
+  - "live smoke on the devin path: devin_task_text() on a retry-shaped
+    card rendered KNOWN_PITFALLS (8 real lines) + KNOWN_GOOD (4) +
+    'This is attempt 2' + primer note"
+method_notes: >
+  devin_task_text(card) -> (task, note): note is "" when the primer
+  injected nothing; start_task posts it via /comment only AFTER a
+  successful devin-dispatch start (same point kanban-dispatch's
+  start_pending comms_add fires). Resolution failures degrade warn-only
+  to the old local RAILS so a missing/stale exec checkout never blocks
+  a claim. rollout: runner-agent deploys as a single file
+  (~/.local/bin/runner-agent); after merge, redeploy it per the
+  fleet-health runbook (scp scripts/board/runner-agent.py
+  <host>:~/.local/bin/runner-agent) — dispatch_task.py itself resolves
+  from each host's exec checkout once chaba-repo-sync pulls master.
+gotchas:
+  - "primer effectiveness still bounded by harvest quality — live smoke
+    lines include noisy 'started devin-task-…' comms entries; the
+    scoring-fixes card owns that axis"
+  - "PyYAML-less runner hosts get rails but no primer blocks — check
+    'warn: lesson_primer unimportable' in the runner unit journal if a
+    host never logs 'primer injected'"
+  - "comms note fires only on successful start — a failed
+    devin-dispatch launch logs no primer line (same as start_pending)"

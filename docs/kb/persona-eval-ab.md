@@ -35,9 +35,42 @@ Clone the lane — every ada instance is `env + keys file + unit`:
 - **Toggle (today, zero code)**: flip the lane pointer —
   `LINE_NAME_BACKENDS=…,kaewta:ws://127.0.0.1:8009,…` in `line-bot.env`,
   restart `ada-line-relay`. Instant, reversible. Whole-lane swap.
-- **Split A/B** (some senders → A, some → B): needs a per-caller override in
-  the relay — card `persona-ab-lane` (OPS-0469). Until it lands, toggling +
-  alternating test windows is the honest equivalent.
+- **Split A/B** (some senders → A, some → B): `LINE_CALLER_BACKENDS` in
+  `line-bot.env` overrides the backend per sender — implemented in
+  `line_relay.py` (`_caller_backends`/`_backend_url`, card
+  `persona-ab-split-routing-relay`, OPS-0469 optional scope). Format:
+  `caller=url` covers every persona that caller addresses;
+  `caller@persona=url` scopes the override to one lane; `user-` prefixes
+  are ignored on both sides; bare `host:port` gets `/ws` appended.
+  Split config example — kk talks to variant A while everyone else
+  (incl. nhong) stays on control:
+
+  ```
+  LINE_NAME_BACKENDS=ada:ws://127.0.0.1:8002,kaewta:ws://127.0.0.1:8007,chaba:ws://127.0.0.1:8004
+  LINE_CALLER_BACKENDS=user-kk=ws://127.0.0.1:8009
+  ```
+
+  Scoped variant — only kk's chaba-lane turns go to the variant, other
+  personas he addresses stay on control:
+
+  ```
+  LINE_CALLER_BACKENDS=user-kk@chaba=ws://127.0.0.1:8009
+  ```
+
+  An override also resolves a persona whose lane URL is empty
+  (known-but-offline) — handy when the variant is the only backend up.
+  Unmapped group members (no `LINE_USER_CALLERS` entry) always ride the
+  lane pointer. Restart `ada-line-relay` after editing; removing the
+  entries restores whole-lane routing instantly.
+  **Status (2026-11-24):** staged as ada-voice drop #22 — three patches
+  in `integrations/ada-voice/`:
+  `backend/line_relay.persona-ab-split.patch`,
+  `backend/test_line_relay_group.persona-ab-split.patch`,
+  `env.example.persona-ab-split.patch` — verified `git apply --check`
+  clean vs `origin/main` @ `2e9a1eeb` and `pytest
+  tests/test_line_relay_group.py` green (32 tests). Until merged +
+  deployed, toggling + alternating test windows remains the honest
+  equivalent.
 - **Shadow**: precedent in `command_lane.py` (shadow vs enforce) — the variant
   can observe/record without answering.
 

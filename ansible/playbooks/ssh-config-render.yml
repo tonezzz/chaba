@@ -1,0 +1,27 @@
+---
+# ssh-config-render.yml — READ-ONLY preview of the generated SSH block (SYS-0032).
+#
+# Prints the exact block the generator would write plus its sha256, without
+# touching any file. Run this from two controllers and compare the hashes to
+# prove the generated config is byte-identical (a SYS-0032 done-condition).
+#
+# Usage (from ansible/, or any checkout with this inventory + template):
+#   ansible-playbook playbooks/ssh-config-render.yml
+#   ansible-playbook playbooks/ssh-config-render.yml | grep 'sha256='
+
+- name: Render and fingerprint the managed SSH block (read-only)
+  hosts: localhost
+  gather_facts: false
+  become: false
+  tasks:
+    - name: Render the managed block
+      ansible.builtin.set_fact:
+        ssh_managed_block: "{{ lookup('template', 'ssh-config-stanzas.j2') }}"
+
+    - name: Print the rendered block
+      ansible.builtin.debug:
+        msg: "{{ ssh_managed_block }}"
+
+    - name: Print the block fingerprint
+      ansible.builtin.debug:
+        msg: "sha256={{ ssh_managed_block | hash('sha256') }}"

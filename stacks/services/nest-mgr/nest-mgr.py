@@ -141,6 +141,10 @@ HOST_MAX_ACTIONS_HOUR = 5  # executed actions/hour -> host circuit-open
 REC_RESEND_S = 900        # re-emit a standing recommendation at most /15m
 HELD_RESEND_S = 3600      # re-emit a held verdict at most hourly
 ACTIONS_CAP = 200         # actions[] audit ring buffer bound
+UNIT_PRUNE_MISSES = 30    # ticks absent from discovery before a unit's
+                          # actuation state is dropped (~30min at TICK_S=60;
+                          # comfortably covers transient `systemctl show`
+                          # gaps and the 5min restart cooldown)
 
 KIND_RULES = [
     ("student", re.compile(r"student", re.I)),
@@ -744,6 +748,21 @@ def actuation_tick(nodes: dict, hid: HostId, prev: dict,
         u["attempts"] = [a for a in (u.get("attempts") or [])
                          if _ago(a.get("ts")) < 2 * 3600]
 
+    # ghost prune — a unit that leaves discovery (unit file removed,
+    # renamed, transient show failure) must not keep stale fail_ticks /
+    # held / attempts forever; seen live on idc02 (ada-code.service
+    # outlived its unit file). `missed` counts consecutive absent ticks
+    # so a one-tick discovery gap can't wipe throttle memory.
+    seen_units = {n.get("unit") for n in nodes.values() if n.get("unit")}
+    for unit in list(units):
+        u = units[unit]
+        if unit in seen_units:
+            u["missed"] = 0
+        else:
+            u["missed"] = int(u.get("missed") or 0) + 1
+            if u["missed"] >= UNIT_PRUNE_MISSES:
+                del units[unit]
+
     prev_mode = prev_act.get("mode") or "monitor"
     if prev_mode != eff:
         record("-", "mode-change", f"{prev_mode} -> {eff}", eff)
@@ -754,8 +773,14 @@ def actuation_tick(nodes: dict, hid: HostId, prev: dict,
         for key in sorted(nodes, key=lambda k: nodes[k].get("name") or k):
             n = nodes[key]
             unit = n.get("unit")
-            if not unit or (units[unit].get("fail_ticks") or 0) \
-                    < FAIL_TICKS:
+            if not unit:
+                continue
+            u = units[unit]
+            if (u.get("fail_ticks") or 0) < FAIL_TICKS:
+                # recovered / never reached threshold — drop any stale
+                # held verdict so the audit trail doesn't claim a gate
+                # that no longer applies
+                u.pop("held", None)
                 continue
             u = units[unit]
             gate = restart_gate(n, allow, manual) or throttle_gate(u)
@@ -1115,6 +1140,9 @@ def publish(nodes: dict, hid: HostId, now: datetime,
         "interval_min": int(cfg.get("interval_min") or PUBLISH_S // 60),
         "run_now": False,
         "page": slug,
+        # generator host — cms-auto-health gates staleness on tailnet
+        # reachability so a powered-off host doesn't card as broken
+        "host": hid.label(),
         "generator": {"kind": "service", "name": "nest-mgr",
                       "unit": "nest-mgr.service",
                       "note": "per-host daemon — publishes every 15 min + "

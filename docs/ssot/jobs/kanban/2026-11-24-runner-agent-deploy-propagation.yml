@@ -1,0 +1,131 @@
+title: "runner-agent deploy propagation — pin gate closes the fast-path bypass"
+subtitle: >-
+  Auto-propagate for the ~/.local/bin runner-agent snapshot already existed
+  twice (runner-agent._self_update at pass start, sync-runner-tools.sh at
+  git-safe-pull tail) but the two paths disagreed: _self_update ignored the
+  tooling manifest pin, and on 2026-11-24 master itself carried an unpinned
+  runner-agent.py (compaction-summary commit 7dc2187b7d) so the sync path
+  refused installs fleet-wide while the contract test sat red. This change
+  pin-gates _self_update, bumps the stale pin, and adds a pre-commit guard
+  so the same-commit pin bump can't be missed again.
+icon: 📡
+id: 2026-11-24-runner-agent-deploy-propagation
+status: done
+owner: devin-dispatch
+project: chaba
+card: runner-agent-deploy-propagation-gap-repo-56a255
+ref: OPS-1026
+started: "2026-11-24"
+completed: "2026-11-24"
+
+context:
+  ask: >-
+    Card spec offered two shapes: (a) auto-propagate via timer or a
+    self-update step at pass start, or (b) ExecStart the repo path
+    directly behind a hash-check wrapper. Verify = push a runner-agent
+    change and every host runs it without manual scp.
+  finding: >-
+    Shape (a) was already built — _self_update() (OPS-1026, 2026-11-02)
+    installs a newer byte-compiling repo copy and re-execs, and
+    sync-runner-tools.sh (card runner-tooling-drift-recurs, merged
+    2026-11-18) converges all six ~/.local/bin tools at every
+    git-safe-pull tail under content pins in
+    scripts/devin/runner-tooling.manifest.json. Shape (b) was rejected:
+    the repo checkout is mode 664, can be stale/diverged, and
+    _self_stale_check's drift gate (installed != checkout -> fail closed)
+    becomes meaningless when the agent IS the checkout file — the gate
+    that caught the OPS-1021 stale-snapshot claim.
+  break_found: >-
+    git show origin/master: runner-agent.py sha256 9a42dc07… vs manifest
+    pin d0a103cb… — sync-runner-tools prints "sha != pinned — skipped" on
+    every host, fleet-health's tool-pin audit violates fleet-wide, and
+    tests/board/test_runner_tooling_contract.py::test_pin_hashes_match_sources
+    fails on master. Cause: 7dc2187b7d "Compaction summary" checkpoint
+    swept runner-agent.py changes without the same-commit pin bump; the
+    pre-commit pytest gate only warns on a 15s timeout over all of
+    tests/board, so nothing stopped it.
+
+changes:
+  - scripts/board/runner-agent.py:
+      _self_update: >-
+        new _self_pin_ok() gate — the repo copy is installed only when its
+        sha256 matches the runner_agent pin in the checkout's own
+        runner-tooling.manifest.json (same fail-closed rule
+        sync-runner-tools.sh applies, including dirty-checkout refusal
+        since any byte change breaks the pin). Unpinned/half-landed
+        states keep the last pinned snapshot instead of propagating.
+      _self_stale_check: >-
+        decline message no longer advises manual scp; it names the real
+        causes (stale checkout, unpinned source) since auto-propagate is
+        the designed path.
+  - scripts/devin/runner-tooling.manifest.json:
+      runner_agent pin bumped to the new runner-agent.py sha256
+      (b879b47f…) — heals the live master mismatch; without it every
+      host's sync-runner-tools keeps refusing runner-agent installs.
+  - .husky/pre-commit: >-
+      runner-tooling pin gate — when a pinned source or the manifest is
+      staged, compares STAGED blob sha256s (git show :path) against the
+      staged/HEAD manifest and blocks on mismatch. Only pin pairs the
+      commit actually touches are checked, so inherited master breakage
+      can't block unrelated commits. Opt out via CHABA_PRECOMMIT_PINS=0
+      or --no-verify.
+  - tests/board/test_runner_self_update.py: >-
+      hermetic fake-HOME suite — snapshot predicate via SourceFileLoader on
+      an extensionless ~/.local/bin/runner-agent, repos.conf wiring through
+      DISPATCH_DIR, os.execv mocked. Covers pinned install+re-exec,
+      unpinned/missing-manifest refusal, never-downgrade, identical
+      no-op, and repo-checkout no-op.
+
+propagation_model:
+  fast_path: >-
+    runner-agent.timer pass -> _self_update(): repo file newer (mtime)
+    AND byte-different AND compiles AND pin-matched -> install + re-exec
+    in place. No restart, no scp.
+  fleet_path: >-
+    chaba-repo-sync.timer -> git-safe-pull.sh tail ->
+    sync-runner-tools.sh: canonical-checkout guard, dirty-source guard,
+    pin gate, syntax gate, never-downgrade mtime guard, provisioning
+    evidence for missing dests. Covers all six tools, not just
+    runner-agent.
+  blessed_version: >-
+    runner-tooling.manifest.json pins are the fleet's install contract —
+    a tool change without its pin bump propagates NOWHERE (sync path
+    refuses, fast path now refuses too, contract test + pre-commit gate
+    fail the commit). Drift surfaces stay truthful: _self_stale_check
+    vs the checkout, fleet-health tool-pin vs origin/master.
+  bootstrap: >-
+    Hosts still running a pre-_self_update snapshot (pre-2026-11-02)
+    can't self-heal but are converged by sync-runner-tools once the pin
+    is consistent — which this change restores.
+
+verify:
+  unit: >-
+    pytest tests/board/test_runner_self_update.py
+    tests/board/test_runner_tooling_contract.py — 13 passed.
+  hook: >-
+    scratch-repo exercise of the extracted pre-commit block: tool change
+    without pin bump BLOCKED; tool+pin together PASS; pin-only catch-up
+    PASS; unrelated file skipped; inherited broken pair + clean
+    other-tool change PASS.
+  sync: >-
+    sandboxed HOME canonical checkout — sync-runner-tools.sh refreshed a
+    drifted ~/.local/bin/runner-agent to the pinned build, mode 0755
+    preserved; never-downgrade guard kept a newer dest.
+  fleet: >-
+    post-merge, each host converges on its next chaba-repo-sync tick
+    (sync-runner-tools, pin now consistent) and/or next runner-agent
+    pass (_self_update). The card's "push a change, all hosts run it"
+    check is observable as: no new 'installed runner-agent drifted'
+    deferrals after one sync cycle, and runner-auto-<host> cards
+    auto-close.
+
+lessons:
+  - "The 15s-capped pytest gate in .husky/pre-commit swallows
+    tests/board — contract tests there never gate commits; pin-class
+    invariants need their own staged-blob check."
+  - "Two deploy paths for the same artifact must share ONE validity
+    rule — _self_update ignoring the manifest pin let unpinned code
+    propagate while sync-runner-tools refused it."
+  - "Compaction-summary checkpoint commits bypass review — they can
+    land tool changes without the same-commit pin bump; the pin gate
+    now catches them at commit time on armed checkouts."

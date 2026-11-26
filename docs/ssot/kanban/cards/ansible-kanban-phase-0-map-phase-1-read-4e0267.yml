@@ -1,0 +1,137 @@
+id: ansible-kanban-phase-0-map-phase-1-read-4e0267
+title: Ansible × Kanban — Phase 0 map + Phase 1 read-only pilots (audit-to-card, stale-checkout diagnosis, verify
+  evidence helper)
+column: done
+updated: 2026-11-26 20:35
+spec: 'Scope (Tony approved option A, 2026-11-25): explore Ansible+Kanban possibilities and apply where fit, starting
+  read-only. Phase 0: inventory 19 ansible playbooks, map to kanban/ops card classes, define board-api idempotent
+  reporting contract (no direct card YAML writes), produce gap report. Phase 1 pilots: (A) extend one existing read-only
+  audit (runner-tools or runner-tools-sync) to emit deduped board-api card/comment on drift/no-drift; (B) new read-only
+  stale-checkout diagnosis playbook that files/updates a decision card with options (no remediation); (C) reusable
+  verify-evidence helper task pattern for attaching command/report evidence to a card. Constraints: board-api is
+  only write door; --check/--diff real where applicable; no host mutations; no secrets in logs; work in chaba worktree;
+  idempotent reruns. Gates: rerun dedupe verified, read-only behavior verified, report/evidence attached.'
+action:
+  type: manual
+  status: done
+ref: KNB-1353
+comms:
+- at: 2026-11-25 09:08
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-25 09:08
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:13
+  from: devin
+  text: 'Phase 0+1 (option A) delivered on branch ansible/kanban-phase0-1 @ bf69015b27 (pushed). Artifacts: docs/reports/ansible-kanban-phase0-map-2026-11-25.md
+    (19-playbook inventory, board-api contract, gap map, verify plan); ansible/playbooks/audit-stale-checkouts.yml
+    (read-only stale/dirty/diverged checkout diagnosis, optional board-api decision card, no remediation); ansible/playbooks/audit-runner-tools.yml
+    extended with optional board-api drift notify (off by default); ansible/playbooks/tasks/board'
+- at: 2026-11-25 09:13
+  from: devin
+  text: moved doing -> review
+- at: 2026-11-25 09:27
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-25): dispatch branch merged into origin/master as de58c62ea48b
+    (conflicts resolved where applicable: generated SSOT snapshots kept from master, substantive code from branch).
+    Deliverable: ansible phase 0+1 map report (bf69015, ansible/kanban-phase0-1). Closing.'
+- at: 2026-11-25 09:27
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 14:35
+  from: devin
+  text: 'Merge-readiness pass: rebased ansible/kanban-phase0-1 onto origin/master 830f3ebb9c (clean, 1/1). Branch
+    force-pushed @ 831ff7dece; diff still only the 5 intended files. Checks: ansible-playbook --syntax-check OK;
+    SSOT validation 6497/6498 valid, 1 pre-existing upstream error NOT caused by this branch (jobs/devnest/2026-11-25-telegram-topic-bindings.yml:
+    YAML syntax error, line 65). Pin manifest/baseline untouched. Upstream SSOT error should be fixed separately
+    before/for CI green.'
+- at: 2026-11-25 15:03
+  from: devin
+  text: 'Phase 1.1 hardening pushed @ cb75f00fdb (ansible/kanban-phase0-1): (1) comment dedupe/fingerprint in board-api-comment.yml,
+    board-api-card-notify.yml, and audit-stale-checkouts/runner-tools notify plays — reruns skip if same fp already
+    in card comms; (2) per-host POST /request on ansible-stale-checkouts with options stash-u-ff★/commit-wip/leave/abandon,
+    only when no unanswered request for that host; (3) controller notify/report plays now run on all:!disabled:!macos
+    with delegate_to localhost+run'
+- at: 2026-11-25 15:23
+  from: devin
+  text: 'Pilot 2e (1.1 hardening) PASS on live board-api (https://idc03.taila0626a.ts.net:10000, --limit idc02,localhost):
+    Run 1 added 1 fp comment (fp=idc02:dirty) + 1 per-host request (stash-u-ff★/commit-wip/leave/abandon), comment_skipped_as_dup=false.
+    Run 2: comment_skipped_as_dup=true, request skipped (unanswered exists). Card state verified: comms=4, requests=1.
+    No duplicate fp comment/request created.'
+- at: 2026-11-25 15:28
+  from: devin
+  text: Merged to origin/master @ 5d37f2f71b (FF). Includes Phase 0 map, Phase 1 pilots A/B/C, Phase 1.1 hardening
+    (comment dedupe/fp, per-host decision requests, limit-safe notify). Live pilot 2e PASS. SSOT blocker (telegram-topic-bindings.yml)
+    fixed separately @ d5a748836a on master. No direct card YAML edits; board-api write door used for pilot evidence.
+- at: 2026-11-25 15:29
+  from: devin
+  text: queue skipped — action.type=manual — human-owned work, not runner-dispatchable
+- at: 2026-11-25 15:29
+  from: chaba
+  text: action.type=manual — human-owned work, not runner-dispatchable
+- at: 2026-11-25 15:30
+  from: devin
+  text: closed by devin
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:07
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:55
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:56
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:56
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:35
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+review_kind: verify

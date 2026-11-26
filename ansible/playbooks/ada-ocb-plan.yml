@@ -1,0 +1,25 @@
+---
+# ada-ocb-plan.yml — read-only plan artifact for ADA-OCB upgrade (OPS-1424 1A).
+# Produces benchmark report and prints the --check --diff upgrade command.
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/ada-ocb-plan.yml -e card_ref=OPS-1424
+
+- import_playbook: ada-ocb-preflight.yml
+  vars:
+    ocb_report_playbook: ada-ocb-plan
+
+- name: Plan next step (controller-side)
+  hosts: localhost
+  gather_facts: false
+  become: false
+  vars:
+    card_ref: ""
+  tasks:
+    - name: Show check-diff plan command
+      ansible.builtin.debug:
+        msg: >-
+          PLAN: run upgrade simulation with:
+          ansible-playbook playbooks/ada-ocb-upgrade.yml --check --diff -e card_ref={{ card_ref | default('OPS-1424') }}.
+          After explicit same-session approval: add -e ocb_change_approved=true.
+          No host mutation performed by this plan playbook.

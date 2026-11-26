@@ -94,6 +94,12 @@ def _action(card: dict) -> dict:
     return _act(card)
 
 
+def _pipe(card: dict) -> dict:
+    """card['pipeline'] read accessor — scalar-tolerant like _act."""
+    p = card.get("pipeline")
+    return p if isinstance(p, dict) else {}
+
+
 def autonomy_tier(card: dict) -> str:
     return str(card.get("autonomy") or "t1").lower()
 
@@ -113,7 +119,7 @@ def declares_artifact(card: dict) -> bool:
     env = env if isinstance(env, dict) else {}
     return bool(a.get("artifact") or card.get("report")
                 or env.get("artifact")
-                or (card.get("pipeline") or {}).get("goals"))
+                or _pipe(card).get("goals"))
 
 
 def declares_verifier(card: dict) -> bool:
@@ -122,7 +128,7 @@ def declares_verifier(card: dict) -> bool:
     env = env if isinstance(env, dict) else {}
     return bool(card.get("auto_done_when") or a.get("verifier")
                 or a.get("verify") or env.get("verifier")
-                or (card.get("pipeline") or {}).get("goals"))
+                or _pipe(card).get("goals"))
 
 
 def open_requests(card: dict) -> list:
@@ -350,6 +356,7 @@ def publish(api_base: str, card_id: str, kind: str, title: str,
     ev = {"kind": kind, "title": title[:240], "body": body[:2000],
           "source": source, "confidence": confidence,
           "visibility": visibility, "card": card_id,
+          "project": "chaba",
           "meta": {"lane": "unattended"}}
     try:
         req = urllib.request.Request(
@@ -364,13 +371,19 @@ def publish(api_base: str, card_id: str, kind: str, title: str,
 
 def notify_lifecycle(api_base: str, card_id: str, event: str,
                      detail: str = "", host: str = "") -> bool:
-    """start/finish/fail/stalled -> Telegram via /publish.
+    """start/finish/fail/stalled/verified/unverified -> /publish.
 
-    event: start|finish|fail|stalled. finish->milestone, fail/stalled->
-    alert (telegram-routed kinds), start->progress (audited on the card
-    + ledger but NOT telegram — a claim is a heartbeat, not news)."""
+    event -> kind: start->progress, finish|verified->milestone,
+    fail|stalled|unverified->alert (telegram-routed kinds); progress is
+    audited on the card + ledger but NOT telegram (a claim is a
+    heartbeat, not news). verified/unverified are the close-the-loop
+    verdict events (card ada-dispatch-approve-button): after the
+    dispatch run finishes, the merge gate's verdict is what Tony
+    approved — it must reach him, not just the card's comms."""
     kind = {"start": "progress", "finish": "milestone",
-            "fail": "alert", "stalled": "alert"}.get(event)
+            "verified": "milestone",
+            "fail": "alert", "stalled": "alert",
+            "unverified": "alert"}.get(event)
     if not kind:
         return False
     where = f" on {host}" if host else ""

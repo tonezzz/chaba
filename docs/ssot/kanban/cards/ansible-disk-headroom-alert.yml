@@ -1,0 +1,64 @@
+id: ansible-disk-headroom-alert
+title: 'Ansible audit: disk headroom alert'
+column: done
+updated: 2026-11-26 20:38
+spec: 'Read-only ansible disk-headroom detected CRIT/warn/unreachable mounts. Hosts: tony-dell. Report dir: reports/ansible-benchmark/disk/.
+  No remediation performed.'
+action:
+  type: manual
+  status: done
+ref: OPS-1421
+comms:
+- at: 2026-11-26 08:47
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-26 08:47
+  from: devin
+  text: 'ansible disk-headroom: 1 host(s) alerting. fp=tony-dell:warn. [{"host": "tony-dell", "kind": "warn", "summary":
+    "warn: /"}]'
+- at: 2026-11-26 08:48
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 18:52
+  from: tony
+  text: '[batch A 19:15 +07] Triage: still active, no safe automated cleanup left. Live `df -h /` on tony-dell =
+    85% (220G, 32G free), down from 87% at the 08:47 audit after today''s ~10G unused-image prune. Re-ran both read-only
+    playbooks: `disk-headroom.yml --limit tony-dell --check` → unreachable=0 failed=0, and `disk-remediate.yml --check
+    --diff --limit tony-dell` → "verify whether remediation is warranted" passed with uv/pip/journal all under caps,
+    so every fix task skipped. Podman is down to 11 imag'
+- at: 2026-11-26 19:29
+  from: tony
+  text: '[tony-dell dig 19:35 +07] Root cause of the 85% root disk found — a runaway Chrome Cache Storage for the
+    board.
+
+
+    Usage: 174G used on `/` (220G, 32G free). Breakdown: `/home/tony` 143G, `/usr` 23G, `/var` 7.4G, `/opt` 1.5G.
+    Inside home: `.config` 61G, CascadeProjects 38G, `.local` 22G, `.cache` 12G. `.config` is dominated by `google-chrome/Default/Service
+    Worker/CacheStorage` = **45G**; MDDB container data 8.2G and other Chrome profiles <1G.
+
+
+    The 45G is one origin: `CacheStorage/3e542f5de860dee8b'
+- at: 2026-11-26 19:36
+  from: tony
+  text: '[tony-dell disk RESOLVED 19:40 +07] Followed the approved "fix headers, then clear cache" path.
+
+
+    1) Live header fix: added `header Cache-Control "no-store"` to both `/apps/board/*` and `/apps/board2/*` handlers
+    in stacks/web/Caddyfile (canonical checkout on idc02 and the served checkout chaba-tony-dell on tony-dell).
+    Verified on tony-dell via local curl and via tailnet: both routes now return `cache-control: no-store` (previously
+    no header / `no-cache`). Both edits are currently uncommitted in t'
+- at: 2026-11-26 19:37
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 20:12
+  from: tony
+  text: '[follow-up 20:10 +07] The no-store fix is now durable in git: committed as a3790c494a ("web: no-store on
+    board routes to stop PWA cache growth") from a role=branch worktree chaba-wt-caddy-no-store and pushed to origin/master
+    (57e24d03ef..a3790c494a). Live tony-dell header remains `cache-control: no-store`; root still 64% used / 76G
+    free. The tony-dell served checkout keeps its local copy of the same edit plus its host-local or-panel route;
+    a future pull there may conflict on that file — reconcil'
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'

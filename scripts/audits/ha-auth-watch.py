@@ -28,6 +28,16 @@ except ImportError:
     websockets = None
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT / "scripts" / "lib"))
+try:
+    from inbox_door import emit_doc, local_writable
+except ImportError:
+    def local_writable(repo):  # noqa: ANN001
+        return True
+
+    def emit_doc(doc, **kw):  # noqa: ANN001, ANN003
+        return "api-failed"
+
 INBOX_DIR = REPO_ROOT / "docs" / "ssot" / "focus-inbox"
 STATE_FILE = Path(os.environ.get(
     "HA_AUTH_WATCH_STATE",
@@ -125,16 +135,46 @@ async def fetch_failures(name, base, token):
     return out
 
 
+def _current_key(key):
+    """Only keys with a numeric epoch in slot 3 match failures we emit."""
+    parts = key.split("|")
+    if len(parts) != 3:
+        return False
+    try:
+        float(parts[2])
+    except (TypeError, ValueError):
+        return False
+    return True
+
+
 def load_state():
     try:
-        return set(json.loads(STATE_FILE.read_text()).get("seen", []))
+        data = json.loads(STATE_FILE.read_text())
     except Exception:
-        return set()
+        return []
+    # Legacy keys used an ISO timestamp in slot 3. They can never match a
+    # current failure and used to sort after every new key, evicting new
+    # keys from the 500-entry cap — so the same log line re-alerted forever.
+    # Drop them on load, preserving file order for the survivors.
+    out, seen = [], set()
+    for key in data.get("seen", []):
+        if _current_key(key) and key not in seen:
+            seen.add(key)
+            out.append(key)
+    return out
 
 
 def save_state(seen):
     STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    STATE_FILE.write_text(json.dumps({"seen": sorted(seen)[-500:]}))
+    tmp = STATE_FILE.with_name(STATE_FILE.name + ".tmp")
+    # Cap by insertion order, NOT lexicographic order: mixed-format keys
+    # made the newest failures sort first and get dropped every tick.
+    ordered = list(dict.fromkeys(seen))[-500:]
+    with tmp.open("w") as f:
+        f.write(json.dumps({"seen": ordered}))
+        f.flush()
+        os.fsync(f.fileno())
+    tmp.replace(STATE_FILE)
 
 
 def alert_yaml(inst, src, ts, line):
@@ -216,7 +256,11 @@ def emit_meta(now_iso, failures, errors):
 
 
 def git_commit_push(files):
-    rels = [str(f.relative_to(REPO_ROOT)) for f in files]
+    # ``written`` holds Paths on the served checkout. The board-api path
+    # never writes local files and must not reach this function at all;
+    # accept strings too so a future mixed list cannot crash the timer.
+    rels = [str(f.relative_to(REPO_ROOT)) if isinstance(f, Path) else str(f)
+            for f in files]
     subprocess.run(["git", "-C", str(REPO_ROOT), "add", *rels], check=True)
     subprocess.run(["git", "-C", str(REPO_ROOT), "commit",
                     "-m", "chore(security): ha-auth-watch failure alerts"],
@@ -246,7 +290,8 @@ def main():
 
     now_iso = datetime.now(timezone.utc).isoformat(timespec="seconds")
     seen = load_state()
-    failures, errors = [], 0
+    seen_keys = set(seen)
+    failures, errors, suppressed = [], 0, 0
     for name, base, tok_path in INSTANCES:
         token = load_token(tok_path)
         if not token:
@@ -260,20 +305,40 @@ def main():
             continue
         for src, ts, text in found:
             key = f"{name}|{src}|{ts}"
-            if key in seen:
+            if key in seen_keys:
+                suppressed += 1
                 continue
-            seen.add(key)
+            seen_keys.add(key)
+            seen.append(key)
             failures.append((name, src, ts, text))
 
-    written, suppressed = [], 0
+    writable = local_writable(REPO_ROOT)
+    written, api_emitted = [], 0
     for inst, src, ts, line in failures:
-        if existing_alert(inst, src):
+        # Local-glob dedupe only means something where the files can be
+        # committed; on exec checkouts stale files would suppress forever.
+        if writable and existing_alert(inst, src):
             suppressed += 1
             print(f"DEDUP {inst} {src} — unresolved alert exists")
             continue
         fname, body = alert_yaml(inst, src, ts, line)
         print(f"FAIL {inst} {src} @ {ts} -> {fname}")
         if not args.dry_run:
+            if not writable:
+                try:
+                    import yaml as _yaml
+                    res = emit_doc(_yaml.safe_load(body),
+                                   session="ha-auth-watch")
+                except Exception:
+                    res = "api-failed"
+                if res == "api":
+                    # Delivered by board-api /inbox — there is no local
+                    # file to stage, so never pass this to git_commit_push.
+                    api_emitted += 1
+                else:
+                    print(f"warn: /inbox emit {res} for {fname}",
+                          file=sys.stderr)
+                continue
             INBOX_DIR.mkdir(parents=True, exist_ok=True)
             f = INBOX_DIR / fname
             f.write_text(body)
@@ -285,12 +350,15 @@ def main():
     if not args.dry_run:
         save_state(seen)
         emit_meta(now_iso, failures, errors)
-        if written and args.git:
+        if written and args.git and writable:
             try:
                 git_commit_push(written)
                 print("pushed alert commit")
             except subprocess.CalledProcessError as e:
                 print(f"warn: git push failed: {e}", file=sys.stderr)
+        elif api_emitted:
+            print(f"alerted {api_emitted} failure(s) via board-api; "
+                  "no local commit on non-writer checkout")
     return 1 if errors else 0
 
 

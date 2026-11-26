@@ -1,0 +1,138 @@
+id: ada-voice-map-embed-pr22-merge-deploy
+title: 'ada-voice: merge PR #22 (map_embed drop 17), deploy, drop GOOGLE_MAPS_API_KEY'
+column: backlog
+updated: 2026-11-26 21:00
+brief: 'PR https://github.com/tonezzz/ada-voice/pull/22 is open and green (tool-lint clean, 1942 tests pass). Needs:
+  merge -> deploy-ada.sh idc03 -> render-tool-profiles --apply -> key drop (or accept keyless).'
+priority: medium
+tags:
+- ada
+- ada-voice
+- maps
+- human-owned
+spec: 'HUMAN-GATED tail of chaba card map-embed-tool (drop 17 finally landed 2026-11-24 after a month staged-only).
+
+
+  STATE: ada-voice PR #22 (feat/map-embed-drop-17 -> main, commit 99ba22a off 1c94657) adds backend/tools.d/map_embed.py
+  + manifest/tool_guide/scenario + count_cap 115->116. Verified: tool-lint clean, pytest 1942 passed/7 skipped,
+  tools_loader registers it (read, secondary_allowed, 60s), keyless smoke correct.
+
+
+  STEPS AFTER MERGE:
+
+  1. deploy-ada.sh on idc03 (runs tool-lint + pytest gates, drains /ws, restarts persona backends) — production
+  restart, needs approval.
+
+  2. scripts/ada/render-tool-profiles.py --host idc03 --apply on the chaba served checkout — chaba ssot.apps.ada-persons.yml
+  already lists map_embed under persons.tony.tools.include + kk-cms-only (merged 2026-10-27), so ADA_INCLUDED_TOOLS
+  picks it up.
+
+  3. GOOGLE_MAPS_API_KEY: Tony''s 2026-10-27 answer claimed a minted key was dropped into ~/.config/secrets/tony-ha/backend.env
+  on idc03 — VERIFIED ABSENT 2026-11-24 (all persona envs grepped; only the dead gev key persists). Re-drop it (or
+  mint fresh: Maps Embed + Static + Routes APIs, restricted key) for interactive embeds / Google static / Routes
+  polylines. WITHOUT it the tool still works: kind=static falls back to keyless OSM multi-pin, open_url always works,
+  kind=interactive returns honest needs_key.
+
+  4. Live smoke: kind=static with two coords (expect OSM image URL today, Google static once key lands); kind=interactive
+  expects needs_key until the env drop + restart.
+
+
+  Until merge the tool does not exist for Ada — chaba-side drop was staged 2026-10-27 but the ada-voice landing
+  was never carded (gap this card closes). Job note: docs/ssot/jobs/ada/2026-11-24-map-embed-drop17-landing.yml.'
+ref: ADA-0028
+comms:
+- at: 2026-11-24 12:07
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:14
+  from: chaba
+  text: classified as manual (jevos conf 0.56)
+- at: 2026-11-24 21:14
+  from: chaba
+  text: classified as manual (jevos conf 0.56)
+- at: 2026-11-25 07:49
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:56
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:32
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:52
+  from: chaba
+  text: 'TRIAGE 2026-11-26 batch 2: DECISION NEEDED: human-gated tail - production deploy-ada.sh restart on idc03
+    plus re-dropping GOOGLE_MAPS_API_KEY. Requires approval and a real key.'
+- at: 2026-11-26 21:00
+  from: chaba
+  text: 'HUMAN CALL 2026-11-26: production restart approved; awaiting GOOGLE_MAPS_API_KEY via the private secret
+    path before dispatch.'
+action:
+  type: dispatch
+  status: idle
+  lane: manual
+  lane_source: jevos
+claim: {}

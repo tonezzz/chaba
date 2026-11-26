@@ -684,5 +684,11 @@ class EnvelopeLibrary(unittest.TestCase):
         self.assertEqual(env["escalation"]["max_retries"], 1)
 
 
+class Pricing(unittest.TestCase):
+    def test_local_ollama_alias_is_zero_cost(self):
+        self.assertEqual(
+            mod.price("litellm/ollama-qwen7b", 100_000, 50_000), 0.0)
+
+
 if __name__ == "__main__":
     unittest.main()

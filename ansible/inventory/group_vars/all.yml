@@ -1,0 +1,62 @@
+---
+# Applied to every host in the inventory.
+# Keep this minimal and safe — everything here must be idempotent and
+# reversible. Host-specific divergence goes in host_vars/, not here.
+
+# Package manager facts
+debian_arch: "{{ ansible_architecture }}"
+
+# Common tooling every Linux host should have. Conservative set —
+# add per-host needs via host_vars instead of growing this list.
+common_packages:
+  - curl
+  - wget
+  - git
+  - htop
+  - jq
+  - rsync
+  - unzip
+  - ca-certificates
+  - unattended-upgrades
+
+# unattended-upgrades: security updates only, no auto-reboot.
+unattended_upgrades_security_only: true
+unattended_upgrades_reboot: false
+
+# Docker: hosts that run containers opt in via host/group vars.
+# (docker is NOT installed fleet-wide — enable per host.)
+docker_enabled: false
+
+# --- SSH access contract (SYS-0032 / ssh-access-ansible-standard) --------
+# Single declared source for how Ansible (and, in a later slice, the
+# generated ~/.ssh/config) reaches each host. Identity is a FILE PATH —
+# no key material, passwords or tokens belong in Ansible or git.
+# ssh-mesh-sync.sh remains the *writer* of authorized_keys/known_hosts;
+# these vars + ssh-mesh-verify.yml are the read-only declared contract.
+ssh_user: tony
+ssh_port: 22
+ssh_identity_file: ~/.ssh/id_ed25519
+ssh_network: tailnet          # tailnet | lan
+ssh_enabled: true             # false on retired hosts (idc01)
+ssh_lan_host: ""              # optional LAN alias for close-proximity ops
+# Declare push:chaba only where the live dry-run probe passes. The board
+# runner's push guard (ADA-0673) still probes at claim time; this is the
+# declared side of that contract so a false label fails the gate here.
+ssh_push_chaba: false
+# Default chaba checkout path; host_vars may override (idc03 is served).
+chaba_repo_path: ~/CascadeProjects/chaba
+# Dedicated path for the SSH push probe. Kept separate from chaba_repo_path
+# because group_vars/session_capture.yml overrides that one with an
+# ansible_facts.env.HOME expression (needed verbatim in systemd units) which
+# cannot resolve under this verifier's gather_facts: false. Tilde form is
+# expanded by the remote shell in the dry-run probe.
+ssh_push_repo_path: ~/CascadeProjects/chaba
+# Hosts with a ~/.ssh/config stanza on the controller. The verifier reads
+# `ssh -G <alias>` for these and REPORTS user drift (warn-only this slice —
+# the generated-config slice reconciles it, e.g. kk-mac's missing User).
+ssh_config_checked_hosts:
+  - tony-omen
+  - tony-dell
+  - idc02
+  - idc03
+  - kk-mac

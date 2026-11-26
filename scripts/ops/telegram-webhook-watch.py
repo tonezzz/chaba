@@ -78,7 +78,10 @@ def load_state() -> dict:
 def save_state(state: dict) -> None:
     STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
     tmp = STATE_FILE.with_suffix(".tmp")
-    tmp.write_text(json.dumps(state, sort_keys=True) + "\n")
+    with tmp.open("w") as f:
+        f.write(json.dumps(state, sort_keys=True) + "\n")
+        f.flush()
+        os.fsync(f.fileno())
     tmp.replace(STATE_FILE)
 
 

@@ -1,23 +1,33 @@
 #!/usr/bin/env python3
-"""promote-views.py — merge Lovelace views dev -> prod over websocket.
+"""promote-views.py — merge Lovelace views into a prod dashboard over websocket.
 
-Usage:
-    promote-views.py <dev_url> <prod_url> <dash_url_path> <views|all>
-        [--create] [--dry-run]
+Two source modes:
 
-Fetches the dashboard config from DEV (DEV_TOKEN env), selects views by
-`path` (or all), then merges them into the PROD dashboard of the same
-url_path (PROD_TOKEN env): views whose path already exists on prod are
-replaced, new paths are appended — prod-only views are preserved.
+  * dev -> prod (legacy):
+        promote-views.py <dev_url> <prod_url> <dash_path> <views|all>
+            [--create] [--dry-run]
+    Tokens come from DEV_TOKEN / PROD_TOKEN env vars.
 
---create registers the dashboard on prod via lovelace/dashboards/create when
-it is missing (idempotent: requires_admin off, sidebar shown, title = path).
---dry-run prints the merge plan (which prod views would be replaced/added)
-without writing.
+  * checked-in snapshot -> prod (used by Ansible):
+        promote-views.py --file <snapshot.json> --view <paths>
+            [--token-file <env-file>] [--create] [--dry-run]
+            <prod_url> <dash_path>
+    Views are read from the local JSON file instead of DEV. --token-file
+    reads the long-lived token from a host-side 0600 env file, so it never
+    enters the process arguments. Multiple view paths are comma-separated.
+
+In both modes, views whose path already exists on prod are replaced, new
+paths are appended, and prod-only views are preserved. When the merge would
+not change anything the script prints `already current` and does not write —
+that line is the idempotency signal Ansible's changed_when keys on.
+
+--create registers the dashboard via lovelace/dashboards/create when missing.
+--dry-run prints the plan (or `already current`) without writing.
 """
 import asyncio
 import json
 import os
+import pathlib
 import sys
 
 import websockets
@@ -53,14 +63,61 @@ async def get_config(url, token, path):
         await ws.close()
 
 
-async def main():
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    flags = {a for a in sys.argv[1:] if a.startswith("--")}
-    dev_url, prod_url, path, want = args[0], args[1], args[2], args[3]
-    dev_token, prod_token = os.environ["DEV_TOKEN"], os.environ["PROD_TOKEN"]
+VALUE_FLAGS = {"--file", "--view", "--token-file"}
+TOKEN_KEYS = ("HA_LONG_LIVED_TOKEN", "HASS_TOKEN", "HA_TOKEN", "SUPERVISOR_TOKEN")
 
-    cfg = await get_config(dev_url, dev_token, path)
-    assert cfg, f"no dashboard '{path}' on dev"
+
+def parse_args(argv):
+    """Split argv into options and positional args, allowing flags with values."""
+    opts, positional, i = {}, [], 0
+    while i < len(argv):
+        arg = argv[i]
+        if arg in VALUE_FLAGS:
+            if i + 1 >= len(argv):
+                sys.exit(f"[promote-views] {arg} needs a value")
+            opts[arg] = argv[i + 1]
+            i += 2
+        elif arg.startswith("--"):
+            opts[arg] = True
+            i += 1
+        else:
+            positional.append(arg)
+            i += 1
+    return opts, positional
+
+
+def token_from_file(path):
+    """Read a long-lived token from a KE=VALUE secret file (never argv)."""
+    for line in pathlib.Path(path).read_text().splitlines():
+        key, sep, value = line.strip().partition("=")
+        if sep and key.strip() in TOKEN_KEYS:
+            return value.strip().strip('"').strip("'")
+    sys.exit(f"[promote-views] no HA token key in {path}")
+
+
+async def main():
+    opts, positional = parse_args(sys.argv[1:])
+    create = "--create" in opts
+    dry = "--dry-run" in opts
+
+    if "--file" in opts:
+        if len(positional) != 2:
+            sys.exit("[promote-views] file mode needs <prod_url> <dash_path>")
+        prod_url, path = positional
+        want = opts.get("--view", "all")
+        with open(opts["--file"], encoding="utf-8") as fh:
+            cfg = json.load(fh)
+        prod_token = (token_from_file(opts["--token-file"]) if "--token-file" in opts
+                      else os.environ["PROD_TOKEN"])
+    else:
+        if len(positional) != 4:
+            sys.exit("[promote-views] usage: <dev_url> <prod_url> <dash_path> "
+                     "<views|all> [--create] [--dry-run]")
+        dev_url, prod_url, path, want = positional
+        dev_token, prod_token = os.environ["DEV_TOKEN"], os.environ["PROD_TOKEN"]
+        cfg = await get_config(dev_url, dev_token, path)
+        assert cfg, f"no dashboard '{path}' on dev"
+
     views = cfg.get("views", [])
     sel = views if want == "all" else \
         [v for v in views if v.get("path") in want.split(",")]
@@ -71,9 +128,9 @@ async def main():
 
     prod_cfg = await get_config(prod_url, prod_token, path)
     if prod_cfg is None:
-        assert "--create" in flags, \
+        assert create, \
             f"dashboard '{path}' missing on prod (pass --create to register it)"
-        if "--dry-run" in flags:
+        if dry:
             print(f"DRY: would create dashboard '{path}' on prod, "
                   f"then merge {len(sel)} views: {sel_paths}")
             return
@@ -88,25 +145,29 @@ async def main():
         await ws.close()
         print(f"created dashboard '{path}' on prod")
 
-    by = {v.get("path"): i for i, v in enumerate(prod_cfg.get("views", []))}
+    current = prod_cfg.get("views", [])
+    by = {v.get("path"): i for i, v in enumerate(current)}
     replaced = [v.get("path") for v in sel if v.get("path") in by]
     added = [v.get("path") for v in sel if v.get("path") not in by]
-    if "--dry-run" in flags:
-        print(f"DRY: dashboard '{path}' — replace views {replaced}, "
-              f"add views {added} (prod keeps {len(by) - len(replaced)} "
-              f"prod-only views)")
-        return
-
-    new_views = list(prod_cfg.get("views", []))
+    new_views = list(current)
     for v in sel:
         p = v.get("path")
         if p in by:
             new_views[by[p]] = v
         else:
             new_views.append(v)
+
+    if new_views == current:
+        print(f"already current: {sel_paths} on '{path}'")
+        return
+    if dry:
+        print(f"DRY: dashboard '{path}' — replace views {replaced}, "
+              f"add views {added} (prod keeps {len(by) - len(replaced)} "
+              f"prod-only views)")
+        return
+
     out_cfg = dict(prod_cfg)
     out_cfg["views"] = new_views
-
     ws, c = await connect(prod_url, prod_token)
     try:
         out = await ws_cmd(ws, {"type": "lovelace/config/save",

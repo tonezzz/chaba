@@ -1,0 +1,44 @@
+# con01 warm-standby copy of idc03's ada-ha-tony.service.
+# Managed by chaba/ansible (deploy-con01-ada-warm-standby.yml). Do not edit on host.
+#
+# Inert by design: stored with a non-systemd suffix under
+# ~/.config/systemd/user/standby/, while the canonical ada-ha-tony.service name
+# is MASKED (symlink -> /dev/null). Activation is a separate, approved failover
+# step — see docs/kb/con01-ada-lane-warm-standby.md.
+#
+# Differences from the live idc03 unit (see stacks/idc03/ada-ha-tony/stack.yml):
+#   - ADAPTER: MDDB_BASE_URL is pinned to con01's local follower/promoted leader
+#     (100.72.146.39:11123) because idc03's leader :11023 is gone in a failover.
+#     See mddb-follower/stack.yml restore note; promote the follower first.
+#   - The idc03 dep-gate drop-in waits on idc03 :11023 and is NOT copied here.
+#     Preflight notebooklm-rest :3011 on idc02 and con01 MDDB :11123 manually.
+#   - Isolation caps from ada-ha-tony.service.d/isolation.conf folded in.
+#   - text-chat.conf's ADA_TEXT_ONLY_CHANNELS kept so LINE/TG chat behaviour
+#     matches the live lane.
+#   - stagger.conf intentionally omitted: con01 starts one lane at a time in
+#     the documented failover order, so no stagger sleep is needed.
+
+[Unit]
+Description=Ada backend (ada-ha-tony) — con01 warm standby of the idc03 lane
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/CascadeProjects/ada-voice
+EnvironmentFile=%h/.config/secrets/tony-ha/backend.env
+EnvironmentFile=%h/.config/secrets/notebooklm-rest-api.env
+# Standby override — must follow the EnvironmentFile lines so it wins.
+Environment=MDDB_BASE_URL=http://100.72.146.39:11123
+Environment=ADA_TEXT_ONLY_CHANNELS=telegram,tg,line,chat,web
+ExecStart=%h/CascadeProjects/ada-voice/.venv/bin/uvicorn pwa_server:app --host 127.0.0.1 --port 8002
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=180
+MemoryMax=2G
+CPUQuota=150%
+LogRateLimitIntervalSec=30s
+LogRateLimitBurst=1000
+
+[Install]
+WantedBy=default.target

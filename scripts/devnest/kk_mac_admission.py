@@ -17,6 +17,14 @@ import time
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
+# After a thermal deny, hold the lane closed until the node has visibly
+# cooled past this point. Without hysteresis a 54.9C reading admits a burst
+# of embed/chat work that immediately reheats the GPU past 55C again.
+TEMP_STATE_PATH = os.environ.get(
+    "KK_ADMISSION_TEMP_STATE",
+    os.path.expanduser("~/.cache/kk-mac-admission/temp-state.json"))
+TEMP_RESUME_C = float(os.environ.get("KK_ADMISSION_RESUME_C", "50.0"))
+
 
 def _search(url: str) -> list[dict]:
     req = urllib.request.Request(
@@ -60,6 +68,25 @@ def _ssh_load(host: str) -> float | None:
         return None
 
 
+def load_gate_limit(*, max_load_1m: float, max_load_per_core: float,
+                    cpu_cores: float | None = None) -> tuple[float, float]:
+    """Effective load ceiling and the core count it was derived from.
+
+    The old gate used an absolute load of 4.0. On KK-Mac's 14-core box
+    that is 0.29/core, so the lane denied nearly every minute while the
+    box was merely busy with its own llama-server. When the node reports
+    a core count, scale the ceiling per core; without one keep the
+    absolute ceiling so an unknown host still fails closed.
+    """
+    try:
+        cores = float(cpu_cores or 0)
+    except (TypeError, ValueError):
+        cores = 0.0
+    if cores > 0:
+        return float(max_load_per_core) * cores, cores
+    return float(max_load_1m), 0.0
+
+
 def snapshot(
     *,
     host: str = "KKs-Mac-Studio",
@@ -67,9 +94,14 @@ def snapshot(
     url: str = "http://100.102.134.91:11026/v1",
     max_age_s: int = 900,
     min_disk_gb: int = 20,
+    # Fallback only: used when the heartbeat has no cpu_cores field.
     max_load_1m: float = 4.0,
-    # Tony 2026-11-09: KK runs hot under load — hold new work at 60C.
-    max_temp_c: float = 60.0,
+    max_load_per_core: float = 1.0,
+    # Tony 2026-11-09: KK runs hot under load — hold new work at 55C,
+    # and do not re-admit until it has cooled to 50C (hysteresis).
+    max_temp_c: float = 55.0,
+    resume_temp_c: float = TEMP_RESUME_C,
+    state_path: str | None = None,
     require_idle: bool = True,
     max_load_pc: float = 1.0,
     now: float | None = None,
@@ -111,6 +143,8 @@ def snapshot(
         "ollama_ok": None,
         "disk_free_gb": None,
         "load_1m": None,
+        "cpu_cores": None,
+        "load_limit": None,
         "identity_alias": identity_alias,
         "node_busy": None,
     }
@@ -154,27 +188,48 @@ def snapshot(
     try:
         if load is None:
             raise ValueError("missing load")
-        if float(load) > max_load_1m:
+        limit, cores = load_gate_limit(
+            max_load_1m=max_load_1m,
+            max_load_per_core=max_load_per_core,
+            cpu_cores=body.get("cpu_cores"),
+        )
+        result["cpu_cores"] = cores or None
+        result["load_limit"] = round(limit, 2)
+        if float(load) > limit:
             result["reasons"].append("load_high")
     except (KeyError, TypeError, ValueError):
         result["reasons"].append("load_unknown")
-    try:
-        temp = body.get("cpu_temp_c")
-        if temp is None and ssh_fallback and not result["reasons"]:
-            # heartbeat body lacks temp (root-owned adanest script) —
-            # same read-only fallback pattern as the load probe.
-            t = subprocess.run(
+    # Gate on the hotter of CPU and GPU: under ollama/Metal inference the
+    # GPU runs hotter than the CPU, so a cool CPU sensor can otherwise admit
+    # a pack that reheats the whole SoC (55C limit).
+    cpu_temp = _as_temp(body.get("cpu_temp_c"))
+    gpu_temp = _as_temp(body.get("gpu_temp_c"))
+    if (cpu_temp is None or gpu_temp is None) and ssh_fallback \
+            and not result["reasons"]:
+        # heartbeat may lack either field (root-owned adanest script) —
+        # same read-only fallback pattern as the load probe.
+        host = os.environ.get("KK_MAC_SSH_HOST", "kk-mac")
+        for flag, slot in (("-c", "cpu"), ("-g", "gpu")):
+            out = _run_text(
                 ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8",
-                 os.environ.get("KK_MAC_SSH_HOST", "kk-mac"),
-                 "~/.local/bin/smctemp -c"],
-                capture_output=True, text=True, timeout=12)
-            if t.returncode == 0 and t.stdout.strip():
-                temp = float(t.stdout.strip())
-        result["cpu_temp_c"] = temp
-        if temp is not None and float(temp) > max_temp_c:
-            result["reasons"].append("temp_high")
-    except (TypeError, ValueError):
-        pass
+                 host, "~/.local/bin/smctemp " + flag],
+                timeout=12)
+            if not out:
+                continue
+            parsed = _as_temp(out.strip().splitlines()[0])
+            if slot == "cpu" and cpu_temp is None:
+                cpu_temp = parsed
+            elif slot == "gpu" and gpu_temp is None:
+                gpu_temp = parsed
+    temps = [t for t in (cpu_temp, gpu_temp) if t is not None]
+    result["cpu_temp_c"] = max(temps) if temps else None
+    result["gpu_temp_c"] = gpu_temp
+    path = state_path or TEMP_STATE_PATH
+    reason = _thermal_reason(result["cpu_temp_c"], max_temp_c,
+                             resume_temp_c, path)
+    if reason:
+        result["reasons"].append(reason)
+    result["temp_cooling"] = _cooling_active(path)
     # Overload gate: KK-Mac is an owner-first box — a busy node defers
     # the opportunistic lane. Signals, best available first: tmux_jobs
     # non-empty (work is running on the node), an explicit load_ok flag,
@@ -252,6 +307,51 @@ def _run_text(cmd: list[str], timeout: int = 10) -> str | None:
         return None
 
 
+def _as_temp(value) -> float | None:
+    """Coerce a sensor reading to a plausible celsius value."""
+    try:
+        t = float(value)
+    except (TypeError, ValueError):
+        return None
+    return t if 0 < t < 150 else None
+
+
+def _cooling_active(state_path: str) -> bool:
+    try:
+        with open(state_path) as f:
+            return json.load(f).get("cooling") is True
+    except (OSError, ValueError, TypeError, AttributeError):
+        return False
+
+
+def _set_cooling(state_path: str, cooling: bool) -> None:
+    try:
+        parent = os.path.dirname(state_path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        tmp = state_path + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump({"cooling": cooling, "ts": time.time()}, f)
+        os.replace(tmp, state_path)
+    except OSError:
+        pass
+
+
+def _thermal_reason(temp: float | None, max_temp_c: float,
+                    resume_temp_c: float, state_path: str) -> str | None:
+    """Deny while hot, and keep denying until visibly cool again."""
+    cooling = _cooling_active(state_path)
+    if temp is not None and temp > max_temp_c:
+        _set_cooling(state_path, True)
+        return "temp_high"
+    if cooling:
+        if temp is not None and temp <= resume_temp_c:
+            _set_cooling(state_path, False)
+            return None
+        return "temp_cooldown"
+    return None
+
+
 def _local_load_1m() -> float | None:
     if os.uname().sysname == "Darwin":
         sysctl = _which("sysctl") or "/usr/sbin/sysctl"
@@ -282,18 +382,28 @@ def _local_temp_c() -> float | None:
     if not smctemp:
         return None
     out = _run_text([smctemp, "-c"])
-    try:
-        return float((out or "").strip())
-    except ValueError:
+    return _as_temp(out.strip().splitlines()[0]) if out else None
+
+
+def _local_gpu_temp_c() -> float | None:
+    """GPU temperature — hotter than CPU under ollama/Metal inference."""
+    smctemp = _which("smctemp")
+    if not smctemp:
         return None
+    out = _run_text([smctemp, "-g"])
+    return _as_temp(out.strip().splitlines()[0]) if out else None
 
 
 def local_snapshot(
     *,
     host: str = "local",
     min_disk_gb: int = 20,
+    # Fallback only: used when os.cpu_count() is unavailable.
     max_load_1m: float = 4.0,
-    max_temp_c: float = 60.0,
+    max_load_per_core: float = 1.0,
+    max_temp_c: float = 55.0,
+    resume_temp_c: float = TEMP_RESUME_C,
+    state_path: str | None = None,
     require_idle: bool = True,
     max_load_pc: float = 1.0,
     ollama_url: str = "http://127.0.0.1:11434",
@@ -303,7 +413,7 @@ def local_snapshot(
     of the MDDB heartbeat, so a worker sitting on the node itself gates
     on what is true right now, not on a heartbeat up to 15 min old.
     Read-only probes only: ollama /api/version, loadavg, statvfs,
-    smctemp, tmux ls."""
+    smctemp -c/-g, tmux ls."""
     result = {
         "host": host,
         "eligible": False,
@@ -314,7 +424,10 @@ def local_snapshot(
         "ollama_ok": None,
         "disk_free_gb": None,
         "load_1m": None,
+        "cpu_cores": None,
+        "load_limit": None,
         "cpu_temp_c": None,
+        "gpu_temp_c": None,
         "node_busy": None,
     }
     try:
@@ -335,21 +448,37 @@ def local_snapshot(
         result["reasons"].append("disk_unknown")
     load = _local_load_1m()
     result["load_1m"] = load
+    cores = os.cpu_count() or 0
+    limit, cores = load_gate_limit(
+        max_load_1m=max_load_1m,
+        max_load_per_core=max_load_per_core,
+        cpu_cores=cores,
+    )
+    result["cpu_cores"] = cores or None
+    result["load_limit"] = round(limit, 2)
     if load is None:
         result["reasons"].append("load_unknown")
-    elif load > max_load_1m:
+    elif load > limit:
         result["reasons"].append("load_high")
-    temp = _local_temp_c()
-    result["cpu_temp_c"] = temp
-    if temp is not None and temp > max_temp_c:
-        result["reasons"].append("temp_high")
+    cpu_temp = _local_temp_c()
+    gpu_temp = _local_gpu_temp_c()
+    temps = [t for t in (cpu_temp, gpu_temp) if t is not None]
+    # cpu_temp_c stays the gate field for existing consumers but carries
+    # the hotter sensor — the GPU is what heats under local inference.
+    result["cpu_temp_c"] = max(temps) if temps else None
+    result["gpu_temp_c"] = gpu_temp
+    path = state_path or TEMP_STATE_PATH
+    reason = _thermal_reason(result["cpu_temp_c"], max_temp_c,
+                             resume_temp_c, path)
+    if reason:
+        result["reasons"].append(reason)
+    result["temp_cooling"] = _cooling_active(path)
     busy = []
     if require_idle:
         tmux = _local_tmux_jobs()
         result["tmux_jobs"] = tmux
         if tmux:
             busy.append("tmux_jobs")
-    cores = os.cpu_count() or 0
     if cores > 0 and load is not None and load / cores > max_load_pc:
         busy.append("load1")
     result["node_busy"] = bool(busy)
@@ -371,11 +500,16 @@ def main() -> int:
     parser.add_argument("--allow-busy", action="store_true",
                         help="admit even when the node reports work")
     parser.add_argument("--max-load-pc", type=float, default=1.0)
+    parser.add_argument("--max-load-per-core", type=float, default=1.0,
+                        help="load ceiling per reported CPU core "
+                             "(default 1.0; absolute 4.0 only when core "
+                             "count is unknown)")
     args = parser.parse_args()
     if args.local:
         result = local_snapshot(min_disk_gb=args.min_disk_gb,
                                 require_idle=not args.allow_busy,
-                                max_load_pc=args.max_load_pc)
+                                max_load_pc=args.max_load_pc,
+                                max_load_per_core=args.max_load_per_core)
         print(json.dumps(result, sort_keys=True))
         return 0 if result["eligible"] else 2
     try:
@@ -386,6 +520,7 @@ def main() -> int:
             min_disk_gb=args.min_disk_gb,
             require_idle=not args.allow_busy,
             max_load_pc=args.max_load_pc,
+            max_load_per_core=args.max_load_per_core,
         )
     except Exception as exc:
         result = {

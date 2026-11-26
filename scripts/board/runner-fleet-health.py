@@ -83,7 +83,20 @@ MAX_BEHIND = int(os.environ.get("RUNNER_FLEET_MAX_BEHIND", "200"))
 ESCALATE_H = 12
 SSH_TIMEOUT = 120          # probe includes one git fetch on the host
 FALLBACK_HOSTS = ["tony-dell", "tony-omen", "idc02", "idc03",
-                  "mn01"]
+                  "mn01", "con01", "kk-mac"]
+# One host grammar for the whole audit. con01 (VPS) and kk-mac (macOS)
+# joined the declared fleet after this regex was written; omitting them
+# made the audit silently blind to both (OPS-1406). Restored after
+# commit 4af10b4c5c accidentally reverted the original fix.
+FLEET_HOST_RE = re.compile(
+    r"\b(tony-[\w-]+|idc\d+|mn\d+|con\d+|kk-[\w-]+)\s*:")
+NO_DEVIN_RE = re.compile(
+    r"no devin CLI|devin executor stays Linux-only", re.I)
+# kk-mac's runner-agent runs under /opt/homebrew/bin/python3 (launchd
+# ProgramArguments); the SSH default `python3` is macOS 3.9 and cannot
+# import dispatch_repos.py's PEP 604 annotations. Probe with the same
+# interpreter the runner uses, not the shell's default.
+PROBE_PYTHON = {"kk-mac": "/opt/homebrew/bin/python3"}
 
 # repo-side reference copies; installed drift is checked against these
 REFS = {
@@ -147,6 +160,15 @@ HELP = {
         "scripts/devin/devin-dispatch.sh <host>:~/.local/bin/"
         "devin-dispatch && ssh <host> chmod +x ~/.local/bin/"
         "devin-dispatch",
+    "tool-pin":
+        "A deployed tool's sha differs from the pin read from "
+        "origin/master (scripts/devin/runner-tooling.manifest.json). "
+        "Refresh the checkout FIRST (git -C ~/CascadeProjects/chaba "
+        "pull --ff-only), then run scripts/devin/sync-runner-tools.sh. "
+        "If the checkout matches the pin but the install does not, the "
+        "sync was skipped — check the sync-runner-tools journal line "
+        "(dirty source / no pin / never-downgrade). Do not edit the "
+        "manifest on a host; bump it in the same commit as the tool.",
     "dispatch-repos":
         "Refresh ~/CascadeProjects/chaba on the host (pull --ff-only) — "
         "runner-agent imports dispatch_repos.py from that checkout.",
@@ -269,6 +291,12 @@ for name, ent in repos_table().items():
         if prc:
             e["push_probe_err"] = (pse or pso or "")[:160]
     base = f"origin/{ent['branch']}"
+    # the behind count is measured against the branch declared in
+    # repos.conf, NOT the checkout's current branch — keep the measured
+    # ref on the probe so the violation message can name it (a divergent
+    # checkout otherwise gets a misleading "behind origin/<current>"
+    # alert, as con01's mddb-fork did in 2026-11-26).
+    e["base"] = base
     if name == FETCH_REPO:
         # real fetch — the count must be against today's origin, not
         # whatever the ref last saw (these checkouts never auto-pull)
@@ -283,6 +311,29 @@ for name, ent in repos_table().items():
     e["behind_err"] = "" if brc == 0 else (bse or "")[:160]
     repos[name] = e
 out["repos"] = repos
+
+# Content pins read from origin/master, NOT from the host's checkout: a
+# stale checkout carries a stale manifest and would happily agree with a
+# stale install (the 2026-11-20 Jules half-purge pattern — master had
+# deleted jules.py but still shipped 107 Jules refs in runner-agent.py).
+# The probe has just fetched origin above, so this is today's reference.
+pins = {"ok": False, "tools": {}, "sources": {}, "checkout": {}, "err": ""}
+try:
+    prc, pso, pse = run(["git", "-C", str(HOME / "CascadeProjects/chaba"),
+                         "show", "origin/master:scripts/devin/"
+                                 "runner-tooling.manifest.json"])
+    if prc == 0:
+        for key, val in json.loads(pso).get("tools", {}).items():
+            pins["tools"][key] = (val.get("sha256") or "")[:16]
+            rel = val.get("source") or ""
+            pins["sources"][key] = rel
+            pins["checkout"][key] = sha(HOME / "CascadeProjects/chaba" / rel)
+        pins["ok"] = bool(pins["tools"])
+    else:
+        pins["err"] = (pse or pso or "")[:160]
+except Exception as ex:
+    pins["err"] = (f"{type(ex).__name__}: {ex}")[:160]
+out["tool_pins"] = pins
 
 # installed dispatch executables — deployed as single-file copies
 inst = {}
@@ -394,6 +445,36 @@ def sh(cmd: list, timeout: int = 60,
         return subprocess.CompletedProcess(cmd, 127, "", str(e))
 
 
+def _find_key(d, key):
+    """First recursive match for key — shared by fleet() and prose helpers."""
+    if isinstance(d, dict):
+        for k, v in d.items():
+            if k == key:
+                return v
+            r = _find_key(v, key)
+            if r is not None:
+                return r
+    return None
+
+
+_FLEET_PROSE_CACHE: tuple = (None, "")
+
+
+def fleet_prose() -> str:
+    """runner_fleet prose from KANBAN_SSOT, mtime-cached; '' if unreadable."""
+    global _FLEET_PROSE_CACHE
+    try:
+        stamp = KANBAN_SSOT.stat().st_mtime
+        if _FLEET_PROSE_CACHE[0] == stamp:
+            return _FLEET_PROSE_CACHE[1]
+        doc = yaml.safe_load(KANBAN_SSOT.read_text()) or {}
+        text = str(_find_key(doc, "runner_fleet") or "")
+        _FLEET_PROSE_CACHE = (stamp, text)
+        return text
+    except Exception:
+        return ""
+
+
 def fleet() -> list[str]:
     """Dispatch hosts from ssot.kanban.yml's runner_fleet prose — the
     '<host>:' labels in that string. Env override wins; empty parse
@@ -401,20 +482,9 @@ def fleet() -> list[str]:
     env = os.environ.get("RUNNER_FLEET_HOSTS")
     if env:
         return [h.strip() for h in env.split(",") if h.strip()]
-    def _find(d, key):
-        if isinstance(d, dict):
-            for k, v in d.items():
-                if k == key:
-                    return v
-                r = _find(v, key)
-                if r is not None:
-                    return r
-        return None
-
     try:
-        doc = yaml.safe_load(KANBAN_SSOT.read_text()) or {}
-        text = str(_find(doc, "runner_fleet") or "")
-        hosts = re.findall(r"\b(tony-[\w-]+|idc\d+|mn\d+)\s*:", text)
+        text = fleet_prose()
+        hosts = FLEET_HOST_RE.findall(text)
         seen = []
         for h in hosts:
             if h not in seen:
@@ -426,12 +496,35 @@ def fleet() -> list[str]:
     return list(FALLBACK_HOSTS)
 
 
+def devin_expected(host: str) -> bool:
+    """Whether this host is declared to serve the devin executor.
+
+    con01 is script/container-only with no devin CLI by design; kk-mac
+    runs launchd lanes with devin Linux-only. Flagging their missing
+    devin binary as a bootstrap failure produced false runner-auto-*
+    cards (OPS-1406).
+    """
+    text = fleet_prose()
+    marks = list(FLEET_HOST_RE.finditer(text))
+    for i, m in enumerate(marks):
+        if m.group(1) != host:
+            continue
+        end = marks[i + 1].start() if i + 1 < len(marks) else len(text)
+        return not bool(NO_DEVIN_RE.search(text[m.end():end]))
+    return True
+
+
+def probe_python(host: str) -> str:
+    """Interpreter the remote probe must use on this host."""
+    return PROBE_PYTHON.get(host, "python3")
+
+
 def probe(host: str) -> dict | None:
     """One JSON doc from the host; None on unreachable/undecodable."""
     local = host == HOST or os.environ.get("RUNNER_FLEET_SKIP_SSH")
     cmd = ([sys.executable, "-"] if local else
            ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8",
-            host, "python3", "-"])
+            host, probe_python(host), "-"])
     r = sh(cmd, timeout=SSH_TIMEOUT, stdin=REMOTE_PROBE)
     if r.returncode != 0:
         return {"_error": ((r.stderr or r.stdout).strip()[:200]
@@ -562,10 +655,13 @@ def judge(host: str, d: dict, refsha: dict) -> tuple[list, list]:
                       f"{name}: no origin remote"))
         b = e.get("behind")
         if b is not None and b > MAX_BEHIND:
+            measured = e.get("base") or f"origin/{e.get('head_branch') or '?'}"
+            head = e.get("head_branch")
+            divergent = (f" — checkout is on {head}, not the declared base"
+                         if head and f"origin/{head}" != measured else "")
             v.append(("repo-checkout",
-                      f"{name}: {b} commits behind "
-                      f"origin/{e.get('head_branch') or '?'} "
-                      f"(limit {MAX_BEHIND}, last-fetched basis)"))
+                      f"{name}: {b} commits behind {measured} "
+                      f"(limit {MAX_BEHIND}, last-fetched basis){divergent}"))
         if e.get("remote"):
             if adv and not probe_ok:
                 v.append(("push-label-false",
@@ -590,8 +686,35 @@ def judge(host: str, d: dict, refsha: dict) -> tuple[list, list]:
                   "host can only strand dispatch branches"))
 
     inst = d.get("installed") or {}
+
+    # Content pins from origin/master catch stale checkouts that agree
+    # with stale installs, and stale installs whose local checkout was
+    # itself behind. The sha comparison below only covers installed vs
+    # THIS host's checkout, which is blind to both.
+    pins = d.get("tool_pins") or {}
+    if not pins.get("ok"):
+        notes.append("tool pins unreadable from origin/master "
+                     f"({pins.get('err') or 'manifest missing'})")
+    else:
+        for key, want in (pins.get("tools") or {}).items():
+            label = key.replace("_", "-")
+            got_checkout = (pins.get("checkout") or {}).get(key)
+            if got_checkout and got_checkout != want:
+                v.append(("tool-pin",
+                          f"{label}: checkout sha {got_checkout} != pin "
+                          f"{want} — chaba clone is stale/divergent"))
+            got_inst = (inst.get(key) or {}).get("sha")
+            if got_inst and got_inst != want:
+                v.append(("tool-pin",
+                          f"~/.local/bin/{label} sha {got_inst} != pin "
+                          f"{want} — installed build is stale"))
+
     for key, label in (("runner_agent", "runner-agent"),
                        ("devin_dispatch", "devin-dispatch")):
+        if key == "devin_dispatch" and not devin_expected(host):
+            notes.append("devin-dispatch intentionally absent — declared "
+                         "lanes do not serve the devin executor")
+            continue
         e = inst.get(key) or {}
         if not e.get("exists"):
             v.append((label, f"~/.local/bin/{label} missing — host "
@@ -651,7 +774,10 @@ def judge(host: str, d: dict, refsha: dict) -> tuple[list, list]:
                              f"review only")
 
     devin = d.get("devin") or {}
-    if not devin.get("path"):
+    if not devin_expected(host):
+        notes.append("devin CLI intentionally absent — declared lanes "
+                     "do not serve the devin executor")
+    elif not devin.get("path"):
         v.append(("devin-cli", "no devin binary resolvable (PATH, "
                                "~/.local/bin, bundled) — dispatch cards "
                                "can't start"))

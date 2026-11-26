@@ -1,0 +1,212 @@
+id: capture-harvester-apply-gate-1426cfed
+title: 'Capture harvester: decide --apply gate'
+column: done
+updated: 2026-11-26 20:33
+brief: The capture router/harvester stay read-only until Tony explicitly approves sink writes. Decide whether to
+  ever enable --apply.
+priority: medium
+tags:
+- ops
+- knowledge-capture
+spec: 'Goal: resolve the one remaining gated decision from OPS-0016 Phase C/D.
+
+  Context: read-only router + harvester landed (424e97f5c6, 778903e435, 92fc6f92ae); matrix tuned to 100% actionable
+  kanban creates; all four Phase D signals measured (2fc668b306, 1426cfed36). --apply has been deliberately unexercised
+  throughout.
+
+  If approved: define exact sink scope, verify board-api mutation door / single-writer / checkout-role constraints,
+  idempotent dedupe + audit metadata, bounded retries and rollback; run a dry-run diff first, then one gated apply
+  with producer/consumer surface verification.
+
+  If declined: keep the pipeline permanently read-only and record that decision in SSOT.
+
+  Done-condition: Tony''s explicit decision recorded, with an audited apply run OR a documented permanent read-only
+  posture. Never enable --apply by inference or momentum.
+
+  Refs: OPS-0016; docs/ssot/ssot.knowledge-capture.yml (Phase D Baseline); scripts/chaba/capture-router.py, harvester.py,
+  capture-metrics.py.'
+ref: OPS-0024
+comms:
+- at: 2026-11-23 13:42
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-23 13:42
+  from: devin
+  text: 'raised request apply-is-the-only-unresolved-gate-from-o-bd7d0c: --apply is the only unresolved gate from
+    OPS-0016. The read-only proposal path is verified (100% actionable kanban creat'
+- at: 2026-11-23 13:49
+  from: devin
+  text: '[2026-11-23 opencode] Precision correction to this card''s wording (''--apply has been deliberately unexercised''):
+    there is no --apply implementation to exercise. Verified in scripts/chaba/harvester.py: ''There is no --apply
+    in this slice by design (OPS-0016 approved 2026-11-23)'' (introduced 424e97f5c6). OPS-0016 approved the read-only
+    propose slice with sink writes explicitly deferred as a separate gated decision. Therefore option (b) means
+    DESIGN AND BUILD a new sink-write feature — define sink s'
+- at: 2026-11-23 14:03
+  from: tony
+  text: 'answered apply-is-the-only-unresolved-gate-from-o-bd7d0c: b - Build gated sink writes. Explicit chat approval
+    2026-11-23 (decision page).'
+- at: 2026-11-23 14:03
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-23 14:03
+  from: devin
+  text: '[2026-11-23 opencode] DECISION: Tony approved option (b) — build gated sink writes. Moving to doing. Build
+    plan: (1) fix exact sink scope from the live proposal report — restrict first apply to the most reversible sink
+    with a working write door; (2) implement an explicit --apply path in harvester.py with a mandatory dry-run diff,
+    idempotent dedupe via the append-only ledger, audit metadata (run_id, dedupe_key, source_id, timestamp), bounded
+    retries and a documented rollback; (3) respect the boar'
+- at: 2026-11-23 14:03
+  from: devin
+  text: moved backlog -> doing
+- at: 2026-11-23 14:09
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:15
+  from: devin
+  text: '[2026-11-23 opencode] DONE — gated sink-write door built, landed and exercised. Code: origin/master ac369526db
+    ("OPS-0024: gated key-scoped capture apply door (board-api only)"). Added scripts/chaba/capture-apply.py (separate
+    writer; harvester.py stays read-only), preserved the `applied:` audit block across harvester ledger rewrites,
+    hardened duplicate gate to fail-closed when board-api is unreadable, and documented write path in ssot.knowledge-capture.yml.
+    Gates: exact ledger key, allowlisted s'
+- at: 2026-11-23 14:15
+  from: devin
+  text: closed by devin
+- at: 2026-11-23 14:20
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:16
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:06
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:22
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:32
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:40
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:45
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:56
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:01
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:33
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+requests:
+- id: apply-is-the-only-unresolved-gate-from-o-bd7d0c
+  ask: '--apply is the only unresolved gate from OPS-0016. The read-only proposal path is verified (100% actionable
+    kanban creates, all four Phase D signals measured). Enable sink writes, or keep the harvester permanently read-only?
+    (★ = recommended: keep read-only until a concrete sink-write consumer exists.)'
+  status: answered
+  at: 2026-11-23 13:42
+  from: devin
+  options:
+  - id: a
+    label: Keep read-only (★ recommended)
+    action: none
+  - id: b
+    label: Approve a gated --apply run
+    action: none
+  answer: b - Build gated sink writes. Explicit chat approval 2026-11-23 (decision page).
+action:
+  status: done

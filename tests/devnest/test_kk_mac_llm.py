@@ -51,6 +51,7 @@ class KkMacLlmTests(unittest.TestCase):
                 "summary",
                 "summarize this",
                 ssh_run=fake,
+                memory_guard=False,
             )
         self.assertTrue(result["ok"])
         self.assertIn("--data-binary", " ".join(fake.command))

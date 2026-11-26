@@ -1,0 +1,64 @@
+title: Install and trial the official gemini-api-dev skill
+subtitle: >
+  Installed the upstream Gemini API development skill with provenance and
+  license, then ran two paired code-generation prompts against a no-skill
+  baseline with objective assertions.
+icon: education
+version: 1
+
+card: gemini-api-dev-skill-install-trial-2026-11-26  # ADA-1441
+date: 2026-11-26
+source_session: "2026-11-26 session history — exploration track chosen after the Gemini capability research publish"
+
+delivered:
+  install:
+    path: /home/tony/.claude/skills/gemini-api-dev
+    files: [SKILL.md, references/migration.md, LICENSE, NOTICE.md]
+    source: https://github.com/google-gemini/gemini-skills/tree/c4d0c62c1240e08a90546186bf320600ab6a039a/skills/gemini-api-dev
+    commit: c4d0c62c1240e08a90546186bf320600ab6a039a
+    license: Apache-2.0
+    visible_to_session: true
+  trial:
+    workspace: /tmp/opencode/gemini-skill-trial/iteration-1
+    viewer: /tmp/opencode/gemini-api-dev-trial-review.html
+    prompts:
+      - "eval-0: Python helper for calibrated ready/not-ready kanban dispatch decision"
+      - "eval-1: two-turn Python voice-agent helper with server-held state via Interactions API"
+    configs: [with_skill, without_skill]
+    runs: 4
+    checks_per_run: 8
+    results:
+      eval-0_decision_gate: {with_skill: 0.875, without_skill: 0.25}
+      eval-1_stateful_agent: {with_skill: 0.875, without_skill: 0.25}
+      overall: {with_skill: 0.875, without_skill: 0.25, delta: 0.625}
+    grading: "objective regex/compile checks; grading.json per run; aggregate_benchmark.py written to benchmark.json/md"
+
+findings:
+  - "With-skill runs used current APIs: client.decisions.create on gemini-decision-1 with api_version=v1beta, and client.interactions.create with previous_interaction_id on gemini-4-hydrogen."
+  - "Both baselines used deprecated google.generativeai / gemini-pro and failed the current-API checks (one also emitted invalid Python)."
+  - "With-skill decision-gate output omitted the requested confidence field (printed P(yes) only) — the skill example shows both noul and confidence; this is the one failed assertion for that run."
+  - "With-skill stateful output did not read interaction.output_text (returns interaction ids only) — the one failed assertion for that run."
+  - "The skill's fetch-the-doc rule worked: both with-skill runs fetched the matching hosted docs (Decisions API + Decision 1 model; Interactions API Overview) before writing code."
+  - "Two subagent write paths lost digits on first attempt; files were re-saved to digit-free paths and copied into the run tree. Timing/token data was not persisted by this harness — no timing claims are made."
+
+guardrails:
+  - "No key, billing, gateway, or model-pin changes."
+  - "Official skill installed unchanged (only NOTICE.md added); no edits to upstream content."
+  - "No wiki publish: this track was scoped to install + trial; publication would need a separate authorization."
+  - "No real Gemini API calls made during the trial — generated code was graded statically."
+
+activation_gate:
+  - "DONE 2026-11-26: card ADA-1441 created in backlog via board-api."
+  - "DONE 2026-11-26: user selected this track from the exploration options."
+  - "DONE 2026-11-26: skill installed under a configured skills path and advertised to the session."
+
+verify:
+  - "DONE 2026-11-26: skill tool loaded gemini-api-dev from /home/tony/.claude/skills/gemini-api-dev after install."
+  - "DONE 2026-11-26: 4 outputs graded; with_skill 7/8 on both prompts, without_skill 2/8 on both."
+  - "DONE 2026-11-26: aggregate_benchmark.py -> 87.5% vs 25%, delta +0.625."
+  - "DONE 2026-11-26: static viewer generated at /tmp/opencode/gemini-api-dev-trial-review.html."
+
+remaining:
+  - "Human review of the static viewer before treating the trial as a quality sign-off."
+  - "Optional description-trigger optimization — defer unless the skill is undertriggering in real work."
+  - "Do not edit upstream skill content; raise issues upstream instead."

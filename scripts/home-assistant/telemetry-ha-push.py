@@ -20,9 +20,16 @@ Env:
   HA_TOKEN_FILE      default ~/.config/secrets/home-assistant-token.env
                      (line `HA_LONG_LIVED_TOKEN=` or `HASS_TOKEN=`)
   STALE_SECONDS      default 900 — doc ts older than this => fresh=off
+  TELEMETRY_TEMP_ALERT_C  default 80 — binary_sensor.<dev>_temp_high threshold
+                     (uses the hottest of all reported zones, not just CPU)
+  TELEMETRY_TEMP_SKIP_DEVICES  default kk-mac — hosts with their own stricter
+                     admission gate are not duplicated here.
+  CHABA_THERMAL_CONFIG      Ansible-managed ~/.config/chaba/thermal.env;
+                     its values are used unless the env vars above are set.
 """
 import json
 import os
+import re
 import sys
 import time
 import urllib.request
@@ -36,6 +43,27 @@ HA_URL = os.environ.get(
     "HA_URL", "https://tony-omen.taila0626a.ts.net:8123").rstrip("/")
 STALE_S = int(os.environ.get("STALE_SECONDS", "900"))
 COLLECTION = "device-telemetry"
+
+
+def _thermal_config() -> dict:
+    """Read the Ansible-managed threshold file (KEY=VALUE, # comments)."""
+    path = Path(os.environ.get(
+        "CHABA_THERMAL_CONFIG",
+        str(Path.home() / ".config/chaba/thermal.env")))
+    out = {}
+    try:
+        for line in path.read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            out[key.strip()] = value.strip()
+    except OSError:
+        pass
+    return out
+
+
+TEMP_CFG = _thermal_config()
 
 
 def _token() -> str:
@@ -93,10 +121,30 @@ def push_device(dev: str, token: str) -> str:
     doc = _latest(dev)
     now = int(time.time())
     if not doc or not doc.get("ts"):
+        # No telemetry doc (host never reported, or MDDB miss): surface the
+        # host as offline/stale instead of leaving the last pushed online
+        # state (which can stay "on" for a sleeping laptop like kk-mac).
+        # Battery/metric sensors are left untouched (quiet failure).
+        try:
+            _push(token, f"binary_sensor.{eid}_online", "off", {
+                "friendly_name": f"{dev} online",
+                "device_class": "connectivity",
+            })
+            _push(token, f"binary_sensor.{eid}_telemetry_fresh", "off", {
+                "friendly_name": f"{dev} telemetry fresh",
+                "device_class": "connectivity",
+                "age_seconds": None,
+            })
+        except Exception:
+            pass
         return f"{dev}: no telemetry doc"
     age = now - int(doc["ts"])
     fresh = "on" if age <= STALE_S else "off"
-    online = "on" if (doc.get("tailnet") or {}).get("online") else "off"
+    # Stale telemetry means the host has not reported recently (e.g. asleep /
+    # off-net), so it must not be shown as online even if the last doc's
+    # tailnet.online was true.
+    online = "on" if ((doc.get("tailnet") or {}).get("online")
+                      and age <= STALE_S) else "off"
     _push(token, f"binary_sensor.{eid}_online", online, {
         "friendly_name": f"{dev} online",
         "device_class": "connectivity",
@@ -127,9 +175,33 @@ def push_device(dev: str, token: str) -> str:
     _metric("mem_pct", "mem", "memory", "%", "mdi:memory")
     _metric("disk_pct", "disk", "disk", "%", "mdi:harddisk")
     _metric("swap_pct", "swap", "swap", "%", "mdi:swap-horizontal")
-    _metric("temp_c", "temp", "temp", "°C", "mdi:thermometer",
-            {"temps": doc.get("temp_zones") or {}})
     zones = doc.get("temp_zones") or {}
+    _metric("temp_c", "temp", "temp", "°C", "mdi:thermometer",
+            {"temps": zones})
+    # History needs a numeric state per label. The headline sensor above
+    # stays the hottest zone; these are stable per-zone series — entity ids
+    # come from the raw zone key, never from whichever zone is hottest now.
+    used_slugs = set()
+    for raw_zone, raw_val in zones.items():
+        try:
+            value = round(float(raw_val), 1)
+        except (TypeError, ValueError):
+            continue
+        base = re.sub(r"[^a-z0-9]+", "_", str(raw_zone).lower()).strip("_")
+        base = base or "zone"
+        slug, n = base, 1
+        while slug in used_slugs:
+            n += 1
+            slug = f"{base}_{n}"
+        used_slugs.add(slug)
+        _push(token, f"sensor.{eid}_temp_{slug}", value, {
+            "friendly_name": f"{dev} {raw_zone} temp",
+            "unit_of_measurement": "°C",
+            "device_class": "temperature",
+            "state_class": "measurement",
+            "source_zone": raw_zone,
+            **common_attrs(doc, age),
+        })
     if zones:
         def _zname(k: str) -> str:
             if k == "x86_pkg_temp":
@@ -137,7 +209,7 @@ def push_device(dev: str, token: str) -> str:
             if k.startswith("pch_"):
                 return "pch"
             return k
-        top = sorted(zones.items(), key=lambda kv: -kv[1])[:5]
+        top = sorted(zones.items(), key=lambda kv: -kv[1])[:1]
         pairs = ",".join(f"{_zname(k)}:{v:g}°" for k, v in top)
         _push(token, f"sensor.{eid}_temps", pairs[:200], {
             "friendly_name": f"{dev} temps",
@@ -152,6 +224,30 @@ def push_device(dev: str, token: str) -> str:
             "icon": "mdi:thermometer-lines",
             **common_attrs(doc, age),
         })
+    # Safety view: one boolean per host driven by the hottest zone, not just
+    # the CPU package. Unknown temp (sensorless VM, failed probe) clears the
+    # alert rather than raising a false one; freshness is reported separately.
+    temp_limit = float(TEMP_CFG.get(
+        "TELEMETRY_TEMP_ALERT_C",
+        os.environ.get("TELEMETRY_TEMP_ALERT_C", "80")))
+    skip = {d.strip() for d in TEMP_CFG.get(
+        "TELEMETRY_TEMP_SKIP_DEVICES",
+        os.environ.get("TELEMETRY_TEMP_SKIP_DEVICES", "kk-mac")
+    ).split(",") if d.strip()}
+    excluded = dev in skip
+    temp_c = doc.get("temp_c")
+    hot = (not excluded and temp_c is not None
+           and float(temp_c) > temp_limit)
+    _push(token, f"binary_sensor.{eid}_temp_high",
+          "on" if hot else "off", {
+              "friendly_name": f"{dev} temp above {temp_limit:g}C",
+              "device_class": "problem",
+              "icon": "mdi:thermometer-alert",
+              "max_temp_c": temp_c,
+              "limit_c": temp_limit,
+              "excluded": excluded,
+              **common_attrs(doc, age),
+          })
     tp = doc.get("thermal_pressure")
     if tp:
         _push(token, f"sensor.{eid}_thermal", str(tp), {

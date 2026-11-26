@@ -1,0 +1,39 @@
+id: plan-route-readonly-report
+card: opencode-cline-idea-proposal-workflow
+case_id: readonly-report
+task_class: shadow_replay
+stage: S0
+target_host: tony-macbook
+executor: opencode
+profile: plan-route-only
+model: ollama/qwen2.5:7b-instruct
+provider: ollama
+mcp_allowlist: []
+allowed_paths:
+  - evals/shadow/task/
+artifact:
+  path: evals/shadow/task/artifacts/plan-route-readonly-report.json
+  schema: evals/opencode-lane/profiles/plan-route-only/fixture/task.yaml#contract.required_fields
+verifier:
+  type: held_out_py
+  ref: evals/opencode-lane/profiles/plan-route-only/fixture/verify.py
+escalation:
+  on_fail: hold
+  max_retries: 0
+rollback:
+  kind: worktree-drop
+  ref: Isolated S0 task; runner-only plan artifact under evals/shadow/task/.
+heartbeat:
+  required: false
+  stale_s: 300
+unattended: false
+task: >-
+  case_id=readonly-report. Request: produce a read-only JSON health report
+  using a supplied synthetic fixture only. Target host is tony-macbook.
+  Expected report output: reports/health-snapshot.json with schema
+  health-report-v1. Do not read a live host or execute any command.
+jev_input:
+  title: Read-only health report
+  brief: Produce a report from a synthetic fixture; no live commands or writes.
+expected_jev_route: free_lane
+timeout_s: 360

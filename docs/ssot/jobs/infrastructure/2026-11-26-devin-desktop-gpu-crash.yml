@@ -1,0 +1,68 @@
+# Job: Devin Desktop startup/crash loop on tony-dell — GPU process
+# Related card: fix-devin-desktop-startup-after-3-12-upgrade (DEV-1218, 2026-11-24
+# XDG split-brain fix; that fix is installed and still valid, this is a new failure mode).
+title: devin-desktop dies ~10s after launch on tony-dell — GPU child crash, software rendering pinned via Ansible
+status: "fixed — software rendering pinned in ~/.devin/argv.json on dell + omen; converged idempotently; verified via --use-gl=disabled"
+date: 2026-11-26
+host: tony-dell
+session: OpenChamber session-2a87ebc4 (operator-approved live fix)
+
+symptom:
+  - No devin-desktop process/window on :20; ~/.config/Devin/code.lock pointed to dead PID 1992097.
+  - watchdog.log showed repeated "window unresponsive → TERM main" plus auto-restarts through the day.
+  - Fresh main.log at each launch ended ~10s later; no update/earlyoom/watchdog kill in that window.
+  - A fresh Crashpad dump appeared at the exact second of each death (e.g. 0cd4ede8… at 19:10:24).
+
+diagnosis:
+  method: read-only via MCP debug, then SSH; parsed minidump header directly.
+  findings:
+    - Minidump exception code 5, address 0, on a child thread (2009403), module list 113 — a child process
+      crash, not a watchdog TERM or OOM kill. Kernel journal had no trap/OOM entry; earlyoom had no 19:10 kill.
+    - Plain relaunch at 19:10:14 died at 19:10:24 with a new dump. Relaunch with --disable-gpu at 19:13:26
+      stayed alive for minutes with windows on :20 and the correct singleton socket.
+    - Installed watchdog already carries the 2026-11-24 XDG_RUNTIME_DIR fix; not a split-brain recurrence.
+    - The GPU-off instance was healthy ~27 min but the watchdog TERM'd it at 19:30/19:40 for a stale modal
+      "Devin" dialog (win 23068680); no such window exists on :20/:99/:1 afterwards and hang state is clear.
+  config_path:
+    - product.json sets dataFolderName ".devin", so the app reads ~/.devin/argv.json — NOT the user-data
+      dir ~/.config/Devin/argv.json. Two earlier convergence attempts wrote the wrong path; corrected at 20:37.
+    - The supported key is disable-hardware-acceleration set to true, which calls
+      app.disableHardwareAcceleration(). "disable-gpu" in argv.json is silently ignored, even though
+      --disable-gpu on the command line works.
+  secondary: stale code.lock and a stale /run/user/1000/vscode-5cc5eca6-1.14-main.sock after each crash.
+
+changes:
+  - Live: backed up code.lock to timestamped .bak files, removed stale lock + socket, relaunched on
+      display 20 with XDG_RUNTIME_DIR=/run/user/1000. Final relaunch at 20:37 (main PID 2244824).
+  - Repo: ansible/playbooks/deploy-devin-desktop-gpu-off.yml plus ansible/files/devin-argv-pin.py —
+      the helper uncomments or sets disable-hardware-acceleration in ~/.devin/argv.json, preserves all
+      other keys/comments, makes a timestamped backup on change, and removes the obsolete wrong-path file.
+      No handler — the pin takes effect on the NEXT launch.
+  - Converged with --check --diff then real run then re-check, --limit tony-dell and --limit tony-omen;
+      preflight 0 unreachable / 0 failed; re-check changed=0 on both hosts.
+  - Merged to origin/master as e123e6a67c; follow-up path correction also pushed to master.
+
+verification:
+  consumer: main PID 2244824 alive on :20; visible window "DEV-1209 — DevNest handoff chaba-tony-dell";
+      code.lock matches main; singleton socket owned by tony; no fresh Crashpad dump since relaunch.
+  pin_proof: gpu-process cmdline carries "--use-gl=disabled" — software rendering applied from argv.json
+      with no command-line flag.
+  idempotency: --check --diff on both hosts => changed=0, unreachable=0, failed=0.
+
+rollback:
+  - In ~/.devin/argv.json, set disable-hardware-acceleration back to a commented line (the helper's
+      timestamped .bak files hold the original content), then relaunch devin-desktop; expect the ~10s
+      crash loop to return.
+  - Stale-lock backups: ~/.config/Devin/code.lock.bak.20261126T19* and .20*.
+
+lessons:
+  - Verify a product's config path and key against its INSTALLED product.json and mainImpl.js before
+    claiming a pin works — this build reads ~/.devin/argv.json and only honors
+    "disable-hardware-acceleration" (calls app.disableHardwareAcceleration()).
+  - argv.json is JSONC — preserve comments and host-specific keys (e.g. crash-reporter-id) when pinning.
+  - A "starting error" that is actually a child crash loop — verify with a fresh crash dump timestamp at the
+      exact death, not just the watchdog log — watchdog TERMs and crashes can interleave.
+  - A watchdog can kill a genuinely healthy GUI over a stale modal dialog; check that the dialog window no
+      longer exists before blaming the GPU fix, and clear hang state before judging stability.
+  - Verify GUI fixes at the consumer: visible window on the real X display, singleton socket under
+      /run/user/$UID, code.lock matching the live main PID, and expected GPU switch in child cmdline.

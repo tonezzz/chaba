@@ -5,7 +5,7 @@ brief: KK's old Intel MacBook Pro becomes a Linux machine — macOS gets wiped e
 column: done
 priority: medium
 created: 2026-10-08
-updated: 2026-11-19 20:05
+updated: 2026-11-26 20:34
 ask:
   question: Which install path — depends on whether this Mac has the T2 chip?
   options:
@@ -20,20 +20,20 @@ note: 'Machine (SSOT ssot.mysystem.macbook.yml): MacBook Pro quad-core i7 2.6GHz
   13.7.8, serial C02T902XH03M, user kkkakk, tailnet 100.124.59.112. Currently OFFLINE (last seen 5d ago — lid closed/asleep).
   Serial + 2.6GHz base clock strongly suggest 2018 15" MacBookPro15,1 (i7-8850H) = T2 chip — CONFIRM before anything:
   `sysctl hw.model`.'
-spec: "T2 FORK (likely): if hw.model = MacBookPro15,1/15,3/16,x — the Apple T2 security chip blocks stock Linux.\
-  \ REQUIRED PATH: 1. WAKE MACBOOK FIRST — cannot do anything while offline. 2. BEFORE wiping macOS (irreversible):\
-  \ extract Broadcom Wi-Fi +\n   Bluetooth firmware — T2 Macs source it from the macOS install\n   (t2linux guide,\
-  \ firmware.sh pulls /usr/share/firmware into a\n   tarball). Skip this and the Mac has NO wifi under Linux.\n\
-  3. Backup KK's data: user files; podman redis-macbook container data\n   (redis-data volume, port 16379); ~/chaba-health\
-  \ script; Chrome\n   Remote Desktop config; SSH authorized_keys (will re-seed).\n4. Install media: t2linux Ubuntu\
-  \ ISO (mbp-ubuntu / t2-ubuntu-repo\n   community images ship the t2 kernel) — plain Ubuntu ISO will boot\n   but\
-  \ lack kb/trackpad/ssd-touch drivers. Fedora-t2 spin is the\n   alternative (better-maintained kernels, ask option\
-  \ 3).\n5. Install: recovery -> Security Utility: allow external boot, no\n   secure boot; erase APFS entirely;\
-  \ install to whole disk.\n6. Post-install: applespi (keyboard/trackpad), wifi firmware from\n   step-2 tarball,\
-  \ audio fix, suspend quirks.\n7. Rejoin infra: tailscale (new machine name or reuse tony-macbook —\n   revoke\
-  \ old key), SSH host 'macbook' in ssh-config on tony-dell/\n   tony-omen, restore redis container if wanted, update\
-  \ SSOT\n   (ssot.mysystem.macbook.yml -> Linux, drop macbook-appdev.yml).\nPRE-T2 PATH (if model is 14,3): vanilla\
-  \ Ubuntu 24.04 USB, standard install, broadcom-sta for wifi — skip all T2 steps."
+spec: "T2 FORK (likely): if hw.model = MacBookPro15,1/15,3/16,x — the Apple T2 security chip blocks stock Linux.
+  REQUIRED PATH: 1. WAKE MACBOOK FIRST — cannot do anything while offline. 2. BEFORE wiping macOS (irreversible):
+  extract Broadcom Wi-Fi +\n   Bluetooth firmware — T2 Macs source it from the macOS install\n   (t2linux guide,
+  firmware.sh pulls /usr/share/firmware into a\n   tarball). Skip this and the Mac has NO wifi under Linux.\n3.
+  Backup KK's data: user files; podman redis-macbook container data\n   (redis-data volume, port 16379); ~/chaba-health
+  script; Chrome\n   Remote Desktop config; SSH authorized_keys (will re-seed).\n4. Install media: t2linux Ubuntu
+  ISO (mbp-ubuntu / t2-ubuntu-repo\n   community images ship the t2 kernel) — plain Ubuntu ISO will boot\n   but
+  lack kb/trackpad/ssd-touch drivers. Fedora-t2 spin is the\n   alternative (better-maintained kernels, ask option
+  3).\n5. Install: recovery -> Security Utility: allow external boot, no\n   secure boot; erase APFS entirely; install
+  to whole disk.\n6. Post-install: applespi (keyboard/trackpad), wifi firmware from\n   step-2 tarball, audio fix,
+  suspend quirks.\n7. Rejoin infra: tailscale (new machine name or reuse tony-macbook —\n   revoke old key), SSH
+  host 'macbook' in ssh-config on tony-dell/\n   tony-omen, restore redis container if wanted, update SSOT\n   (ssot.mysystem.macbook.yml
+  -> Linux, drop macbook-appdev.yml).\nPRE-T2 PATH (if model is 14,3): vanilla Ubuntu 24.04 USB, standard install,
+  broadcom-sta for wifi — skip all T2 steps."
 help: 'What lives on it today (from SSOT): Chrome Remote Desktop, PlayLive/ CDP offload (ports 9222/9231), podman
   + redis-macbook container, com.chaba.macbook-health launchd job, ssh host ''macbook''. All replaceable on Linux
   — podman/redis are native, CRD has a Linux client, tailscale native. Chirawat''s-task / iOS-dev goals in ssot.mysystem.macbook-appdev.yml
@@ -193,6 +193,138 @@ comms:
 - at: 2026-11-19 20:05
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:46
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:07
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:20
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:18
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:07
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:08
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:24
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:40
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:08
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:48
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:58
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:53
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:55
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:34
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch

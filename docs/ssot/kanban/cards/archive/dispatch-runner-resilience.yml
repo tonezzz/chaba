@@ -1,0 +1,142 @@
+id: dispatch-runner-resilience
+title: 'dispatch runner resilience: WIP push before GC, push-cred gating, claim stagger'
+column: done
+updated: 2026-11-23 13:34
+brief: 'Three dispatch failures on 2026-11-17/18 were infra, not task: (1) free-model rate limit killed 4 simultaneous
+  claims, (2) worktree GC destroyed unpushed work twice (ADA-0175 r1 branch lost entirely, idc02 scratch clone lost),
+  (3) idc02 lacks push:ada-voice creds so repo cards fail at push guard. Harden runner-agent/kanban-dispatch against
+  all three.'
+priority: high
+tags:
+- dispatch
+- runner-agent
+- infra
+spec: 'Scope: scripts/board/runner-agent.py + kanban-dispatch claim path in the chaba repo. Requirements: (a) before
+  worktree GC/reap, push any committed-but-unpushed dispatch branch to origin (or a wip/ namespace) so work is never
+  silently lost — log the pushed ref in card comms; (b) enforce push-capability gating: cards whose action.repo
+  requires push must only be claimed by hosts holding push:<repo> credentials (there is already a push:ada-voice
+  label mechanism — verify and enforce at claim time, not just push time); (c) stagger/limit concurrent claims per
+  host or globally when the lane model is rate-limited — detect provider 429/rate-limit in runner output and back
+  off claims for a cooldown window instead of burning attempts; (d) add tests under tests/board/ covering each guard.
+  Do NOT change card schema or board-api write paths. Done when: a simulated GC with unpushed commits leaves a recoverable
+  branch, a push-incapable host cannot claim an ada-voice card, and a rate-limited runner defers claims.'
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  lane: devin
+  lane_source: fallback
+  runner: idc02
+  result: 'exit=0 6-11-18-dispatch-runner-resilience.yml`; outcome doc written. No card-schema or board-api changes.
+    | devin-task-20261118-213939-scope-scripts-board-runner-age.service: Consumed 3min 42.302s CPU time, 293.4M
+    memory peak, 0B memory swap peak.'
+  verified: true
+comms:
+- at: 2026-11-18 21:39
+  from: chaba
+  text: classified as devin (fallback conf 0.13)
+- at: 2026-11-18 21:39
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-18 21:39
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.11 > 0.85)'
+- at: 2026-11-18 21:39
+  from: idc02
+  text: claimed
+- at: 2026-11-18 21:39
+  from: chaba
+  text: started devin-task-20261118-213939-scope-scripts-board-runner-age on idc02 (dispatch)
+- at: 2026-11-18 21:39
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-18 21:39
+  from: devin
+  text: session started — scoping scripts/board/runner-agent.py + kanban-dispatch claim path
+- at: 2026-11-18 21:39
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.10 > 1.0)'
+- at: 2026-11-18 21:57
+  from: devin
+  text: 'implemented all three guards + 15 tests (641 board tests green): wt-sweep salvage-pushes unpushed heads
+    to wip/dispatch/<tid> before reap (keeps tree when push impossible); push gating verified at claim time on both
+    claimers + new kanban-dispatch claim-path tests; provider-429 signatures in failed-unit output now arm a host
+    claim cooldown (RUNNER_RATELIMIT_COOLDOWN_S, default 30m) on runner-agent and kanban-dispatch'
+- at: 2026-11-18 22:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:01
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:01
+  from: idc02
+  text: 'finished (ok): exit=0 6-11-18-dispatch-runner-resilience.yml`; outcome doc written. No card-schema or board-api
+    changes. | devin-task-2'
+- at: 2026-11-18 22:01
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-18 22:01
+  from: chaba
+  text: pushed dispatch/20261118-213939-scope-scripts-board-runner-age to origin
+- at: 2026-11-18 22:01
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 150.5s)
+- at: 2026-11-18 22:01
+  from: chaba
+  text: auto-merged 0fc7f24a (dispatch/20261118-213939-scope-scripts-board-runner-age) → origin/master
+- at: 2026-11-18 22:01
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261118-213939-scope-scripts-board-runner-age,
+    branch dispatch/20261118-213939-scope-scripts-board-runner-age'
+- at: 2026-11-18 22:04
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:05
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-18 22:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:48
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:41
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:34
+  from: tony
+  text: archived (1d in done, verified)
+ref: OPS-0206
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-18 22:05
+  note: verified — evidence checks green, closing itself

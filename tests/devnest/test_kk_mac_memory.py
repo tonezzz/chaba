@@ -42,6 +42,20 @@ class SampleTests(unittest.TestCase):
         self.assertFalse(s["ok"])
         self.assertIsNone(s["free_pct"])
 
+    def test_memstatus_marker_parsed(self):
+        out = ("System-wide memory free percentage: 72%\n"
+               "MEMSTATUS=75\n")
+        s = km.sample(ssh_run=lambda *a, **k: _R(out))
+        self.assertTrue(s["ok"])
+        self.assertEqual(s["free_pct"], 72.0)
+        self.assertEqual(s["memstatus_pct"], 75.0)
+
+    def test_memstatus_absent_is_none(self):
+        s = km.sample(ssh_run=lambda *a, **k: _R(
+            "System-wide memory free percentage: 72%\n"))
+        self.assertTrue(s["ok"])
+        self.assertIsNone(s["memstatus_pct"])
+
 
 class EvaluateTests(unittest.TestCase):
     def _snap(self, pct, ok=True):
@@ -63,6 +77,17 @@ class EvaluateTests(unittest.TestCase):
         self.assertIn("memory_sample_failed",
                       km.evaluate(bad, phase="pre"))
         self.assertEqual(km.evaluate(bad, phase="during"), [])
+
+    def test_memstatus_critical_aborts_all_phases(self):
+        snap = {"ok": True, "free_pct": 70.0, "level": None,
+                "memstatus_pct": 30.0}
+        for phase in ("pre", "during", "post"):
+            reasons = km.evaluate(snap, phase=phase)
+            self.assertTrue(any("memory_pressure_critical" in r
+                                for r in reasons), phase)
+        # healthy kernel level adds nothing
+        snap["memstatus_pct"] = 80.0
+        self.assertEqual(km.evaluate(snap, phase="during"), [])
 
 
 class MonitorLifecycleTests(unittest.TestCase):

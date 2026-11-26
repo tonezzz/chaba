@@ -1,0 +1,362 @@
+---
+# audit-stale-checkouts.yml — read-only exec-checkout drift diagnosis.
+#
+# Detects chaba checkouts that are behind origin/master, dirty, diverged,
+# locked, or on an unexpected branch. Produces a controller-side report and
+# optionally files/updates a board-api decision card (no remediation).
+#
+# Board-api is the only kanban write door. This playbook NEVER writes to host
+# checkouts, never stashes/resets/pulls, and never edits card YAML directly.
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/audit-stale-checkouts.yml
+#   ansible-playbook playbooks/audit-stale-checkouts.yml --check --diff
+#   ansible-playbook playbooks/audit-stale-checkouts.yml --limit idc02,tony-omen
+#   ansible-playbook playbooks/audit-stale-checkouts.yml -e board_notify=true \
+#     -e board_api_base=https://idc03.taila0626a.ts.net:10000
+#
+# Artifacts: reports/ansible-benchmark/stale-checkouts/<inventory_host>.yml
+
+- name: Probe chaba exec checkouts for stale/dirty/diverged state
+  hosts: all:!disabled:!macos
+  gather_facts: false
+  become: false
+  vars:
+    chaba_repo_path: "/home/{{ ansible_user }}/CascadeProjects/chaba"
+    stale_checkout_max_behind: 200
+    benchmark_out: "{{ playbook_dir }}/../../reports/ansible-benchmark/stale-checkouts"
+
+  tasks:
+    - name: Probe checkout state (read-only)
+      ansible.builtin.shell: |
+        set -u
+        REPO="{{ chaba_repo_path }}"
+        if [ ! -d "$REPO/.git" ]; then
+          python3 - <<'PY'
+        import json
+        print(json.dumps({"exists": False, "path": "{{ chaba_repo_path }}"}))
+        PY
+          exit 0
+        fi
+        git -C "$REPO" fetch -q origin 2>/dev/null || true
+        python3 - "$REPO" <<'PY'
+        import json, os, subprocess, sys
+        repo = sys.argv[1]
+        def sh(*a):
+            r = subprocess.run(a, cwd=repo, capture_output=True, text=True)
+            return r.returncode, (r.stdout or '').strip(), (r.stderr or '').strip()
+        rc, head, _ = sh('git','rev-parse','--short','HEAD')
+        rc, branch, _ = sh('git','branch','--show-current')
+        rc, origin, _ = sh('git','rev-parse','--short','origin/master')
+        rc, behind, _ = sh('git','rev-list','--count','HEAD..origin/master')
+        rc, ahead, _ = sh('git','rev-list','--count','origin/master..HEAD')
+        rc, dirty, _ = sh('git','status','--porcelain')
+        dirty_lines = [l for l in dirty.splitlines() if l]
+        rc, lock, _ = sh('bash','-lc','ls .git/index.lock 2>/dev/null || true')
+        rc, rp, _ = sh('bash','-lc','ls -d .git/rebase-merge .git/rebase-apply .git/MERGE_HEAD .git/CHERRY_PICK_HEAD 2>/dev/null || true')
+        rc, stashes, _ = sh('git','stash','list')
+        out = {
+          'exists': True,
+          'path': repo,
+          'head': head,
+          'branch': branch,
+          'origin_master': origin,
+          'behind': int(behind) if behind.isdigit() else None,
+          'ahead': int(ahead) if ahead.isdigit() else None,
+          'dirty_total': len(dirty_lines),
+          'dirty_sample': dirty_lines[:20],
+          'index_lock': bool(lock.strip()),
+          'in_progress': [x for x in rp.splitlines() if x.strip()],
+          'stash_count': len([l for l in stashes.splitlines() if l.strip()]),
+        }
+        print(json.dumps(out))
+        PY
+      args:
+        executable: /bin/bash
+      register: checkout_probe
+      changed_when: false
+      failed_when: false
+      check_mode: no
+
+    - name: Parse checkout probe
+      ansible.builtin.set_fact:
+        checkout: "{{ checkout_probe.stdout | default('{}') | from_json }}"
+      when: checkout_probe.rc == 0
+
+    - name: Evaluate stale-checkout condition
+      ansible.builtin.set_fact:
+        checkout_stale: >-
+          {{ (checkout.exists | default(false))
+             and (
+               ((checkout.behind | default(0) | int) > (stale_checkout_max_behind | int))
+               or ((checkout.dirty_total | default(0) | int) > 0)
+               or ((checkout.ahead | default(0) | int) > 0)
+               or (checkout.index_lock | default(false))
+               or ((checkout.in_progress | default([]) | length) > 0)
+             ) }}
+        checkout_reasons: >-
+          {{
+            ([] +
+             (['behind>' ~ stale_checkout_max_behind] if ((checkout.behind | default(0) | int) > (stale_checkout_max_behind | int)) else []) +
+             (['dirty'] if ((checkout.dirty_total | default(0) | int) > 0) else []) +
+             (['ahead'] if ((checkout.ahead | default(0) | int) > 0) else []) +
+             (['index_lock'] if (checkout.index_lock | default(false)) else []) +
+             (['in_progress'] if ((checkout.in_progress | default([]) | length) > 0) else [])
+            )
+          }}
+
+- name: Render stale-checkout report and optionally notify board-api
+  hosts: all:!disabled:!macos
+  gather_facts: false
+  become: false
+  vars:
+    benchmark_out: "{{ playbook_dir }}/../../reports/ansible-benchmark/stale-checkouts"
+    audited_hosts: "{{ groups['all'] | difference(groups['disabled'] | default([])) | difference(groups['macos'] | default([])) | sort }}"
+    board_notify: false
+    board_api_base: "https://idc03.taila0626a.ts.net:10000"
+    board_from: "devin"
+  tasks:
+    - name: Ensure report dir exists
+      ansible.builtin.file:
+        path: "{{ benchmark_out }}"
+        state: directory
+        mode: "0755"
+      check_mode: no
+      delegate_to: localhost
+      run_once: true
+
+    - name: Build stale host summary
+      ansible.builtin.set_fact:
+        stale_hosts: >-
+          {{
+            audited_hosts
+            | select('in', hostvars)
+            | map('extract', hostvars)
+            | selectattr('checkout_stale', 'defined')
+            | selectattr('checkout_stale')
+            | map(attribute='inventory_hostname')
+            | list
+          }}
+        stale_checkout_fingerprint: >-
+          {%- set parts = [] -%}
+          {%- for h in audited_hosts -%}
+            {%- if h in hostvars and (hostvars[h].checkout_stale | default(false)) -%}
+              {%- set _ = parts.append(h ~ ':' ~ ((hostvars[h].checkout_reasons | default([])) | join('+'))) -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ parts | join('|') }}
+      delegate_to: localhost
+      run_once: true
+
+    - name: Write per-host reports
+      ansible.builtin.copy:
+        dest: "{{ benchmark_out }}/{{ item }}.yml"
+        mode: "0644"
+        content: |
+          host: {{ item }}
+          stale: {{ hostvars[item].checkout_stale | default(false) }}
+          reasons: {{ hostvars[item].checkout_reasons | default([]) | to_json }}
+          checkout: {{ hostvars[item].checkout | default({}) | to_nice_json }}
+      loop: "{{ audited_hosts }}"
+      when: item in hostvars and hostvars[item].checkout is defined
+      delegate_to: localhost
+      run_once: true
+
+    - name: Notify board-api when stale checkouts found
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card"
+        method: POST
+        body_format: json
+        status_code: [200, 201, 400]
+        return_content: true
+        body:
+          id: ansible-stale-checkouts
+          title: "Ansible audit: stale chaba exec checkouts detected"
+          column: backlog
+          action: {type: manual}
+          from: "{{ board_from }}"
+          spec: >-
+            Read-only audit detected stale/dirty/diverged chaba exec checkouts.
+            Hosts: {{ stale_hosts | join(', ') }}.
+            Report dir: reports/ansible-benchmark/stale-checkouts/.
+            No remediation performed; decide stash-u-ff / commit-wip / leave / abandon per host.
+      when:
+        - board_notify | bool
+        - (stale_hosts | length) > 0
+      register: stale_card_create
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fail on unexpected stale-checkout card create error
+      ansible.builtin.fail:
+        msg: "board-api /card create failed: {{ stale_card_create.content | default('') }}"
+      when:
+        - board_notify | bool
+        - (stale_hosts | length) > 0
+        - stale_card_create.status not in [200, 201]
+        - "'already exists' not in (stale_card_create.content | default(''))"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fetch card for comment dedupe
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card/ansible-stale-checkouts"
+        method: GET
+        return_content: true
+        status_code: [200, 404]
+      register: stale_card_for_comment
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (stale_hosts | length) > 0
+
+    - name: Compute stale-checkout comment dedupe
+      ansible.builtin.set_fact:
+        stale_comment_text: >-
+          ansible audit-stale-checkouts: {{ stale_hosts | length }} stale host(s): {{ stale_hosts | join(', ') }}.
+          fp={{ stale_checkout_fingerprint }}.
+          Reasons per host in reports/ansible-benchmark/stale-checkouts/. Read-only; no host writes.
+        stale_comment_is_dup: >-
+          {{
+            (stale_card_for_comment.status | default(404)) == 200
+            and (
+              ((stale_card_for_comment.json.card.comms | default([]))
+                | selectattr('from', 'equalto', board_from)
+                | selectattr('text', 'defined')
+                | selectattr('text', 'search', 'fp=' ~ (stale_checkout_fingerprint | regex_escape))
+                | list | length) > 0
+            )
+          }}
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (stale_hosts | length) > 0
+
+    - name: Comment on stale-checkout card with current summary
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/comment"
+        method: POST
+        body_format: json
+        status_code: [200, 201]
+        body:
+          id: ansible-stale-checkouts
+          from: "{{ board_from }}"
+          text: "{{ stale_comment_text }}"
+      when:
+        - board_notify | bool
+        - (stale_hosts | length) > 0
+        - not (stale_comment_is_dup | default(false) | bool)
+      delegate_to: localhost
+      run_once: true
+
+    - name: Post per-host decision requests
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/request"
+        method: POST
+        body_format: json
+        status_code: [200, 201, 400]
+        return_content: true
+        body:
+          id: ansible-stale-checkouts
+          from: "{{ board_from }}"
+          to: "tony"
+          ask: >-
+            {{ item }} chaba exec checkout is stale/dirty ({{ hostvars[item].checkout_reasons | default([]) | join(', ') }};
+            behind={{ hostvars[item].checkout.behind | default('?') }},
+            ahead={{ hostvars[item].checkout.ahead | default('?') }},
+            dirty={{ hostvars[item].checkout.dirty_total | default('?') }}).
+            How should it be brought current? No work will be destroyed.
+          options:
+            - "stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner (recommended, reversible)"
+            - "commit-wip — commit dirty work on a branch, then bring checkout current; preserves work in history"
+            - "leave — accept stale checkout on this host for now; exclude from stale audit until resolved"
+            - "abandon — discard dirty work and hard-reset to origin/master (destructive, explicit approval required)"
+          suggested: "stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner (recommended, reversible)"
+      loop: "{{ stale_hosts }}"
+      when:
+        - board_notify | bool
+        - (stale_hosts | length) > 0
+        - (stale_card_for_comment.json.card.requests | default([]))
+          | selectattr('ask', 'defined')
+          | selectattr('ask', 'search', '^' ~ (item | regex_escape) ~ ' chaba exec checkout is stale/dirty')
+          | selectattr('status', 'defined')
+          | rejectattr('status', 'equalto', 'answered')
+          | list | length == 0
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fetch stale-checkout card for cleared check
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card/ansible-stale-checkouts"
+        method: GET
+        return_content: true
+        status_code: [200, 404]
+      register: stale_card_for_cleared
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (stale_hosts | length) == 0
+
+    - name: Compute stale-checkout cleared comment
+      ansible.builtin.set_fact:
+        stale_cleared_comment: >-
+          ansible audit-stale-checkouts: all clear, no stale hosts. fp=cleared.
+        stale_cleared_needed: >-
+          {{
+            (stale_card_for_cleared.status | default(404)) == 200
+            and (
+              (
+                (stale_card_for_cleared.json.card.comms | default([]))
+                | selectattr('from', 'equalto', board_from)
+                | selectattr('text', 'defined')
+                | selectattr('text', 'search', 'fp=')
+                | list
+              ) | length > 0
+            )
+            and (
+              'fp=cleared' not in (
+                (
+                  (stale_card_for_cleared.json.card.comms | default([]))
+                  | selectattr('from', 'equalto', board_from)
+                  | selectattr('text', 'defined')
+                  | selectattr('text', 'search', 'fp=')
+                  | list | last
+                ).text | default('')
+              )
+            )
+          }}
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (stale_hosts | length) == 0
+
+    - name: Comment stale-checkout cleared
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/comment"
+        method: POST
+        body_format: json
+        status_code: [200, 201]
+        body:
+          id: ansible-stale-checkouts
+          from: "{{ board_from }}"
+          text: "{{ stale_cleared_comment }}"
+      when:
+        - board_notify | bool
+        - (stale_hosts | length) == 0
+        - stale_cleared_needed | default(false) | bool
+      delegate_to: localhost
+      run_once: true
+
+    - name: Summary
+      ansible.builtin.debug:
+        msg:
+          stale_hosts: "{{ stale_hosts }}"
+          report_dir: "{{ benchmark_out }}"
+          comment_skipped_as_dup: "{{ stale_comment_is_dup | default(false) }}"
+          cleared_comment_posted: "{{ stale_cleared_needed | default(false) }}"
+      delegate_to: localhost
+      run_once: true

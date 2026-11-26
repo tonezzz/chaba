@@ -1,7 +1,7 @@
 id: merge-sweep-test-gate-fail-open
 title: merge-sweep test gate is fail-open when a runner host lacks pytest
-column: review
-updated: 2026-11-19 20:05
+column: done
+updated: 2026-11-26 20:34
 priority: medium
 tags:
 - merge-sweep
@@ -244,6 +244,544 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:52
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:46
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:05
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:20
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 15:12
+  from: chaba
+  text: '[verify-fail] Review pass 2026-11-23 (Tony): 2026-11-19 17:15 devin says fail-closed fix re-landed, but
+    gate_unrunnable not in origin/master and final test gate failed (suite timeout) — no landed evidence; request
+    answered, so rework is unblocked — requeued for rework.'
+- at: 2026-11-23 15:12
+  from: tony
+  text: queued for processing
+- at: 2026-11-23 15:13
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 0.91 > 0.85)'
+- at: 2026-11-23 15:13
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.38 > 0.85)'
+- at: 2026-11-23 15:13
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 15:13
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.29 > 1.5)'
+- at: 2026-11-23 15:14
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 15:14
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.40 > 1.0)'
+- at: 2026-11-23 15:21
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-151207-assessment-2026-11-09-verified)
+    — claims held ~29m'
+- at: 2026-11-23 15:22
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261123-151149-ada-benchmark-coverage-scenari)
+    — claims held ~29m'
+- at: 2026-11-23 15:22
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-151040-tony-s-flow-ada-shows-menu-opt)
+    — claims held ~29m'
+- at: 2026-11-23 15:23
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-145907-implement-memory-inspection-pa)
+    — claims held ~29m'
+- at: 2026-11-23 15:24
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-152131-lane-savings-py-now-attributes)
+    — claims held ~29m'
+- at: 2026-11-23 15:24
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-145629-goal-drain-the-review-column-s)
+    — claims held ~29m'
+- at: 2026-11-23 15:25
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-152219-extend-wiki-page-door-to-allow)
+    — claims held ~29m'
+- at: 2026-11-23 15:52
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.86 > 1.5)'
+- at: 2026-11-23 15:55
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 15:56
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 16:03
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-23 16:12
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.14 > 0.85)'
+- at: 2026-11-23 16:17
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261123-161416-ada-benchmark-coverage-scenari)
+    — claims held ~29m'
+- at: 2026-11-23 16:18
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-160801-investigate-the-live-kk-mac-wo)
+    — claims held ~29m'
+- at: 2026-11-23 16:19
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:21
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-155555-goal-drain-the-review-column-s)
+    — claims held ~29m'
+- at: 2026-11-23 16:23
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-160101-the-kk-mac-local-lane-admits-4)
+    — claims held ~29m'
+- at: 2026-11-23 16:32
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-162813-the-goal-is-to-stop-the-tony-u)
+    — claims held ~29m'
+- at: 2026-11-23 16:52
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261123-165021-the-goal-is-to-stop-the-tony-u)
+    — claims held ~29m'
+- at: 2026-11-23 16:54
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 16:54
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261123-165233-investigate-and-resolve-the-fa)
+    — claims held ~29m'
+- at: 2026-11-23 16:56
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-165345-ada-benchmark-coverage-scenari)
+    — claims held ~29m'
+- at: 2026-11-23 17:03
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 0.86 > 0.85)'
+- at: 2026-11-23 17:07
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 17:11
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-170638-extend-wiki-page-door-to-allow)
+    — claims held ~29m'
+- at: 2026-11-23 17:11
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-165641-the-kk-mac-local-lane-admits-4)
+    — claims held ~29m'
+- at: 2026-11-23 17:12
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-170441-investigate-and-resolve-the-fa)
+    — claims held ~29m'
+- at: 2026-11-23 17:56
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.50 > 1.5)'
+- at: 2026-11-23 18:37
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 18:39
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 19:10
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:10
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:17
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-23 19:34
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-23 19:52
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-194248-the-goal-is-to-stop-the-tony-u)
+    — claims held ~27m'
+- at: 2026-11-23 19:52
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-192619-fix-the-executor-model-id-mism)
+    — claims held ~29m'
+- at: 2026-11-23 19:52
+  from: chaba
+  text: 'mn01 defers: provider rate-limited (rate limit on devin-task-20261123-123122-supersedes-manual-card-wiki-ta)
+    — claims held ~29m'
+- at: 2026-11-23 19:53
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-191504-investigate-and-resolve-the-fa)
+    — claims held ~29m'
+- at: 2026-11-23 19:55
+  from: chaba
+  text: 'idc03 defers: provider rate-limited (rate limit on devin-task-20261123-195341-deploy-the-updated-runner-agen)
+    — claims held ~29m'
+- at: 2026-11-23 19:56
+  from: chaba
+  text: 'idc03 defers: provider rate-limited (rate limit on devin-task-20261123-195436-ada-tool-consolidation-merge-o)
+    — claims held ~29m'
+- at: 2026-11-23 19:57
+  from: chaba
+  text: 'idc03 defers: provider rate-limited (rate limit on devin-task-20261123-195521-goal-address-the-live-voice-to)
+    — claims held ~29m'
+- at: 2026-11-23 20:22
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 20:23
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-23 20:26
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-23 20:26
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 20:27
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.38 > 0.85)'
+- at: 2026-11-23 20:44
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-202451-ada-tool-consolidation-merge-o)
+    — claims held ~29m'
+- at: 2026-11-23 20:44
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-203733-fix-the-phantom-state-issue-in)
+    — claims held ~29m'
+- at: 2026-11-23 20:44
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-202551-fix-the-executor-model-id-mism)
+    — claims held ~29m'
+- at: 2026-11-23 20:46
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-202527-corpus-18-jev-bench-cases-4-pi)
+    — claims held ~29m'
+- at: 2026-11-23 20:47
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-202348-investigate-and-resolve-the-fa)
+    — claims held ~28m'
+- at: 2026-11-23 21:14
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 21:16
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 21:17
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-23 21:19
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 21:34
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-211532-productionize-the-enriched-t1-)
+    — claims held ~29m'
+- at: 2026-11-23 21:34
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-211800-kk-mac-classes-eval-2026-11-19)
+    — claims held ~29m'
+- at: 2026-11-23 21:34
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-211710-corpus-18-jev-bench-cases-4-pi)
+    — claims held ~29m'
+- at: 2026-11-23 21:35
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-211558-fix-the-phantom-state-issue-in)
+    — claims held ~29m'
+- at: 2026-11-23 21:35
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-211859-kk-mac-launchd-runner-port-shi)
+    — claims held ~29m'
+- at: 2026-11-23 21:37
+  from: chaba
+  text: 'mn01 defers: provider rate-limited (rate limit on devin-task-20261123-142345-redeploy-the-drifted-runner-ag)
+    — claims held ~29m'
+- at: 2026-11-23 22:06
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 22:07
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-23 22:09
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-23 22:09
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 22:31
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-220531-productionize-the-enriched-t1-)
+    — claims held ~29m'
+- at: 2026-11-23 22:32
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-220709-goal-address-the-live-voice-to)
+    — claims held ~29m'
+- at: 2026-11-23 22:32
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-222811-ada-text-model-promotion-gate-)
+    — claims held ~29m'
+- at: 2026-11-23 22:33
+  from: chaba
+  text: 'mn01 defers: provider rate-limited (rate limit on devin-task-20261123-152827-tony-2026-10-11-think-of-ada-a)
+    — claims held ~29m'
+- at: 2026-11-23 22:33
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-220626-kk-mac-launchd-runner-port-shi)
+    — claims held ~29m'
+- at: 2026-11-23 22:34
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-220607-kk-ha-degraded-mode-explain-ca)
+    — claims held ~29m'
+- at: 2026-11-23 22:36
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-222712-follow-up-to-kk-mac-admitted-c)
+    — claims held ~29m'
+- at: 2026-11-23 22:36
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-220843-supersedes-manual-card-wiki-ta)
+    — claims held ~29m'
+- at: 2026-11-23 23:05
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-23 23:06
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 23:44
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.02 > 1.0)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:45
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.06 > 1.0)'
+- at: 2026-11-24 02:27
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.57 > 0.85)'
+- at: 2026-11-24 03:14
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 03:26
+  from: chaba
+  text: 'idc03 defers: disk headroom 70MB < 2048MB floor'
+- at: 2026-11-24 03:26
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.04 > 0.85)'
+- at: 2026-11-24 04:27
+  from: chaba
+  text: 'idc03 defers: disk headroom 844MB < 2048MB floor'
+- at: 2026-11-24 08:01
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 08:08
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-24 08:09
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:23
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:40
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:44
+  from: chaba
+  text: 'con01 defers: host overloaded (5m load/core 1.67 > 1.6)'
+- at: 2026-11-24 09:02
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.43 > 0.85)'
+- at: 2026-11-24 09:15
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 09:23
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.54 > 1.5)'
+- at: 2026-11-24 09:24
+  from: chaba
+  text: 'kk-mac defers: host overloaded (5m load/core 2.23 > 1.0)'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:44
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 0.86 > 0.85)'
+- at: 2026-11-24 12:09
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:47
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.85 > 1.0)'
+- at: 2026-11-24 14:09
+  from: tony-macbook
+  text: parked at attempt cap — attempt cap reached (2/2) — /action do=retry re-arms it
+- at: 2026-11-24 14:29
+  from: tony
+  text: retry requested
+- at: 2026-11-24 14:30
+  from: tony-omen
+  text: claimed
+- at: 2026-11-24 14:31
+  from: chaba
+  text: started devin-task-20261124-143145-observed-on-hands-off-waiting- on tony-omen (dispatch)
+- at: 2026-11-24 14:31
+  from: chaba
+  text: 'primer injected 8 lesson(s): [merge-sweep-test-gate-fail-open] DEV-0230 exposed this gap again: the merge
+    gat; [merge-sweep-test-gate-fail-open] merge-sweep: verified gate failed — no deliver; [dispatch-worktree-gc]
+    done: gc_worktree guard helper in dispatch_repos (clean +; [merge-sweep-test-gate-fail-open] primer injected
+    8 lesson(s): [dispatch-worktre; [merge-sweep-test-gate-fail-open] primer injected 8 lesson(s): [merge-sweep-test;
+    `_self_stale_check`/`_claimable` gate every claim on installe'
+- at: 2026-11-24 14:43
+  from: devin
+  text: 'attempt 3: re-landed the still-unmerged attempt-2 branch (dispatch/20261119-165806) onto current master
+    as merge commit 1fc75685fd — resolved _merge_and_gate to keep BOTH card-aware gate + master docs-only timeout_override;
+    excluded assessment churn. Fail-closed design intact: unrunnable hold + repo .venv bootstrap + pytest label
+    + gated merge-sweep. 101/101 focused tests, 247/247 gate set (~78s on tony-omen). Prior holds were the bootstrap
+    trap: the gate always runs pre-merge master code, so th'
+- at: 2026-11-24 14:45
+  from: devin
+  text: 'done (attempt 3): fail-closed merge test gate re-landed onto master as merge 1fc75685fd (parents: master
+    + attempt-2 branch head). Deliverables: dispatch-outcome-20261124-143145-observed-on-hands-off-waiting-.md +
+    docs/ssot/jobs/kanban/2026-11-19-merge-test-gate-fail-closed.yml (landings trail). Verified: 255/255 gate-set
+    tests green in ~91s on merged tree — clears even the old 240s budget. Remaining ops (not code): routine runner-agent
+    fleet redeploy activates the pytest label auto-advertise; s'
+- at: 2026-11-24 14:47
+  from: tony-omen
+  text: 'finished (ok): exit=0  idc03''s served checkout picks up the gated merge-sweep on its next kanban-commit
+    pull. | devin-task-20261124-143'
+- at: 2026-11-24 14:47
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 14:47
+  from: chaba
+  text: 'session-end checkpoint cf73f230: 1 leftover file(s) committed'
+- at: 2026-11-24 14:47
+  from: chaba
+  text: banked 299 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 14:47
+  from: chaba
+  text: pushed dispatch/20261124-143145-observed-on-hands-off-waiting- to origin
+- at: 2026-11-24 14:47
+  from: chaba
+  text: 'auto-merge conflicts: scripts/board/dispatch_repos.py, tests/board/test_dispatch_close_out.py — card stays
+    in review for manual resolution'
+- at: 2026-11-24 14:47
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 20:44
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-24): the fail-closed merge test gate (OPS-1191) is already
+    in origin/master — scripts/board/dispatch_repos.py carries the unrunnable-gate hold and tests/board/test_dispatch_close_out.py
+    has the OPS-1191 pytest-absence coverage (commit 04298c99a23). The dispatch branch conflicted only because it
+    re-landed the same change; no new work to merge. Closing.'
+- at: 2026-11-24 20:44
+  from: tony
+  text: closed by tony
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:48
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:01
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:02
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:34
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: approve-dispatch-of-this-multi-step-pyte-f36ee6
   ask: Approve dispatch of this multi-step pytest/test-gate fix on the Devin lane? The recommended implementation
@@ -262,17 +800,18 @@ action:
   type: dispatch
   status: done
   lane: codemod
-  attempts: 2
+  attempts: 1
   sweep:
     stale_running: 2026-11-19 13:44
     dirty: 1
     zero_commit: 2026-11-19 16:55
     no_repo: 2026-11-19 16:59
-  result: 'exit=0 redeploy `runner-agent.py` fleet-wide so the `pytest` label auto-advertise is live. | devin-task-20261119-165806-observed-on-hands-off-waiting-.service:
+  last_failure: 'exit=0 redeploy `runner-agent.py` fleet-wide so the `pytest` label auto-advertise is live. | devin-task-20261119-165806-observed-on-hands-off-waiting-.service:
     Consumed 12min 53.877s CPU time over 17min 33.927s wall clock time, 938.1M memory peak.'
-  verified: false
-  last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
   runner: tony-omen
+  result: 'exit=0  idc03''s served checkout picks up the gated merge-sweep on its next kanban-commit pull. | devin-task-20261124-143145-observed-on-hands-off-waiting-.service:
+    Consumed 5min 9.440s CPU time over 14min 15.551s wall clock time, 1.4G memory peak.'
+  verified: false
 claim:
-  since: 2026-11-19 16:56
+  since: 2026-11-24 14:30
 review_kind: verify

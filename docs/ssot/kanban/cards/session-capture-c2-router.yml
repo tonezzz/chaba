@@ -1,0 +1,227 @@
+id: session-capture-c2-router
+title: 'Session capture C.2: idempotent capture-router CLI/lib'
+column: done
+updated: 2026-11-26 20:34
+priority: medium
+tags:
+- dev-0038-followup
+spec: 'Goal: implement capture-router CLI/lib: normalize+route+dedupe+audit, --dry-run default for new sinks. Depends:
+  C.1-spec. Acceptance: idempotent unit tests; audit JSONL; no unapproved sink writes; respects board-api mutation
+  door.'
+ref: OPS-1354
+comms:
+- at: 2026-11-25 09:12
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-25 09:12
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:19
+  from: chaba
+  text: classified as free_lane (kw:unit test conf 1.00)
+- at: 2026-11-25 09:19
+  from: tony
+  text: queued for processing
+- at: 2026-11-25 09:20
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 2.19 > 1.0)'
+- at: 2026-11-25 09:21
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.50 > 0.85)'
+- at: 2026-11-25 09:21
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 09:28
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 09:29
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 09:31
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (3/3)'
+- at: 2026-11-25 09:35
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-25 09:38
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-25 09:41
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.44 > 1.0)'
+- at: 2026-11-25 09:46
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 10:20
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 10:30
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.42 > 0.7)'
+- at: 2026-11-25 10:36
+  from: chaba
+  text: 'tony-dell defers: runner at cap (2/2)'
+- at: 2026-11-25 10:56
+  from: chaba
+  text: 'kk-mac defers: installed runner-agent drifted from repo /Users/kkkakk/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 10:57
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.71 > 0.7)'
+- at: 2026-11-25 11:00
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 11:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 11:19
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.59 > 1.5)'
+- at: 2026-11-25 11:23
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 11:35
+  from: mn01
+  text: claimed
+- at: 2026-11-25 11:36
+  from: chaba
+  text: started devin-task-20261125-043641-goal-implement-capture-router- on mn01 (dispatch)
+- at: 2026-11-25 11:36
+  from: chaba
+  text: 'primer injected 8 lesson(s): [session-capture-c3-hooks] capture-event.py emitter + spool design: events.jsonl;
+    [session-capture-c3-hooks] Rejected-content guard must audit metadata only — wri; board-api `--selftest` and
+    mutation tests encode the OLD contract — grep tests f; Any classify/draft/post failure -> deduped board-api
+    /inbox flag (report-watch s; [publish-promote-knowledge-capture-ssot-w-d34a39] Phase B+ ansible session-captu;
+    [session-capture-c4-harvester] checkpoint failed: commit: Com'
+- at: 2026-11-25 11:40
+  from: devin
+  text: '[devin] C.2 in progress: extending scripts/chaba/capture-router.py with an events-consumer mode (normalize
+    C.1-envelope events.jsonl -> route() -> dedupe -> router-audit.jsonl -> capture-ledger.yml proposal upsert).
+    No sink writes; apply stays behind capture-apply.py/board-api.'
+- at: 2026-11-25 11:45
+  from: devin
+  text: 'DONE (dispatch worktree, commits 600804b8d9 + 874648d0cb on dispatch/20261125-043641-goal-implement-capture-router-
+    — not pushed). capture-router.py gained an events mode: consumes C.1-contract events.jsonl (capture-event.py
+    C.3 + capture-harvest.py C.4 spools), normalizes->route()->dedupes (event dedupe_key + router dedupe_key + ledger
+    keys), audits to router-audit.jsonl (dry_run=true always), upserts new proposals into runtime capture-ledger.yml
+    preserving applied:. NO sink writes, no network '
+- at: 2026-11-25 11:47
+  from: mn01
+  text: 'finished (ok): exit=0 he idc02 `chaba-capture-harvest` job is the natural host) is a separate ops decision.
+    | devin-task-20261125-04364'
+- at: 2026-11-25 11:47
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 11:47
+  from: chaba
+  text: 'session-end checkpoint c3c815d4: 1 leftover file(s) committed'
+- at: 2026-11-25 11:47
+  from: chaba
+  text: banked 45 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 11:47
+  from: chaba
+  text: pushed dispatch/20261125-043641-goal-implement-capture-router- to origin
+- at: 2026-11-25 11:47
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 11:47
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-25 11:54
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-043641-goal-implement-capture-router- on mn01 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 14:03
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-25): dispatch branch merged into origin/master as 533e0caa2d13.
+    Deliverable: session-capture c2 router (c3c815d, 6 files). Closing.'
+- at: 2026-11-25 14:03
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:54
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:03
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:34
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+action:
+  type: dispatch
+  status: done
+  lane: free_lane
+  lane_source: kw
+  model: swe-2-flash-medium
+  runner: mn01
+  attempts: 1
+  result: 'exit=0 he idc02 `chaba-capture-harvest` job is the natural host) is a separate ops decision. | devin-task-20261125-043641-goal-implement-capture-router-.service:
+    Consumed 1min 55.170s CPU time over 8min 44.200s wall clock time, 681.9M memory peak.'
+  verified: false
+  sweep:
+    dirty: 1
+claim:
+  since: 2026-11-25 11:35
+review_kind: verify

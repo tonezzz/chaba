@@ -2,7 +2,7 @@ title: Log Digest Standard
 subtitle: Measurable bars for the journald → MDDB → digest pipeline — enforced by scripts/ada/logs-kanban.py
 icon: gauge
 version: 1
-last_updated: "2026-10-06"
+last_updated: "2026-11-23"
 
 overview:
   purpose: |
@@ -23,9 +23,12 @@ overview:
 
 bars:
   fleet:
-    hosts: [idc02, idc03, mn01, tony-dell, tony-omen, michael-ha]
+    hosts: [idc02, idc03, con01, mn01, tony-dell, tony-omen, michael-ha]
       # idc01 retired (dell-off migration) — dropped 2026-10-22 so the
       # unreachable-host card stops re-firing on a host that is gone.
+      # con01 added 2026-11-23 — has its own --self/--severe timers and
+      # heartbeats in host-logs-state; the coverage checker had been
+      # flagging a real shipper as an unexpected log source.
       # every host runs a local log-shipper.timer (--self) posting a
       # ship/<host> state doc each run — even when nothing ships. A host
       # absent from host-logs-state is a gap, not a quiet host.

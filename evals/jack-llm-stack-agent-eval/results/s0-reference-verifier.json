@@ -1,0 +1,93 @@
+{
+  "arm_repo": "/home/tony/CascadeProjects/dispatch-wt-20261124-170743-compare-opencode-and-cline-on-/evals/jack-llm-stack-agent-eval/fixtures/reference",
+  "pass": true,
+  "failed": [],
+  "checks": [
+    {
+      "id": "committed-artifact",
+      "status": "pass",
+      "evidence": "git_repo=True commits=3 dirty_entries=0"
+    },
+    {
+      "id": "opencode-provider-config",
+      "status": "pass",
+      "evidence": "files=['opencode/opencode.json']"
+    },
+    {
+      "id": "opencode-config-content",
+      "status": "pass",
+      "evidence": "provider+endpoint+model keys present"
+    },
+    {
+      "id": "litellm-routing-config",
+      "status": "pass",
+      "evidence": "files=['litellm/config.yaml'] content_ok=True"
+    },
+    {
+      "id": "env-example",
+      "status": "pass",
+      "evidence": "files=['env.example']"
+    },
+    {
+      "id": "healthcheck-script",
+      "status": "pass",
+      "evidence": "files=['healthcheck.sh'] shebang=True"
+    },
+    {
+      "id": "rollback-script",
+      "status": "pass",
+      "evidence": "files=['rollback.sh']"
+    },
+    {
+      "id": "rollback-content",
+      "status": "pass",
+      "evidence": "teardown+restore markers"
+    },
+    {
+      "id": "runbook",
+      "status": "pass",
+      "evidence": "files=['RUNBOOK.md'] sections=['deploy', 'verify', 'rollback', 'health']"
+    },
+    {
+      "id": "tests-present",
+      "status": "pass",
+      "evidence": "files=['tests/test_stack.py']"
+    },
+    {
+      "id": "resource-limits",
+      "status": "pass",
+      "evidence": "limit keywords found"
+    },
+    {
+      "id": "ollama-small-model",
+      "status": "pass",
+      "evidence": "model=qwen2.5:3b"
+    },
+    {
+      "id": "mock-deploy-path",
+      "status": "pass",
+      "evidence": "mock/127.0.0.1 references present"
+    },
+    {
+      "id": "verify-sh",
+      "status": "pass",
+      "evidence": "files=['verify.sh'] executable=True"
+    },
+    {
+      "id": "safety-scan",
+      "status": "pass",
+      "evidence": "violations=0 warnings=0"
+    },
+    {
+      "id": "verify-sh-run",
+      "status": "pass",
+      "evidence": "rc=0 1.7s"
+    }
+  ],
+  "run": {
+    "rc": 0,
+    "seconds": 1.7,
+    "tail": "\n=== 1/6 unit tests ===\nunit tests: PASS\n\n=== 2/6 mock deploy ===\nmock deploy: PASS (pid 1850048)\n\n=== 3/6 healthcheck (healthy) ===\nPASS  ollama reachable, model qwen2.5:3b present\nPASS  litellm liveliness at http://127.0.0.1:39663\nPASS  litellm chat completion via alias jack-chat\nPASS  opencode provider config targets http://127.0.0.1:39663\n---\nhealthcheck: ALL PASS\nhealthcheck healthy: PASS\n\n=== 4/6 failure injection ===\nfailure injection: PASS (healthcheck correctly failed)\n\n=== 5/6 recovery ===\nrecovery: PASS\n\n=== 6/6 rollback drill ===\nrollback: stopping mock stack (if running)\nrollback: killed mock pid 1850048\nrollback: compose teardown (skipped \u2014 no runtime on this host)\nrollback: no container runtime \u2014 compose teardown not applicable\nrollback: removing generated env (keeps env.example)\nrollback: complete \u2014 stack is at pre-deploy state\nrollback: PASS (clean state)\npost-rollback: PASS (stack down as expected)\n\n=== result ===\nverify.sh: ALL CHECKS PASSED\ntest_compose_resource_limits (test_stack.TestArtifacts.test_compose_resource_limits) ... ok\ntest_env_example_placeholders_only (test_stack.TestArtifacts.test_env_example_placeholders_only) ... ok\ntest_litellm_routes_local_only (test_stack.TestArtifacts.test_litellm_routes_local_only) ... ok\ntest_model_choice_is_small (test_stack.TestArtifacts.test_model_choice_is_small) ... ok\ntest_opencode_json_valid_and_wired (test_stack.TestArtifacts.test_opencode_json_valid_and_wired) ... ok\ntest_required_files_exist (test_stack.TestArtifacts.test_required_files_exist) ... ok\ntest_runbook_sections (test_stack.TestArtifacts.test_runbook_sections) ... ok\ntest_scripts_executable (test_stack.TestArtifacts.test_scripts_executable) ... ok\n\n----------------------------------------------------------------------\nRan 8 tests in 0.002s\n\nOK\n"
+  },
+  "scanned_files": 11
+}

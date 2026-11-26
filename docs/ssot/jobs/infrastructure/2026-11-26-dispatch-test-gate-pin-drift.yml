@@ -1,0 +1,53 @@
+title: Dispatch merge-gate unblock — dispatch_repos tooling pin drift
+subtitle: runner-tooling.manifest.json sha256 bumped to match swept source change
+icon: wrench
+
+card: ansible-prep-plan-apply-verify
+date: 2026-11-26
+status: done
+owner: devin
+attempt: 2 (dispatch-wt-20261126-135732, runner con01)
+
+context: |
+  Attempt 1 of card ansible-prep-plan-apply-verify completed all OPS-1424
+  deliverables (prep/plan/apply/verify policy in ssot.ansible-change-procedure.yml,
+  shared benchmark-report contract, ADA-OCB preflight/plan/verify wrappers,
+  live pilot + 4 bug fixes) but the merge was held: "test gate failed —
+  pytest unavailable — no test evidence" (OPS-1191 fail-closed; mn01 runner
+  had no pytest). The work itself had already been swept onto master inside
+  board-api mega-commit 62c638d3fb6.
+
+  Attempt 2 reproduced the gate locally on con01 using the repo's chaba
+  smoke set (scripts/board/dispatch_repos.py REPO_TESTS["chaba"], run under
+  ~/CascadeProjects/chaba/.venv/bin/python which has pytest). The gate was
+  RED on clean master — unrelated to this card's diff:
+  tests/board/test_runner_tooling_contract.py::test_pin_hashes_match_sources
+  failed because scripts/board/dispatch_repos.py changed in the 2026-11-26
+  sweep commits without a matching sha256 bump in
+  scripts/devin/runner-tooling.manifest.json. Every chaba dispatch merge
+  would have been held until fixed.
+
+fix:
+  - file: scripts/devin/runner-tooling.manifest.json
+    change: dispatch_repos sha256 d0b3bacf… -> 99038146… (matches source on master)
+  - commit: 28924b33705 on dispatch/20261126-135732-objective-define-and-pilot-an-
+
+verify:
+  command: >-
+    ~/CascadeProjects/chaba/.venv/bin/python -m pytest
+    tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py
+    tests/board/test_runner_agent_lane.py tests/board/test_runner_agent_reconcile.py
+    tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py
+    tests/board/test_wiki_extension.py
+    tests/board/test_board_api_action_persistence.py
+    tests/board/test_runner_tooling_contract.py tests/test_ssot_validate_refs.py
+    -x -q
+  result: "300 passed in 118s (con01, 2026-11-26)"
+
+lessons:
+  - "board-api/board sweep commits can land dispatch worktree changes en masse — check `git log -- <file>` and commit contents before assuming card work is unmerged."
+  - "runner-tooling.manifest.json pins are a merge-gate dependency: any change to the 6 pinned sources MUST bump sha256 in the same commit or every chaba dispatch merge holds."
+  - "chaba merge-gate smoke set runs fine under ~/CascadeProjects/chaba/.venv/bin/python on con01 (~2min); system python3 lacks numpy/PIL so the FULL suite is not a usable local check there."
+  - "mn01 lacks pytest entirely — dispatch merges originating there fail-closed at the test gate; prefer pytest-capable runners (con01/tony-omen) for chaba cards."

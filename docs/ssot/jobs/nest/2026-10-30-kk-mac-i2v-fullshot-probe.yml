@@ -1,0 +1,121 @@
+title: KK-Mac full-settings storyboard I2V probe
+subtitle: Validate one mapped shot at the private V2 frame/step settings
+icon: video
+card: kk-mac-video-render-lane-ltx-video-mps-p-267f14
+date: 2026-10-30
+
+planning:
+  goal: >-
+    Validate that KK-Mac MPS can render one approved storyboard-mapped shot
+    at the 640x384, 73-frame, 40-step settings used by the private V2.
+  scope: >-
+    Render only shot 1 using the already-verified v1_01 page-9 image and
+    embedding, the pinned local LTX cache, and an offline MPS pipeline. Store
+    the artifact privately in ada-nest-kk-mac-video-pilot. Do not render the
+    remaining nine shots, generate narration, run Qwen, install software,
+    download model weights, or publish.
+  approval: >-
+    Tony asked to hold the Colab V2 queue and prioritize KK-Mac while available.
+    The short image-conditioning probe passed; this remains one private,
+    bounded production-settings probe.
+  success_criteria:
+    - AC power, memory-pressure, no-resident-model, and owner-app preflight passes immediately before execution.
+    - Audited page-9 image and shot01 embedding hashes match the completed short probe.
+    - One 640x384, 73-frame H.264 shot fully decodes and passes near-total-black QC.
+    - Output, report, and hashes read back from the isolated private Mac pilot root.
+  risks:
+    - Full 73x40 I2V may use more unified memory than the short probe; stop on OOM or pressure changes.
+    - Keep the worker serial and do not unload/interrupt KK's Ollama or owner applications.
+    - Technical validity does not establish creative quality or authorize public release.
+  resources:
+    - KK-Mac M4 Max on AC; cached LTX revision 8984fa25007f376c1a299016d0957a37a2f797bb.
+    - Completed private page-9 I2V probe and shot01 input assets in the isolated Mac pilot root.
+    - Trusted tony-dell -> kk-mac SSH hop and one-shot Nest worker.
+  owner: tony
+  estimated_duration: 1 bounded render
+  related_focus:
+    - label: OPS-0967 KK-Mac video render lane
+      file: docs/ssot/kanban/cards/kk-mac-video-render-lane-ltx-video-mps-p-267f14.yml
+
+processing:
+  status: completed
+  started_at: '2026-10-30'
+  steps:
+    - id: 1
+      label: Build and stage full-settings one-shot pack
+      status: completed
+      notes: >-
+        Staged the immutable 73-frame/40-step pack in the isolated Mac video
+        pilot root. rclone read-back reported 0 differences across three files;
+        the full-settings pack requires the completed short I2V probe.
+    - id: 2
+      label: Recheck Mac idle gates and run one shot
+      status: completed
+      notes: >-
+        Preflight later found AC power, 87% free memory, no resident Ollama
+        model, and no blocking owner apps. The pack completed on KK-Mac under
+        worker KKs-Mac-Studio.local-14923; a separate one-shot worker pass
+        found it already completed and did not duplicate inference.
+    - id: 3
+      label: Verify remote media and artifact hashes
+      status: completed
+      notes: >-
+        H.264 640x384, 73 frames, 3.04s; full decode and black-frame check
+        passed. Mac-side rclone check reported 0 differences across the three
+        output artifacts. Visual review is still required before shots 2-10.
+  decisions:
+    - label: Use a separate immutable full-settings pack
+      rationale: >-
+        The short probe pack is already DONE; a new name prevents its done
+        marker from suppressing the full-settings validation.
+      alternatives_considered: Mutate/relaunch the completed short probe pack.
+  changes: []
+
+followup:
+  verification:
+    - Validate H.264 metadata, requested frame count, full decode, and black-frame duration.
+    - Independently verify output and manifest read-back from the isolated Mac pilot root.
+  rollback_plan:
+    - Stop without further shots if preflight, memory, decode, or artifact verification fails.
+    - Keep all partial/full probe artifacts private; never clear the existing model cache.
+  handoff:
+    - Review the full-settings shot before any ten-shot Mac render.
+  deferred:
+    - Remaining nine shots, narration, assembly, Colab V2 resume, and public release.
+
+report:
+  status: completed
+  completed_at: '2026-10-30'
+  summary: >-
+    The isolated private full-settings I2V shot01 probe passed on KK-Mac MPS.
+    The completed 73-frame/40-step output is read-back verified. This is
+    technical validation only; it does not authorize additional scenes or
+    public release without visual review.
+  metrics:
+    - metric: model
+      value: Lightricks/LTX-Video@8984fa25007f376c1a299016d0957a37a2f797bb, MPS BF16
+    - metric: generation_s
+      value: 88.70
+    - metric: output
+      value: H.264 640x384, 73 frames, 3.04s, 285368 bytes
+    - metric: output_sha256
+      value: 847b6e7cc17c6341abae83eda07be4eabe45527e376cdc5984d1ca86f43467a7
+    - metric: mps_driver_allocated_after_run
+      value: 10.91GB; not peak memory
+    - metric: visibility
+      value: private; public_release=false
+  links:
+    - title: Short storyboard I2V probe
+      url: gdrive:ada-nest-kk-mac-video-pilot/packs/kk-mac-storyboard-i2v-probe-20261029/out/
+    - title: OPS-0967 Mac LTX lane
+      file: docs/ssot/kanban/cards/kk-mac-video-render-lane-ltx-video-mps-p-267f14.yml
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: 2026-10-30
+  last_updated: 2026-10-30
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml

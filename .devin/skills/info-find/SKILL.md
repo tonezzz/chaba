@@ -112,13 +112,14 @@ Unified information-finding flow for `chaba`, `trade`, and any other project in 
     - Rank: MDDB docs first (by relevance), official web results second, SSOT matches third, code matches fourth.
     - For trade, also produce an `events` JSON snippet that can be appended to a `*_history.json` file.
     - Summarize counts and offer to `read` the top matches.
+    - When a followed pointer/citation turns out STALE (path/key no longer resolves to the canonical source), record the incident once: `python3 scripts/chaba/pointer-stale-add.py --pointer-ref <stale-ref> --canonical-ref <correct-ref>` — local Phase D telemetry (OPS-1368), never a canonical write.
 
 13. Fallback on no matches
     - `ask_user_question` with options: rephrase the query, broaden the search, switch to web search, or switch to code-only.
 
 14. Audit
-    - After the final answer, append the outcome to the session audit log:
-      `node .devin/skills/info-find/info-find.mjs --session <id> --record-result '<short JSON summary>'`
+    - After the final answer, append the outcome to the session audit log, passing your measured wall time (query -> answer) and the resolved verdict so Phase D telemetry sees the whole find, not just local source time:
+      `node .devin/skills/info-find/info-find.mjs --session <id> --record-result '<short JSON summary>' --elapsed-ms <ms> --resolved yes|no`
 
 Safety for other sessions:
 

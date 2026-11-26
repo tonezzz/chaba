@@ -1,0 +1,60 @@
+id: timer-alert-idc02-ansible-audit-board
+title: Timer ansible-audit-board on idc02 failing
+column: done
+updated: 2026-11-26 20:37
+priority: high
+tags:
+- timer-alert
+- auto
+- by:timer-sentinel
+note: 'Last run (11-26 06:31) of `ansible-audit-board.service` on `idc02` result=exit-code — investigate journal:
+  `journalctl --user -u ansible-audit-board.service` on the host. See CMS `timer-timeline-idc02`.'
+ref: AUD-1420
+comms:
+- at: 2026-11-26 06:34
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-26 06:35
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 06:35
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 06:35
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 06:35
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 06:35
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 06:36
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 06:43
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 06:44
+  from: devin
+  text: '[still suspicious] Last run (11-26 06:31) of `ansible-audit-board.service` on `idc02` result=exit-code
+    — investigate journal: `journalctl --user -u ansible-audit-board.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-26 09:25
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-26 08:48 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-26 09:25
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 20:37
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+action:
+  status: done

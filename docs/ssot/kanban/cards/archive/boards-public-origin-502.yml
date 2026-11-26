@@ -1,0 +1,215 @@
+id: boards-public-origin-502
+title: Repair boards.surf-thailand.com origin 502
+column: done
+updated: 2026-11-23 13:33
+brief: Public boards.surf-thailand.com is returning Cloudflare 502; origin boards.h3.gizmo-thailand.com also returns
+  nginx 502. Diagnose the external Plesk/WP upstream and restore the public boards surface.
+priority: high
+program: infrastructure
+tags:
+- boards
+- plesk
+- nginx
+- '502'
+- external-origin
+spec: 'Evidence 2026-10-29: https://boards.surf-thailand.com/ returns Cloudflare HTTP 502; origin https://boards.h3.gizmo-thailand.com/wp/
+  returns nginx HTTP 502. Chaba board-api on idc03 remains healthy at :8787/health and public tailnet :10000/health
+  returns 200. Do not start a duplicate board service on tony-dell. Diagnose origin nginx/Plesk/WP upstream, verify
+  /wp/ and /wp/wp-json/ through both origin and public host, then report root cause and consumer proof.'
+ref: KNB-0990
+comms:
+- at: 2026-10-29 23:48
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-30 00:25
+  from: devin
+  text: 'DNS/IP verification 2026-10-29: boards.surf-thailand.com resolves to Cloudflare proxy IPs 172.67.196.69
+    and 104.21.74.33 (expected when proxied). Origin boards.h3.gizmo-thailand.com resolves to 103.99.11.249. Direct
+    SNI/Host request to 103.99.11.249 for boards.surf-thailand.com/wp returns Nginx HTTP 502, confirming DNS points
+    to the origin but the origin upstream is broken/misrouted. Public surf endpoint now timed out during one probe.
+    Chaba board-api idc03 remains separately healthy.'
+- at: 2026-11-08 20:43
+  from: tony
+  text: queued for processing
+- at: 2026-11-08 20:44
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.25 > 1.0)'
+- at: 2026-11-08 20:45
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.95 > 1.0)'
+- at: 2026-11-08 20:46
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.71 > 1.0)'
+- at: 2026-11-08 20:49
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.95 > 1.0)'
+- at: 2026-11-08 20:50
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 3.17 > 1.0)'
+- at: 2026-11-08 20:51
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.69 > 1.0)'
+- at: 2026-11-08 20:52
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.31 > 1.0)'
+- at: 2026-11-08 20:53
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.97 > 1.0)'
+- at: 2026-11-08 20:55
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.71 > 1.0)'
+- at: 2026-11-08 20:56
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.35 > 1.0)'
+- at: 2026-11-08 20:57
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 3.35 > 1.0)'
+- at: 2026-11-08 20:58
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 3.48 > 1.0)'
+- at: 2026-11-08 20:59
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.95 > 1.0)'
+- at: 2026-11-08 21:00
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.53 > 1.0)'
+- at: 2026-11-08 21:01
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.10 > 1.0)'
+- at: 2026-11-09 09:06
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.08 > 0.85)'
+- at: 2026-11-09 09:06
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.00 > 1.0)'
+- at: 2026-11-09 09:07
+  from: idc02
+  text: claimed
+- at: 2026-11-09 09:07
+  from: chaba
+  text: started devin-task-20261109-090745-evidence-2026-10-29-https-boar on idc02 (dispatch)
+- at: 2026-11-09 09:08
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-09 09:11
+  from: devin
+  text: 'Diagnosis complete — site self-recovered, no duplicate service needed. Incident window 2026-10-29 ~17:02
+    -> 10-30 ~07:47 (+07), brief relapse 10-30 15:31. Two layers: (a) origin distress — Plesk nginx answered but
+    upstream Apache/PHP-FPM dead (nginx 502 on direct probes; read-timeouts + TCP i/o timeouts + h2 GOAWAY/resets
+    from idc02 edge 19:30-21:28 = host-level event, not WP app bug); (b) idc02 edge DNS flakiness — systemd-resolved
+    lookup i/o timeouts for boards.h3 independently produced public'
+- at: 2026-11-09 09:11
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-09 09:12
+  from: idc02
+  text: 'finished (ok): exit=0 the dispatch branch (not pushed), diagnosis posted to the card, outcome in `dispatch-outcome-20261109-090745-evid'
+- at: 2026-11-09 09:12
+  from: chaba
+  text: pushed dispatch/20261109-090745-evidence-2026-10-29-https-boar to origin
+- at: 2026-11-09 09:12
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-09 09:12
+  from: chaba
+  text: auto-merged bdf2495c (dispatch/20261109-090745-evidence-2026-10-29-https-boar) → origin/master
+- at: 2026-11-09 09:12
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261109-090745-evidence-2026-10-29-https-boar,
+    branch dispatch/20261109-090745-evidence-2026-10-29-https-boar'
+- at: 2026-11-09 09:21
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-09 09:21
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:06
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:35
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:36
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:04
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:01
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:01
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:17
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:01
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:05
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:41
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:33
+  from: tony
+  text: archived (1d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: devin
+  runner: idc02
+  result: 'exit=0 the dispatch branch (not pushed), diagnosis posted to the card, outcome in `dispatch-outcome-20261109-090745-evidence-2026-10-29-https-boar.md`.
+    | devin-task-20261109-090745-evidence-2026-10-29-https-boar.service: Consumed 18.685s CPU time.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-09 09:20
+  note: verified — evidence checks green, closing itself

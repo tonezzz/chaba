@@ -1,7 +1,7 @@
 # ada-voice drop-ins
 
 Staged files for the **ada-voice repo** (`tonezzz/ada-voice`), produced by
-chaba dispatches. Nineteen drops live here:
+chaba dispatches. Twenty-two drops live here:
 
 **Patch currency (audited 2026-11-13 vs ada-voice `main` @ `8223b56`,
 card `chaba-merge-gate-ada-drops-rot-audit`):** a staged `.patch` has
@@ -73,6 +73,16 @@ re-staging the diff, never by hand-merging hunks.
 19. `host_status` — live-first host answers (telemetry probe before
     board records, freshness tags, contradiction flags) — card
     `ada-status-live-state-preference` (OPS-1045, 2026-11-20)
+20. `gev_pane_honest_fail` extended to every pane type + typed
+    `vcast_display` pub/report driver actions — card `gev-map`
+    (MED-0135, 2026-11-23)
+21. degraded-mode notices — member lanes answer credit/quota outages
+    with a defined bilingual notice instead of silence — card
+    `kk-ha-degraded-mode-explain-capabilities-000d8b` (2026-11-24);
+    runbook `docs/kb/member-lane-degraded-mode.md`
+22. persona photo store — `asset_save` keeps an inbound LINE photo as
+    a persona asset and `ada_memory_search` re-shows it — card
+    `persona-photo-store` (2026-11-24)
 
 ---
 
@@ -1612,3 +1622,147 @@ never from card comms parroted as current.
 - Requires the chaba side (`GET /host-status`) deployed on the
   board-api the lane calls — a 404 there means the chaba half isn't
   live yet.
+
+---
+
+## Drop 20 — gev_pane_honest_fail, every pane type
+
+**Status: PENDING** — staged for install into ada-voice. Companion chaba
+changes (the chaba half ships with the web stack):
+
+- `stacks/web/public/apps/vcast/index.html` — per-pane honest-fail
+  overlay (`.pfail`): video element errors + stall watchdog, img
+  onerror, iframe load watchdog, hls retry veil, same-origin
+  `__gevHonestFail` probe + cross-origin `gev-honest-fail` postMessage
+  channel; failures report `state=pane-fail` over the relay.
+- `stacks/web/public/apps/gev/honest-fail.js` — vendored watchdog
+  injected by `scripts/gev/patch-gev-dist.sh` (which also codifies the
+  iPad `msaaSamples:1` post-build patch).
+
+### Files
+
+- `tests/scenarios-live/gev_pane_honest_fail.yaml` — REPLACES the
+  upstream scenario of the same name. Adds served-code guards (vcast
+  page wiring for every pane type, GEV watchdog staged, iPad msaa patch
+  kept), a `vcast_display` driver block covering all three pane types,
+  and keeps the original Ada-side honesty turns.
+- `scripts/scenario-live.pane-pub.patch` — extends `_VcastDisplay.pub`
+  with `type:` (nav|play|image) + `pane:`, and adds a `report` action
+  that emits a display state like the real page's sendState (so a
+  scenario can prove the relay surfaces `pane-fail`).
+
+### Install (ada-voice worktree)
+
+1. `cp <chaba>/integrations/ada-voice/tests/scenarios-live/gev_pane_honest_fail.yaml
+   <ada-voice>/tests/scenarios-live/gev_pane_honest_fail.yaml`
+2. `cd <ada-voice> && git apply <chaba>/integrations/ada-voice/scripts/scenario-live.pane-pub.patch`
+   (applies clean on scenario-live.py @ the staged base; without it the
+   typed-pub spec fields are ignored — pub still navs — but the report
+   turns then fail loudly, so apply it).
+3. Run: `python3 scripts/scenario-live.py
+   tests/scenarios-live/gev_pane_honest_fail.yaml --url ... -v`
+   (needs tailnet + ADA_ADMIN_KEY for the vcast_display claim; the
+   layer-1 http_check guards fail until the chaba web stack carrying
+   the honest-fail changes is deployed).
+
+---
+
+## Drop 22 — persona photo store (`asset_save` + image-bearing memory hits)
+
+**Status: PENDING** — staged 2026-11-24 for install into ada-voice.
+Card `persona-photo-store`: personas could not hold or reshow photos —
+bank docs were text-only and no tool returned a stored image URL to the
+relay's `_images_from` path (the relay already re-hosts any fetchable
+image URL publicly and verified working). Driver: kaewta re-showing
+kk's car photo on request.
+
+Three moving parts, all riding existing rails:
+
+- **Storage** — `asset_save` copies the image bytes into
+  `<LINE_MEDIA_ARCHIVE_DIR>/persona-assets/` (default
+  `~/.local/share/ada/line-media/persona-assets/`), already publicly
+  served by the relay at `/relay-img/arch/persona-assets/<file>` — no
+  new hosting surface. Content-hash dedupe: same bytes re-save
+  idempotently, different bytes under one slug get a `-<sha8>` suffix.
+- **Bank doc** — upserts `assets/<slug>` in the caller's personal bank
+  (or `bank=` override) with `meta.image_url` + `written_by:
+  [asset_save]`, through `memory_ops.asset_remember` — the same
+  `acl_decision(tool='ada_remember')` ACL the remember path uses, plus
+  the staged-writes lane: non-admin callers' saves park as pending
+  route `asset` (approve replays through `memory_ops.asset_remember`),
+  `{full: true}` identities write directly. Confirmed-policy banks
+  refuse in-tool (tools.d confirmed args never reach `run()`).
+- **Recall** — `_doc_to_hit` surfaces `meta.image_url` on hits;
+  `ada_memory_search` promotes the FIRST usable image-bearing hit to a
+  top-level `image_url` scalar. `_safe_args` keeps scalars, so the
+  relay's `_images_from` sees it and `_image_msgs` attaches a real
+  LINE image — no `chat_send` round-trip. Draft/archival hits never
+  auto-attach; their per-hit `image_url` still reaches the model for an
+  explicit resend.
+
+Ingestion needs no relay change: inbound LINE images already archive
+under `/relay-img/arch/` and the image turn's caption carries
+`media_url:` — the model passes it verbatim to `asset_save`, or omits
+`media_url=` to take this chat's latest inbound image from
+`manifest.jsonl`.
+
+### Files
+
+- `backend/tools.d/asset_save.py` — the tool (whole-file drop).
+- `backend/tools.d/manifest.asset_save.yml` — manifest snippet
+  (`policy: read`, `secondary_allowed: false` — the memory-write tier;
+  the in-tool ACL + staging still apply).
+- `backend/memory_ops.persona-photo-store.patch` — `_doc_to_hit`
+  `image_url` + `asset_remember()`.
+- `backend/tool_runner.memory.persona-photo-store.patch` —
+  `ada_memory_search` top-level `image_url` promotion.
+- `backend/memory_pending.persona-photo-store.patch` — pending route
+  `asset` (ROUTES + `_apply`).
+- `scripts/ada.memory-pending.persona-photo-store.patch` —
+  `_runtime` builds mddb+registry for route `asset` on approve.
+- `backend/tool_guide.persona-photo-store.patch` — `asset_save` guide
+  entry (when to call, staged-result phrasing, personal-bank default).
+- `ssot.tool-surface.persona-photo-store.patch` — `asset_save` into
+  `coverage_debt` until a live scenario lands.
+- Chaba side (this repo): `docs/ssot/apps/ssot.apps.ada-memory-schema.yml`
+  gained `meta_schema.fields.image_url` — run
+  `scripts/ada/render-memory-banks.py` so the registry JSON stops
+  warn-logging the field; `docs/ssot/infrastructure/ssot.tools.yml`
+  gained the `memory.asset_save` row.
+- `tests/ada/test_persona_photo_store.py` — 18 tests: patch gate,
+  tool standalone (resolve/sniff/dedupe/stage/ACL), `_doc_to_hit`,
+  `asset_remember` create+correct, search promotion + draft/archival
+  skip.
+
+### Install (ada-voice worktree)
+
+1. `cp <chaba>/integrations/ada-voice/backend/tools.d/asset_save.py
+   <ada-voice>/backend/tools.d/asset_save.py`
+2. `cd <ada-voice> && for p in memory_ops memory_pending
+   tool_runner.memory tool_guide; do git apply
+   <chaba>/integrations/ada-voice/backend/$p.persona-photo-store.patch;
+   done && git apply
+   <chaba>/integrations/ada-voice/scripts/ada.memory-pending.persona-photo-store.patch
+   && git apply
+   <chaba>/integrations/ada-voice/ssot.tool-surface.persona-photo-store.patch`
+3. Merge `manifest.asset_save.yml`'s `asset_save:` block into
+   `backend/tools.d/manifest.yml`.
+4. Gates: `python3 scripts/tool-lint.py`, `.venv/bin/python -m pytest
+   tests/ -x -q`; deploy via `scripts/deploy-ada.sh` on idc03 (drains
+   live sessions, runs the gates).
+5. Chaba side: `python3 scripts/ada/render-memory-banks.py` to refresh
+   the memory-bank registry JSON (`schema.fields` gains `image_url`).
+
+### Contract
+
+- `asset_save(name=, description=, media_url=, bank=)` → `{ok, verb,
+  bank, key: 'assets/<slug>', image_url, file, bytes, mime}` or the
+  staged shape `{ok, staged, id}` for non-admin callers.
+- Reshow: "show me the kk-crv photo" → `ada_memory_search` hits
+  `assets/kk-crv`, top-level `image_url` attaches automatically; the
+  per-hit `image_url` stays available for `chat_send image_url=`
+  verbatim when the member wants it re-sent deliberately.
+- Env: `LINE_MEDIA_ARCHIVE_DIR` (must match the relay),
+  `ADA_RELAY_PUBLIC_BASE`/`LINE_PUBLIC_IMG_BASE` (public base chain,
+  same as ada_render_image), `ADA_PERSONA_ASSET_DIR` (override the
+  store dir), `ADA_ASSET_MAX_BYTES` (fetch/read cap, default 15 MiB).

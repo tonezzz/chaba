@@ -1,0 +1,291 @@
+id: runner-agent-primer-coverage
+title: runner-agent primer coverage — 96% of dispatches bypass the tuned path
+column: done
+updated: 2026-11-24 21:02
+brief: 'primer-efficacy measurement (2026-11-09 report): only kanban-dispatch.build_task injects KNOWN_PITFALLS
+  — 15/41 dispatches post-launch. runner-agent.py (the dominant lane, ~893 dispatches, ~96%) builds spec+RAILS with
+  no primer at all. Wire the primer into the runner-agent devin path.'
+priority: high
+tags:
+- dispatch-tuning
+- primer
+- runner-agent
+spec: 'Evidence: reports/primer-efficacy-2026-11-09.md + docs/ssot/jobs/kanban/2026-11-09-primer-efficacy.yml (primer-efficacy-measurement
+  card).
+
+
+  Gap: scripts/board/runner-agent.py (~line 1816, the devin-path fallback) builds spec + RAILS for the task text
+  — no lp.build call, no KNOWN_PITFALLS, no RETRY_RAILS equivalent (compare its RAILS constant vs kanban-dispatch
+  TASK_RAILS/RETRY_RAILS). runner-agent carries ~96% of dispatches, so the lesson loop effectively never fires.
+
+
+  Implement (pick the cleaner of):
+
+  A. Extract the task-composition from kanban-dispatch.build_task (spec + TASK_RAILS + KNOWN_PITFALLS + RETRY_RAILS
+  + REPORT_RAILS) into a shared helper both callers use — single source, future rails land in both lanes.
+
+  B. Minimal: in runner-agent''s devin-path task build, call lp.build(card, HOST, repo, REPO-root) and append lp.format_block
+  lines after its RAILS block; add a retry-failure block mirroring RETRY_RAILS when action.attempts>0 or last_failure
+  is set.
+
+  Prefer A if the import boundary is clean (both live in scripts/board); keep the primer warn-only + KANBAN_PRIMER=0
+  honored, and log injected lines to card comms like kanban-dispatch start_pending does.
+
+
+  Scope note (record the decision in the outcome doc): inject primer ONLY on the devin path — opencode/kk_mac lanes
+  have bounded profile contracts where extra prompt blocks could break the contract. Do NOT inject into start_opencode_lane
+  or start_kk_mac_lane.
+
+
+  Verify: unit test or smoke — build a card task on the runner-agent devin path and show KNOWN_PITFALLS renders;
+  pytest tests/board green; comms log shows injected lines on the next claimed card.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  status: done
+  sweep:
+    failed_noted: 2026-11-09 18:49
+    stale_running: 2026-11-17 09:26
+    session_gone: 2026-11-17 09:26
+  last_failure: 'exit=1 0261117-091539-evidence-reports-primer-effica.service: Failed with result ''exit-code''.
+    | devin-task-20261117-091539-evidence-reports-primer-effica.service: Consumed 16min 21.692s CPU time over 21min
+    6.133s wall clock time, 485M memory peak.'
+  attempts: 2
+  runner: tony-macbook
+  result: 'exit=0 ner-agent scp — stale checkouts simply skip the primer warn-only until they refresh. | devin-task-20261119-084715-evidence-reports-primer-effica.service:
+    Consumed 49min 5.995s CPU time over 51min 59.962s wall clock time, 620.9M memory peak.'
+  verified: true
+ref: OPS-1280
+comms:
+- at: 2026-11-09 16:54
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-09 17:51
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails — this host can''t land the
+    branch'
+- at: 2026-11-09 18:16
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.14 > 0.85)'
+- at: 2026-11-09 18:17
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-09 18:17
+  from: idc02
+  text: claimed
+- at: 2026-11-09 18:17
+  from: chaba
+  text: started devin-task-20261109-181749-evidence-reports-primer-effica on idc02 (dispatch executor=devin)
+- at: 2026-11-09 18:43
+  from: idc02
+  text: 'finished (failed): exit=1 | devin-task-20261109-181749-evidence-reports-primer-effica.service: Failed with
+    result ''exit-code''. | devin-task'
+- at: 2026-11-09 18:49
+  from: chaba
+  text: 'merge-sweep: devin-task-20261109-181749-evidence-reports-primer-effica failed — its branch isn''t auto-merged
+    (unverified partial work). Retry the card or merge dispatch/20261109-181749-evidence-reports-primer-effica by
+    hand.'
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 09:09
+  from: tony
+  text: retry requested
+- at: 2026-11-17 09:15
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-17 09:17
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-17 09:17
+  from: chaba
+  text: started devin-task-20261117-091539-evidence-reports-primer-effica on tony-macbook (dispatch executor=devin)
+- at: 2026-11-17 09:19
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-17 09:26
+  from: chaba
+  text: 'merge-sweep: devin-task-20261109-181749-evidence-reports-primer-effica no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-17 09:26
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261109-181749-evidence-reports-primer-effica on
+    tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-11-17 09:26
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261109-181749-evidence-reports-primer-effica on
+    tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-11-17 09:39
+  from: tony-macbook
+  text: 'finished (failed): exit=1 0261117-091539-evidence-reports-primer-effica.service: Failed with result ''exit-code''.
+    | devin-task-20261117-0915'
+- at: 2026-11-17 10:29
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
+    the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-17 18:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:18
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:38
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:40
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 20:08
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
+    the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-17 21:07
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 22:12
+  from: devin
+  text: moved doing -> backlog
+- at: 2026-11-18 17:19
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:07
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:08
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:18
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:03
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:07
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 08:44
+  from: tony
+  text: retry requested
+- at: 2026-11-19 08:46
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.80 > 0.85)'
+- at: 2026-11-19 08:46
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.54 > 0.85)'
+- at: 2026-11-19 08:46
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.32 > 1.0)'
+- at: 2026-11-19 08:46
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-19 08:47
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-19 08:47
+  from: chaba
+  text: started devin-task-20261119-084715-evidence-reports-primer-effica on tony-macbook (dispatch executor=devin)
+- at: 2026-11-19 09:38
+  from: devin
+  text: 'implemented option A: new shared scripts/board/dispatch_task.py holds spec+TASK_RAILS+KNOWN_PITFALLS/GOOD+RETRY+REPORT
+    composition; kanban-dispatch delegates, runner-agent devin path resolves it via a dr_module-style dt_module()
+    (single-file deploy safe, warn-only fallback). opencode/kk_mac lanes untouched. New test file 9/9 ok; full board
+    suite 643 tests green (1 pre-existing env error). writing outcome doc + committing on the dispatch branch.'
+- at: 2026-11-19 09:39
+  from: devin
+  text: 'done on dispatch/20261119-084715-evidence-reports-primer-effica (commit f1936f3): shared dispatch_task.py
+    now composes devin-lane prompts for both kanban-dispatch and runner-agent — KNOWN_PITFALLS/KNOWN_GOOD/RETRY/REPORT
+    all land in the ~96% lane. opencode/kk_mac excluded by contract. 9 new unit tests + full board suite green;
+    job trail in docs/ssot/jobs/kanban/2026-11-19-runner-agent-primer-coverage.yml. Deploy note: hosts pick up dispatch_task.py
+    via chaba checkout sync, not the runner-agent s'
+- at: 2026-11-19 09:44
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ner-agent scp — stale checkouts simply skip the primer warn-only until they refresh.
+    | devin-task-20261119-084715'
+- at: 2026-11-19 09:44
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-19 09:44
+  from: chaba
+  text: 'session-end checkpoint 9e81e640: 1 leftover file(s) committed'
+- at: 2026-11-19 09:44
+  from: chaba
+  text: banked 72 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-19 09:44
+  from: chaba
+  text: pushed dispatch/20261119-084715-evidence-reports-primer-effica to origin
+- at: 2026-11-19 09:44
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-19 09:44
+  from: chaba
+  text: auto-merged c796b002 (dispatch/20261119-084715-evidence-reports-primer-effica) → origin/master
+- at: 2026-11-19 09:44
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-19 09:51
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-19 17:03
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 15:05
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
+    the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-21 17:48
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:34
+  from: tony
+  text: archived (1d in done, verified)
+- at: 2026-11-24 21:02
+  from: chaba
+  text: 'dispatch-wt-sweep salvaged unpushed commits before reap: dispatch-wt-20261117-091539-evidence-reports-primer-effica
+    head 9c903de6 → origin refs/heads/wip/dispatch/20261117-091539-evidence-reports-primer-effica'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-19 09:51
+  note: verified — evidence checks green, closing itself

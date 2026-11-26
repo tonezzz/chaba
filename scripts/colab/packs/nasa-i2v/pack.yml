@@ -4,6 +4,8 @@
 # per scene -> mp4. Uses PIL Image.open (diffusers load_image chokes on
 # plain paths — the doc-render i2v lesson).
 name: nasa-i2v
+hf_repos:                # selective restore-hf-cache (ADA-0806)
+  - Lightricks/LTX-Video
 needs:
   gpu_gb: 14
   disk_gb: 20
@@ -22,6 +24,12 @@ run: |
   from PIL import Image
   from diffusers import LTXImageToVideoPipeline
   from diffusers.utils import export_to_video
+  # shared-ns hygiene (card colab-pack-release-t5-before-ltx): drop any
+  # resident models a prior pack left in the runner's exec namespace —
+  # a T5 encoder is ~9.5GB bf16 on cuda.
+  for _v in ('model', 'pipe', 'enc', 'tok'):
+      globals().pop(_v, None)
+  gc.collect(); torch.cuda.empty_cache()
   FRAMES = f'{NEST_ROOT}/nasa-2p5d'
   EMB = f'{NEST_ROOT}/packs/nasa-embeds-ss1/embeds'
   OUT = f'{PACK_DIR}/out'; os.makedirs(OUT, exist_ok=True)

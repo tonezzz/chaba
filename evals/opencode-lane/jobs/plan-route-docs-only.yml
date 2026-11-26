@@ -1,0 +1,39 @@
+id: plan-route-docs-only
+card: opencode-cline-idea-proposal-workflow
+case_id: docs-only
+task_class: shadow_replay
+stage: S0
+target_host: tony-macbook
+executor: opencode
+profile: plan-route-only
+model: ollama/qwen2.5:7b-instruct
+provider: ollama
+mcp_allowlist: []
+allowed_paths:
+  - evals/shadow/task/
+artifact:
+  path: evals/shadow/task/artifacts/plan-route-docs-only.json
+  schema: evals/opencode-lane/profiles/plan-route-only/fixture/task.yaml#contract.required_fields
+verifier:
+  type: held_out_py
+  ref: evals/opencode-lane/profiles/plan-route-only/fixture/verify.py
+escalation:
+  on_fail: hold
+  max_retries: 0
+rollback:
+  kind: worktree-drop
+  ref: Isolated S0 task; runner-only plan artifact under evals/shadow/task/.
+heartbeat:
+  required: false
+  stale_s: 300
+unattended: false
+task: >-
+  case_id=docs-only. Request: draft a docs-only checklist for a proposed
+  feature rollout. No deployment or code changes are requested. The
+  destination is docs/reports/plan-route-checklist.md. The target host or
+  writer checkout for a future execution is intentionally unspecified.
+jev_input:
+  title: Docs-only checklist
+  brief: Create a docs-only checklist; no deployment or code change.
+expected_jev_route: free_lane
+timeout_s: 360

@@ -1,0 +1,204 @@
+id: ada-ocb-ansible-upgrade
+title: Ansible ada-ocb upgrade playbook (approval-gated)
+column: done
+updated: 2026-11-26 20:32
+brief: Follow-up to AUD-0014. Build an approval-gated ada-ocb-upgrade.yml that starts idc02's existing openchamber-update.service
+  (never reimplements npm i -g), then runs ada-ocb-verify.yml. Blocked on explicit same-session production-write
+  approval.
+priority: medium
+tags:
+- ada-ocb,ansible,idc02,upgrade
+spec: 'Goal: complete the Ansible maintenance layer for ada-ocb with the write path, after Tony explicitly approves
+  a production write in-session.
+
+
+  Prereq (done): AUD-0014 / commit 2ab78f0101 added the ocb_pane inventory group, read-only audit + verify playbooks,
+  and the declared contract. Verify gate is proven (exit 2 on drift).
+
+
+  Required shape:
+
+  1. Playbook defaults to check mode; write tasks assert an explicit approval var (e.g. ocb_change_approved=true)
+  plus an in-session approval record.
+
+  2. Upgrade step = `systemctl --user start openchamber-update.service` on idc02 only. Do NOT reimplement npm install,
+  patch application, or restart — the unit already does patch-first fail-loud and is the sole executor.
+
+  3. Rollback statement before any destructive step: restore the one Caddy line + reload (per openchamber migration
+  runbook).
+
+  4. Post-write: run ada-ocb-verify.yml as the gate; on failure report with reason to the card via board-api and
+  stop — never half-apply.
+
+  5. Never write cards from Ansible (board-api only); no secrets in playbooks.
+
+
+  Done when: --syntax-check clean; dry-run shows only the intended unit start; live run on idc02 leaves verify green;
+  first-run report updated.
+
+
+  Owner: Tony — needs an explicit "approve the ada-ocb upgrade playbook" in-session. Default = do not write prod
+  until then.
+
+
+  Refs: card ada-ocb-ansible-audit-verify (AUD-0014, done); docs/reports/ada-ocb-ansible-audit-2026-11-24.md; ansible/playbooks/ada-ocb-verify.yml;
+  docs/ssot/infrastructure/ssot.audit.hosts.yml:2242-2279.'
+ref: ADA-0015
+comms:
+- at: 2026-11-24 07:59
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:13
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:18
+  from: devin
+  text: moved backlog -> doing
+- at: 2026-11-24 08:18
+  from: devin
+  text: 'Building the approval-gated playbook now (worktree code only — no prod write). Live unit inspected: openchamber-update.service
+    is Type=oneshot, RemainAfterExit=no, ExecStart pins only @openchamber/web@2.7.3 (@opencode/cli is unpinned in
+    the unit despite the SSOT 2.3.2 pin), ExecStartPost re-applies patch then restarts. Noting the cli pin gap for
+    a separate decision; not changing a host unit in this pass.'
+- at: 2026-11-24 08:22
+  from: devin
+  text: 'Built + safety-tested; NO prod write executed. Commit 63c6ed0b73 on branch ada-ocb. Playbook starts idc02''s
+    existing openchamber-update.service (oneshot, fail-loud patch re-apply, restart) only with -e ocb_change_approved=true.
+    Safety matrix (all changed=0): --check --diff -> exit 0, skipped; no approval -> exit 0, skipped; approved +
+    --check -> exit 0, skipped (check mode beats approval); verify drift override -> exit 2 named assertion. Rollback
+    printed before write; post-gate reuses the exact '
+- at: 2026-11-24 08:22
+  from: devin
+  text: moved doing -> done
+- at: 2026-11-24 08:24
+  from: devin
+  text: 'Correction on column: moved done -> review. The card''s done-condition includes a live upgrade run on idc02
+    with verify green; that run was deliberately NOT performed (needs explicit same-session approval). Code is complete
+    and safety-tested, execution remains gated. Leave in review until Tony approves and the run is evidenced.'
+- at: 2026-11-24 08:24
+  from: devin
+  text: moved done -> review
+- at: 2026-11-24 08:24
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:28
+  from: devin
+  text: 'LIVE UPGRADE EXECUTED by Tony 2026-11-24 08:25-08:26 +07. Unit finished Result=success/ExecMainStatus=0;
+    patch script logged ''models.status patch applied and syntax-checked''; all 4 units active; local 200; edge
+    200; web 2.7.3. HOWEVER post-gate FAILED (exit 2): @opencode/cli is 2.4.1 vs SSOT pin 2.3.2 — root cause is
+    the host unit installing cli unpinned (flagged before the run). Card stays in review: done-condition (verify
+    green) is unmet. Fix carded as ocb-cli-pin-drift (DEV-0020, backlog) wit'
+- at: 2026-11-24 08:32
+  from: devin
+  text: 'CLOSED. Live upgrade executed 08:26 +07 (unit success, patch applied, all units active, local/edge 200).
+    The gate initially failed on cli 2.4.1 vs 2.3.2; Tony chose to accept 2.4.1 (DEV-0020). SSOT + inventory pins
+    updated; ssot-validate-all clean (5641/5641, 0 errors); ansible-playbook playbooks/ada-ocb-verify.yml now exit
+    0 with full producer+consumer proof. Done-condition met. Evidence: docs/reports/ada-ocb-ansible-audit-2026-11-24.md.'
+- at: 2026-11-24 08:32
+  from: devin
+  text: moved review -> done
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:40
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 09:01
+  from: devin
+  text: 'INTEGRATED to origin/master 2026-11-24 ~09:00 +07 (Tony approved ''proceed next action''). Fresh verify
+    before integration: exit 0, web 2.7.3 / cli 2.4.1, 4/4 units active, local 200, edge 200, patch present. Master
+    moved 33 commits during the session; git fetch + clean rebase of the 4 commits onto origin/master (0 conflicts),
+    then git push origin HEAD:master succeeded. New canonical SHAs: fb2609a662 (audit+verify), 7da9617357 (upgrade
+    playbook), 95ecd0be8e (live outcome report), 3991cc2bbc (CLI 2'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:07
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:45
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:56
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:00
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:32
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+action:
+  status: done
+claim: {}
+review_kind: verify

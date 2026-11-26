@@ -1,0 +1,62 @@
+icon: shield
+title: Raise LiteLLM ada-dev-2 virtual-key cap from $10 to $20
+date: 2026-11-26
+card: budget-watch-ada-dev-2
+context: >-
+  LiteLLM virtual key ada-dev-2 hit its $10/30d cap at 2026-11-26 ~09:30 +07
+  (spend $10.0035) and calls were being 422'd. The card offered "raise the
+  cap (/key/update) or wait for reset 2026-12-01 00:00Z". Tony approved a
+  raise during the 2026-11-26 review triage. The earlier
+  2026-11-23 rainy-day-spend-decisions incident is relevant: an old
+  /key/update call replaced the whole models allowlist when a /key/info
+  fetch came back empty, so any update must capture and re-send the list.
+decision:
+  summary: >-
+    Raised max_budget 10 -> 20 USD with budget_duration unchanged at 30d.
+    $20 bounds exposure to a modest bump while leaving ~$10 of headroom for
+    the ~4 days remaining in the window; no key rotation and no change to
+    the key value, allowlist, or reset date.
+  alternatives_rejected: >-
+    - Wait for 2026-12-01 reset — rejected by Tony; ada-dev-2 calls were
+      already 422'd and the work needed the key now.
+    - Rotate the key — irrelevant; the cap, not the credential, was the
+      blocker.
+changes:
+  - "On idc03: POST /key/update with key_alias=ada-dev-2 (identify by
+    alias only — no key value put on the wire in the mutation request),
+    max_budget=20.0, budget_duration=30d, and the 9-model allowlist read
+    from the pre-change snapshot."
+  - "Pre-change metadata snapshot written to
+    /tmp/opencode/ada-dev-2-key-backup.json with mode 0600 (alias, ident
+    prefix/suffix, max_budget, duration, spend, reset, models). No key
+    value or token was written to disk or printed."
+  - "Master key sourced from ~/.config/secrets/litellm.env on idc03; not
+    echoed, not committed."
+verification:
+  - "Deployed /openapi.json confirms /key/update is a merge patch, but the
+    allowlist was passed explicitly anyway to guard against the older
+    clobber behaviour."
+  - "Post-change /key/info: key_alias=ada-dev-2, max_budget=20.0,
+    budget_duration=30d, spend=10.0035277 (unchanged),
+    budget_reset_at=2026-12-01T00:00:00+00:00 (unchanged), models equal to
+    the captured list [chat, voice-aux, summary, classify, tool-call,
+    embedding, or-gemini-3.5-flash-lite, or-free-nemotron-nano,
+    or-free-gemma31b]. All assertions passed."
+  - "Live completion through LITELLM_KEY_ADA_DEV with model=chat returned
+    HTTP 200 — no 422, so the cap-out is resolved."
+  - "/v1/models with that key returned the same 9 allowlisted models."
+rollback: >-
+  POST /key/update again with key_alias=ada-dev-2 and max_budget=10.0 plus
+  the same 9-model list. The snapshot in
+  /tmp/opencode/ada-dev-2-key-backup.json records the pre-change state;
+  no key or credential rotation is needed.
+residual: >-
+  A probe of or-free-gemma31b returned HTTP 400 from OpenRouter
+  ("API key not valid") — a pre-existing upstream provider-key problem
+  unrelated to this cap, not introduced by the change. The budget card was
+  closed; that provider issue is not tracked here.
+lesson: >-
+  /key/update on this gateway is documented as a merge patch, but the
+  2026-11-23 clobber incident argues for always snapshotting the models
+  allowlist and re-sending it explicitly. Identify keys by key_alias where
+  possible so the key value never needs to appear in a mutation request.

@@ -1,0 +1,304 @@
+id: devin-cli-fleet-update-20261108
+title: Update Devin CLI and verify agents on Omen, Dell, and MacBook
+column: done
+updated: 2026-11-23 13:35
+brief: The requested CLI updates remain incomplete; the non-TTY updater exited 130. Await approval for an interactive
+  SSH fallback.
+priority: medium
+program: chaba-ops
+tags:
+- devin
+- cli
+- runner-agent
+- tony-omen
+- tony-dell
+- macbook
+spec: 'Update Devin CLI on tony-omen, tony-dell, and tony-macbook, then verify the CLI and agent state. 2026-11-08
+  evidence: `devin doctor` passes on Omen and Dell; Omen CLI is 3000.11.205 and Dell is 3000.11.234. Non-TTY `devin
+  update` exited 130 on Omen and Dell without changing versions. MacBook is reachable via Omen SSH; mcp-debug is
+  intentionally not installed there. User requested updates, but interactive SSH is needed for the updater and remains
+  approval-gated. Do not restart Devin Desktop or re-enable runner timers as part of this CLI update.'
+ref: DEV-1221
+comms:
+- at: 2026-11-08 18:48
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-08 18:48
+  from: devin
+  text: 'raised request devin-cli-interactive-update-ssh: May I use an interactive SSH session on Omen, Dell, and
+    MacBook to run the Devin CLI updater? The documented `devin upda'
+- at: 2026-11-08 19:38
+  from: tony
+  text: 'answered devin-cli-interactive-update-ssh: Yes — run the interactive CLI updates, then verify versions
+    and agent health (approved by Tony via chat).'
+- at: 2026-11-08 19:38
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-08 19:38
+  from: devin
+  text: 'Update result 2026-11-08: Omen and Dell are now Devin CLI 3000.12.28; `devin doctor` passes 3/3 on both.
+    MacBook remains 3000.11.3; local `devin update` returned `Auto-update is not available for this installation`.
+    Its `~/.local/bin/devin` is a standalone static binary not owned by dpkg. No Devin Desktop was restarted and
+    all runner timers remain paused.'
+- at: 2026-11-08 19:38
+  from: devin
+  text: 'raised request devin-macbook-install-channel: MacBook CLI auto-update is unavailable for its standalone
+    binary. May I run the documented official installer `curl -fsS'
+- at: 2026-11-08 19:48
+  from: tony
+  text: 'answered devin-macbook-install-channel: Yes — run the official installer on MacBook and verify version/doctor
+    (recommended).'
+- at: 2026-11-08 19:48
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-08 20:34
+  from: devin
+  text: 'Completed with interactive TTY: Omen and Dell updated to 3000.12.28; `devin doctor` passes on both. MacBook
+    remains 3000.11.3 because `devin update` says auto-update is unavailable for this standalone binary. The official
+    installer was inspected and ends by running `devin setup` (authentication + MCP configuration wizard); installer
+    has not been run and the existing binary is unchanged.'
+- at: 2026-11-08 20:34
+  from: devin
+  text: 'raised request devin-macbook-setup-wizard: The approved MacBook installer unconditionally launches `devin
+    setup`, an interactive wizard for authentication and MCP '
+- at: 2026-11-08 20:38
+  from: ada
+  text: 'answered devin-macbook-setup-wizard: Yes — run the installer and setup wizard; preserve/reuse existing
+    auth and MCP settings wherever offered.'
+- at: 2026-11-08 20:38
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-09 09:33
+  from: chaba
+  text: 'answer-sweep: executed ''Yes — run the official installer on MacBook and verify versi'' -> queued for processing'
+- at: 2026-11-09 09:33
+  from: chaba
+  text: 'answer-sweep: 1 answered request(s) still unmapped — stays flagged'
+- at: 2026-11-09 09:49
+  from: idc02
+  text: claimed
+- at: 2026-11-09 09:49
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.71 > 1.0)'
+- at: 2026-11-09 09:49
+  from: chaba
+  text: started devin-task-20261109-094945-update-devin-cli-on-tony-omen- on idc02 (dispatch)
+- at: 2026-11-09 09:51
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-09 09:51
+  from: idc02
+  text: 'finished (failed): exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-094945-update-devin-cli-on-tony-omen-.service:'
+- at: 2026-11-09 10:05
+  from: chaba
+  text: 'merge-sweep: devin-task-20261109-094945-update-devin-cli-on-tony-omen- failed — its branch isn''t auto-merged
+    (unverified partial work). Retry the card or merge dispatch/20261109-094945-update-devin-cli-on-tony-omen- by
+    hand.'
+- at: 2026-11-09 10:06
+  from: chaba
+  text: 'merge-sweep: devin-task-20261109-094945-update-devin-cli-on-tony-omen- failed — its branch isn''t auto-merged
+    (unverified partial work). Retry the card or merge dispatch/20261109-094945-update-devin-cli-on-tony-omen- by
+    hand.'
+- at: 2026-11-14 14:11
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:11
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-15 16:55
+  from: devin
+  text: 'MacBook update done 2026-11-15: official installer path completed — devin CLI now 3000.12.57 (was 3000.11.3
+    standalone). ~/.local/bin/devin is now a symlink into ~/.local/share/devin/cli/_versions (auto-update-enabled
+    layout); `devin setup` ran non-interactively and reused existing auth ("Logged in"), doctor 3/3 pass. Old binary
+    kept as ~/.local/bin/devin.old-3000.11.3. Direct download to macbook was too slow/flaky (~17KB/s, stalled at
+    20MB) — tarball fetched on omen, checksum-verified against m'
+- at: 2026-11-17 09:19
+  from: tony
+  text: retry requested
+- at: 2026-11-17 09:20
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-17 09:25
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-17 09:25
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.16 > 1.0)'
+- at: 2026-11-17 09:25
+  from: tony-dell
+  text: claimed
+- at: 2026-11-17 09:25
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-17 09:25
+  from: chaba
+  text: started devin-task-20261117-092521-update-devin-cli-on-tony-omen- on tony-dell (dispatch)
+- at: 2026-11-17 09:26
+  from: devin
+  text: Dispatch 2026-11-17 picked up card. Dell already at 3000.12.57. Checking Omen + MacBook versions and doctor
+    state; will run TTY updater where behind.
+- at: 2026-11-17 09:29
+  from: devin
+  text: 'Fleet verified 2026-11-17: all three hosts already on latest CLI 3000.12.57. dell+omen+macbook `devin update`
+    -> already latest (remote via `script -qec ... /dev/null` PTY trick — solves the exit-130 non-TTY problem without
+    interactive SSH); doctor 3/3 pass and `auth status` logged-in on all three. No Desktop restart, runner timers
+    untouched. Trail: docs/ssot/jobs/infrastructure/2026-11-17-devin-cli-fleet-update-verify.yml'
+- at: 2026-11-17 09:29
+  from: tony
+  text: closed by tony
+- at: 2026-11-17 09:38
+  from: chaba
+  text: 'session-end checkpoint fbc71598: 1 leftover file(s) committed'
+- at: 2026-11-17 09:39
+  from: chaba
+  text: banked 61 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-17 09:39
+  from: chaba
+  text: pushed dispatch/20261117-092521-update-devin-cli-on-tony-omen- to origin
+- at: 2026-11-17 09:39
+  from: chaba
+  text: 'auto-merge not done: merge: commit after conflict resolution failed — close will block until merged'
+- at: 2026-11-17 09:39
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-17 09:42
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261117-092521-update-devin-cli-on-tony-omen-'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-17 09:42
+  from: chaba
+  text: banked 61 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-17 09:42
+  from: chaba
+  text: pushed dispatch/20261117-092521-update-devin-cli-on-tony-omen- to origin
+- at: 2026-11-17 09:42
+  from: chaba
+  text: 'auto-merge not done: merge: commit after conflict resolution failed — close will block until merged'
+- at: 2026-11-17 09:42
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-17 18:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:24
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:40
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:43
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:09
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:21
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:13
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:14
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:20
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:05
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:02
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:05
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:45
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:35
+  from: tony
+  text: archived (1d in done, board over card cap)
+requests:
+- id: devin-cli-interactive-update-ssh
+  ask: May I use an interactive SSH session on Omen, Dell, and MacBook to run the Devin CLI updater? The documented
+    `devin update` command exited 130 without a TTY on Omen and Dell; this fallback contacts the update service
+    and changes the CLI binaries only. Devin Desktop will not be restarted.
+  status: answered
+  at: 2026-11-08 18:48
+  from: devin
+  options:
+  - Yes — run the interactive CLI updates, then verify versions and agent health (recommended).
+  - Hold — leave all CLI versions unchanged.
+  suggested: Yes — run the interactive CLI updates, then verify versions and agent health (recommended).
+  answer: Yes — run the interactive CLI updates, then verify versions and agent health (approved by Tony via chat).
+- id: devin-macbook-install-channel
+  ask: MacBook CLI auto-update is unavailable for its standalone binary. May I run the documented official installer
+    `curl -fsSL https://cli.devin.ai/install.sh | bash` to replace/update `~/.local/bin/devin` and verify it? This
+    contacts the vendor, changes the CLI install layout, and will not restart Devin Desktop.
+  status: answered
+  at: 2026-11-08 19:38
+  from: devin
+  options:
+  - Yes — run the official installer on MacBook and verify version/doctor (recommended).
+  - No — leave MacBook at 3000.11.3 and mark the CLI update blocked.
+  suggested: Yes — run the official installer on MacBook and verify version/doctor (recommended).
+  answer: Yes — run the official installer on MacBook and verify version/doctor (recommended).
+  executed: 2026-11-09 queue
+- id: devin-macbook-setup-wizard
+  ask: The approved MacBook installer unconditionally launches `devin setup`, an interactive wizard for authentication
+    and MCP configuration. Do you authorize running that wizard? It may prompt for auth or change `~/.config/devin`;
+    Devin Desktop will not be restarted.
+  status: answered
+  at: 2026-11-08 20:34
+  from: devin
+  options:
+  - Yes — run the installer and setup wizard; preserve/reuse existing auth and MCP settings wherever offered.
+  - No — hold MacBook at 3000.11.3 until a noninteractive update path is confirmed.
+  suggested: No — hold MacBook at 3000.11.3 until a noninteractive update path is confirmed.
+  answer: Yes — run the installer and setup wizard; preserve/reuse existing auth and MCP settings wherever offered.
+  executed: 2026-11-09 queue
+action:
+  type: dispatch
+  status: done
+  lane: devin
+  sweep:
+    failed_noted: 2026-11-09 10:06
+  last_failure: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-094945-update-devin-cli-on-tony-omen-.service:
+    Failed with result ''exit-code''. | devin-task-20261109-094945-update-devin-cli-on-tony-omen-.service: Consumed
+    3.959s CPU time.'
+  attempts: 1
+  runner: tony-dell

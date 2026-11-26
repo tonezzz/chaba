@@ -244,14 +244,15 @@ tony-dell:
     image: docker.io/library/chaba-raceman-raceman-php:latest
     runtime: rootless podman
     network: host
+    host: tony_dell
     port: 9001
     host_port: 100.68.142.13:9001
     data_volume: /home/tony/CascadeProjects/chaba-raceman
     quadlet:
       container_unit: ~/.config/containers/systemd/raceman-php.container
       service_unit: ~/.config/systemd/user/raceman-php.service
-    status: implemented (2026-08-17)
-    note: Migrated from tony-omen; php-fpm listens on 0.0.0.0:9001 to avoid conflict with mddb :9000.
+    status: active on tony-dell (running again since 2026-11-16)
+    note: "PHP-FPM backend for the raceman course API (api/{list,load,save,save-course}.php — file-backed by apps_data/raceman + public/apps/raceman/courses in the data_volume). Placement decided 2026-11-25 (card raceman-php-placement-decision, path 2) — stays on tony-dell; listens 0.0.0.0:9001 and is consumed cross-host by raceman-web's nginx on tony-omen via fastcgi_pass 100.68.142.13:9001."
   raceman-web:
     container: raceman-web
     image: docker.io/library/nginx:alpine
@@ -265,7 +266,7 @@ tony-dell:
       container_unit: ~/.config/containers/systemd/raceman-web.container
       service_unit: ~/.config/systemd/user/raceman-web.service
     status: migrated to tony-omen (2026-10-20); dell copy retired
-    note: Nginx listens on tony-omen:8083 and serves the raceman app plus yt-live media; the old dell listener is gone.
+    note: Nginx listens on tony-omen:8083 and serves the raceman app plus yt-live media; the old dell listener is gone. PHP locations fastcgi_pass to the dell backend at 100.68.142.13:9001 (repointed from dead 127.0.0.1:9001 on 2026-11-25 — see card raceman-php-placement-decision).
   weaviate:
     container: weaviate
     image: docker.io/semitechnologies/weaviate:latest
@@ -536,18 +537,18 @@ tony-dell:
     autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
     status: 'mcp server active on tony-omen (verified 2026-10-26)'
     note: 'Container rootless podman, evacuated to tony-omen 2026-10-19/20. HA-MCP active, health check and autostart configured. UI reachable via tailscale serve https://tony-omen.taila0626a.ts.net:8123 only (loopback bind, no LAN listener; evacuated dell->omen 2026-10-20, OPS-0754). Two Tuya smart plugs under local TinyTuya command_line control (switch.plakkaaaef_local, switch.plalhawetiiyng_local). Camera ip_cam_65 now uses local go2rtc H.264 proxy for high-res stream. Official cloud Tuya integration (entry 01M1PBMNRENWNDC93N205E0VZA, endpoint apigw-sg.iotbing.com) is stale for ALL its devices, not just the bedside plug — verified 2026-09-24: Tuya entities are should_poll=False and update only via the sharing MQ push channel (m1-sg.iotbing.com:8883); the cloud delivers zero messages on that link (proven by standalone subscriber receiving nothing even during a forced plug toggle), so entities freeze at the config-entry-setup REST snapshot and only refresh on HA restart/reload. Devices themselves are online and reporting current data to Tuya cloud (e.g. Nobito pm25 17 cloud vs 72.0 frozen in HA). Fix needs either Tuya-side push (re-auth / device-status-notification service) or an external poller writing states.'
-  michael-dev:
-    container: michael-dev
+  mn-ha-dev:
+    container: mn-ha-dev
     image: docker.io/homeassistant/home-assistant:2026.9.0
     runtime: rootless podman
-    host: idc02   # migrated tony-dell -> idc03 2026-10-09 -> idc02 2026-10-26; entry kept here for anchor stability
-    network: podman bridge (PublishPort 127.0.0.1:8124, 127.0.0.1:9585, 100.123.163.11:9585)
+    host: mn01   # migrated tony-dell -> idc03 2026-10-09 -> idc02 2026-10-26 -> mn01 2026-11-25; entry kept here for anchor stability
+    network: podman bridge (PublishPort 127.0.0.1:8124, 127.0.0.1:9585, 100.106.196.22:9585 — tailnet-IP :8124 publish removed 2026-11-25, conflicts with tailscale serve)
     port: 8124
     host_port: 127.0.0.1:8124
     quadlet:
-      container_unit: ~/.config/containers/systemd/michael-dev.container
-      service_unit: ~/.config/systemd/user/michael-dev.service
-    config: /home/tony/.config/michael-dev
+      container_unit: ~/.config/containers/systemd/mn-ha-dev.container
+      service_unit: ~/.config/systemd/user/mn-ha-dev.service
+    config: /home/tony/.config/mn-ha-dev
     custom_components:
       - ha_mcp_tools
     mcp_server:
@@ -560,13 +561,13 @@ tony-dell:
       secret_path: /private_B3WMIAChoseTpDS7fwgwRw
       webhook_id: mcp_ed77567866f1ebbb6fb091dc816cb550
       local_url: http://127.0.0.1:9585/private_B3WMIAChoseTpDS7fwgwRw
-      tailnet_url: http://idc02:9585/private_B3WMIAChoseTpDS7fwgwRw
+      tailnet_url: http://mn01:9585/private_B3WMIAChoseTpDS7fwgwRw
     caddy:
       note: Not used — HA UI uses absolute redirects that break a path-prefixed reverse proxy. Direct port 8124 is used.
-    health_check: ssh idc02 curl -sf http://127.0.0.1:8124/ >/dev/null
+    health_check: ssh mn01 curl -sf http://127.0.0.1:8124/ >/dev/null
     autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
     status: enabled
-    note: "Dev staging container for michael-ha. Runs on idc02 podman bridge (moved from idc03 2026-10-26, capacity-move-michael-dev); UI 127.0.0.1:8124 (+ public https://michael-dev.surf-thailand.com via idc02 edge/CF), MCP 9585 on tailnet IP + loopback."
+    note: "Dev staging container for michael-ha. Runs on mn01 podman bridge (moved idc02 -> mn01 2026-11-25, card michael-dev-migrate-mn01); UI 127.0.0.1:8124 + https://mn01.taila0626a.ts.net:8124 via tailscale serve (+ public https://michael-dev.surf-thailand.com via idc02 edge/CF -> mn01 tailnet), MCP 9585 on tailnet IP + loopback."
   go2rtc:
     service: go2rtc.service
     host: tony_omen
@@ -758,6 +759,7 @@ tony-omen:
     cron:
       nightly-digest: "0 8 * * * Asia/Bangkok, command job → announce telegram to 8960073266; id 02680285-5b7a-4e21-a784-6e2bd030dcdf; deterministic — runs scripts/ops-digest.py (mddb /v1/search on ada-ha-events-tony, 24h), no LLM tool-calls (free-model schema errors made the agent variant flaky)"
     known_issues:
+      - "ROTATED 2026-11-23/24: key sk-or-v1-74d…180f6c swapped into all 4 stores; @myChabaBot had logged 64 OpenRouter 401s because the old key expired 2026-11-11 and weekly fleet rotations missed openclaw's sqlite authProfiles.store. After the swap a live agent turn STILL 401d — openclaw-gateway caches the auth profile at STARTUP, so a manual gateway restart was needed. rotate-or-key.sh now restarts the gateway unconditionally, waits for 127.0.0.1:18789 to bind, retries several :free models on upstream 429, and gates on a real gateway agent turn (SEC-0027). Verify by surface: live agent turn returns status ok, not just direct HTTP 200."
       - "ghostroute writes OR model ids unprefixed — FIXED via fork tonezzz/GhostRoute c6ca06d (cli.py + watcher.py). Standard: fork patched deps to tonezzz, keep fixes quiet — no upstream PR unless explicitly decided. Local install at ~/.openclaw/workspace/skills/ghost-route now tracks origin=tonezzz/GhostRoute (upstream=kittimasak for pulls)"
       - "ROTATED 2026-10-12: key sk-or-v1-e2c…5528 (expires 2026-11-11 — cadence changed weekly→daily per Tony 2026-10-12, he mints a fresh key daily to track daily usage) swapped into all 4 stores via rotate-or-key.sh; ghostroute-watcher + gemini-ollama-proxy restarted, verified e2e (apodex-1.1-mini:free). Replaces bridge key 005…c44b ($1 throwaway on account user_3ACXf7) which bridged the 2026-10-11 old-account outage and expired 2026-10-12."
       - "ROTATED 2026-10-10: new key sk-or-v1-a40822 ($10 cap, expires 2026-10-17 — Tony mints weekly) swapped into all 4 stores: dell+omen ~/.config/secrets/openrouter.env, idc03 mddb-gemini.env, omen openclaw.sqlite authProfiles.store; ghostroute-watcher + gemini-ollama-proxy restarted, verified e2e (nemotron-3-super:free cost=0). OR key in auth profile openrouter:manual must be re-pasted whenever idc03 mddb-gemini.env rotates (rotated 2026-09-28→29, caused 401s; again 2026-10-08 — fix = update authProfiles.store in openclaw.sqlite + ~/.config/secrets/openrouter.env)"

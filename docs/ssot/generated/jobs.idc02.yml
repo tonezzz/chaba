@@ -17,3 +17,7 @@ jobs:
   - id: log-shipper-severe
     schedule: "every 1h"
     dispatch: "systemd"
+  - id: opencode-models-sync
+    schedule: "*-*-* *:37:00"
+    dispatch: "systemd"
+    persistent: true

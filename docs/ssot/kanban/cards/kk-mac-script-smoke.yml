@@ -1,9 +1,9 @@
 id: kk-mac-script-smoke
 title: kk-mac launchd runner — script executor e2e smoke
-column: review
+column: done
 priority: low
 created: '2026-11-19'
-updated: 2026-11-20 17:03
+updated: 2026-11-26 20:36
 brief: 'E2E: script executor syncs chaba and runs a bounded repo command on kk-mac under launchd — proves the provisioned
   runner claims+executes a real kanban card (card kk-mac-launchd-runner-followthrough).'
 action:
@@ -21,9 +21,9 @@ action:
     timeout: 300
   runner: kk-mac
   attempts: 1
-  result: "exit=0 tVersion:\t\t15.7.3 | /Users/kkkakk/.local/share/runner-agent/launchd/runner-kk-mac-script-smoke-1795059466.sh:\
-    \ line 13: 32548 Terminated: 15          ( sleep 300; kill -TERM -\"$cpid\" 2> /dev/null; sleep 15; kill -KILL\
-    \ -\"$cpid\" 2> /dev/null )"
+  result: "exit=0 tVersion:\t\t15.7.3 | /Users/kkkakk/.local/share/runner-agent/launchd/runner-kk-mac-script-smoke-1795059466.sh:
+    line 13: 32548 Terminated: 15          ( sleep 300; kill -TERM -\"$cpid\" 2> /dev/null; sleep 15; kill -KILL
+    -\"$cpid\" 2> /dev/null )"
 spec: smoke — kk-mac launchd runner claim+execute verify
 comms:
 - at: 2026-11-19 10:38
@@ -39,8 +39,8 @@ comms:
     action.labels/host pins or teach a runner the capability'
 - at: 2026-11-19 10:39
   from: kk-mac
-  text: "finished (ok): exit=0 tVersion:\t\t15.7.3 | /Users/kkkakk/.local/share/runner-agent/launchd/runner-kk-mac-script-smoke-1795059466.sh:\
-    \ lin"
+  text: "finished (ok): exit=0 tVersion:\t\t15.7.3 | /Users/kkkakk/.local/share/runner-agent/launchd/runner-kk-mac-script-smoke-1795059466.sh:
+    lin"
 - at: 2026-11-19 10:42
   from: chaba
   text: 'tony-dell defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner
@@ -165,6 +165,397 @@ comms:
   from: chaba
   text: 'tony-dell defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner
     — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-20 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 22:42
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-20 22:52
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-20 22:53
+  from: chaba
+  text: 'tony-dell defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-20 22:57
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-21 04:39
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-21 04:43
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-21 04:54
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-21 04:54
+  from: chaba
+  text: 'tony-dell defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-21 04:58
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-21 10:39
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-21 10:44
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-21 10:56
+  from: chaba
+  text: 'tony-dell defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-21 11:04
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-21 14:49
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-21 16:39
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-21 16:46
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-21 16:58
+  from: chaba
+  text: 'tony-dell defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-21 17:05
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-21 17:50
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 22:40
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-21 22:47
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-21 22:59
+  from: chaba
+  text: 'tony-dell defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-21 23:06
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-22 04:40
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-22 04:48
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-22 05:00
+  from: chaba
+  text: 'tony-dell defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-22 05:09
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-22 10:41
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-22 10:48
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-22 11:01
+  from: chaba
+  text: 'tony-dell defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-22 11:11
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-22 16:42
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-22 16:49
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-22 17:02
+  from: chaba
+  text: 'tony-dell defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-22 17:13
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-22 22:42
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-22 22:50
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-22 23:02
+  from: chaba
+  text: 'tony-dell defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-22 23:16
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-23 04:42
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-23 04:51
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-23 05:04
+  from: chaba
+  text: 'tony-dell defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-23 05:25
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-23 10:14
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-23 10:43
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-23 10:51
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-23 11:10
+  from: chaba
+  text: 'tony-dell defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-23 14:09
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:21
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 15:11
+  from: tony
+  text: closed by tony
+- at: 2026-11-23 15:11
+  from: chaba
+  text: '[verify] Review pass 2026-11-23 (Tony): 2026-11-19 10:39 kk-mac finished (ok) exit=0 — launchd runner claimed
+    and executed the script smoke end-to-end'
+- at: 2026-11-23 16:22
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:44
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-23 16:53
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-23 17:26
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-23 18:37
+  from: chaba
+  text: 'tony-dell defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-23 19:13
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:13
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 22:44
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-23 23:20
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-23 23:29
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:37
+  from: chaba
+  text: 'tony-dell defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-24 00:46
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-24 06:48
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-24 08:13
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:24
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:25
+  from: chaba
+  text: 'con01 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:42
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 09:03
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-24 11:22
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-24 11:29
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:11
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:37
+  from: chaba
+  text: 'tony-dell defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner
+    — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-24 12:50
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-24 14:25
+  from: chaba
+  text: 'con01 defers: unclaimable by the declared runner fleet: action.host=kk-mac names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-24 17:04
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:53
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:01
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:08
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:28
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:40
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:56
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:07
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:36
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 claim:
   since: 2026-11-19 10:37
 review_kind: verify

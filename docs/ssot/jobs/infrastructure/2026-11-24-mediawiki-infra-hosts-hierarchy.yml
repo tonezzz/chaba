@@ -1,0 +1,129 @@
+title: MediaWiki Infrastructure/Hosts hierarchy — generator + privacy gates
+subtitle: >-
+  scripts/wiki-infra-hosts.py renders the canonical Infrastructure:Hosts
+  rollup + per-host leaves on wiki.h3.gizmo-thailand.com from the existing
+  report layer; registry-driven off ssot.audit.hosts.yml
+icon: sitemap
+id: 2026-11-24-mediawiki-infra-hosts-hierarchy
+status: done
+owner: devin-dispatch
+project: chaba
+card: mediawiki-infrastructure-host-hierarchy
+ref: SYS-1034
+started: "2026-11-24"
+completed: "2026-11-24"
+
+context:
+  user_request: >
+    Define and implement the MediaWiki Infrastructure/Hosts hierarchy.
+    Canonical pages: Infrastructure/Hosts rollup and
+    Infrastructure/Hosts/<host> leaves fed by host-services-cms,
+    audit-hosts, host-loads, disk-trend-watch, timer-timeline-update,
+    ssot.reports.yml and ssot.audit.hosts.yml. Full pages stay private
+    until MediaWiki access control is configured; before then only
+    dry-run or a sanitized public fleet-status derivative.
+
+deliverables:
+  - scripts/wiki-infra-hosts.py — generator. Dry-run by default; --check
+    runs orphan/missing-host, required-field, compatibility-link and
+    privacy gates; --apply publishes via board-api /wiki/page
+    (Infrastructure namespace prefix allowlist) after an anonymous-deny probe of
+    api.php (or --private-ok); --surface public renders a sanitized
+    file-only derivative.
+  - Host registry reconciled to ssot.audit.hosts.yml `hosts:` — 10
+    declared hosts, no hardcoded list. idc01 renders `retired`;
+    idc03/con01/macbook/kk-mac/michael-ha all get leaves even where the
+    audit layer cannot probe them.
+  - scripts/ada/host-services-cms.py — HOST_META now mirrors the same
+    registry (added con01, macbook, kk-mac; idc01 is a retired stub, not
+    probed); stale "six leaf pages" docstring fixed.
+  - docs/ssot/infrastructure/ssot.reports.yml — registered the missing
+    audit-hosts/idc02 and audit-hosts/con01 L1 nodes and added them to
+    fleet.children (audit-hosts.py audited them but the registry never
+    declared them).
+  - docs/ssot/infrastructure/ssot.automation.yml + ssot.audit.hosts.yml —
+    "6 leaf pages" notes updated to registry-driven wording.
+
+page_contract:
+  leaf: >-
+    Infrastructure:Hosts/<host> — wikitext metadata table
+    (report_role=leaf, parent=Infrastructure:Hosts, status
+    active|degraded|unreachable|retired, role, last_verified,
+    offline_ok, generated_by, sources) plus Quick summary, Services,
+    Capacity/load/disk, Expected-service delta, Sources & generators,
+    Related reports (ssot.reports.yml node ids + CMS slugs),
+    Compatibility (services-by-host / services-<host> links).
+  rollup: >-
+    Infrastructure:Hosts — report_role=rollup, one table row per
+    declared host (status, freshness, role, key warning, leaf link),
+    Children list, Watch list, Compatibility links.
+  status_rules: >-
+    retired -> retired; any probe failure (audit unreachable flag,
+    host-loads/disk-trend unreachable) -> unreachable; audit deltas,
+    unexplained failed units, or disk-trend warn/fill/critical ->
+    degraded; no observations at all -> unreachable (never verified);
+    else active. Failed units are filtered through audit-hosts'
+    FAILED_NOISE + SSOT known_failed so desktop flakiness does not
+    degrade a host.
+
+privacy:
+  private_surface: >-
+    Full pages carry service names, units, capacity, deltas, tailnet
+    addresses. Infrastructure: (ns 3000) is Lockdown-protected —
+    anonymous content read returns accessdenied (verified live
+    2026-11-24 via api.php probe). --apply refuses to run if the
+    anonymous probe returns content, unless --private-ok asserts a
+    prior Lockdown verification.
+  public_surface: >-
+    --surface public emits host/status/freshness only — service names,
+    ports, routes, IPs, unit names and topology are withheld, and
+    public_scrub() fails the run if a forbidden pattern survives.
+    File-only: /wiki/page refuses non-allowlisted namespaces, so there
+    is deliberately no public publish path in this script.
+
+runbook:
+  dry_run: python3 scripts/wiki-infra-hosts.py            # render + checks
+  check: python3 scripts/wiki-infra-hosts.py --check      # gates only
+  publish: >-
+    Run on a host with the freshest reports/ (tony-dell reaches every
+    host except michael-ha; con01 runs the report chain):
+    python3 scripts/wiki-infra-hosts.py --apply
+    First run probes anonymous access itself; pass --private-ok to skip.
+  single_host: python3 scripts/wiki-infra-hosts.py --host idc03
+  public_derivative: python3 scripts/wiki-infra-hosts.py --surface public --out-dir /tmp/wiki-pub
+
+verification_2026_11_24:
+  - "mn01 worktree dry-run with live probes: audit-hosts x6 hosts +
+    host-loads 6/9 sampled -> 11 pages rendered, --check exit 0"
+  - "rollup: 10 declared hosts — 6 degraded (real deltas), 3
+    unreachable (con01/kk-mac/michael-ha not reachable from mn01),
+    1 retired (idc01)"
+  - "public surface --check exit 0 after port/time scrub fixes"
+  - "host-services-cms --slug services-idc01 --dry-run renders the
+    retired stub without probing"
+  - "anon_privacy_probe(https://wiki.h3.gizmo-thailand.com/api.php)
+    -> anonymous read denied (accessdenied)"
+
+notes:
+  - "Not yet scheduled — natural next step is a weekly timer on
+    tony-dell beside chaba-services-regen (same reachability profile)."
+  - "Publishing was NOT done from this dispatch: mn01 cannot reach
+    con01/kk-mac/michael-ha, so pages built here would stamp false
+    'unreachable' rows. Run --apply where reachability is broadest."
+  - "timer-timeline CMS docs are read via MDDB /get (best-effort);
+    timer-timeline-update's own HOSTS list is still a 6-host census —
+    con01/michael-ha/kk-mac have no timer-timeline leaf."
+
+related_files:
+  - scripts/wiki-infra-hosts.py
+  - scripts/ada/host-services-cms.py
+  - scripts/audit-hosts.py
+  - scripts/host-loads.py
+  - scripts/ada/disk-trend-watch.py
+  - scripts/ada/timer-timeline-update.py
+  - docs/ssot/infrastructure/ssot.audit.hosts.yml
+  - docs/ssot/infrastructure/ssot.reports.yml
+  - docs/ssot/apps/ssot.mediawiki-news.yml
+related_ssot:
+  - docs/ssot/infrastructure/ssot.mediawiki-news.yml
+  - docs/ssot/infrastructure/ssot.automation.yml

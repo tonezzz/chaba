@@ -1,0 +1,101 @@
+title: "runner-agent fleet re-verify + ada-ha kanban tab lowercase rename"
+subtitle: >-
+  Card chaba-admin-kanban-tab-rename-lowercase carried a fleet constraint:
+  verify every runner host's runner-agent matches the canonical repo copy
+  before executing. Audit showed all 8 installed snapshots already at the
+  pinned build; the live drift was stale CHECKOUT refs on tony-macbook
+  (git object corruption) and kk-mac (dead deploy key + shallow clone).
+  Both repaired; the ada-ha chaba-admin 'kanban' tab title was then
+  lowercased live and the snapshot resynced.
+icon: 🔤
+id: 2026-11-25-runner-fleet-sync-kanban-tab-rename
+status: done
+owner: devin-dispatch
+project: chaba
+card: chaba-admin-kanban-tab-rename-lowercase
+ref: KNB-1314
+started: "2026-11-25"
+completed: "2026-11-25"
+
+context:
+  ask: >-
+    Rename the chaba-admin dashboard tab "Kanban" to lowercase "kanban";
+    runners must first be synchronized with
+    /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py and all
+    runner agents verified updated to prevent the recurring drift
+    deferrals on the card.
+  drift_model: >-
+    runner-agent._self_stale_check fails closed when
+    ~/.local/bin/runner-agent != <repos.conf chaba checkout>/
+    scripts/board/runner-agent.py byte-for-byte. The installed snapshot
+    being current is NOT sufficient — a stale checkout ref produces the
+    same "installed runner-agent drifted" decline.
+
+fleet_audit:
+  canonical_sha256: "1514c75c4679a01b486bbffd9f75c5636d023fed528424aed358a970ee3f7210"
+  pinned_in: scripts/devin/runner-tooling.manifest.json (runner_agent)
+  hosts:
+    tony-dell: "installed+checkout canonical (local)"
+    tony-omen: "installed+checkout canonical"
+    idc02: "installed+checkout canonical; NOTE ~/CascadeProjects/chaba-tony-dell is a stale unreferenced checkout (runner-agent.py adfa0c57…) — not the drift ref"
+    idc03: "installed+checkout canonical (chaba + chaba-tony-dell)"
+    mn01: "installed+checkout canonical"
+    con01: "installed+checkout canonical"
+    tony-macbook: "REPAIRED — see below"
+    kk-mac: "REPAIRED — see below"
+
+tony-macbook_repair:
+  symptoms:
+    - ".git/objects: 6 zero-byte loose objects (incl. broken branch tip 7f5e579fe…)"
+    - "refs/heads/dispatch/20261125-092906-observed-2026-11-24-after-pr-2 pointed at the corrupt tip — broke every git fetch ('bad object')"
+    - "checkout ~200 commits behind origin/master; 106 dirty files (focus-inbox residue)"
+  actions:
+    - "deleted the 6 empty loose objects"
+    - "git update-ref -d the broken dispatch branch (tip commit never pushed — work already unrecoverable; worktree dir dispatch-wt-20261125-092906-* left on disk as residue, branch ref now unborn)"
+    - "git fetch origin (github deploy key 'tony-macbook' works)"
+    - "scripts/git-safe-pull.sh ~/CascadeProjects/chaba — pulled to origin/master, autostash preserved the 106 dirty files"
+  result: "checkout at origin/master tip; runner-agent.py sha256 = canonical; no broken refs remain"
+
+kk-mac_repair:
+  symptoms:
+    - "checkout 6 days stale (HEAD 66daca1832f, 2026-11-19), shallow clone (.git/shallow, 3 boundary commits)"
+    - "ssh deploy key id_chaba_deploy REJECTED by GitHub — key absent from repo deploy keys (OPS-0220 enrolled it 2026-11-19; it is gone now)"
+    - "github.com host key was also missing from ~/.ssh/known_hosts (fixed via accept-new)"
+  actions:
+    - "discarded 2 dirty files after verifying both were stale duplicates already landed upstream (kk_mac_admission.py per-core load gate = c77cf30a44a; ada-nest-heartbeat.sh identical to origin/master; local max_temp_c 60 superseded by upstream 55 in 4d0041cad82)"
+    - "thin bundles failed (prerequisites below the shallow cut, e.g. 27d12626); built FULL bundle of origin/master on tony-dell (239MB), scp'd, fetched into refs/remotes/origin/master"
+    - "git merge --ff-only origin/master -> 53d811b6988; removed .git/shallow (only 3 refs exist, all objects present) — repo now complete"
+  result: "checkout at origin/master tip; runner-agent.py sha256 = canonical"
+  residual: >-
+    kk-mac CANNOT fetch from GitHub — deploy key missing. The checkout
+    will go stale again and drift deferrals will return within days.
+    Fix = re-add the deploy key (gh repo deploy-key add -R tonezzz/chaba
+    with kk-mac's id_chaba_deploy.pub) — credential change, left for
+    Tony. Until then kk-mac needs manual/bundle syncs.
+
+dashboard_change:
+  what: >-
+    lovelace.chaba_admin on ada-ha (tony-omen:8125, url_path chaba-admin):
+    views[path=kanban].title "Kanban" -> "kanban". Path, view order, and
+    all other views (incl. Kanban 2) untouched.
+  how: >-
+    scripts/home-assistant/push-dashboard.py --mutate
+    scripts/home-assistant/mutate-ada-ha-kanban-tab-lowercase.py over the
+    HA websocket (HASS_TOKEN from tony-omen
+    ~/.config/secrets/ada-ha-token.env); readback verified lowercase.
+  sync: >-
+    scripts/home-assistant/sync-ssot-from-live.sh --instance ada-ha —
+    resanitized ada-ha-chaba-admin-current.json (title diff only),
+    chaba-home snapshot byte-identical, dashboards SSOT last_verified
+    bumped to 2026-11-25.
+  commit: "87bd3c7947c on dispatch/20261125-150802-the-goal-is-to-rename-the-chab (pushed)"
+
+verification:
+  - "ws readback: path='kanban' title='kanban'; path='kanban2' title='Kanban 2' unchanged"
+  - "git diff snapshot: single-line title change, 2 values redacted as before"
+  - "fleet sha256 audit re-run post-repair: all 8 hosts installed+ref = 1514c75c…"
+
+lessons:
+  - "runner-agent drift is judged installed-vs-CHECKOUT-REF, not installed-vs-origin — a current snapshot still declines when the host checkout is stale; check both shas."
+  - "shallow clones cannot accept thin git bundles (prerequisites below the cut); a full-history bundle fetch + rm .git/shallow heals one without any remote auth."
+  - "zero-byte loose objects + one broken ref is enough to fail every git fetch — scan .git/objects for size-0 files and for-each-ref+cat-file -e when fetch dies with 'bad object'."

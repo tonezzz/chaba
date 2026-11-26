@@ -1,0 +1,62 @@
+title: expire stale non-card .local-conflict files
+subtitle: TTL-based archive for generated-path conflicts the reconciler only flagged
+icon: git
+version: 1
+
+card: reconcile-local-conflicts-expire-stale-n-00974b
+date: 2026-11-25
+dispatch: 20261125-091036-focus-inbox-and-other-generate
+redispatch: >-
+  20261125-105702-focus-inbox-and-other-generate (attempt 2 —
+  cherry-picked e405de247b; fixed non-hermetic selftest: FLAG_STATE
+  dedup leaked between runs and suppressed the flag writes the alert-
+  card assertions need; added tests/board/test_reconcile_local_conflicts.py)
+
+summary: |
+  reconcile-local-conflicts.py resolved card conflicts but only ever
+  flagged non-card ones (generated paths under docs/ssot/ and non-.yml
+  files in the cards dir). Those files accumulated forever — 18 stale
+  report-watch/focus-inbox artifacts on tony-dell and tony-omen on
+  2026-11-13 kept both checkouts dirty, git-safe-pull exited 1, and
+  chaba-repo-sync / chaba-served-mirror-sync timer-alerts looped for
+  >24h (OPS-0117). Manual cleanup fixed it once; this is the durable
+  fix.
+
+deliverables:
+  - scripts/board/reconcile-local-conflicts.py — new expire_noncard()
+    gate on both non-card branches (cards-dir non-.yml in
+    reconcile_one, docs/ssot rglob strays in run()). A conflict file is
+    expired only when ALL hold — the CONFLICT_RE base exists (upstream-
+    wins verified — the pulled copy is already canonical), the file is
+    older than RECONCILE_NONCARD_TTL_S (default 86400s, age read from
+    the -YYYYMMDD-HHMMSS suffix with mtime fallback), and the archive
+    move succeeds. Expired files are moved to
+    RECONCILE_NONCARD_ARCHIVE (default
+    ~/.local/share/chaba-reconcile-archive/, repo-relative path
+    preserved, .N suffix on collision) — outside the checkout, so the
+    tree goes clean. Fresh (<TTL), orphan (no canonical), and
+    unparseable-suffix files keep the existing flag-on-recent path;
+    flag text now distinguishes "no canonical base — kept" from
+    "needs manual reconcile — file kept".
+  - "Selftest extended — stale+canonical expires to the archive root
+    and run() returns 0; fresh and orphan non-card files are kept and
+    flagged (run() returns 1)."
+
+verify:
+  - "python3 scripts/board/reconcile-local-conflicts.py --selftest — OK"
+  - "python3 scripts/board/reconcile-local-conflicts.py --dry-run . —
+    exit 0, no conflicts in this worktree"
+  - "next chaba-repo-sync/chaba-served-mirror-sync tick on a host with
+    stale non-card conflicts: files move to the archive dir, checkout
+    goes clean, no new timer-alert"
+
+gotchas:
+  - "Expiry is archive-not-delete on purpose — the dropped local side is
+    preserved under ~/.local/share/chaba-reconcile-archive/ for audit,
+    but it is outside the repo so it cannot re-dirty the checkout."
+  - "Age comes from the filename timestamp, not mtime — git operations
+    can touch mtime; the suffix is written once by git-safe-pull."
+  - "Orphan non-card conflicts (canonical deleted upstream) are NEVER
+    expired — the conflict file may be the only copy of that state."
+  - "Card-path conflicts (.yml) are untouched by this change — they
+    still merge via merge_cards; orphan .yml cards still flag review."

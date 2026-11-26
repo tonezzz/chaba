@@ -1,0 +1,210 @@
+id: ada-wiki-extension-confirm-flag
+title: ada-voice wiki_extension tool must pass confirm=true on mutations
+column: done
+updated: 2026-11-26 19:40
+brief: 'Follow-up from wiki-extension-control-plane: board-api /wiki/extension now requires confirm=true on install|enable|disable;
+  ada-voice backend/tools.d/wiki_extension.py does not send it, so Ada-side mutations will 400 once the hardened
+  door deploys.'
+priority: high
+program: devnest
+tags:
+- ada-voice
+- mediawiki
+- wiki-extension-control-plane
+spec: 'In ada-voice repo (edit point: tony-dell ~/CascadeProjects/ada-voice, deploy via deploy-ada.sh): update backend/tools.d/wiki_extension.py
+  run() to include confirm:true in the POST /wiki/extension body for action install|enable|disable (list stays confirm-free).
+  Mirror the same fix in the ada-ocb bridge path if it calls the door directly (opencode/ada_mcp.py ada_wiki_extension(s)).
+  Add/adjust a scenario or unit test covering the confirm flag. Deploy gates: tool-lint + pytest must pass.'
+ref: ADA-1324
+comms:
+- at: 2026-11-24 20:26
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-24 20:55
+  from: chaba
+  text: classified as free_lane (kw:install conf 1.00)
+- at: 2026-11-24 20:55
+  from: tony
+  text: queued for processing
+- at: 2026-11-24 20:56
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.06 > 1.5)'
+- at: 2026-11-24 20:56
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.61 > 0.85)'
+- at: 2026-11-24 20:56
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-24 20:56
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-24 20:56
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.85 > 1.0)'
+- at: 2026-11-24 20:57
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-24 20:58
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (3/3)'
+- at: 2026-11-24 20:58
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 20:59
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-24 21:02
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-24 21:05
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-24 21:06
+  from: chaba
+  text: started devin-task-20261124-210549-in-ada-voice-repo-edit-point-t on tony-macbook (dispatch)
+- at: 2026-11-24 21:06
+  from: chaba
+  text: 'primer injected 8 lesson(s): [gev-voice] primer injected 8 lesson(s): "The render_job writer" is NOT in
+    chaba; missing-path QC must gate on the card''s declared action.repo — ada-voice/ada-pi ; [board-api-wiki-read-search-doors]
+    spec (chaba repo, scripts/board/board-api.py); [fix-cms-publish-page-slug-argument-missi-96152a] primer injected
+    8 lesson(s): [; [mediawiki-infrastructure-host-hierarchy] Blocker update: extension bundle was u; The chaba
+    merge test gate runs a FIXED file list in dispatch_'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:20
+  from: devin
+  text: 'done: confirm=true added to POST /wiki/extension body for install|enable|disable in backend/tools.d/wiki_extension.py
+    and mirrored in opencode/ada_mcp.py ada_wiki_extension; list stays confirm-free. Fakeboard now enforces the
+    door gate; scenario audit asserts the flag; unit test pins list confirm-free. Gates: tool-lint clean, pytest
+    1977 passed/4 skipped. Branch dispatch/wiki-extension-confirm-flag (e12c641+d5c9132) in worktree ~/CascadeProjects/ada-voice-wt-wiki-confirm-flag
+    — not pushed, no de'
+- at: 2026-11-24 21:22
+  from: tony-macbook
+  text: 'finished (ok): exit=0 a final comms entry posted to the card; next step is merge + `deploy-ada.sh` on idc03.
+    | devin-task-20261124-2105'
+- at: 2026-11-24 21:22
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 21:22
+  from: chaba
+  text: 'session-end checkpoint 25907b64: 1 leftover file(s) committed'
+- at: 2026-11-24 21:22
+  from: chaba
+  text: banked 477 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 21:22
+  from: chaba
+  text: pushed dispatch/20261124-210549-in-ada-voice-repo-edit-point-t to origin
+- at: 2026-11-24 21:22
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-24 21:22
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-24 21:23
+  from: chaba
+  text: 'merge-sweep: merged 9be44ee2 (dispatch/20261124-210549-in-ada-voice-repo-edit-point-t from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261124-210549-in-ada-voice-repo-edit-point-t.md)
+    — auto-closed'
+- at: 2026-11-24 21:23
+  from: local
+  text: 'pub milestone: card verified: ada-wiki-extension-confirm-flag on idc03 — merged 9be44ee2 (dispatch/20261124-210549-in-ada-voice-repo-edit-point-t
+    from tony-macbook) -> origin/master — verified — merged 9be44ee2 (dispatch/20261124-210549-in-ada-voice-repo-edit-point-t
+    from tony-macbook) -> origin/master — verified — auto-closed [evt-e1ab7b3c2d294068]'
+- at: 2026-11-24 21:23
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-210549-in-ada-voice-repo-edit-point-t,
+    branch dispatch/20261124-210549-in-ada-voice-repo-edit-point-t on tony-macbook'
+- at: 2026-11-24 21:23
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261124-210549-in-ada-voice-repo-edit-point-t on
+    tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-11-25 07:44
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:26
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:38
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:48
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:40
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: free_lane
+  lane_source: kw
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
+  result: 'exit=0 a final comms entry posted to the card; next step is merge + `deploy-ada.sh` on idc03. | devin-task-20261124-210549-in-ada-voice-repo-edit-point-t.service:
+    Consumed 2min 11.742s CPU time over 15min 25.256s wall clock time, 1.6G memory peak.'
+  verified: true
+claim:
+  since: 2026-11-24 21:05
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 21:23
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261124-210549-in-ada-voice-repo-edit-point-t.md

@@ -33,6 +33,7 @@
 # NOTE: /v1/backup closes the connection with no HTTP response (curl exit 52)
 # even on success — verify by the staged file appearing, not curl status.
 set -euo pipefail
+umask 077            # backup artifacts contain DB contents — never world-readable
 
 INSTANCES="${MDDB_BACKUP_INSTANCES:-mddb:11023 mddb-ops:11026 mddb-cms:11027}"
 HOST="${MDDB_BACKUP_HOST:-100.102.134.91}"

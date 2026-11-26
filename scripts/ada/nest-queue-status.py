@@ -16,7 +16,7 @@ Checks (the things that have actually bitten us):
 Usage: nest-queue-status.py [--json] [--stale-min N]
 Exit: 0 ok/drained, 1 anomalies found (stalled runner, false marker).
 """
-import argparse, json, re, subprocess, sys, time
+import argparse, json, os, re, shutil, subprocess, sys, tempfile, time
 
 ROOT = 'gdrive:ada-nest'
 Q = f'{ROOT}/queue'
@@ -53,6 +53,72 @@ def cat(path):
     r = subprocess.run(['rclone', 'cat', path], capture_output=True,
                        text=True, timeout=60)
     return r.stdout.strip() if r.returncode == 0 else ''
+
+
+def packs_index():
+    """Fold queue/packs-index event files -> {pack: {state, ts, worker}}.
+
+    One rclone copy of the whole dir (ADA-0806): event files are written
+    by the Colab runner, nest-worker and nest-pack-submit on every
+    claim/done/fail/stage/release. {} when the index is absent — callers
+    fall back to live per-pack checks."""
+    tmp = tempfile.mkdtemp(prefix='nest-packs-index-')
+    try:
+        r = subprocess.run(
+            ['rclone', 'copy', f'{Q}/packs-index', tmp,
+             '--include', '*.json'],
+            capture_output=True, text=True, timeout=90)
+        if r.returncode != 0:
+            return {}
+        state = {}
+        for fn in os.listdir(tmp):
+            try:
+                with open(os.path.join(tmp, fn)) as f:
+                    ev = json.load(f)
+            except Exception:
+                continue
+            p, st = ev.get('pack'), ev.get('state')
+            try:
+                ts = float(ev.get('ts') or 0)
+            except (TypeError, ValueError):
+                ts = 0.0
+            if not p or not st:
+                continue
+            cur = state.get(p)
+            if cur is None or ts >= cur['ts']:
+                state[p] = {'state': st, 'ts': ts,
+                            'worker': ev.get('worker')}
+        return state
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def batch_done_markers(dirs):
+    """{pack: done-marker text} for every pack dir in ONE rclone copy —
+    files-from 'd/done' entries; absent markers simply don't come back.
+    Replaces a per-pack `rclone cat` for the common all-done case."""
+    if not dirs:
+        return {}
+    tmp = tempfile.mkdtemp(prefix='nest-done-')
+    try:
+        lst = os.path.join(tmp, 'files.txt')
+        with open(lst, 'w') as f:
+            f.write('\n'.join(f'{d}/done' for d in dirs) + '\n')
+        dst = os.path.join(tmp, 'out')
+        r = subprocess.run(
+            ['rclone', 'copy', PACKS, dst, '--files-from', lst],
+            capture_output=True, text=True, timeout=180)
+        if r.returncode != 0:
+            return {}
+        markers = {}
+        for d in dirs:
+            fp = os.path.join(dst, d, 'done')
+            if os.path.isfile(fp):
+                with open(fp) as f:
+                    markers[d] = f.read().strip()
+        return markers
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 def glob_remote(pattern):
@@ -97,16 +163,32 @@ def main():
     args = ap.parse_args()
     anomalies, report = [], {'checked_at': int(time.time())}
 
-    # --- heartbeat ---
-    hb = cat(f'{Q}/heartbeat')
-    hb_epoch = 0
+    # --- liveness: queue/lease is the unified file (ADA-0806); the
+    # legacy queue/heartbeat text is the pre-unification fallback ---
+    hb_epoch, hb_state = 0, ''
+    d = {}
     try:
-        hb_epoch = int(hb.split()[0])
-        hb_state = ' '.join(hb.split()[1:])
-    except (ValueError, IndexError):
-        hb_state = hb or '(empty/missing)'
+        d = json.loads(cat(f'{Q}/lease'))
+        hb_epoch = int(float(d.get('ts') or 0))
+        hb_state = ' '.join(x for x in (
+            str(d.get('job') or ''), str(d.get('phase') or '')) if x)
+    except Exception:
+        d = {}
+    if not hb_epoch or not hb_state:
+        parts = cat(f'{Q}/heartbeat').split()
+        if not hb_epoch:
+            try:
+                hb_epoch = int(parts[0])
+            except (ValueError, IndexError):
+                pass
+        if not hb_state and len(parts) >= 2:
+            hb_state = ' '.join(parts[1:])
+    if not hb_state:
+        hb_state = (str(d.get('worker')) if isinstance(d, dict) else '') \
+            or '(empty/missing)'
     hb_age = int(time.time()) - hb_epoch if hb_epoch else None
-    report['heartbeat'] = {'epoch': hb_epoch, 'age_s': hb_age, 'state': hb_state}
+    report['heartbeat'] = {'epoch': hb_epoch, 'age_s': hb_age,
+                           'state': hb_state}
     pid = cat(f'{Q}/runner.pid')
     report['runner_pid'] = pid or None
 
@@ -129,10 +211,27 @@ def main():
     report['env_done'] = env
 
     # --- packs ---
+    # packs-index (ADA-0806) + one batched done-marker fetch keep the
+    # enumeration near O(1); live per-pack lsf/cat survives only for packs
+    # the index doesn't call terminal — claim state must be read remotely
+    # anyway, and the index is advisory, never authoritative.
+    idx = packs_index()
+    dirs = lsf(PACKS)
+    markers = batch_done_markers(dirs)
     packs = {}
-    for d in lsf(PACKS):
-        entry = {'claimed_by': lsf(f'{PACKS}/{d}/claim'),
-                 'done': cat(f'{PACKS}/{d}/done') or None}
+    for d in dirs:
+        ev = idx.get(d) or {}
+        st = ev.get('state')
+        done_text = markers.get(d)
+        if done_text is None and st not in ('done', 'fail'):
+            done_text = cat(f'{PACKS}/{d}/done') or None
+        entry = {'claimed_by': [], 'done': done_text or None}
+        if entry['done'] is None and st != 'fail':
+            entry['claimed_by'] = lsf(f'{PACKS}/{d}/claim')
+        elif st in ('done', 'fail') and ev.get('worker'):
+            # terminal state — attribution comes from the index event
+            # instead of a per-pack claim listing
+            entry['claimed_by'] = [ev['worker']]
         if entry['done']:
             entry['artifacts'] = check_marker_artifacts(entry['done'])
             bad = [v for v in entry['artifacts'] if not v['ok']]
@@ -142,6 +241,7 @@ def main():
             anomalies.append(f'UNCLAIMED pack {d}')
         packs[d] = entry
     report['packs'] = packs
+    report['packs_index_events'] = len(idx)
 
     # --- stall detection: live work but dead heartbeat ---
     pending = bool(packs and any(not p['done'] for p in packs.values()))

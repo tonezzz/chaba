@@ -1,0 +1,80 @@
+id: opencode-lane-profile-claim-gate
+title: executor=opencode claim gate replicates lane->profile resolution
+date: 2026-11-24
+card: runner-agent-opencode-lane-profile-bug
+ref: OPS-0996
+host: fleet (runner-agent.py claimable/executor_defer_reason)
+status: implemented
+
+goal: >
+  Card runner-agent-opencode-lane-profile-bug: start_task called
+  start_opencode_lane(card, "", unit) for declared executor=opencode,
+  blinding the card's own action.lane from the LANE_PROFILES map —
+  executor=opencode + lane=free_lane failed 'no task profile for lane
+  (none)' unless it also pinned action.agent_profile (found live
+  2026-10-30 on devnest-fl-pilot-sop, idc02, 3rd claim attempt).
+
+state_found: >
+  The start-side fix was already merged (OPS-1021, 2026-10-30,
+  cline-ready-mirror 9316bb32a): start_task now forwards
+  str(a.get("lane") or "") into start_opencode_lane and the error
+  names action.agent_profile-or-mapped-lane. Verified at
+  runner-agent.py:3953+. runner-fleet-health binary/repo drift
+  flagging also already exists (judge() compares installed sha vs
+  repo refsha AND vs origin/master tool pins; wired via
+  scripts/ada/kanban-sync.sh).
+
+root_cause: >
+  The claim-time gate did NOT replicate the start-time routing for
+  explicit executor=opencode: _claimable checked OPENCODE_LANES +
+  binary + lane_envelope but never profile resolution. A card with
+  executor=opencode + staged envelope + unmapped/absent lane + no
+  agent_profile was claimed, then start_opencode_lane failed
+  deterministically — finish ok=False + retry_record_failure burned
+  the attempt budget (ops-1244d-janitor-merge: 'no task profile for
+  lane paid_frontier'). KNOWN_PITFALLS for this card states the rule:
+  claim-time gates must replicate start-time routing or the attempt
+  ledger pays for it.
+
+fix:
+  runner-agent.py _claimable (ex == "opencode" branch): >
+    After the lane_envelope hold, added the profile-resolution hold:
+    card_profile(card) or LANE_PROFILES.get(action.lane) must resolve,
+    else the card is unclaimable on every host — held queued with a
+    reason instead of burning a start failure. Explicit executor
+    never classifies, so action.lane at claim == the lane start_task
+    forwards — the check is exact, not approximate.
+  runner-agent.py executor_defer_reason: >
+    Mirrored the same check so the hold surfaces on the board as a
+    debounced defer comms (names agent_profile, the lane, and that no
+    attempt is burned) rather than looking like silent starvation.
+  tests/board/test_executor_contract.py: >
+    +4 UnstagedOpencodeHoldTest cases: mapped lane (free_lane ->
+    ops-readonly) without agent_profile CLAIMS (the bug scenario);
+    unmapped lane (paid_frontier) and absent lane are HELD with the
+    defer reason asserted; action.profile alias claims. Also added
+    agent_profile to test_opencode_executor_needs_push_too so it
+    keeps exercising the push guard past the new hold.
+  scripts/devin/runner-tooling.manifest.json: >
+    runner_agent pin bumped to the new source sha256. The base was
+    already red: checkpoint 9b34c16b92f (Jev stagnation gate, today
+    16:43) changed runner-agent.py without a pin bump, so
+    test_pin_hashes_match_sources failed AND sync-runner-tools.sh
+    would refuse the deploy — fleet-wide stale-binary risk, the same
+    class as idc02's Oct-25 runner-agent.
+
+verified: >
+  tests/board/test_executor_contract.py 112 passed;
+  test_runner_tooling_contract.py 7 passed (was 1 failed on base);
+  test_runner_agent_lane/gate/reconcile/stale_worktree 58 passed;
+  test_runner_agent_launchd/waiting_cards/stalled_claim_lifecycle
+  100 passed.
+
+notes: >
+  Deploy note unchanged: hosts receive the new runner-agent via their
+  chaba checkout sync (chaba-repo-sync.timer -> sync-runner-tools.sh),
+  not scp — and only after this merges, since the manifest pin now
+  gates the install. The claim hold is card-contract deterministic:
+  it applies on every host equally, so a card that can never resolve
+  a profile waits queued for a card edit rather than failing per
+  attempt.

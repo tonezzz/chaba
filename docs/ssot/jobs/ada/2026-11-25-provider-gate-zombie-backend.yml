@@ -1,0 +1,60 @@
+date: 2026-11-25
+title: provider-gate zombie-backend blind spot — /api/health live probe added
+domain: ada
+job: provider-gate-zombie-backend-blind
+cards: [provider-gate-zombie-backend-blind]
+refs: [ADA-1168]
+host: idc03
+repo: chaba
+summary: >
+  scenario-provider-gate.py verdict chain trusted systemd is-active +
+  journal dunning evidence only. On 2026-11-02 ada-dev sat 'active'
+  with ZERO journal lines all day (zombie uvicorn) — the gate
+  verdict 'ok — provider healthy' and the research suite then failed
+  all 7 scenarios in ~0.4s each. Fix: a cheap live probe — GET
+  http://127.0.0.1:<port>/api/health must answer ok:true before the
+  gate returns ok; unreachable/malformed -> 'infra' (clean skip,
+  exit 1, per-scenario infra reports as usual).
+
+decision:
+  chose: live-probe (card option B) over journal-silence floor (option A)
+  why: >
+    Journal silence is not evidence of death — an idle-but-healthy
+    backend also logs nothing between suite runs, so a
+    healthy_markers==0 && journal_lines<floor rule would false-skip
+    quiet nights. /api/health is the surface the suite actually needs
+    (unauthenticated on pwa_server.py, returns ok:true +
+    active_sessions); one loopback GET proves serving for ~zero cost.
+    The probe also catches zombies that DO have recent journal
+    markers (hung after last log line) — the floor could not.
+
+implementation:
+  file: scripts/ada/scenario-provider-gate.py
+  changes:
+    - >-
+      service_port(unit) resolves ADA_PORT env then --port in ExecStart,
+      same resolution as ada-voice scripts/deploy-ada.sh service_port();
+      '' -> 'skip' verdict, journal-only path preserved for relays and
+      non-HTTP units.
+    - >-
+      check_live_probe(unit): 2 attempts x 4s timeout, 1.5s apart;
+      requires HTTP 200 + JSON body with ok:true.
+    - >-
+      verdict order: not-active -> infra; live==infra -> infra;
+      paid-lane -> paid-lane; quota-dead -> quota-dead; else ok.
+      infra reason names the probe detail so the gate summary doc
+      shows the zombie evidence.
+  tests: tests/ada/test_scenario_provider_gate.py — 9 cases
+    (port resolution, probe ok/infra/skip, main() zombie->exit1,
+    serving->exit0). All pass; gate dry-run verified on idc02.
+
+verification: >
+  python3 -m pytest tests/ada/test_scenario_provider_gate.py -x -q
+  (9 passed). Live proof lands on the next scheduled suite fire on
+  idc03 — a zombie ada-dev now gates 'infra' instead of 'ok'.
+
+notes:
+  - Probe runs only when is-active=active; adds <= ~10s worst case to
+    ExecCondition, no API spend (loopback only).
+  - deploy-ada.sh already drains on the same /api/health endpoint —
+    the contract is proven in prod since 2026-10-14.

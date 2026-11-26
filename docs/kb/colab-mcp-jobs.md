@@ -51,9 +51,11 @@ workloads are queue jobs/packs (`JOBS.py` + `packs/<name>/pack.yml`).
   runner removes its identity files only when they still name it, so a
   fenced-out generation can't strip a live runner's marks.
 - **Registry/state layout**: `queue/runtime-sessions/<boot_id>.json` (managed
-  VMs), `queue/runner.id`, `queue/heartbeat`, `queue/lease`,
-  `queue/warmup/<boot_id>.json` (per-boot warmup stats). Fleet-side read:
-  `mcp-colab` tool `colab_session_status`.
+  VMs), `queue/runner.id`, `queue/lease` (unified liveness —
+  `{worker,epoch,ts,job,phase}`; `queue/heartbeat` is the retired legacy
+  file kept only as a reader fallback), `queue/packs-index/` (per-event
+  pack state files), `queue/warmup/<boot_id>.json` (per-boot warmup
+  stats). Fleet-side read: `mcp-colab` tool `colab_session_status`.
 - **Snapshot constraint**: the runner imports `JOBS.py` and scans
   `packs/` ONCE at launch, runs all JOBS before the (name-sorted) packs,
   and overlaps only the *next* job's `prep` under the current `run`.
@@ -179,8 +181,11 @@ of staging cells per job:
 - **Detached mode (2026-10-23; hardened 2026-10-26)** — the launch path
   is cell 2 of the job-console notebook (`queue-launcher-cell.py`): it
   starts `queue/runner.py` as a session-detached process (output →
-  `queue/run-<ts>.out.log`, identity → `queue/runner.id`, `queue/heartbeat`
-  rewritten every 15 s) after the session gate described above. The
+  `queue/run-<ts>.out.log`, identity → `queue/runner.id`, unified
+  liveness → `queue/lease` JSON `{worker,epoch,ts,job,phase}` rewritten
+  every 15 s — the legacy `queue/heartbeat` text file is retired;
+  readers fall back to it for pre-unification runners, ADA-0806) after
+  the session gate described above. The
   kernel stays free for diagnostics mid-run, and the queue survives a
   kernel restart. Blocking in-kernel mode is only for interactive
   debugging.
@@ -199,25 +204,35 @@ of staging cells per job:
   `signal.alarm(N)` guard + a `start` print before it; a silent stall
   otherwise looks identical to a slow run (VoxCPM2 sat ~1 h at 0% GPU).
 - **Bracket every manifest with cache jobs** so the second runtime of a
-  session (or the next session) skips weight re-downloads entirely:
+  session (or the next session) skips weight re-downloads entirely.
+  Since ADA-0806 the cache is stored **per repo** —
+  `cache/hf-hub/models--<org>--<name>.tar.zst` — and `save-hf-cache`
+  writes those plus the legacy `cache/hf-hub.tar.zst` monolith (kept one
+  transition cycle). `restore-hf-cache` honors `NEST_HF_REPOS` (the
+  runner sets it to the union of `hf_repos` over packs/jobs still
+  pending this boot): named repos extract only their own tar — or their
+  `hub/models--*` subtree out of the monolith in ONE tar pass, so
+  selective restore works even before per-repo archives exist;
+  `'NONE'` skips the extract entirely; unset (only pre-ADA-0806 runners)
+  restores the whole monolith, with per-repo tars as the monolith-less
+  fallback:
   ```python
   {"name":"restore-hf-cache","scope":"env",
-   "prep":"test -f /content/drive/MyDrive/ada-nest/cache/hf-hub.tar.zst"
-          " && mkdir -p /root/.cache/huggingface"
-          " && tar -I zstd -xf /content/drive/MyDrive/ada-nest/cache/hf-hub.tar.zst"
-          "    -C /root/.cache/huggingface || true",
-   "run":"import os;print('hub entries:',len(os.listdir('/root/.cache/huggingface/hub'))if os.path.exists('/root/.cache/huggingface/hub')else 0)"},
-  # ... gpu jobs whose preps stay `snapshot_download` — they validate the
-  # restored cache instantly instead of re-downloading ...
-  {"name":"save-hf-cache","scope":"env","artifacts":["cache/hf-hub.tar.zst"],
-   "prep":"tar -I zstd -cf /content/drive/MyDrive/ada-nest/cache/hf-hub.tar.zst"
-          " -C /root/.cache/huggingface hub",
-   "run":"print('hf cache packed')"},
+   # prep/run as shipped in scripts/colab/JOBS.py — selective via
+   # $NEST_HF_REPOS: 'NONE' skips, 'org/name ...' extracts only those
+   # cache/hf-hub/models--org--name.tar.zst archives
+   ...},
+  {"name":"save-hf-cache","scope":"env",
+   "artifacts":["cache/hf-hub.tar.zst","cache/hf-hub/*.tar.zst"],
+   # prep tars each /root/.cache/huggingface/hub/models--* dir into
+   # cache/hf-hub/<name>.tar.zst AND the legacy monolith
+   ...},
   ```
   Drive read + zstd decompress beats an HF re-pull, and `snapshot_download`
   becomes a fast no-op validator when the cache is warm. Keep the
   `snapshot_download` preps regardless — they self-heal when the tar is
-  missing or stale.
+  missing or stale. Packs declare their hub need via `hf_repos:` (see
+  Packs below) so a pending LTX pack restores LTX-Video, not VoxCPM2.
 - **The first GPU job's prep is the one un-hideable window** — unless you
   put the warmup first. Canonical `JOBS.py`
   (`scripts/colab/JOBS.py`) opens with `t4-session-warmup` (scope `env`):
@@ -266,8 +281,13 @@ The launch order that keeps the T4 fed end-to-end:
 3. **After prep, the T4 package runs with durable-artifact gates.**
    env `scope` jobs re-run per boot; packs claim → prep → run →
    verify-before-mark (`artifacts` globs must hit ≥1 non-empty file) →
-   `packs/<name>/done`. The 120 s `NEST_QUEUE_SETTLE_S` drain window lets
-   DriveFS finish flushing before the VM idles; server-side truth is
+   `packs/<name>/done`. The `NEST_QUEUE_SETTLE_S` drain window (default
+   120 s) is the stage-then-push flush window: packs should write big
+   outputs to local disk and copy them into the Drive path, and after
+   settling the runner re-stats every artifact pattern marked done this
+   session — sizes still growing mean the FUSE flush was incomplete at
+   mark time (the 2026-10-23 lost-tar class); the check is logged for
+   the fleet audit and never fails the queue. Server-side truth is
    `rclone lsf` from a fleet host.
 
 ## Packs — work units for any worker (nest-pack v2, 2026-10-23)
@@ -280,6 +300,11 @@ same bundle runs on Colab today and a fleet host tomorrow.
   ```yaml
   name: my-job
   needs: {gpu_gb: 3, disk_gb: 4, ram_gb: 8, egress_only_ok: true}   # capability floor
+  hf_repos: [Lightricks/LTX-Video]   # HF hub repos this pack needs in
+                                   # /root/.cache/huggingface/hub —
+                                   # drives selective restore-hf-cache
+                                   # (ADA-0806). Absent = no declared HF
+                                   # need; undeclared use self-downloads.
   requires: [my-release-preflight]  # claim gate — wait for done marker(s)
   timeout_s: 1200     # runner-side SIGALRM around the whole run
   artifacts:          # globs vs ada-nest/ root — verify-before-mark gate
@@ -296,6 +321,16 @@ same bundle runs on Colab today and a fleet host tomorrow.
   (first-writer-wins, 2 s settle; Drive listing lag makes it best-effort
   for simultaneous claims — fine at our scale). Done marker is a FILE:
   `packs/<name>/done` (note: not `.done` suffix — inside the pack dir).
+  A worker releases its own claim on FAIL, on done, and before a
+  fence-exit self-kill — a dead claim never waits out the stale-claim
+  window (ADA-0806).
+- **packs-index** — every state change also drops one tiny immutable
+  JSON event at `queue/packs-index/<ms>-<worker>-<pack>-<state>.json`
+  (states: `stage|claim|done|fail|release`; writers: nest-pack-submit,
+  nest-worker, queue-runner). Fleet scans fold the dir in ONE rclone
+  copy instead of `lsf` per pack; the index is advisory — consumers
+  (`nest-queue-status.py`) fall back to live per-pack checks for
+  anything not called terminal.
 - **needs check** — workers advertise `gpu_gb` (nvidia-smi),
   `disk_gb` (statvfs), `ram_gb` (sysconf SC_PHYS_PAGES), and
   `egress_only_ok` (Colab can only egress). Unmatched packs skip
@@ -336,11 +371,19 @@ same bundle runs on Colab today and a fleet host tomorrow.
 - Verified live 2026-10-23: `smoke` pack (lifecycle proof) +
   `thonburian-bench` (Thai voice-clone eval — 10 wavs in 98 s on T4,
   report.md inside the pack dir).
-- **Member-surface mirror** — queue-mgr (dell, watches the Drive store)
-  mirrors job/pack state into WP `nest_job` posts via board-api
+- **Member-surface mirror** — `scripts/ops/queue-mgr.py` (tony-dell,
+  `queue-mgr.timer` every 5m via ssot.jobs.yml) watches the Drive store
+  and mirrors job/pack state into WP `nest_job` posts via board-api
   `POST /job` (upsert by slug, `status`, `comms` append log, `parent`
-  for job trees). Watchers stay read-only on Drive; the door is the
-  only writer — workers and Colab never hold WP creds.
+  for job trees). One root post `ada-nest-queue` (kind=queue) parents
+  every pack (kind=pack) and manifest job (`job-<name>`, kind=sub);
+  root status is derived from children. Writes are delta-only — a
+  per-slug fingerprint in `~/.local/state/queue-mgr.json` means
+  unchanged entities cost zero WP calls, and `comms` lines land only on
+  transitions. Kill switch: `touch ~/.config/queue-mgr.off` on
+  tony-dell; `--dry-run` prints the derived plan with no writes.
+  Watchers stay read-only on Drive; the door is the only writer —
+  workers and Colab never hold WP creds.
   See `docs/kb/board-api-write-door.md`.
 
 ### Gap packs — idle GPU during main-queue prep (2026-10-25)
@@ -348,7 +391,8 @@ same bundle runs on Colab today and a fleet host tomorrow.
 `ada-nest/queue/gap-runner.py` fills the GPU-idle prep/prep-wait windows
 of the main queue with tiny self-contained **gap packs** under
 `ada-nest/gap-packs/<name>/pack.json`. It runs only while the main
-heartbeat is fresh (<=60s) AND phase is `prep`/`prep-wait`, a VRAM gate
+queue liveness is fresh (<=60s — `queue/lease` ts, heartbeat fallback)
+AND phase is `prep`/`prep-wait`, a VRAM gate
 passes, and `queue/gap-lease` is free — and it SIGKILLs the pack's process
 group the moment the window closes (claim released for retry). Gap packs
 never pull models, never touch HF/Drive caches or production indexes, and
@@ -367,3 +411,180 @@ per runtime with `scripts/colab/gap-launcher-cell.py`. Policy + contract:
   already staged by an env job — a pack is meant to be self-contained.
 - Pack `run` is exec'd in a *shared* namespace with the manifest jobs —
   pop stale `model`/`pipe` globals and `torch.cuda.empty_cache()` first.
+
+## Job status lifecycle and storage map
+
+How a nest job's status flows across the four surfaces, and where each
+piece of truth lives (OPS-0922 SOP: `docs/kb/job-package-status-sop.md`;
+enforcement: OPS-0923).
+
+| Surface | What it stores | Writer / reader |
+|---|---|---|
+| `queue/lease` | unified liveness `{worker,epoch,ts,job,phase}` — what the runner is doing *right now* | runner rewrites ~15 s; `queue/heartbeat` text is the pre-unification fallback |
+| `packs/<name>/claim/` + `done`/`failed` markers | per-pack queue truth — who claimed, terminal proof | worker writes claim, verify-before-mark writes `done`; readers: `nest-queue-status.py`, `nest-job-reconcile.py` |
+| `queue/packs-index/*.json` | advisory event fold `{ts,pack,state,worker}` — `stage|claim|done|fail|release` | nest-pack-submit / nest-worker / queue-runner write; fleet scanners fold in one rclone copy; never authoritative alone |
+| WP `nest_job` CPT meta | member-facing mirror — `status`, `result_ref`, `error`, `evidence`, `artifact_verified`, `comms[]` | board-api `/job` (and `/publish` job sink) is the ONLY writer; queue-mgr mirrors Drive state through it |
+
+Status flow: `queued → claimed → running → done|failed|stalled|
+cancelled`. `done`/`cancelled` are terminal — they exit only via
+`queued` (explicit requeue) or `failed` (honest correction).
+
+Write-door contract (enforced in `do_job`, board-api):
+
+- transitions follow `JOB_TRANSITIONS` — illegal jumps get HTTP 400;
+- `status=done` requires `result_ref` **and** verified artifact
+  evidence (`evidence[]`, `verified:true`, or `confidence=verified`);
+- `/publish` milestones never imply `done` — only an explicit
+  `meta.job_status` does, and it hits the same gate;
+- evidence lands in `meta.evidence` + `meta.artifact_verified` so the
+  mirror carries its own proof.
+
+Read side: `GET /nest-jobs` on board-api lists the mirror (slug,
+status, meta — comms stripped unless `comms=1`);
+`scripts/ops/nest-job-reconcile.py` cross-checks all four surfaces and
+reports drift without mutating anything.
+## KK-Mac isolated Nest and DevNest jobs
+
+Use this lane for explicitly approved, bounded work on KK's member Mac
+(`kk-mac`, M4 Max, 36 GiB unified memory). It is not a general-purpose
+always-on fleet worker. The host is owner-first, may go offline without
+notice, and must pass a fresh resource admission before each run. Keyboard
+or mouse input and an open design app are not blockers by themselves.
+
+### Stores and lane boundaries
+
+- Video/MPS experiments use the isolated root
+  `gdrive:ada-nest-kk-mac-video-pilot`.
+- Local-model/DevNest experiments use the separate root
+  `gdrive:ada-nest-kk-mac-pilot`.
+- Never mix the two roots or launch a worker against `gdrive:ada-nest`
+  from KK-Mac. A Mac worker's `--once` scans every claimable pack in its
+  selected root, not just a named pack.
+- The recorded Qwen3:8B model-only slot in the LLM root is `partial` (2/5
+  fixtures) and postdates the `deterministic-only` decision recorded on
+  OPS-0966. Do not rerun or extend that inference lane until its authorization
+  is reconciled.
+
+### Admission and package contract
+
+1. **Card and lifecycle first.** Link the job to the relevant card and create
+   `planning` before execution. State the exact input hashes, output contract,
+   timeout, privacy, stop condition, owner workload protection, and rollback.
+2. **Use a versioned, bounded pack.** One pack should do one verifiable unit
+   (for video, one shot); use an immutable name for each revision. Declare
+   `needs.ram_gb` and `needs.disk_gb`. Do not use `gpu_gb` to describe Apple
+   MPS capacity: the generic fleet worker probes NVIDIA with `nvidia-smi`.
+3. **Do not treat `egress_only_ok: false` as host pinning.** The generic
+   `nest-worker.py` ignores that field when matching capabilities. The isolated
+   Mac root plus an explicit trusted-host one-shot launch is the placement
+   control; never run a generic fleet worker against that root.
+4. **Keep Mac execution offline and cache-only.** Pin the local model revision,
+   set `HF_HUB_OFFLINE=1`, verify required model files before inference, and
+   do not install dependencies, pull models, change services, or read personal
+   files unless separately approved.
+5. **Repeat safety gates in the pack's `prep`.** Require AC power, at least
+   80% free system memory before loading the video model, no resident Ollama
+   model, no competing Nest worker, and no active render/export process.
+   Sample design-app and system CPU with `mac-owner-resource-gate.py`;
+   recent input is informational and idle open apps may remain open. If a
+   gate fails, return nonzero before model load. Never close owner apps,
+   unload owner models, or stop owner workers to make a pack pass.
+6. **Hash-bind private inputs.** Put only the approved source files in
+   `inputs/`; verify source revision, audit record, image page, embedding and
+   byte/hash values before model load. Do not stage voice references or
+   narration unless the pack explicitly needs them.
+7. **Keep artifact gates strict.** Declare every required non-empty output;
+   independently verify media codec, size, frame count/duration, full decode,
+   black-frame threshold, output hash and private visibility. Technical pass
+   is not human quality approval.
+
+### Stage, run, verify
+
+1. Stage from a trusted fleet checkout to the specific Mac root:
+   `nest-pack-submit.py <pack-dir> --remote gdrive:ada-nest-kk-mac-video-pilot`.
+   Dry-run first; use a new pack name; then require `rclone check --one-way`
+   to report zero differences. The Colab MCP pack submitter may not be able to
+   see a satellite worktree path.
+2. Before launch, verify Tailscale reachability and the trusted tony-dell to
+   kk-mac SSH route without disabling host-key checking. Read AC state,
+   memory pressure, resident-model count, owner-app gate, disk and model-cache
+   status. If the Mac is offline or busy, leave the pack staged and stop.
+3. Confirm the isolated root contains only the intended runnable pack(s), no
+   active claim, and a completed prerequisite marker. Then run exactly one
+   worker pass from the trusted Dell hop:
+   ```bash
+   ssh -o BatchMode=yes kk-mac \
+     '$HOME/kk-video/.venv/bin/python "$HOME/CascadeProjects/chaba/scripts/ada/nest-worker.py" \
+       --once --remote gdrive:ada-nest-kk-mac-video-pilot \
+       --workdir "$HOME/.cache/nest-worker"'
+   ```
+   Do not start a persistent loop or launch parallel workers. The worker scans
+   every claimable pack in that root and runs them serially.
+4. If `prep` stops, treat that as a successful safety stop: do not retry until
+   a fresh preflight passes. If `run_sh` fails, inspect the claim/log and
+   artifact state before retrying. A failed run may leave local partial output;
+   stage per-shot packs or explicitly publish each verified checkpoint if
+   resumability is required.
+5. Require a remote `done` marker, non-empty declared artifacts, and a
+   fleet-side `rclone check`/read-back. Update the lifecycle and card through
+   board-api; keep human review separate from technical verification.
+
+### Renderer-neutral video contract
+
+Keep one shared job record and make renderer details adapter-specific. The
+same lifecycle can drive local MLX, local MPS, or a hosted provider without
+pretending their capabilities, cost, or continuity are interchangeable.
+
+1. The shared job record captures project/card, private-by-default visibility,
+   immutable job/version ID, source asset paths and SHA-256 values, action
+   plan, prompt, target duration/format, timeout, output location, audio plan,
+   and review gates. Record the renderer adapter, exact model/provider
+   revision, and any spend authorization.
+2. Each adapter receives a small native manifest. For example,
+   `~/kk-video/kk_mac_video_batch.py` accepts serial `shots` with `id`,
+   `image`, `prompt`, `frames`, `height`, `width`, `seed`, `steps`, and `fps`,
+   and writes one MP4 per shot plus `batch-result.json`. The MPS panel runner
+   additionally verifies its storyboard map and embeddings. Do not force
+   provider-specific controls into fields an adapter cannot honor.
+3. The local MLX and MPS adapters use verified local caches and produce silent
+   video in the current KK-Mac lane; audio/mux is a separate, hash-recorded
+   step. A hosted Veo adapter is a separate paid route: require explicit spend
+   authorization and provider billing verification before submission. Never
+   silently fall back from a local render to a paid provider.
+4. Run one short proof cut first. Give every retry a new immutable version;
+   do not overwrite output. A technical pass does not authorize the next cut:
+   human review must accept the action, identity, continuity, and framing
+   before extending or assembling a sequence. A creative rejection stops the
+   chain; a corrected same-cut retry needs a concrete prompt/input change.
+5. Independently verify output codec, dimensions, frame count, duration, full
+   decode, black-frame result, audio presence, size, and SHA-256. Keep the
+   technical report separate from the human creative-review result.
+6. Use explicit lifecycle states: `staged`, `ready`, `admitted`,
+   `rendering`, `produced`, `technical_pass`, `creative_review`,
+   `accepted_private`, and `published`. “Prepared” or “embedding complete”
+   never means a video exists.
+7. Keep the source, immutable manifest, logs, output, QC report, and review
+   decision in the private project artifact root. Verify the upload with
+   `rclone check --one-way`; do not publish or deliver it to LINE without the
+   applicable approval.
+
+The 2026-11-04 dance-party pilot confirmed the MLX adapter produces a
+73-frame, 640x384 silent proof in about 33 seconds on this host. Free memory
+briefly fell during model load and recovered after each run; keep runtime
+memory/swap under observation and stop the current render if pressure remains
+critical. This is a measured pilot, not a duration guarantee.
+
+### Current Sacred Father sequence
+
+- The 25-frame page-9 MPS I2V probe passed: H.264 640x384, 1.04 s, full decode.
+- `kk-mac-storyboard-i2v-fullshot01-20261030` passed at 73 frames/40 steps;
+  the user then requested one additional test render, and shot02/page12 passed
+  with the same settings. Both outputs remain private and need visual review.
+- A user-requested one-off test may run before visual review, but do not stage
+  or launch the remaining scene batch until shot01/shot02 are reviewed.
+  After review, package shots 3-10 as bounded child units with the approved
+  page/image/embedding map and a review gate. Keep MPS stages serial.
+- Only after all mapped shots pass artifact verification should the held
+  Colab V2 pack be resumed for cloned narration and assembly.
+- The Colab V2 pack currently has an explicit resume prerequisite; do not
+  remove that hold while Mac video work is in progress.

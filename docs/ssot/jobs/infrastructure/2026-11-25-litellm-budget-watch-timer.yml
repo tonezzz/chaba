@@ -1,0 +1,42 @@
+title: LiteLLM budget-watch timer enabled on idc03
+subtitle: near-cap watcher went from live-smoke-only to hourly systemd timer
+icon: clock
+version: 1
+
+card: litellm-budget-watch-enable
+ref: SEC-0962
+date: 2026-11-25
+dispatch: 20261125-102426-the-near-cap-watcher-scripts-l
+
+question: |
+  scripts/litellm/budget-watch.py (LiteLLM VerificationToken near-cap
+  watcher, warn >=80% / alert >=100%) had never had a timer — it was
+  live-smoked on idc03 2026-10-28 and only reported then. Enable its
+  timer so near-cap budgets warn/alert before a 422 blocks calls.
+
+decision: |
+  Declared job litellm-budget-watch in ssot.jobs.yml (host idc03,
+  dispatch: systemd, every: 1h, persistent, timeout 5m,
+  env_file ~/.config/secrets/litellm.env for the LITELLM_MASTER_KEY
+  API fallback, condition_path on the script). Rendered units to
+  systemd/generated/idc03/ and installed on idc03
+  ~/.config/systemd/user/ (scp + daemon-reload + enable --now) —
+  same result as render-jobs.py --host idc03 --ids litellm-budget-watch
+  --install, done out-of-band because the declaring commit is not yet
+  on idc03's exec checkout.
+
+verification: |
+  Timer fired on enable (OnBootSec=1min catch-up): service exited 0,
+  source postgres:VerificationToken, verdict ok (0 alerts / 0 warns),
+  ops-event emitted to ada-ha-events-tony.
+  ssh idc03 'python3 scripts/litellm/budget-watch.py --selftest' -> OK
+  ssh idc03 'python3 scripts/litellm/budget-watch.py --dry-run' -> ok
+  python3 -m unittest tests.litellm.test_budget_watch -> 13 tests OK
+
+notes: |
+  Hourly cadence chosen over key-watch's 6h: spend can move fast during
+  eval burns (2026-10-24 incident ~$27.5); the psql read is one cheap
+  query and LINE noise is already bounded by the script's 240min resend
+  dedup + 00-07 ICT quiet hours. At >=100% the script alerts but calls
+  are already 422ing — the >=80% warn is the advance-notice layer.
+  First ops-event doc key: ops-budget-watch-<ts> in ada-ha-events-tony.

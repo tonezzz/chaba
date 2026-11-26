@@ -1,0 +1,230 @@
+{
+  "schema_version": 1,
+  "status": "synthetic_review_only",
+  "execution_authorized": false,
+  "routes": [
+    {
+      "case_id": "readonly-report",
+      "expected": "free_lane",
+      "actual": "free_lane",
+      "match": true
+    },
+    {
+      "case_id": "docs-only",
+      "expected": "free_lane",
+      "actual": "free_lane",
+      "match": true
+    },
+    {
+      "case_id": "physical-hardware",
+      "expected": "manual",
+      "actual": "manual",
+      "match": true
+    }
+  ],
+  "compiled_proposals": [
+    {
+      "schema_version": 1,
+      "status": "needs_clarification",
+      "card_snapshot": {
+        "source": "synthetic_card_snapshot",
+        "id": "SYN-READONLY-REPORT-001",
+        "version": 1
+      },
+      "jev": {
+        "route": "free_lane",
+        "source": "jev_keyword"
+      },
+      "proposal": {
+        "case_id": "readonly-report",
+        "goal": "Generate a read-only health report using synthetic data.",
+        "recommendation": "Proceed with analysis using synthetic data.",
+        "viewpoints": {
+          "user_value": "Provides a baseline health report for review without affecting live systems.",
+          "technical": "Ensures data privacy and avoids potential disruptions.",
+          "operations_safety": "No live system interactions, reducing risk.",
+          "cost_effort": "Eliminates costs associated with live system access and minimizes effort."
+        },
+        "options": [
+          {
+            "label": "A",
+            "benefit": "Uses predefined synthetic data for analysis.",
+            "tradeoff": "Does not reflect current system state."
+          },
+          {
+            "label": "B",
+            "benefit": "Incorporates live system data for initial analysis.",
+            "tradeoff": "Requires careful handling of live data."
+          }
+        ],
+        "assumptions": [],
+        "open_questions": [
+          "What is the synthetic data format and availability?",
+          "Is there a specific timeframe for the health report?",
+          "What is the expected format of the final report (e.g., JSON, PDF)?"
+        ],
+        "matching_existing_work": {
+          "status": "not_evaluated",
+          "matches": []
+        }
+      },
+      "policy": {
+        "task_class": "report",
+        "risk_level": "low",
+        "target_host": "tony-macbook",
+        "allowed_paths": [
+          "reports/health-snapshot.json"
+        ],
+        "mcp_allowlist": [],
+        "artifact": {
+          "path": "reports/health-snapshot.json",
+          "schema": "health-report-v1"
+        },
+        "verifier": {
+          "type": "held_out_py",
+          "ref": "evals/shadow/fixtures/host-health/verify.py"
+        },
+        "done_condition": "The held-out health-report verifier passes.",
+        "human_gate_required": false,
+        "execution_allowed": false
+      },
+      "execution_authorized": false,
+      "human_review_required": false
+    },
+    {
+      "schema_version": 1,
+      "status": "needs_clarification",
+      "card_snapshot": {
+        "source": "synthetic_card_snapshot",
+        "id": "SYN-DOCS-ONLY-001",
+        "version": 1
+      },
+      "jev": {
+        "route": "free_lane",
+        "source": "jev_keyword"
+      },
+      "proposal": {
+        "case_id": "docs-only",
+        "goal": "Prepare a proposal for a checklist for documentation task",
+        "recommendation": "Clarify the target repository or workspace for the checklist",
+        "viewpoints": {
+          "user_value": "A checklist ensures that all necessary documentation tasks are completed, enhancing the quality and completeness of the documentation",
+          "technical": "A clear checklist aids in standardizing documentation processes, making the task more efficient and reducing errors",
+          "operations_safety": "The checklist helps maintain consistency and reduces the risk of oversights or omissions in documentation",
+          "cost_effort": "Creating a checklist now will save time and effort in the long term by ensuring all required documentation steps are covered"
+        },
+        "options": [
+          {
+            "label": "A",
+            "benefit": "Define the exact repository or workspace to use for the checklist, ensuring clear responsibility and visibility",
+            "tradeoff": "May require coordination with the relevant stakeholders to identify the appropriate location"
+          },
+          {
+            "label": "B",
+            "benefit": "Create a generic template that can be adapted to multiple repositories or workspaces, ensuring flexibility",
+            "tradeoff": "May lead to inconsistencies in documentation practices across different repositories"
+          }
+        ],
+        "assumptions": [],
+        "open_questions": [
+          "Which repository or workspace should receive the checklist?"
+        ],
+        "matching_existing_work": {
+          "status": "not_evaluated",
+          "matches": []
+        }
+      },
+      "policy": {
+        "task_class": "artifact_write",
+        "risk_level": "low",
+        "target_host": null,
+        "allowed_paths": [
+          "docs/reports/plan-route-checklist.md"
+        ],
+        "mcp_allowlist": [],
+        "artifact": {
+          "path": "docs/reports/plan-route-checklist.md",
+          "schema": "markdown-checklist-v1"
+        },
+        "verifier": {
+          "type": "human_review",
+          "description": "Review required headings, links, and the proposed scope."
+        },
+        "done_condition": "The checklist passes human review before any write.",
+        "human_gate_required": true,
+        "execution_allowed": false
+      },
+      "execution_authorized": false,
+      "human_review_required": true
+    },
+    {
+      "schema_version": 1,
+      "status": "needs_clarification",
+      "card_snapshot": {
+        "source": "synthetic_card_snapshot",
+        "id": "SYN-PHYSICAL-HARDWARE-001",
+        "version": 1
+      },
+      "jev": {
+        "route": "manual",
+        "source": "jev_keyword"
+      },
+      "proposal": {
+        "case_id": "physical-hardware",
+        "goal": "Evaluate the need for a second GPU on tony-omen",
+        "recommendation": "Halt procurement until more details are available",
+        "viewpoints": {
+          "user_value": "A second GPU could improve performance for multi-tasking or parallel processing.\n",
+          "technical": "The current setup and workload do not specify specific requirements or compatibility.\n",
+          "operations_safety": "Without a detailed understanding of the workload, installing additional hardware could potentially cause instability.\n",
+          "cost_effort": "The exact hardware model and associated costs are unknown, making financial planning difficult."
+        },
+        "options": [
+          {
+            "label": "A",
+            "benefit": "Proceed with purchasing and installing the second GPU.",
+            "tradeoff": "This may not align with current or future workload requirements."
+          },
+          {
+            "label": "B",
+            "benefit": "Conduct a thorough workload analysis and consult with IT experts before proceeding.",
+            "tradeoff": "This will delay procurement but ensures a more informed decision."
+          }
+        ],
+        "assumptions": [],
+        "open_questions": [
+          "What is the current workload and its specific requirements?",
+          "What is the budget for this purchase?",
+          "What specific GPU model is being considered?",
+          "Is the current hardware configuration compatible with additional GPUs?"
+        ],
+        "matching_existing_work": {
+          "status": "not_evaluated",
+          "matches": []
+        }
+      },
+      "policy": {
+        "task_class": "manual",
+        "risk_level": "high",
+        "target_host": "tony-omen",
+        "allowed_paths": [],
+        "mcp_allowlist": [],
+        "artifact": null,
+        "verifier": {
+          "type": "human",
+          "description": "Tony approves budget, model, compatibility, and installation."
+        },
+        "done_condition": "Human-approved purchase and safe installation plan exists.",
+        "human_gate_required": true,
+        "execution_allowed": false
+      },
+      "execution_authorized": false,
+      "human_review_required": true
+    }
+  ],
+  "notes": [
+    "Policy fields come only from synthetic canonical-card snapshots and JEV output.",
+    "Model-generated proposals cannot set task_class, target, allowed_paths, MCP, human gate, or execution authority.",
+    "Nothing was submitted to Nest or Cline."
+  ]
+}

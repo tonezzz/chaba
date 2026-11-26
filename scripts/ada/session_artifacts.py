@@ -68,7 +68,7 @@ _CARD_RE = re.compile(r"\b[A-Z]{2,6}-\d{3,5}\b")
 _TASKID_RE = re.compile(r"\b\d{6,8}-\d{6}-[\w-]{4,}\b")
 _HOST_RE = re.compile(
     r"\b(tony-dell|tony-omen|tony-macbook|tony-ha|idc0\d|idc\d+|mn01|"
-    r"con01|ada-ha|michael-dev|michael-ha|tony-test)\b")
+    r"con01|ada-ha|mn-ha-dev|michael-ha|tony-test)\b")
 _COLLECTION_RE = re.compile(r"\bada-[\w-]*bank[\w-]*\b")
 _PORT_RE = re.compile(r"\b(?:127\.0\.0\.1|localhost|0\.0\.0\.0|\d{1,3}(?:\.\d{1,3}){3}|[\w-]+(?:\.[\w-]+)+):(\d{4,5})\b")
 _SIZE_RE = re.compile(

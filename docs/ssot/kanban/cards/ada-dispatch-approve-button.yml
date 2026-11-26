@@ -1,7 +1,7 @@
 id: ada-dispatch-approve-button
 title: 'Hands-off dispatch: board-level approve → gated dispatch → Ada verify+report'
-column: review
-updated: 2026-11-19 20:04
+column: done
+updated: 2026-11-26 20:32
 priority: medium
 tags:
 - ada
@@ -97,4 +97,320 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:45
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:05
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:20
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 15:09
+  from: chaba
+  text: '[verify-fail] Review pass 2026-11-23 (Tony): spec lists 3 missing pieces (click-level approval signal,
+    dispatch-triggering menu option, auto close-the-loop); 2026-11-08 12:45 devin only deployed ask->respond handshake,
+    no evidence items 1-3 landed — requeued for rework.'
+- at: 2026-11-23 15:09
+  from: chaba
+  text: classified as free_lane (kw:plan conf 1.00)
+- at: 2026-11-23 15:09
+  from: tony
+  text: queued for processing
+- at: 2026-11-23 15:09
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.73 > 0.85)'
+- at: 2026-11-23 15:10
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.87 > 1.0)'
+- at: 2026-11-23 15:10
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-23 15:10
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 15:10
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-23 15:10
+  from: chaba
+  text: started devin-task-20261123-151040-tony-s-flow-ada-shows-menu-opt on tony-macbook (dispatch)
+- at: 2026-11-23 15:10
+  from: chaba
+  text: 'primer injected 8 lesson(s): missing-path QC must gate on the card''s declared action.repo — ada-voice/ada-pi
+    ; [ada-benchmark-coverage-scenarios-for-kan-152a4f] offline coverage landed: 11 ne; [education-maintenance-consolidated-report]
+    SHIPPED on dispatch branch: scripts/; [keywatch-absolute-spend-floor] DONE (aa8399e4ef9) — implemented directly.
+    Corre; [knowledge-capture-harvester-guards-phase-c-d-64d812ef] [2026-11-23 opencode] To; [report-graph-producer-metas-never-reach-7b0982]
+    [devin] DONE'
+- at: 2026-11-23 15:14
+  from: devin
+  text: 'dispatch picked up — mapping the click-approve path. Found: /request already accepts dict options {id,label,action:queue|retry|close|hold|none}
+    and board buttons POST /respond {option:N}, but execution waits for answer-sweep (~15min tick). Plan: execute
+    declared option actions at respond time (the click IS the approval), plus verified-verdict lifecycle notify
+    + canonical approve-ask emitter.'
+- at: 2026-11-23 15:20
+  from: devin
+  text: '[dispatch] resumed worktree — core code already landed in 4df0e492 (respond-time option action exec, verified/unverified
+    lifecycle pushes). Verifying tests + finishing approve-ask.py + runbook doc now.'
+- at: 2026-11-23 15:21
+  from: tony-macbook
+  text: 'finished (failed): exit=1 0261123-151040-tony-s-flow-ada-shows-menu-opt.service: Failed with result ''exit-code''.
+    | devin-task-20261123-1510 — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 15:21
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-151040-tony-s-flow-ada-shows-menu-opt (rate limit)
+    — tony-macbook holds new claims ~30m
+- at: 2026-11-23 15:21
+  from: chaba
+  text: 'tony-macbook retry backoff: fail 1/3 — next claim not before 11-23 15:51'
+- at: 2026-11-23 15:22
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-151040-tony-s-flow-ada-shows-menu-opt)
+    — claims held ~29m'
+- at: 2026-11-23 15:22
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261123-151149-ada-benchmark-coverage-scenari)
+    — claims held ~29m'
+- at: 2026-11-23 15:23
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-145907-implement-memory-inspection-pa)
+    — claims held ~29m'
+- at: 2026-11-23 15:24
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-152131-lane-savings-py-now-attributes)
+    — claims held ~29m'
+- at: 2026-11-23 15:24
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-145629-goal-drain-the-review-column-s)
+    — claims held ~29m'
+- at: 2026-11-23 15:25
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-152219-extend-wiki-page-door-to-allow)
+    — claims held ~29m'
+- at: 2026-11-23 15:27
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-151207-assessment-2026-11-09-verified)
+    — claims held ~23m'
+- at: 2026-11-23 15:52
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.86 > 1.5)'
+- at: 2026-11-23 15:54
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-23 15:55
+  from: chaba
+  text: started devin-task-20261123-155518-tony-s-flow-ada-shows-menu-opt on tony-macbook (dispatch)
+- at: 2026-11-23 15:55
+  from: chaba
+  text: 'primer injected 8 lesson(s): missing-path QC must gate on the card''s declared action.repo — ada-voice/ada-pi
+    ; [ada-benchmark-coverage-scenarios-for-kan-152a4f] offline coverage landed: 11 ne; [education-maintenance-consolidated-report]
+    SHIPPED on dispatch branch: scripts/; [keywatch-absolute-spend-floor] DONE (aa8399e4ef9) — implemented directly.
+    Corre; [knowledge-capture-harvester-guards-phase-c-d-64d812ef] [2026-11-23 opencode] To; [report-graph-producer-metas-never-reach-7b0982]
+    [devin] DONE'
+- at: 2026-11-23 15:59
+  from: devin
+  text: '[dispatch-2] prior attempt code recovered — cherry-picked 4df0e492 into this worktree (respond-time option
+    action exec + verified/unverified lifecycle pushes), selftest green. Added scripts/board/approve-ask.py (canonical
+    approve-menu emitter) + tests/board/test_approve_ask.py + docs/kb/ada-approve-dispatch-loop.md runbook. 113
+    board tests + 8 new tests pass.'
+- at: 2026-11-23 15:59
+  from: devin
+  text: 'DONE (attempt 2). All 3 spec gaps now have landed code on this branch: (1) click-level approval — board-api
+    _exec_option_action runs the selected option''s declared action in the /respond write; (2) dispatch-triggering
+    menu — scripts/board/approve-ask.py emits {id,label,action} option dicts (do_request validates the enum); (3)
+    close-the-loop — verified/unverified lifecycle events push via /publish->Telegram from kanban-dispatch + merge-sweep
+    (auto-close announced, held verdicts alerted once). Ver'
+- at: 2026-11-23 16:03
+  from: chaba
+  text: 'merge-sweep: devin-task-20261123-155518-tony-s-flow-ada-shows-menu-opt no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-23 16:03
+  from: chaba
+  text: banked 184 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 16:03
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261123-155518-tony-s-flow-ada-shows-menu-opt on
+    tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-11-23 16:03
+  from: chaba
+  text: pushed dispatch/20261123-155518-tony-s-flow-ada-shows-menu-opt to origin
+- at: 2026-11-23 16:03
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-23 16:03
+  from: chaba
+  text: auto-merged a82187de (dispatch/20261123-155518-tony-s-flow-ada-shows-menu-opt) → origin/master
+- at: 2026-11-23 16:03
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261123-155518-tony-s-flow-ada-shows-menu-opt,
+    branch dispatch/20261123-155518-tony-s-flow-ada-shows-menu-opt'
+- at: 2026-11-23 16:06
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ince live e2e needs the board-api redeploy after merge. Outcome doc and card comms
+    posted. | devin-task-20261123-'
+- at: 2026-11-23 16:06
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 16:06
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261123-155518-tony-s-flow-ada-shows-menu-opt — close will block
+    until merged'
+- at: 2026-11-23 16:19
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:08
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:09
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:52
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261123-155518-tony-s-flow-ada-shows-menu-opt'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:13
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:22
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:32
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:39
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:02
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 20:38
+  from: tony
+  text: '[verify] TRIAGE probe 2026-11-24 — api write path check'
+- at: 2026-11-24 20:39
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-24): dispatch branch 20261123-155518-tony-s-flow-ada-shows-menu-opt
+    (tip 21759d21b0fd) is merged into origin/master; runner reported finished (ok) with an outcome doc. Work is
+    provably landed. Closing.'
+- at: 2026-11-24 20:39
+  from: tony
+  text: closed by tony
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:47
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:55
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:32
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 review_kind: verify
+action:
+  type: dispatch
+  status: done
+  lane: free_lane
+  lane_source: kw
+  model: litellm/gemini-3.5-flash-lite
+  attempts: 2
+  result: 'exit=0 ince live e2e needs the board-api redeploy after merge. Outcome doc and card comms posted. | devin-task-20261123-155518-tony-s-flow-ada-shows-menu-opt.service:
+    Consumed 48.450s CPU time over 4min 26.796s wall clock time, 395.7M memory peak.'
+  last_failure: 'exit=1 0261123-151040-tony-s-flow-ada-shows-menu-opt.service: Failed with result ''exit-code''.
+    | devin-task-20261123-151040-tony-s-flow-ada-shows-menu-opt.service: Consumed 1min 9.774s CPU time over 10min
+    7.527s wall clock time, 458.5M memory peak.'
+  runner: tony-macbook
+  sweep:
+    stale_running: 2026-11-23 16:03
+    session_gone: 2026-11-23 16:03
+    no_repo: 2026-11-23 19:52
+claim:
+  since: 2026-11-23 15:54

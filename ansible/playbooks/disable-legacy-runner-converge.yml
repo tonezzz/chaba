@@ -1,0 +1,41 @@
+---
+# disable-legacy-runner-converge.yml — retire idc02's stale ada-ocb converge.
+#
+# Why: idc02's ada-ocb-agent-runner-converge.timer (03:45 nightly, randomized)
+# calls an UNTRACKED playbook in a stale feature-branch checkout and re-deploys
+# an old runner-agent after the canonical chaba converge (03:34). Disabling it
+# leaves one converge path: the committed deploy-runner-agent.yml.
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/disable-legacy-runner-converge.yml --check --diff --limit idc02
+#   ansible-playbook playbooks/disable-legacy-runner-converge.yml --limit idc02
+#
+# Rollback: systemctl --user enable --now ada-ocb-agent-runner-converge.timer
+# (only after refreshing that checkout's source to the pinned hash).
+
+- name: Retire the stale ada-ocb runner-agent converge timer
+  hosts: idc02
+  gather_facts: false
+  become: false
+  environment:
+    XDG_RUNTIME_DIR: /run/user/1000
+    DBUS_SESSION_BUS_ADDRESS: unix:path=/run/user/1000/bus
+
+  tasks:
+    - name: Stop and disable the legacy converge timer
+      ansible.builtin.systemd_service:
+        name: ada-ocb-agent-runner-converge.timer
+        scope: user
+        state: stopped
+        enabled: false
+
+    - name: Confirm the legacy timer is disabled
+      ansible.builtin.command:
+        cmd: systemctl --user is-enabled ada-ocb-agent-runner-converge.timer
+      register: legacy_timer_state
+      changed_when: false
+      failed_when: (legacy_timer_state.stdout | trim) != 'disabled'
+
+    - name: Report legacy converge retirement
+      ansible.builtin.debug:
+        msg: "idc02: ada-ocb-agent-runner-converge.timer disabled; canonical converge is tony-dell's deploy-runner-agent.yml"

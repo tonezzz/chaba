@@ -1,0 +1,78 @@
+id: devin-lane-claim-provenance
+title: claim-time lane stamps carry lane_source provenance (DEV-0045 slice 2)
+date: 2026-11-24
+card: devin-lane-cheap-ops-reroute
+ref: DEV-0045
+host: fleet (board-api.py do_claim + runner-agent.py claim body + kanban-dispatch.py JEV_LANE path)
+status: implemented
+
+goal: >
+  The 2026-11-23 devin-lane audit found explicit=16 of 36 devin-lane
+  cards — assumed author pins. Verification showed most were bare
+  claim-time classifier stamps: do_claim persisted action.lane from
+  the claim body with NO lane_source, so lane_source semantics
+  ("no source = author pin, always wins") made every claim-classified
+  lane immortal — a fixed classifier could never unstick them.
+
+root_cause: >
+  Three write paths stamped lanes without provenance:
+  (a) board-api do_claim — persisted body lane verbatim;
+  (b) runner-agent claim_pass — sent lane in claim_body after
+      claim-time classify_lane, no source field existed to send;
+  (c) kanban-dispatch start_pending — JEV_LANE classify wrote
+      a["lane"]+a["model"] via save_card, no lane_source.
+  Cards claimed before BOARD_CLASSIFY_AT_QUEUE existed, or with
+  action.executor set (queue classify skips executor cards), hit
+  these paths and read as explicit pins forever — including the
+  timer-alert-* ops cards Tony chose to re-route.
+
+fix:
+  board-api.py do_claim: >
+    When a claim sets action.lane on a card that is NOT already an
+    author pin (existing lane with no lane_source), persist
+    lane_source: body.lane_source when provided (sanitized, <=40
+    chars), else the card's existing lane_source, else "claim".
+    Author pins are never stamped — explicit routing still wins.
+  runner-agent.py claim_pass: >
+    claim_body gains lane_source="claim" ONLY when the lane came
+    from fresh claim-time classification (lane was absent). A
+    re-sent author pin carries no lane_source.
+  kanban-dispatch.py start_pending: >
+    JEV_LANE classify now uses classify_lane(with_detail=True) and
+    persists lane_source=<source prefix> (kw/jevos/fallback/
+    timer-alert) — same convention as _apply_classify_at_queue.
+
+verified: >
+  tests/board/test_stalled_claim_lifecycle.py +4 do_claim cases
+  (stamp/claim, body-source wins, existing source preserved,
+  author pin never provenanced); test_runner_agent_lane.py +2
+  (claim body carries lane_source=claim on fresh classify; absent
+  on pinned lane). Targeted suites 109 tests OK; full tests/board
+  discover run recorded on the dispatch card.
+
+measurement: >
+  Re-measure over 660 fetched cards (2026-11-24): of the 39 cards
+  pinned action.lane=devin, the merged classifier slice
+  (origin/fix/devin-lane-reroute ae45a7ac22 — 'host' kw removed,
+  free_lane evaluated before devin, timer-alert tag guard ->
+  free_lane) re-routes 3 to free_lane; 17 carry no lane_source
+  (explicit-looking — mostly legacy claim stamps + true author
+  pins). Over 350 OPEN cards old-vs-new classify: devin 220 -> 126,
+  free_lane 64 -> 161 — ~50 of the flips are backlog timer-alert-*
+  cards via the tag guard, ~44 via free_lane-first ordering.
+  Caveat: free_lane only saves burn on OPENCODE_LANES hosts (the
+  litellm/* model is stripped on the devin path per OPS-1127), and
+  broad free_lane keywords (try/plan/install/report) can
+  false-cheap multi-step epics — keep/narrow/revert-order is a
+  Tony decision raised on the card.
+
+followups:
+  - runner-agent.py is drifted on every runner host (comms
+    2026-11-24) — the claim_body lane_source only flows once hosts
+    redeploy their snapshot; board-api's "claim" floor covers
+    drifted runners meanwhile.
+  - existing bare claim stamps on old cards are NOT retro-fixed —
+    they re-evaluate only if re-queued after this lands AND their
+    lane_source is absent (explicit-looking). A one-off audit pass
+    could clear lane on classifier-era cards, but that is a
+    card-mutation decision for Tony.

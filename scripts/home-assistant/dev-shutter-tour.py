@@ -108,7 +108,7 @@ def main():
 
     dmin, dmax = num(ENT["dmin"]), num(ENT["dmax"])
     smin, rmin = num(ENT["smin"]), num(ENT["rmin"])
-    say(f"thresholds: dir {dmin:.0f}–{dmax:.0f}°  speed ≥ {smin:g} kn  rain ≥ {rmin:g} mm/h")
+    say(f"thresholds: dir {dmin:.0f}–{dmax:.0f}°  speed ≥ {smin:g} m/s  rain ≥ {rmin:g} mm/h")
 
     # snapshot values to restore at the end
     saved = {k: state(v) for k, v in (("dir", ENT["dir"]), ("spd", ENT["spd"]),
@@ -138,21 +138,21 @@ def main():
         set_num(ENT["rain"], 0)
         set_num(ENT["spd"], safe_spd)
         set_num(ENT["dir"], safe_dir)
-        say(f"   wind {safe_dir:.0f}° (outside arc), {safe_spd:g} kn, rain 0 — baseline safe state")
+        say(f"   wind {safe_dir:.0f}° (outside arc), {safe_spd:g} m/s, rain 0 — baseline safe state")
         say(f"   status: {wait_status('Open shutter')} / state: {state(ENT['state'])}")
         time.sleep(a.pause)
 
         banner("Wind closes the shutter")
         set_num(ENT["dir"], danger_dir)
         set_num(ENT["spd"], danger_spd)
-        say(f"   wind {danger_dir:.0f}° INSIDE red arc, {danger_spd:g} kn ≥ {smin:g} — watch needle turn red")
+        say(f"   wind {danger_dir:.0f}° INSIDE red arc, {danger_spd:g} m/s ≥ {smin:g} — watch needle turn red")
         s = wait_status("Close shutter")
         say(f"   status: {s} / state: {state(ENT['state'])}")
         time.sleep(a.pause)
 
         banner("Wind drops — shutter opens")
         set_num(ENT["spd"], safe_spd)
-        say(f"   speed {safe_spd:g} kn < {smin:g} — needle back to green")
+        say(f"   speed {safe_spd:g} m/s < {smin:g} — needle back to green")
         s = wait_status("Open shutter")
         say(f"   status: {s} / state: {state(ENT['state'])}")
         time.sleep(a.pause)
@@ -160,7 +160,7 @@ def main():
         banner("Rain alone closes the shutter (OR logic)")
         set_num(ENT["dir"], safe_dir)
         set_num(ENT["rain"], danger_rain)
-        say(f"   wind safe ({safe_dir:.0f}°, {safe_spd:g} kn) but rain {danger_rain:g} ≥ {rmin:g} mm/h")
+        say(f"   wind safe ({safe_dir:.0f}°, {safe_spd:g} m/s) but rain {danger_rain:g} ≥ {rmin:g} mm/h")
         s = wait_status("Close shutter")
         say(f"   status: {s} / state: {state(ENT['state'])}")
         time.sleep(a.pause)
@@ -174,7 +174,7 @@ def main():
         banner("Simulation off — live RK600 values return")
         set_bool(ENT["sim"], False)
         time.sleep(2)
-        say(f"   live: dir {state(ENT['eff_dir'])}°, speed {state(ENT['eff_spd'])} kn, "
+        say(f"   live: dir {state(ENT['eff_dir'])}°, speed {state(ENT['eff_spd'])} m/s, "
             f"rain {state(ENT['eff_rain'])} mm/h — status {state(ENT['status'])}")
         time.sleep(a.pause)
     finally:

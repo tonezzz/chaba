@@ -1,0 +1,547 @@
+{
+  "schema": "g4-model-compare",
+  "schema_version": 1,
+  "date": "2026-11-26T13:20:13.613469+00:00",
+  "host": "idc03",
+  "key_printed": false,
+  "task_limit": 4,
+  "models": {
+    "gemini-3.1-flash-lite": {
+      "agent_loop": {
+        "rows": [
+          {
+            "task": 1,
+            "tool_ok": false,
+            "tool_relaxed": true,
+            "recall_ok": true,
+            "usage": {
+              "input": 991,
+              "output": 144
+            },
+            "elapsed_s": 21.33,
+            "steps": [
+              "function_call",
+              "model_output",
+              "thought"
+            ],
+            "tool_args": {
+              "attendees": [
+                "Bob",
+                "Alice"
+              ],
+              "date": "2025-03-14",
+              "time": "10:00",
+              "topic": "Q3 planning for project Lighthouse"
+            },
+            "expected_args": {
+              "attendees": [
+                "Bob",
+                "Alice"
+              ],
+              "date": "2025-03-14",
+              "time": "10:00",
+              "topic": "Q3 planning"
+            },
+            "final_text": "Your project codename is Lighthouse, and the Q3 planning meeting is scheduled for 2025-03-14 at 10:00."
+          },
+          {
+            "task": 2,
+            "tool_ok": false,
+            "tool_relaxed": true,
+            "recall_ok": true,
+            "usage": {
+              "input": 973,
+              "output": 133
+            },
+            "elapsed_s": 81.15,
+            "steps": [
+              "function_call",
+              "model_output",
+              "thought"
+            ],
+            "tool_args": {
+              "attendees": [
+                "Carol",
+                "Dan"
+              ],
+              "date": "2025-04-02",
+              "time": "13:30",
+              "topic": "migration"
+            },
+            "expected_args": {
+              "attendees": [
+                "Carol",
+                "Dan"
+              ],
+              "date": "2025-04-02",
+              "time": "13:30",
+              "topic": "the migration"
+            },
+            "final_text": "Our staging cluster is called Birch, and the migration meeting is scheduled for 13:30 on 2025-04-02."
+          },
+          {
+            "task": 3,
+            "tool_ok": false,
+            "tool_relaxed": true,
+            "recall_ok": true,
+            "usage": {
+              "input": 978,
+              "output": 130
+            },
+            "elapsed_s": 45.78,
+            "steps": [
+              "function_call",
+              "model_output",
+              "thought"
+            ],
+            "tool_args": {
+              "attendees": [
+                "Erin"
+              ],
+              "date": "2025-05-19",
+              "time": "09:15",
+              "topic": "renewal terms for Northwind"
+            },
+            "expected_args": {
+              "attendees": [
+                "Erin"
+              ],
+              "date": "2025-05-19",
+              "time": "09:15",
+              "topic": "renewal terms"
+            },
+            "final_text": "The customer account is Northwind, and the renewal meeting is scheduled for 2025-05-19."
+          },
+          {
+            "task": 4,
+            "tool_ok": false,
+            "tool_relaxed": true,
+            "recall_ok": true,
+            "usage": {
+              "input": 1009,
+              "output": 136
+            },
+            "elapsed_s": 299.71,
+            "steps": [
+              "function_call",
+              "model_output",
+              "thought"
+            ],
+            "tool_args": {
+              "attendees": [
+                "Frank",
+                "Grace"
+              ],
+              "date": "2025-06-07",
+              "time": "16:45",
+              "topic": "audit"
+            },
+            "expected_args": {
+              "attendees": [
+                "Frank",
+                "Grace"
+              ],
+              "date": "2025-06-07",
+              "time": "16:45",
+              "topic": "the audit"
+            },
+            "final_text": "Your preferred timezone is Bangkok (ICT). The attendees for the audit meeting are Frank and Grace."
+          }
+        ],
+        "completed": 4,
+        "n": 4,
+        "tool_exact": 0,
+        "tool_relaxed": 4,
+        "recall": 4,
+        "both_relaxed": 4,
+        "input_tokens": 3951,
+        "output_tokens": 543,
+        "mean_elapsed_s": 111.99
+      },
+      "surfaces": {
+        "streaming": {
+          "ok": true,
+          "event_types": {
+            "interaction.created": 1,
+            "interaction.status_update": 1,
+            "step.start": 2,
+            "step.delta": 3,
+            "step.stop": 2,
+            "interaction.completed": 1
+          },
+          "delta_types": {
+            "thought_signature": 1,
+            "text": 2
+          },
+          "text": "1, 2, 3, 4, 5, 6, 7, 8",
+          "status": "completed",
+          "usage": {
+            "initial_input_tokens": 16,
+            "input_tokens_by_modality": [
+              {
+                "modality": "text",
+                "tokens": 16
+              }
+            ],
+            "total_cached_tokens": 0,
+            "total_input_tokens": 16,
+            "total_output_tokens": 22,
+            "total_thought_tokens": 0,
+            "total_tokens": 38,
+            "total_tool_use_tokens": 0
+          }
+        },
+        "structured": {
+          "ok": true,
+          "raw": "{\"sentiment\": \"positive\", \"summary\": \"The new interface is highly intuitive and user-friendly.\"}",
+          "schema_valid": true,
+          "usage": {
+            "initial_input_tokens": 15,
+            "input_tokens_by_modality": [
+              {
+                "modality": "text",
+                "tokens": 15
+              }
+            ],
+            "total_cached_tokens": 0,
+            "total_input_tokens": 15,
+            "total_output_tokens": 22,
+            "total_thought_tokens": 0,
+            "total_tokens": 37,
+            "total_tool_use_tokens": 0
+          }
+        },
+        "background": {
+          "ok": true,
+          "statuses": [
+            "in_progress",
+            "completed"
+          ],
+          "terminal": "completed",
+          "output_text": "Standing as silent sentinels against the crashing waves, lighthouses pierce the darkness to guide weary sailors safely home."
+        },
+        "flex": {
+          "ok": true,
+          "echoed_tier": "flex",
+          "text": "TIEROK",
+          "usage": {
+            "initial_input_tokens": 8,
+            "input_tokens_by_modality": [
+              {
+                "modality": "text",
+                "tokens": 8
+              }
+            ],
+            "total_cached_tokens": 0,
+            "total_input_tokens": 8,
+            "total_output_tokens": 3,
+            "total_thought_tokens": 0,
+            "total_tokens": 11,
+            "total_tool_use_tokens": 0
+          }
+        },
+        "code_execution": {
+          "ok": true,
+          "text": "6765",
+          "steps": [
+            "thought",
+            "code_execution_call",
+            "code_execution_result",
+            "thought",
+            "model_output"
+          ],
+          "usage": {
+            "initial_input_tokens": 19,
+            "input_tokens_by_modality": [
+              {
+                "modality": "text",
+                "tokens": 19
+              }
+            ],
+            "tool_use_tokens_by_modality": [
+              {
+                "modality": "text",
+                "tokens": 207
+              }
+            ],
+            "total_cached_tokens": 0,
+            "total_input_tokens": 19,
+            "total_output_tokens": 189,
+            "total_thought_tokens": 0,
+            "total_tokens": 415,
+            "total_tool_use_tokens": 207
+          }
+        }
+      }
+    },
+    "gemini-3.5-flash-lite": {
+      "agent_loop": {
+        "rows": [
+          {
+            "task": 1,
+            "tool_ok": true,
+            "tool_relaxed": true,
+            "recall_ok": true,
+            "usage": {
+              "input": 980,
+              "output": 134
+            },
+            "elapsed_s": 22.44,
+            "steps": [
+              "function_call",
+              "model_output",
+              "thought"
+            ],
+            "tool_args": {
+              "attendees": [
+                "Bob",
+                "Alice"
+              ],
+              "date": "2025-03-14",
+              "time": "10:00",
+              "topic": "Q3 planning"
+            },
+            "expected_args": {
+              "attendees": [
+                "Bob",
+                "Alice"
+              ],
+              "date": "2025-03-14",
+              "time": "10:00",
+              "topic": "Q3 planning"
+            },
+            "final_text": "Your project codename is Lighthouse, and the Q3 planning meeting is scheduled for 2025-03-14 at 10:00."
+          },
+          {
+            "task": 2,
+            "tool_ok": true,
+            "tool_relaxed": true,
+            "recall_ok": true,
+            "usage": {
+              "input": 977,
+              "output": 134
+            },
+            "elapsed_s": 21.74,
+            "steps": [
+              "function_call",
+              "model_output",
+              "thought"
+            ],
+            "tool_args": {
+              "attendees": [
+                "Carol",
+                "Dan"
+              ],
+              "date": "2025-04-02",
+              "time": "13:30",
+              "topic": "the migration"
+            },
+            "expected_args": {
+              "attendees": [
+                "Carol",
+                "Dan"
+              ],
+              "date": "2025-04-02",
+              "time": "13:30",
+              "topic": "the migration"
+            },
+            "final_text": "Your staging cluster is called Birch, and the migration meeting is scheduled for 2025-04-02 at 13:30."
+          },
+          {
+            "task": 3,
+            "tool_ok": true,
+            "tool_relaxed": true,
+            "recall_ok": true,
+            "usage": {
+              "input": 984,
+              "output": 128
+            },
+            "elapsed_s": 26.55,
+            "steps": [
+              "function_call",
+              "model_output",
+              "thought"
+            ],
+            "tool_args": {
+              "attendees": [
+                "Erin"
+              ],
+              "date": "2025-05-19",
+              "time": "09:15",
+              "topic": "renewal terms"
+            },
+            "expected_args": {
+              "attendees": [
+                "Erin"
+              ],
+              "date": "2025-05-19",
+              "time": "09:15",
+              "topic": "renewal terms"
+            },
+            "final_text": "The customer account you mentioned is Northwind, and the renewal meeting is scheduled for May 19, 2025."
+          },
+          {
+            "task": 4,
+            "tool_ok": false,
+            "tool_relaxed": true,
+            "recall_ok": true,
+            "usage": {
+              "input": 963,
+              "output": 114
+            },
+            "elapsed_s": 21.24,
+            "steps": [
+              "function_call",
+              "model_output",
+              "thought"
+            ],
+            "tool_args": {
+              "attendees": [
+                "Frank",
+                "Grace"
+              ],
+              "date": "2025-06-07",
+              "time": "16:45",
+              "topic": "audit"
+            },
+            "expected_args": {
+              "attendees": [
+                "Frank",
+                "Grace"
+              ],
+              "date": "2025-06-07",
+              "time": "16:45",
+              "topic": "the audit"
+            },
+            "final_text": "Your preferred timezone is Bangkok. The attendees for the audit meeting are Frank and Grace."
+          }
+        ],
+        "completed": 4,
+        "n": 4,
+        "tool_exact": 3,
+        "tool_relaxed": 4,
+        "recall": 4,
+        "both_relaxed": 4,
+        "input_tokens": 3904,
+        "output_tokens": 510,
+        "mean_elapsed_s": 22.99
+      },
+      "surfaces": {
+        "streaming": {
+          "ok": true,
+          "event_types": {
+            "interaction.created": 1,
+            "interaction.status_update": 1,
+            "step.start": 2,
+            "step.delta": 3,
+            "step.stop": 2,
+            "interaction.completed": 1
+          },
+          "delta_types": {
+            "thought_signature": 1,
+            "text": 2
+          },
+          "text": "1, 2, 3, 4, 5, 6, 7, 8",
+          "status": "completed",
+          "usage": {
+            "initial_input_tokens": 16,
+            "input_tokens_by_modality": [
+              {
+                "modality": "text",
+                "tokens": 16
+              }
+            ],
+            "total_cached_tokens": 0,
+            "total_input_tokens": 16,
+            "total_output_tokens": 22,
+            "total_thought_tokens": 0,
+            "total_tokens": 38,
+            "total_tool_use_tokens": 0
+          }
+        },
+        "structured": {
+          "ok": true,
+          "raw": "{\n  \"sentiment\": \"positive\",\n  \"summary\": \"The new user interface is exceptionally intuitive.\"\n}",
+          "schema_valid": true,
+          "usage": {
+            "initial_input_tokens": 15,
+            "input_tokens_by_modality": [
+              {
+                "modality": "text",
+                "tokens": 15
+              }
+            ],
+            "total_cached_tokens": 0,
+            "total_input_tokens": 15,
+            "total_output_tokens": 25,
+            "total_thought_tokens": 0,
+            "total_tokens": 40,
+            "total_tool_use_tokens": 0
+          }
+        },
+        "background": {
+          "ok": true,
+          "statuses": [
+            "in_progress",
+            "in_progress",
+            "completed"
+          ],
+          "terminal": "completed",
+          "output_text": "Standing resolute against the crashing waves, lighthouses pierce the encroaching darkness to guide weary sailors safely back to shore."
+        },
+        "flex": {
+          "ok": true,
+          "echoed_tier": "flex",
+          "text": "TIEROK",
+          "usage": {
+            "initial_input_tokens": 8,
+            "input_tokens_by_modality": [
+              {
+                "modality": "text",
+                "tokens": 8
+              }
+            ],
+            "total_cached_tokens": 0,
+            "total_input_tokens": 8,
+            "total_output_tokens": 3,
+            "total_thought_tokens": 0,
+            "total_tokens": 11,
+            "total_tool_use_tokens": 0
+          }
+        },
+        "code_execution": {
+          "ok": true,
+          "text": "6765",
+          "steps": [
+            "thought",
+            "code_execution_call",
+            "code_execution_result",
+            "thought",
+            "model_output"
+          ],
+          "usage": {
+            "initial_input_tokens": 19,
+            "input_tokens_by_modality": [
+              {
+                "modality": "text",
+                "tokens": 19
+              }
+            ],
+            "tool_use_tokens_by_modality": [
+              {
+                "modality": "text",
+                "tokens": 84
+              }
+            ],
+            "total_cached_tokens": 0,
+            "total_input_tokens": 19,
+            "total_output_tokens": 66,
+            "total_thought_tokens": 0,
+            "total_tokens": 169,
+            "total_tool_use_tokens": 84
+          }
+        }
+      }
+    }
+  }
+}

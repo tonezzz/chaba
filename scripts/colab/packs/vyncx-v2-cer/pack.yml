@@ -5,6 +5,8 @@
 # ada9s clips should be clean). whisper-small on CPU is coarse for
 # Thai — treat CER deltas as signal, absolute values with care.
 name: vyncx-v2-cer
+hf_repos:                # selective restore-hf-cache (ADA-0806)
+  - Systran/faster-whisper-small
 needs:
   egress_only_ok: true
   disk_gb: 3

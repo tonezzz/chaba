@@ -1,0 +1,81 @@
+id: board-api-accept-loop-wedge-auto-restart-7dd2f1
+title: 'board-api accept-loop wedge: auto-restart on handler-thread stall (observed 2026-11-26 ~09:00-09:17Z on
+  idc03)'
+column: backlog
+updated: 2026-11-26 21:23
+tags:
+- board-api
+- idc03
+- reliability
+note: 'During lesson-polish dispatch 20261126-084458: chaba-board-api on idc03 stopped answering ALL requests for
+  ~20min (last 200 at 08:56:12Z, then only 503/504). Stack dump showed main thread deadlocked in Thread.start()->_started.wait()
+  (socketserver process_request) — no new handler threads could spawn; backlog=6 filled; every door (/cards /comment
+  /lesson /health) timed out. Lock watchdog fired LOCK-HOLD-ALERTs and dumped stacks but cannot recover a dead accept
+  thread. Manual `systemctl --user re'
+ref: KNB-1423
+comms:
+- at: 2026-11-26 09:18
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-26 09:19
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 18:52
+  from: tony
+  text: '[batch A 19:15 +07] Triage — real unfixed risk, needs a dedicated implementation pass. Confirmed on idc03:
+    unit has `Restart=on-failure`/`RestartSec=10`, which cannot help a dead accept loop because the process stays
+    alive (main thread blocked in `Thread.start()->_started.wait()`); `/health` exists (`board-api.py:6119`) but
+    nothing consumes it for liveness, and the lock-hold watchdog only dumps stacks. `grep -n ''WATCHDOG|sd_notify''`
+    in board-api.py returns only lock-watchdog hits — no systemd no'
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:47
+  from: chaba
+  text: 'TRIAGE 2026-11-26: written bounded spec and armed for dispatch (lane=devin).'
+- at: 2026-11-26 20:47
+  from: tony
+  text: queued for processing
+- at: 2026-11-26 20:47
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-26 20:47
+  from: chaba
+  text: 'tony-dell defers: runner at local cap (3/3) — remote slots unaffected'
+- at: 2026-11-26 20:48
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.09 > 0.7)'
+- at: 2026-11-26 20:50
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-26 20:55
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.00 > 1.0)'
+- at: 2026-11-26 21:01
+  from: chaba
+  text: 'mn01 defers: runner at local cap (1/1) — remote slots unaffected'
+- at: 2026-11-26 21:03
+  from: chaba
+  text: 'idc02 defers: runner at local cap (3/3) — remote slots unaffected'
+- at: 2026-11-26 21:03
+  from: chaba
+  text: 'con01 defers: runner at local cap (1/1) — remote slots unaffected'
+- at: 2026-11-26 21:23
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.53 > 1.5)'
+spec: 'Fix chaba-board-api on idc03 wedging its accept loop (2026-11-26 08:56-09:17Z: main thread deadlocked in
+  Thread.start()->_started.wait(); every door 503/504 until a manual systemctl --user restart). In scripts/board/board-api.py,
+  make handler-thread spawn failures non-fatal and add a watchdog that detects an unresponsive accept loop and restarts
+  the service automatically (or equivalent in-process recovery), with one board/comms alert. Add a regression test
+  simulating a stuck handler thread. Done: a stuck handler no longer blocks all doors, recovery happens within 60s,
+  the chaba gate suite passes, and the outcome records the deploy note.'
+action:
+  type: dispatch
+  status: queued
+  lane: devin
+  attempts: 0
+  repo: chaba
+claim: {}

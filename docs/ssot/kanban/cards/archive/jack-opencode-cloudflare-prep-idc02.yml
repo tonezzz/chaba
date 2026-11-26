@@ -1,0 +1,168 @@
+id: jack-opencode-cloudflare-prep-idc02
+title: Prepare Jack Cloudflare route with OpenCode on idc02
+column: done
+updated: 2026-11-23 13:34
+brief: Bounded OpenCode prep for the Jack Cloudflare route on the executor host.
+priority: high
+program: devnest
+tags:
+- jack
+- opencode
+- cloudflare
+- free-lane
+- safety
+spec: 'Run as OpenCode free_lane on idc02 in a fresh worktree. Prepare only: Caddy site block for opencode-jack.surf-thailand.com
+  -> 127.0.0.1:8377 with WebSocket support; Cloudflare Access identity-header validation design for javkster@gmail.com;
+  DNS/Access request templates without secrets; rollback and browser smoke tests. Do not call Cloudflare APIs, read
+  secrets, reload Caddy, or expose a public route. Deliver committed patch/report and verifier evidence; fail closed
+  on missing artifacts.'
+action:
+  type: dispatch
+  repo: chaba
+  host: idc02
+  status: done
+  lane: free_lane
+ref: OPS-0955
+comms:
+- at: 2026-10-27 19:39
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-27 19:39
+  from: tony
+  text: queued for processing
+- at: 2026-10-27 19:39
+  from: idc02
+  text: claimed
+- at: 2026-10-29 10:52
+  from: devin
+  text: 'QC 2026-10-29: the dispatch claim was stale. idc02 has the Jack IDE/enrollment services running, but runner-agent
+    is inactive, OPENCODE_LANES is unset/default-off, branch-code is disabled, and no task service/worktree exists
+    for this prep card. Cloudflare Access app, DNS record, and Caddy site are absent. Holding this preparation action
+    in Backlog; public route remains gated by explicit Tony sign-off per the parent job.'
+- at: 2026-10-29 10:52
+  from: devin
+  text: put on hold
+- at: 2026-10-29 21:56
+  from: devin
+  text: 'Verified 2026-10-29: replacement Cloudflare token parses correctly (account ID shape, token prefix, mode
+    600). GET /accounts/{account}/access/apps returns HTTP 200, but POST create self-hosted Access app for opencode-jack.surf-thailand.com
+    returns HTTP 403 / error 1010. Token still lacks Account → Access: Apps and Policies → Edit, or is scoped to
+    the wrong account. No DNS/Caddy/public route was changed. Prepared and committed isolated Jack gateway Cloudflare
+    JWT validation patch in commit fd9b78'
+- at: 2026-10-29 23:08
+  from: devin
+  text: 'PUBLIC EDGE DEPLOYED AND SECURITY-SMOKED: Cloudflare Access app opencode-jack.surf-thailand.com exists
+    (24h session), allow policy javkster@gmail.com, audience configured. Proxied DNS A record points to 45.136.236.190.
+    idc02 jack-enroll and caddy-edge active. Public /enroll returns Cloudflare Access 302; direct loopback and public-host
+    requests with forged Tailscale header return 403. Gateway JWT validation deployed; Caddy config validated. Commits
+    in isolated branch: fd9b78f3e and cef7f0f9c. Re'
+- at: 2026-11-03 10:13
+  from: devin
+  text: 'Supervised test access added: Cloudflare reusable policy now allows javkster@gmail.com and tonezzzz@gmail.com.
+    Minted a shared one-time test enrollment code labeled tony; stored locally mode 600, not posted. This is a shared-workspace
+    test only: both users reach the same Jack /workspace and sessions are not yet identity-bound at the filesystem
+    level.'
+- at: 2026-11-03 10:19
+  from: devin
+  text: 'Separate Tony instance deployed for supervised shared-workspace testing. New public host opencode-tony.surf-thailand.com
+    has Cloudflare Access policy for javkster@gmail.com and tonezzzz@gmail.com, proxied DNS, separate tony-opencode
+    + tony-enroll services, separate Tony workspace/session state. Jack and Tony containers can each read/write
+    the other primary workspace at /workspace/tony-workspace and /workspace/jack-workspace respectively, per Tony''s
+    explicit request. Both health checks and Caddy '
+- at: 2026-11-14 14:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:06
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:06
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:35
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:37
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:51
+  from: devin
+  text: queued for processing
+- at: 2026-11-17 18:52
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-17 19:13
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.93 > 1.5)'
+- at: 2026-11-17 19:23
+  from: devin
+  text: 'Verified live 2026-11-17: jack-enroll.service + caddy-edge.service active on idc02, Caddyfile contains
+    the opencode-jack site, 127.0.0.1:8377 listening. Comms already document the deployed+smoked state (Access app,
+    DNS, JWT validation, commits fd9b78f3e/cef7f0f9c). The prep deliverable is done — closing. The tony-dell twin
+    card is superseded (OpenCode absent on tony-dell, same deliverable).'
+- at: 2026-11-17 19:23
+  from: devin
+  text: closed by devin
+- at: 2026-11-17 21:07
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:19
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:08
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:18
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:02
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:06
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:41
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:34
+  from: tony
+  text: archived (1d in done, board over card cap)

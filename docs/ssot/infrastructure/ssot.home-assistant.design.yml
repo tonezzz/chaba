@@ -101,8 +101,8 @@ pfg_card:
   cardstyle: pfg
   repo_source: src/cards/pfg-card.ts
   test_url:
-    - https://idc02.taila0626a.ts.net:8124/tony-test/pfg
-    - https://idc02.taila0626a.ts.net:8124/tony-test/pfg1
+    - https://mn01.taila0626a.ts.net:8124/tony-test/pfg
+    - https://mn01.taila0626a.ts.net:8124/tony-test/pfg1
   config:
     card_height: 520px
     view_layout: { grid-area: pfg }
@@ -118,7 +118,7 @@ pfg2_card:
   cardstyle: pfg2
   repo_source: src/cards/pfg2-card.ts
   test_url:
-    - https://idc02.taila0626a.ts.net:8124/tony-test/pfg2
+    - https://mn01.taila0626a.ts.net:8124/tony-test/pfg2
   config:
     card_height: 520px
     view_layout: { grid-area: pfg }
@@ -126,7 +126,7 @@ pfg2_card:
   note: |
     The PFG2 card is a copy of the PFG grid card with a 15x15 grid by default
     (pfg_grid_size still overrides). It shares the same pfg_* config keys and
-    entity/status tile mapping as pfg. First deployed to michael-dev in bundle v33;
+    entity/status tile mapping as pfg. First deployed to mn-ha-dev in bundle v33;
     corner anchors and span-aware lines landed in v51, per-line speed scaling in v56,
     pfg_hide_grid in v79.
     As of v71 pfg2-card.ts is removed: cardstyle pfg2 renders via pfgCard with a
@@ -260,7 +260,7 @@ pfg_feature_keys:
     pfg_* config lives entirely in the Lovelace card config. Once the bundle supports a
     key, iterate it live with scripts/home-assistant/push-dashboard.py (websocket save,
     no restart). Only new card code requires a bundle rebuild + version bump + restart.
-    Deploy: scripts/home-assistant/deploy-card.sh [--host michael-dev|michael-ha|all]
+    Deploy: scripts/home-assistant/deploy-card.sh [--host mn-ha-dev|michael-ha|all]
     (flock-locked, version derived from remote lovelace_resources).
 
 multi_battery_layout:

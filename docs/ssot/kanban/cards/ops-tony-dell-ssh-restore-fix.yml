@@ -1,0 +1,72 @@
+id: ops-tony-dell-ssh-restore-fix
+title: tony-dell - capture Ansible bootstrap failure output
+column: done
+priority: high
+created: '2026-11-26'
+updated: 2026-11-26 20:38
+brief: 'Diagnostic follow-up: the first bootstrap run exited 2 in ~4s. Re-run verbosely with all output redirected
+  to /home/tony/ssh-restore-fix.txt so it can be read over SFTP while shell access is still blocked. Exit 0 by design.'
+action:
+  type: script
+  status: done
+  host: tony-dell
+  executor: script
+  script:
+    repo: chaba
+    ref: ops/restore-ssh-shell
+    cmd: '{ ANSIBLE_LOCALHOST_WARNING=False ~/.local/bin/ansible-playbook -i localhost, -c local --limit localhost
+      -vvv ansible/playbooks/restore-ssh-shell.yml; echo "PLAYBOOK_EXIT=$?"; } > /home/tony/ssh-restore-fix.txt
+      2>&1; true'
+    timeout: 300
+  attempts: 1
+  last_failure: 'exit=0 .9300513-970557-121580566382482/AnsiballZ_command.py | pam_unix(sudo:session): session closed
+    for user root | runner-ops-tony-dell-ssh-restore-fix-1795670776.service: Consumed 3.076s CPU time over 3.213s
+    wall clock time, 133.6M memory peak.'
+  runner: tony-dell
+  result: 'exit=0 .0279706-974687-213253463984020/AnsiballZ_command.py | pam_unix(sudo:session): session closed
+    for user root | runner-ops-tony-dell-ssh-restore-fix-1795670921.service: Consumed 5.206s CPU time over 5.395s
+    wall clock time, 120.3M memory peak.'
+spec: Capture only - do not change the recovery approach. Write stdout and stderr of the -vvv playbook run to /home/tony/ssh-restore-fix.txt
+  then exit 0.
+comms:
+- at: 2026-11-26 12:25
+  from: tony
+  text: diagnostic card filed under /tmp/board-api.lock; POST /card refuses action.type=script
+- at: 2026-11-26 12:26
+  from: tony-dell
+  text: claimed
+- at: 2026-11-26 12:26
+  from: chaba
+  text: started runner-ops-tony-dell-ssh-restore-fix-1795670776 on tony-dell (script executor=script)
+- at: 2026-11-26 12:26
+  from: tony-dell
+  text: 'finished (ok): exit=0 .9300513-970557-121580566382482/AnsiballZ_command.py | pam_unix(sudo:session): session
+    closed for user root | run'
+- at: 2026-11-26 12:27
+  from: tony
+  text: retry requested
+- at: 2026-11-26 12:28
+  from: tony-dell
+  text: claimed
+- at: 2026-11-26 12:28
+  from: chaba
+  text: started runner-ops-tony-dell-ssh-restore-fix-1795670921 on tony-dell (script executor=script)
+- at: 2026-11-26 12:29
+  from: tony-dell
+  text: 'finished (ok): exit=0 .0279706-974687-213253463984020/AnsiballZ_command.py | pam_unix(sudo:session): session
+    closed for user root | run'
+- at: 2026-11-26 15:06
+  from: tony
+  text: '[close 15:05 +07] Stale fix follow-up: comms show "finished (ok): exit=0" with sudo session closed cleanly.
+    Live check: tony-dell SSH shell OK; scoped SFTP-only template from 2026-11-26 remains in place, no sshd change
+    in this pass. Closing.'
+- at: 2026-11-26 15:06
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+claim:
+  since: 2026-11-26 12:28
+review_kind: verify

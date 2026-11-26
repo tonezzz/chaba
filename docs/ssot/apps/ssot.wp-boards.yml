@@ -170,6 +170,21 @@ post_types:
   # Regression probes: wp-nest-job-cpt + wp-activity-cpt in
   # ssot.health.home.web.yml; re-verify any time with
   # scripts/wp-boards/verify-nest-job.sh.
+  # v0.10.0 (DEPLOYED 2026-11-24 via deploy-plugin-zip.sh on tony-omen,
+  # card rename-educations-cpt-label-to-lessons-w-0014fb / OPS-0820):
+  # lesson CPT admin labels Education(s) -> Lesson(s) — name/singular_name/
+  # menu_name + full labels array; slug 'lesson', rest_base, has_archive
+  # and all meta unchanged (REST + board-api depend on the slug). WP
+  # lesson posts are a frozen archive since the 2026-11-07 wiki cutover;
+  # the 137 private posts still list under wp-admin Lessons.
+  # v0.11.0 (PENDING DEPLOY — card lesson-comments-dev-board, phase 1):
+  # registers the `chaba_agent` role (read + read_private_posts +
+  # moderate_comments) so devin/ada/chaba WP users can post in-thread
+  # comment replies via board-api POST /wp-comment with status=approve —
+  # real author identity, never the hold queue. Provisioning:
+  # scripts/wp-boards/ensure-agent-users.py on tony-omen writes
+  # ~/.config/secrets/wp-agent-users.env (scp to idc03); runbook
+  # docs/ssot/jobs/wordpress/2026-11-26-comment-dev-board.yml.
   # Verified 2026-10-14 (KNB-0657 audit follow-up): /wp/v2/plugins reports
   # chaba-boards 0.3.3 active; all 10 CPTs in /wp/v2/types; private sample
   # post per core CPT seeded via REST (ids 266-271) proving the fleet-writer
@@ -328,12 +343,22 @@ writers:
                   POST /wp/v2/media then store the returned source_url (or
                   chaba/v1/media/<id> for member-gated); never a filesystem
                   path (id 117 stored /local/local-gen/... which 404s in the
-                  browser; file also no longer exists on tony-omen)"
+                  browser; file also no longer exists on tony-omen).
+                  Canonical writer (2026-11-23, card
+                  render-job-writer-must-upload-output-to-78229c):
+                  scripts/lib/wp_boards.py (upload_media + write_render_job,
+                  path-shaped output_url rejected) via CLI
+                  scripts/ada/render-job-record.py — ada-voice render tools
+                  adopt it by subprocess (CHABA_REPO) or port. Trail:
+                  docs/ssot/jobs/ada/2026-11-23-render-job-media-upload.yml"
   news_fetch:     "scripts/ada/news-fetch.py + news-feeds.json on idc03 —
                   wp-news-fetch.timer hourly; RSS/Atom -> news CPT, dedup by
                   slug n-<md5(link)> via ?slug= lookup (no local ledger).
                   Categories/tags mapped per feed; flood Google-News queries
-                  land under disaster>flood + thailand region cats.
+                  land under disaster>flood + thailand region cats. AI/model
+                  feeds (gn-ai-*, hf-blog — added 2026-11-24 for the morning
+                  brief, card ai-news-education-morning-brief) carry tag ai
+                  and feed the news-morning-brief job.
                   Archive: /wp/news/ (live 2026-10-14, ~120 seeded items)"
   repeat_ask_sync: "scripts/sync-repeat-asks.py on idc03 —
                   chaba-repeat-asks-sync.timer every 15min; reads
@@ -361,6 +386,24 @@ writers:
                   wp-comment-sync routes pin/unpin/watch comment commands
                   to the same transition. Every change posts a WP comment
                   — never silent. Card news-situation-summaries."
+  news_morning_brief: "scripts/ada/news-morning-brief.py on idc03 —
+                  wp-news-morning-brief.timer daily 08:00 ICT
+                  (ssot.jobs.yml). Reads the news CPT (AI feeds
+                  gn-ai-*/hf-blog in news-feeds.json carry tag ai +
+                  source_feed), drafts the fixed-section private brief
+                  (60s scan / model-provider table / impacts /
+                  TRY-WATCH-NO-ACTION / sources+confidence / Education)
+                  via chat-local LiteLLM -> gemini fallback ->
+                  deterministic render (never blocks). Upserts private
+                  page slug ai-morning-brief — consumer URL
+                  https://boards.surf-thailand.com/wp/ai-morning-brief/
+                  (editor login required). Durable comparisons append a
+                  dated 'News watch' block to matched EXISTING lessons
+                  via board-api /lesson (update-only, max 2/run). Ask:
+                  news-morning-brief.py ask \"<text>\" (news+lesson
+                  embedding query). verify subcommand re-checks the page.
+                  Card ai-news-education-morning-brief; procedure
+                  docs/kb/ai-news-to-education-procedure.md."
   cam_snapshot: "scripts/cam-wall/cam-snapshot-wp.py on tony-dell —
                   wp-cam-snapshot.timer every 15min at :02 (ssot.jobs.yml
                   job wp-cam-snapshot). Enumerates streams from

@@ -20,6 +20,9 @@ contract:
            the verifier re-counts this itself (tolerance 2)"
     services: "list of {unit, state} objects for the units the task
            asked about (may be empty if none were asked)"
+    failure_class: "string — the diagnosis's failure class (e.g.
+           unit_failed, dependency_down, disk_full, config_drift);
+           'none' when the target is healthy"
     findings: "list of strings — each a concrete finding with the
            evidence (journal line, unit state, command output)"
     summary: "one-paragraph operator summary of the diagnosis"

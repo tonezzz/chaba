@@ -1,0 +1,143 @@
+id: embed-lane-banks-bounded-run
+title: 'embed-lane-banks: bound each daily run to its 45min window'
+column: backlog
+updated: 2026-11-26 21:28
+brief: 'Daily embed-lane-banks oneshot on idc02 is SIGTERMd at TimeoutStartSec=2700 after copying only ~3200/74940
+  docs of ada-ha-bank-devin-handoff: the queue throttle (depth>=3000) plus CPU-only bge-m3 embedding yields ~15
+  docs/min. Ollama and mddb-embed are healthy; queue drained to 0, dropped=0, no data loss. Result=timeout every
+  day despite cumulative progress. See card timer-alert-idc02-embed-lane-banks comms (2026-11-26).'
+priority: high
+program: jobs
+tags:
+- mddb
+- embed-lane
+- timer
+spec: 'Make the daily run finish inside its time budget instead of being killed. Preferred: add a --limit (or wall-clock
+  budget) to scripts/embed/embed-lane.py banks and set the rendered job to a per-run cap sized to complete in <45min,
+  so the service exits 0 with incremental progress and the daily timer advances the resume-safe cursor. Alternative:
+  raise TimeoutStartSec for this one rendered job with an explicit upper bound. Update docs/ssot/jobs/mddb/2026-10-27-embedding-backfill-lane.yml
+  (job embed-lane-banks) and re-render; do not hand-edit the generated unit. Verify: one manual oneshot exits 0/SUCCESS
+  with a nonzero copy count and no timeout in journalctl; next daily run starts cleanly. Keep the depth>=3000 throttle
+  and dropped=0 invariant.'
+ref: MEM-1450
+comms:
+- at: 2026-11-26 18:47
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-26 19:01
+  from: chaba
+  text: classified as free_lane (kw:docs/ conf 1.00)
+- at: 2026-11-26 19:01
+  from: chaba
+  text: queued for processing
+- at: 2026-11-26 19:01
+  from: chaba
+  text: '[auto-dispatch] wave 17 (2026-11-26 19:01): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-26 19:01
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.58 > 0.7)'
+- at: 2026-11-26 19:01
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-26 19:02
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-26 19:02
+  from: con01
+  text: claimed
+- at: 2026-11-26 19:02
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 0.96 > 0.8)'
+- at: 2026-11-26 19:04
+  from: chaba
+  text: started devin-task-20261126-190355-make-the-daily-run-finish-insi on con01 (dispatch)
+- at: 2026-11-26 19:04
+  from: chaba
+  text: 'primer injected 8 lesson(s): [runner-dispatch-no-timeout] primer injected 8 lesson(s): idc02''s kanban-dispatc;
+    idc02''s kanban-dispatch.service was a linked unit running a stale scripts/-only ; [idc03-ada-hygiene-20261107]
+    primer injected 8 lesson(s): idc02''s kanban-dispatc; [board-gantt-timeline-view] primer injected 8 lesson(s):
+    idc02''s kanban-dispatch; [mddb-cms-11027-embed-coverage-gap-250-do-e35321] progress: vector-stats recheck;
+    [mddb-cms-11027-embed-coverage-gap-250-do-e35321] update: rei'
+- at: 2026-11-26 19:07
+  from: devin
+  text: 'DONE (dispatch worktree): banks gained --budget wall-clock cap; rendered embed-lane-banks.service now runs
+    `banks --budget 2400` (40min < 45m TimeoutStartSec). Saturated-queue throttle waits are budget-bounded too,
+    so the run exits 0 with copied progress and the daily timer resumes via key-set diff. queue-hi 3000 / dropped=0
+    unchanged. Re-rendered idc02 unit + swept stale generated drift (cline retirement leftovers, wp-comment-sync,
+    ansible-runner-tool-guard) so test_render_jobs GeneratedTree is'
+- at: 2026-11-26 19:09
+  from: chaba
+  text: 'merge-sweep: devin-task-20261126-190355-make-the-daily-run-finish-insi no longer active on con01 but card
+    still says running — sweeping its branch'
+- at: 2026-11-26 19:10
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261126-190355-make-the-daily-run-finish-insi on con01 still dirty —
+    14 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-26 19:19
+  from: con01
+  text: 'finished (ok): exit=0 ''t touch that host. Outcome written to `dispatch-outcome-20261126-190355-make-the-daily-run-finish-insi.md`
+    and t'
+- at: 2026-11-26 19:19
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-26 19:19
+  from: chaba
+  text: 'session-end checkpoint c0b3cef2: 14 leftover file(s) committed'
+- at: 2026-11-26 19:19
+  from: chaba
+  text: banked 794 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 19:19
+  from: chaba
+  text: pushed dispatch/20261126-190355-make-the-daily-run-finish-insi to origin
+- at: 2026-11-26 19:19
+  from: chaba
+  text: "auto-merge not done: push: Authorized access only. All activity may be monitored and reported.\nremote:
+    error: refusing to update checked out branch: refs/heads/master        \nremote: error: By default, updating
+    the current bran — close will block until merged"
+- at: 2026-11-26 19:19
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261126-190355-make-the-daily-run-finish-insi,
+    branch dispatch/20261126-190355-make-the-daily-run-finish-insi'
+- at: 2026-11-26 19:24
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261126-190355-make-the-daily-run-finish-insi on
+    con01 — if the work was never pushed it may be gone'
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 21:25
+  from: tony
+  text: '[verify 2026-11-26] NOT VERIFIED — fix did not land. Evidence: scripts/embed/embed-lane.py on origin/master
+    still has no per-run cap wired to the banks job (the --limit arg exists but the job spec does not set one);
+    docs/ssot/jobs/mddb/2026-10-27-embedding-backfill-lane.yml embed-lane-banks has no cap field; no origin/master
+    commit touched either file since 18:00; the dispatch branch dispatch/20261126-190355-make-the-daily-run-finish-insi
+    is absent from origin (auto-merge was refused: checked-ou'
+- at: 2026-11-26 21:25
+  from: tony
+  text: retry requested
+- at: 2026-11-26 21:25
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-26 21:28
+  from: chaba
+  text: 'con01 defers: runner at local cap (1/1) — remote slots unaffected'
+action:
+  type: dispatch
+  status: queued
+  lane: free_lane
+  lane_source: kw
+  attempts: 0
+  sweep:
+    stale_running: 2026-11-26 19:10
+    dirty: 14
+    session_gone: 2026-11-26 19:25
+  last_failure: 'exit=0 ''t touch that host. Outcome written to `dispatch-outcome-20261126-190355-make-the-daily-run-finish-insi.md`
+    and the card has a DONE comms entry. | devin-task-20261126-190355-make-the-daily-run-finish-insi.service: Consumed
+    27.560s CPU time.'
+claim:
+  since: 2026-11-26 19:02
+review_kind: verify

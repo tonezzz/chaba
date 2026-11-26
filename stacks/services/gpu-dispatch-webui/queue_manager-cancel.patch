@@ -1,0 +1,95 @@
+--- a/queue/queue_manager.py
++++ b/queue/queue_manager.py
+@@ -244,6 +244,68 @@
+         }))
+         return True
+ 
++    def cancel_job(self, job_id: str, actor: str = "cli") -> Dict[str, Any]:
++        """Cancel a job that has not been dispatched yet.
++
++        Only 'queued'/'waiting' jobs can be cancelled: once the scheduler
++        claims a job (status=processing) the container lifecycle belongs to
++        the dispatch playbook and host runtime — stop it there instead.
++
++        Returns a result dict; never raises for expected states.
++        """
++        job_key = f"queue:job:{job_id}"
++        data = self.r.hgetall(job_key)
++        if not data:
++            return {"ok": False, "reason": "not_found", "job_id": job_id}
++        status = data.get("status", "unknown")
++        if status == "processing":
++            return {"ok": False, "reason": "running", "job_id": job_id, "status": status,
++                    "detail": "job is dispatched; stop the container on its host or let it finish"}
++        if status not in ("queued", "waiting"):
++            return {"ok": False, "reason": "terminal", "job_id": job_id, "status": status,
++                    "detail": f"job already {status}; use requeue to run it again"}
++
++        try:
++            priority = int(data.get("priority", Priority.NORMAL))
++        except (TypeError, ValueError):
++            priority = int(Priority.NORMAL)
++        queue_key = f"queue:jobs:{priority}"
++        now = datetime.now().isoformat()
++
++        # Atomic check-and-cancel: bail if the scheduler claimed the job
++        # between our hgetall and now.
++        lua = """
++        local status = redis.call('HGET', KEYS[1], 'status')
++        if status ~= 'queued' and status ~= 'waiting' then
++            return {0, status or 'unknown', 0}
++        end
++        local removed = redis.call('LREM', KEYS[2], 0, ARGV[1])
++        redis.call('HSET', KEYS[1],
++            'status', 'cancelled',
++            'cancelled_at', ARGV[2],
++            'cancelled_by', ARGV[3])
++        return {1, status, removed}
++        """
++        script = self.r.register_script(lua)
++        res = script(keys=[job_key, queue_key], args=[job_id, now, actor]) or ["0", "unknown", "0"]
++        res = [str(x) for x in res]
++        if res[0] != "1":
++            return {"ok": False, "reason": "state_changed", "job_id": job_id,
++                    "status": res[1] if len(res) > 1 else "unknown",
++                    "detail": "job changed state before cancel landed; refresh and retry"}
++        removed = int(res[2]) if len(res) > 2 and res[2].lstrip("-").isdigit() else 0
++
++        self.release_reservation(job_id)
++        self.r.publish("queue:events", json.dumps({
++            "event": "cancelled",
++            "job_id": job_id,
++            "actor": actor,
++            "previous_status": res[1],
++            "timestamp": now,
++        }))
++        return {"ok": True, "job_id": job_id, "previous_status": res[1],
++                "queue_entries_removed": removed}
++
+     # ─── GPU Reservations ────────────────────────────────────────────────
+     #
+     # Ledger: one key per held GPU — gpu:hold:{host}:{gpu_index} -> JSON payload
+@@ -590,6 +652,12 @@
+     holds.add_argument("--host", required=True)
+     holds.add_argument("--redis", default="100.123.163.11")
+ 
++    # Cancel
++    can = sub.add_parser("cancel", help="Cancel a queued/waiting job")
++    can.add_argument("job_id")
++    can.add_argument("--actor", default="cli", help="Recorded in the audit trail")
++    can.add_argument("--redis", default="100.123.163.11")
++
+     args = parser.parse_args()
+ 
+     qm = QueueManager(redis_host=args.redis)
+@@ -668,6 +736,9 @@
+     elif args.command == "holds":
+         print(json.dumps(qm.host_holds(args.host)))
+ 
++    elif args.command == "cancel":
++        print(json.dumps(qm.cancel_job(args.job_id, actor=args.actor)))
++
+ 
+ if __name__ == "__main__":
+     main()
+\ No newline at end of file

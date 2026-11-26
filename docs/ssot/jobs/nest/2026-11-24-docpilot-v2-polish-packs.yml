@@ -1,0 +1,110 @@
+id: docpilot-v2-polish-packs-2026-11-24
+title: doc-pilot v2 polish — six nest job-packs authored, tested, staged
+    to gdrive:ada-nest/packs
+date: 2026-11-24
+card: doc-pilot-v2-polish-music-bed-subs-shot-943456
+ref: OPS-0818
+host: tony-omen (dispatch worktree; packs run later on nest workers)
+status: staged — all six packs on Drive awaiting worker claims; CPU
+    packs claimable immediately, GPU pack gated on doc-v2-shot-qc +
+    a >=14GB worker
+
+context: >-
+  Card spec: five polish items for the ss1 solar-system documentary,
+  each pack-able. Current master = ss1-hybrid-v6.mp4 (69.165s,
+  640x384@24, h264/aac + mov_text TH subs; NASA shots 1/11 carry
+  burned captions). Store root chosen = gdrive:ada-nest (V1 doc-pilot
+  store — the card brief itself points at ada-nest/doc-pilot/final/;
+  it has identical inputs to the doc-pilot-v2 subqueue plus the flat
+  final/ layout the packs use). Staging to the default root also lets
+  GPU workers (Colab T4, KK-Mac) see the re-render pack — the
+  doc-pilot-v2 subqueue is Omen-only and tony-omen's GTX 1650 4GB
+  cannot run gpu_gb:14 jobs.
+
+packs_staged:
+  doc-v2-vo-earcheck:
+    item: '4 — flag stuttery VO beats'
+    needs: 'gpu_gb:0 disk_gb:4 venv'
+    local_test: 'PASS — all 18 beats measured (dur/peak/rms/clip/lead+trail
+      silence/max internal gap/envelope-autocorr repeat score), zero
+      flags; writes vo-earcheck-report.md + flagged-beats.txt + per-shot
+      PNGs under packs/doc-v2-vo-earcheck/out + doc-pilot/qc/vo-earcheck/'
+    vo_map: 'shots 4,8→vo-v2; 6,7→vo-v4; 15→vo-v5; else vo/ (matches
+      08-doc-hybrid-v6)'
+  doc-v2-shot-qc:
+    item: '3a — per-shot QC evidence'
+    needs: 'gpu_gb:0 disk_gb:3 venv'
+    local_test: 'PASS on real shots — motion/p90/frozen-frame/gradient/
+      blackdetect per shot + 6x3 contact sheet; weak=[15,17,18]
+      (near-frozen; 17/18 also ~3s blackdetect — intentional "blue dot"
+      minimalism, flagged for human eyeball not auto-fail); review list
+      of 8 low-motion shots; weak-shots.txt feeds rerender pack'
+  doc-v2-rerender-shots:
+    item: '3b — GPU re-render of QC-weak shots'
+    needs: 'gpu_gb:14 disk_gb:35 egress_only_ok timeout 2400'
+    requires: [doc-v2-shot-qc]
+    design: >-
+      reads doc-pilot/qc/shot-qc/weak-shots.txt; re-renders ONLY those
+      shots with the doc-render-ss1 recipe (LTX 73f/40step/640x384,
+      t2v + i2v last-frame continuations 2<-1, 18<-17 using freshest
+      frame). Originals archived to doc-pilot/shots-v1-archive/ before
+      overwrite; re-rendered shots merge into doc-pilot/shots/.
+      Replaces doc-render-ss1's >50KB cache-skip semantics which cannot
+      express "re-render THESE" (most ss1 shots are <50KB).
+      No-op done if weak list empty (artifacts = verdict+report only).
+    local_test: 'syntax-checked; GPU path not runnable on tony-omen'
+  doc-v2-music-bed:
+    item: '1 — music bed source decision + duck under VO'
+    needs: 'gpu_gb:0 disk_gb:3 venv'
+    local_test: 'PASS end-to-end — generated ambient pad chosen
+      (zero licensing surface, fully reproducible; licensed swap-in
+      contract documented: drop audio at doc-pilot/assets/music/ and
+      re-run). sidechaincompress ducking keyed on VO stem; outputs
+      dry bed + ducked bed + vo-stem-v6.wav + preview-music-v1.mp4
+      (69.08s) + report under doc-pilot/audio/'
+  doc-v2-subs:
+    item: '2 — TH+EN SRT + ffmpeg overlay variants'
+    needs: 'gpu_gb:0 disk_gb:4 venv'
+    local_test: 'PASS — 16 cues parsed (cue index==shot#; NASA 1/11
+      excluded), TH verbatim from v6 SRT, EN from script.yml en:
+      fields, bilingual TH+EN variant; 3 soft mov_text muxes + 2
+      libass burn-in previews under doc-pilot/final-v7/ + SRTs under
+      doc-pilot/subs/. One transient ffmpeg "Invalid argument" on
+      soft-en — retry+partial-cleanup added'
+  doc-v2-delivery:
+    item: '5 — 720p export + poster + CMS destination'
+    needs: 'gpu_gb:0 disk_gb:8 venv timeout 1800'
+    requires: [doc-v2-music-bed, doc-v2-subs]
+    local_test: 'PASS end-to-end in ~70s — replicates 08-doc-hybrid-v6
+      assembly (NASA composites shots 1/11, per-scene tpad clone-holds,
+      same VO map) → ss1-master-v7-{th,en,bi}.mp4 (69.205s) with
+      VO-stem+ducked-bed mix, 720p lanczos+unsharp export, poster
+      frames (Saturn mid-window primary, Earth alt), align-report-v7,
+      cms-destination.json → doc-pilot/final-v7/'
+    note: 'rerender NOT in requires — v7 must not block on GPU
+      availability; if rerender lands later, delete done marker +
+      re-run to pick up new shots (documented in cms-destination.json)'
+
+dependency_graph: >-
+  earcheck, shot-qc, music-bed, subs: claimable immediately (CPU).
+  rerender-shots waits on shot-qc done + a >=14GB worker.
+  delivery waits on music-bed + subs done.
+  v7 picks up re-rendered shots automatically if rerender completes
+  before delivery runs.
+
+verification: >-
+  All six pack.yml pass nest-pack-submit.py --dry-run (name==dirname,
+  needs keys, run/run_sh xor, artifact globs under packs/). Run blocks
+  compile clean. CPU packs (earcheck, shot-qc, music-bed, subs,
+  delivery) executed against the real fetched inputs mirrored at
+  .dispatch-scratch/nestroot — all PASS with production-shaped
+  outputs. rerender-shots syntax-checked; its GPU path mirrors the
+  proven doc-render-ss1 code.
+
+followups:
+  - 'worker claims: CPU packs run on next fleet pass; rerender needs
+    Colab T4 or KK-Mac-class worker scanning ada-nest/packs'
+  - 'after rerender done: re-run doc-v2-delivery (delete its done
+    marker) to rebuild v7 with new shots'
+  - 'CMS publish itself is human/Ada via board-api /lesson|/publish —
+    cms-destination.json is the ready manifest (Education post 2157)'

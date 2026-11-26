@@ -5,12 +5,26 @@ on:
     branches: [master, main]
     paths:
       - "scripts/**"
+      - "tests/**"
+      - ".husky/**"
+      - "docs/ssot/infrastructure/ssot.devnest-lanes.yml"
+      - "docs/ssot/infrastructure/ssot.jobs.yml"
+      - "evals/opencode-lane/**"
+      - "stacks/idc03/litellm/**"
+      - "systemd/generated/**"
       - "package.json"
       - ".github/workflows/repo-lint.yml"
   pull_request:
     branches: [master, main]
     paths:
       - "scripts/**"
+      - "tests/**"
+      - ".husky/**"
+      - "docs/ssot/infrastructure/ssot.devnest-lanes.yml"
+      - "docs/ssot/infrastructure/ssot.jobs.yml"
+      - "evals/opencode-lane/**"
+      - "stacks/idc03/litellm/**"
+      - "systemd/generated/**"
       - "package.json"
       - ".github/workflows/repo-lint.yml"
 
@@ -39,3 +53,44 @@ jobs:
             node --check "$f" || { echo "SYNTAX FAIL: $f"; FAIL=1; }
           done < <(find scripts -name "*.mjs" -not -path "*/node_modules/*")
           exit $FAIL
+
+  # Drift guards from the 2026-11-20 Jules half-purge: a lane marked
+  # retired in the SSOT must not survive in an executor allowlist, and a
+  # deployed tool must be byte-identical to its committed sha256 pin.
+  # Keep this next to the cheap syntax gate so both run on the same
+  # scripts/ push, plus test/SSOT edits that can change the contracts.
+  tooling-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install test dependencies
+        run: python3 -m pip install --quiet pytest pyyaml
+      - name: Runner tooling + lane retirement contracts
+        run: >-
+          python3 -m pytest -q
+          tests/board/test_runner_tooling_contract.py
+          tests/board/test_kanban_commit_guard.py
+          tests/devin/test_unit_exit_status.py
+          tests/devnest/test_sync_opencode_models.py
+      # Stale-write guard (4af10b4c5c / 56aac6476c): a board sweep commit
+      # must be pathspec-limited and must refuse staged code, deletions or
+      # the hand-maintained ssot.kanban.yml. The full shell suite carries
+      # known fixture failures, so this focused scratch-repo test gates CI.
+      # Model-route registration drift guard (card
+      # model-route-registration-unify / OPS-1020): profile allowlists
+      # and the jack-ide opencode provider map must only name routes the
+      # LiteLLM config actually serves. --check exits 1 on breaking
+      # classes (profile_route_missing, profile_default_unallowed,
+      # opencode_map_unwritable); route_not_registered notes are
+      # informational — the hourly opencode-models-sync job on idc02 /
+      # tony_dell --writes the live runner maps, CI never writes.
+      - name: OpenCode model drift check
+        run: >-
+          python3 scripts/devnest/sync-opencode-models.py
+          --from-config stacks/idc03/litellm/config.yaml
+          --opencode stacks/idc02/jack-ide/opencode/opencode.json
+          --check

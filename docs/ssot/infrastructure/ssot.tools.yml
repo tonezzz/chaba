@@ -16,6 +16,15 @@ overview:
     tools.d vocabulary; secondary mirrors manifest secondary_allowed. backend is the service the call reaches; transport is how the agent invokes
     it.
   inventoried: 2026-11-18 from ada-voice @ Nov 13-18 checkout (tony-omen) + devin mcp_config.json — re-run inventory before trusting counts.
+  observation:
+    live_inventory: reports/mcp-fleet/MCP-FLEET-REPORT.md
+    producer: scripts/mcp-inventory.py
+    report_node: mcp-fleet
+    note: >-
+      Declared rows below are the versioned catalog; the L2 report is the
+      observed per-host surface (configured vs declared, running hints).
+      Re-run the producer before trusting per-host state; do not copy live
+      counts into this registry. Card KNB-0019.
   related:
   - docs/kb/agent-tool-federation.md — registry->surface generator design + migration order
   - infrastructure/ssot.mcp.yml — MCP server infra definitions (endpoints, wrappers)
@@ -186,6 +195,13 @@ tools:
     ada-voice: ada_render_image
     ada-dev: ada_render_image
   source: ada-voice:backend/tools.d/ada_render_image.py
+  notes: >-
+    tony-omen sdcpp lane is ILLUSTRATION-TIER for stock photorealism
+    (OPS-1078, 2026-11-25): Lightning 4-step Q4 reads painterly;
+    full sdxl-base Q8_0 is smoother but still short of photo on CPU.
+    sd-server has no hot model swap — parallel instance on another
+    port is the non-disruptive path (see
+    docs/ssot/jobs/nest/2026-11-25-omen-sdxl-q8-experiment.yml).
 - name: media.adobe_stock_qc
   kind: tool
   sig: action,asset,decision,note
@@ -857,6 +873,21 @@ tools:
     ada-dev: ada_forget
   source: ada-voice:backend/realtime_provider.py
   notes: MEMORY_WRITE_TOOLS
+- name: memory.asset_save
+  kind: tool
+  sig: name,description,media_url,bank
+  policy: read
+  secondary: false
+  backend: LINE media archive persona-assets/ + mddb bank doc (meta.image_url)
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: asset_save
+    ada-dev: asset_save
+  source: ada-voice:backend/tools.d/asset_save.py
+  notes: "card persona-photo-store (2026-11-24) — writes ride the ada_remember ACL + staged-writes lane (pending route 'asset'); confirmed-policy banks refuse in-tool; recall side is _doc_to_hit image_url + ada_memory_search top-level promote -> relay _images_from"
 - name: agent.ops
   kind: tool
   sig: action,node,bank,key,outcome,note,source,reset,collection,product,url,mode,topic,depth,identity,entity_id,tool,confirmed,confirm_token
@@ -1555,18 +1586,18 @@ tools:
     devin: ha_home
   source: ~/.config/devin/mcp_config.json
   notes: remote http mcp (server key home-assistant); token-in-URL; reference config only
-- name: mcp.ha_michael_dev
+- name: mcp.ha_mn_ha_dev
   kind: provider
   sig: per-tool via mcp_list_tools
   policy: mixed
-  backend: michael dev ha idc02:9585
+  backend: michael dev ha mn01:9585
   transport: http
   agents:
   - devin
   surfaces:
-    devin: ha_michael_dev
+    devin: ha_mn_ha_dev
   source: ~/.config/devin/mcp_config.json
-  notes: remote http mcp (server key michael-dev); token-in-URL
+  notes: remote http mcp (server key mn-ha-dev); token-in-URL
 - name: mcp.ha_michael
   kind: provider
   sig: per-tool via mcp_list_tools

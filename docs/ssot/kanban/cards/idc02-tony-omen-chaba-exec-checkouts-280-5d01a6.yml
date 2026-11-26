@@ -1,0 +1,136 @@
+id: idc02-tony-omen-chaba-exec-checkouts-280-5d01a6
+title: idc02 + tony-omen chaba exec checkouts 280 commits stale (dirty feature branches block repo-sync)
+column: done
+updated: 2026-11-26 20:35
+spec: 'Discovered 2026-11-24 during OPS-1326 fleet convergence. runner-fleet-health reports 2 hosts failing clone-stale
+  (limit 200): idc02 (branch retire/ops-1310-helm-leftovers, ~20 modified + untracked ansible playbooks/docs) and
+  tony-omen (master, 127 dirty focus-inbox handoff files). Both are ~280 commits behind origin/master; chaba-repo-sync.service
+  cannot pull (conflicts / dirty tree). Tool pins were converged directly so runner-agent + devin-dispatch installed
+  builds now match origin/master pins on both hosts, but runner-agent still imports dispatch_repos.py and other
+  helpers from the STALE checkout code. Need a human decision on the in-flight dirty work before forcing checkout
+  current (stash -u + ff-only, commit, or abandon). Do NOT destroy unproven work. NOTE: OPS-1326 tool-pin drift
+  IS resolved on both hosts — remaining failure is the pre-existing clone-stale condition, not introduced by the
+  pin bump.'
+action:
+  type: manual
+  status: done
+ref: OPS-1330
+comms:
+- at: 2026-11-24 22:19
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-24 22:20
+  from: devin
+  text: 'raised request how-should-the-dirty-in-flight-work-on-i-11feb4: How should the dirty in-flight work on
+    idc02 (retire/ops-1310-helm-leftovers) and tony-omen (127 dirty focus-inbox files'
+- at: 2026-11-25 07:28
+  from: tony
+  text: 'answered how-should-the-dirty-in-flight-work-on-i-11feb4: stash-u-ff — git stash -u (tracked+untracked)
+    then git pull --ff-only on both hosts; stash left for owner to pop (recommended, reversible)'
+- at: 2026-11-25 07:28
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-25 07:35
+  from: tony
+  text: '[triage] 2026-11-25 (Tony): decision recorded (stash-u-ff). Card is manual - execute the stash+pull on
+    idc02 and tony-omen when ready; not auto-dispatched.'
+- at: 2026-11-25 07:36
+  from: devin
+  text: 'OPS-1330 proceed (recommended stash-u-ff, adapted for diverged branches): idc02 converged — stash@{0} "OPS-1330
+    pre-convergence idc02 20261125-073302" preserves 56 dirty files; ahead 2 commits preserved as branch/ref ops-1330/idc02-ahead-backup
+    (retire/ops-1310-helm-leftovers tip 9c942d006a); checkout now master at origin/master, behind 0, dirty 0. tony-omen
+    mostly converged — stash@{1} "OPS-1330 pre-convergence tony-omen 20261125-072211" preserves 153 preflight dirty
+    files; ahead 1 commit prese'
+- at: 2026-11-25 07:37
+  from: devin
+  text: 'Final: both hosts converged to origin/master c9e971c521, behind 0. idc02 dirty 0, stash@{0} OPS-1330 pre-convergence
+    idc02 20261125-073302 preserves 56 files, ahead backup ops-1330/idc02-ahead-backup=9c942d006a. tony-omen dirty
+    1 (rescued untracked docs/ssot/focus-inbox/2026-11-25-003242-gh-run-tonezzz-chaba-45518383969.yml, not in any
+    stash - preserved), stash@{1} OPS-1330 pre-convergence tony-omen 20261125-072211 preserves 153 files, ahead
+    backup ops-1330/tony-omen-ahead-backup=f97afaa1c1c. Ar'
+- at: 2026-11-25 07:37
+  from: devin
+  text: moved backlog -> done
+- at: 2026-11-25 07:52
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:07
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:28
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:56
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:58
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:35
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+requests:
+- id: how-should-the-dirty-in-flight-work-on-i-11feb4
+  ask: How should the dirty in-flight work on idc02 (retire/ops-1310-helm-leftovers) and tony-omen (127 dirty focus-inbox
+    files) be handled so their chaba exec checkouts can be brought current? Tool pins are already converged; only
+    the stale checkout code remains.
+  status: answered
+  at: 2026-11-24 22:20
+  from: devin
+  options:
+  - stash-u-ff — git stash -u (tracked+untracked) then git pull --ff-only on both hosts; stash left for owner to
+    pop (recommended, reversible)
+  - commit-wip — commit the dirty work on each host branch, then rebase/merge origin/master; preserves work in history
+  - leave — accept stale checkout code on these two hosts; exclude them from clone-stale audit
+  - abandon — discard the dirty work then hard-reset to origin/master (destructive, needs explicit approval)
+  suggested: stash-u-ff — git stash -u (tracked+untracked) then git pull --ff-only on both hosts; stash left for
+    owner to pop (recommended, reversible)
+  answer: stash-u-ff — git stash -u (tracked+untracked) then git pull --ff-only on both hosts; stash left for owner
+    to pop (recommended, reversible)
+claim: {}

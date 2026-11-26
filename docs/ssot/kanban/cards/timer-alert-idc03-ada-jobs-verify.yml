@@ -1,130 +1,109 @@
 id: timer-alert-idc03-ada-jobs-verify
 title: Timer ada-jobs-verify on idc03 failing
 column: done
-updated: 2026-11-20 12:40
+updated: 2026-11-26 20:37
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-09 18:00) of `ada-jobs-verify.service` on `idc03` result=exit-code — investigate journal: `journalctl
+note: 'Last run (11-25 10:05) of `ada-jobs-verify.service` on `idc03` result=exit-code — investigate journal: `journalctl
   --user -u ada-jobs-verify.service` on the host. See CMS `timer-timeline-idc03`.'
-ref: ADA-1293
+ref: ADA-1372
 comms:
-- at: 2026-11-09 18:20
+- at: 2026-11-25 10:14
   from: devin
   text: card captured via board-api
-- at: 2026-11-09 18:30
+- at: 2026-11-25 10:15
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 10:24
   from: devin
-  text: '[still suspicious] Last run (11-09 18:00) of `ada-jobs-verify.service` on `idc03` result=exit-code — investigate
+  text: '[still suspicious] Last run (11-25 10:05) of `ada-jobs-verify.service` on `idc03` result=exit-code — investigate
     journal: `journalctl --user -u ada-jobs-verify.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-09 18:40
+- at: 2026-11-25 10:44
   from: devin
-  text: '[auto-resolved] last run result=success at 11-09 18:30 — closing (timer-sentinel KNB-0577)'
-- at: 2026-11-09 18:40
+  text: '[auto-resolved] last run result=success at 11-25 10:34 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-25 10:44
   from: tony
   text: closed by tony
-- at: 2026-11-14 14:08
+- at: 2026-11-25 16:49
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-14 14:08
-  from: chaba
-  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-17 18:06
-  from: chaba
-  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-17 18:15
-  from: chaba
-  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-17 18:36
+- at: 2026-11-25 16:51
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-17 18:38
-  from: chaba
-  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-17 21:05
-  from: chaba
-  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-18 17:15
-  from: chaba
-  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-18 18:03
-  from: chaba
-  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-18 18:05
+- at: 2026-11-25 16:57
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-18 21:17
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-18 22:02
+- at: 2026-11-25 17:26
   from: chaba
-  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-18 22:06
-  from: chaba
-  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
-    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-19 08:21
-  from: tony
-  text: moved done -> backlog
-- at: 2026-11-19 08:21
-  from: devin
-  text: '[reopened — condition recurred] Last run (11-19 08:00) of `ada-jobs-verify.service` on `idc03` result=exit-code
-    — investigate journal: `journalctl --user -u ada-jobs-verify.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-19 08:31
-  from: devin
-  text: '[still suspicious] Last run (11-19 08:00) of `ada-jobs-verify.service` on `idc03` result=exit-code — investigate
-    journal: `journalctl --user -u ada-jobs-verify.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-19 08:40
-  from: devin
-  text: '[auto-resolved] last run result=success at 11-19 08:30 — closing (timer-sentinel KNB-0577)'
-- at: 2026-11-19 08:40
-  from: tony
-  text: closed by tony
-- at: 2026-11-19 17:03
+- at: 2026-11-25 17:38
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-19 18:53
+- at: 2026-11-26 03:48
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-19 19:08
+- at: 2026-11-26 03:49
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-19 20:03
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-- at: 2026-11-20 12:10
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 09:25
   from: tony
   text: moved done -> backlog
-- at: 2026-11-20 12:10
+- at: 2026-11-26 09:25
   from: devin
-  text: '[reopened — condition recurred] Last run (11-20 12:00) of `ada-jobs-verify.service` on `idc03` result=exit-code
+  text: '[reopened — condition recurred] Last run (11-26 09:05) of `ada-jobs-verify.service` on `idc03` result=exit-code
     — investigate journal: `journalctl --user -u ada-jobs-verify.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-20 12:20
+- at: 2026-11-26 09:34
   from: devin
-  text: '[still suspicious] Last run (11-20 12:00) of `ada-jobs-verify.service` on `idc03` result=exit-code — investigate
+  text: '[still suspicious] Last run (11-26 09:05) of `ada-jobs-verify.service` on `idc03` result=exit-code — investigate
     journal: `journalctl --user -u ada-jobs-verify.service` on the host. See CMS `timer-timeline-idc03`.'
-- at: 2026-11-20 12:40
+- at: 2026-11-26 09:55
   from: devin
-  text: '[auto-resolved] last run result=success at 11-20 12:30 — closing (timer-sentinel KNB-0577)'
-- at: 2026-11-20 12:40
+  text: '[auto-resolved] last run result=success at 11-26 09:34 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-26 09:55
   from: tony
   text: closed by tony
+- at: 2026-11-26 20:37
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done

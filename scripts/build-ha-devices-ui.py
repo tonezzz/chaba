@@ -196,11 +196,11 @@ def build_instance_rows(
     return rows
 
 
-def build_michael_dev_rows() -> list[dict]:
+def build_mn_ha_dev_rows() -> list[dict]:
     """Dev instance has no separate network registry; list its HA device registry items."""
     return [
         {
-            "ha_instance": "michael-dev",
+            "ha_instance": "mn-ha-dev",
             "device_id": "5a59c585a4dd35c1af1e93a7398f7090",
             "label": "Sun",
             "ip": None,
@@ -216,7 +216,7 @@ def build_michael_dev_rows() -> list[dict]:
             "first_seen": None,
         },
         {
-            "ha_instance": "michael-dev",
+            "ha_instance": "mn-ha-dev",
             "device_id": "f0bd32929e81e09e3d830450ba8ca1e6",
             "label": "Backup",
             "ip": None,
@@ -232,7 +232,7 @@ def build_michael_dev_rows() -> list[dict]:
             "first_seen": None,
         },
         {
-            "ha_instance": "michael-dev",
+            "ha_instance": "mn-ha-dev",
             "device_id": "756b55b96dec5d0d20e83a1f78c571a6",
             "label": "Google Translate en com",
             "ip": None,
@@ -248,7 +248,7 @@ def build_michael_dev_rows() -> list[dict]:
             "first_seen": None,
         },
         {
-            "ha_instance": "michael-dev",
+            "ha_instance": "mn-ha-dev",
             "device_id": "6572f2976ffb8ffa56a6e87f2cdcfa5c",
             "label": "Forecast",
             "ip": None,
@@ -264,7 +264,7 @@ def build_michael_dev_rows() -> list[dict]:
             "first_seen": None,
         },
         {
-            "ha_instance": "michael-dev",
+            "ha_instance": "mn-ha-dev",
             "device_id": "02dd55a1519aa0b614e5bdc17f798188",
             "label": "HA-MCP Server",
             "ip": None,
@@ -439,7 +439,7 @@ def main() -> None:
     meta = {
         "michael-ha": {"title": "Michael HA", "description": "Michael's home network"},
         "tony-ha": {"title": "Tony HA", "description": "Tony's home network"},
-        "michael-dev": {"title": "Michael Dev", "description": "Michael dev HA on tony-dell"},
+        "mn-ha-dev": {"title": "Michael Dev", "description": "Michael dev HA on tony-dell"},
     }
     ui_instances: dict[str, dict] = {
         name: {
@@ -468,9 +468,9 @@ def main() -> None:
             {k: v for k, v in row.items() if k not in ("ha_instance",)} for row in rows
         ]
 
-    dev_rows = build_michael_dev_rows()
+    dev_rows = build_mn_ha_dev_rows()
     all_rows.extend(dev_rows)
-    ui_instances["michael-dev"]["devices"] = [
+    ui_instances["mn-ha-dev"]["devices"] = [
         {k: v for k, v in row.items() if k not in ("ha_instance",)} for row in dev_rows
     ]
     OUT_SSOT.parent.mkdir(parents=True, exist_ok=True)
@@ -503,7 +503,7 @@ def main() -> None:
             "device_record": {
                 "required": ["ha_instance", "device_id", "label"],
                 "fields": {
-                    "ha_instance": "Home Assistant instance slug (e.g. tony-ha, michael-ha, michael-dev)",
+                    "ha_instance": "Home Assistant instance slug (e.g. tony-ha, michael-ha, mn-ha-dev)",
                     "device_id": "Stable device slug",
                     "label": "Human-readable name",
                     "ip": "IPv4 address or null",

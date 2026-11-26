@@ -40,7 +40,21 @@ REPO="${KANBAN_REPO:-$HOME/CascadeProjects/chaba-tony-dell}"
 # (dev-system assess, host-roles writers) whose files collide on every
 # autostash pop — a narrow kanban-only regex left those "for manual
 # merge" and wedged the tree + spammed the ops-guard card each cycle.
-GENERATED_RE='^(docs/ssot/|reports/SSOT_OPTIMIZATION_WARNINGS\.json$|stacks/web/public/apps/board/|docs/reports/education-maintenance/)'
+GENERATED_RE='^(docs/ssot/|reports/SSOT_OPTIMIZATION_WARNINGS\.json$|stacks/web/public/apps/board/|docs/reports/education-maintenance/|docs/reports/lesson-audit/)'
+# Auto-writer ownership boundary (incidents 4af10b4c5c and 56aac6476c):
+# this sweep owns GENERATED board state only. It must never commit code or
+# the hand-maintained SSOT prose — both used to ride in from a stale writer
+# checkout and silently revert origin/master (OPS-1406 restore). The commit
+# below is pathspec-limited to these paths, with the prose explicitly
+# excluded, and the guard after `git add` refuses anything else staged.
+GENERATED_PATHS=(
+    "docs/ssot/"
+    "reports/SSOT_OPTIMIZATION_WARNINGS.json"
+    "stacks/web/public/apps/board/"
+    "docs/reports/education-maintenance/"
+    "docs/reports/lesson-audit/"
+)
+PROTECTED_PATH="docs/ssot/kanban/ssot.kanban.yml"
 PUSH_RETRIES="${KANBAN_PUSH_RETRIES:-3}"
 SAFE_PULL="$(cd "$(dirname "$0")" && pwd)/../git-safe-pull.sh"
 cd "$REPO" || exit 1
@@ -233,10 +247,63 @@ git_lock_retry() {
     return 1
 }
 
-for d in docs/ssot/kanban/ docs/ssot/focus-inbox/ stacks/web/public/apps/board/ docs/reports/education-maintenance/; do
-    [ -d "$d" ] && git_lock_retry git add "$d" >/dev/null 2>&1 || true
+for d in docs/ssot/kanban/ docs/ssot/focus-inbox/ stacks/web/public/apps/board/ docs/reports/education-maintenance/ docs/reports/lesson-audit/; do
+    [ -d "$d" ] && git_lock_retry git add "$d" ":(exclude)${PROTECTED_PATH}" >/dev/null 2>&1 || true
 done
-if git diff --cached --quiet; then
+
+# git errors on a positive pathspec that matches nothing (idc03 20:30:
+# "error: pathspec 'stacks/web/public/apps/board/' did not match any file(s)
+# known to git" killed the sweep after the guard landed). An empty generated
+# dir is normal in a writer checkout, so keep only paths git knows about —
+# computed AFTER the `git add` loop so freshly staged files count too.
+# Use --error-unmatch, NOT `git ls-files … | grep -q`: under `set -o pipefail`
+# grep -q closes the pipe early on a large path (docs/ssot/ has thousands of
+# files), git dies of SIGPIPE (141) and the whole `if` reads as false — the
+# path silently drops out of COMMIT_PATHS and its staged edits never commit.
+COMMIT_PATHS=()
+for _p in "${GENERATED_PATHS[@]}"; do
+    if git ls-files --error-unmatch "$_p" >/dev/null 2>&1; then
+        COMMIT_PATHS+=("$_p")
+    fi
+done
+# A magical exclude pathspec is safe even when the path is absent.
+COMMIT_PATHS+=(":(exclude)${PROTECTED_PATH}")
+
+# Stale-write guard (4af10b4c5c, 56aac6476c): the sweep must not commit
+# files it does not own, even if another producer or a stale autostash put
+# them in the index. `git commit` used to have no pathspec, so any staged
+# scripts/ file or a stale docs/ssot/kanban/ssot.kanban.yml was swept into
+# "board: live card updates" and reverted newer origin/master content.
+# Refuse and surface it on the ops card instead of silently undoing work.
+staged_files=$(git diff --cached --name-only --diff-filter=ACMD)
+bad_scope=""
+bad_prose=""
+while IFS= read -r p; do
+    [ -z "$p" ] && continue
+    if [ "$p" = "$PROTECTED_PATH" ]; then
+        bad_prose="$p"
+        continue
+    fi
+    owned=0
+    for g in "${GENERATED_PATHS[@]}"; do
+        case "$p" in
+            "${g%/}"|"$g"*) owned=1; break ;;
+        esac
+    done
+    [ "$owned" -eq 1 ] || bad_scope="${bad_scope:+${bad_scope} }${p}"
+done <<< "$staged_files"
+if [ -n "$bad_scope" ] || [ -n "$bad_prose" ]; then
+    detail=""
+    [ -n "$bad_scope" ] && detail="out-of-scope staged: ${bad_scope}"
+    [ -n "$bad_prose" ] && detail="${detail:+${detail}; }stale prose staged: ${bad_prose}"
+    detail="${detail} — unstage these in ${REPO}; board commits are held"
+    echo "kanban-commit: REFUSING to commit — ${detail}" >&2
+    alert_card "stale-write-guard" "$detail"
+    fail_tick "stale-write-guard"
+    exit 1
+fi
+
+if git diff --cached --quiet -- "${COMMIT_PATHS[@]}"; then
     rm -f "$STREAK_FILE"   # healthy tick, nothing pending — silent reset
     exit 0
 fi
@@ -287,6 +354,7 @@ fi
 
 git_lock_retry git -c user.name="kanban-bot" -c user.email="kanban-bot@chaba.local" \
     commit -qm "board: live card updates ($(date '+%F %H:%M'))" \
+    -- "${COMMIT_PATHS[@]}" \
     || { fail_tick "commit failed"; exit 1; }
 
 attempt=0

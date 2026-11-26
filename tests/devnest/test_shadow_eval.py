@@ -4,9 +4,12 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 REPO = Path(__file__).resolve().parents[2]
 SCRIPT = REPO / "scripts/devnest/shadow_eval.py"
@@ -141,6 +144,101 @@ class CapabilityMatrix(unittest.TestCase):
         for rung in ("L1", "L2", "L3"):
             self.assertEqual(s[rung], "BLOCKED")
         self.assertEqual(s["L4"], "PASS")
+
+
+class BenchKeySelection(unittest.TestCase):
+    """bench_key() must return the first candidate that authenticates
+    against /v1/models — a dead LITELLM_KEY_BENCH must not shadow a
+    working CHABA (litellm-key-bench-dead-shadows-chaba)."""
+
+    ENV_VARS = ("LITELLM_KEY_BENCH", "LITELLM_KEY_CHABA",
+                "LITELLM_KEY", "SHADOW_OFFLINE")
+
+    def setUp(self):
+        self._saved = {k: os.environ.get(k) for k in self.ENV_VARS}
+        for k in self.ENV_VARS:
+            os.environ.pop(k, None)
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.home = Path(self._tmp.name)
+        (self.home / ".config" / "secrets").mkdir(parents=True)
+        for p in (patch.object(Path, "home", return_value=self.home),
+                  patch.object(mod, "_http_ok", return_value=False)):
+            p.start()
+            self.addCleanup(p.stop)
+        self.mock_http = mod._http_ok
+
+    def tearDown(self):
+        for k, v in self._saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+    def _secrets(self, name, text):
+        (self.home / ".config" / "secrets" / name).write_text(text)
+
+    @staticmethod
+    def _only_live(live_key):
+        return lambda url, timeout=4, key="", want_2xx=False: (
+            want_2xx and key == live_key)
+
+    def test_dead_bench_does_not_shadow_chaba(self):
+        os.environ["LITELLM_KEY_BENCH"] = "sk-bench-dead"
+        os.environ["LITELLM_KEY_CHABA"] = "sk-chaba-live"
+        self.mock_http.side_effect = self._only_live("sk-chaba-live")
+        self.assertEqual(mod.bench_key(), "sk-chaba-live")
+        # BENCH probed first, CHABA second — first 2xx wins
+        self.assertEqual(
+            [c.kwargs["key"] for c in self.mock_http.call_args_list],
+            ["sk-bench-dead", "sk-chaba-live"])
+
+    def test_file_dead_bench_yields_to_file_chaba(self):
+        self._secrets("litellm-keys.env",
+                      "LITELLM_KEY_BENCH=sk-file-bench\n"
+                      "LITELLM_KEY_CHABA=sk-file-chaba\n")
+        self.mock_http.side_effect = self._only_live("sk-file-chaba")
+        self.assertEqual(mod.bench_key(), "sk-file-chaba")
+
+    def test_chaba_env_file_is_a_candidate(self):
+        # hosts without litellm-keys.env (e.g. tony-omen) still resolve
+        # the chaba virtual key from litellm-chaba.env
+        self._secrets("litellm-chaba.env",
+                      "LITELLM_URL=http://x\nLITELLM_KEY=sk-file-chaba\n")
+        self.mock_http.side_effect = self._only_live("sk-file-chaba")
+        self.assertEqual(mod.bench_key(), "sk-file-chaba")
+        self.assertEqual(mod.bench_key_candidates()[0][0],
+                         "file:litellm-chaba.env:LITELLM_KEY")
+
+    def test_first_present_fallback_when_none_verify(self):
+        os.environ["LITELLM_KEY_BENCH"] = "sk-bench"
+        os.environ["LITELLM_KEY_CHABA"] = "sk-chaba"
+        self.assertEqual(mod.bench_key(), "sk-bench")
+
+    def test_no_candidates_returns_empty(self):
+        self.assertEqual(mod.bench_key(), "")
+        self.assertEqual(mod.bench_key_candidates(), [])
+
+    def test_dedup_and_var_ordering(self):
+        os.environ["LITELLM_KEY_BENCH"] = "sk-same"
+        os.environ["LITELLM_KEY_CHABA"] = "sk-same"
+        os.environ["LITELLM_KEY"] = "sk-generic"
+        cands = mod.bench_key_candidates()
+        self.assertEqual([lbl for lbl, _k in cands],
+                         ["env:LITELLM_KEY_BENCH", "env:LITELLM_KEY"])
+
+    def test_offline_never_probes(self):
+        os.environ["SHADOW_OFFLINE"] = "1"
+        os.environ["LITELLM_KEY_BENCH"] = "sk-bench"
+        os.environ["LITELLM_KEY_CHABA"] = "sk-chaba"
+        self.assertEqual(mod.bench_key(), "sk-bench")
+        self.mock_http.assert_not_called()
+
+    def test_verify_false_returns_first_present(self):
+        os.environ["LITELLM_KEY_BENCH"] = "sk-bench"
+        os.environ["LITELLM_KEY_CHABA"] = "sk-chaba"
+        self.assertEqual(mod.bench_key(verify=False), "sk-bench")
+        self.mock_http.assert_not_called()
 
 
 class SecretGuard(unittest.TestCase):

@@ -1,0 +1,183 @@
+title: KK-Mac dance-party local render pilot
+subtitle: Run a private MLX continuation proof and generalize the KK-Mac video lane.
+icon: video
+
+planning:
+  goal: >-
+    Produce one bounded local dance-party continuation proof on KK-Mac and
+    define a reusable renderer-neutral job contract for the local video lane.
+  scope: >-
+    Use the existing private 8-second Veo clip as the visual source, run one
+    short image-conditioned MLX proof at a time, independently verify output,
+    preserve rejected attempts, and document the shared lane procedure.
+    No paid Veo call, public publication, LINE delivery, full music-video
+    assembly, or Sacred Father work is in scope.
+  success_criteria:
+    - A real private MP4 exists and is hash-bound to its manifest and source.
+    - Technical QC and creative-review status are recorded separately.
+    - No later cut is launched from a creatively rejected proof.
+    - The artifact bundle is durably stored and verified with rclone.
+    - KK-Mac's shared renderer/adapter procedure is documented and indexed.
+  risks:
+    - KK-Mac is owner-first; resource admission must be fresh and active work must not be interrupted.
+    - Model load can temporarily consume unified memory and swap; monitor recovery before another run.
+    - A technically valid clip may not follow the requested dance action or preserve identity.
+    - The local MLX output is silent and low-resolution compared with the Veo source.
+  resources:
+    - KK-Mac M4 Max, AC power, local MLX LTX-Video 2B cache, and its .venv.
+    - Source video SHA-256 1aa41423f6aa2523825877f59cea05014c2038adebeb265369c961a49413ef73.
+    - Private project artifact root gdrive:ada-nest/projects/kk-video-c9f99fee6146/renders/kk-dance-party-local-20261104-v1.
+    - Board cards ADA-1062 and OPS-0967.
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+    - label: ADA-1062 longer KK dance-party video
+      file: docs/ssot/kanban/cards/ada-kk-dance-party-video-longer.yml
+    - label: OPS-0967 KK-Mac video render lane
+      file: docs/ssot/kanban/cards/kk-mac-video-render-lane-ltx-video-mps-p-267f14.yml
+
+processing:
+  status: completed
+  started_at: '2026-11-04'
+  steps:
+    - id: 1
+      label: Verify KK-Mac admission and local renderer
+      status: completed
+      notes: >-
+        Confirmed SSH reachability, AC power, 80% or more free memory before
+        each run, empty Ollama, no competing worker/render, and low measured
+        app/system CPU. The MLX model cache was present; the prior HF/MPS cache
+        path was not. The M4 Max .venv imports MLX, imageio, and NumPy.
+    - id: 2
+      label: Run immutable v1 continuation proof
+      status: completed
+      notes: >-
+        Rendered 73 frames at 640x384/24fps in 32.8 seconds from the source
+        video's last frame. Full decode passed, but the subject walked toward
+        camera instead of dancing. Marked v1 creatively rejected and did not
+        chain from it.
+    - id: 3
+      label: Select an action-matched frame and run v2
+      status: completed
+      notes: >-
+        Sampled the source clip and selected frame 120 (5.0 seconds), which
+        shows an arms-up dance pose. Added explicit in-place step-touch and
+        no-walking/no-approach constraints. V2 rendered 73 frames in 33.45
+        seconds; technical QC passed. Human acceptance remains pending.
+    - id: 4
+      label: Verify and land private artifacts
+      status: completed
+      notes: >-
+        Independently verified H.264, 640x384, 73 frames, 3.04 seconds, full
+        decode, zero detected black duration, and no audio. Uploaded the v1/v2
+        manifests, outputs, logs, QC, and contact sheets to the private project
+        root; rclone check reported 0 differences and 18 matching files.
+    - id: 5
+      label: Generalize and index the renderer procedure
+      status: completed
+      notes: >-
+        Added a renderer-neutral job contract covering local MLX/MPS and
+        separately authorized hosted adapters, one-cut review gates, resource
+        admission, technical QC, audio, privacy, and honest lifecycle states.
+        Updated the procedure index.
+  decisions:
+    - label: Use KK-Mac MLX rather than the unavailable MPS cache
+      rationale: >-
+        The local MLX LTX-Video 2B cache and runner were present and importable;
+        the expected HF/MPS snapshot was not found. This avoided a model
+        download or paid fallback.
+      alternatives_considered: >-
+        Wait for or download the MPS model; call paid Veo extension; stitch
+        cloud-generated clips. None was needed for the bounded local proof.
+    - label: Stop after the creative failure and revise only the same cut
+      rationale: >-
+        V1 passed technical checks but walked instead of dancing. Selecting a
+        source frame that actually shows dance movement and changing the prompt
+        created a distinct v2 without advancing a multi-cut sequence.
+      alternatives_considered: Continue extending from the rejected v1.
+  changes:
+    - file: docs/kb/colab-mcp-jobs.md
+      summary: >-
+        Updated KK-Mac admission wording and added renderer-neutral video job,
+        adapter, review, and status contracts.
+    - file: docs/ssot/ssot.procedures.yml
+      summary: Extended the KK-Mac procedure index entry.
+    - file: docs/ssot/jobs/nest/2026-11-04-kk-mac-dance-party-local-render.yml
+      summary: Recorded the pilot lifecycle and review gate.
+    - file: Education lesson-b6a057d429d5 (post 3784)
+      summary: Added the renderer-neutral one-cut video procedure and pilot lessons.
+
+followup:
+  verification:
+    - >-
+      Verify the private Drive bundle remains readable at
+      gdrive:ada-nest/projects/kk-video-c9f99fee6146/renders/kk-dance-party-local-20261104-v1.
+    - >-
+      Tony reviews v2/out/dance-continuation-proof-v2.mp4 for identity,
+      dance action, and visual artifacts; technical pass is not acceptance.
+    - >-
+      Do not render further cuts or assemble a longer video until v2 is
+      accepted and the next source/action beats are specified.
+  rollback_plan:
+    - No destructive source/model changes were made; keep rejected v1 for audit.
+    - Keep both outputs private; do not publish or deliver to LINE.
+  handoff:
+    - Tony reviews the private v2 proof and decides whether to continue the local sequence.
+    - The answered Veo-extension choice on ADA-1062 remains separate; this local pilot did not execute it.
+  deferred:
+    - Human creative acceptance of v2.
+    - Longer sequence rendering, upscale, music selection, audio mux, final QC, and publication.
+    - Any paid Veo call.
+
+report:
+  status: completed_with_creative_review_pending
+  completed_at: '2026-11-04'
+  summary: >-
+    KK-Mac produced two private local proof clips. V1 passed technical QC but
+    was rejected because it walked instead of dancing. V2 used a dance-pose
+    source frame and explicit in-place movement constraints; technical QC
+    passed and human acceptance is pending. The artifact bundle is private and
+    rclone-verified. No longer sequence, audio mux, paid render, LINE delivery,
+    or public publication occurred.
+  metrics:
+    - metric: v1_duration_s
+      value: 3.04
+    - metric: v1_creative_status
+      value: rejected
+    - metric: v2_duration_s
+      value: 3.04
+    - metric: v2_technical_status
+      value: passed
+    - metric: v2_creative_status
+      value: pending_human_review
+    - metric: drive_differences
+      value: 0
+  links:
+    - title: Private render bundle
+      url: gdrive:ada-nest/projects/kk-video-c9f99fee6146/renders/kk-dance-party-local-20261104-v1
+    - title: ADA-1062
+      file: docs/ssot/kanban/cards/ada-kk-dance-party-video-longer.yml
+    - title: KK-Mac renderer procedure
+      file: docs/kb/colab-mcp-jobs.md
+    - title: Education lesson
+      url: lesson-b6a057d429d5
+  kb_review:
+    - >-
+      A unified job lifecycle can support different video renderers through
+      adapter-native manifests while keeping privacy, admission, verification,
+      review, audio, and spend gates consistent.
+  lessons_learned:
+    - >-
+      Choose a conditioning frame that shows the intended action; blindly using
+      the final source frame can continue a walk-off rather than a dance.
+    - >-
+      Monitor unified-memory recovery during model load as well as preflight;
+      one short low-memory sample may recover after inference completes.
+
+config:
+  version: 1
+  created_at: 2026-11-04
+  last_updated: 2026-11-04
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Dev/live entity parity lint + mirror generator for michael-dev.
+"""Dev/live entity parity lint + mirror generator for mn-ha-dev.
 
-Compares entity ids referenced by the tony-test dashboard on michael-dev
+Compares entity ids referenced by the tony-test dashboard on mn-ha-dev
 against dev's actual states. Missing entities that exist on michael-ha can
 be emitted as ready-to-paste `rest:` mirror blocks for
 docs/home-assistant/dev/dev-mocks.yaml (deployed as packages/a_dev_mocks.yaml).
@@ -12,8 +12,8 @@ Usage:
     mirror-sweep.py --ha-only           # skip dev states; list entities missing vs ha
 
 Env:
-    DEV_TOKEN / HASS_TOKEN   token for michael-dev (default: reads
-                             ~/.config/secrets/ha-michael-dev.env)
+    DEV_TOKEN / HASS_TOKEN   token for mn-ha-dev (default: reads
+                             ~/.config/secrets/ha-mn-ha-dev.env)
     HA_TOKEN                 token for michael-ha (default: reads
                              ~/.local/share/home-assistant-michael/ha-token)
     DEV_URL, HA_URL          override base urls
@@ -27,7 +27,10 @@ import asyncio
 import websockets
 
 DEV_URL = os.environ.get(
-    "DEV_URL", "http://idc02.taila0626a.ts.net:8124"
+    # HA moved idc02 -> mn01 (2026-11-25) and :8124 is now tailscale-served
+    # HTTPS; plain HTTP on :8124 returns 400 and :9585 is MCP, not the HA
+    # API (timer-alert-tony-omen-mn-ha-dev-parity, 2026-11-26).
+    "DEV_URL", "https://mn01.taila0626a.ts.net:8124"
 )
 HA_URL = os.environ.get("HA_URL", "http://michael-ha:8123")
 DASH = os.environ.get("DASH", "tony-test")
@@ -125,7 +128,7 @@ def main():
     fail_on_missing = "--fail-on-missing" in sys.argv
 
     dev_token = load_token(
-        "~/.config/secrets/ha-michael-dev.env", ["DEV_TOKEN", "HASS_TOKEN"]
+        "~/.config/secrets/ha-mn-ha-dev.env", ["DEV_TOKEN", "HASS_TOKEN"]
     )
     ha_token = load_token(
         "~/.local/share/home-assistant-michael/ha-token", ["HA_TOKEN"]
@@ -140,7 +143,7 @@ def main():
     try:
         cfg = asyncio.run(get_dashboard(DEV_URL, dev_token))
     except websockets.exceptions.ConnectionClosed as e:
-        print(f"[mirror-sweep] michael-dev websocket closed "
+        print(f"[mirror-sweep] mn-ha-dev websocket closed "
               f"({e}) after retries — audit skipped this run")
         return
     entities = set()
@@ -167,7 +170,7 @@ def main():
     for e in missing_ha:
         print(f"  [ha-missing] {e}")
     if not ha_only:
-        print(f"missing on michael-dev: {len(missing_dev)}")
+        print(f"missing on mn-ha-dev: {len(missing_dev)}")
         for e in missing_dev:
             tag = "mirrorable" if e in ha_states else "no-ha-source"
             print(f"  [dev-missing:{tag}] {e}")

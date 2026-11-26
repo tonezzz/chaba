@@ -1,0 +1,35 @@
+# GPU Exclusive Window Job (~1GB VRAM, holds GPU for the window)
+# Demonstrates reserve_gpu_window_sec: while this job runs, no other GPU job
+# (reservation or plain VRAM-fit) is placed on omen's GTX 1650.
+# Dispatch via queue (scheduler enforces the hold):
+#   python3 queue/queue_manager.py enqueue ... --reserve-window 900
+# or via playbook:
+#   ansible-playbook playbooks/queue_operations.yml -e operation=enqueue \
+#     -e job_spec_file=jobs/examples/gpu-reserved-window.yaml
+
+job_id: "gpu-reserved-window-{{ '%Y%m%d-%H%M' | strftime }}"
+job_image: "docker.io/nvidia/cuda:12.2.0-base-ubuntu22.04"
+# NOTE: job_cmd is argv-split on whitespace by containers.podman — no shell
+# quoting/&&/; support. Use flat commands only (e.g. nvidia-smi dmon for a
+# timed GPU run); bake compound logic into the image instead.
+job_cmd: "nvidia-smi dmon -s pucm -d 5 -c 120"
+
+job_gpus: 1
+job_min_vram_gb: 1
+job_max_load_pct: 1000  # omen load1 is raw (18-70 on 12 CPUs); allow oversubscription
+job_max_mem_pct: 90
+job_timeout_sec: 900
+
+# Exclusive GPU window: 15 min — covers expected runtime; released early on completion
+reserve_gpu_window_sec: 900
+# reservation_id: ""  # optional; defaults to rsv-<job_id>
+
+job_require_tags: ["gpu"]
+job_exclude_tags: ["laptop"]
+target_group: "all"
+priority: 1
+user: "tony"
+project: "gpu-validation"
+
+container_runtime: "podman"
+sidecar_redis_host: "100.123.163.11"

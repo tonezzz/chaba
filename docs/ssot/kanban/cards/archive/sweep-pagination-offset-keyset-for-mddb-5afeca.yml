@@ -1,0 +1,520 @@
+id: sweep-pagination-offset-keyset-for-mddb-5afeca
+title: 'sweep pagination: offset -> keyset for mddb pruning scripts'
+column: done
+updated: 2026-11-26 19:41
+brief: 'prune-old-docs.py and device-telemetry prune.py enumerate via /v1/search offset paging (skip += kept). Under
+  concurrent bulk writes the offset window shifts: stale docs get skipped, scanned under-counts, sweeps report deleted
+  0 while work remains (observed 2026-11-12 on ops host-logs during refill). Fix = iterate by key cursor (seek from
+  last seen key) if /v1/search supports ordering/range, else accept the daily convergence and document. Verify API
+  support first (check 2.18.x too).'
+priority: low
+ref: MEM-0033
+comms:
+- at: 2026-11-12 08:54
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-14 14:15
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:15
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:26
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:44
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:48
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 19:04
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:16
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:29
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:18
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:19
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:22
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:11
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:12
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:03
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:55
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:06
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:48
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:08
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:21
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:22
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:13
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:13
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:13
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:24
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:42
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:12
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:04
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:55
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 14:11
+  from: chaba
+  text: classified as free_lane (kw:audit-ro conf 1.00)
+- at: 2026-11-25 14:11
+  from: tony
+  text: queued for processing
+- at: 2026-11-25 14:12
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.44 > 0.7)'
+- at: 2026-11-25 14:12
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 14:12
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 14:13
+  from: chaba
+  text: 'kk-mac defers: installed runner-agent drifted from repo /Users/kkkakk/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 14:13
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 6.64 > 0.8)'
+- at: 2026-11-25 14:13
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.23 > 0.75)'
+- at: 2026-11-25 14:13
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 14:14
+  from: chaba
+  text: 'tony-dell defers: runner at cap (2/2)'
+- at: 2026-11-25 14:31
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.18 > 0.7)'
+- at: 2026-11-25 14:31
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 14:31
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 14:51
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 5.40 > 1.5)'
+- at: 2026-11-25 14:54
+  from: chaba
+  text: 'tony-dell defers: runner at cap (2/2)'
+- at: 2026-11-25 15:08
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 15:13
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 15:24
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.54 > 1.5)'
+- at: 2026-11-25 15:26
+  from: chaba
+  text: 'kk-mac defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 15:26
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (4/4)'
+- at: 2026-11-25 15:34
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 3.57 > 0.7)'
+- at: 2026-11-25 15:37
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 15:48
+  from: chaba
+  text: 'tony-dell defers: runner at cap (2/2)'
+- at: 2026-11-25 16:31
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.63 > 0.7)'
+- at: 2026-11-25 16:39
+  from: tony
+  text: 'routing edited: executor=devin by tony: 2026-11-25 load adjustment: free_lane card had no staged lane_envelope
+    and was rejected on every host; route to devin on tony-dell (cap raised 2->4)'
+- at: 2026-11-25 16:40
+  from: chaba
+  text: 'kk-mac defers: executor=devin declared but this runner is launchd — devin-dispatch drives systemd-run internally;
+    the card stays queued for a Linux runner (executor=opencode/script serve here)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:01
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.12 > 1.5)'
+- at: 2026-11-25 17:06
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 4.46 > 1.0)'
+- at: 2026-11-25 17:09
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:28
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:40
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:50
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 0.82 > 0.75)'
+- at: 2026-11-25 19:08
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 19:10
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 19:11
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-25 19:18
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.08 > 1.5)'
+- at: 2026-11-25 19:56
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.91 > 1.0)'
+- at: 2026-11-25 20:12
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.82 > 0.7)'
+- at: 2026-11-25 20:12
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 20:13
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 5.23 > 0.8)'
+- at: 2026-11-25 20:14
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-25 20:24
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 3.96 > 1.0)'
+- at: 2026-11-25 20:37
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-25 20:57
+  from: chaba
+  text: 'mn01 defers: provider rate-limited (throttl on devin-task-20261125-125447-goal-generated-writes-from-non)
+    — claims held ~28m'
+- at: 2026-11-25 21:08
+  from: tony-dell
+  text: claimed
+- at: 2026-11-25 21:09
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-125447-goal-generated-writes-from-non no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-25 21:09
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261125-125447-goal-generated-writes-from-non'
+- at: 2026-11-25 21:09
+  from: chaba
+  text: started devin-task-20261125-210908-sweep-pagination-offset-keyset on tony-dell (dispatch executor=devin)
+- at: 2026-11-25 21:09
+  from: chaba
+  text: 'primer injected 8 lesson(s): idc02''s kanban-dispatch.service was a linked unit running a stale scripts/-only
+    ; [ada-capability-verb-wiring] primer injected 8 lesson(s): [board-api-wiki-read-s; [embed-lane-banks-search-pagination]
+    Dispatch scope: fix scripts/embed/embed-lan; runbook docs/kb/global-rules-rules.md: Testing Global Rules Effectiveness
+    — **Ob; [ada-lanes-run-on-deleted-ada-pi-venv-res-df9c81] primer injected 8 lesson(s): A; [embed-lane-banks-search-pagination]
+    primer injected 8 lesson'
+- at: 2026-11-25 21:11
+  from: devin
+  text: 'API check done: /v1/search has no keyset/cursor in any deployed version (2.15.3 idc02, 2.18.10 idc03, latest
+    upstream 2.19.13 — SearchRequest is collection/filterMeta/filter/sort/asc/limit/offset only). Default sort is
+    updatedAt, which reshuffles under writes — that is the instability. Plan: pin sort=key asc (verified honored
+    on :11026 and :11025) + bounded re-sweep passes until a pass deletes 0, then document.'
+- at: 2026-11-25 21:26
+  from: devin
+  text: 'DONE on dispatch branch (worktree dispatch-wt-20261125-210908-sweep-pagination-offset-keyset). /v1/search
+    has no keyset in any deployed version (checked 2.15.3/2.18.10/2.19.13 source) — but found TWO bigger bugs: (1)
+    2.18.x caps limit at 1000 via X-Limit while scripts requested 5000 and broke on len<PAGE_SIZE, so every sweep
+    scanned only the first ~1000 docs; (2) default sort is updatedAt, reshuffling per write. Fix: sort=key asc +
+    cap-aware termination (X-Limit) + server-side meta filter {ts_ke'
+- at: 2026-11-25 21:28
+  from: tony-dell
+  text: 'finished (ok): exit=0 acklog warning and the idc03 install step needed post-merge. | devin-task-20261125-210908-sweep-pagination-offset'
+- at: 2026-11-25 21:28
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 21:28
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261125-210908-sweep-pagination-offset-keyset
+    is 40 commits behind origin/master —\n   run 'git pull -"
+- at: 2026-11-25 21:28
+  from: chaba
+  text: banked 717 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 21:28
+  from: chaba
+  text: pushed dispatch/20261125-210908-sweep-pagination-offset-keyset to origin
+- at: 2026-11-25 21:28
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-25 21:28
+  from: chaba
+  text: 'worktree kept: dirty — 4 uncommitted file(s)'
+- at: 2026-11-26 03:58
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:58
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:08
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 08:35
+  from: tony
+  text: '[verify] VERIFY-QUEUE triage 2026-11-26 (Tony): dispatch produced NO commits — worktree kept dirty — 4
+    uncommitted files, no commit landed. No deliverable exists in origin/master. Holding to backlog for re-dispatch,
+    not closing as done. Note: fleet-wide runner-agent drift (installed 8c28da6b vs pin 1514c75c) was active during
+    these runs; converge is being handled separately.'
+- at: 2026-11-26 08:35
+  from: tony
+  text: put on hold
+- at: 2026-11-26 12:31
+  from: chaba
+  text: queued for processing
+- at: 2026-11-26 12:31
+  from: chaba
+  text: '[auto-dispatch] wave 11 (2026-11-26 12:31): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-26 12:32
+  from: chaba
+  text: 'con01 defers: runner at cap (1/1)'
+- at: 2026-11-26 12:32
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.73 > 0.7)'
+- at: 2026-11-26 12:32
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-26 12:32
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.65 > 0.8)'
+- at: 2026-11-26 12:32
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.15 > 1.5)'
+- at: 2026-11-26 12:34
+  from: tony-dell
+  text: claimed
+- at: 2026-11-26 12:35
+  from: chaba
+  text: started devin-task-20261126-123501-sweep-pagination-offset-keyset on tony-dell (dispatch executor=devin)
+- at: 2026-11-26 12:35
+  from: chaba
+  text: 'primer injected 8 lesson(s): [sweep-pagination-offset-keyset-for-mddb-5afeca] primer injected 8 lesson(s):
+    id; idc02''s kanban-dispatch.service was a linked unit running a stale scripts/-only ; [ada-capability-verb-wiring]
+    primer injected 8 lesson(s): [board-api-wiki-read-s; [embed-lane-banks-search-pagination] Dispatch scope: fix
+    scripts/embed/embed-lan; [logs-auto-con01-add-failed] [triage 2026-11-26] Still active: another ''mddb add;
+    [logs-auto-idc02-add-failed] [triage 2026-11-26] Still active'
+- at: 2026-11-26 12:39
+  from: devin
+  text: 'DONE attempt 2 — attempt-1 work (verified but uncommitted) is now committed on dispatch/20261126-123501-sweep-pagination-offset-keyset
+    as d0cca8f89c6, rebased onto current master (kept the newer CHUNK=100/timeout=300 prune.py tuning). Changes:
+    sort=key asc + X-Limit cap-aware termination + MAX_PASSES=5 convergence in scripts/ada/prune-old-docs.py and
+    scripts/device-telemetry/prune.py; meta filter on host-logs expiry; job trail docs/ssot/jobs/mddb/2026-11-26-sweep-pagination-keyset.yml;
+    outcome d'
+- at: 2026-11-26 12:40
+  from: chaba
+  text: 'merge-sweep: merged 4e5a5dd2 (dispatch/20261126-123501-sweep-pagination-offset-keyset from tony-dell) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261126-123501-sweep-pagination-offset-keyset.md)
+    — auto-closed'
+- at: 2026-11-26 12:40
+  from: local
+  text: 'pub milestone: card verified: sweep-pagination-offset-keyset-for-mddb-5afeca on idc03 — merged 4e5a5dd2
+    (dispatch/20261126-123501-sweep-pagination-offset-keyset from tony-dell) -> origin/master — verified — a — merged
+    4e5a5dd2 (dispatch/20261126-123501-sweep-pagination-offset-keyset from tony-dell) -> origin/master — verified
+    — auto-closed [evt-7c81ea3d4ac521f0]'
+- at: 2026-11-26 12:40
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261126-123501-sweep-pagination-offset-keyset,
+    branch dispatch/20261126-123501-sweep-pagination-offset-keyset on tony-dell'
+- at: 2026-11-26 12:40
+  from: chaba
+  text: 'merge-sweep: dispatch/20261126-123501-sweep-pagination-offset-keyset already in origin/master — marked
+    verified (exit_code=0; outcome doc dispatch-outcome-20261126-123501-sweep-pagination-offset-keyset.md) — auto-closed'
+- at: 2026-11-26 12:40
+  from: local
+  text: 'pub milestone: card verified: sweep-pagination-offset-keyset-for-mddb-5afeca on idc03 — dispatch/20261126-123501-sweep-pagination-offset-keyset
+    already in origin/master — verified — auto-closed — dispatch/20261126-123501-sweep-pagination-offset-keyset
+    already in origin/master — verified — auto-closed [evt-d8d450ace1b52536]'
+- at: 2026-11-26 12:40
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-26 12:40
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261126-123501-sweep-pagination-offset-keyset — close will block
+    until merged'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: free_lane
+  lane_source: kw
+  executor: devin
+  attempts: 2
+  sweep:
+    stale_running: 2026-11-25 21:09
+    no_repo: 2026-11-25 21:09
+  result: 'exit=0 acklog warning and the idc03 install step needed post-merge. | devin-task-20261125-210908-sweep-pagination-offset-keyset.service:
+    Consumed 2min 7.369s CPU time over 17min 16.876s wall clock time, 962.1M memory peak, 571.8M memory swap peak.'
+  runner: tony-dell
+  verified: true
+claim:
+  since: 2026-11-26 12:34
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 12:40
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261126-123501-sweep-pagination-offset-keyset.md

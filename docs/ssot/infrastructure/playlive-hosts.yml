@@ -34,9 +34,17 @@ hosts:
     description: Local headless Chrome CDP on tony-dell (fallback target)
     available: true
   tony-omen:
-    cdp: http://127.0.0.1:9228
-    description: Chrome CDP on tony-omen, forwarded to tony-dell via 127.0.0.1:9228 (SSH tunnel)
-    available: true
+    cdp: http://127.0.0.1:9223
+    description: >-
+      Chrome CDP on tony-omen loopback :9223 (playlive-chrome.service,
+      restored 2026-11-25) — reachable only from omen-local clients
+      (chaba-playwright-mcp auto mode tries :9223 first). The old remote
+      path — dell:9228 SSH tunnel -> omen:9222
+      (playlive-omen-cdp-tunnel.service) — is dead: the tunnel unit no
+      longer exists on tony-dell and nothing on omen serves :9222, so
+      non-omen clients have no route to this browser until a tunnel is
+      re-provisioned (then this entry goes back to the tunnel endpoint).
+    available: false
   tony-macbook:
     cdp: http://127.0.0.1:9229
     description: RETIRED 2026-10-11 — was Chrome CDP on macOS via SSH tunnel; host is Linux now, no CDP endpoint provisioned

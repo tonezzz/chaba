@@ -1,0 +1,69 @@
+title: Dispatch prompt-budget measurement — step count is the driver,
+  fixed context floor is the lever
+subtitle: DEV-1334 / card dispatch-prompt-budget-measure — 30d fleet
+  usage joined to task dirs; driver correlations + evidence-backed cap
+  proposals. Read-only; no dispatch-path code changed.
+icon: bar_chart
+version: 1
+
+card: dispatch-prompt-budget-measure
+date: 2026-11-25
+dispatch: 20261125-093438-parent-card-devin-usage-reduct
+program: devnest
+parent_card: devin-usage-reduction
+parent_job: docs/ssot/jobs/devnest/2026-11-24-devin-usage-reduction.yml
+report: docs/reports/dispatch-prompt-budget-2026-11.md
+
+dataset: |
+  devin-usage.py --fleet --days 30 --json on 2026-11-25 ~09:35 +07:
+  494 transcripted sessions (idc02 186, tony-omen 175, tony-dell 98,
+  mn01 35); idc01 ssh timeout (unreachable); idc03 reachable but 0
+  in-window sessions — all its Nov dispatches rate-limit-died before
+  transcript write. 62/494 (12.6%) have empty final_metrics (early
+  crash/rate-limit deaths). 432 metriced sessions = 1.89B prompt
+  tokens, 90.7% cached, 26,276 steps, avg 72k tokens/step.
+  Median session 3.45M prompt / 57 steps / 6.6KB prompt.txt.
+
+driver_findings: |
+  steps vs prompt tokens: pearson +0.957 / spearman +0.968 — effectively
+  the whole story (every inference resends full context).
+  prompt.txt bytes +0.07, spec_bytes +0.06, primer_bytes +0.07,
+  attempt_n +0.07 — all noise. Spec p50=2.1KB max=5.8KB: spec-size
+  gates save ~0. Primer median 6 lines/2.4KB (~1.2% of session burn),
+  already hard-capped (8+4 lines) — no further cap warranted.
+  Top decile = long sessions (steps p50=112 vs 57), not big prompts.
+
+fixed_context_floor: |
+  system messages + tool_definitions measured 80-118KB chars
+  (~22-32k tokens/step) on 5 transcripts / 4 hosts; prompt/step p10
+  27.7k corroborates. ~31-40% of all prompt tokens is fixed per-step
+  resend. Every 1KB trimmed ≈ 7.1M tokens/30d fleet-wide.
+
+outcome_join: |
+  Top decile (all 44) + random median-band sample (40) classified via
+  git merge-state on origin host + task-anchored card comms slice
+  (archive-aware, 1844 cards) + meta.result: verified 40, merged 7,
+  card-done-no-evidence 16, merge_blocked 12, unmerged_work 5,
+  zero_commit 1, failed_early 3. Non-landing ≈19% of sampled tokens
+  (~131M/693M) — extrapolated ~300-360M/30d at stake, partial-capture
+  estimate only.
+
+cap_proposals: |
+  1. Step-budget gate: steps>100 excess ≈84.7M (4.5%), >80 ≈215.6M
+     (11.4%) per 30d. Warn-wrap at ~80 steps, hard ceiling ~150 with
+     partial-outcome salvage. Est. capture 40-100M/30d.
+  2. Dispatch-lite context profile: -20KB fixed context ≈140M/30d
+     (~7.4%); trim tool_definitions (~37KB) + rules/MCP descriptions.
+  3. Deliverable-checkpoint rail mid-session to convert
+     zero_commit/merge_blocked waste — estimate, measure post-landing.
+  4. Formalize 2-attempt ceiling -> scoping escalation (attempt>=2 =
+     58 sess / 231.8M = 12.3%; attempt 3 nearly nonexistent already).
+  5. Rejected by evidence: spec-length caps, tighter primer budget,
+     per-host quotas.
+
+caveats: |
+  Outcome classes are best-effort (stale origin refs where worktrees
+  were GC'd; merge-sweep can land hours later). attempt_n only parsed
+  when RETRY_RAILS present (103/432). idc01 gap and idc03 transcript
+  gap noted above — fleet totals are a floor, not a ceiling.
+  devin-usage.py --fleet numbers reproducible modulo host reachability.

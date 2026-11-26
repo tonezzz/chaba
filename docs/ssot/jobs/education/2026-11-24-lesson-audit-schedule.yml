@@ -1,0 +1,96 @@
+title: lesson-audit-scheduled — deterministic audit -> queued Fable polish loop
+subtitle: chaba-lessons-audit.timer daily 07:40 idc03; R1/R3/R4 flags re-arm the standing lesson-polish-run dispatch card
+icon: education
+version: 1
+
+card: lesson-audit-scheduled
+date: 2026-11-24
+dispatch: 20261124-160340-wire-lesson-polish-pack-to-a-s
+
+summary: |
+  The lesson-polish audit was one-shot (OPS-0829 / AUD-0831 shipped the
+  deterministic scanner + daily timer on 2026-10-24/25, but flags only
+  landed in a JSON file — nothing consumed them). This change closes the
+  loop: scripts/lessons-audit.py now (1) fetches ALL lesson bodies in a
+  single op:list{content:1} call — a new bulk-read param on the board-api
+  wiki lesson source (the namespace scan already holds every wikitext;
+  per-slug op=get rescans it each call, so 221 lessons was a guaranteed
+  timeout — this was the REAL cause of the recurring 10m unit failures,
+  worse than the old WP serial fetch), with parallel op:get kept only as
+  a fallback for wp/mddb sources, (2) writes the report to
+  docs/reports/lesson-audit/{<date>,latest}.json — swept by
+  kanban-commit — instead of an untracked out/ dir, (3) posts a one-line
+  comms summary to card lesson-audit-scheduled every run, and (4) when
+  R1/R3/R4 flags exist, re-arms the standing `lesson-polish-run` dispatch
+  card via POST /card {queue:true, on_exists:"queue",
+  action:{type:dispatch, repo:chaba, executor:devin}} and posts the
+  flagged list as a card comm.
+
+loop: |
+  audit (07:40, deterministic, $0) -> flags R1/R3/R4 > 0 ->
+  lesson-polish-run queued (devin dispatch, spec is a standing
+  self-contained procedure; per-run flag list arrives via comms) ->
+  agent re-audits, polishes flagged lessons via /lesson upserts using
+  the Fable lane (litellm consult-claude =
+  openrouter/anthropic/claude-fable-5.1) -> next day's audit verifies.
+  R2 thin/junk and R5 Thai deliberately do NOT queue spend: junk
+  deletion is human-gated and Thai has curated exemptions
+  (scripts/lesson-thai-exceptions.yml + meta.no_th). The digest/report
+  surface stays chaba-education-report (07:50, --post board,tg).
+
+dedup_and_bounds: |
+  - on_exists:"queue" makes the card idempotent: already queued/running
+    -> "already active", no pile-up; done/review -> re-armed to
+    backlog+queued (the self-perpetuating part).
+  - Flag signature (sha1 of sorted slug|flag pairs over R1/R3/R4) +
+    queued_at persisted at ~/.local/state/lesson-audit/polish.json on
+    the job host: a CHANGED signature re-arms immediately; an UNCHANGED
+    one re-arms at most every LESSON_POLISH_MIN_INTERVAL_H=20h (~1
+    queue/day on a stuck flag set).
+  - Degraded-fetch guard: >20% op=get failures (LESSON_AUDIT_MAX_GET_ERR)
+    skips queueing — a partial audit must not spawn polish work.
+  - Off switch: LESSON_POLISH_QUEUE=0 -> report-only mode.
+  - board writes prefer http://127.0.0.1:8787 (trusted 'local' identity
+    on idc03) with one 503-retry; tailnet base is the portable fallback.
+
+files: |
+  - scripts/lessons-audit.py — rewritten: bulk content=1 fetch (gets
+    only as wp/mddb fallback), durable artifacts, polish queue, comms
+    report, --dry-run, LESSON_API_TIMEOUT (default 90s — wiki op:list
+    measured ~13s warm, one cold call >60s).
+  - scripts/board/board-api.py — _read_lessons_wiki op=list honors
+    content=1/full=1: rows gain content+meta from the scan it already
+    performs (zero extra upstream calls); selftest asserts both modes.
+    DEPLOY: kanban-commit pulls + restarts chaba-board-api.service on
+    merge — until then the audit's content=1 is ignored and it falls
+    back to per-slug gets (slow but correct).
+  - scripts/board/kanban-commit.sh — docs/reports/lesson-audit/ added to
+    the swept add-dirs and GENERATED_RE (upstream-wins on pull).
+  - docs/ssot/infrastructure/ssot.jobs.yml — chaba-lessons-audit note.
+
+verify: |
+  - python3 -m pytest tests/test_education_report.py — 13 pass
+    (audit_one signature/behavior unchanged; education-report imports it).
+  - python3 scripts/lessons-audit.py --dry-run — real fetch, prints the
+    /card + /comment payloads without posting.
+  - Live proof lands on the first 07:40 idc03 run after this merges:
+    journal shows "polish new-flags -> lesson-polish-run" (or
+    throttled/clean), card lesson-polish-run appears queued on the
+    board, and lesson-audit-scheduled gets the daily comms line.
+
+known_gaps: |
+  - RESOLVED in this change: source=wiki op=get scanned the whole
+    Education: namespace per slug (221 x ~13s — the recurring 10m
+    timeouts). op:list{content:1} now returns all bodies in the one
+    scan the door already performs.
+  - content=1 must reach idc03's board-api (kanban-commit restart on
+    merge) before the first fast run; until then the audit degrades to
+    parallel gets — correct but slow, and on wiki source likely still
+    >10m, so the queue simply won't fire those days (degraded-skip /
+    job timeout — no wrong polish work is spawned).
+  - The polish card's executor is pinned devin (proven path, cheap
+    swe-2-flash-medium via lane pick); "Fable" refers to the rewrite
+    model inside the procedure, not the dispatch model.
+  - First queue creates lesson-polish-run with the standing spec;
+    later runs only re-arm — spec edits must go through the card, not
+    the audit.

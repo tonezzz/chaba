@@ -1,7 +1,7 @@
 id: fleet-mcp-inventory-report-wiki-edu
 title: 'Fleet MCP inventory report — SSOT consolidation + Reports:/Education: integration'
-column: backlog
-updated: 2026-11-20 16:40
+column: done
+updated: 2026-11-26 20:38
 brief: 'Consolidate the fleet MCP server inventory into the layered reporting standard, emit a per-host observation
   script and L2 fleet rollup, and integrate the published report into the wiki Reports: namespace with durable lessons
   in Education:.'
@@ -41,6 +41,7 @@ spec: 'Context: MDDB on tony-dell is a dead/retired follower (canonical primary 
   on this card. No hand-written digests; evidence-bound only.'
 action:
   type: manual
+  status: done
 ref: KNB-0019
 comms:
 - at: 2026-11-20 16:25
@@ -62,3 +63,289 @@ comms:
     gained 6 L1 mcp-inventory/* nodes + L2 mcp-fleet (+ publish block); ssot.jobs.yml gained mcp-fleet-report (idc03,
     24h, DECLARED ONLY - install with render-jobs.py --host idc03 --install after review). Producer scripts/mcp-inventory.py:
     --host/--all/--c'
+- at: 2026-11-20 17:31
+  from: mcp-inventory
+  text: 'pub report: Fleet MCP inventory — = Fleet MCP Inventory Report =
+
+
+    _Generated: 2026-11-20T17:31:46+07:00_
+
+
+    Source: <code>scripts/mcp-inventory.py --consolidate</code> (SSOT: <code>ssot.mcp.yml</c [evt-7393ce83148ca0d9]'
+- at: 2026-11-20 17:35
+  from: mcp-inventory
+  text: 'pub report: Fleet MCP inventory — = Fleet MCP Inventory Report =
+
+
+    _Generated: 2026-11-20T17:34:58+07:00_
+
+
+    Source: <code>scripts/mcp-inventory.py --consolidate</code> (SSOT: <code>ssot.mcp.yml</c [evt-43dace0c71669e8c]'
+- at: 2026-11-20 17:37
+  from: devin
+  text: 'VERIFIED 2026-11-20: done-condition met. Merged to master (served idc03) and pushed: 80fbdaf030d (SSOT+producer+publication),
+    1c7e15613fc (audit declaration mcp-fleet-report.timer on idc03), d5c93c96500 (host-status fix: reachable-no-config
+    vs unreachable). Exec checkout ~/CascadeProjects/chaba synced to d5c93c96500. Timer installed via render-jobs.py
+    --host idc03 --ids mcp-fleet-report --install: mcp-fleet-report.timer enabled (24h), service static; first scheduled
+    run 17:31 +07 exit 0, correct'
+- at: 2026-11-20 17:37
+  from: devin
+  text: closed by devin
+- at: 2026-11-20 18:31
+  from: mcp-inventory
+  text: 'pub report: Fleet MCP inventory — = Fleet MCP Inventory Report =
+
+
+    _Generated: 2026-11-20T18:26:24+07:00_
+
+
+    Source: <code>scripts/mcp-inventory.py --consolidate</code> (SSOT: <code>ssot.mcp.yml</c [evt-ef5833260e1a5252]'
+- at: 2026-11-20 18:43
+  from: mcp-inventory
+  text: 'pub report: Fleet MCP inventory — = Fleet MCP Inventory Report =
+
+
+    _Generated: 2026-11-20T18:43:03+07:00_
+
+
+    Source: <code>scripts/mcp-inventory.py --consolidate</code> (SSOT: <code>ssot.mcp.yml</c [evt-9da38b6187921690]'
+- at: 2026-11-20 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:55
+  from: mcp-inventory
+  text: 'pub report: Fleet MCP inventory — = Fleet MCP Inventory Report =
+
+
+    _Generated: 2026-11-20T18:55:00+07:00_
+
+
+    Source: <code>scripts/mcp-inventory.py --consolidate</code> (SSOT: <code>ssot.mcp.yml</c [evt-6e0ce747943d1d0a]'
+- at: 2026-11-20 19:06
+  from: mcp-inventory
+  text: 'pub report: Fleet MCP inventory — = Fleet MCP Inventory Report =
+
+
+    _Generated: 2026-11-20T19:06:35+07:00_
+
+
+    Source: <code>scripts/mcp-inventory.py --consolidate</code> (SSOT: <code>ssot.mcp.yml</c [evt-85bd2720457dcbcb]'
+- at: 2026-11-20 19:14
+  from: mcp-inventory
+  text: 'pub report: Fleet MCP inventory — = Fleet MCP Inventory Report =
+
+
+    _Generated: 2026-11-20T19:14:03+07:00_
+
+
+    Source: <code>scripts/mcp-inventory.py --consolidate</code> (SSOT: <code>ssot.mcp.yml</c [evt-91180d192abb2ef4]'
+- at: 2026-11-20 19:50
+  from: mcp-inventory
+  text: 'pub report: Fleet MCP inventory — = Fleet MCP Inventory Report =
+
+
+    _Generated: 2026-11-20T19:50:17+07:00_
+
+
+    Source: <code>scripts/mcp-inventory.py --consolidate</code> (SSOT: <code>ssot.mcp.yml</c [evt-eb3dc6033896a272]'
+- at: 2026-11-21 17:35
+  from: mcp-inventory
+  text: 'pub report: Fleet MCP inventory — = Fleet MCP Inventory Report =
+
+
+    _Generated: 2026-11-21T17:34:56+07:00_
+
+
+    Source: <code>scripts/mcp-inventory.py --consolidate</code> (SSOT: <code>ssot.mcp.yml</c [evt-0f061358db631b37]'
+- at: 2026-11-21 17:49
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 18:26
+  from: mcp-inventory
+  text: 'pub report: Fleet MCP inventory — = Fleet MCP Inventory Report =
+
+
+    _Generated: 2026-11-21T18:26:16+07:00_
+
+
+    Source: <code>scripts/mcp-inventory.py --consolidate</code> (SSOT: <code>ssot.mcp.yml</c [evt-5bb5f370dc320cb4]'
+- at: 2026-11-22 17:35
+  from: mcp-inventory
+  text: 'pub report: Fleet MCP inventory — = Fleet MCP Inventory Report =
+
+
+    _Generated: 2026-11-22T17:35:08+07:00_
+
+
+    Source: <code>scripts/mcp-inventory.py --consolidate</code> (SSOT: <code>ssot.mcp.yml</c [evt-c80fd06597708f4b]'
+- at: 2026-11-23 14:05
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:17
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 17:35
+  from: mcp-inventory
+  text: 'pub report: Fleet MCP inventory — = Fleet MCP Inventory Report =
+
+
+    _Generated: 2026-11-23T17:35:17+07:00_
+
+
+    Source: <code>scripts/mcp-inventory.py --consolidate</code> (SSOT: <code>ssot.mcp.yml</c [evt-d366328f713b0938]'
+- at: 2026-11-23 19:06
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:51
+  from: mcp-inventory
+  text: 'pub report: Fleet MCP inventory — = Fleet MCP Inventory Report =
+
+
+    _Generated: 2026-11-23T19:51:38+07:00_
+
+
+    Source: <code>scripts/mcp-inventory.py --consolidate</code> (SSOT: <code>ssot.mcp.yml</c [evt-a92364995d7ac1a1]'
+- at: 2026-11-24 00:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:11
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:13
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:21
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:30
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:39
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:01
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:01
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 19:51
+  from: mcp-inventory
+  text: 'pub report: Fleet MCP inventory — = Fleet MCP Inventory Report =
+
+
+    _Generated: 2026-11-24T19:51:30+07:00_
+
+
+    Source: <code>scripts/mcp-inventory.py --consolidate</code> (SSOT: <code>ssot.mcp.yml</c [evt-7d6e42e5c568d1bb]'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:42
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:26
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:38
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 19:32
+  from: mcp-inventory
+  text: 'pub report: Fleet MCP inventory — = Fleet MCP Inventory Report =
+
+
+    _Generated: 2026-11-25T19:32:38+07:00_
+
+
+    Source: <code>scripts/mcp-inventory.py --consolidate</code> (SSOT: <code>ssot.mcp.yml</c [evt-08c9df02e4e91c7a]'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:32
+  from: mcp-inventory
+  text: 'pub report: Fleet MCP inventory — = Fleet MCP Inventory Report =
+
+
+    _Generated: 2026-11-26T19:32:33+07:00_
+
+
+    Source: <code>scripts/mcp-inventory.py --consolidate</code> (SSOT: <code>ssot.mcp.yml</c [evt-7d54176bc52b5519]'
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'

@@ -1,0 +1,94 @@
+title: Session capture C.3 — wire /session-capture + Devin session-end hooks to emit router events
+subtitle: >-
+  OPS-1356 / card session-capture-c3-hooks. New dry-run emitter
+  scripts/chaba/capture-event.py produces C.1-contract router events
+  (events.jsonl + audit.jsonl under ~/.local/share/chaba/capture); wired into
+  the OpenCode /session-capture + /handoff-packet surfaces, the Devin
+  session-capture/finish-and-close skills, the Devin SessionEnd hook, and the
+  ansible chaba-session-capture helper. No canonical sink writes — gated
+  writes remain behind capture-apply.py (OPS-0024).
+id: 2026-11-25-c3-router-event-hooks
+status: done
+owner: devin-dispatch
+project: chaba
+card: session-capture-c3-hooks
+branch: dispatch/20261125-094719-goal-wire-session-capture-and-
+started: "2026-11-25"
+depends_on:
+  - session-capture-c1-spec (contract: PR #218, branch ada/session-capture-c1-spec — unmerged at write time)
+  - session-capture-c2-router (sibling dispatch 20261125-094612 in flight)
+
+deliverables:
+  emitter:
+    path: scripts/chaba/capture-event.py
+    contract: >-
+      Envelope per C.1 Capture Router Contract: event_id, event_type
+      (discovery|decision|open_ask|lesson|outcome|handoff|focus_decision|
+      focus_session), as_of, source (devin|opencode|ada-voice|script|manual),
+      actor, subject, session, summary, refs/evidence, dedupe_key, volatility,
+      sink_hint, payload (where_filed/open_asks verbatim), provenance.
+    stores:
+      - ~/.local/share/chaba/capture/events.jsonl — append-only event spool ($CHABA_CAPTURE_OUT/events.jsonl)
+      - ~/.local/share/chaba/capture/audit.jsonl — append-only audit ($CHABA_CAPTURE_OUT/audit.jsonl)
+    dry_run_route: >-
+      Each event is routed through capture-router.py route() and the proposal
+      (target_sink/action/confidence/rule/router_dedupe_key) is embedded as
+      event.route + audit fields. Advisory only — never a sink write.
+  wired_surfaces:
+    - .opencode/commands/session-capture.md — sweep step 7 emits handoff event
+    - .opencode/commands/handoff-packet.md — step 4 emits handoff event
+    - .opencode/instructions/session-capture.md — always-on step 7
+    - .opencode/skills/session-capture/SKILL.md — sweep step 7
+    - .devin/skills/session-capture/SKILL.md — sweep step 7 (source devin)
+    - .devin/skills/finish-and-close/SKILL.md — step 7b emit line
+    - scripts/devin/session/devin-session-end.sh — SessionEnd hook emits
+      focus_session (reason, checkpoint, immediate-pin task/next/open as
+      --open-ask, payload-json); loud stderr on nonzero rc, non-fatal
+    - ansible/playbooks/session-capture.yml — helper gains capture-event
+      passthrough; session-end also emits focus_session (source script)
+
+acceptance_mapping:
+  no_duplicate_handoff_packets: >-
+    dedupe_key = "{type}:{source}:{session-or-subject-anchor}:{slug}"; events.jsonl
+    replay check makes re-emit a noop+audit (verified: second identical emit ->
+    {"status":"duplicate"}, events.jsonl stays 1 line). Only the capture step
+    emits type=handoff; the hook emits focus_session — different keys, and the
+    emitter refuses handoff without refs/where_filed.
+  where_filed_preserved: >-
+    --where-filed strings stored verbatim in payload.where_filed (list); smoke
+    test confirmed exact strings round-trip into events.jsonl.
+  failures_loud: >-
+    Guard rejections -> stderr + exit 2 + metadata-only audit record (rejected
+    content is NEVER persisted, so a secret can't leak into audit either).
+    Persist failures -> exit 3. Route errors -> stderr WARNING + audit error
+    field, event still lands. Hook prints rc+stderr on emitter failure.
+  no_fake_events: >-
+    handoff requires >=1 --ref or --where-filed; open_ask requires --open-ask;
+    type/source/volatility allowlists; secret-shaped content rejected pre-write;
+    the SessionEnd hook only emits focus_session (a true lifecycle fact) and
+    never claims a handoff packet exists.
+
+gated_write_path: >-
+  Unchanged and deliberate: capture-event.py has NO sink-write path. Once C.2
+  normalizes events into router proposals and C.4 harvests them into
+  capture-ledger.yml entries, the only write door is
+  scripts/chaba/capture-apply.py --key <dedupe_key> --apply --confirm <key>
+  (OPS-0024: board-api only, per-key, dry-run default, GET-verified, audited).
+
+verification:
+  - python3 scripts/chaba/capture-event.py --self-test  # 10/10
+  - bash -n scripts/devin/session/devin-session-end.sh
+  - embedded-python compile check of the hook heredoc
+  - yaml.safe_load ansible/playbooks/session-capture.yml
+  - smoke: handoff emit -> route evidence/skip (already_filed); replay -> duplicate
+
+notes:
+  - events.jsonl/audit.jsonl live under ~/.local/share/chaba/capture (same dir as
+    capture-ledger.yml) — runtime spool, per-host, not committed. Chosen over the
+    contract's suggested reports/session-capture/ because reports/* is gitignored
+    per-checkout and the capture ledger already lives in the HOME dir.
+  - C.1 contract section is on unmerged branch ada/session-capture-c1-spec
+    (PR#218); field names follow it. If C.2 lands a different envelope, adjust
+    capture-event.py emit mapping — the spool is the integration seam.
+  - focus_session open items ride as --open-ask (max 5 router-visible, 10 in
+    payload) so pinned resume items reach the router without separate events.

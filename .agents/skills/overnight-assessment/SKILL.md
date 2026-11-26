@@ -1,3 +1,8 @@
+---
+name: overnight-assessment
+description: Comprehensive overnight Chaba assessment — health, GPU/queues, logs, SSOT validation and report
+---
+
 # Overnight System Assessment
 
 Comprehensive overnight assessment leveraging existing Chaba monitoring infrastructure.

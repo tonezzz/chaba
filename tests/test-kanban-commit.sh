@@ -43,6 +43,11 @@ git clone -q "$TMP/origin.git" "$TMP/seed"
            stacks/web/public/apps/board; do : > "$d/.gitkeep"; done
   echo "title: kanban" > docs/ssot/kanban/ssot.kanban.yml
   cp "$ROOT/.husky/pre-commit" .husky/pre-commit
+  # kanban-commit.sh's alert_card() does sys.path.insert(REPO/scripts/board)
+  # + import card_io — the real served checkout ships it, so the fixture
+  # must too or the ops-guard card write silently no-ops (880df7caf4).
+  mkdir -p scripts/board
+  cp "$ROOT/scripts/board/card_io.py" scripts/board/card_io.py
   git add -A; git commit -qm seed
   git push -q origin master
 )
@@ -60,6 +65,12 @@ export CHABA_DIVERGENCE_N=2        # small N so the warning is easy to trip
 # reconcile/flag paths must never reach a real board-api from tests —
 # unroutable base -> deterministic local-file fallback.
 export BOARD_API="http://127.0.0.1:9"
+# kanban-commit's alert_card imports card_io from the checkout's
+# scripts/board — the fixture checkout needs the module on disk or
+# every alert write dies on ImportError (pre-existing fixture gap:
+# sections F/J 'alert card filed' checks).
+mkdir -p "$TMP/served/scripts/board"
+cp "$ROOT/scripts/board/card_io.py" "$TMP/served/scripts/board/"
 
 # --- A: two parallel sessions ----------------------------------------------
 echo "# live board edit" >> "$TMP/served/docs/ssot/kanban/ssot.kanban.yml"
@@ -92,7 +103,10 @@ check "A: served replayed onto upstream" \
 # untracked — that is the class autostash cannot cover (the reported stall).
 mkdir -p "$TMP/served/docs/ssot/jobs/kanban" "$TMP/other/docs/ssot/jobs/kanban"
 echo "LOCAL version" > "$TMP/served/docs/ssot/jobs/kanban/2026-01-01-collision.yml"
-echo "# board tick"    >> "$TMP/served/docs/ssot/kanban/ssot.kanban.yml"
+# Sweep-owned generated write. ssot.kanban.yml is deliberately NOT used as
+# a tick file any more: the stale-write guard disowns that prose, so it
+# would never stage and the pull (the thing under test) would never run.
+echo "title: tick-b" > "$TMP/served/docs/ssot/kanban/cards/tick-b.yml"
 (
   cd "$TMP/other" || exit 1
   bash "$SAFE_PULL" . >/dev/null 2>&1
@@ -115,7 +129,7 @@ check "B: no rebase left in progress" \
 
 # --- C: untracked collision, identical content ------------------------------
 echo "identical" > "$TMP/served/docs/ssot/jobs/kanban/2026-01-02-identical.yml"
-echo "# tick" >> "$TMP/served/docs/ssot/kanban/ssot.kanban.yml"
+echo "title: tick-c" > "$TMP/served/docs/ssot/kanban/cards/tick-c.yml"
 (
   cd "$TMP/other" || exit 1
   bash "$SAFE_PULL" . >/dev/null 2>&1
@@ -487,6 +501,265 @@ check "K: served pull waited on render lock" \
 check "K: served pull waited on board lock" \
   "grep -q 'board lock .*pulling anyway' '$TMP/k2.err'"
 flock -u 8; flock -u 9; exec 8>&- 9>&-
+
+# --- L: autostash-pop card write preservation ------------------------
+# board-api-queue-write-verify-lost-race-f85f2f: a card write dirty in
+# the worktree when safe-pull's autostash pops used to resolve
+# upstream-wins with the raced write gone — the OPS-0200 'queued'
+# answers that never persisted action.status=queued. Now: modify/
+# modify card conflicts still union-merge inline via the card-union
+# driver (L1), and a modify/delete conflict keeps the stash side
+# (stage 3) as a .local-conflict-* sidecar BEFORE the HEAD resolution
+# so reconcile can fold it back instead of dropping it silently (L2/L3).
+
+# L1: modify/modify — union driver folds the raced write inline
+(
+  cd "$TMP/other" || exit 1
+  bash "$SAFE_PULL" . >/dev/null 2>&1
+  cat > docs/ssot/kanban/cards/card-pop1.yml <<'YML'
+id: card-pop1
+title: card-pop1-base
+column: backlog
+updated: 2026-11-24 08:00
+action: {type: dispatch, status: idle}
+comms:
+- at: 2026-11-24 08:00
+  from: ada
+  text: base-note
+YML
+  git add -A && git commit -qm "other: card-pop1 base" || exit 1
+  git push -q origin master || exit 1
+)
+bash "$SAFE_PULL" "$TMP/served" >/dev/null 2>&1
+# the raced board write — dirty, uncommitted (the autostash payload)
+cat > "$TMP/served/docs/ssot/kanban/cards/card-pop1.yml" <<'YML'
+id: card-pop1
+title: card-pop1-local-raced
+column: backlog
+updated: 2026-11-24 12:00
+action: {type: dispatch, status: queued}
+comms:
+- at: 2026-11-24 08:00
+  from: ada
+  text: base-note
+- at: 2026-11-24 12:00
+  from: devin
+  text: raced-queue-write
+YML
+(
+  cd "$TMP/other" || exit 1
+  cat > docs/ssot/kanban/cards/card-pop1.yml <<'YML'
+id: card-pop1
+title: card-pop1-upstream
+column: backlog
+updated: 2026-11-24 10:00
+action: {type: dispatch, status: idle}
+comms:
+- at: 2026-11-24 08:00
+  from: ada
+  text: base-note
+- at: 2026-11-24 10:00
+  from: ada
+  text: upstream-side-note
+YML
+  git commit -qam "other: card-pop1 divergent" || exit 1
+  git push -q origin master || exit 1
+)
+bash "$SAFE_PULL" "$TMP/served" >/dev/null 2>"$TMP/l1.err"; rc_l1=$?
+POP1="$TMP/served/docs/ssot/kanban/cards/card-pop1.yml"
+check "L1: safe-pull exits 0 on card pop conflict" "[ $rc_l1 -eq 0 ]"
+check "L1: raced write folded back (queued status landed)" \
+  "grep -q 'status: queued' '$POP1'"
+check "L1: raced comms preserved" \
+  "grep -q 'raced-queue-write' '$POP1'"
+check "L1: upstream comms preserved" \
+  "grep -q 'upstream-side-note' '$POP1'"
+check "L1: no sidecar left for union-merged card" \
+  "! ls '$TMP/served/docs/ssot/kanban/cards/card-pop1.yml.local-conflict-'* >/dev/null 2>&1"
+# commit the merged result so later pulls see a clean tree (the
+# kanban-commit sweep does this for real on the served checkout)
+git -C "$TMP/served" add docs/ssot/kanban/cards/card-pop1.yml
+git -C "$TMP/served" commit -qm "served: card-pop1 union result" 2>/dev/null || true
+
+# L2: modify/delete — upstream removed the card mid-write; stage 3
+# (the stash side = the raced write) is preserved as .local-conflict-*
+# instead of dying upstream-wins
+(
+  cd "$TMP/other" || exit 1
+  bash "$SAFE_PULL" . >/dev/null 2>&1
+  cat > docs/ssot/kanban/cards/card-pop2.yml <<'YML'
+id: card-pop2
+title: card-pop2
+column: backlog
+updated: 2026-11-24 08:00
+comms: []
+YML
+  git add -A && git commit -qm "other: card-pop2 base" || exit 1
+  git push -q origin master || exit 1
+)
+bash "$SAFE_PULL" "$TMP/served" >/dev/null 2>&1
+cat > "$TMP/served/docs/ssot/kanban/cards/card-pop2.yml" <<'YML'
+id: card-pop2
+title: card-pop2
+column: backlog
+updated: 2026-11-24 12:30
+action: {type: dispatch, status: queued}
+comms:
+- at: 2026-11-24 12:30
+  from: devin
+  text: raced-write-on-deleted-card
+YML
+(
+  cd "$TMP/other" || exit 1
+  bash "$SAFE_PULL" . >/dev/null 2>&1
+  git rm -q docs/ssot/kanban/cards/card-pop2.yml
+  git commit -qm "other: card-pop2 removed upstream" || exit 1
+  git push -q origin master || exit 1
+)
+bash "$SAFE_PULL" "$TMP/served" >/dev/null 2>"$TMP/l2.err"; rc_l2=$?
+POP2="$TMP/served/docs/ssot/kanban/cards/card-pop2.yml"
+check "L2: safe-pull exits 0 on delete/modify pop conflict" "[ $rc_l2 -eq 0 ]"
+check "L2: upstream deletion won (card gone)" \
+  "[ ! -f '$POP2' ]"
+check "L2: stash side preserved as .local-conflict sidecar" \
+  "ls '$TMP/served/docs/ssot/kanban/cards/card-pop2.yml.local-conflict-'* >/dev/null 2>&1"
+check "L2: sidecar holds the raced write, not HEAD" \
+  "grep -q 'raced-write-on-deleted-card' '$TMP/served/docs/ssot/kanban/cards/card-pop2.yml.local-conflict-'*"
+check "L2: no autostash retained" \
+  "! git -C '$TMP/served' stash list | grep -qi autostash"
+
+# L3: reconcile folds a preserved sidecar back into the canonical card
+# (the EXIT-trap reconcile can't run here — the fixture checkout has
+# no scripts/ — so invoke it directly, same as the trap would)
+cat > "$TMP/served/docs/ssot/kanban/cards/card-fold.yml" <<'YML'
+id: card-fold
+title: card-fold
+column: backlog
+updated: 2026-11-24 09:00
+action: {type: dispatch, status: idle}
+comms:
+- at: 2026-11-24 09:00
+  from: ada
+  text: base-note
+YML
+cat > "$TMP/served/docs/ssot/kanban/cards/card-fold.yml.local-conflict-20261124-130000" <<'YML'
+id: card-fold
+title: card-fold
+column: backlog
+updated: 2026-11-24 13:00
+action: {type: dispatch, status: queued}
+comms:
+- at: 2026-11-24 09:00
+  from: ada
+  text: base-note
+- at: 2026-11-24 13:00
+  from: devin
+  text: raced-queue-write
+YML
+python3 "$ROOT/scripts/board/reconcile-local-conflicts.py" "$TMP/served" \
+  >/dev/null 2>"$TMP/l3.err"
+FOLD="$TMP/served/docs/ssot/kanban/cards/card-fold.yml"
+check "L3: raced write folded into canonical card" \
+  "grep -q 'status: queued' '$FOLD' && grep -q 'raced-queue-write' '$FOLD'"
+check "L3: base comms preserved" "grep -q 'base-note' '$FOLD'"
+check "L3: fold sidecar consumed" \
+  "! ls '$TMP/served/docs/ssot/kanban/cards/card-fold.yml.local-conflict-'* >/dev/null 2>&1"
+check "L3: orphan sidecar (deleted canonical) kept for review" \
+  "ls '$TMP/served/docs/ssot/kanban/cards/card-pop2.yml.local-conflict-'* >/dev/null 2>&1"
+
+# --- M: autostash-pop conflict on a non-generated code file -----------
+# exec-sync-autostash-conflict-codefile (incident 2026-11-09): a dirty
+# tracked code file whose autostash pop conflicts used to keep
+# <<<<<<< markers in the live worktree — a SyntaxError for the systemd
+# job executing it — while safe-pull still exited 0 and chaba-repo-sync
+# reported success. Now the stash side is preserved as a
+# .local-conflict-* sidecar, the file resolves to HEAD (valid code),
+# the autostash stays retained for manual recovery, and the run exits
+# non-zero so the sync surfaces the manual-merge debt.
+(
+  cd "$TMP/other" || exit 1
+  bash "$SAFE_PULL" . >/dev/null 2>&1
+  printf 'print("upstream-v1")\n' > tool.py
+  git add tool.py && git commit -qm "other: add tool.py v1" || exit 1
+  git push -q origin master || exit 1
+)
+bash "$SAFE_PULL" "$TMP/served" >/dev/null 2>&1
+# the raced dirty write — uncommitted, exactly what autostash covers
+printf 'print("local-dirty")\n' > "$TMP/served/tool.py"
+(
+  cd "$TMP/other" || exit 1
+  bash "$SAFE_PULL" . >/dev/null 2>&1
+  printf 'print("upstream-v2")\n' > tool.py
+  git commit -qam "other: tool.py v2" || exit 1
+  git push -q origin master || exit 1
+)
+bash "$SAFE_PULL" "$TMP/served" >/dev/null 2>"$TMP/m.err"; rc_m=$?
+TOOLF="$TMP/served/tool.py"
+check "M: safe-pull exits non-zero when manual merge required" \
+  "[ $rc_m -ne 0 ]"
+check "M: failure logged for the non-generated pop conflict" \
+  "grep -q 'non-generated path tool.py' '$TMP/m.err'"
+check "M: no conflict markers left in the live code file" \
+  "! grep -qE '^(<{7}|={7}|>{7})' '$TOOLF'"
+check "M: file resolved to upstream (valid code)" \
+  "grep -q 'upstream-v2' '$TOOLF'"
+check "M: resolved file still compiles (no SyntaxError)" \
+  "python3 -m py_compile '$TOOLF'"
+check "M: stash side preserved as .local-conflict sidecar" \
+  "ls '$TMP/served/tool.py.local-conflict-'* >/dev/null 2>&1 && grep -q 'local-dirty' '$TMP/served/tool.py.local-conflict-'*"
+check "M: autostash retained for manual recovery" \
+  "git -C '$TMP/served' stash list | grep -qi autostash"
+check "M: HEAD contains upstream despite the failure" \
+  "git -C '$TMP/served' merge-base --is-ancestor origin/master HEAD"
+check "M: no unmerged entries left behind" \
+  "[ -z \"\$(git -C '$TMP/served' diff --name-only --diff-filter=U)\" ]"
+# keep the tree converged — drop the retained autostash + sidecars so a
+# later section (or a re-run) starts clean
+git -C "$TMP/served" stash drop -q 'stash@{0}' 2>/dev/null || true
+rm -f "$TMP/served/tool.py.local-conflict-"* 2>/dev/null || true
+
+# --- N: stale staged code file must NOT ride into board commit --------------
+# Incident 4af10b4c5c: a writer checkout had scripts/board/*.py staged; the
+# unscoped `git commit -qm "board: live card updates"` swept them in and
+# reverted newer origin/master content.
+echo "title: tick-n" > "$TMP/served/docs/ssot/kanban/cards/tick-n.yml"
+mkdir -p "$TMP/served/scripts/board"
+echo "STALE CODE" > "$TMP/served/scripts/board/stale.py"
+git -C "$TMP/served" add scripts/board/stale.py
+bash "$KANBAN_COMMIT" >/dev/null 2>"$TMP/n.err"; rc_n=$?
+check "N: sweep refuses a staged code file" "[ $rc_n -ne 0 ]"
+check "N: stale code not committed" \
+  "! git -C '$TMP/served' log -1 --format=%H | xargs -I{} git -C '$TMP/served' show --name-only --format= {} | grep -q 'scripts/board/stale.py'"
+check "N: refusal explained on stderr" \
+  "grep -qi 'out-of-scope staged' '$TMP/n.err'"
+# staged deletion of an out-of-scope file must be refused too
+echo "REAL CODE" > "$TMP/served/scripts/board/kept.py"
+git -C "$TMP/served" add scripts/board/kept.py
+git -C "$TMP/served" commit -qm "seed kept.py" -- scripts/board/kept.py
+git -C "$TMP/served" rm -q scripts/board/kept.py
+bash "$KANBAN_COMMIT" >/dev/null 2>"$TMP/n2.err"; rc_n2=$?
+check "N: staged deletion of code refused" "[ $rc_n2 -ne 0 ]"
+check "N: deletion refusal explained on stderr" \
+  "grep -qi 'out-of-scope staged: scripts/board/kept.py' '$TMP/n2.err'"
+git -C "$TMP/served" reset -q HEAD scripts/board/kept.py
+git -C "$TMP/served" checkout -q -- scripts/board/kept.py
+# leave the tree clean for O
+git -C "$TMP/served" reset -q HEAD scripts/board/stale.py
+rm -f "$TMP/served/scripts/board/stale.py" "$TMP/served/docs/ssot/kanban/cards/tick-n.yml"
+
+# --- O: stale staged ssot.kanban.yml prose must NOT be committed -------------
+# Incident 56aac6476c: the stale writer checkout had the hand-maintained
+# prose staged; it reverted the runner_fleet restoration from 6b65150117.
+echo "title: tick-o" > "$TMP/served/docs/ssot/kanban/cards/tick-o.yml"
+printf '\n# stale prose from old checkout\n' >> \
+  "$TMP/served/docs/ssot/kanban/ssot.kanban.yml"
+git -C "$TMP/served" add docs/ssot/kanban/ssot.kanban.yml
+bash "$KANBAN_COMMIT" >/dev/null 2>"$TMP/o.err"; rc_o=$?
+check "O: sweep refuses staged ssot.kanban.yml" "[ $rc_o -ne 0 ]"
+check "O: stale prose not committed" \
+  "! git -C '$TMP/served' log -1 --format=%H | xargs -I{} git -C '$TMP/served' show --name-only --format= {} | grep -q 'ssot.kanban.yml'"
+check "O: refusal explained on stderr" \
+  "grep -qi 'stale prose staged' '$TMP/o.err'"
 
 echo
 echo "passed: $PASS  failed: $FAIL"

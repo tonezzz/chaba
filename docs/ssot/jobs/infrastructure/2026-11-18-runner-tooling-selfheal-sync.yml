@@ -57,8 +57,26 @@ audit_finding_2026-11-18: >-
   against the builtin table inside devin-dispatch.sh, which drifts with
   the same snapshot problem the card is about. Now a note on
   runner-auto-idc02 each audit pass.
+content_pins_2026_11_20: >-
+  The 2026-11-20 Jules purge exposed a gap the 2026-11-18 sync could not
+  close — it converges each host to its OWN checkout, and origin/master
+  itself held a half-purge (jules.py deleted, 107 Jules refs still in
+  runner-agent.py) while the local checkout was 86 commits behind. Three
+  additions make the source of truth checkable. (1)
+  scripts/devin/runner-tooling.manifest.json pins the sha256 of every
+  tool sync-runner-tools.sh installs. (2) The sync refuses to install a
+  source whose sha differs from its pin — a tool change must bump the pin
+  in the SAME commit, enforced by
+  tests/board/test_runner_tooling_contract.py in CI. (3) runner-fleet-
+  health.py reads the manifest from origin/master (never the host's
+  possibly-stale checkout) and files a new tool-pin violation when EITHER
+  the checkout copy or the installed copy disagrees. Net effect: stale
+  installs, stale checkouts, and a wrong canonical source are all visible
+  on the runner-auto-<host> surface; a half-purge cannot merge.
 verify: |
   journalctl --user -u chaba-repo-sync.service -n 5 --no-pager   # look for "sync-runner-tools:" lines
+  git -C ~/CascadeProjects/chaba show origin/master:scripts/devin/runner-tooling.manifest.json \
+    | python3 -c 'import json,sys; print(len(json.load(sys.stdin)["tools"]), "pinned tools")'
   sha256sum ~/.local/bin/runner-agent \
     ~/CascadeProjects/chaba/scripts/board/runner-agent.py        # must match post-sync
   sha256sum ~/.local/bin/devin-dispatch \

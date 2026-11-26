@@ -1,0 +1,432 @@
+id: lab-iphone-webgpu-worker
+title: 'Lab: iPhone-15 as opportunistic WebGPU inference worker'
+column: done
+updated: 2026-11-26 19:41
+brief: 'Hypothesis: iPhone 15 can contribute real GPU compute to the fleet via a WebGPU worker page in Safari (WebGPU
+  default-on since iOS 26, maps to Metal). Pattern: PWA page on /apps polls a job queue, runs small-model inference
+  (embeddings/whisper-tiny/classifiers), posts results — opportunistic worker while page is open on charger. Constraints:
+  Safari tab memory ~1-1.5GB (models <=~800MB), foreground-only, no SSH/persistence. NOT viable: tmux/Linux shells
+  (iSH/a-Shell have no GPU), UTM VM (virtual GPU, no Metal passthrough), exo (maintainer: iOS = thin client only,
+  no inference participation). Na'
+ref: OPS-0779
+comms:
+- at: 2026-10-23 13:40
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-23 13:47
+  from: devin
+  text: '[verify] test page deployed: https://tony-dell.taila0626a.ts.net/apps/webgpu-bench/ (route declared ssot.routes.yml,
+    Caddyfile block added, statics in stacks/web/public/apps/webgpu-bench/, 200 tailnet+local). Page probes adapter,
+    runs WGSL matmul GFLOPS bench, runs real all-MiniLM-L6-v2 embedding via transformers.js WebGPU, then POSTs results
+    back to this card via /apps/board-api. Needs iOS 26 (WebGPU default-on) or feature flag on 17.4+.'
+- at: 2026-10-23 14:11
+  from: devin
+  text: post-path test
+- at: 2026-10-23 14:13
+  from: devin
+  text: '[webgpu-bench]
+
+    ua: Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148
+    Safari Lin
+
+    adapter: {"vendor":"apple","architecture":"apple","device":"apple","description":"apple"}
+
+    matmul: {"n256":{"ms":2,"gflops":16.8},"n512":{"ms":11,"gflops":24.4},"n1024":{"ms":58,"gflops":37}}
+
+    embed: {"model":"all-MiniLM-L6-v2","load_ms":632,"infer_ms":[46,27,25],"dims":384}'
+- at: 2026-10-23 14:17
+  from: devin
+  text: '[webgpu-bench]
+
+    ua: Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148
+    Safari Lin
+
+    adapter: {"vendor":"apple","architecture":"apple","device":"apple","description":"apple"}
+
+    matmul: {"n256":{"ms":2,"gflops":16.8},"n512":{"ms":12,"gflops":22.4},"n1024":{"ms":60,"gflops":35.8}}
+
+    embed: {"model":"all-MiniLM-L6-v2","load_ms":555,"infer_ms":[47,27,20],"dims":384}'
+- at: 2026-10-23 14:17
+  from: devin
+  text: "[webgpu-worker] job job-001-fleet-facts — 7 embeddings in 183ms on iPhone GPU\nquery: which host writes
+    kanban cards to git\nranking:\n  1. 0.623 — idc03 is the canonical kanban writer — card YAML commits go through
+    chaba-board-api on 127\n  2. 0.511 — kanban-commit.timer on idc03 pushes board changes to github every 15 minutes\n
+    \ 3. 0.144 — the gev api and gemini bridge listen on the idc02 tailnet address\n  4. 0.133 — kk-mac runs ollama
+    with llama3.2 exposed on port 11434 for nest experiments\n  5. 0"
+- at: 2026-10-23 14:22
+  from: devin
+  text: "[webgpu-worker] job mddb-rerank-20261023-142249 — 9 embeddings in 356ms on iPhone GPU\nquery: how do I
+    deploy changes to the ada voice service\nranking:\n  1. 0.044 — [object Object]\n  2. 0.044 — [object Object]\n
+    \ 3. 0.044 — [object Object]\n  4. 0.044 — [object Object]\n  5. 0.044 — [object Object]\n  6. 0.044 — [object
+    Object]\n  7. 0.044 — [object Object]\n  8. 0.044 — [object Object]"
+- at: 2026-10-23 14:22
+  from: devin
+  text: '[verify] LAB VERDICT: hypothesis CONFIRMED. Full worker loop ran end-to-end 2026-10-23: job-001 7 embeddings
+    in 183ms (~26ms each), correct doc ranked 0.623 vs distractors <=0.14. Bench: adapter apple/Metal, naive matmul
+    ~37 GFLOPS floor, MiniLM embeds 25-46ms. iOS 18.7 — WebGPU worked with no flag. Iteration 2 shipped: job.json
+    now carries {key,text} docs; scripts/nest/webgpu-mddb-job.py generates real rerank jobs from the live mddb bank
+    (job mddb-rerank-* staged). Lesson captured: ada-nest-iph'
+- at: 2026-10-25 14:08
+  from: devin
+  text: '[webgpu-bench]
+
+    ua: Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0.1
+    Mobile/24
+
+    adapter: {"vendor":"apple","architecture":"apple","device":"apple","description":"apple"}
+
+    matmul: {"n256":{"ms":2,"gflops":16.8},"n512":{"ms":11,"gflops":24.4},"n1024":{"ms":61,"gflops":35.2}}
+
+    embed: null'
+- at: 2026-10-25 14:11
+  from: devin
+  text: "[webgpu-worker] job mddb-rerank-20261023-142249 — 9 embeddings in 415ms on iPhone GPU\nquery: how do I
+    deploy changes to the ada voice service\nranking:\n  1. 0.527 — devin/95371ffdee9a4936\n  2. 0.495 — devin/a0264e31339146bb\n
+    \ 3. 0.307 — devin-session/expensive-climb\n  4. 0.306 — devin/d28abb817c154af2\n  5. 0.146 — devin/geode-soybean\n
+    \ 6. 0.077 — devin-session/salty-shell\n  7. 0.071 — devin-session/season-nickel\n  8. 0.049 — devin/2df9058a4a7448a4"
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:25
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:43
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:45
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 19:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:14
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:26
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:16
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:19
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:21
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:09
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:11
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:03
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:05
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:47
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-22 07:22
+  from: backlog-spec-enrich
+  text: skipped — The card focuses on setting up an iPhone-15 as a WebGPU inference worker, but the recent communications
+    only discuss runner-agent drift across existing infrastructure hosts (idc03, tony-macbook, idc02, tony-dell),
+    making the core task obsolete or mismatched with current agent logs.
+- at: 2026-11-22 13:20
+  from: backlog-spec-enrich
+  text: skipped — The card focuses on setting up an iPhone-15 as a WebGPU inference worker, but recent communications
+    show persistent runner-agent drift across infrastructure hosts, making the core task mismatched with the current
+    state of agent logs.
+- at: 2026-11-22 19:20
+  from: backlog-spec-enrich
+  text: skipped — Recent communications indicate persistent runner-agent drift across existing infrastructure hosts
+    and note that the core task is mismatched with the current state of agent logs.
+- at: 2026-11-23 01:24
+  from: backlog-spec-enrich
+  text: skipped — Recent communications indicate persistent runner-agent drift across existing infrastructure hosts
+    and note that the core task is mismatched with the current state of agent logs.
+- at: 2026-11-23 07:20
+  from: backlog-spec-enrich
+  text: skipped — Recent communications indicate persistent runner-agent drift across existing infrastructure hosts,
+    making the core task mismatched with the current state of agent logs.
+- at: 2026-11-23 13:20
+  from: backlog-spec-enrich
+  text: skipped — Recent communications indicate persistent runner-agent drift across existing infrastructure hosts,
+    making the core task mismatched with the current state of agent logs.
+- at: 2026-11-23 14:07
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:20
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:21
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:11
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:11
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:24
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:41
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:10
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 15:25
+  from: chaba
+  text: classified as devin (fallback conf 0.39)
+- at: 2026-11-24 15:25
+  from: tony
+  text: queued for processing
+- at: 2026-11-24 15:25
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 15:25
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (3/3)'
+- at: 2026-11-24 15:25
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-24 15:25
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.12 > 0.85)'
+- at: 2026-11-24 15:26
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 15:27
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.24 > 1.0)'
+- at: 2026-11-24 15:27
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-24 15:32
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-24 15:41
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.26 > 0.85)'
+- at: 2026-11-24 15:51
+  from: tony-dell
+  text: claimed
+- at: 2026-11-24 15:52
+  from: chaba
+  text: started devin-task-20261124-155201-lab-iphone-15-as-opportunistic on tony-dell (dispatch)
+- at: 2026-11-24 15:52
+  from: chaba
+  text: 'primer injected 8 lesson(s): [lab-iphone-webgpu-worker] [verify] LAB VERDICT: hypothesis CONFIRMED. Full
+    work; runbook docs/kb/tailnet-device-unreachable.md: Tailnet device "can''t open page" ; `~/var/chaba/health/*.json`
+    is unrelated producer snapshots (ssh-canary logs); r; tony-dell has runner-agent-converge.timer (nightly checksum-gated
+    ansible redepl; [ada-consultant-tier] worktree triage: wt dispatch-wt-20261117-232247 dropped on; [ansible-vs-legacy-fleet-benchmark]
+    MANUAL LANDING (devin ses'
+- at: 2026-11-24 16:11
+  from: devin
+  text: '[iteration 3] bge-compat ANSWERED headlessly: Xenova/bge-m3 q4 via transformers.js vs ollama bge-m3 ref
+    = cosine 0.9664 cls-pooling (mean 0.76 diverges — bge is CLS). Browser bge-m3 IS bank-space compatible; on-device
+    button 6 remains final WebGPU-EP confirm. ALSO: embed-nest-bridge (lane-B pull-worker bridge lost with the 11-14
+    worktree) rebuilt at scripts/nest/embed-nest-bridge.py + shim DEFER tier restored + page gained installable
+    PWA/auto-worker/pool-worker mode + /apps/embed-nest Caddy rou'
+- at: 2026-11-24 16:20
+  from: devin
+  text: '[done] Committed on dispatch branch (24f8684): embed-nest-bridge rebuilt + shim DEFER tier + page PWA/pool-worker
+    + /apps/embed-nest route; 11 tests pass; bge compat proven headless (0.9664 cls). Deploy steps + rollback in
+    docs/ssot/jobs/nest/2026-11-24-embed-nest-bridge-iphone.yml — needs idc03 bridge unit + shim env + caddy reload
+    + iPhone Add-to-Home-Screen before the phone joins the real pool.'
+- at: 2026-11-24 16:23
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-155201-lab-iphone-15-as-opportunistic no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-24 16:23
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261124-155201-lab-iphone-15-as-opportunistic on tony-dell still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-24 16:24
+  from: tony-dell
+  text: 'finished (ok): exit=0 Phone Add-to-Home-Screen step, all of which are deploy-gated. | devin-task-20261124-155201-lab-iphone-15-as-oppor'
+- at: 2026-11-24 16:24
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 16:24
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-155201-lab-iphone-15-as-opportunistic'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-24 16:24
+  from: chaba
+  text: pushed dispatch/20261124-155201-lab-iphone-15-as-opportunistic to origin
+- at: 2026-11-24 16:24
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 74.0s)
+- at: 2026-11-24 16:24
+  from: chaba
+  text: auto-merged 43ebe651 (dispatch/20261124-155201-lab-iphone-15-as-opportunistic) → origin/master
+- at: 2026-11-24 16:24
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 16:38
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-24 17:04
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:51
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:06
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:28
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:40
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:54
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:58
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: devin
+  lane_source: fallback
+  runner: tony-dell
+  attempts: 1
+  sweep:
+    stale_running: 2026-11-24 16:23
+    dirty: 1
+  result: 'exit=0 Phone Add-to-Home-Screen step, all of which are deploy-gated. | devin-task-20261124-155201-lab-iphone-15-as-opportunistic.service:
+    Consumed 7min 28.543s CPU time over 28min 51.967s wall clock time, 4.1G memory peak, 681.4M memory swap peak.'
+  verified: true
+claim:
+  since: 2026-11-24 15:51
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 16:38
+  note: verified — evidence checks green, closing itself

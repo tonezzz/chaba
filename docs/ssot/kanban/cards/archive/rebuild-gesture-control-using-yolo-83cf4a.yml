@@ -1,41 +1,139 @@
 id: rebuild-gesture-control-using-yolo-83cf4a
 title: Rebuild gesture control using YOLO
 column: done
-updated: 2026-11-09 20:10
-note: User proposed replacing current gesture control with YOLO.
+updated: 2026-11-26 19:41
+priority: medium
+spec: 'Goal: Replace MediaPipe hand tracking with a YOLO-based hand/gesture detection model in the client display
+  app. Surface: display UI / vcast client. Sequence: evaluate YOLO pose/hand models suitable for browser/edge, integrate
+  inference pipeline, map gestures to display control commands. Hard limits: keep inference latency low enough for
+  real-time control. Verify: test gesture detection and screen control actions.'
+action:
+  type: dispatch
+  repo: ada-voice
+  executor: devin
+  status: done
+  runner: tony-macbook
+  attempts: 1
+  result: 'exit=0 -20261126-130417-goal-replace-mediapipe-hand-tr.md`; final status posted to the card. | devin-task-20261126-130417-goal-replace-mediapipe-hand-tr.service:
+    Consumed 1min 12.690s CPU time over 24min 5.231s wall clock time, 579.4M memory peak.'
+  verified: true
+  sweep:
+    merge_err: 2026-11-26 13:40
+note: Rebuild gesture control using YOLO model instead of MediaPipe for the display interface
+ref: OPS-1436
 comms:
-- at: 2026-10-09 17:34
+- at: 2026-11-26 13:00
   from: ada
-  text: User proposed replacing current gesture control with YOLO.
-- at: 2026-10-09 21:27
-  from: ada
-  text: 'raised request should-we-rebuild-gesture-control-using-ec63b8: Should we rebuild gesture control using
-    YOLO, replacing the old MediaPipe system? Card exists in the backlog.'
-- at: 2026-10-09 22:25
-  from: ada
-  text: YOLO could offer better performance in varied lighting conditions compared to the current MediaPipe implementation,
-    potentially reducing false positives.
-- at: 2026-10-10 07:34
-  from: tony
-  text: yes.
-- at: 2026-10-10 10:10
-  from: devin
-  text: 'closed: superseded — landmark pipeline shipped (gesture-relay live 2026-10-09, YOLO boxes assessed as wrong
-    primitive); next track is VLM two-stage → vlm-gesture-two-stage.'
-- at: 2026-10-11 06:51
-  from: tony
-  text: 'answered should-we-rebuild-gesture-control-using-ec63b8: Yes'
-- at: 2026-10-11 08:35
+  text: Rebuild gesture control using YOLO model instead of MediaPipe for the display interface
+- at: 2026-11-26 13:01
   from: chaba
-  text: 'ref assigned: OPS-0419'
-- at: 2026-11-09 20:10
+  text: queued for processing
+- at: 2026-11-26 13:01
+  from: chaba
+  text: '[auto-dispatch] wave 13 (2026-11-26 13:01): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-26 13:02
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.35 > 0.8)'
+- at: 2026-11-26 13:02
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.36 > 0.7)'
+- at: 2026-11-26 13:02
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.20 > 1.5)'
+- at: 2026-11-26 13:02
+  from: chaba
+  text: 'con01 defers: runner at cap (1/1)'
+- at: 2026-11-26 13:02
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-26 13:03
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-26 13:03
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.28 > 1.0)'
+- at: 2026-11-26 13:04
+  from: chaba
+  text: started devin-task-20261126-130417-goal-replace-mediapipe-hand-tr on tony-macbook (dispatch executor=devin)
+- at: 2026-11-26 13:04
+  from: chaba
+  text: 'primer injected 8 lesson(s): [rebuild-gesture-controls-using-yolo-190356] worktree triage: ada-voice wt
+    dispa; [explore-yolo-for-gesture-control-in-apps-8e27eb] checkpoint failed: commit: ⚠️ ; [explore-yolo-for-gesture-control-in-apps-8e27eb]
+    finished (failed): exit=1 0261; [explore-yolo-for-gesture-control-in-apps-8e27eb] finished (ok): exit=0 h-outcom;
+    [explore-yolo-for-gesture-control-in-apps-8e27eb] primer injected 8 lesson(s): [; [purge-retained-ada-ha-household-clone-ba-51b853]
+    primer inje'
+- at: 2026-11-26 13:19
+  from: devin
+  text: 'investigating: vcast hand-pointer already runs YOLO server-side (hand_yolov8n -> gesture msgs, chaba 2026-10-15);
+    wand ?engine=yolo + in-browser ONNX YOLO26n-HaGRID eval merged today. Gap found: yolo-gesture backend (port
+    8785) is DOWN on all hosts — hand mode currently delivers frames nobody consumes. Delivering ada-voice side:
+    detector-health honesty in vcast_gesture + SSOT eval/integration doc.'
+- at: 2026-11-26 13:28
+  from: devin
+  text: 'DONE (dispatch branch dd8a928+3ca1ffc, not pushed). Audit: MediaPipe->YOLO replacement already shipped
+    in chaba — vcast hand mode = camera uplink -> yolo-gesture.service hand_yolov8n -> gesture msgs (2026-10-15);
+    wand ?engine=yolo + in-browser ONNX YOLO26n-HaGRID eval merged today. GAP: detector service is DOWN on all hosts
+    (omen/idc03 :8785 refused, mn01 unreachable) so hand mode was silently dead. Delivered in ada-voice: vcast_gesture(mode=hand)
+    now probes GET /pointer (ADA_YOLO_POINTER_URL) a'
+- at: 2026-11-26 13:29
+  from: tony-macbook
+  text: 'finished (ok): exit=0 -20261126-130417-goal-replace-mediapipe-hand-tr.md`; final status posted to the card.
+    | devin-task-20261126-13041'
+- at: 2026-11-26 13:29
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-26 13:29
+  from: chaba
+  text: banked 84 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 13:29
+  from: chaba
+  text: pushed dispatch/20261126-130417-goal-replace-mediapipe-hand-tr to origin
+- at: 2026-11-26 13:29
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-26 13:29
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/main'
+- at: 2026-11-26 13:39
+  from: chaba
+  text: "merge-sweep: landing devin-task-20261126-130417-goal-replace-mediapipe-hand-tr failed: push: Authorized
+    access only. All activity may be monitored and reported.\nremote: error: refusing to update checked out branch:
+    refs/heads/main        \nremote: error: By default, updating the current branch"
+- at: 2026-11-26 16:24
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261126-130417-goal-replace-mediapipe-hand-tr,
+    branch dispatch/20261126-130417-goal-replace-mediapipe-hand-tr on tony-macbook'
+- at: 2026-11-26 16:24
+  from: chaba
+  text: 'merge-sweep: dispatch/20261126-130417-goal-replace-mediapipe-hand-tr already in origin/main — marked verified
+    (exit_code=0; outcome doc dispatch-outcome-20261126-130417-goal-replace-mediapipe-hand-tr.md) — auto-closed'
+- at: 2026-11-26 16:24
+  from: local
+  text: 'pub milestone: card verified: rebuild-gesture-control-using-yolo-83cf4a on idc03 — dispatch/20261126-130417-goal-replace-mediapipe-hand-tr
+    already in origin/main — verified — auto-closed — dispatch/20261126-130417-goal-replace-mediapipe-hand-tr already
+    in origin/main — verified — auto-closed [evt-07a3eeab4dae2967]'
+- at: 2026-11-26 16:25
   from: tony
-  text: archived (29d in done, board over card cap)
-requests:
-- id: should-we-rebuild-gesture-control-using-ec63b8
-  ask: Should we rebuild gesture control using YOLO, replacing the old MediaPipe system? Card exists in the backlog.
-  status: answered
-  at: 2026-10-09 21:27
-  from: ada
-  answer: 'Yes'
-ref: OPS-0419
+  text: '[triage 16:10 +07] Landed manually: session branch dispatch/20261126-130417-goal-replace-mediapipe-hand-tr
+    (3ca1ffc, commits dd8a928 YOLO detector health OPS-1436 + outcome doc) merged --no-ff into origin/main as 5da3cc01bbc
+    from idc03 served checkout. Test gate on tony-omen (system pytest): 2022 passed, 7 skipped, 33 subtests, RC=0.
+    Earlier push rejection was a stale /tmp/ada-voice-ssot-get worktree on tony-dell holding main checked out; it
+    was detached (clean tree, unchanged commit 5a5379a), n'
+- at: 2026-11-26 16:25
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 16:25
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261126-130417-goal-replace-mediapipe-hand-tr on
+    tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+claim:
+  since: 2026-11-26 13:03
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 16:24
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261126-130417-goal-replace-mediapipe-hand-tr.md

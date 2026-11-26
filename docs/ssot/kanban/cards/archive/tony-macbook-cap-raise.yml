@@ -1,0 +1,80 @@
+id: tony-macbook-cap-raise
+title: tony-macbook runner cap 2 -> 3 (self-service)
+column: done
+priority: low
+created: '2026-11-24'
+updated: 2026-11-24 10:45
+brief: Raise the local runner-agent concurrency cap from 2 to 3 on tony-macbook while Tony is away. Backs up the
+  config, detects systemd vs launchd, reloads safely, keeps the Mac awake for the test window.
+action:
+  type: script
+  status: done
+  host: tony-macbook
+  labels:
+  - macbook
+  - local-8c
+  - always-home
+  script:
+    repo: chaba
+    cmd: "set -e\necho \"== tony-macbook runner cap raise ==\"\nSVC=\"$HOME/.config/systemd/user/runner-agent.service\"\nPLIST=\"$HOME/Library/LaunchAgents/ai.chaba.runner-agent.plist\"\nif
+      [ -f \"$SVC\" ]; then\n  cp \"$SVC\" \"$SVC.bak-cap2\"\n  if grep -q 'RUNNER_CAP=2' \"$SVC\"; then\n    sed
+      -i '' 's/RUNNER_CAP=2/RUNNER_CAP=3/' \"$SVC\" 2>/dev/null || sed -i 's/RUNNER_CAP=2/RUNNER_CAP=3/' \"$SVC\"\n
+      \ fi\n  echo \"CHANGED=systemd\"; grep -n 'RUNNER_CAP' \"$SVC\"\n  systemctl --user daemon-reload 2>&1 ||
+      true\nelif [ -f \"$PLIST\" ]; then\n  cp \"$PLIST\" \"$PLIST.bak-cap2\"\n  /usr/libexec/PlistBuddy -c 'Set
+      :EnvironmentVariables:RUNNER_CAP 3' \"$PLIST\" 2>&1 || true\n  echo \"CHANGED=launchd\"\n  /usr/libexec/PlistBuddy
+      -c 'Print :EnvironmentVariables:RUNNER_CAP' \"$PLIST\" 2>&1 || true\n  nohup sh -c 'sleep 15; launchctl bootout
+      gui/$(id -u)/ai.chaba.runner-agent 2>/dev/null; launchctl bootstrap gui/$(id -u) \"$HOME/Library/LaunchAgents/ai.chaba.runner-agent.plist\"
+      2>/dev/null' >/dev/null 2>&1 &\nelse\n  echo \"NO_CONFIG_FOUND\"; exit 1\nfi\nnohup caffeinate -i -t 14400
+      >/dev/null 2>&1 &\necho \"CAFFEINATE=started-4h\"\necho \"DONE\""
+    timeout: 300
+  runner: tony-macbook
+  attempts: 1
+  result: exit=0  |   GTK_IM_MODULE='' QT_IM_MODULE='' CLUTTER_IM_MODULE='' SDL_IM_MODULE='' XMODIFIERS='' |   Set
+    IM_CONFIG_CURRENT_DESKTOP <- XDG_CURRENT_DESKTOP='XFCE' | == tony-macbook runner cap raise == | CHANGED=systemd
+    | CAFFEINATE=started-4h | DONE
+spec: self-service config change — no SSH access to tony-macbook from any fleet host
+comms:
+- at: 2026-11-24 10:35
+  from: tony
+  text: Filed under /tmp/board-api.lock (script type). Detect-and-back-up both systemd and launchd layouts; reload
+    deferred for launchd so the task is not killed mid-run.
+- at: 2026-11-24 10:35
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: tony-macbook lacks labels [''cpu''] — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-24 10:36
+  from: chaba
+  text: 'con01 defers: unclaimable by the declared runner fleet: tony-macbook lacks labels [''cpu''] — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-24 10:37
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: tony-macbook lacks labels [''cpu''] — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-24 10:38
+  from: chaba
+  text: 'tony-dell defers: unclaimable by the declared runner fleet: tony-macbook lacks labels [''cpu''] — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-24 10:38
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: tony-macbook lacks labels [''cpu''] — fix
+    action.labels/host pins or teach a runner the capability'
+- at: 2026-11-24 10:38
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: tony-macbook lacks labels [''cpu''] — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-24 10:45
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-24 10:45
+  from: chaba
+  text: started runner-tony-macbook-cap-raise-1795491913 on tony-macbook (script)
+- at: 2026-11-24 10:45
+  from: tony-macbook
+  text: 'finished (ok): exit=0  |   GTK_IM_MODULE='''' QT_IM_MODULE='''' CLUTTER_IM_MODULE='''' SDL_IM_MODULE=''''
+    XMODIFIERS='''' |   Set IM_CONFIG_CURRE'
+- at: '2026-11-24 11:22'
+  from: tony
+  text: 'archived (verification scaffolding — result recorded in fleet SSOT + ADA-0191 comms)'
+review_kind: verify
+claim:
+  since: 2026-11-24 10:45

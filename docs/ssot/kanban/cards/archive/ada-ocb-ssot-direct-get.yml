@@ -1,0 +1,108 @@
+id: ada-ocb-ssot-direct-get
+title: 'ada-ocb: direct SSOT get for exact host/spec lookups'
+column: done
+updated: 2026-11-23 13:34
+brief: OpenChamber/Ada finds the right SSOT docs via ada_context_pack but still answers with excerpts/metadata instead
+  of exact values. Add a bounded read-only direct-get path so once a canonical SSOT key is discovered the agent
+  can fetch the exact document/block instead of issuing repeated broad semantic searches.
+priority: high
+program: ai-workforce
+tags:
+- ada
+- opencode
+- ssot
+- mddb
+- ada-ocb
+spec: 'In ada-voice opencode/ada_mcp.py add ada_ssot_get (or equivalent) accepting collection + canonical key/doc
+  id/path and optional selector such as host=tony-macbook. Resolve through MDDB /get or deterministic doc lookup;
+  return exact structured values plus provenance and mutations_performed=[]. Update OpenChamber/Ada guest instructions:
+  search/discovery first via ada_context_pack, then call ada_ssot_get for the exact key/block. Verify "find the
+  spec of tony-macbook from ssot" returns concrete cpu/memory/disk/tailnet/role values, not only document titles.
+  Keep read-only boundaries; no household/personal memory banks.'
+ref: ADA-0167
+comms:
+- at: 2026-11-17 18:39
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-17 18:40
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:40
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:44
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 19:42
+  from: devin
+  text: 'Implemented ada_ssot_get(collection,key,selector?,max_chars?) in ada-voice 07e6866. Gates: tool-lint clean
+    + 1757 tests passed on idc03 deploy; services active. Smoke: ada_ssot_get(infrastructure-ssot, host-roles, selector=host=tony-macbook)
+    returned the tony-macbook block (tailnet 100.77.76.112, LAN 192.168.2.88, Ubuntu 26.04.1) with mutations_performed=[]
+    and calls.jsonl ok=true. DevNest bridge+instructions synced in 15e8cab; OpenChamber guest instructions updated.'
+- at: 2026-11-17 19:42
+  from: devin
+  text: moved doing -> review
+- at: 2026-11-17 21:07
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 22:05
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:19
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:08
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:18
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:02
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:06
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:15
+  from: tony
+  text: closed by tony
+- at: 2026-11-19 17:02
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:41
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:34
+  from: tony
+  text: archived (1d in done, board over card cap)
+review_kind: verify
+action:
+  status: done

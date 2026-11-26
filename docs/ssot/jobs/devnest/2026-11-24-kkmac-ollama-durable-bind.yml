@@ -1,0 +1,61 @@
+id: 2026-11-24-kkmac-ollama-durable-bind
+title: kk-mac ollama durable reachability — direct tailnet bind verified, tunnel demoted to declared fallback
+host: idc03 + kk-mac
+card: kkmac-ollama-durable-bind
+spec_note: >-
+  Card spec said "do (a) declared tunnel unit now; (b) OLLAMA_HOST bind
+  when adanest access is sorted". Live verification 2026-11-24 showed
+  (b) already landed 2026-11-19 (comms on the card): adanest ollama
+  binds 0.0.0.0, answers on tailnet 100.108.217.17:11434 AND LAN
+  192.168.0.101:11434, admission shim + embed-pool repointed to the
+  direct bind, kkmac-ollama-tunnel stopped+disabled after ~19k restart
+  flaps. Option (a) as specced was moot — nothing consumes :11445.
+verified: >-
+  2026-11-24 live checks: curl http://100.108.217.17:11434/api/version
+  -> 200 {"version":"0.40.8"}; idc03
+  kkmac-admission-shim.service active, GET :11447/health shows
+  upstream=http://100.108.217.17:11434 and live admission verdicts
+  (denied load_high at check time — owner-first gate working);
+  :11445 closed (tunnel dead as intended); embed-pool-shim
+  EMBED_POOL_UPSTREAMS ends at http://127.0.0.1:11447; LiteLLM
+  config.yaml kk-mac api_base entries all :11447. Attempt-2 re-verify
+  (via idc03 -> kkkakk@kk-mac): `launchctl print
+  system/net.adanest.ollama` shows OLLAMA_HOST=0.0.0.0:11434 in the
+  EnvironmentVariables of /Library/LaunchDaemons/net.adanest.ollama.plist
+  (root:wheel, plutil -p readable as kkkakk) — the bind SURVIVES REBOOT,
+  item (1) of the board request closed without adanest access. curl
+  from kk-mac itself confirms the bind answers on tailnet
+  100.108.217.17, LAN 192.168.0.101 AND LAN 192.168.2.90 — the LAN
+  exposure is real on both home subnets. kkkakk has no passwordless
+  sudo; adanest@ ssh is denied from idc03/tony-omen/tony-dell — item
+  (2) still needs KK's sudo on kk-mac.
+changes: >-
+  Repo truth only (no live mutation this session):
+  stacks/idc03/litellm/kkmac-admission-shim.service updated to match the
+  live unit (KK_SHIM_UPSTREAM=http://100.108.217.17:11434, dropped the
+  kkmac-ollama-tunnel.service After= dep — live was hand-edited
+  2026-11-19 without repo sync); new
+  stacks/idc03/litellm/kkmac-ollama-tunnel.service declares the
+  disabled fallback unit (deploy.sh installs it, never enables);
+  stacks/idc03/litellm/config.yaml kk-mac comment block rewritten for
+  the direct bind; ssot.llm-gateway.yml ollama-kkmac +
+  ssot.audit.hosts.yml (tunnel expected_state active->inactive,
+  shim/embed-pool notes, kk-mac capabilities.ollama) and KB docs
+  kkmac-ollama-lane.md / opencode-lane-model-notes.md updated.
+pending: >-
+  ONE item remains, KK-sudo-gated on kk-mac (board request answered
+  'proceed' 2026-11-24 19:41 — no fleet path has sudo): narrow the bind
+  to the tailnet IP — LAN 192.168.0.101:11434 AND 192.168.2.90:11434
+  are currently exposed (SEC-0985 intent is tailnet-only). Fix:
+  edit OLLAMA_HOST=0.0.0.0:11434 -> 100.108.217.17:11434 in
+  /Library/LaunchDaemons/net.adanest.ollama.plist (root:wheel — needs
+  sudo), then `sudo launchctl kickstart -k system/net.adanest.ollama`.
+  Caveat: a single-address bind drops loopback too — the disabled ssh
+  tunnel fallback then needs its -L target changed to
+  100.108.217.17:11434 (noted in the unit file comment).
+rollback: >-
+  If the tailnet bind is lost (kk-mac reboot, plist revert):
+  systemctl --user enable --now kkmac-ollama-tunnel.service on idc03,
+  set shim Environment=KK_SHIM_UPSTREAM=http://127.0.0.1:11445, daemon-
+  reload + restart kkmac-admission-shim.service. Expect restart flaps
+  while kk-mac sleeps — that is why it is disabled.

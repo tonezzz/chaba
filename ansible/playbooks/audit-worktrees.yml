@@ -1,0 +1,538 @@
+---
+# audit-worktrees.yml — fleet git worktree / checkout hygiene audit (READ-ONLY).
+#
+# Companion report template: templates/worktree-audit.j2 (in this dir).
+# `repo_root` defaults to the chaba checkout containing this playbook;
+# override with -e chaba_repo=/path/to/chaba if running from elsewhere.
+#
+# What it does:
+#   * one batched, read-only probe per host: discovers chaba checkouts and
+#     registered worktrees, then collects branch, role marker, hooks, upstream
+#     divergence (last-fetched refs only — no network), dirty paths split into
+#     significant vs declared-noise, focus-inbox dirt and lock/prune state
+#   * controller compares against a declarative policy (roles, served flag,
+#     allowed-dirty prefixes) and ssot.audit.hosts.yml (laptop offline_ok)
+#   * writes per-host verdict reports to
+#     reports/ansible-benchmark/worktrees/<inventory_host>.yml
+#   * returns ok / expected-dirty / drift / fail / offline-ok
+#
+# It does NOT fetch, clean, reset, remove, push or commit anything. The only
+# writes are controller-side report files. Under --check --diff the probe
+# still runs (check_mode: no) but report writes are skipped.
+#
+# Policy override: -e @/path/to/policy.yml  (defines wt_policy) or
+#                  -e wt_policy='{...}' on the command line.
+#
+# Controller self-detect matches the disk-headroom.yml / audit-log-shipper.yml
+# pattern: the machine running the playbook is probed with ansible_connection=local.
+# Override with -e self_host=<name> if detection picks wrong.
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/audit-worktrees.yml --check --diff
+#   ansible-playbook playbooks/audit-worktrees.yml --limit tony-dell
+
+- name: Fleet git worktree hygiene audit
+  hosts: all:!macos:!disabled
+  gather_facts: false
+  become: false
+
+  vars:
+    repo_root: "{{ (chaba_repo | default(playbook_dir ~ '/../..')) | regex_replace('/+$', '') }}"
+    audited_hosts: >-
+      {{ groups['all']
+         | difference(groups['macos'] | default([]))
+         | difference(groups['disabled'] | default([]))
+         | sort }}
+    controller_idents: >-
+      {{ (lookup('ansible.builtin.pipe', 'hostname -I', errors='ignore')
+          | default('')).split()
+         + [lookup('ansible.builtin.pipe', 'hostname', errors='ignore')
+            | default(''),
+            lookup('ansible.builtin.pipe', 'hostname -f', errors='ignore')
+            | default('')]
+         | select('truthy') | unique | list }}
+    controller_self: >-
+      {{ self_host | default(
+          ((hostvars | dict2items
+            | selectattr('key', 'in', audited_hosts)
+            | selectattr('value.ansible_host', 'defined')
+            | selectattr('value.ansible_host', 'in', controller_idents)
+            | map(attribute='key') | list)
+           + (audited_hosts | select('in', controller_idents) | list))
+          | unique | sort | first | default(''), true) }}
+    audit_ssot: >-
+      {{ lookup('ansible.builtin.file',
+                repo_root ~ '/docs/ssot/infrastructure/ssot.audit.hosts.yml')
+         | from_yaml }}
+    ssot_key_map:
+      tony-macbook: macbook
+    benchmark_out: "{{ repo_root }}/reports/ansible-benchmark/worktrees"
+    probe_ts: "{{ now(utc=True).isoformat(timespec='seconds') }}"
+    board_notify: false
+    board_api_base: "https://idc03.taila0626a.ts.net:10000"
+    board_from: "devin"
+
+    # Declarative layer over discovery. Checkouts not listed here are still
+    # probed and reported with the default policy; listing one only adds
+    # expectations (role/served) and widens its allowed-dirty prefixes.
+    # Paths are expanded on the TARGET host ($HOME works).
+    wt_policy:
+      primary: "$HOME/CascadeProjects/chaba"
+      candidate_globs:
+        - "$HOME/CascadeProjects/chaba*"
+        - "$HOME/CascadeProjects/ada-voice*"
+      allowed_dirty_default:
+        - reports/
+        - logs/
+        - systemd/generated/
+      # Exclude nested eval/shadow sandboxes — they are real worktrees but
+      # not chaba checkouts and would swamp the report with stale noise.
+      exclude_path_contains:
+        - /evals/shadow/
+        - /opencode-host-health/
+      behind_warn: 10
+      checkouts:
+        - name: chaba-exec
+          path: "$HOME/CascadeProjects/chaba"
+          role: exec
+          served: false
+          allowed_dirty:
+            - reports/
+            - logs/
+            - systemd/generated/
+        - name: chaba-served
+          path: "$HOME/CascadeProjects/chaba-tony-dell"
+          # Actual marker installed by install-hooks.sh on the writer checkout.
+          role: readonly
+          served: true
+          allowed_dirty:
+            - reports/
+            - logs/
+        - name: chaba-merge-logshipper
+          path: "/tmp/opencode/chaba-merge-logshipper"
+          role: dispatch
+          served: false
+          allowed_dirty: []
+
+  pre_tasks:
+    - name: Report controller detection
+      ansible.builtin.debug:
+        msg: >-
+          controller_self={{ controller_self or 'none' }}
+          {%- if controller_self %} (probes itself locally)
+          {%- else %} (controller not in inventory — all hosts use ssh)
+          {%- endif %}
+      run_once: true
+
+    - name: Probe the controller locally — ssh to its own tailnet IP has no key path
+      ansible.builtin.set_fact:
+        ansible_connection: local
+      when: inventory_hostname == controller_self
+
+  tasks:
+    - name: Probe chaba checkouts (single round-trip, read-only)
+      ansible.builtin.shell: |
+        python3 - <<'PYEOF'
+        import glob, json, os, shlex, subprocess
+        from pathlib import Path
+
+        POL = json.loads(os.environ.get("WT_POLICY_JSON", "{}"))
+        HOST = os.environ.get("WT_HOST", "")
+        HOME = os.path.expanduser("~")
+
+        def sh(cmd, cwd=None, timeout=15):
+            try:
+                p = subprocess.run(["bash", "-c", cmd], cwd=cwd,
+                                   capture_output=True, text=True, timeout=timeout)
+                return p.returncode, p.stdout.strip(), p.stderr.strip()
+            except Exception as exc:
+                return 99, "", str(exc)
+
+        def q(p):
+            return shlex.quote(str(p))
+
+        def expand(p):
+            return os.path.realpath(os.path.expanduser(
+                os.path.expandvars(str(p).replace("$HOME", HOME))))
+
+        allowed_default = POL.get("allowed_dirty_default") or []
+        policy_by_path = {}
+        for entry in POL.get("checkouts") or []:
+            if entry.get("path"):
+                policy_by_path[expand(entry["path"])] = entry
+
+        # Discovery: known checkout globs + every registered worktree of the
+        # primary checkout (catches /tmp/opencode dispatch worktrees too).
+        cands = []
+        for pat in (POL.get("candidate_globs") or ["$HOME/CascadeProjects/chaba*"]):
+            pat = str(pat).replace("$HOME", HOME)
+            for p in glob.glob(os.path.expanduser(pat)):
+                if os.path.isdir(p):
+                    cands.append(os.path.realpath(p))
+        primary = expand(POL.get("primary") or "$HOME/CascadeProjects/chaba")
+        rc, out, _ = sh("git -C %s worktree list --porcelain" % q(primary))
+        locked, prunable, registered = set(), set(), set()
+        cur = None
+        for line in out.splitlines():
+            if line.startswith("worktree "):
+                cur = os.path.realpath(line[9:].strip())
+                registered.add(cur)
+            elif line.startswith("locked") and cur:
+                locked.add(cur)
+            elif line.startswith("prunable") and cur:
+                prunable.add(cur)
+        cands.extend(registered)
+
+        excludes = POL.get("exclude_path_contains") or []
+        checkouts = []
+        seen = set()
+        for p in sorted(set(cands)):
+            if p in seen or not os.path.isdir(p):
+                continue
+            if any(frag in p for frag in excludes):
+                continue
+            seen.add(p)
+            rc, top, _ = sh("git -C %s rev-parse --show-toplevel" % q(p))
+            if rc != 0 or not top or os.path.realpath(top) != p:
+                continue  # nested directory, not a worktree root
+
+            branch = sh("git -C %s branch --show-current" % q(p))[1] or ""
+            detached = sh("git -C %s symbolic-ref -q HEAD" % q(p))[0] != 0
+            head = sh("git -C %s rev-parse --short HEAD" % q(p))[1] or ""
+            gd = sh("git -C %s rev-parse --absolute-git-dir" % q(p))[1]
+            role = ""
+            if gd:
+                try:
+                    role = (Path(gd) / "chaba-role").read_text().strip()
+                except Exception:
+                    pass
+            hooks = sh("git -C %s config --get core.hooksPath" % q(p))[1]
+            up = (sh("git -C %s rev-parse --abbrev-ref --symbolic-full-name "
+                     "'@{upstream}'" % q(p))[1] or "origin/master")
+            rc, counts, err = sh("git -C %s rev-list --left-right --count %s...HEAD"
+                                 % (q(p), q(up)))
+            bits = counts.split()
+            behind = int(bits[0]) if len(bits) == 2 and bits[0].isdigit() else None
+            ahead = int(bits[1]) if len(bits) == 2 and bits[1].isdigit() else None
+
+            rc, st, _ = sh("git -C %s status --porcelain=v1 -uall" % q(p))
+            sig, noise, inbox = [], [], 0
+            pol = policy_by_path.get(p, {})
+            allow = pol.get("allowed_dirty", allowed_default) or []
+            for raw in st.splitlines():
+                if len(raw) < 4:
+                    continue
+                path = raw[3:]
+                if " -> " in path:
+                    path = path.split(" -> ", 1)[1]
+                if path.startswith('"'):
+                    try:
+                        path = json.loads(path)
+                    except Exception:
+                        pass
+                if path.startswith("docs/ssot/focus-inbox/"):
+                    inbox += 1
+                if any(path.startswith(prefix) for prefix in allow):
+                    noise.append(path)
+                else:
+                    sig.append({"code": raw[:2].strip(), "path": path})
+
+            checkouts.append({
+                "declared": bool(pol),
+                "name": pol.get("name") or os.path.basename(p),
+                "path": p,
+                "branch": branch or ("(detached " + head + ")" if detached else "?"),
+                "detached": detached,
+                "head": head,
+                "role": role,
+                "declared_role": pol.get("role", ""),
+                "served": bool(pol.get("served", False)),
+                "hooks": hooks,
+                "upstream": up,
+                "ahead": ahead,
+                "behind": behind,
+                "dirty_count": len(sig) + len(noise),
+                "significant_count": len(sig),
+                "noise_count": len(noise),
+                "significant": sig[:40],
+                "noise": noise[:20],
+                "inbox_dirty": inbox,
+                "locked": p in locked,
+                "prunable": p in prunable,
+            })
+
+        print(json.dumps({"host": HOST, "discovered": len(seen),
+                          "checkouts": checkouts}))
+        PYEOF
+      environment:
+        WT_POLICY_JSON: "{{ wt_policy | to_json }}"
+        WT_HOST: "{{ inventory_hostname }}"
+      register: wt_probe_raw
+      changed_when: false
+      failed_when: false
+      ignore_unreachable: true
+      check_mode: no
+
+    - name: Store worktree snapshot
+      ansible.builtin.set_fact:
+        wt_probe: >-
+          {{ (wt_probe_raw.stdout | trim | from_json)
+             if (wt_probe_raw.stdout is defined
+                 and (wt_probe_raw.stdout | trim | length) > 0
+                 and (wt_probe_raw.stdout | trim)[:1] == '{')
+             else {} }}
+      changed_when: false
+      ignore_unreachable: true
+
+    - name: Flag a probe that produced no JSON
+      ansible.builtin.set_fact:
+        wt_probe:
+          error: >-
+            unreachable or no JSON
+            {%- if wt_probe_raw.stderr is defined %} :: {{ wt_probe_raw.stderr | trim | truncate(160) }}{% endif %}
+      changed_when: false
+      ignore_unreachable: true
+      when: wt_probe is not defined or wt_probe | length == 0
+
+    # --- controller-side evaluation: one play on purpose so --limit
+    # cannot filter out the report tasks (see disk-headroom.yml) ---
+
+    - name: Ensure the report dir exists
+      ansible.builtin.file:
+        path: "{{ benchmark_out }}"
+        state: directory
+        mode: "0755"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Collect hosts actually probed this run
+      ansible.builtin.set_fact:
+        probed_hosts: >-
+          {{ hostvars | dict2items
+             | selectattr('key', 'in', audited_hosts)
+             | selectattr('value.wt_probe', 'defined')
+             | map(attribute='key')
+             | sort | list }}
+      delegate_to: localhost
+      run_once: true
+      changed_when: false
+
+    - name: Render per-host worktree verdicts
+      ansible.builtin.template:
+        src: templates/worktree-audit.j2
+        dest: "{{ benchmark_out }}/{{ target }}.yml"
+        mode: "0644"
+      loop: "{{ probed_hosts }}"
+      loop_control:
+        loop_var: target
+        label: "{{ target }}"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Show worktree summaries (re-rendered in memory — correct under --check)
+      ansible.builtin.debug:
+        msg: >-
+          {{ target }}:
+          {{ (lookup('ansible.builtin.template', 'templates/worktree-audit.j2')
+              | from_yaml).summary }}
+      loop: "{{ probed_hosts }}"
+      loop_control:
+        loop_var: target
+        label: "{{ target }}"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Compute worktree alert summary and fingerprint
+      ansible.builtin.set_fact:
+        wt_alert_hosts: >-
+          {%- set out = [] -%}
+          {%- for h in probed_hosts -%}
+            {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
+            {%- if rpt -%}
+              {%- set y = rpt | from_yaml -%}
+              {%- set s = y.get('summary', '') -%}
+              {%- if s.startswith('fail') or s.startswith('drift') or s.startswith('unreachable') or s.startswith('error') -%}
+                {%- set kind = 'fail' if s.startswith('fail') else ('drift' if s.startswith('drift') else ('unreachable' if s.startswith('unreachable') else 'error')) -%}
+                {%- set _ = out.append({'host': h, 'kind': kind, 'summary': s}) -%}
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ out }}
+        wt_alert_fingerprint: >-
+          {%- set out = [] -%}
+          {%- for h in probed_hosts -%}
+            {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
+            {%- if rpt -%}
+              {%- set y = rpt | from_yaml -%}
+              {%- set s = y.get('summary', '') -%}
+              {%- if s.startswith('fail') or s.startswith('drift') or s.startswith('unreachable') or s.startswith('error') -%}
+                {%- set kind = 'fail' if s.startswith('fail') else ('drift' if s.startswith('drift') else ('unreachable' if s.startswith('unreachable') else 'error')) -%}
+                {%- set _ = out.append(h ~ ':' ~ kind) -%}
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ out | join('|') }}
+      delegate_to: localhost
+      run_once: true
+
+    - name: Notify board-api when worktree alerts found
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card"
+        method: POST
+        body_format: json
+        status_code: [200, 201, 400]
+        return_content: true
+        body:
+          id: ansible-worktree-audit-alert
+          title: "Ansible audit: worktree hygiene drift/fail"
+          column: backlog
+          action: {type: manual}
+          from: "{{ board_from }}"
+          spec: >-
+            Read-only ansible audit-worktrees detected fail/drift/unreachable hosts.
+            Hosts: {{ wt_alert_hosts | map(attribute='host') | join(', ') }}.
+            Report dir: reports/ansible-benchmark/worktrees/. No remediation performed.
+      when:
+        - board_notify | bool
+        - (wt_alert_hosts | length) > 0
+      register: wt_alert_card
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fail on unexpected worktree alert card create error
+      ansible.builtin.fail:
+        msg: "board-api /card create failed: {{ wt_alert_card.content | default('') }}"
+      when:
+        - board_notify | bool
+        - (wt_alert_hosts | length) > 0
+        - wt_alert_card.status not in [200, 201]
+        - "'already exists' not in (wt_alert_card.content | default(''))"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fetch worktree alert card for comment dedupe
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card/ansible-worktree-audit-alert"
+        method: GET
+        return_content: true
+        status_code: [200, 404]
+      register: wt_alert_card_for_comment
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (wt_alert_hosts | length) > 0
+
+    - name: Compute worktree alert comment dedupe
+      ansible.builtin.set_fact:
+        wt_alert_comment_text: >-
+          ansible audit-worktrees: {{ wt_alert_hosts | length }} host(s) alerting.
+          fp={{ wt_alert_fingerprint }}. {{ wt_alert_hosts | to_json }}
+        wt_alert_comment_is_dup: >-
+          {{
+            (wt_alert_card_for_comment.status | default(404)) == 200
+            and (
+              ((wt_alert_card_for_comment.json.card.comms | default([]))
+                | selectattr('from', 'equalto', board_from)
+                | selectattr('text', 'defined')
+                | selectattr('text', 'search', 'fp=' ~ (wt_alert_fingerprint | regex_escape))
+                | list | length) > 0
+            )
+          }}
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (wt_alert_hosts | length) > 0
+
+    - name: Comment worktree alert summary
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/comment"
+        method: POST
+        body_format: json
+        status_code: [200, 201]
+        body:
+          id: ansible-worktree-audit-alert
+          from: "{{ board_from }}"
+          text: "{{ wt_alert_comment_text }}"
+      when:
+        - board_notify | bool
+        - (wt_alert_hosts | length) > 0
+        - not (wt_alert_comment_is_dup | default(false) | bool)
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fetch worktree alert card for cleared check
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card/ansible-worktree-audit-alert"
+        method: GET
+        return_content: true
+        status_code: [200, 404]
+      register: wt_alert_card_for_cleared
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (wt_alert_hosts | length) == 0
+
+    - name: Compute worktree alert cleared comment
+      ansible.builtin.set_fact:
+        wt_alert_cleared_comment: >-
+          ansible audit-worktrees: all clear, no alert hosts. fp=cleared.
+        wt_alert_cleared_needed: >-
+          {{
+            (wt_alert_card_for_cleared.status | default(404)) == 200
+            and (
+              (
+                (wt_alert_card_for_cleared.json.card.comms | default([]))
+                | selectattr('from', 'equalto', board_from)
+                | selectattr('text', 'defined')
+                | selectattr('text', 'search', 'fp=')
+                | list
+              ) | length > 0
+            )
+            and (
+              'fp=cleared' not in (
+                (
+                  (wt_alert_card_for_cleared.json.card.comms | default([]))
+                  | selectattr('from', 'equalto', board_from)
+                  | selectattr('text', 'defined')
+                  | selectattr('text', 'search', 'fp=')
+                  | list | last
+                ).text | default('')
+              )
+            )
+          }}
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (wt_alert_hosts | length) == 0
+
+    - name: Comment worktree alert cleared
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/comment"
+        method: POST
+        body_format: json
+        status_code: [200, 201]
+        body:
+          id: ansible-worktree-audit-alert
+          from: "{{ board_from }}"
+          text: "{{ wt_alert_cleared_comment }}"
+      when:
+        - board_notify | bool
+        - (wt_alert_hosts | length) == 0
+        - wt_alert_cleared_needed | default(false) | bool
+      delegate_to: localhost
+      run_once: true
+
+    - name: Show kanban notify summary
+      ansible.builtin.debug:
+        msg:
+          board_notify: "{{ board_notify }}"
+          alert_hosts: "{{ wt_alert_hosts | map(attribute='host') | list }}"
+          comment_skipped_as_dup: "{{ wt_alert_comment_is_dup | default(false) }}"
+          cleared_comment_posted: "{{ wt_alert_cleared_needed | default(false) }}"
+      when: board_notify | bool
+      delegate_to: localhost
+      run_once: true

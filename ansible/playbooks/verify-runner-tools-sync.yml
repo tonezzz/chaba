@@ -1,0 +1,162 @@
+---
+# verify-runner-tools-sync.yml — read-only preview of runner-tool drift.
+#
+# Two validators, both non-destructive:
+#   1. ansible.utils.validate checks the policy dict against a JSON Schema
+#      (fails fast on malformed config, before any host is touched).
+#   2. ansible.utils.ipaddr refuses targets outside the declared tailnet CIDR.
+#
+# The drift preview uses ansible.posix.synchronize with rsync's --dry-run +
+# --itemize-changes. NOTHING is written on any host. The six canonical tools
+# are staged once on the controller and compared in ONE rsync connection per
+# host (--include/--exclude filters) — important because idc02's UFW has a
+# 22/tcp LIMIT rule (6 new connections / 30s) that rejected the previous
+# six-connection version of this play.
+#
+# Tool classes — required vs leaf:
+#   scripts/devin/sync-runner-tools.sh installs a MISSING dest only for
+#   runner-agent and devin-dispatch; the other four are leaf tools,
+#   update-only and never bootstrapped. Leaf absence is normal on VPS hosts
+#   (idc02/idc03 CLAUDE_LANES=0, dispatch-queue is dell-local, prune is a
+#   dell-local timer, dispatch_repos.py falls back to the checkout copy).
+#   Only required-tool drift fails the play; leaf drift is report-only.
+#
+# Usage (from ansible/ on the controller):
+#   ansible-playbook playbooks/verify-runner-tools-sync.yml
+#   ansible-playbook playbooks/verify-runner-tools-sync.yml --limit idc03
+#
+# Do NOT add --check/--diff: the rsync dry-run IS the preview. The task is
+# marked changed_when: false because --dry-run never modifies a file.
+#
+# Controller requirements: see ../requirements.yml (ansible.posix,
+# ansible.utils) plus Python packages jsonschema>=4 and netaddr>=0.10.1.
+#
+# Host scope: baseline only (no macOS, no laptops, no con01). kk-mac and
+# idc01 are excluded by the pattern; portable hosts need an explicit --limit.
+# con01 is the absorber tier, not a runner host — runner-fleet-health.py
+# excludes it and it has no devin-dispatch provisioning evidence.
+
+- name: Preview runner-tool drift with rsync dry-run
+  hosts: baseline:!disabled:!macos:!con01
+  gather_facts: false
+  become: false  # installed tools live in the login user's home — no sudo
+  vars:
+    runner_sync_policy:
+      source_root: "{{ playbook_dir }}/../../scripts"
+      max_drift_files: 0
+      tailnet_cidr: 100.64.0.0/10
+    guard_stage_dir: /tmp/ansible-runner-tool-guard
+
+    # dest is the filename used in the staging dir and in ~/.local/bin.
+    # required=true -> failure on drift; false -> informational only.
+    runner_tools:
+      - src: scripts/board/runner-agent.py
+        dest: runner-agent
+        required: true
+      - src: scripts/devin/devin-dispatch.sh
+        dest: devin-dispatch
+        required: true
+      - src: scripts/devin/claude-dispatch.sh
+        dest: claude-dispatch
+        required: false
+      - src: scripts/devin/devin-dispatch-prune.sh
+        dest: devin-dispatch-prune
+        required: false
+      - src: scripts/devin/dispatch-queue.sh
+        dest: dispatch-queue
+        required: false
+      - src: scripts/board/dispatch_repos.py
+        dest: dispatch_repos.py
+        required: false
+
+  tasks:
+    - name: Validate the sync policy against its JSON Schema
+      ansible.utils.validate:
+        data: "{{ runner_sync_policy }}"
+        criteria: >-
+          {{ lookup('ansible.builtin.file',
+                    playbook_dir + '/vars/runner_sync_policy.schema.json')
+             | from_json }}
+        engine: ansible.utils.jsonschema
+      delegate_to: localhost
+      vars:
+        ansible_connection: local
+        ansible_jsonschema_draft: draft7
+      run_once: true
+
+    - name: Refuse targets outside the tailnet
+      ansible.builtin.assert:
+        that:
+          - ansible_host == (ansible_host | ansible.utils.ipaddr(runner_sync_policy.tailnet_cidr))
+        fail_msg: >-
+          {{ inventory_hostname }} is outside {{ runner_sync_policy.tailnet_cidr }}
+          — refusing to rsync
+      when: ansible_host is defined
+
+    - name: Create staging directory on the controller
+      ansible.builtin.file:
+        path: "{{ guard_stage_dir }}"
+        state: directory
+        mode: "0755"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Stage canonical tool copies under their installed names
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../{{ item.src }}"
+        dest: "{{ guard_stage_dir }}/{{ item.dest }}"
+        mode: "0755"
+      delegate_to: localhost
+      run_once: true
+      loop: "{{ runner_tools }}"
+      loop_control:
+        label: "{{ item.dest }}"
+
+    - name: Dry-run compare — one rsync connection per host
+      ansible.posix.synchronize:
+        src: "{{ guard_stage_dir }}/"
+        dest: "/home/{{ ansible_user }}/.local/bin/"
+        mode: push
+        archive: false
+        recursive: true
+        checksum: true
+        compress: false
+        delete: false
+        rsync_opts:
+          - --dry-run
+          - --itemize-changes
+          - --include=runner-agent
+          - --include=devin-dispatch
+          - --include=claude-dispatch
+          - --include=devin-dispatch-prune
+          - --include=dispatch-queue
+          - --include=dispatch_repos.py
+          - --exclude=*
+      register: sync_preview
+      changed_when: false  # --dry-run never writes
+
+    - name: Collect itemized changes
+      ansible.builtin.set_fact:
+        drift_all: "{{ sync_preview.stdout_lines | default([]) | select('search', '^[<>*]') | list }}"
+
+    - name: Classify drift into required and leaf
+      ansible.builtin.set_fact:
+        required_drift: "{{ drift_all | select('search', '(runner-agent|devin-dispatch)$') | list }}"
+        leaf_drift: "{{ drift_all | reject('search', '(runner-agent|devin-dispatch)$') | list }}"
+
+    - name: Report per-host drift
+      ansible.builtin.debug:
+        msg:
+          - "host={{ inventory_hostname }} required={{ required_drift | length }} leaf={{ leaf_drift | length }} (informational)"
+          - "required: {{ required_drift }}"
+          - "leaf (informational): {{ leaf_drift }}"
+
+    - name: Fail when required drift exceeds policy
+      ansible.builtin.assert:
+        that:
+          - required_drift | length <= runner_sync_policy.max_drift_files
+        fail_msg: >-
+          {{ required_drift | length }} required runner-tool file(s) would change
+          on {{ inventory_hostname }} (policy max
+          {{ runner_sync_policy.max_drift_files }}). Leaf-tool drift is
+          informational only.

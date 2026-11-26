@@ -3,7 +3,10 @@
 
 Source:  docs/ssot/apps/ssot.apps.ada-persons.yml — persons.<key>.tools
 Output:  a managed block in ~/.config/secrets/<env_file> on the instance
-         host (ADA_INCLUDED_TOOLS keep-list / ADA_EXCLUDED_TOOLS drop-list)
+         host (ADA_INCLUDED_TOOLS keep-list / ADA_EXCLUDED_TOOLS drop-list),
+         plus a second managed block (ada-env-knobs) when the profile
+         declares tools.env_knobs — non-tool env vars such as the kk
+         CMS-only pilot's ADA_SESSION_PRIME / ADA_PRIME_SKIP_HISTORY.
 Lint:    warns on declared tools in NEITHER list and on names that do
          not resolve to ada-voice's declared surface or alias table —
          the anti-rot tripwire for tool merges/renames.
@@ -33,6 +36,8 @@ SSOT = Path(__file__).resolve().parents[2] / "docs/ssot/apps/ssot.apps.ada-perso
 ADA_PI = Path(os.environ.get("ADA_PI_REPO") or "~/CascadeProjects/ada-voice").expanduser()
 BLOCK_BEGIN = "# >>> chaba-rendered: ada-tool-profile"
 BLOCK_END = "# <<< chaba-rendered: ada-tool-profile"
+KNOB_BEGIN = "# >>> chaba-rendered: ada-env-knobs"
+KNOB_END = "# <<< chaba-rendered: ada-env-knobs"
 _MANAGED_VARS = ("ADA_INCLUDED_TOOLS", "ADA_EXCLUDED_TOOLS")
 
 
@@ -54,6 +59,10 @@ def load_profiles() -> dict[str, dict]:
             "host": tools.get("host"),
             "include": include,
             "exclude": exclude,
+            # None = knob block unmanaged; {} = managed block cleared;
+            # {K: V} = managed KEY=value lines (kk CMS-only pilot uses
+            # ADA_SESSION_PRIME / ADA_PRIME_SKIP_HISTORY).
+            "env_knobs": tools.get("env_knobs"),
         }
     return out
 
@@ -71,21 +80,40 @@ def render_block(person: str, prof: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
-def merge_env(current: str, block: str) -> str:
-    """Replace/append the managed block; retire hand-written copies of the
+def render_knobs_block(person: str, prof: dict) -> str:
+    """Second managed block for persons.<key>.tools.env_knobs — same
+    marker format as kk-bench-env.py's bench-profile knob block so the
+    two writers never fight over a file (bench profiles only ever target
+    *-dev env files; person profiles target the prod env)."""
+    knobs = prof.get("env_knobs")
+    if knobs is None:
+        return ""
+    lines = [
+        f"{KNOB_BEGIN} (persons.{person} @ {SSOT.name})",
+        "# edit the SSOT profile, not this file — reapplied by deploy-ada.sh",
+    ]
+    for key in sorted(knobs):
+        lines.append(f"{key}={knobs[key]}")
+    lines.append(KNOB_END)
+    return "\n".join(lines) + "\n"
+
+
+def _merge_block(text: str, begin: str, end: str, block: str,
+                 retire_prefixes: tuple[str, ...]) -> str:
+    """Replace/append one managed block; retire hand-written copies of the
     managed vars that sit outside it (last block wins under systemd)."""
     out, in_block, seen_block = [], False, False
-    for line in current.splitlines(keepends=True):
+    for line in text.splitlines(keepends=True):
         stripped = line.rstrip("\n")
-        if stripped.startswith(BLOCK_BEGIN):
+        if stripped.startswith(begin):
             in_block, seen_block = True, True
             out.append(block)
             continue
         if in_block:
-            if stripped.startswith(BLOCK_END):
+            if stripped.startswith(end):
                 in_block = False
             continue
-        if any(stripped.startswith(f"{v}=") for v in _MANAGED_VARS):
+        if any(stripped.startswith(p) for p in retire_prefixes):
             out.append(f"# migrated to managed block below: {stripped}\n")
             continue
         out.append(line)
@@ -94,6 +122,20 @@ def merge_env(current: str, block: str) -> str:
             out[-1] += "\n"
         out.append(block)
     return "".join(out)
+
+
+def merge_env(current: str, block: str, knob_block: str = "") -> str:
+    """Merge the tool-profile block, then the optional env-knob block."""
+    text = _merge_block(current, BLOCK_BEGIN, BLOCK_END, block,
+                        tuple(v + "=" for v in _MANAGED_VARS))
+    if knob_block:
+        knob_keys = tuple(
+            line.split("=", 1)[0].strip() + "="
+            for line in knob_block.splitlines()
+            if "=" in line and not line.strip().startswith("#"))
+        text = _merge_block(text, KNOB_BEGIN, KNOB_END, knob_block,
+                            knob_keys)
+    return text
 
 
 def ada_surface() -> tuple[set[str], dict[str, str]] | None:
@@ -188,7 +230,8 @@ def apply_profiles(host: str | None, profiles: dict[str, dict], check: bool) -> 
         if current is None:
             print(f"SKIP {person}/{prof['env_file']} on {where}: env file not found")
             continue
-        merged = merge_env(current, render_block(person, prof))
+        merged = merge_env(current, render_block(person, prof),
+                           render_knobs_block(person, prof))
         if merged == current:
             print(f"UNCHANGED {person}/{prof['env_file']} on {where}")
             continue
@@ -241,7 +284,8 @@ def main() -> int:
 
     for person, prof in profiles.items():
         print(f"# persons.{person} -> {_remote_env_path(prof)} on {prof.get('host') or '?'}")
-        print(render_block(person, prof))
+        print(render_block(person, prof), end="")
+        print(render_knobs_block(person, prof), end="")
     return 0
 
 

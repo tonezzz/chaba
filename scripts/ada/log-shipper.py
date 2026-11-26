@@ -14,9 +14,23 @@ Docs land in collection "host-logs" as {contentMd: line, meta: {host,
 journal, unit, ts, kind}}. Key = hostlog/<host>/<rt_us>-<hash8> (unique
 per emission — never a re-add, so no HNSW tombstone churn).
 
+Docs post in batches via /v1/ingest (~0.1s/doc vs 2-6s/doc for
+individual /adds on a loaded 17GB ops bank — OPS-1153: the per-doc lane
+could not drain idc03's ~1500 docs/h inside TimeoutStartSec=600 once
+write latency crossed ~0.4s). The cursor checkpoints after EVERY
+successful batch, so a SIGTERM kill at the systemd timeout loses at most
+one batch of progress instead of the whole leg — the 2026-11-08 wedge
+(sys cursor frozen 2 days, every run killed mid-leg) was this
+granularity bug, not just slow writes.
+
 MDDB-down tolerant: posts with a short timeout and stops at the first
 failure (lines are ordered — a shipped-cursor gap would silently drop
 lines); the remote cursor only advances past lines confirmed shipped.
+That safety must not look like success: any failed /add (host-logs or
+heartbeat) makes the process exit 1, so systemd, the SSOT audit and the
+kanban judge can see it. Exit 0 means every attempted post landed (a
+host that is merely unreachable still exits 0 — that is an offline
+coverage gap, not a write failure).
 
 Per-host model (2026-10-05): each fleet host runs this on its own
 systemd user timer (`--self`, installed by install-log-shipper.sh) and
@@ -45,7 +59,8 @@ second per-host timer can run it hourly without disturbing the full
 lane's cursor — a severe line never queues behind a capped backlog.
 `--kinds`/`--cursor-tag` are the generic knobs underneath; `--severe` is
 `--kinds oom,panic,failed --cursor-tag severe`. Severe runs post
-`ship-severe/<host>` state docs (logs-kanban only reads `ship/`).
+`ship-severe/<host>` state docs; logs-kanban judges backlog/coverage on
+`ship/<host>` but reads every lane's state for add failures.
 """
 
 from __future__ import annotations
@@ -56,9 +71,11 @@ import hashlib
 import json
 import os
 import re
+import signal
 import socket
 import subprocess
 import sys
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -416,6 +433,66 @@ def _post(path: str, payload: dict, timeout: int = 15) -> bool:
         return False
 
 
+BATCH = 5  # docs per /v1/ingest call. mddb-ops closes the connection
+           # at ~30s server-side regardless of our client timeout. 100
+           # docs took ~35s and 20 took ~33s on a loaded host (idc03,
+           # load 8+) -> RemoteDisconnected -> 'mddb add failed —
+           # stopping' with zero progress. 10 docs still hit 32-79s
+           # writes on 2026-11-26 (server logs 'response not delivered:
+           # handler finished after the HTTP write timeout', observed
+           # elapsed 32.7s/37.3s/42.3s/79.1s vs writeTimeout 30s).
+           # 5 docs halves per-call size; mddb-ops' write timeout was
+           # also raised to 120s in the same fix. Far cheaper than
+           # per-doc /add (2-6s).
+
+# Set on SIGTERM/SIGINT — systemd kills oneshot services with TERM at
+# TimeoutStartSec; checking this between batches lets the loop stop
+# cleanly AFTER the last batch's cursor checkpoint, instead of dying
+# mid-leg and replaying everything next run.
+_STOP = False
+
+
+def _on_stop(_sig, _frm) -> None:
+    global _STOP
+    _STOP = True
+
+
+signal.signal(signal.SIGTERM, _on_stop)
+signal.signal(signal.SIGINT, _on_stop)
+
+
+def _doc(r: dict) -> dict:
+    meta = {"host": [r["host"]],
+            "journal": [r["journal"]],
+            "unit": [r["unit"]], "ts": [r["ts"]],
+            "kind": [r["kind"]]}
+    if r.get("suppressed"):
+        meta["suppressed"] = [str(r["suppressed"])]
+    return {"key": r["key"], "lang": "en",
+            "contentMd": f"`{r['ts']}` [{r['unit']}] {r['line']}",
+            "meta": meta}
+
+
+def _ingest(docs: list[dict], timeout: int = 60) -> bool | None:
+    """Bulk-post one batch. True = all added; False = transport/server
+    error or partial failure (caller stops — keys are deterministic, so
+    replaying the batch upserts identical content); None = endpoint
+    missing on this mddb (caller falls back to per-doc /add)."""
+    try:
+        req = urllib.request.Request(
+            f"{MDDB_URL}/ingest",
+            data=json.dumps({"collection": COLLECTION,
+                             "documents": docs}).encode(),
+            headers={"content-type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            res = json.loads(r.read())
+        return not res.get("failed")
+    except urllib.error.HTTPError as e:
+        return None if e.code == 404 else False
+    except Exception:
+        return False
+
+
 def _save_cursor(host: str, user: bool, cursor: str,
                  tag: str = "") -> None:
     _ssh(host, f"mkdir -p ~/.cache; printf '%s' '{cursor}' "
@@ -456,37 +533,43 @@ def ship(host: str, dry: bool, max_docs: int, kinds: set | None = None,
         journals["user" if user else "sys"] = len(rows)
         legs["user" if user else "sys"] = leg
         last_ok = ""
-        for r in rows:
-            if sent >= max_docs:
-                break
+        i = 0
+        while i < len(rows) and sent < max_docs and not _STOP:
+            batch = rows[i:i + min(BATCH, max_docs - sent)]
+            i += len(batch)
             if dry:
-                sent += 1
+                sent += len(batch)
+                last_ok = batch[-1]["cursor"]
                 continue
-            meta = {"host": [r["host"]],
-                    "journal": [r["journal"]],
-                    "unit": [r["unit"]], "ts": [r["ts"]],
-                    "kind": [r["kind"]]}
-            if r.get("suppressed"):
-                meta["suppressed"] = [str(r["suppressed"])]
-            if not _post("/add", {
-                    "collection": COLLECTION, "key": r["key"],
-                    "lang": "en",
-                    "contentMd":
-                        f"`{r['ts']}` [{r['unit']}] {r['line']}",
-                    "meta": meta}):
+            res = _ingest([_doc(r) for r in batch])
+            if res is None:
+                # mddb too old for /v1/ingest — per-doc fallback,
+                # same stop-on-first-failure ordering rule
+                res = True
+                for r in batch:
+                    if not _post("/add",
+                                 {"collection": COLLECTION, **_doc(r)}):
+                        res = False
+                        break
+                    sent += 1
+                    last_ok = r["cursor"]
+            elif res:
+                sent += len(batch)
+                last_ok = batch[-1]["cursor"]
+            if not res:
                 fail += 1
                 # ordered lines — stop here; everything after last_ok
                 # replays next run
                 print(f"warn: {host}: mddb add failed — stopping "
                       f"(cursor replays unshipped)", file=sys.stderr)
                 break
-            sent += 1
-            last_ok = r["cursor"]
-        if not dry and last_ok:
-            if ha:
-                _save_ha_state(host, last_ok, tag)
-            else:
-                _save_cursor(host, user, last_ok, tag)
+            # checkpoint after every batch — a kill at TimeoutStartSec
+            # keeps all confirmed progress
+            if last_ok:
+                if ha:
+                    _save_ha_state(host, last_ok, tag)
+                else:
+                    _save_cursor(host, user, last_ok, tag)
         if fail:
             break
     return {"host": host, "shipped": sent, "failed": fail,
@@ -497,16 +580,18 @@ def ship(host: str, dry: bool, max_docs: int, kinds: set | None = None,
             "error": "mddb add failed" if fail else ""}
 
 
-def post_state(r: dict) -> None:
+def post_state(r: dict) -> bool:
     """Upsert the per-host ship heartbeat. Runs even when shipped=0 — a
     quiet host and a broken shipper must not look identical. Tagged lanes
     (e.g. severe) write `ship-<tag>/<host>` — separate key so the fast
     lane's counters never clobber the full lane's `ship/<host>` doc that
-    logs-kanban judges backlog/coverage against."""
+    logs-kanban judges backlog/coverage against. Returns the /add result:
+    a failed heartbeat is itself a write failure (the judge cannot see
+    this run at all), so main() counts it in the exit code."""
     run = r.get("run") or "full"
     key = f"ship/{r['host']}" if run == "full" else \
         f"ship-{run}/{r['host']}"
-    _post("/add", {
+    return _post("/add", {
         "collection": STATE_COLLECTION, "key": key,
         "lang": "en",
         "contentMd": json.dumps(r),
@@ -587,6 +672,7 @@ def main() -> int:
 
     hosts = [_local_name()] if args.self_host else \
         [x.strip() for x in args.hosts.split(",") if x.strip()]
+    add_failures = state_failures = 0
     for h in hosts:
         try:
             r = ship(h, args.dry_run, args.max_docs,
@@ -597,16 +683,23 @@ def main() -> int:
                      if r.get("suppressed") else "")
                   + f", {r['failed']} failed)"
                   + ("" if r.get("reachable") else " — unreachable"))
-            if not args.dry_run:
-                post_state(r)
+            add_failures += int(r.get("failed") or 0)
+            if not args.dry_run and not post_state(r):
+                state_failures += 1
         except Exception as e:
             print(f"warn: {h}: {e}", file=sys.stderr)
             if not args.dry_run:
-                post_state({"host": h, "shipped": 0, "failed": 0,
-                            "scanned": 0, "reachable": False,
-                            "journals": {}, "run": tag or "full",
-                            "error": str(e)[:200]})
-    return 0
+                ok = post_state({"host": h, "shipped": 0, "failed": 0,
+                                 "scanned": 0, "reachable": False,
+                                 "journals": {}, "run": tag or "full",
+                                 "error": str(e)[:200]})
+                if not ok:
+                    state_failures += 1
+    if add_failures or state_failures:
+        print(f"error: {add_failures} host-log add failure(s), "
+              f"{state_failures} heartbeat write failure(s) — cursor "
+              "held at last confirmed line", file=sys.stderr)
+    return 1 if (add_failures or state_failures) else 0
 
 
 if __name__ == "__main__":

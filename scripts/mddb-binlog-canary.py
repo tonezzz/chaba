@@ -25,6 +25,17 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
+REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO / "scripts" / "lib"))
+try:
+    from inbox_door import emit_doc, local_writable
+except ImportError:
+    def local_writable(repo):  # noqa: ANN001
+        return True
+
+    def emit_doc(doc, **kw):  # noqa: ANN001, ANN003
+        return "api-failed"
+
 LIMIT_BINLOG_BYTES = 1_073_741_824  # 1 GiB
 LIMIT_LSN_GAP = 5_000_000
 SEEN_FRESH_SECONDS = 120   # leader last_seen_at younger than this = stream connected
@@ -336,25 +347,46 @@ def main():
                                                   else "recurring")
                 inbox_dir = find_inbox_dir(args.inbox_dir)
                 if inbox_dir:
-                    try:
-                        path = write_inbox(inbox_dir, reasons, metrics,
-                                           breach_secs, now,
-                                           None if first else escalation)
-                        result["detail"] += (f" | inbox written ({escalation}): "
-                                             f"{path.name}")
-                        result["alerted"] = True
-                        state["alerted"] = True
-                        state["alerted_epoch"] = now.timestamp()
-                        state["alerted_at"] = ts_iso(now)
-                        state["alerted_file"] = path.name
-                        state["alerted_reasons"] = list(reasons)
-                        state["alerted_signature"] = signature
-                        state["alerted_items"] = sorted(
-                            alerted_items | set(signature))
-                        if new_items:
-                            result["detail"] += (f" [+{', '.join(new_items)}]")
-                    except Exception as e:
-                        result["detail"] += f" | inbox write failed: {e}"
+                    # inbox_dir is <repo>/docs/ssot/focus-inbox — only a
+                    # writable checkout may hold the file; elsewhere the
+                    # /inbox door lands it on the served checkout.
+                    inbox_repo = inbox_dir.parents[3]
+                    if not local_writable(inbox_repo):
+                        res = emit_doc(
+                            make_inbox_item(reasons, metrics, breach_secs,
+                                            now, None if first else escalation),
+                            session="mddb-binlog-canary", dedupe=False)
+                        result["detail"] += f" | inbox via /inbox: {res}"
+                        if res == "api":
+                            result["alerted"] = True
+                            state["alerted"] = True
+                            state["alerted_epoch"] = now.timestamp()
+                            state["alerted_at"] = ts_iso(now)
+                            state["alerted_file"] = "board-api:/inbox"
+                            state["alerted_reasons"] = list(reasons)
+                            state["alerted_signature"] = signature
+                            state["alerted_items"] = sorted(
+                                alerted_items | set(signature))
+                    else:
+                        try:
+                            path = write_inbox(inbox_dir, reasons, metrics,
+                                               breach_secs, now,
+                                               None if first else escalation)
+                            result["detail"] += (f" | inbox written ({escalation}): "
+                                                 f"{path.name}")
+                            result["alerted"] = True
+                            state["alerted"] = True
+                            state["alerted_epoch"] = now.timestamp()
+                            state["alerted_at"] = ts_iso(now)
+                            state["alerted_file"] = path.name
+                            state["alerted_reasons"] = list(reasons)
+                            state["alerted_signature"] = signature
+                            state["alerted_items"] = sorted(
+                                alerted_items | set(signature))
+                            if new_items:
+                                result["detail"] += (f" [+{', '.join(new_items)}]")
+                        except Exception as e:
+                            result["detail"] += f" | inbox write failed: {e}"
                 else:
                     result["detail"] += " | no focus-inbox dir found"
     else:

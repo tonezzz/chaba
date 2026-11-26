@@ -13,29 +13,6 @@ services:
     profiles:
       - home
       - mobile
-  - id: helm
-    name: Helm Dashboard
-    disabled: true
-    note: "Retired 2026-09-30 — superseded by project-health/focus/SSOT stack. Container removed."
-    type: http
-    url: http://100.68.142.13:3003/apps/helm
-    expected_status: 200
-    timeout: 5
-    category: web
-    profiles:
-      - home
-      - mobile
-    verification:
-      - "Check podman container: ssh tony-dell podman ps | grep helm"
-      - "Check podman logs: ssh tony-dell podman logs helm --tail 20"
-      - "Test direct podman container: curl -s http://100.68.142.13:3003/apps/helm/"
-      - "Test Caddy proxy: curl -s http://100.68.142.13:3003/apps/helm/"
-    recovery_actions:
-      - "Restart service: ssh tony-dell systemctl --user restart helm"
-      - 'Rebuild helm: ssh tony-dell "cd /home/tony/CascadeProjects/chaba-tony-dell/stacks/web
-        && docker compose up -d --build helm"'
-      - Check Caddy proxy configuration in stacks/web/Caddyfile
-      - "Verify env: ssh tony-dell podman exec helm env | grep LLM"
   - id: status-data-api
     name: Status Data API
     type: http
@@ -149,10 +126,12 @@ services:
     name: Playlived (tony-dell)
     type: http
     host: tony_dell
-    url: http://127.0.0.1:9230/sessions
+    url: http://tony-dell:9230/sessions
     expected_status: 200
     timeout: 5
     category: api
+    disabled: true
+    note: "Loopback-bound on tony-dell; not reachable from the health host over tailnet. Verified manually via ssh tony-dell curl/systemd status. Re-enable only after an explicit tailnet endpoint exists."
     profiles:
       - home
       - mobile
@@ -188,7 +167,7 @@ services:
     name: Postgres
     type: container
     container: chaba-postgres-16
-    host: tony_dell
+    host: idc03
     expected_state: running
     timeout: 5
     category: datastore
@@ -197,16 +176,16 @@ services:
       - mobile
     disabled: true
     note:
-      Postgres now runs in a rootless Podman container on tony_dell. Health is best inferred from yomi-api and the pg tailscale
-      endpoint. If both Postgres and Yomi are down on tony_dell, use the failover plan in docs/ssot/infrastructure/ssot.yomi-failover.yml.
+      Postgres now runs in a rootless Podman container on idc03 (migrated off tony-dell in OPS-0725). Health is best inferred from yomi-api and the pg tailscale
+      endpoint. If both Postgres and Yomi are down, use the failover plan in docs/ssot/infrastructure/ssot.yomi-failover.yml.
     verification:
-      - "Test container on tony_dell: podman ps | grep chaba-postgres-16"
-      - "Test port: nc -zv postgre 5432"
-      - "Check logs: podman logs chaba-postgres-16 --tail 20"
+      - "Test container on idc03: ssh idc03 podman ps | grep chaba-postgres-16"
+      - "Test port: nc -zv 100.102.134.91 5432"
+      - "Check logs: ssh idc03 journalctl --user -u chaba-postgres.service --tail 20"
     recovery_actions:
-      - "Restart container on tony_dell: podman restart chaba-postgres-16"
-      - "Check data volume: /home/tony/.config/containers/postgres/data"
-      - "If tony_dell cannot be recovered, run the failover script: /home/tony/.local/bin/yomi-failover-to-omen.sh"
+      - "Restart container on idc03: ssh idc03 systemctl --user restart chaba-postgres.service"
+      - "Check data volume: /home/tony/.local/share/containers/storage/volumes on idc03"
+      - "If idc03 cannot be recovered, run the failover script: /home/tony/.local/bin/yomi-failover-to-omen.sh"
   - id: weaviate
     name: Weaviate
     type: http

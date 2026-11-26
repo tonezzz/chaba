@@ -1,0 +1,113 @@
+id: timer-alert-idc02-mddb-backup
+title: Timer mddb-backup on idc02 failing
+column: done
+updated: 2026-11-26 20:31
+priority: high
+tags:
+- timer-alert
+- auto
+- by:timer-sentinel
+note: 'Last run (11-25 04:10) of `mddb-backup.service` on `idc02` result=exit-code — investigate journal: `journalctl
+  --user -u mddb-backup.service` on the host. See CMS `timer-timeline-idc02`.'
+ref: MEM-1341
+comms:
+- at: 2026-11-25 04:34
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-25 04:44
+  from: devin
+  text: '[still suspicious] Last run (11-25 04:10) of `mddb-backup.service` on `idc02` result=exit-code — investigate
+    journal: `journalctl --user -u mddb-backup.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-25 07:45
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 13:23
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-25 14:16
+  from: tony
+  text: '2026-11-25 14:2x (+07): TRIAGE: part of the MDDB backend degradation cluster. mddb-backup fails on ''filecopy-mddb-embed-20261125-0330.db.UNVERIFIED''
+    after 3 open-verify attempts. Same window as bank-inspect PUBLISH FAIL ''Remote end closed connection'', prune-old-docs
+    ''host-logs: list failed'', chaba-lessons-due read timeout and ada-market-report connection refused. Fix the
+    MDDB endpoint/embed path first; the downstream cards should then auto-heal via sentinel reconcile.'
+- at: 2026-11-25 14:34
+  from: tony
+  text: '2026-11-25 14:35 (+07): FIXED + VERIFIED. Root cause was NOT the backend: the nightly backup script on
+    idc02 still listed a retired mddb-embed:11028 container (no container, no listener), so native + filecopy both
+    failed and the unit exited 1. Removed that stale target from ~/mddb-backup.sh (backup at ~/mddb-backup.sh.bak-20261125-143311;
+    rollback: cp that file back). Reran the unit: Result=success, backup ok (native): mddb-ops-20261125-1433.db.gz
+    (81M).'
+- at: 2026-11-25 14:44
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-25 14:33 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-25 14:44
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:26
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:38
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:48
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:31
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+spec: Investigate the failure of `mddb-backup.service` on `idc02` by inspecting the user journal via `journalctl
+  --user -u mddb-backup.service` on host `idc02`. Target repo is `chaba` for runner alignment if needed, following
+  the CMS timeline `timer-timeline-idc02`. The runner must diagnose the exit-code failure and verify the root cause
+  from the logs. Done-condition is met when the failure reason is identified in the journal and documented on the
+  card with a clear remediation path.
+action:
+  status: done

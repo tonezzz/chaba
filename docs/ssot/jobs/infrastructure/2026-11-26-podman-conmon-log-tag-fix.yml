@@ -1,0 +1,67 @@
+id: podman-conmon-log-tag-fix-20261126
+title: Fix dispatch container failures on podman 4.9.3 hosts — drop log_tag from containers.conf
+date: 2026-11-26
+card: dispatch-podman-conmon-49-incompat
+ref: OPS-1437
+hosts: [con01, idc02, idc03]
+status: verified-live
+
+# ─── Root cause ────────────────────────────────────────────────────────────
+goal: >
+  All gpus=0 container dispatches to con01/idc02/idc03 failed with
+  "conmon:e] k8s-file doesn't support --log-tag / conmon failed: exit
+  status 1". Make dispatched containers runnable on those hosts again.
+
+root_cause:
+  - "con01/idc02/idc03 run podman 4.9.3 + conmon 2.1.10; omen/dell run podman 5.7.0 + conmon 2.1.13"
+  - "~/.config/containers/containers.conf on all four hosts sets log_driver = \"k8s-file\" AND log_tag = \"{{.Name}}/{{.ID}}\""
+  - "podman passes --log-tag to conmon when log_tag is configured; conmon 2.1.10's k8s-file driver rejects --log-tag (support added later); conmon 2.1.13 accepts it — which is why omen/dell worked"
+  - "scheduler._select_target_host has no container-runtime capability check, so CPU jobs landed on the broken hosts and DLQ'd after max_retries"
+
+# ─── What changed ──────────────────────────────────────────────────────────
+changes:
+  - "con01, idc02, idc03: removed the single line `log_tag = \"{{.Name}}/{{.ID}}\"` from ~/.config/containers/containers.conf (log_driver stays k8s-file)"
+  - "Backup of each original saved as ~/.config/containers/containers.conf.bak-20261126 on the same host"
+  - "tony-dell left unchanged — same file but conmon 2.1.13 supports --log-tag; minimal blast radius"
+  - "No repo/code changes: ~/ansible (idc02, untracked prototype) and .dispatch-scratch/ansible-mirror needed no diff — this was pure host config"
+
+provenance_caveat: >
+  The 1799-byte containers.conf (identical md5 13a262fe on con01/idc02/
+  idc03/tony-dell) appeared fleet-wide on 2026-11-26 between 11:24
+  (dell) and 12:35 (idc03); omen was NOT touched (its Aug-6 204-byte
+  file has no log_driver/log_tag). It is NOT managed by chaba ansible/
+  or ~/ansible on idc02 (grep for containers.conf/log_driver/log_tag
+  finds nothing) despite the 'Managed by Ansible' comment. Writer
+  unknown — if some session re-pushes this file, the log_tag line must
+  stay out or the bug returns on podman-4.9.3 hosts.
+
+# ─── Verification ──────────────────────────────────────────────────────────
+verification:
+  reproduce_before:
+    - "idc02: podman run -d alpine sleep -> 'conmon:e] k8s-file doesn't support --log-tag / conmon failed: exit status 1' (rc=126) — exact dispatch failure reproduced"
+  fix_tests_on_idc02:
+    - "--log-driver=journald detached run: OK (alternative, not used)"
+    - "CONTAINERS_CONF=<copy minus log_tag> + k8s-file detached run: OK — proved log_tag line is the trigger"
+  applied:
+    - "con01/idc02/idc03: grep confirms log_tag gone, log_driver=k8s-file kept; detached podman run OK on all three"
+  end_to_end:
+    - "ansible-playbook ~/ansible/playbooks/dispatch_job.yml -e job_id=conmon-verify-001 -e job_image=alpine -e job_cmd='sleep 20' -e target_group=con01 -e job_gpus=0 on idc02: PLAY RECAP ok=19 changed=2 failed=0 — the podman_container module path that was failing now completes; container ran on con01 (Exited, logs readable)"
+    - "idc03 playbook run blocked by eligibility gate (load1=8.63 > cpu budget — box genuinely busy, unrelated); raw detached podman run on idc03 verified OK"
+    - "dispatch:conmon-verify-001 Redis record cleaned up; test containers removed"
+
+# ─── Residual / follow-ups ─────────────────────────────────────────────────
+residual:
+  - "podman 4.9.3/conmon 2.1.10 on con01/idc02/idc03 is old — upgrading podman+conmon removes the landmine entirely (k8s-file+log_tag works on 2.1.13)"
+  - "scheduler._select_target_host still has no container-runtime capability check — a future host with an old runtime would silently DLQ CPU jobs again; optional hardening: sidecar tags like runtime=podman4.9 vs podman5 + require/exclude tag on jobs"
+  - "containers.conf provenance unknown (see caveat) — worth a card to find what pushed it fleet-wide at ~11:24-12:35 and either adopt it into ansible or remove the 'Managed by Ansible' fiction"
+  - "dispatch-scheduler.service on idc02 still runs pre-approval-gate queue_manager in memory (noted in 2026-11-26-dispatch-queue-approval-gate.yml) — unrelated but pending restart"
+
+rollback: >
+  cp ~/.config/containers/containers.conf.bak-20261126
+  ~/.config/containers/containers.conf on each host restores the
+  original (buggy-on-4.9.3) file.
+
+lessons:
+  - "conmon 2.1.10 k8s-file log driver rejects --log-tag; podman only sends it when containers.conf log_tag is set — deleting that one line fixes podman 4.9.3 without touching log_driver"
+  - "identical fleet-wide containers.conf mtimes (11:24-12:35) with no managing playbook = an untracked writer; grep BOTH ~/ansible and chaba ansible before assuming Ansible owns a 'Managed by Ansible' file"
+  - "dispatch_job.yml eligibility gates (load/mem) can mask container-runtime verification on busy hosts — verify with raw podman run + one module-path run on whichever host has headroom"

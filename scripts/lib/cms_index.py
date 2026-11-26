@@ -93,15 +93,22 @@ def stale(meta: dict, now: datetime.datetime) -> bool:
 
 
 def index_rows(docs: list[dict], now: datetime.datetime) -> list[dict]:
-    rows = []
+    # one row per key — prefer the en variant; a non-en doc emits only
+    # when the key has no en sibling, and only the first such variant
+    # seen. Lang mirrors carry no extra signal and double the row count
+    # (cctv pages flooded past MAX_ROWS and pushed real reports out);
+    # generalized from the old th-only skip so de/ja/… behave the same.
+    en_keys = {d.get("key") for d in docs
+               if (d.get("lang") or "en") == "en"}
+    rows, emitted = [], set()
     for d in docs:
-        # index the en variant only — a th mirror row carries no extra
-        # signal and doubles the row count (cctv pages flooded past
-        # MAX_ROWS and pushed real reports out of the index)
-        if d.get("lang") == "th":
+        key = d.get("key")
+        if key in emitted or (
+                (d.get("lang") or "en") != "en" and key in en_keys):
             continue
         meta = d.get("meta") or {}
-        if (meta.get("kind") or [""])[0] not in ("report", "page"):
+        if (meta.get("kind") or [""])[0] not in (
+                "report", "page", "memory-inspect"):
             continue
         if (meta.get("status") or [""])[0] in EXCLUDED_STATUS:
             continue
@@ -121,6 +128,7 @@ def index_rows(docs: list[dict], now: datetime.datetime) -> list[dict]:
             "public": (meta.get("public") or [""])[0].lower()
                       in ("true", "yes", "1"),
         })
+        emitted.add(key)
     rows.sort(key=lambda r: r["updated"], reverse=True)
     return rows
 

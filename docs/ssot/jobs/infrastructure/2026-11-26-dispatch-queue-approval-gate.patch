@@ -1,0 +1,772 @@
+diff --git a/approval_policy.yml b/approval_policy.yml
+new file mode 100644
+index 0000000..095f87a
+--- /dev/null
++++ b/approval_policy.yml
+@@ -0,0 +1,26 @@
++# Dispatch queue approval policy — RBAC-lite gate
++#
++# Card: dispatch-queue-approval-gate (follow-up to awx-aap-rbac-approval-gates,
++# decision: do-not-adopt-AWX — docs/ssot/jobs/infrastructure/
++# 2026-11-25-awx-aap-rbac-approval-gates-decision.yml in the chaba repo).
++#
++# Jobs matching require_approval_when are held in queue:pending:{priority}
++# with status=awaiting_approval — the scheduler never sees them until
++# `queue_manager.py approve <job_id> --by <approver>` LPUSHes them onto
++# queue:jobs:{priority}. Pending jobs expire to approval_state=expired
++# after ttl_sec (swept by the scheduler tick).
++#
++# NOTE: queue_manager.py reads this file without requiring PyYAML — keep to
++# the supported subset: nested maps, `- item` lists, `[a, b]` inline lists,
++# scalars, `#` comments.
++
++approval:
++  enabled: true
++  ttl_sec: 86400            # pending approvals expire after 24h
++  self_approve: true        # single-operator fleet: tony may approve own jobs
++  approvers:                # users allowed to run approve/reject
++    - tony
++  require_approval_when:
++    job_gpus_gt: 0          # any job requesting GPUs (job_gpus > 0)
++    priority_lte: 2         # priority 0-2 (CRITICAL=0, HIGH=1, and above-normal)
++    tags_any: [gpu]         # 'gpu' appearing in job_require_tags
+diff --git a/playbooks/queue_operations.yml b/playbooks/queue_operations.yml
+index 7facbb8..b4b7a37 100644
+--- a/playbooks/queue_operations.yml
++++ b/playbooks/queue_operations.yml
+@@ -13,6 +13,9 @@
+ #   ansible-playbook playbooks/queue_operations.yml -e operation=stats
+ #   ansible-playbook playbooks/queue_operations.yml -e operation=list -e queue_status=queued
+ #   ansible-playbook playbooks/queue_operations.yml -e operation=requeue -e job_id=job-abc123
++#   ansible-playbook playbooks/queue_operations.yml -e operation=pending
++#   ansible-playbook playbooks/queue_operations.yml -e operation=approve -e job_id=job-abc123
++#   ansible-playbook playbooks/queue_operations.yml -e operation=reject -e job_id=job-abc123 -e approval_reason="not needed"
+ 
+ - name: Queue Control Plane Operations
+   hosts: localhost
+@@ -27,6 +30,8 @@
+     queue_user: "{{ lookup('env', 'QUEUE_USER') or '' }}"
+     queue_limit: "{{ lookup('env', 'QUEUE_LIMIT') or 20 }}"
+     queue_complete_success: "{{ lookup('env', 'QUEUE_COMPLETE_SUCCESS') | default('true', true) | bool }}"
++    approval_by: "{{ lookup('env', 'QUEUE_APPROVER') or lookup('env', 'USER') or 'unknown' }}"
++    approval_reason: "{{ lookup('env', 'QUEUE_REASON') or '' }}"
+     cli_operation: "{{ operation }}"
+ 
+   tasks:
+@@ -204,6 +209,68 @@
+         msg: "{{ dlq_result.stdout }}"
+       when: operation == 'dlq'
+ 
++    # ─── APPROVAL GATE ────────────────────────────────────────────────────
++    - name: List jobs awaiting approval
++      ansible.builtin.command:
++        argv:
++          - python3
++          - /home/tony/ansible/queue/queue_manager.py
++          - pending
++          - --redis
++          - "{{ redis_host }}"
++      register: pending_result
++      changed_when: false
++      when: operation == 'pending'
++
++    - name: Display pending approvals
++      ansible.builtin.debug:
++        msg: "{{ pending_result.stdout }}"
++      when: operation == 'pending'
++
++    - name: Approve pending job
++      ansible.builtin.command:
++        argv:
++          - python3
++          - /home/tony/ansible/queue/queue_manager.py
++          - approve
++          - "{{ job_id }}"
++          - --by
++          - "{{ approval_by }}"
++          - --reason
++          - "{{ approval_reason | default('approved via queue_operations', true) }}"
++          - --redis
++          - "{{ redis_host }}"
++      register: approve_result
++      changed_when: true
++      when: operation == 'approve' and (job_id | length > 0)
++
++    - name: Report approval result
++      ansible.builtin.debug:
++        msg: "Approve {{ job_id }} as {{ approval_by }}: {{ approve_result.stdout }}"
++      when: operation == 'approve'
++
++    - name: Reject pending job
++      ansible.builtin.command:
++        argv:
++          - python3
++          - /home/tony/ansible/queue/queue_manager.py
++          - reject
++          - "{{ job_id }}"
++          - --by
++          - "{{ approval_by }}"
++          - --reason
++          - "{{ approval_reason | default('rejected via queue_operations', true) }}"
++          - --redis
++          - "{{ redis_host }}"
++      register: reject_result
++      changed_when: true
++      when: operation == 'reject' and (job_id | length > 0)
++
++    - name: Report rejection result
++      ansible.builtin.debug:
++        msg: "Reject {{ job_id }} as {{ approval_by }}: {{ reject_result.stdout }}"
++      when: operation == 'reject'
++
+     # ─── DEQUEUE (for worker) ─────────────────────────────────────────────
+     - name: Dequeue next eligible job
+       ansible.builtin.command:
+diff --git a/queue/queue_manager.py b/queue/queue_manager.py
+index 75986a4..a50a201 100644
+--- a/queue/queue_manager.py
++++ b/queue/queue_manager.py
+@@ -12,19 +12,30 @@ Redis-backed priority queue with:
+ 
+ Data Model:
+ - queue:jobs:{priority} -> Redis LIST (LPUSH/RPOP for FIFO within priority)
+-- queue:job:{job_id} -> Redis HASH (full job spec)
++- queue:pending:{priority} -> Redis LIST (jobs awaiting approval; moved to
++  queue:jobs:{priority} only by `approve`)
++- queue:job:{job_id} -> Redis HASH (full job spec + approval fields:
++  approval_state, approved_by, approved_at, approval_reason)
+ - queue:dispatch:{job_id} -> Redis HASH (dispatch record from playbook)
+ - queue:fairshare:{user} -> Redis SORTED SET (score = jobs_dispatched_recently)
+ - queue:dlq -> Redis LIST (failed jobs after max retries)
++
++Approval gate (card dispatch-queue-approval-gate): jobs matching
++approval_policy.yml `require_approval_when` are stored with
++status=awaiting_approval and LPUSHed to queue:pending:{priority} instead of
++queue:jobs:{priority}, so the scheduler never sees them until `approve`.
+ """
+ 
++import getpass
+ import json
+ import os
+ import redis
++import sys
+ import time
+ import uuid
+ from dataclasses import dataclass, asdict, field
+ from datetime import datetime
++from pathlib import Path
+ from typing import Any, Dict, List, Optional, Tuple
+ from enum import IntEnum
+ 
+@@ -59,6 +70,11 @@ class JobSpec:
+     max_retries: int = 2
+     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
+     metadata: Dict[str, Any] = field(default_factory=dict)
++    status: str = "queued"
++    approval_state: str = "not_required"
++    approved_by: str = ""
++    approved_at: str = ""
++    approval_reason: str = ""
+ 
+     def to_dict(self) -> Dict[str, Any]:
+         return asdict(self)
+@@ -68,6 +84,139 @@ class JobSpec:
+         return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+ 
+ 
++# ─── Approval policy ──────────────────────────────────────────────────────
++
++DEFAULT_APPROVAL_POLICY: Dict[str, Any] = {
++    "enabled": True,
++    "ttl_sec": 86400,          # pending approvals expire after 24h
++    "self_approve": True,      # single-operator fleet: submitter may approve own jobs
++    "approvers": ["tony"],
++    "require_approval_when": {
++        "job_gpus_gt": 0,      # job_gpus > 0
++        "priority_lte": 2,     # priority <= 2
++        "tags_any": ["gpu"],   # 'gpu' in job_require_tags
++    },
++}
++
++
++def caller_user() -> str:
++    """OS user behind this CLI invocation (SUDO_USER wins under sudo)."""
++    sudo_user = os.environ.get("SUDO_USER")
++    if sudo_user:
++        return sudo_user
++    try:
++        return getpass.getuser()
++    except Exception:
++        return os.environ.get("USER") or "unknown"
++
++
++def _yaml_scalar(s: str) -> Any:
++    s = s.strip()
++    if s.startswith("[") and s.endswith("]"):
++        inner = s[1:-1].strip()
++        return [_yaml_scalar(x) for x in inner.split(",")] if inner else []
++    if len(s) >= 2 and s[0] == s[-1] and s[0] in ("'", '"'):
++        return s[1:-1]
++    if s in ("true", "True"):
++        return True
++    if s in ("false", "False"):
++        return False
++    if s in ("null", "~", ""):
++        return None
++    try:
++        return int(s)
++    except ValueError:
++        pass
++    try:
++        return float(s)
++    except ValueError:
++        pass
++    return s
++
++
++def _parse_simple_yaml(text: str) -> Dict[str, Any]:
++    """Minimal YAML-subset loader for approval_policy.yml.
++
++    Supports nested maps, block lists (`- item`), inline `[a, b]` lists and
++    scalar values — everything the policy file needs — so queue_manager does
++    not depend on PyYAML being importable by the system python3.
++    """
++    raw = []
++    for line in text.splitlines():
++        stripped = line.strip()
++        if not stripped or stripped.startswith("#"):
++            continue
++        # strip trailing " # comment" (policy file uses no '#' inside values)
++        stripped = stripped.split(" #", 1)[0].rstrip()
++        if not stripped:
++            continue
++        raw.append((len(line) - len(line.lstrip(" ")), stripped))
++    if not raw:
++        return {}
++    pos = 0
++
++    def parse(indent: int):
++        nonlocal pos
++        if pos >= len(raw):
++            return None
++        if raw[pos][1].startswith("- "):
++            lst = []
++            while pos < len(raw) and raw[pos][0] == indent and raw[pos][1].startswith("- "):
++                lst.append(_yaml_scalar(raw[pos][1][2:]))
++                pos += 1
++            return lst
++        out = {}
++        while pos < len(raw):
++            ind, content = raw[pos]
++            if ind < indent or content.startswith("- "):
++                break
++            if ind > indent:
++                pos += 1
++                continue
++            key, _, val = content.partition(":")
++            key = key.strip().strip("'\"")
++            pos += 1
++            val = val.strip()
++            if val == "":
++                if pos < len(raw) and raw[pos][0] > indent:
++                    out[key] = parse(raw[pos][0])
++                else:
++                    out[key] = None
++            else:
++                out[key] = _yaml_scalar(val)
++        return out
++
++    return parse(raw[0][0]) or {}
++
++
++def load_approval_policy(path: Optional[str] = None) -> Dict[str, Any]:
++    """Load approval_policy.yml (repo root by default), merged over defaults."""
++    policy_path = Path(path) if path else Path(__file__).resolve().parent.parent / "approval_policy.yml"
++    data: Dict[str, Any] = {}
++    if policy_path.is_file():
++        try:
++            text = policy_path.read_text()
++            try:
++                import yaml  # type: ignore
++                data = yaml.safe_load(text) or {}
++            except ImportError:
++                data = _parse_simple_yaml(text)
++        except Exception as e:
++            print(f"queue_manager: warning: could not parse {policy_path}: {e}; "
++                  f"using built-in defaults", file=sys.stderr)
++            data = {}
++    pol = data.get("approval", data) if isinstance(data, dict) else {}
++    merged = dict(DEFAULT_APPROVAL_POLICY)
++    if isinstance(pol, dict):
++        merged.update({k: v for k, v in pol.items() if k != "require_approval_when"})
++        rules = dict(DEFAULT_APPROVAL_POLICY["require_approval_when"])
++        extra = pol.get("require_approval_when")
++        if isinstance(extra, dict):
++            rules.update(extra)
++        merged["require_approval_when"] = rules
++    return merged
++
++
+ class QueueManager:
+     def __init__(
+         self,
+@@ -76,26 +225,65 @@ class QueueManager:
+         redis_db: int = 0,
+         fairshare_window_sec: int = 3600,  # 1 hour window
+         max_jobs_per_user_per_window: int = 10,
++        policy_path: Optional[str] = None,
+     ):
+         self.r = redis.Redis(host=redis_host, port=redis_port, db=redis_db, decode_responses=True)
+         self.fairshare_window = fairshare_window_sec
+         self.max_jobs_per_user = max_jobs_per_user_per_window
++        self.policy = load_approval_policy(policy_path)
++        self.approval_ttl_sec = int(self.policy.get("ttl_sec", 86400))
++
++    # ─── Approval gate ────────────────────────────────────────────────────
++
++    def requires_approval(self, job: JobSpec) -> bool:
++        """True when approval_policy.yml gates this job."""
++        p = self.policy
++        if not p.get("enabled", True):
++            return False
++        rules = p.get("require_approval_when") or {}
++        if job.job_gpus > int(rules.get("job_gpus_gt", 0)):
++            return True
++        if job.priority <= int(rules.get("priority_lte", 2)):
++            return True
++        tags_any = rules.get("tags_any") or []
++        if tags_any and any(t in tags_any for t in (job.job_require_tags or [])):
++            return True
++        return False
++
++    def _approval_list_key(self, priority: int) -> str:
++        return f"queue:pending:{priority}"
+ 
+     # ─── Core Queue Operations ────────────────────────────────────────────
+ 
+     def enqueue(self, job: JobSpec) -> str:
+-        """Add job to priority queue. Returns job_id."""
++        """Add job to priority queue (or pending-approval list). Returns job_id."""
+         # Ensure job_id
+         if not job.job_id:
+             job.job_id = f"job-{uuid.uuid4().hex[:8]}"
+ 
++        # Attribute to the caller when no explicit user was set
++        if not job.user or job.user == "default":
++            job.user = caller_user()
++
++        # Gated jobs wait in queue:pending:{priority} — the scheduler only
++        # reads queue:jobs:{priority}, so they cannot dispatch until approve().
++        if self.requires_approval(job):
++            job.status = "awaiting_approval"
++            job.approval_state = "pending"
++            queue_key = self._approval_list_key(job.priority)
++            event = "awaiting_approval"
++        else:
++            job.status = "queued"
++            job.approval_state = "not_required"
++            queue_key = f"queue:jobs:{job.priority}"
++            event = "enqueued"
++
+         # Store job spec
+         job_key = f"queue:job:{job.job_id}"
+         self.r.hset(job_key, mapping={k: json.dumps(v) if isinstance(v, (list, dict)) else str(v) for k, v in job.to_dict().items()})
+         self.r.expire(job_key, 86400 * 7)  # 7 day TTL
+ 
+         # Add to priority queue (LPUSH = higher priority items at head)
+-        queue_key = f"queue:jobs:{job.priority}"
+         self.r.lpush(queue_key, job.job_id)
+ 
+         # Track in fair-share
+@@ -103,15 +291,147 @@ class QueueManager:
+ 
+         # Publish event for real-time consumers
+         self.r.publish("queue:events", json.dumps({
+-            "event": "enqueued",
++            "event": event,
+             "job_id": job.job_id,
+             "priority": job.priority,
+             "user": job.user,
++            "approval_state": job.approval_state,
+             "timestamp": datetime.now().isoformat()
+         }))
+ 
+         return job.job_id
+ 
++    def _decide_approval(self, job_id: str, by: str, approve: bool, reason: str = "") -> Dict[str, Any]:
++        """Shared approve/reject path. Returns a result dict; never raises for
++        expected states (missing job, wrong state, unauthorized approver)."""
++        approvers = [str(a) for a in (self.policy.get("approvers") or [])]
++        if by not in approvers:
++            return {"ok": False, "reason": "not_an_approver", "job_id": job_id,
++                    "detail": f"{by!r} is not in approval_policy approvers {approvers}"}
++
++        job_key = f"queue:job:{job_id}"
++        data = self.r.hgetall(job_key)
++        if not data:
++            return {"ok": False, "reason": "not_found", "job_id": job_id}
++        if data.get("approval_state") != "pending":
++            return {"ok": False, "reason": "not_pending", "job_id": job_id,
++                    "approval_state": data.get("approval_state", "unknown")}
++        if approve and data.get("user") == by and not self.policy.get("self_approve", False):
++            return {"ok": False, "reason": "self_approve_disabled", "job_id": job_id,
++                    "detail": f"{by} submitted this job and self_approve is off"}
++
++        try:
++            priority = int(data.get("priority", Priority.NORMAL))
++        except (TypeError, ValueError):
++            priority = int(Priority.NORMAL)
++
++        new_state = "approved" if approve else "rejected"
++        new_status = "queued" if approve else "rejected"
++        now = datetime.now().isoformat()
++
++        # Atomic: only one decision lands; loser sees state != pending.
++        lua = """
++        local state = redis.call('HGET', KEYS[1], 'approval_state')
++        if state ~= 'pending' then
++            return {0, state or 'missing'}
++        end
++        redis.call('LREM', KEYS[2], 0, ARGV[1])
++        if ARGV[2] == 'approved' then
++            redis.call('LPUSH', KEYS[3], ARGV[1])
++        end
++        redis.call('HSET', KEYS[1],
++            'approval_state', ARGV[2],
++            'status', ARGV[3],
++            'approved_by', ARGV[4],
++            'approved_at', ARGV[5],
++            'approval_reason', ARGV[6])
++        return {1, state}
++        """
++        script = self.r.register_script(lua)
++        res = script(
++            keys=[job_key, self._approval_list_key(priority), f"queue:jobs:{priority}"],
++            args=[job_id, new_state, new_status, by, now, reason],
++        ) or ["0", "missing"]
++        res = [str(x) for x in res]
++        if res[0] != "1":
++            return {"ok": False, "reason": "state_changed", "job_id": job_id,
++                    "approval_state": res[1] if len(res) > 1 else "unknown",
++                    "detail": "job changed state before decision landed; refresh and retry"}
++
++        # Keep the 7-day audit TTL fresh on decision
++        self.r.expire(job_key, 86400 * 7)
++        self.r.publish("queue:events", json.dumps({
++            "event": "approved" if approve else "rejected",
++            "job_id": job_id,
++            "by": by,
++            "reason": reason,
++            "timestamp": now,
++        }))
++        return {"ok": True, "job_id": job_id, "approval_state": new_state,
++                "status": new_status, "by": by, "reason": reason}
++
++    def approve_job(self, job_id: str, by: str, reason: str = "") -> Dict[str, Any]:
++        """Approve a pending job: move it to queue:jobs:{priority}."""
++        return self._decide_approval(job_id, by, approve=True, reason=reason)
++
++    def reject_job(self, job_id: str, by: str, reason: str = "") -> Dict[str, Any]:
++        """Reject a pending job: status=rejected, never dispatched."""
++        return self._decide_approval(job_id, by, approve=False, reason=reason)
++
++    def list_pending(self) -> List[JobSpec]:
++        """Jobs awaiting approval across all priorities."""
++        jobs = []
++        for p in range(10):
++            key = self._approval_list_key(p)
++            for job_id in self.r.lrange(key, 0, -1):
++                job = self.get_job(job_id)
++                if job and job.approval_state == "pending":
++                    jobs.append(job)
++        return jobs
++
++    def expire_pending_approvals(self) -> List[str]:
++        """Expire pending jobs older than approval_ttl_sec.
++
++        Called from the scheduler tick. Returns the expired job_ids.
++        Sets approval_state=expired (+status=expired) and publishes
++        queue:events {event: approval_expired}.
++        """
++        now = datetime.now()
++        expired: List[str] = []
++        for p in range(10):
++            pending_key = self._approval_list_key(p)
++            for job_id in self.r.lrange(pending_key, 0, -1):
++                job_key = f"queue:job:{job_id}"
++                data = self.r.hgetall(job_key)
++                if not data:
++                    self.r.lrem(pending_key, 0, job_id)
++                    continue
++                if data.get("approval_state") != "pending":
++                    self.r.lrem(pending_key, 0, job_id)
++                    continue
++                try:
++                    created = datetime.fromisoformat(str(data.get("created_at", "")))
++                except (TypeError, ValueError):
++                    continue
++                if (now - created).total_seconds() <= self.approval_ttl_sec:
++                    continue
++                ts = now.isoformat()
++                self.r.lrem(pending_key, 0, job_id)
++                self.r.hset(job_key, mapping={
++                    "approval_state": "expired",
++                    "status": "expired",
++                    "approval_reason": f"approval_ttl_exceeded ({self.approval_ttl_sec}s)",
++                    "expired_at": ts,
++                })
++                self.r.publish("queue:events", json.dumps({
++                    "event": "approval_expired",
++                    "job_id": job_id,
++                    "priority": p,
++                    "timestamp": ts,
++                }))
++                expired.append(job_id)
++        return expired
++
+     def dequeue(self, worker_id: str = "ansible-dispatcher") -> Optional[JobSpec]:
+         """Get next eligible job considering fair-share. Returns JobSpec or None."""
+         now = time.time()
+@@ -261,7 +581,9 @@ class QueueManager:
+         if status == "processing":
+             return {"ok": False, "reason": "running", "job_id": job_id, "status": status,
+                     "detail": "job is dispatched; stop the container on its host or let it finish"}
+-        if status not in ("queued", "waiting"):
++        if status == "awaiting_approval":
++            pass  # cancellable — lives in queue:pending:{priority}
++        elif status not in ("queued", "waiting"):
+             return {"ok": False, "reason": "terminal", "job_id": job_id, "status": status,
+                     "detail": f"job already {status}; use requeue to run it again"}
+ 
+@@ -269,14 +591,17 @@ class QueueManager:
+             priority = int(data.get("priority", Priority.NORMAL))
+         except (TypeError, ValueError):
+             priority = int(Priority.NORMAL)
+-        queue_key = f"queue:jobs:{priority}"
++        if status == "awaiting_approval":
++            queue_key = self._approval_list_key(priority)
++        else:
++            queue_key = f"queue:jobs:{priority}"
+         now = datetime.now().isoformat()
+ 
+         # Atomic check-and-cancel: bail if the scheduler claimed the job
+         # between our hgetall and now.
+         lua = """
+         local status = redis.call('HGET', KEYS[1], 'status')
+-        if status ~= 'queued' and status ~= 'waiting' then
++        if status ~= 'queued' and status ~= 'waiting' and status ~= 'awaiting_approval' then
+             return {0, status or 'unknown', 0}
+         end
+         local removed = redis.call('LREM', KEYS[2], 0, ARGV[1])
+@@ -295,6 +620,8 @@ class QueueManager:
+                     "detail": "job changed state before cancel landed; refresh and retry"}
+         removed = int(res[2]) if len(res) > 2 and res[2].lstrip("-").isdigit() else 0
+ 
++        if res[1] == "awaiting_approval":
++            self.r.hset(job_key, "approval_state", "cancelled")
+         self.release_reservation(job_id)
+         self.r.publish("queue:events", json.dumps({
+             "event": "cancelled",
+@@ -516,12 +843,18 @@ class QueueManager:
+         return JobSpec.from_dict(parsed)
+ 
+     def get_queue_stats(self) -> Dict[str, Any]:
+-        stats = {"by_priority": {}, "total_queued": 0, "processing": 0, "completed": 0, "failed": 0, "dlq": 0}
++        stats = {"by_priority": {}, "total_queued": 0, "pending_approval": 0,
++                 "processing": 0, "completed": 0, "failed": 0, "queued": 0,
++                 "awaiting_approval": 0, "rejected": 0, "expired": 0,
++                 "cancelled": 0, "waiting": 0, "dlq": 0}
+         for p in range(10):
+             count = self.r.llen(f"queue:jobs:{p}")
+             if count:
+                 stats["by_priority"][p] = count
+                 stats["total_queued"] += count
++            pcount = self.r.llen(self._approval_list_key(p))
++            if pcount:
++                stats["pending_approval"] += pcount
+ 
+         # Scan job statuses (sample for performance)
+         for key in self.r.scan_iter("queue:job:*", count=100):
+@@ -533,11 +866,14 @@ class QueueManager:
+         stats["reservations"] = self.list_reservations()
+         return stats
+ 
+-    def list_jobs(self, status: str = None, user: str = None, limit: int = 50) -> List[JobSpec]:
++    def list_jobs(self, status: str = None, user: str = None, limit: int = 50,
++                  approval_state: str = None) -> List[JobSpec]:
+         jobs = []
+         for key in self.r.scan_iter("queue:job:*", count=limit * 2):
+             job = self.get_job(key.split(":")[-1])
+-            if job and (status is None or job.metadata.get("status") == status) and (user is None or job.user == user):
++            if job and (status is None or job.status == status) \
++                    and (user is None or job.user == user) \
++                    and (approval_state is None or job.approval_state == approval_state):
+                 jobs.append(job)
+                 if len(jobs) >= limit:
+                     break
+@@ -589,7 +925,11 @@ def main():
+     enq.add_argument("--gpus", type=int, default=1)
+     enq.add_argument("--min-vram", type=int, default=8)
+     enq.add_argument("--priority", type=int, default=Priority.NORMAL, choices=range(10))
+-    enq.add_argument("--user", default="default")
++    enq.add_argument("--user", default=None,
++                     help="Submitting user (default: caller identity; "
++                          "must match caller unless --as-user is given)")
++    enq.add_argument("--as-user", action="store_true",
++                     help="Allow --user to differ from the caller identity")
+     enq.add_argument("--project", default="default")
+     enq.add_argument("--require-tags", action="append", default=[])
+     enq.add_argument("--exclude-tags", action="append", default=[])
+@@ -653,16 +993,44 @@ def main():
+     holds.add_argument("--redis", default="100.123.163.11")
+ 
+     # Cancel
+-    can = sub.add_parser("cancel", help="Cancel a queued/waiting job")
++    can = sub.add_parser("cancel", help="Cancel a queued/waiting/pending-approval job")
+     can.add_argument("job_id")
+     can.add_argument("--actor", default="cli", help="Recorded in the audit trail")
+     can.add_argument("--redis", default="100.123.163.11")
+ 
++    # Approval gate
++    app = sub.add_parser("approve", help="Approve a pending job (moves it to the dispatch queue)")
++    app.add_argument("job_id")
++    app.add_argument("--by", required=True, help="Approver identity (must be in approval_policy approvers)")
++    app.add_argument("--reason", default="")
++    app.add_argument("--redis", default="100.123.163.11")
++
++    rej = sub.add_parser("reject", help="Reject a pending job (never dispatched)")
++    rej.add_argument("job_id")
++    rej.add_argument("--by", required=True, help="Approver identity (must be in approval_policy approvers)")
++    rej.add_argument("--reason", default="")
++    rej.add_argument("--redis", default="100.123.163.11")
++
++    pen = sub.add_parser("pending", help="List jobs awaiting approval")
++    pen.add_argument("--redis", default="100.123.163.11")
++
+     args = parser.parse_args()
+ 
+     qm = QueueManager(redis_host=args.redis)
+ 
+     if args.command == "enqueue":
++        caller = caller_user()
++        requested = args.user
++        if args.as_user and not requested:
++            parser.error("--as-user requires --user <name>")
++        if requested in (None, "", "default"):
++            user = caller
++        elif requested != caller and not args.as_user:
++            print(f"error: --user {requested!r} does not match caller {caller!r}; "
++                  f"pass --as-user to override", file=sys.stderr)
++            sys.exit(2)
++        else:
++            user = requested
+         job = JobSpec(
+             job_id=args.job_id,
+             job_image=args.image,
+@@ -670,7 +1038,7 @@ def main():
+             job_gpus=args.gpus,
+             job_min_vram_gb=args.min_vram,
+             priority=args.priority,
+-            user=args.user,
++            user=user,
+             project=args.project,
+             job_require_tags=args.require_tags,
+             job_exclude_tags=args.exclude_tags,
+@@ -684,7 +1052,8 @@ def main():
+             reservation_id=args.reservation_id,
+         )
+         job_id = qm.enqueue(job)
+-        print(f"Enqueued: {job_id} (priority={args.priority})")
++        state = "awaiting approval" if job.approval_state == "pending" else "enqueued"
++        print(f"{state}: {job_id} (priority={args.priority}, user={job.user})")
+ 
+     elif args.command == "dequeue":
+         job = qm.dequeue(args.worker)
+@@ -701,7 +1070,7 @@ def main():
+     elif args.command == "list":
+         jobs = qm.list_jobs(status=args.status, user=args.user, limit=args.limit)
+         for job in jobs:
+-            print(f"{job.job_id} | {job.metadata.get('status', 'unknown'):12} | p={job.priority} | {job.user}:{job.project} | {job.job_image}")
++            print(f"{job.job_id} | {job.status:20} | appr={job.approval_state:13} | p={job.priority} | {job.user}:{job.project} | {job.job_image}")
+ 
+     elif args.command == "complete":
+         qm.complete_job(args.job_id, args.success)
+@@ -739,6 +1108,25 @@ def main():
+     elif args.command == "cancel":
+         print(json.dumps(qm.cancel_job(args.job_id, actor=args.actor)))
+ 
++    elif args.command == "approve":
++        print(json.dumps(qm.approve_job(args.job_id, by=args.by, reason=args.reason)))
++
++    elif args.command == "reject":
++        print(json.dumps(qm.reject_job(args.job_id, by=args.by, reason=args.reason)))
++
++    elif args.command == "pending":
++        jobs = qm.list_pending()
++        if not jobs:
++            print("No jobs awaiting approval")
++        for job in jobs:
++            age = ""
++            try:
++                age = f" age={int((datetime.now() - datetime.fromisoformat(job.created_at)).total_seconds())}s"
++            except (TypeError, ValueError):
++                pass
++            print(f"{job.job_id} | awaiting_approval | p={job.priority} | "
++                  f"{job.user}:{job.project}{age} | {job.job_image}")
++
+ 
+ if __name__ == "__main__":
+     main()
+\ No newline at end of file
+diff --git a/queue/scheduler.py b/queue/scheduler.py
+index 0843f39..972f047 100644
+--- a/queue/scheduler.py
++++ b/queue/scheduler.py
+@@ -107,6 +107,9 @@ class Scheduler:
+ 
+     def _tick(self):
+         """One scheduler iteration: dispatch new jobs + monitor active ones."""
++        # Expire pending approvals older than the policy TTL
++        self._sweep_expired_approvals()
++
+         # Monitor existing jobs first
+         self._monitor_jobs()
+ 
+@@ -131,6 +134,21 @@ class Scheduler:
+         future = self.executor.submit(self._dispatch_job, job)
+         future.add_done_callback(lambda f, j=job: self._dispatch_done(f, j))
+ 
++    def _sweep_expired_approvals(self):
++        """Move pending-approval jobs past approval_ttl_sec to expired.
++
++        Pending jobs live in queue:pending:{priority}, never in
++        queue:jobs:{priority}, so dequeue() needs no changes — this sweep
++        only maintains the approval_state audit trail.
++        """
++        try:
++            expired = self.qm.expire_pending_approvals()
++            for job_id in expired:
++                log.info(f"Approval expired for pending job {job_id} "
++                         f"(ttl={self.qm.approval_ttl_sec}s)")
++        except Exception as e:
++            log.error(f"Approval expiry sweep failed: {e}", exc_info=True)
++
+     def _select_target_host(self, job: JobSpec) -> Optional[str]:
+         """Select the best eligible host from sidecar metrics, considering
+         tags, GPU count/VRAM, load, and memory. Returns hostname or None.
+diff --git a/queue/test_gpu_reservations.py b/queue/test_gpu_reservations.py
+index 0f52f3e..4ecf2f2 100644
+--- a/queue/test_gpu_reservations.py
++++ b/queue/test_gpu_reservations.py
+@@ -94,6 +94,11 @@ def main():
+         qm.enqueue(job_a)
+         qm.enqueue(job_b)
+ 
++        # Approval gate: gpu jobs land in queue:pending until approved
++        for jid in ("test-rsv-a", "test-rsv-b"):
++            res = qm.approve_job(jid, by="tony", reason="reservation test")
++            check(f"approve {jid}", res.get("ok") is True, f"res={res}")
++
+         # First dequeue gets job A (FIFO within priority)
+         ja = qm.dequeue(worker_id="test")
+         check("dequeue returns job A first", ja is not None and ja.job_id == "test-rsv-a",

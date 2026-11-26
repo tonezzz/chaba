@@ -29,6 +29,61 @@ conventions:
   safe_to_parallel: true only when the step does not change live services and can
     be verified independently.
 
+automation:
+  post_restart_verify:
+    purpose: >-
+      Check-only post-restart verification — one automated pass per boot per
+      configured host, covering the machine-checkable parts of
+      transition.post_restart + host_notes.post_restart.
+    mechanism: >-
+      Chained first ExecStart ('-' prefixed) of
+      systemd/mcp-health-snapshot.service (timer: OnBootSec=5min,
+      OnUnitActiveSec=15min). The script compares
+      /proc/sys/kernel/random/boot_id against
+      ~/var/chaba/post-restart-verify/last-boot-id and runs the pass once per
+      boot; repeat timer fires inside the same boot no-op on that state, so
+      there is no duplicate spam. The verifier runs before the snapshot
+      ExecStart so the snapshot's known exit-nonzero quirk cannot skip it.
+      The health.check step itself is covered by the sibling ExecStart
+      (scripts/mcp-health-snapshot.mjs).
+    script: scripts/post-restart-verify.py
+    state_dir: ~/var/chaba/post-restart-verify
+    report: >-
+      ~/var/chaba/health/post-restart-verify-<host>-<bootid8>.json plus
+      post-restart-verify-latest.json; one result record is also appended to
+      ~/var/chaba/reports/timeline.jsonl.
+    findings: >-
+      On must-severity failures, one aggregate focus-inbox entry via board-api
+      POST /inbox, fingerprinted per boot + fail-set (host-ready-check
+      pattern). Warn-severity failures stay in the JSON report only.
+    remediation: >-
+      NONE — check-only. Fixes are manual per docs/kb/host-reboot-verification.md;
+      e.g. mcp.devin's "restart the HA container" is NOT automated.
+    configured_hosts: [tony_omen, tony_dell]
+    severity_model: >-
+      must = failing check produces an inbox finding and overall=fail;
+      warn = recorded in the report only (expected post-boot lag, e.g. mddb's
+      4-8 min init, seat/display variance).
+    checks_common:
+      - id: tailscale-up
+        label: Tailscale up with a 100.x address
+        type: command
+        shell: tailscale ip -4
+        expect_re: '^100\.'
+        severity: must
+      - id: failed-user-units
+        label: No unexpected failed user units
+        type: failed_units
+        scope: user
+        severity: warn
+        ignore_re:
+          - '^apport'
+          - 'NetworkManager-wait-online'
+          - 'xdg-desktop-portal'
+          - 'xfce4-notifyd'
+          - '^snapd\.'
+          - 'grub-initrd-fallback'
+
 checklists:
   pre_shutdown:
     id: transition.pre_shutdown
@@ -53,7 +108,7 @@ checklists:
         must: true
       - id: services.stop
         label: Stop non-essential services
-        action: Stop optional services such as playlived, michael-dev, and experimental GPU jobs unless the operator marks them critical.
+        action: Stop optional services such as playlived, mn-ha-dev, and experimental GPU jobs unless the operator marks them critical.
         ssot_ref: docs/ssot/infrastructure/ssot.services.yml
         must: false
       - id: backups.verify
@@ -80,7 +135,7 @@ checklists:
         must: true
       - id: mcp.devin
         label: Verify Devin MCP tools
-        action: Run mcp_list_tools for each server in ~/.config/devin/mcp_config.json and mcp-health quick_health. If tony-ha (tony-omen:9584) or michael-dev (idc02:9585) does not list tools, restart the HA container on that host and retry.
+        action: Run mcp_list_tools for each server in ~/.config/devin/mcp_config.json and mcp-health quick_health. If tony-ha (tony-omen:9584) or mn-ha-dev (mn01:9585) does not list tools, restart the HA container on that host and retry.
         ssot_ref: docs/ssot/infrastructure/ssot.mcp-tools.yml
         must: true
       - id: services.start
@@ -387,13 +442,73 @@ host_notes:
       - >-
         systemd --user units: mcp-debug-sse, yomi timers, chaba-audit timers,
         mcp-health timer, tony-dell-health-snapshot timer.
-      - Home Assistant + michael-dev reachable; ha-live via Tailscale Serve 8444.
+      - Home Assistant + mn-ha-dev reachable; ha-live via Tailscale Serve 8444.
       - gpu-queue on tony-dell:3001 and Caddy on tony-dell:8080 answer.
       - Re-run mcp-health; compare against pre_shutdown snapshot.
       - >-
         Verify Devin MCP server endpoints; mcp_list_tools for tony-ha (tony-omen:9584),
-        michael-dev (idc02:9585), michael-ha (100.80.105.88:9584), and all other servers.
+        mn-ha-dev (mn01:9585), michael-ha (100.80.105.88:9584), and all other servers.
         Restart the HA container on its current host if the MCP port is not listening.
+    post_restart_checks:
+      - id: podman-core
+        label: Core rootless containers running
+        type: podman
+        containers: [redis, postgres, weaviate, raceman]
+        severity: must
+      - id: podman-mddb
+        label: mddb container running (4-8 min init is normal)
+        type: podman
+        containers: [mddb]
+        severity: warn
+      - id: gpu-queue
+        label: gpu-queue answers :3001
+        type: http
+        url: http://127.0.0.1:3001/health
+        expect_status: 200
+        severity: must
+      - id: yomi-api
+        label: yomi-api answers :3000
+        type: http
+        url: http://127.0.0.1:3000/api/yomi/health
+        expect_status: 200
+        severity: must
+      - id: caddy-tailnet
+        label: Caddy serves apps via tailnet :8080
+        type: http
+        url: https://tony-dell.taila0626a.ts.net:8080/apps/tony-live/
+        expect_status: 200
+        timeout: 15
+        severity: must
+      - id: ha-live
+        label: ha-live via Tailscale Serve :8444
+        type: http
+        url: https://tony-dell.taila0626a.ts.net:8444
+        expect_status: [200, 401, 403]
+        timeout: 15
+        severity: warn
+      - id: xorg-seat
+        label: Physical seat Xorg :1 running
+        type: command
+        shell: "pgrep -a Xorg | grep -q ':1'"
+        severity: warn
+      - id: seat-session
+        label: Seat session unit active (lxqt-seat or xfce-seat)
+        type: command
+        shell: "systemctl --user is-active lxqt-seat.service xfce-seat.service 2>/dev/null | grep -qx active"
+        severity: warn
+      - id: barrier-pin-vt
+        label: barrier-pin-vt.timer active (VT pin helper; Barrier KVM retired)
+        type: systemd
+        unit: barrier-pin-vt.timer
+        scope: user
+        expect: active
+        severity: warn
+      - id: display-dp2
+        label: Monitor connected on iGPU card1-DP-2
+        type: file
+        path: /sys/class/drm/card1-DP-2/status
+        expect: connected
+        severity: warn
     refs:
       - docs/ssot/infrastructure/ssot.tony-dell-failover.yml
       - docs/ssot/infrastructure/ssot.yomi-failover.yml
@@ -434,12 +549,61 @@ host_notes:
         returns valid JSON with `host.temperatures` and `host.cpu_freq`.
       - sensor-reader container on :8001, Google Drive mount, Ollama, GPU Queue.
       - Re-run mcp-health; expect intentionally-off services to stay off.
+    post_restart_checks:
+      - id: tailscale-ip
+        label: Tailscale online as 100.75.102.88
+        type: command
+        shell: tailscale ip -4
+        expect_re: '100\.75\.102\.88'
+        severity: must
+      - id: gpu-present
+        label: nvidia-smi sees the GPU
+        type: command
+        shell: nvidia-smi -L
+        expect_re: 'GPU'
+        severity: must
+      - id: cpufreq-service
+        label: cpufreq-limit.service active (system)
+        type: systemd
+        unit: cpufreq-limit.service
+        scope: system
+        expect: active
+        severity: must
+      - id: cpufreq-cap
+        label: CPU cap is 2.00GHz (scaling_max_freq=2000000)
+        type: file
+        path: /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+        expect: "2000000"
+        severity: must
+      - id: sensor-reader
+        label: sensor-reader answers :8001
+        type: http
+        url: http://100.75.102.88:8001/health
+        expect_status: 200
+        severity: must
+      - id: weaviate-index-timer
+        label: weaviate-index.timer active
+        type: systemd
+        unit: weaviate-index.timer
+        scope: user
+        expect: active
+        severity: warn
+      - id: gdrive-mount
+        label: Google Drive mounted
+        type: mount
+        expect_re: '(?i)gdrive'
+        severity: warn
+      - id: dell-reachable
+        label: tony-dell reachable over tailnet
+        type: command
+        shell: ping -c 2 -W 3 tony-dell
+        severity: warn
     refs:
       - docs/ssot/infrastructure/ssot.health.home.system.yml
       - docs/ssot/infrastructure/ssot.gpu.yml
       - docs/ssot/infrastructure/ssot.night-jobs.tony-omen.yml
 metadata:
   created: "2026-09-07"
-  last_updated: "2026-09-11"
+  last_updated: "2026-11-23"
   maintainer: tony
   status: active

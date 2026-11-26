@@ -1,0 +1,216 @@
+id: cms-auto-cctv-roster
+title: CMS automation `cctv-roster` stale
+brief: A scheduled report-page job ('cctv-roster') is stale. Re-run it or check the generator — details in the note.
+column: done
+review_kind: triage
+generated: cms-auto-health
+priority: medium
+note: 'Recovering: cctv-roster healthy for 1/2 ticks — auto-closes when the streak holds.'
+help: 'Trigger a manual regen: cms_automation run_now for ''cctv-roster'' (or POST /api/cms/pages/cctv-roster/regenerate).
+  If it repeats, check the page''s generator command in the registry doc.'
+updated: 2026-11-26 19:41
+comms:
+- at: 2026-11-25 09:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:56
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 09:30
+  from: tony
+  text: '[triage 2026-11-26] Still active: last_run 2026-11-25T01:00Z, 1254m overdue against a 60m interval. CMS
+    automation has not run for ~21h; needs scheduler/job repair on idc03.'
+- at: 2026-11-26 15:14
+  from: tony
+  text: '[triage 15:15 +07] Root cause found: MDDB registry entry cctv-roster is enabled with interval_min=60, but
+    its generator timer cam-wall-cms-vps.timer is DISABLED on idc03. Last generator run 2026-11-25 08:20 +07 (01:20Z)
+    ended with several "mddb add ... Remote end closed connection without response" errors before the timer was
+    disabled. This is an intentionally parked scheduler, not an acute break; re-enabling it needs approval because
+    of those prior MDDB write failures. Holding pending that deci'
+- at: 2026-11-26 15:15
+  from: tony
+  text: put on hold
+- at: 2026-11-26 15:16
+  from: chaba
+  text: classified as free_lane (kw:report conf 1.00)
+- at: 2026-11-26 15:16
+  from: chaba
+  text: queued for processing
+- at: 2026-11-26 15:16
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-26 15:16
+  from: chaba
+  text: '[auto-dispatch] wave 14 (2026-11-26 15:16): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-26 15:16
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-26 15:16
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-26 15:17
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.94 > 0.7)'
+- at: 2026-11-26 15:17
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-26 15:17
+  from: chaba
+  text: 'kk-mac defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-26 15:18
+  from: chaba
+  text: started devin-task-20261126-151845-cms-automation-cctv-roster-sta on tony-macbook (dispatch)
+- at: 2026-11-26 15:18
+  from: chaba
+  text: 'primer injected 8 lesson(s): Drift flags flap transiently: chaba-repo-sync updates the checkout copy, and
+    unt; VERIFY-QUEUE triage can re-hold an already-merged card on a stale "no committed ; `_self_stale_check`/`_claimable`
+    gate every claim on installed==checkout-ref byt; idc02''s kanban-dispatch.service was a linked unit running
+    a stale scripts/-only ; [ada-nest-drive-store-hardening-stale-cla-558c90] primer injected 8 lesson(s): [; [audit-miss-cms-page-devin-session-audit-2026-10-17]
+    primer i'
+- at: 2026-11-26 15:21
+  from: devin
+  text: dispatch picked up — verifying roster-audit generator state before touching anything
+- at: 2026-11-26 15:26
+  from: devin
+  text: 'Resolved as intentionally-parked, not broken. Verified via MDDB + timer-timeline pages: cam-wall-roster-audit.timer
+    is disabled on tony-omen (only remaining host; tony-dell unit retired) after MDDB write failures — matches Tony''s
+    15:15 hold. Actions: (1) live registry ada-cms-automation/cctv-roster set enabled:false + disabled_reason so
+    cms-auto-health judges ok and the card auto-closes; (2) ssot.audit.hosts.yml census corrected — dell roster-audit
+    -> expected_absent, omen roster-audit + idc03 c'
+- at: 2026-11-26 15:26
+  from: devin
+  text: 'Resolved as intentionally-parked, not broken. Verified via MDDB + timer-timeline pages: cam-wall-roster-audit.timer
+    is disabled on tony-omen (only remaining host; tony-dell unit retired) after MDDB write failures - matches Tony''s
+    15:15 hold. Actions: (1) live registry ada-cms-automation/cctv-roster set enabled:false + disabled_reason so
+    cms-auto-health judges ok and the card auto-closes; (2) ssot.audit.hosts.yml census corrected - dell roster-audit
+    -> expected_absent, omen roster-audit + idc03 c'
+- at: 2026-11-26 15:29
+  from: tony-macbook
+  text: 'finished (ok): exit=0 same retirement class; the MDDB write-failure cause still open) are in the trail
+    doc. | devin-task-20261126-15184'
+- at: 2026-11-26 15:29
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-26 15:29
+  from: chaba
+  text: "checkpoint failed: commit: \U0001F50D Validating SSOT files...\n\U0001F4CB Found SSOT files to validate:\ndocs/ssot/ssot.dev-system.assessment.yml\n\U0001F527
+    Checking YAML syntax...\n\e[0;32m✅ YAML syntax valid\e[0m\n\U0001F527 C"
+- at: 2026-11-26 15:29
+  from: chaba
+  text: banked 760 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 15:29
+  from: chaba
+  text: pushed dispatch/20261126-151845-cms-automation-cctv-roster-sta to origin
+- at: 2026-11-26 15:29
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-26 15:29
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-26 15:39
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261126-151845-cms-automation-cctv-roster-sta on tony-macbook still
+    dirty — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-26 16:51
+  from: chaba
+  text: 'merge-sweep: merged e70e5783 (dispatch/20261126-151845-cms-automation-cctv-roster-sta from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261126-151845-cms-automation-cctv-roster-sta.md)
+    — held in review (review_kind=triage — human-gated)'
+- at: 2026-11-26 16:51
+  from: local
+  text: 'pub milestone: card verified: cms-auto-cctv-roster on idc03 — merged e70e5783 (dispatch/20261126-151845-cms-automation-cctv-roster-sta
+    from tony-macbook) -> origin/master — verified — merged e70e5783 (dispatch/20261126-151845-cms-automation-cctv-roster-sta
+    from tony-macbook) -> origin/master — verified — held in review (review_kind=triage — h [evt-36f8282fefa93b0c]'
+- at: 2026-11-26 16:51
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261126-151845-cms-automation-cctv-roster-sta,
+    branch dispatch/20261126-151845-cms-automation-cctv-roster-sta on tony-macbook'
+- at: 2026-11-26 16:54
+  from: chaba
+  text: 'merge-sweep: verified — held in review (review_kind=triage — human-gated)'
+- at: 2026-11-26 17:11
+  from: tony
+  text: '[triage 16:50 +07] Verified and landed: session commits 1c9dc82cd43 (park cctv-roster: registry enabled:false
+    + census reflects disabled timers) and 7cd9283e367 (outcome doc) merged to origin/master as e70e5783b4; worktree
+    and branch GC removed; card verified=True. review_kind=triage was the only hold. Closing per Tony decision.'
+- at: 2026-11-26 17:11
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  status: done
+  type: dispatch
+  lane: free_lane
+  lane_source: kw
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
+  result: 'exit=0 same retirement class; the MDDB write-failure cause still open) are in the trail doc. | devin-task-20261126-151845-cms-automation-cctv-roster-sta.service:
+    Consumed 1min 14.855s CPU time over 8min 34.262s wall clock time, 805.2M memory peak.'
+  verified: true
+  sweep:
+    dirty: 1
+    close_held: 2026-11-26 16:55
+claim:
+  since: 2026-11-26 15:17
+ok_streak: 1

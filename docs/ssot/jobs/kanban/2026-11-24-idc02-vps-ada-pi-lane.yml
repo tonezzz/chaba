@@ -1,0 +1,102 @@
+title: idc02 as VPS-grade ada-pi dispatch failover lane
+subtitle: vps label + push:ada-voice on runner-agent/kanban-dispatch, canary OPS-0029
+icon: server
+version: 1
+
+card: idc02-second-ada-pi-lane
+date: 2026-11-24
+dispatch: 20261124-150259-goal-a-vps-grade-fallback-runn
+ops: OPS-0599
+
+summary: |
+  Goal (card spec): a VPS-grade fallback runner for ada-pi dispatches
+  so tony-dell isn't single-point. idc02 already ran 5+ ada-pi
+  dispatches (29 ada-pi/ada-voice devin-dispatch task dirs on the
+  host) and carries runner-agent.timer — the lane mostly existed; this
+  card made it addressable and verified it end-to-end.
+
+  Dell stays the canonical edit point — this is a failover lane, not a
+  second source of truth. ada-voice SSOT remains GitHub origin; both
+  hosts push dispatch branches to the same remote and close-out merges
+  land on origin/main identically.
+
+changes: |
+  Host config (idc02, ~/.config/systemd/user/):
+  - runner-agent.service.d/vps-lane.conf — RUNNER_LABELS now
+    ssd,always-on,cpu,small,push:chaba,push:ada-voice,vps. 'vps' is the
+    fleet-unique opt-in label (cards pin via action.labels:[vps]);
+    'staging' was rejected because idc02's ada-voice checkout IS the
+    staging checkout — the label would misdescribe scope. Drop-in sorts
+    last so its RUNNER_LABELS wins over ada-pilot.conf's.
+  - kanban-dispatch.service.d/vps-lane.conf — KANBAN_HOST_LABELS mirrors
+    the same set; ExecStart repointed off ~/CascadeProjects/chaba-tony-dell
+    (a scripts/-only scaffold carrying an Oct-16 kanban-dispatch.py and
+    no docs/ssot for the autonomy policy file — the unit was un-runnable)
+    onto the hourly-synced exec checkout ~/CascadeProjects/chaba; added
+    BOARD_API=https://idc03.taila0626a.ts.net:10000 (script default
+    127.0.0.1:8787 has no listener on idc02). Unit stays manual-drain
+    (no timer) — runner-agent.timer is the automated claimer.
+
+  SSOT (this worktree):
+  - docs/ssot/kanban/ssot.kanban.yml runner_fleet prose — idc02 label
+    list updated (fixes the queue-time 'unclaimable by declared fleet'
+    warning on vps-labeled cards).
+  - docs/ssot/infrastructure/ssot.audit.hosts.yml idc02 — runner-agent.timer
+    note records the label set; runner-agent.service and
+    kanban-dispatch.service declared in expected_services.
+
+verification: |
+  (b) checkout/remote — ~/CascadeProjects/ada-pi is a symlink to
+  ada-voice; origin fetch=https://github.com/tonezzz/ada-voice.git,
+  pushurl=git@github-ada-pi:tonezzz/ada-pi.git (ssh alias -> github.com,
+  dedicated key). `git push --dry-run origin HEAD:refs/heads/__runner-push-probe`
+  rc=0; ls-remote main SHA identical on both URLs (GitHub rename
+  redirect). devin-dispatch built-in repo table resolves ada-pi and
+  ada-voice -> ~/CascadeProjects/ada-voice@main; worktree flow is
+  `git worktree add ~/CascadeProjects/dispatch-wt-<id> -b dispatch/<id>
+  origin/main` (proven by existing dispatch-wt-* ada-voice worktrees).
+  Merge test gate for ada-pi = `pytest tests -k 'not slow'` under
+  ~/CascadeProjects/ada-voice/.venv (pytest 9.2.0 present).
+
+  (c) canary — first queued as idc02-vps-lane-canary (OPS-0029,
+  priority:low) but starved in claim order (~9 cards ahead; defer
+  comms kept refreshing `updated`). Re-queued as
+  idc02-vps-lane-canary-hv (OPS-0034, priority:high), low card closed.
+  RESULT: PASS end-to-end at 15:56 —
+  claim: idc02 runner-agent claimed 15:51 (only host carrying 'vps';
+  idc03/mn01/con01 correctly deferred 'unclaimable by declared fleet'
+  until the runner_fleet prose merge propagates);
+  run: devin-task-20261124-155106, repo=ada-pi, executor=devin,
+  model=swe-2-flash-medium (free_lane devin pick), dispatch-wt
+  worktree cut from origin/main;
+  session: committed docs/canary/idc02-vps-lane-hv.md (4da86c9), exit 0;
+  close-out: branch pushed to origin via github-ada-pi ssh, merge
+  --no-ff 2e9a1eeb -> origin/main, test gate PASSED
+  (ada-voice/.venv pytest tests -k 'not slow', 206.1s), worktree GC'd;
+  consumer proof: origin/main:docs/canary/idc02-vps-lane-hv.md reads
+  'idc02 vps-lane canary — 2026-11-24'.
+
+result: |
+  Lane verified. To fail over ada-pi/ada-voice dispatches to idc02:
+  queue the card with action.labels containing 'vps' (host-unique
+  opt-in) — or let normal unlabeled ada-pi cards ride the shared
+  queue; idc02 now passes the push guard for ada-voice so it competes
+  for them like tony-dell does. Dell remains the canonical edit point;
+  both hosts push dispatch branches to the same GitHub origin and
+  close-out merges land identically. Caveats: idc02 cap is 3 shared
+  with all its other dispatch work (not ada-pi-reserved), and its
+  ~/CascadeProjects/ada-voice is the staging checkout — dispatch
+  worktrees are siblings under ~/CascadeProjects/dispatch-wt-*, they
+  do not dirty it.
+
+lessons:
+  - "idc02's kanban-dispatch.service was a linked unit running a stale
+    scripts/-only scaffold (chaba-tony-dell has no docs/ssot) with a dead
+    127.0.0.1:8787 API default — it only 'worked' because the load gate
+    stopped it first. Drop-in repoint + BOARD_API made it real; always
+    check ExecStart provenance before arming labels on a linked unit."
+  - "runner-agent claim order is priority high>medium>absent>low then
+    oldest updated — and every fleet 'X defers: unclaimable' comms
+    refreshes the card's updated stamp, so a low-priority labeled
+    canary on a busy host starves indefinitely. Queue canaries at
+    priority:high (or expect to re-queue)."

@@ -25,6 +25,8 @@ close_out also banks each session outcome doc's ``lessons:`` lines into
 the mddb devin-handoff collection (cross-repo-lesson-harvest) — the
 repo-agnostic corpus lesson_primer reads back over /v1/search.
 """
+from __future__ import annotations
+
 import base64
 import json
 import os
@@ -82,10 +84,6 @@ except Exception:  # executor optional — a declared goal set then blocks
 BUILTIN_REPOS = {
     "chaba": ("~/CascadeProjects/chaba", "master"),
     "ada-voice": ("~/CascadeProjects/ada-voice", "main"),
-    # legacy alias for cards/dispatches still naming the pre-rename repo
-    # (kanban ada-pi-rename-ada-voice, 2026-10-14) — retire once no card
-    # carries action.repo: ada-pi
-    "ada-pi": ("~/CascadeProjects/ada-voice", "main"),
     "sunsynk-card": ("~/CascadeProjects/sunsynk-power-flow-card", "main"),
     "mddb-fork": ("~/CascadeProjects/mddb-fork", "main"),
     "gods-eye-view": ("~/gods-eye-view", "main"),
@@ -146,20 +144,41 @@ def rate_limit_hit(text: str) -> str:
 # --- lane -> cheapest-executor routing (jev-pilot Phase 2, 2026-10-25) --
 # Canonical home for the lane tables + classifier so a queued card's lane
 # resolves to DISPATCH_MODEL identically whichever claimer wins the race —
-# kanban-dispatch (served host) or runner-agent (a remote host). Model
-# lanes map to `devin --model` ids; codemod -> script executor, manual ->
-# Tony's hands (never dispatched). jev-model-chain-probe found this gap:
-# the wiring originally lived only in kanban-dispatch, so cards claimed
-# by runner-agent always launched on the devin default model.
+# kanban-dispatch (served host) or runner-agent (a remote host). codemod
+# -> script executor, manual -> Tony's hands (never dispatched).
+# jev-model-chain-probe found this gap: the wiring originally lived only
+# in kanban-dispatch, so cards claimed by runner-agent always launched on
+# the devin default model.
+#
+# Executor-aware model ids (devin-executor-model-routing, DEV-0958; Tony
+# answer executor-split-no-paid 2026-10-28): LANE_MODELS holds
+# LiteLLM-proxy aliases — they resolve ONLY on executors that speak
+# provider/model ids (the opencode lane). The devin CLI accepts only ids
+# from `devin models list`; DEVIN_LANE_MODELS holds the devin-native pick
+# per lane and every entry MUST be one (devin-dispatch.sh's model
+# preflight re-validates against the live list before systemd-run). A
+# litellm/* id handed to `devin --model` exits 'Unknown model' inside
+# the unit — the 2026-10-28 tony-macbook Cline/Nest dispatch died that
+# way pre-inference. paid_frontier is deliberately ABSENT from
+# DEVIN_LANE_MODELS: the paid route requires explicit budget approval,
+# so the lane keeps the devin default rather than silently mapping to a
+# billable model. For the Cline pilot the no-token-cost route is local
+# qwen3:4b via the Nest adapter (PR #45), not a dispatch lane.
 LANE_MODELS = {
-    "free_lane": "litellm/gemini-3.5-flash-lite",
-    # was litellm/or-claude-fable-5.1 — that alias was never deployed
-    # on the litellm proxy (OPS-1021 escalation, 2026-11-02);
-    # gemini-3.5-flash is the strongest served non-lite model
+    # OPS-1363 2026-11-26: free_lane offloaded to the $0 agent-local alias
+    # (S1 gate PASS 16/16, 80.9s, $0.00). Was litellm/gemini-3.5-flash-lite;
+    # before that or-claude-fable-5.1 (never deployed — OPS-1021).
+    "free_lane": "litellm/agent-local",
     "paid_frontier": "litellm/gemini-2.5-flash",
 }
+# devin-native lane picks — every id MUST appear in `devin models list`
+# (the preflight in devin-dispatch.sh enforces it at launch).
+# paid_frontier has no entry on purpose: see the block comment above.
+DEVIN_LANE_MODELS = {
+    "free_lane": "swe-2-flash-medium",
+}
 LANE_EXECUTORS = {"codemod": "script", "manual": None,
-                "jules": "jules", "nlm_batch": "nlm_batch"}
+                "nlm_batch": "nlm_batch"}
 JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
 
 # ------------------------------------------------- executor contract
@@ -190,13 +209,8 @@ JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
 #              the admitted task classes. Serving requires KK_MAC_LANES=1
 #              on the runner (off by default until the supervised
 #              dispatch passes).
-#   jules    — the Jules REST lane (OPS-1048/OPS-1049): Google AI
-#              Pro's async coding agent. A card carries
-#              action.executor=jules (or action.lane=jules); a
-#              JULES_LANES=1 runner shells scripts/jules/jules.py
-#              (create --auto-pr + wait) and Jules opens the
-#              GitHub PR itself — no local worktree, no push
-#              creds. Declared = fail closed like opencode.
+#   jules    — REMOVED 2026-11-20 (provider EOL, OPS-0156): no lane,
+#              no executor, no client, no key. A stale pin fails closed.
 #   claude   — the claude-dispatch sibling lane (2026-11-18 eval:
 #              sonnet best tokens-per-verified-fix). Same contract as
 #              devin-dispatch — shared task dirs, devin-task-<id>
@@ -213,12 +227,14 @@ JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
 # executor value outside EXECUTORS is unintelligible — claimants fail
 # closed rather than guess.
 EXECUTORS = {"opencode", "devin", "script", "manual", "kk_mac_local",
-            "jules", "nlm_batch", "claude"}
+            "nlm_batch", "claude"}
 # Bounded task classes the kk_mac_local executor may ever run — mirrors
 # scripts/devnest/kk_mac_llm.py ALLOWED_TASKS (kept local: board-api
 # validates the contract without importing the devnest package).
+# operator_brief/safe_route held unadmitted pending re-eval — card
+# kk-mac-admitted-classes-narrow (2026-11-19 class eval).
 KK_MAC_TASK_CLASSES = {
-    "summary", "operator_brief", "structured_extract", "safe_route"}
+    "summary", "structured_extract"}
 # roots the kk_mac_local persisted artifact may land under — mirrors
 # kk_mac_executor.ARTIFACT_ROOTS
 KK_MAC_ARTIFACT_ROOTS = ("evals/kk-mac-lane/out/", "reports/",
@@ -270,6 +286,40 @@ def model_provider(model: str) -> str:
     return m.split("/", 1)[0] if "/" in m else "devin"
 
 
+def model_valid_for_executor(model: str, executor: str) -> bool:
+    """Provider/executor namespace contract
+    (dispatch-model-pick-executor-mismatch 2026-11-08 +
+    devin-executor-model-routing 2026-11-24): `executor` is the
+    RESOLVED executor ('' resolves to devin). An empty model is always
+    valid — it means the executor default. The opencode lane takes
+    provider/model ids ('litellm/x'); the devin path takes bare devin
+    ids only — a 'litellm/...' pick exits 'Unknown model' inside the
+    unit. claude-dispatch self-validates its own id space, so the
+    bare-id pass-through is safe there."""
+    m = (model or "").strip()
+    if not m:
+        return True
+    if (executor or "devin") == "opencode":
+        return "/" in m
+    return model_provider(m) == "devin"
+
+
+def lane_model(lane: str, executor: str) -> str:
+    """Lane -> model pick for `executor` ('' resolves to devin).
+    opencode/proxy executors take LANE_MODELS (litellm ids); devin
+    takes DEVIN_LANE_MODELS (devin-native ids — free_lane only;
+    paid_frontier has no pick, the paid route stays gated on explicit
+    budget approval). Other executors get '' — their launch path owns
+    model selection (claude-dispatch self-validates, script/nlm run
+    no model)."""
+    ex = executor or "devin"
+    if ex == "opencode":
+        return LANE_MODELS.get(lane or "", "")
+    if ex == "devin":
+        return DEVIN_LANE_MODELS.get(lane or "", "")
+    return ""
+
+
 def executor_blurb(card: dict) -> str:
     """Short executor/provider/model/profile phrase for comms lines —
     'executor=opencode provider=litellm model=litellm/g-3.5 profile=ops'
@@ -313,12 +363,29 @@ LANE_KW = {
                       "versus", "benchmark", "bench ", "productionize",
                       "promotion gate", "hardening", "hybrid recall",
                       "discussion board", "work bridge"],
-    "codemod": ["config", "retire", "remove", "bump", "lock", "change the",
-                "parallelism", "raise ", "cap", "flag", "script",
-                "copies task tests", "inject", "drift", "delete old", "purge",
-                "schedule", "recurring", "nest job"],
+    # codemod = deterministic pattern change, known transform, no
+    # judgment (OPS-0028, 2026-11-20). Entries are TITLE-scoped
+    # word-boundary matches — 'lock' no longer substring-hits
+    # block/clock/unlock (ADA-1285 routed codemod on "tools block" in
+    # its spec). Bare 'config'/'lock'/'script'/'raise ' dropped or
+    # qualified: any spec discussing a script or config matched.
+    # "codemod_body" holds the strong multi-word phrases that may also
+    # match the spec body; classify_lane picks codemod only on a title
+    # hit OR >=2 distinct hits — a lone body mention is context, not a
+    # known transform.
+    "codemod": ["retire", "remove", "bump", "deprecate", "purge",
+                "cap", "flag", "inject", "drift", "parallelism",
+                "raise", "schedule", "recurring", "change the"],
+    "codemod_body": ["delete old", "copies task tests", "nest job"],
+    # DEV-0045 reroute (2026-11-23): the broad standalone "host"
+    # keyword was removed. The devin keyword audit found 5 devin-lane
+    # cards routed purely by it (disk/storage/report-graph/render-job/
+    # ansible ops), all with bounded deterministic or read-only surfaces;
+    # because devin was evaluated BEFORE free_lane, one host mention
+    # pre-empted the cheaper lane. Ambiguous host work still fails
+    # through to devin via the jevos fallback.
     "devin": ["shims", "wiring", "multi-repo", "backfill", "re-embed",
-              "roster", "protocol", "provision", "host", "feature",
+              "roster", "protocol", "provision", "feature",
               "automation", "diagnos", "experiment", "pipeline", "end-to-end",
               "quadlet", "warm standby", "repoint", "failing", "dep fix",
               "dependency"],
@@ -327,6 +394,53 @@ LANE_KW = {
                   "evaluate", "gui", "probe", "report", "fixture"],
 }
 LANE_COMPARE = r"(vs|versus|or)\s+(\w+\s+)?(lane|option|choice|path|approach)"
+
+# Read-only audit-class lead-in (classifier-readonly-audit-class-
+# reroute, parent devin-usage-reduction DEV-0044 lever 1): titles that
+# LEAD with an audit/assessment/review/investigate/sweep marker are
+# bounded read-only triage — free_lane's ops-readonly contract covers
+# them (kanban-free-lane-routing-contract §3). Title-scoped ONLY: the
+# spec body is never scanned here, and a mutation verb anywhere in the
+# TITLE vetoes the reroute ('audit X then fix Y' stays on the normal
+# path). The bare keyword must be followed by space/punctuation, and
+# the hyphenated-slug form needs >=2 hyphens — component names like
+# 'audit-cast' (vcast-audit-cast) are not audit tasks. Explicit
+# action.lane and the timer-alert pin still win (both evaluated
+# earlier). Deliberately NOT a LANE_KW entry: a raw 'audit' substring
+# would match spec bodies fleet-wide.
+_AUDIT_RO_STEM = r"(?:audit|assess|review|investigat|sweep)"
+AUDIT_RO_TITLE_RE = re.compile(
+    r"^\s*(?:\[[^\]\n]*\]\s*)*(?:"
+    r"\[[^\]\n]*\b" + _AUDIT_RO_STEM + r"\w*\b[^\]\n]*\]"
+    r"|\b" + _AUDIT_RO_STEM + r"\w*(?=[\s:;,.!?)\]]|$)"
+    r"|\b" + _AUDIT_RO_STEM + r"\w*(?:-\w+){2,}(?=[\s:;,.!?)\]]|$))",
+    re.I)
+AUDIT_RO_MUTATION_RE = re.compile(
+    r"\b(?:fix(?:es|ed|ing)?|implement\w*|deploy\w*|migrat\w*|"
+    r"merg\w*|repair\w*|patch\w*|clean[\s-]?up\w*|build\w*|creat\w*)\b",
+    re.I)
+
+
+def _kw_hit(kw: str, text: str) -> bool:
+    """Word-boundary keyword match — 'lock' hits 'lock' but not
+    block/clock/unlock; phrase words may span any whitespace run."""
+    pat = r"\b" + r"\s+".join(re.escape(w) for w in kw.split()) + r"\b"
+    return re.search(pat, text) is not None
+
+
+def _codemod_hit(title: str, text: str):
+    """Codemod gate (OPS-0028): a TITLE hit on any codemod keyword is
+    decisive; the spec body counts only through the LANE_KW
+    ['codemod_body'] multi-word phrases, and codemod still needs >=2
+    distinct hits when the title says nothing — a lone body mention is
+    context, not a known transform. Returns the first matched keyword
+    (LANE_KW order) or None."""
+    title_hits = [k for k in LANE_KW["codemod"] + LANE_KW["codemod_body"]
+                  if _kw_hit(k, title)]
+    body_hits = [k for k in LANE_KW["codemod_body"]
+                 if k not in title_hits and _kw_hit(k, text)]
+    hits = title_hits + body_hits
+    return hits[0] if title_hits or len(hits) >= 2 else None
 
 
 def classify_lane(card: dict, with_detail: bool = False):
@@ -343,11 +457,28 @@ def classify_lane(card: dict, with_detail: bool = False):
     Manual-lane keywords match the TITLE only — a spec body that
     discusses spend or hardware as decision context must not force the
     card onto Tony's hands (dispatch-lane-classifier-spend-false-manual
-    false positives, 2026-11-17). Other lanes still read the spec."""
+    false positives, 2026-11-17). Codemod keywords are word-boundary
+    TITLE hits, or >=2 distinct hits counting codemod_body phrases in
+    the spec (OPS-0028 — see _codemod_hit). Audit-class lead-in titles
+    route to free_lane unless the title carries a mutation verb
+    (classifier-readonly-audit-class-reroute — see AUDIT_RO_TITLE_RE).
+    Other lanes still read the
+    spec as raw substrings."""
     a = _act(card)
     declared = str(a.get("lane") or "").strip()
     if declared and not a.get("lane_source"):
         return (declared, "explicit", 1.0) if with_detail else declared
+    # DEV-0045 chosen slice (Tony 2026-11-23): timer-sentinel alert cards
+    # are bounded, auto-generated ops diagnoses ("investigate journal"),
+    # never mutation work. Pin them to the cheapest lane before keyword
+    # classification — the generic "failing" keyword was sending every
+    # new sentinel alert to devin. Narrow tag match only: an explicitly
+    # declared lane above still wins, and ordinary failing tasks keep
+    # their normal routing.
+    tags = {str(t) for t in (card.get("tags") or [])}
+    if {"timer-alert", "by:timer-sentinel"} <= tags:
+        return ("free_lane", "timer-alert", 1.0) if with_detail \
+            else "free_lane"
     title = card.get("title", "").lower()
     text = (card.get("title", "") + " " +
             (card.get("brief") or card.get("spec") or "")).lower()
@@ -357,11 +488,25 @@ def classify_lane(card: dict, with_detail: bool = False):
     if re.search(LANE_COMPARE, text):
         return ("paid_frontier", "kw:compare", 1.0) if with_detail \
             else "paid_frontier"
+    codemod_kw = _codemod_hit(title, text)
+    # Read-only audit-class lead-in — evaluated at the free_lane slot
+    # of the lane loop below (after manual/compare/paid_frontier/
+    # codemod, before devin) so every earlier gate keeps precedence.
+    audit_ro = bool(AUDIT_RO_TITLE_RE.search(title)
+                    and not AUDIT_RO_MUTATION_RE.search(title))
+    # DEV-0045 reroute: free_lane is evaluated BEFORE devin, matching
+    # the lane catalog's cheapest-capable-first entry rule. The old
+    # order let one broad devin keyword pre-empt a cheaper lane on
+    # bounded ops/data cards; gate failure still escalates one lane.
     for lane, kws in (("paid_frontier", LANE_KW["paid_frontier"]),
                       ("codemod", LANE_KW["codemod"]),
-                      ("devin", LANE_KW["devin"]),
-                      ("free_lane", LANE_KW["free_lane"])):
-        kw = next((k for k in kws if k in text), None)
+                      ("free_lane", LANE_KW["free_lane"]),
+                      ("devin", LANE_KW["devin"])):
+        if lane == "free_lane" and audit_ro:
+            return ("free_lane", "kw:audit-ro", 1.0) if with_detail \
+                else "free_lane"
+        kw = codemod_kw if lane == "codemod" else next(
+            (k for k in kws if k in text), None)
         if kw:
             return (lane, f"kw:{kw}", 1.0) if with_detail else lane
     state = {"card": card.get("id"), "title": card.get("title", ""),
@@ -406,13 +551,11 @@ def classify_lane(card: dict, with_detail: bool = False):
 KK_MAC_MAX_PROMPT_CHARS = 6000  # mirrors kk_mac_llm.MAX_PROMPT_CHARS
 KK_MAC_ROUTE_KW = {
     "summary": ("summar", "recap", "tl;dr", "tl dr"),
-    "operator_brief": ("operator_brief", "operator brief",
-                       "ops brief", "status brief"),
+    # held classes (operator_brief, safe_route) carry no keywords while
+    # unadmitted — an inferred class must stay inside
+    # KK_MAC_TASK_CLASSES or queue-time validation would refuse it
     "structured_extract": ("structured_extract", "extract the",
                            "extract a ", "extract key", "pull out"),
-    "safe_route": ("safe_route", "which lane", "route this",
-                   "triage this", "classify this", "categorize this",
-                   "categorise this"),
 }
 # mutation/side-effect intent — any hit keeps the card off the
 # read-only lane no matter which class matched. Deliberately not in
@@ -474,8 +617,8 @@ def kk_mac_route(card: dict) -> str:
             if any(k in text for k in kws):
                 tc = cls
                 break
-        if not tc:
-            return ""
+        if not tc or tc not in KK_MAC_TASK_CLASSES:
+            return ""  # keyword drift must never route a held class
     prompt = kk_mac_prompt(card)
     if not prompt or len(prompt) > KK_MAC_MAX_PROMPT_CHARS:
         return ""
@@ -826,7 +969,13 @@ def sort_claimable(cards: list, starve_hours: float = 12.0,
 
 SERVED_TYPES = {"dispatch", "container", "script"}
 
-_FLEET_HOST_RE = re.compile(r"\b(tony-[\w-]+|idc\d+|mn\d+)\s*:")
+# kk-* hosts join the declared fleet (OPS-0220: kk-mac runner provisioned
+# and e2e-verified 2026-11-19, but host:kk-mac pins were invisible here and
+# produced "pins naming no declared runner" defers fleet-wide).
+# con01 joined the declared fleet 2026-11-24; without con\d+ its labels
+# and push:chaba capability were invisible to every claim gate (OPS-1406).
+_FLEET_HOST_RE = re.compile(
+    r"\b(tony-[\w-]+|idc\d+|mn\d+|con\d+|kk-[\w-]+)\s*:")
 _FLEET_LABELS_RE = re.compile(
     r"\blabels\s+([A-Za-z0-9_:.\-]+(?:\s*,\s*[A-Za-z0-9_:.\-]+)*)")
 _FLEET_TYPES_RE = re.compile(r"\(\s*([a-z_]+(?:\s*\+\s*[a-z_]+)*)")
@@ -1283,6 +1432,14 @@ def _resolve_side(wt: Path, path: str, side: str) -> bool:
 # are left untouched.
 DEFAULT_TEST_CMD = "python3 -m pytest tests -x -q"
 DEFAULT_TEST_TIMEOUT = 240
+# A suite timeout is infra flake, not a test verdict — the 240s smoke
+# set times out on a loaded merge host even for doc-only diffs
+# (OPS-0200/ADA-0201/KNB-0212 held merges, card
+# board-api-queue-write-verify-lost-race-f85f2f). The gate retries a
+# timed-out run once before reporting; a second timeout is reported
+# with timeout:true so callers can tell flake from a red suite.
+TEST_TIMEOUT_RETRIES = int(
+    os.environ.get("KANBAN_TESTGATE_TIMEOUT_RETRIES", "1"))
 VENV_DIRS = (".venv", "venv")  # checkout venv conventions in use
 REPO_TESTS = {
     # chaba's full suite (1549 tests) runs ~1h — it can never fit the
@@ -1306,14 +1463,13 @@ REPO_TESTS = {
               "tests/board/test_runner_push_guard.py "
               "tests/board/test_board_api_mutations.py "
               "tests/board/test_kanban_act.py "
+              "tests/board/test_wiki_extension.py "
               "tests/board/test_board_api_action_persistence.py "
+              "tests/board/test_runner_tooling_contract.py "
               "tests/test_ssot_validate_refs.py "
               "-x -q",
               "timeout": 240},
     "ada-voice": {"command": "python3 -m pytest tests -k 'not slow' -x -q",
-               "timeout": 300},
-    # legacy alias — same suite for cards still saying repo: ada-pi
-    "ada-pi": {"command": "python3 -m pytest tests -k 'not slow' -x -q",
                "timeout": 300},
     # Unlisted repos get the default command — but only when the merged
     # tree actually carries a tests/ dir (run_test_gate skips otherwise),
@@ -1428,9 +1584,11 @@ def _resolve_gate_cmd(cmd: str, wt: Path, repo_name: str,
 def run_test_gate(wt: Path, repo_name: str) -> dict:
     """Run the repo's fast test step inside the merged worktree.
 
-    {ran, ok, failed?, skipped?, command?, elapsed?, error?} —
-    ok=False only for red tests / suite timeout; missing pytest or a
-    tree without tests/ skips fail-open (merge_guard convention)."""
+    {ran, ok, failed?, skipped?, command?, elapsed?, error?,
+     unrunnable?} — ok=False for red tests, suite timeout, or an
+    unrunnable gate. Missing pytest is FAIL-CLOSED (OPS-1191): a merge
+    with no test evidence is held, never landed as "verified". A tree
+    without tests/ still skips (nothing to run)."""
     if os.environ.get("KANBAN_TESTGATE", "1") == "0":
         return {"ran": False, "ok": True, "skipped": "KANBAN_TESTGATE=0"}
     cfg = test_gate_config(repo_name)
@@ -1445,28 +1603,55 @@ def run_test_gate(wt: Path, repo_name: str) -> dict:
     interp = py or ("python3" if _PY_LEAD_RE.match(cmd) else None)
     timeout = int(cfg["timeout"])
     t0 = time.time()
-    try:
-        r = subprocess.run(["bash", "-c", cmd], cwd=str(wt),
-                           capture_output=True, text=True, timeout=timeout)
-    except subprocess.TimeoutExpired:
-        return {"ran": True, "ok": False, "command": cmd, "python": interp,
-                "failed": [f"suite timeout ({timeout}s)"],
-                "error": f"test gate timed out after {timeout}s"}
+    attempts = 0
+    while True:
+        attempts += 1
+        try:
+            r = subprocess.run(["bash", "-c", cmd], cwd=str(wt),
+                               capture_output=True, text=True,
+                               timeout=timeout)
+            break
+        except subprocess.TimeoutExpired:
+            if attempts > TEST_TIMEOUT_RETRIES:
+                return {"ran": True, "ok": False, "command": cmd,
+                        "python": interp,
+                        "failed": [f"suite timeout ({timeout}s)"],
+                        "error": f"test gate timed out after {timeout}s",
+                        "timeout": True, "attempts": attempts}
+            print(f"test gate attempt {attempts}/{TEST_TIMEOUT_RETRIES + 1} "
+                  f"timed out after {timeout}s — retrying "
+                  f"({repo_name or '?'} merge gate)", file=sys.stderr)
+            time.sleep(2)
     out = f"{r.stdout or ''}\n{r.stderr or ''}"
     if r.returncode != 0 and re.search(
             r"No module named .?pytest|command not found", out):
-        return {"ran": False, "ok": True, "command": cmd, "python": interp,
-                "skipped": "pytest unavailable — fail-open"}
+        # OPS-1191: "test gate skipped: pytest unavailable — fail-open"
+        # let tony-macbook merges land with ZERO test evidence. Hold the
+        # merge instead. Runners advertise a `pytest` claim label so a
+        # testable card can be routed to a host that can actually run it;
+        # a repo .venv with pytest is preferred by _resolve_gate_cmd.
+        return {"ran": False, "ok": False, "command": cmd, "python": interp,
+                "unrunnable": True,
+                "failed": ["pytest unavailable — no test evidence"],
+                "error": "test gate unrunnable: pytest unavailable "
+                         "(fail-closed; use a pytest-capable runner or "
+                         "repo .venv)"}
     if r.returncode == 5:
         return {"ran": False, "ok": True, "command": cmd, "python": interp,
                 "skipped": "no tests collected"}
     if r.returncode == 0:
-        return {"ran": True, "ok": True, "command": cmd, "python": interp,
-                "elapsed": round(time.time() - t0, 1)}
+        res = {"ran": True, "ok": True, "command": cmd, "python": interp,
+               "elapsed": round(time.time() - t0, 1)}
+        if attempts > 1:
+            res["attempts"] = attempts   # recovered after a timeout
+        return res
     failed = _FAILED_SUMMARY_RE.findall(out) or _FAILED_HEADER_RE.findall(out)
     tail = [ln for ln in out.splitlines() if ln.strip()][-2:]
-    return {"ran": True, "ok": False, "command": cmd, "python": interp,
-            "failed": failed[:8] or tail or ["pytest exited nonzero"]}
+    res = {"ran": True, "ok": False, "command": cmd, "python": interp,
+           "failed": failed[:8] or tail or ["pytest exited nonzero"]}
+    if attempts > 1:
+        res["attempts"] = attempts
+    return res
 
 
 def _gate_failfast_strip(cmd: str) -> str:
@@ -1569,6 +1754,11 @@ def baseline_aware_test_gate(wt: Path, repo_name: str, base_ref: str) -> dict:
     """
     branch = run_test_gate(wt, repo_name)
     if branch.get("ok") or not branch.get("ran") or not base_ref:
+        return branch
+    if branch.get("timeout"):
+        # a suite that can't finish can't enumerate a failure set
+        # either — the baseline compare would just burn another full
+        # timeout and return None anyway
         return branch
     enum, meta = _gate_failures(wt, repo_name)
     if not enum:
@@ -1724,9 +1914,90 @@ def _merge_in(wt: Path, ref: str) -> tuple:
     return False, [], "commit after conflict resolution failed"
 
 
+# Docs-only allowlist for the test-gate timeout override (card
+# board-api-queue-write-verify-lost-race-f85f2f): a diff touching only
+# docs/, stacks/, or *.md files cannot change pytest outcomes, so a
+# suite TIMEOUT on it is infra flake — merge anyway, flagged. Assertion
+# failures still hold regardless of paths.
+DOCS_ONLY_PATH_RE = re.compile(r"^(?:docs/|stacks/)|\.md$")
+
+
+def _docs_only_paths(wt: Path, base: str) -> bool:
+    """True when every path the merge adds vs `base` is docs/, stacks/,
+    or *.md. Conservative: an unreadable diff or an empty path list is
+    NOT docs-only."""
+    r = sh(["git", "-C", str(wt), "diff", "--name-only", base, "HEAD"],
+           timeout=30)
+    if r.returncode != 0:
+        return False
+    paths = [p for p in (r.stdout or "").splitlines() if p.strip()]
+    return bool(paths) and all(
+        DOCS_ONLY_PATH_RE.search(p) for p in paths)
+
+
+PIN_MANIFEST = "scripts/devin/runner-tooling.manifest.json"
+PIN_CONTRACT_TEST = ("python3 -m unittest discover -s tests/board "
+                     "-p test_runner_tooling_contract.py")
+
+
+def pin_contract_gate(wt: Path, base: str) -> dict:
+    """OPS-1326: run the tooling-pin contract test when this merge touched
+    a pinned source or the manifest; hold the merge on failure.
+
+    The 2026-11-24 ops-1036 conflict resolution took sources from one
+    parent and pins from the other — it merged cleanly and the fast test
+    gate does not carry tests/board, so all six hosts drifted before CI
+    noticed. This gate is path-conditional (no cost on unrelated merges)
+    and fail-closed: an unreadable manifest or a missing test holds the
+    merge rather than silently passing.
+
+    {ran, ok, paths?, command?, failed?, error?, skipped?}.
+    Opt out with KANBAN_PIN_GATE=0 (mirrors CHABA_PRECOMMIT_PINS)."""
+    if os.environ.get("KANBAN_PIN_GATE", "1") == "0":
+        return {"ran": False, "ok": True, "skipped": "KANBAN_PIN_GATE=0"}
+    manifest_path = Path(wt) / PIN_MANIFEST
+    if not manifest_path.exists():
+        # Repos without a tooling manifest (test fixtures, other repos)
+        # have nothing to gate — but a merge that DELETES a previously
+        # declared manifest must not slip past the check.
+        had = sh(["git", "-C", str(wt), "cat-file", "-e",
+                  f"{base}:{PIN_MANIFEST}"])
+        if had.returncode == 0:
+            return {"ran": True, "ok": False,
+                    "error": f"{PIN_MANIFEST} deleted by merge — "
+                             "pin gate cannot verify"}
+        return {"ran": False, "ok": True,
+                "skipped": "no tooling manifest in tree"}
+    try:
+        doc = json.loads(manifest_path.read_text())
+        tools = doc.get("tools") if isinstance(doc, dict) else None
+        sources = {val.get("source") for val in (tools or {}).values()
+                   if isinstance(val, dict) and val.get("source")}
+    except Exception as exc:
+        return {"ran": True, "ok": False,
+                "error": f"cannot read {PIN_MANIFEST}: {exc}"}
+    r = sh(["git", "-C", str(wt), "diff", "--name-only", base, "HEAD"])
+    if r.returncode != 0:
+        return {"ran": True, "ok": False,
+                "error": (r.stderr or r.stdout).strip()[:160] or "git diff failed"}
+    changed = {path for path in (r.stdout or "").splitlines() if path.strip()}
+    touched = sorted(changed & (sources | {PIN_MANIFEST}))
+    if not touched:
+        return {"ran": False, "ok": True, "skipped": "no pinned paths"}
+    proc = subprocess.run(["bash", "-c", PIN_CONTRACT_TEST], cwd=str(wt),
+                          capture_output=True, text=True, timeout=120)
+    if proc.returncode != 0:
+        out = f"{proc.stdout or ''}\n{proc.stderr or ''}"
+        failed = _FAILED_SUMMARY_RE.findall(out) or [f"exit {proc.returncode}"]
+        return {"ran": True, "ok": False, "paths": touched,
+                "command": PIN_CONTRACT_TEST, "failed": failed[:10]}
+    return {"ran": True, "ok": True, "paths": touched,
+            "command": PIN_CONTRACT_TEST}
+
+
 def _merge_and_gate(mwt: Path, mref: str, repo_name: str,
                     base: str) -> tuple:
-    """_merge_in + shadow guard + the post-merge test gate ->
+    """_merge_in + shadow guard + pin contract + the post-merge test gate ->
     (ok, conflicts, err, tests, shadows).
 
     tests is the run_test_gate() result ({} when the merge never got
@@ -1738,7 +2009,18 @@ def _merge_and_gate(mwt: Path, mref: str, repo_name: str,
     shadows = shadow_paths(mwt, base, "HEAD")
     if shadows:
         return False, [], "", {}, shadows
+    pins = pin_contract_gate(mwt, base)
+    if not pins.get("ok"):
+        detail = "; ".join(pins.get("failed") or [])
+        detail = detail or pins.get("error") or "contract test failed"
+        return False, [], (f"runner-tooling pin contract gate blocked: "
+                           f"{detail}"), pins, []
     tests = baseline_aware_test_gate(mwt, repo_name, base)
+    if not tests.get("ok") and tests.get("timeout") \
+            and _docs_only_paths(mwt, base):
+        # suite-timeout flake on a docs-only diff — land it flagged
+        # (gate: timeout-override) instead of holding for a human
+        tests = dict(tests, ok=True, timeout_override=True)
     if not tests.get("ok"):
         return False, [], "", tests, []
     return True, [], "", tests, []
@@ -2081,7 +2363,10 @@ def close_out_notes(res: dict) -> list:
     if tests.get("skipped"):
         notes.append(f"test gate skipped: {tests['skipped']}")
     if res.get("merged"):
-        if tests.get("baseline_failed"):
+        if tests.get("timeout_override"):
+            notes.append("test gate timed out — docs-only diff merged "
+                         "anyway (gate: timeout-override)")
+        elif tests.get("baseline_failed"):
             notes.append("test gate: failure(s) identical to base "
                          "(pre-existing) — not blocking: "
                          + ", ".join(tests["baseline_failed"][:6]))

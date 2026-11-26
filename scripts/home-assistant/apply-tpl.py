@@ -13,10 +13,10 @@ Usage:
     (pairs separated by ';' since cells contain commas)
 
 Example:
-    apply-tpl.py https://idc02.taila0626a.ts.net:8124 tony-test tpl pfg2 \\
+    apply-tpl.py https://mn01.taila0626a.ts.net:8124 tony-test tpl pfg2 \\
         --map "Grid:1,7;Battery:5,1;Home:5,7;Inverter:3,4;Sum:3,1"
 
-Reads token from HASS_TOKEN env (source ~/.config/secrets/ha-michael-dev.env).
+Reads token from HASS_TOKEN env (source ~/.config/secrets/ha-mn-ha-dev.env).
 """
 import asyncio, copy, json, os, sys
 import websockets

@@ -1,0 +1,16 @@
+[Unit]
+Description=Re-render kanban board (index.html + cards.json) — containerized chaba-board-render.service
+
+[Container]
+Image=localhost/chaba-board:latest
+ContainerName=chaba-board-render
+Network=host
+Volume=/home/tony:/home/tony
+Volume=/tmp:/tmp
+Environment=HOME=/home/tony
+# board-render-guard runs render-board.py + render-board2.py --if-changed
+# and upserts ops-board-render-fail after two consecutive failures.
+Exec=/usr/local/bin/python3 /home/tony/CascadeProjects/chaba-tony-dell/scripts/board/board-render-guard.py
+
+[Service]
+TimeoutStartSec=300

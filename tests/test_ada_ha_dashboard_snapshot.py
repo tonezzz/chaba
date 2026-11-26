@@ -50,6 +50,32 @@ class AdaDashboardSnapshotTests(unittest.TestCase):
         url = "https://cline.surf-thailand.com/?v=1"
         self.assertEqual(MODULE.sanitize_snapshot(url), url)
 
+    def test_keeps_pfg_charts_series_key_but_redacts_secret_key_elsewhere(self):
+        source = {
+            "views": [
+                {
+                    "cards": [
+                        {
+                            "type": "custom:pfg3d-card",
+                            "pfg_charts": {
+                                "1,1": [{"type": "bar3d", "key": "nobito"}]
+                            },
+                        }
+                    ]
+                }
+            ],
+            "key": "real-secret",
+        }
+        counts = {"redacted": 0}
+        sanitized = MODULE.sanitize_snapshot(source, counts)
+
+        self.assertEqual(
+            sanitized["views"][0]["cards"][0]["pfg_charts"]["1,1"][0]["key"],
+            "nobito",
+        )
+        self.assertEqual(sanitized["key"], "<redacted>")
+        self.assertEqual(counts["redacted"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -52,6 +52,10 @@ COLLECTION = "ada-cms-pages"
 REGISTRY = "ada-cms-automation"  # per-page switches/knobs + worker state
 BLOCK_BEGIN = "<!-- flood-news:auto -->"
 BLOCK_END = "<!-- /flood-news:auto -->"
+HUB_BEGIN = "<!-- flood-hub:auto -->"
+HUB_END = "<!-- /flood-hub:auto -->"
+HUB_STATUS_KEY = "flood-hub-status"  # ada-cms-automation doc written by flood-hub-poll.py (idc01)
+HUB_MAX_AGE_H = 36  # Flood Hub forecasts are daily; older than this = stale, drop the block
 ICT = timezone(timedelta(hours=7))
 FEEDS_CONFIG = os.environ.get(
     "FLOOD_NEWS_FEEDS",
@@ -223,6 +227,116 @@ def render_block(items, now_ict, since_hours, cfg=None):
 
 BLOCK_RE = re.compile(
     re.escape(BLOCK_BEGIN) + r".*?" + re.escape(BLOCK_END), re.S)
+HUB_RE = re.compile(
+    re.escape(HUB_BEGIN) + r".*?" + re.escape(HUB_END), re.S)
+
+
+# --- flood-hub gauge block -------------------------------------------------
+# The Google Flood Hub API key is IP-restricted to idc01, so this generator
+# never calls the API — it reads the 'flood-hub-status' doc that
+# scripts/ada/flood-hub-poll.py publishes on idc01. Pages opt in with
+# "hub": true in feeds.json (registry doc can override).
+
+_HUB_SEV_TH = {
+    "NO_FLOODING": "ปกติ",
+    "UNKNOWN": "ไม่ทราบ",
+    "SEVERITY_UNSPECIFIED": "ไม่ทราบ",
+    "ABOVE_NORMAL": "เฝ้าระวัง",
+    "SEVERE": "วิกฤต",
+    "EXTREME": "วิกฤตสูงสุด",
+}
+_HUB_SEV_RANK = {"ABOVE_NORMAL": 1, "SEVERE": 2, "EXTREME": 3}
+
+
+def get_hub_status(now=None):
+    """Parsed flood-hub-status doc, or None when missing/stale/unreachable."""
+    try:
+        doc = _post("get", {"collection": REGISTRY, "key": HUB_STATUS_KEY,
+                            "lang": "en"}, timeout=30)
+    except Exception as e:
+        print(f"warn: flood-hub-status doc unreachable ({e})", file=sys.stderr)
+        return None
+    if not isinstance(doc, dict):
+        return None
+    try:
+        status = json.loads(doc.get("contentMd") or "{}")
+    except json.JSONDecodeError:
+        return None
+    gen = status.get("generated_at")
+    if gen:
+        try:
+            gen_dt = datetime.fromisoformat(gen)
+            if gen_dt.tzinfo is None:
+                gen_dt = gen_dt.replace(tzinfo=timezone.utc)
+            if now and now - gen_dt > timedelta(hours=HUB_MAX_AGE_H):
+                print(f"warn: flood-hub-status stale ({gen}) — block skipped",
+                      file=sys.stderr)
+                return None
+        except ValueError:
+            pass
+    return status
+
+
+def render_hub_block(status, now_ict):
+    """Thai summary block from the poll doc. None-safe: caller checks."""
+    stamp = now_ict.strftime("%Y-%m-%d %H:%M")
+    lines = [HUB_BEGIN,
+             f"## Google Flood Hub — อัปเดต {stamp} น. (ICT)",
+             ""]
+    areas = status.get("areas") or {}
+    alertable = status.get("alertable") or []
+    if not alertable:
+        lines.append("*   ไม่พบเกจที่มีสถานะเฝ้าระวังขึ้นไปในพื้นที่ที่เฝ้าระวัง")
+    else:
+        for rec in alertable[:10]:
+            sev = rec.get("severity", "?")
+            label = (rec.get("siteName") or rec.get("river")
+                     or rec.get("gaugeId", "?"))
+            area_names = ", ".join(
+                (areas.get(a) or {}).get("label", a)
+                for a in rec.get("areas") or [])
+            trend = rec.get("trend") or ""
+            lines.append(
+                f"*   **{_HUB_SEV_TH.get(sev, sev)}** — {label}"
+                + (f" ({area_names})" if area_names else "")
+                + (f" · แนวโน้ม {trend}" if trend else ""))
+        if len(alertable) > 10:
+            lines.append(f"*   … และอีก {len(alertable) - 10} เกจ")
+    gen = status.get("generated_at", "")
+    lines += ["",
+              f"*ข้อมูล Google Flood Hub (CC BY 4.0) · ผลสำรวจเมื่อ {gen} · "
+              f"สคริปต์ scripts/ada/flood-hub-poll.py บน idc01*",
+              HUB_END]
+    return "\n".join(lines)
+
+
+def _hub_lines(block):
+    """Alertable-gauge bullets only — header stamp and footer timestamp
+    excluded so an unchanged status doesn't churn page revisions."""
+    return [l for l in block.splitlines()
+            if l.startswith("*   **") or l.startswith("*   …")
+            or "ไม่พบเกจ" in l]
+
+
+def apply_hub_block(body, block):
+    """Replace the managed hub block. Insert after the flood-news block
+    when present, else before the first ## heading, else append."""
+    if HUB_RE.search(body):
+        return HUB_RE.sub(lambda m: block, body, count=1)
+    m = BLOCK_RE.search(body)
+    if m:
+        return body[:m.end()] + "\n\n" + block + body[m.end():]
+    m = re.search(r"^## ", body, re.M)
+    if m:
+        return body[:m.start()] + block + "\n\n" + body[m.start():]
+    return body.rstrip() + "\n\n" + block + "\n"
+
+
+def strip_hub_block(body):
+    """Remove the hub block entirely (used when the status doc is gone)."""
+    if not HUB_RE.search(body):
+        return body
+    return HUB_RE.sub("", body, count=1).replace("\n\n\n", "\n\n").strip() + "\n"
 
 
 def _item_lines(block):
@@ -362,14 +476,24 @@ def update_page(page, cfg, args, now, now_ict, registry_up, require_default):
         write_state("error", 0, e)
         return 2
 
-    if not items:
+    hub_status = get_hub_status(now) if cfg.get("hub") else None
+    hub_block = render_hub_block(hub_status, now_ict) if hub_status else None
+    hub_strip = bool(cfg.get("hub")) and hub_status is None
+
+    if not items and not hub_block and not hub_strip:
         print("  nothing new — page left untouched")
         write_state("no-items", 0)
         return 0
 
-    block = render_block(items, now_ict, since, cfg)
+    if items:
+        block = render_block(items, now_ict, since, cfg)
     if args.dry_run:
-        print("\n" + block + "\n")
+        if items:
+            print("\n" + block + "\n")
+        if hub_block:
+            print("\n" + hub_block + "\n")
+        elif hub_strip:
+            print("  hub: enabled but no fresh status doc — block would be stripped")
         return 0
 
     docs = get_page(page, args.lang)
@@ -383,13 +507,21 @@ def update_page(page, cfg, args, now, now_ict, registry_up, require_default):
     try:
         for doc in docs:
             body = doc.get("contentMd") or ""
-            existing = BLOCK_RE.search(body)
-            if existing and _item_lines(existing.group(0)) == _item_lines(block):
-                print(f"  skip {doc['id']} — item set unchanged")
-                continue
-            new_body = apply_block(body, block, now_ict)
+            new_body = body
+            if items:
+                existing = BLOCK_RE.search(new_body)
+                if not (existing
+                        and _item_lines(existing.group(0)) == _item_lines(block)):
+                    new_body = apply_block(new_body, block, now_ict)
+            if hub_block:
+                existing = HUB_RE.search(new_body)
+                if not (existing
+                        and _hub_lines(existing.group(0)) == _hub_lines(hub_block)):
+                    new_body = apply_hub_block(new_body, hub_block)
+            elif hub_strip:
+                new_body = strip_hub_block(new_body)
             if new_body == body:
-                print(f"  skip {doc['id']} — block unchanged")
+                print(f"  skip {doc['id']} — blocks unchanged")
                 continue
             publish(doc, new_body, now, cfg)
             print(f"  updated {doc['id']} ({len(new_body) - len(body):+d}c)")

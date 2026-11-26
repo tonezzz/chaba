@@ -1,17 +1,39 @@
 // data.js — fetch cards.json and normalize card dicts.
 import { CARDS_URL } from './config.js';
 
+// Slug normalization for `project: <slug>` values — lowercase, single
+// dashes for whitespace, single slashes kept for parent/child nesting.
+function normSlug(s) {
+  return String(s || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/\/{2,}/g, '/')
+    .replace(/^\/+|\/+$/g, '');
+}
+
+// Resolve the card's project slug: explicit `project:` field first, then a
+// `project:<slug>` / `project: <slug>` tag (ssot.project-lifecycle.yml).
+// Returns null when untagged — groups.js decides the fallback.
+function projectSlug(c, tags) {
+  if (typeof c.project === 'string' && c.project.trim()) {
+    const s = normSlug(c.project);
+    if (s) return s;
+  }
+  const hit = tags.find((t) => typeof t === 'string' && /^project\s*:/i.test(t));
+  if (hit) {
+    const s = normSlug(hit.replace(/^project\s*:\s*/i, ''));
+    if (s) return s;
+  }
+  return null;
+}
+
 // Normalize one raw card into the shape the rest of the app consumes.
 // Raw card fields come straight from render-board*.py's cards.json.
 export function normalizeCard(c) {
   const comms = Array.isArray(c.comms) ? c.comms : [];
   const tags = Array.isArray(c.tags) ? c.tags : [];
-  // explicit `project:` tag value, e.g. tags: ["project:adobe-stock"]
-  let project = c.project || null;
-  if (!project) {
-    const hit = tags.find((t) => typeof t === 'string' && t.startsWith('project:'));
-    if (hit) project = hit.slice('project:'.length);
-  }
+  const project = projectSlug(c, tags);
   const times = comms
     .map((m) => m && m.at)
     .filter(Boolean)

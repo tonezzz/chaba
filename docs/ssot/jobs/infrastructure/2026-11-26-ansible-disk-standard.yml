@@ -1,0 +1,55 @@
+icon: wrench
+title: Ansible-standard disk pressure remediation
+date: 2026-11-26
+card: ansible-disk-headroom-harden,disk-guard-ssot-enforce
+context: >-
+  Disk handling was split across a read-only audit (disk-headroom.yml), a
+  trend-to-card watcher (disk-trend-watch.py) and one-off ad-hoc SSH cleanup.
+  After the 2026-11-26 uv cleanup and stale-card triage, Tony asked to make
+  Ansible the standard for assess/verify/fix. Scope chosen in the UI:
+  standardize now — threshold-gated fix playbook for Linux, dry-run default,
+  explicit opt-in to mutate, kk-mac identity repaired for read-only audit,
+  SSOT record and runbook filed.
+changes:
+  - "Added ansible/playbooks/disk-remediate.yml: two plays. Linux play loads
+    per-host max_root_disk_percent from ssot.audit.hosts.yml (default 90%),
+    applies a 15 GiB absolute floor, sizes uv/pip/journal caches, sets
+    needs_fix, and purges only caches above cap (8 GiB uv / 1 GiB pip / 2 GiB
+    /var/log). All fix tasks require disk_remediate_apply=true, are tagged
+    `fix`, and are skipped in check mode; an assert requires --limit before
+    any apply. macOS play is audit-only with become:false, no fix tasks."
+  - "ansible/inventory/hosts.yml: added ansible_ssh_private_key_file
+    ~/.ssh/id_ed25519_opencode to kk-mac. Ansible reaches the Tailscale IP
+    directly, bypassing the ~/.ssh/config alias, so the identity had to be
+    explicit — this was the same gap that made disk-trend-watch unable to
+    probe kk-mac."
+  - "Added docs/runbooks/disk-pressure-ansible-remediate.md (assess/verify/fix
+    SOP, thresholds, safe candidates, mandatory --limit, known gaps) and a
+    pointer section in docs/kb/disk-space-management.md."
+verification:
+  - "ansible-playbook --syntax-check passed."
+  - "--check --diff --limit tony-macbook: root=62% avail=83.3GiB
+    needs_fix=False, uv=0KiB pip=492680KiB, changed=0, skipped fix tasks."
+  - "--check --diff --limit idc02,con01: root=74%/60%, avail=77.3/118.5GiB,
+    ceiling=90.0% resolved from SSOT, no changes."
+  - "--check --diff --limit kk-mac: audit play reported /System/Volumes/Data
+    86% used / 62 GiB free, reachable, changed=0 — confirms both the key fix
+    and the read-only guarantee."
+  - "An apply run was intentionally NOT performed: no host breached a
+    threshold, and mutation requires explicit human opt-in."
+rollback: >-
+  Delete the new playbook/runbook and revert the single inventory line with
+  git. No host state was changed — every validation ran in --check mode, so
+  there is nothing to undo on the fleet.
+residual: >-
+  disk-trend-watch.py still resolves user tony against kk-mac's Tailscale IP
+  while inventory expects kkkakk + id_ed25519_opencode, so its kk-mac history
+  remains stale/unreachable. A live playbook probe is the authority until
+  that mapping is fixed. The new playbook also probes only / on Linux; /data
+  cache growth remains documented separately in disk-space-management.md.
+lesson: >-
+  Make the safe path the default: dry-run, SSOT thresholds, mandatory --limit
+  and rebuildable-caches-only mean the standard can be run without a human
+  approving each command, while mutation stays a deliberate, scoped act.
+  An inventory SSH identity is not the same as an ssh config alias — Ansible
+  connects to the resolved IP and needs the key declared explicitly.

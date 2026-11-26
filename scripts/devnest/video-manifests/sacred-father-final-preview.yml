@@ -1,0 +1,36 @@
+# Canonical final-preview dispatch manifest — Sacred Father project
+# (OPS-1042 first deliverable, card video-render-dispatcher).
+#
+# Records the ALREADY-RENDERED canonical final preview so the dispatcher
+# can verify its artifacts and never re-dispatch it. The render itself
+# completed 2026-11-03 on the KK-Mac MLX lane; this manifest is the
+# machine-readable pointer the status/dispatcher layer consumes.
+# Companion human doc: reports/sacred-father-canonical-manifest-20261103.yml
+schema: video-dispatch/v1
+project_id: kk-video-c9f99fee6146
+manifest: sacred-father-final-preview
+title: Sacred Father — canonical final preview (v4-clean)
+approved: false            # record-only; nothing left to dispatch
+approved_by: null          # owner visual review still pending per canonical manifest `next:`
+canonical_manifest: reports/sacred-father-canonical-manifest-20261103.yml
+stages:
+  - id: final-preview-v4-clean
+    state: done            # rendered 2026-11-03; never re-dispatch
+    lane: mlx
+    variant: clean         # review-vs-clean: clean variant, overlays=false
+    shots: [shot01, shot02, shot03, shot04, shot05,
+            shot06, shot07, shot08, shot09, shot10]
+    artifacts:
+      - final/pdf-final-preview-v4-clean.mp4
+      - final/pdf-final-preview-v4-clean.th.srt
+      - final/pdf-final-preview-v4-clean.en.srt
+    notes: >-
+      Canonical artifact is pdf-final-preview-v4-clean.mp4 (h264 640x384
+      24fps, 720 frames, 59.92s, AAC). pdf-final-preview-canonical-v1.mp4
+      (2026-11-04, different encode, PSNR~14dB vs v4-clean) exists on the
+      same final/ root but is NOT the manifest canonical — flagged for
+      owner review, not adopted.
+next:
+  - visual_review
+  - approve_private_preview
+  - publish_only_after_owner_approval

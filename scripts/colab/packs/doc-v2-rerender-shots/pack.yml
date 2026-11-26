@@ -1,0 +1,215 @@
+# doc-v2-rerender-shots — GPU re-render of QC-weak ss1 shots
+# (card doc-pilot-v2-polish-music-bed-subs-shot-943456, item 3b).
+# Reads doc-pilot/qc/shot-qc/weak-shots.txt (published by
+# doc-v2-shot-qc; requires: gate enforces ordering) and re-renders only
+# those shots with the same LTX recipe as doc-render-ss1 (73f/40step/
+# 640x384, t2v + i2v last-frame continuations). Original shots are
+# archived to doc-pilot/shots-v1-archive/ before overwrite; re-rendered
+# shots merge into doc-pilot/shots/ (rclone copy never deletes, so
+# non-weak shots are untouched).
+#
+# Why a new pack: doc-render-ss1's done() skips any cached shot >50KB —
+# nearly all ss1 shots are under that (efficient encodes of near-static
+# space scenes), so its cache logic can't express "re-render THESE".
+# This pack renders an explicit list instead.
+#
+# GPU-gated: needs.gpu_gb=14 (T4 ceiling, same as doc-render-ss1).
+# Colab T4 or KK-Mac-class worker only; fleet CPU hosts skip cleanly.
+name: doc-v2-rerender-shots
+needs:
+  gpu_gb: 14
+  disk_gb: 35
+  egress_only_ok: true
+requires:
+  - doc-v2-shot-qc
+timeout_s: 2400
+fetch:
+  - packs/doc-embeds-ss1/embeds/
+  - doc-pilot/shots/
+  - doc-pilot/qc/
+artifacts:
+  - packs/doc-v2-rerender-shots/verdict.md
+  - packs/doc-v2-rerender-shots/rerender-report.md
+publish:
+  shots: doc-pilot/shots
+  archive: doc-pilot/shots-v1-archive
+prep: |
+  apt-get install -y -qq zstd ffmpeg >/dev/null 2>&1 || true
+  TAR=$NEST_ROOT/model-archive/hf/ltx-slim.tar.zst
+  # slim (per-repo) archive preferred: ~9GB vs the 17.4GB full tar —
+  # on Colab NEST_ROOT is the Drive mount so this resolves directly;
+  # on fleet workers it misses and we fall through to HF download
+  [ -f "$TAR" ] || TAR=$NEST_ROOT/model-archive/hf/ltx-video.tar.zst
+  if [ -f "$TAR" ]; then
+    tar -I zstd -tf "$TAR" 2>/dev/null | head -1 | grep -q '^hub/' \
+      && DEST=/root/.cache/huggingface || DEST=/root/.cache/huggingface/hub
+    if du -sh "$DEST/models--Lightricks--LTX-Video" 2>/dev/null | awk '$1+0 >= 9 {exit 1}'; then
+      mkdir -p "$DEST" && tar -I zstd -xf "$TAR" -C "$DEST" || true
+    fi
+  fi
+  if ls "$DEST/models--Lightricks--LTX-Video"/snapshots/*/transformer/*.safetensors >/dev/null 2>&1; then
+    echo "weights present — snapshot_download skipped"
+  else
+    pip install -q huggingface_hub
+    python -c "from huggingface_hub import snapshot_download; snapshot_download('Lightricks/LTX-Video',ignore_patterns=['text_encoder/*','tokenizer/*','*.bin','*fp8*','*gguf*'])"
+  fi
+run: |
+  import os, time, gc, subprocess, shutil
+  import torch
+  for _v in ('model', 'pipe'):
+      globals().pop(_v, None)
+  gc.collect(); torch.cuda.empty_cache()
+  from diffusers import LTXPipeline, LTXImageToVideoPipeline
+  from diffusers.utils import export_to_video, load_image
+
+  ROOT = NEST_ROOT
+  EMB = f'{ROOT}/packs/doc-embeds-ss1/embeds'
+  SHOTS_IN = f'{ROOT}/doc-pilot/shots'
+  SHOTS_STORE = f'{ROOT}/doc-pilot/shots'      # same path: Colab=mount,
+                                             # fleet=pack-local fetched
+  ARCH_STORE = f'{ROOT}/doc-pilot/shots-v1-archive'
+  QC = f'{ROOT}/doc-pilot/qc/shot-qc'
+  OUT = f'{PACK_DIR}/shots'
+  ARCH = f'{PACK_DIR}/archive'
+  KF = f'{PACK_DIR}/keyframes'
+  for d in (OUT, ARCH, KF, ARCH_STORE):
+      os.makedirs(d, exist_ok=True)
+
+  W, H, FR, STEPS = 640, 384, 73, 40
+  I2V = {2: 1, 18: 17}          # shot -> last-frame source shot
+
+  # --- weak-shot list (doc-v2-shot-qc contract) -------------------------
+  weak = []
+  try:
+      weak = [int(t) for t in
+              open(f'{QC}/weak-shots.txt').read().split()
+              if t.strip().isdigit()]
+  except Exception as e:
+      print(f'weak-shots.txt unreadable ({e}) — no-op', flush=True)
+  weak = sorted({n for n in weak if 1 <= n <= 18})
+
+  verdict = ['# doc-v2-rerender-shots verdict', '',
+             f'weak list: {weak or "none"}', '',
+             '| shot | mode | s | peakGB | note |', '|---|---|---|---|---|']
+  rep = ['# doc-v2-rerender-shots report', '',
+         f'weak list source: {QC}/weak-shots.txt',
+         f'rendered: {weak or "none"}', '']
+
+  if not weak:
+      verdict += ['', 'no weak shots — nothing rendered (no-op done)']
+      rep += ['no-op: weak-shots.txt empty or absent']
+      open(f'{PACK_DIR}/verdict.md', 'w').write('\n'.join(verdict) + '\n')
+      open(f'{PACK_DIR}/rerender-report.md', 'w').write('\n'.join(rep) + '\n')
+      print('doc-v2-rerender-shots no-op', flush=True)
+      raise SystemExit(0)
+
+  # --- archive originals before any overwrite --------------------------
+  for n in weak:
+      src = f'{SHOTS_IN}/ss1-shot{n:02d}.mp4'
+      if os.path.isfile(src):
+          shutil.copyfile(src, f'{ARCH}/ss1-shot{n:02d}.mp4')
+          shutil.copyfile(src, f'{ARCH_STORE}/ss1-shot{n:02d}.mp4')
+
+  def emb(n):
+      return {k: (v.cuda() if torch.is_tensor(v) else v)
+              for k, v in torch.load(f'{EMB}/shot{n:02d}.pt',
+                                     map_location='cpu',
+                                     weights_only=False).items()}
+
+  def run_pipe(pipe, n, image=None):
+      e = emb(n)
+      kw = dict(prompt_embeds=e['prompt_embeds'],
+                prompt_attention_mask=e['prompt_attention_mask'],
+                negative_prompt_embeds=e['negative_prompt_embeds'],
+                negative_prompt_attention_mask=e['negative_prompt_attention_mask'],
+                width=W, height=H, num_frames=FR,
+                num_inference_steps=STEPS, frame_rate=24)
+      if image is not None:
+          kw['image'] = image
+      return pipe(**kw).frames[0]
+
+  def shot_path(n, fresh=False):
+      """ freshest copy: this run's output first, then the store. """
+      p = f'{OUT}/ss1-shot{n:02d}.mp4'
+      if fresh and os.path.exists(p):
+          return p
+      return f'{SHOTS_IN}/ss1-shot{n:02d}.mp4'
+
+  def last_frame(mp4, png):
+      subprocess.run(['ffmpeg', '-y', '-sseof', '-0.1', '-i', mp4,
+                      '-frames:v', '1', '-update', '1', png],
+                     capture_output=True)
+
+  def publish_shot(n):
+      """pack artifact + store-side copy (Colab: mount; fleet: local dup
+      that publish: mirrors — keep both writes, they are the same bytes)."""
+      p = f'{OUT}/ss1-shot{n:02d}.mp4'
+      shutil.copyfile(p, f'{SHOTS_STORE}/ss1-shot{n:02d}.mp4')
+
+  t2v_shots = [n for n in weak if n not in I2V]
+  i2v_shots = [n for n in weak if n in I2V]
+
+  # pass 1: t2v weak shots
+  pipe = LTXPipeline.from_pretrained('Lightricks/LTX-Video',
+      torch_dtype=torch.bfloat16, text_encoder=None,
+      tokenizer=None).to('cuda')
+  print('t2v resident %.1fGB' % (torch.cuda.memory_allocated()/1e9), flush=True)
+  for n in t2v_shots:
+      t = time.time(); note = ''
+      try:
+          fr = run_pipe(pipe, n)
+          export_to_video(fr, f'{OUT}/ss1-shot{n:02d}.mp4', fps=24)
+          publish_shot(n)
+      except Exception as e:
+          note = f'{type(e).__name__}: {str(e)[:160]}'
+      pk = torch.cuda.max_memory_allocated()/1e9
+      verdict.append(f'| {n} | t2v | {time.time()-t:.0f} | {pk:.1f} | {note} |')
+      rep.append(f'shot{n} t2v {time.time()-t:.0f}s peak {pk:.1f}GB {note}')
+      print(f'shot{n} t2v {time.time()-t:.0f}s peak {pk:.1f}GB {note}',
+            flush=True)
+  del pipe; gc.collect(); torch.cuda.empty_cache()
+
+  # pass 2: i2v weak shots — source = freshest rendered frame when the
+  # source shot was itself re-rendered this run
+  if i2v_shots:
+      pipe = LTXImageToVideoPipeline.from_pretrained('Lightricks/LTX-Video',
+          torch_dtype=torch.bfloat16, text_encoder=None,
+          tokenizer=None).to('cuda')
+      print('i2v resident %.1fGB' % (torch.cuda.memory_allocated()/1e9),
+            flush=True)
+      for n in i2v_shots:
+          src = I2V[n]
+          t = time.time(); note = ''
+          try:
+              src_mp4 = shot_path(src, fresh=True)
+              png = f'{KF}/shot{src:02d}-last.png'
+              last_frame(src_mp4, png)
+              fr = run_pipe(pipe, n, image=load_image(png))
+              export_to_video(fr, f'{OUT}/ss1-shot{n:02d}.mp4', fps=24)
+              publish_shot(n)
+          except Exception as e:
+              note = f'{type(e).__name__}: {str(e)[:160]}'
+          pk = torch.cuda.max_memory_allocated()/1e9
+          verdict.append(f'| {n} | i2v:{src} | {time.time()-t:.0f} | '
+                         f'{pk:.1f} | {note} |')
+          rep.append(f'shot{n} i2v:{src} {time.time()-t:.0f}s '
+                     f'peak {pk:.1f}GB {note}')
+          print(f'shot{n} i2v:{src} {time.time()-t:.0f}s peak {pk:.1f}GB '
+                f'{note}', flush=True)
+      del pipe; gc.collect(); torch.cuda.empty_cache()
+
+  failed = [n for n in weak
+            if not (os.path.exists(f'{OUT}/ss1-shot{n:02d}.mp4')
+                    and os.path.getsize(f'{OUT}/ss1-shot{n:02d}.mp4') > 50000)]
+  verdict += ['', f'failed_or_tiny: {failed or "none"}']
+  rep += ['', f'failed_or_tiny: {failed or "none"}',
+          'originals archived under doc-pilot/shots-v1-archive/',
+          're-rendered shots merged into doc-pilot/shots/ — downstream',
+          'packs pick them up on next run; re-run doc-v2-delivery (delete',
+          'its done marker) to rebuild the cut with new shots.']
+  open(f'{PACK_DIR}/verdict.md', 'w').write('\n'.join(verdict) + '\n')
+  open(f'{PACK_DIR}/rerender-report.md', 'w').write('\n'.join(rep) + '\n')
+  print('doc-v2-rerender-shots done failed=%s' % (failed or 'none'),
+        flush=True)
+  if failed:
+      raise SystemExit(f'render failed for shots {failed}')

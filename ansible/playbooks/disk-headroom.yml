@@ -1,0 +1,429 @@
+---
+# disk-headroom.yml — fleet disk-headroom audit (read-only).
+#
+# Instantaneous counterpart to scripts/ada/disk-trend-watch.py and the
+# mddb-backup pre-flight guard (job 2026-11-19-backup-disk-headroom-guard):
+# one df probe per host (parallel), controller evaluates every real mount
+# against BOTH yardsticks:
+#   * disk-trend's flat CRIT_PCT=90 on any real mount
+#   * ssot.audit.hosts.yml expected_resources.max_root_disk_percent for /
+#     (85 on most hosts — audit-hosts.py declares it but never enforces)
+#   * the mddb guard's absolute floor: free >= 15 GiB on /
+#
+# This playbook ALSO feeds the trend: every probed host's mounts are
+# appended to the shared DISK_TREND_HISTORY jsonl (same record shape
+# disk-trend-watch.py writes: ts/epoch/host/unreachable/mounts/dirs),
+# keyed by the ssot.audit.hosts.yml host name so the slope lifecycle sees
+# one continuous series per host. Hosts excluded by --limit write no
+# sample at all — a skipped laptop must not record a false 'unreachable'.
+# Disable the feed with -e disk_trend_feed=false.
+#
+# Controller self-detect: the playbook matches the machine it runs on
+# against the inventory (ansible_host IP in the controller's own
+# addresses, or inventory name == hostname/fqdn) and gives that host
+# ansible_connection=local — ssh-to-self over the tailnet IP has no key
+# path and always failed (OPS-0019). Override with -e self_host=<name>
+# when detection picks wrong.
+#
+# Dry-run: `ansible-playbook playbooks/disk-headroom.yml --check --diff`
+# is a real dry-run — the df probe still runs (it is read-only;
+# check_mode:no) so verdicts and diffs are genuine, while file writes
+# (verdict reports + history append) are skipped.
+#
+# host_key_checking: stays True (ansible.cfg). ansible_host is a
+# Tailscale IP, so each controller needs the *IP* in ~/.ssh/known_hosts —
+# hashed hostname entries do not match. Seed per host:
+#   ssh-keyscan -H <tailscale-ip> >> ~/.ssh/known_hosts
+# or inventory-wide via ansible/README.md "SSH known_hosts".
+#
+#   * underused signal (informational): mount <50% used or >100 GiB free —
+#     surfaces over-provisioned capacity for storage-rebalance-underused.
+# disk-trend still owns the *trend* (slope over jsonl history) — ansible
+# runs are stateless, this playbook only covers the instantaneous check.
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/disk-headroom.yml
+#   ansible-playbook playbooks/disk-headroom.yml --check --diff   # dry-run
+#   ansible-playbook playbooks/disk-headroom.yml --limit tony-dell
+#
+# Artifacts: reports/ansible-benchmark/disk/<inventory_host>.yml
+#            + ~/var/chaba/health/disk-trend.jsonl (or $DISK_TREND_HISTORY)
+#
+# Layout note: everything lives in ONE play on purpose — a dedicated
+# `hosts: localhost` eval play is filtered out by --limit ("no hosts
+# matched"), so controller-side steps are delegate_to:localhost +
+# run_once tasks at the end of the probe play instead.
+
+- name: Fleet disk-headroom audit
+  hosts: all:!macos:!disabled
+  gather_facts: false
+  become: false
+
+  vars:
+    audited_hosts: >-
+      {{ groups['all']
+         | difference(groups['macos'] | default([]))
+         | difference(groups['disabled'] | default([]))
+         | sort }}
+    # Controller identity candidates: all local IPs + host names. Lookups
+    # run on the controller (not the target), need no facts, and survive
+    # missing commands on non-Linux controllers.
+    controller_idents: >-
+      {{ (lookup('ansible.builtin.pipe', 'hostname -I', errors='ignore')
+          | default('')).split()
+         + [lookup('ansible.builtin.pipe', 'hostname', errors='ignore')
+            | default(''),
+            lookup('ansible.builtin.pipe', 'hostname -f', errors='ignore')
+            | default('')]
+         | select('truthy') | unique | list }}
+    controller_self: >-
+      {{ self_host | default(
+          ((hostvars | dict2items
+            | selectattr('key', 'in', audited_hosts)
+            | selectattr('value.ansible_host', 'defined')
+            | selectattr('value.ansible_host', 'in', controller_idents)
+            | map(attribute='key') | list)
+           + (audited_hosts | select('in', controller_idents) | list))
+          | unique | sort | first | default(''), true) }}
+    benchmark_out: "{{ playbook_dir }}/../../reports/ansible-benchmark/disk"
+    audit_ssot: >-
+      {{ lookup('ansible.builtin.file',
+                playbook_dir ~ '/../../docs/ssot/infrastructure/ssot.audit.hosts.yml')
+         | from_yaml }}
+    ssot_key_map:
+      tony-macbook: macbook
+    crit_pct: 90          # disk-trend CRIT_PCT — flat fleet crit
+    min_free_gib: 15      # mddb guard MDDB_BACKUP_MIN_FREE_GB floor on /
+    underused_pct: 50     # informational: mount <50% used is underused
+    underused_free_gib: 100  # ...or >100 GiB free
+    disk_trend_feed: true
+    # Shared with scripts/ada/disk-trend-watch.py — same env override.
+    disk_trend_history: >-
+      {{ lookup('ansible.builtin.env', 'DISK_TREND_HISTORY')
+         | default(lookup('ansible.builtin.env', 'HOME')
+                   ~ '/var/chaba/health/disk-trend.jsonl', true) }}
+    probe_ts: "{{ now(utc=True).isoformat(timespec='seconds') }}"
+    probe_epoch: "{{ now().timestamp() | int }}"
+    board_notify: false
+    board_api_base: "https://idc03.taila0626a.ts.net:10000"
+    board_from: "devin"
+
+  pre_tasks:
+    - name: Report controller detection
+      ansible.builtin.debug:
+        msg: >-
+          controller_self={{ controller_self or 'none' }}
+          {%- if controller_self %} (probes itself locally)
+          {%- else %} (controller not in inventory — all hosts use ssh)
+          {%- endif %}
+      run_once: true
+
+    - name: Probe the controller locally — ssh to its own tailnet IP has no key path
+      ansible.builtin.set_fact:
+        ansible_connection: local
+      when: inventory_hostname == controller_self
+
+  tasks:
+    - name: df probe (single round-trip, JSON out; read-only so it also runs under --check)
+      ansible.builtin.shell: |
+        python3 - <<'PYEOF'
+        import json, subprocess
+        SKIP_FS = {"tmpfs", "devtmpfs", "overlay", "squashfs", "ramfs",
+                   "efivarfs", "autofs", "binfmt_misc", "debugfs",
+                   "tracefs", "securityfs", "pstore", "bpf", "hugetlbfs",
+                   "mqueue", "devpts", "proc", "sysfs", "cgroup",
+                   "cgroup2", "nsfs", "fusectl", "configfs", "shm",
+                   "none", "selinuxfs", "fuse.gvfsd-fuse", "fuse.portal",
+                   "fuse.rclone", "fuse.sshfs"}
+        SKIP_MT = ("/snap", "/var/snap", "/run", "/dev")
+        out = []
+        p = subprocess.run(["df", "-PTk"], capture_output=True,
+                           text=True, timeout=30)
+        for l in p.stdout.splitlines()[1:]:
+            f = l.split()
+            if len(f) < 7:
+                continue
+            fs, typ, size, used, avail, cap, mount = \
+                f[0], f[1], int(f[2]), int(f[3]), int(f[4]), f[5], f[6]
+            if typ in SKIP_FS or mount.startswith(SKIP_MT):
+                continue
+            out.append({"mount": mount, "fs": fs,
+                        "size_kb": size, "used_kb": used,
+                        "avail_kb": avail, "pct": int(cap.rstrip("%"))})
+        print(json.dumps(out))
+        PYEOF
+      register: diskprobe
+      changed_when: false
+      failed_when: false
+      ignore_unreachable: true
+      check_mode: no
+
+    - name: Store mount snapshot
+      ansible.builtin.set_fact:
+        mounts: "{{ diskprobe.stdout | from_json }}"
+      when: diskprobe.stdout is defined and diskprobe.stdout | length > 0
+      ignore_unreachable: true
+
+    # --- controller-side evaluation: runs once on the first host,
+    # delegated to localhost so --limit can't filter it out ---
+
+    - name: Ensure the report dir exists
+      ansible.builtin.file:
+        path: "{{ benchmark_out }}"
+        state: directory
+        mode: "0755"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Render per-host disk verdicts (probed hosts only; --limit preserves others)
+      ansible.builtin.template:
+        src: disk-headroom.j2
+        dest: "{{ benchmark_out }}/{{ target }}.yml"
+        mode: "0644"
+      loop: "{{ audited_hosts }}"
+      loop_control:
+        loop_var: target
+        label: "{{ target }}"
+      when: hostvars[target].diskprobe is defined
+      delegate_to: localhost
+      run_once: true
+
+    - name: Show alerts (re-rendered in memory — correct under --check too)
+      ansible.builtin.debug:
+        msg: >-
+          {{ target }}:
+          {{ (lookup('ansible.builtin.template', 'disk-headroom.j2')
+              | from_yaml).summary }}
+      loop: "{{ audited_hosts }}"
+      loop_control:
+        loop_var: target
+        label: "{{ target }}"
+      when: hostvars[target].diskprobe is defined
+      delegate_to: localhost
+      run_once: true
+
+    - name: Append probe sample to DISK_TREND_HISTORY (skipped under --check)
+      ansible.builtin.lineinfile:
+        path: "{{ disk_trend_history }}"
+        line: >-
+          {{ {'ts': probe_ts,
+              'epoch': probe_epoch,
+              'host': ssot_key_map.get(item, item),
+              'unreachable': hostvars[item].mounts is not defined,
+              'mounts': hostvars[item].mounts | default([]),
+              'dirs': []} | to_json }}
+        insertafter: EOF
+        create: true
+        mode: "0644"
+      loop: "{{ audited_hosts }}"
+      loop_control:
+        label: "{{ item }}"
+      when:
+        - disk_trend_feed | bool
+        # actually probed this run — --limit-skipped hosts have no
+        # diskprobe result and must not record a false 'unreachable'
+        - hostvars[item].diskprobe is defined
+        # only hosts disk-trend-watch.py also samples (keyed by the
+        # ssot.audit.hosts.yml name) — keeps one series per host
+        - ssot_key_map.get(item, item) in (audit_ssot['hosts'] | default({}))
+      delegate_to: localhost
+      run_once: true
+
+    - name: Compute disk-headroom alert summary and fingerprint
+      ansible.builtin.set_fact:
+        disk_alert_hosts: >-
+          {%- set out = [] -%}
+          {%- for h in audited_hosts -%}
+            {%- if hostvars[h].diskprobe is defined -%}
+            {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
+            {%- if rpt -%}
+              {%- set y = rpt | from_yaml -%}
+              {%- set s = y.get('summary', '') -%}
+              {%- if s.startswith('CRIT') or s.startswith('warn') or s.startswith('unreachable') -%}
+                {%- set kind = 'crit' if s.startswith('CRIT') else ('warn' if s.startswith('warn') else 'unreachable') -%}
+                {%- set _ = out.append({'host': h, 'kind': kind, 'summary': s}) -%}
+              {%- endif -%}
+            {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ out }}
+        disk_alert_fingerprint: >-
+          {%- set out = [] -%}
+          {%- for h in audited_hosts -%}
+            {%- if hostvars[h].diskprobe is defined -%}
+            {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
+            {%- if rpt -%}
+              {%- set y = rpt | from_yaml -%}
+              {%- set s = y.get('summary', '') -%}
+              {%- if s.startswith('CRIT') or s.startswith('warn') or s.startswith('unreachable') -%}
+                {%- set kind = 'crit' if s.startswith('CRIT') else ('warn' if s.startswith('warn') else 'unreachable') -%}
+                {%- set _ = out.append(h ~ ':' ~ kind) -%}
+              {%- endif -%}
+            {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ out | join('|') }}
+      delegate_to: localhost
+      run_once: true
+
+    - name: Notify board-api when disk headroom alerts found
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card"
+        method: POST
+        body_format: json
+        status_code: [200, 201, 400]
+        return_content: true
+        body:
+          id: ansible-disk-headroom-alert
+          title: "Ansible audit: disk headroom alert"
+          column: backlog
+          action: {type: manual}
+          from: "{{ board_from }}"
+          spec: >-
+            Read-only ansible disk-headroom detected CRIT/warn/unreachable mounts.
+            Hosts: {{ disk_alert_hosts | map(attribute='host') | join(', ') }}.
+            Report dir: reports/ansible-benchmark/disk/. No remediation performed.
+      when:
+        - board_notify | bool
+        - (disk_alert_hosts | length) > 0
+      register: disk_alert_card
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fail on unexpected disk alert card create error
+      ansible.builtin.fail:
+        msg: "board-api /card create failed: {{ disk_alert_card.content | default('') }}"
+      when:
+        - board_notify | bool
+        - (disk_alert_hosts | length) > 0
+        - disk_alert_card.status not in [200, 201]
+        - "'already exists' not in (disk_alert_card.content | default(''))"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fetch disk alert card for comment dedupe
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card/ansible-disk-headroom-alert"
+        method: GET
+        return_content: true
+        status_code: [200, 404]
+      register: disk_alert_card_for_comment
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (disk_alert_hosts | length) > 0
+
+    - name: Compute disk alert comment dedupe
+      ansible.builtin.set_fact:
+        disk_alert_comment_text: >-
+          ansible disk-headroom: {{ disk_alert_hosts | length }} host(s) alerting.
+          fp={{ disk_alert_fingerprint }}. {{ disk_alert_hosts | to_json }}
+        disk_alert_comment_is_dup: >-
+          {{
+            (disk_alert_card_for_comment.status | default(404)) == 200
+            and (
+              ((disk_alert_card_for_comment.json.card.comms | default([]))
+                | selectattr('from', 'equalto', board_from)
+                | selectattr('text', 'defined')
+                | selectattr('text', 'search', 'fp=' ~ (disk_alert_fingerprint | regex_escape))
+                | list | length) > 0
+            )
+          }}
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (disk_alert_hosts | length) > 0
+
+    - name: Comment disk alert summary
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/comment"
+        method: POST
+        body_format: json
+        status_code: [200, 201]
+        body:
+          id: ansible-disk-headroom-alert
+          from: "{{ board_from }}"
+          text: "{{ disk_alert_comment_text }}"
+      when:
+        - board_notify | bool
+        - (disk_alert_hosts | length) > 0
+        - not (disk_alert_comment_is_dup | default(false) | bool)
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fetch disk alert card for cleared check
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card/ansible-disk-headroom-alert"
+        method: GET
+        return_content: true
+        status_code: [200, 404]
+      register: disk_alert_card_for_cleared
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (disk_alert_hosts | length) == 0
+
+    - name: Compute disk alert cleared comment
+      ansible.builtin.set_fact:
+        disk_alert_cleared_comment: >-
+          ansible disk-headroom: all clear, no alert hosts. fp=cleared.
+        disk_alert_cleared_needed: >-
+          {{
+            (disk_alert_card_for_cleared.status | default(404)) == 200
+            and (
+              (
+                (disk_alert_card_for_cleared.json.card.comms | default([]))
+                | selectattr('from', 'equalto', board_from)
+                | selectattr('text', 'defined')
+                | selectattr('text', 'search', 'fp=')
+                | list
+              ) | length > 0
+            )
+            and (
+              'fp=cleared' not in (
+                (
+                  (disk_alert_card_for_cleared.json.card.comms | default([]))
+                  | selectattr('from', 'equalto', board_from)
+                  | selectattr('text', 'defined')
+                  | selectattr('text', 'search', 'fp=')
+                  | list | last
+                ).text | default('')
+              )
+            )
+          }}
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (disk_alert_hosts | length) == 0
+
+    - name: Comment disk alert cleared
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/comment"
+        method: POST
+        body_format: json
+        status_code: [200, 201]
+        body:
+          id: ansible-disk-headroom-alert
+          from: "{{ board_from }}"
+          text: "{{ disk_alert_cleared_comment }}"
+      when:
+        - board_notify | bool
+        - (disk_alert_hosts | length) == 0
+        - disk_alert_cleared_needed | default(false) | bool
+      delegate_to: localhost
+      run_once: true
+
+    - name: Show kanban notify summary
+      ansible.builtin.debug:
+        msg:
+          board_notify: "{{ board_notify }}"
+          alert_hosts: "{{ disk_alert_hosts | map(attribute='host') | list }}"
+          comment_skipped_as_dup: "{{ disk_alert_comment_is_dup | default(false) }}"
+          cleared_comment_posted: "{{ disk_alert_cleared_needed | default(false) }}"
+      when: board_notify | bool
+      delegate_to: localhost
+      run_once: true

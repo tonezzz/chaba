@@ -1,0 +1,184 @@
+---
+# host-load-guard.yml — deploy the CPU-job wrapper, aggregate slice and alarms.
+#
+# Follow-up to the 2026-11-25 tony-omen load incident (1m load ~57-63 on 12
+# CPUs, swap 16/16 GiB, open-jev OOM-killed at 14:21). Structural gaps:
+#   1. Long CPU jobs were bare `nohup ... &` from dead shells — no timeout,
+#      thread cap, stable log path, or aggregate limit.
+#   2. Netdata stock load alarms are `to: silent`, so spikes never reached
+#      the board-api inbox. Stock `used_swap` already notifies; do not duplicate.
+#
+# 2026-11-26: the wrapper now gates NEW jobs on the hottest thermal zone
+# (>80C deny, sticky until <=75C). Deployed to all Linux hosts, not just
+# tony-omen, so the thermal gate follows CPU jobs wherever they run. The
+# netdata load/RAM alarms stay tony-omen-only (other hosts use stock alarms).
+#
+# Changes (all idempotent):
+#   * scripts/ada/run-cpu-job.sh -> ~/.local/bin/run-cpu-job.sh (0755)
+#     systemd-run --user --scope in cpu-jobs.slice + OMP cap + timeout + nice
+#     + hottest-zone thermal admission (CPU_JOB_TEMP_CHECK=0 to bypass).
+#   * ~/.config/systemd/user/cpu-jobs.slice (0644) — CPUQuota=600% and
+#     MemoryMax=16G bound the SUM of all cpu jobs, not just each one.
+#   * tony-omen only: health alarm file -> ~/netdata/etc/health.d/tony-load.conf
+#     (root-owned 0644), bound into the netdata container by an existing mount.
+#     Netdata picks up health.d changes after `netdatacli reload-health`.
+#
+# Usage (from ansible/) — ALWAYS pass an explicit --limit or inventory group:
+#   ansible-playbook playbooks/host-load-guard.yml --check --diff --limit tony-omen
+#   ansible-playbook playbooks/host-load-guard.yml --limit tony-omen
+#   ansible-playbook playbooks/host-load-guard.yml --check --diff --limit 'vps'
+#
+# Rollback: delete the deployed files; remove --slice from the wrapper and
+# let systemd garbage-collect the slice. open-jev drop-ins are separate.
+
+- name: Deploy host load guard
+  hosts: all:!macos:!disabled
+  # No fact gathering: portable laptops prompt for interactive sudo during
+  # setup, and every path below is derivable from inventory ansible_user.
+  gather_facts: false
+  # ansible.cfg sets become=True globally; this play is mostly user-owned
+  # files. Root is requested only for the tony-omen netdata alarms.
+  become: false
+
+  vars:
+    remote_home: "/home/{{ ansible_user }}"
+    wrapper_src: "{{ playbook_dir }}/../../scripts/ada/run-cpu-job.sh"
+    wrapper_dest: "{{ remote_home }}/.local/bin/run-cpu-job.sh"
+    slice_dest: "{{ remote_home }}/.config/systemd/user/cpu-jobs.slice"
+    netdata_health_dir: "/home/tony/netdata/etc/health.d"
+    alarm_dest: "{{ netdata_health_dir }}/tony-load.conf"
+
+  vars_files:
+    - vars/thermal.yml
+
+  tasks:
+    - name: Ensure chaba config directory exists
+      ansible.builtin.file:
+        path: "{{ remote_home }}/.config/chaba"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0700"
+      tags: [thermal]
+
+    - name: Install thermal policy (single source of truth)
+      ansible.builtin.template:
+        src: templates/thermal.env.j2
+        dest: "{{ remote_home }}/.config/chaba/thermal.env"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0644"
+      tags: [thermal]
+
+    - name: Install bounded CPU-job wrapper
+      ansible.builtin.copy:
+        src: "{{ wrapper_src }}"
+        dest: "{{ wrapper_dest }}"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0755"
+      tags: [wrapper]
+
+    - name: Ensure user systemd config directory exists
+      ansible.builtin.file:
+        path: "{{ remote_home }}/.config/systemd/user"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0700"
+      tags: [slice]
+
+    - name: Install aggregate CPU-job slice
+      ansible.builtin.copy:
+        dest: "{{ slice_dest }}"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0644"
+        content: |
+          # Managed by chaba/ansible (host-load-guard.yml). Do not edit on host.
+          # Bounds the SUM of all cpu-job-*.scope units, so a second or third
+          # job cannot saturate all 12 cores or exhaust RAM.
+          [Unit]
+          Description=Bounded slice for CPU-heavy eval jobs
+
+          [Slice]
+          CPUQuota=600%
+          MemoryMax=16G
+      tags: [slice]
+
+    - name: Reload user systemd manager for the new slice
+      # Point systemctl at the user's runtime bus so no sudo is needed
+      # (portable laptops require interactive sudo for become).
+      ansible.builtin.shell:
+        cmd: "XDG_RUNTIME_DIR=/run/user/$(id -u) systemctl --user daemon-reload"
+        executable: /bin/bash
+      changed_when: false
+      tags: [slice]
+
+    - name: Install HA telemetry mirror (tony-omen only)
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../scripts/home-assistant/telemetry-ha-push.py"
+        dest: "/home/tony/CascadeProjects/chaba/scripts/home-assistant/telemetry-ha-push.py"
+        owner: tony
+        group: tony
+        mode: "0644"
+      when: inventory_hostname == 'tony-omen'
+      tags: [ha]
+
+    - name: Ensure Netdata health.d exists
+      ansible.builtin.file:
+        path: "{{ netdata_health_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      become: true
+      when: inventory_hostname == 'tony-omen'
+      tags: [alarms]
+
+    - name: Install load and RAM alarms (swap alarm is stock)
+      ansible.builtin.copy:
+        dest: "{{ alarm_dest }}"
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          # Managed by chaba/ansible (host-load-guard.yml). Do not edit on host.
+          # Stock load alarms are `to: silent`; these notify via the existing
+          # health_alarm_notify.conf -> board-api /inbox custom sender.
+
+                alarm: tony_load_1_notify
+                   on: system.load
+                class: Utilization
+                 type: System
+            component: Load
+          host labels: _os=linux
+               lookup: max -1m unaligned of load1
+                 calc: ($load_cpu_number == nan) ? (nan) : ($this * 100 / $load_cpu_number)
+                units: % of CPUs
+                every: 1m
+                 warn: $this > (($status >= $WARNING) ? (200) : (250))
+                 crit: $this > (($status == $CRITICAL) ? (400) : (500))
+                delay: down 15m multiplier 1.5 max 1h
+              summary: Load 1m above 2x CPU count
+                 info: load1 as a percentage of active CPUs; warn 200%, crit 400%
+                   to: sysadmin
+
+                alarm: tony_ram_pressure
+                   on: system.ram
+                class: Utilization
+                 type: System
+            component: Memory
+          host labels: _os=linux
+                 calc: (($used + $free + $cached + $buffers) > 0) ? ($used * 100 / ($used + $free + $cached + $buffers)) : 0
+                units: %
+                every: 1m
+                 warn: $this > (($status >= $WARNING) ? (85) : (90))
+                 crit: $this > (($status == $CRITICAL) ? (92) : (95))
+                delay: down 15m multiplier 1.5 max 1h
+              summary: RAM utilization above 90%
+                 info: used / (used + free + cached + buffers) as a percentage
+                   to: sysadmin
+      become: true
+      when: inventory_hostname == 'tony-omen'
+      tags: [alarms]

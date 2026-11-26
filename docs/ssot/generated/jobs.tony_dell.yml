@@ -9,6 +9,10 @@ jobs:
     schedule: "every 1h"
     dispatch: "systemd"
     persistent: true
+  - id: bank-inspect
+    schedule: "*-*-* 05:40:00"
+    dispatch: "systemd"
+    persistent: true
   - id: check-serve-config
     schedule: "*-*-* *:23:00"
     dispatch: "systemd"
@@ -50,8 +54,15 @@ jobs:
   - id: network-scan-tony
     schedule: "every 15m"
     dispatch: "systemd"
+  - id: opencode-models-sync
+    schedule: "*-*-* *:41:00"
+    dispatch: "systemd"
+    persistent: true
   - id: podman-lock-watchdog
     schedule: "every 2min"
+    dispatch: "systemd"
+  - id: queue-mgr
+    schedule: "every 5m"
     dispatch: "systemd"
   - id: system-report-watchdog
     schedule: "hourly"

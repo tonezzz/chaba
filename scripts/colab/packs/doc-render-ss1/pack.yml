@@ -8,6 +8,8 @@
 # packs/doc-embeds-ss1/embeds (fetch mirrors them on fleet; on Colab the
 # store path resolves directly).
 name: doc-render-ss1
+hf_repos:                # selective restore-hf-cache (ADA-0806)
+  - Lightricks/LTX-Video
 needs:
   gpu_gb: 14
   disk_gb: 30
@@ -49,7 +51,7 @@ prep: |
 run: |
   import os, time, datetime, gc, subprocess
   import torch
-  for _v in ('model', 'pipe'):
+  for _v in ('model', 'pipe', 'enc', 'tok'):
       globals().pop(_v, None)
   gc.collect(); torch.cuda.empty_cache()
   from diffusers import LTXPipeline, LTXImageToVideoPipeline

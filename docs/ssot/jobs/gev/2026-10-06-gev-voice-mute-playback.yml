@@ -1,0 +1,204 @@
+title: GEV voice — mute-invariant regression check, iOS doc, playback gap closed
+subtitle: >
+  Dispatch of kanban card gev-voice (HELD — gods-eye-view repo not
+  dispatchable, see gev-program-design). Worked the card inside chaba:
+  regression-tested the GainNode mute invariant behaviorally against the
+  staged bundle, codified the post-build patch set (incl. the new client
+  playback patch) into an idempotent script, forwarded model_turn audio in
+  the bridge, and documented the iOS mic constraint.
+icon: target
+
+planning:
+  goal: >
+    Cover card gev-voice without the (non-dispatchable) gods-eye-view repo:
+    prove "muted => zero outbound PCM frames" against the bundle that
+    actually ships, document the iOS standalone-PWA mic constraint, and
+    close the playback gap end-to-end (bridge forward + client playback).
+  scope: >
+    stacks/tony-dell/gev-gemini/ (bridge.py audio forward + unit check),
+    stacks/web/public/apps/gev/ (vendored bundle patch + index.html),
+    stacks/web/scripts/gev-patch-dist.mjs (post-build patch codification),
+    stacks/web/input-bridge/gev-voice-check.mjs (regression check),
+    docs/ssot/apps/ssot.apps.gev.yml, AGENTS.md GEV section.
+  success_criteria:
+    - "muted => zero outbound PCM frames asserted behaviorally, incl. a
+      flag-stripped mutation run proving the GainNode — not the flag —
+      carries the invariant"
+    - "Binary ws audio path exists end-to-end: bridge forwards model_turn
+      inline_data; bundle plays it via playGeminiAudio"
+    - Checks run green on the staged bundle; old bundle fails only the
+      playback checks (proves check discriminates)
+  risks:
+    - "Minified-bundle patching is anchor-fragile — mitigated: anchors are
+      property names (not minified), patch script exits 2 on anchor-miss,
+      voice-check re-verifies structure + behavior after any repatch."
+    - "Deploy drift: tony-dell must pull chaba + rebuild gev-gemini before
+      live passes --live mode; intentional per dispatch rules."
+  resources:
+    - vendored bundle stacks/web/public/apps/gev/assets/index-D8kXv0di*.js
+    - gev-gemini bridge source (chaba, editable; container on tony-dell)
+  owner: devin (dispatch)
+  estimated_duration: 1 session
+  related_focus:
+    - label: gev-voice
+      file: docs/ssot/kanban/cards/gev-voice.yml
+    - label: gev-program-design
+      file: docs/ssot/kanban/cards/gev-program-design.yml
+
+processing:
+  status: done
+  started_at: "2026-10-06 17:45 +07"
+  steps:
+    - id: 1
+      label: Recon — real voice path in the shipped bundle
+      status: done
+      notes: >
+        ~/gods-eye-view absent on tony-omen; card is HELD for that. The
+        shipped truth is the vendored bundle. Extracted the capture chain:
+        MediaStreamSource -> micGain (init 0) -> ScriptProcessor(4096,1,1)
+        -> destination; onaudioprocess buffers Float32 chunks only while
+        isRecording; setMicrophoneEnabled sets flag AND gain in one
+        transition; flushAndSend resamples to 16kHz PCM16 -> one binary
+        frame + {"type":"end"} per utterance. Inbound: message listener
+        dropped non-string frames entirely — no playback path existed
+        client-side. Bridge requested AUDIO modality but pump_responses
+        forwarded only output_transcription — model audio dropped at the
+        bridge too. Gap was double-sided.
+    - id: 2
+      label: bridge.py — forward model_turn audio
+      status: done
+      notes: >
+        pump_responses now sends each part.inline_data.data as a binary ws
+        frame (symmetric with the client's binary uplink). Unpatched
+        clients ignore non-text frames — safe to deploy ahead of or behind
+        the bundle patch.
+    - id: 3
+      label: audio-forward-check.py
+      status: done
+      notes: >
+        Stubbed google.genai + websockets (sys.modules) so the check runs
+        dependency-free on any host. 7 checks: verbatim binary forwarding,
+        text/done JSON unchanged, interrupted marker, per-part send-failure
+        resilience.
+    - id: 4
+      label: gev-patch-dist.mjs — codify post-build patches
+      status: done
+      notes: >
+        Idempotent patcher owning all documented dist patches
+        (/api, /models prefixes; msaaSamples iOS guard) plus the new voice
+        playback patch (binary listener -> playGeminiAudio PCM16->Float32
+        BufferSource queue on a 24kHz ctx; interrupted -> stopGeminiAudio;
+        cleanupSession closes playCtx). --check mode for verify; exit 2
+        when a minified anchor is missing (i.e. after an upstream rebuild
+        changed shapes). Applied to staged bundle -> index-D8kXv0di-v1.js
+        (-vN suffix convention), index.html script tag updated.
+    - id: 5
+      label: gev-voice-check.mjs — regression check
+      status: done
+      notes: >
+        21 checks on repo bundle: structural (chain order, gain init,
+        flag+gain on same transition, flag-gated buffering) + behavioral
+        (extracted real method bodies driven through a mock graph:
+        positive control, muted=>zero frames, mid-stream mute tail, the
+        flag-stripped mutation proving gain alone silences, and a
+        self-test proving the harness detects a flag slip under a dead
+        gain gate) + playback path + bridge forward + iOS meta. --live
+        mode runs the same checks against tony-dell with drift=WARN.
+        Old bundle: 17/21 (only playback checks fail) — discriminates.
+    - id: 6
+      label: Docs — iOS constraint + status corrections
+      status: done
+      notes: >
+        ssot.apps.gev.yml: Known Issues gained the iOS mic constraint
+        (getUserMedia in mobile Safari yes, standalone PWA no —
+        apple-mobile-web-app-capable=no is deliberate); corrected the stale
+        AudioWorklet/"-v15" playback description to match reality; Testing
+        lists both new checks. AGENTS.md GEV section: patch list now points
+        at gev-patch-dist.mjs, caveat "no audio playback" replaced with the
+        real path.
+
+decisions:
+  - label: Close the gap inside chaba instead of stalling on the HELD repo
+    rationale: >
+      The card's own comms say "pull the work into chaba staging" is a
+      valid unblock path. Everything needed lives here: the bridge source,
+      the staged bundle (the deployed truth — SSOT already notes the
+      working bundle is patched directly), and the Caddy mount. Repo-side
+      changes commit here; reaching users still needs the gated deploy
+      steps on tony-dell.
+    alternatives_considered: >
+      Write needs-input and stall (leaves the card dead until a remote
+      exists); patch only the bridge (client still drops audio — gap not
+      actually closed).
+  - label: Playback via binary frames + BufferSource queue, not AudioWorklet
+    rationale: >
+      Symmetric with the existing uplink (binary PCM frames over the same
+      socket) and far less minified-patch surface than an AudioWorklet
+      (needs a separate module file + worklet plumbing inside a bundle we
+      can only patch surgically). Scheduled back-to-back BufferSources give
+      gapless playback for Live's chunked stream.
+    alternatives_considered: >
+      base64-in-JSON frames (33% overhead, churn on every chunk);
+      AudioWorklet (heavier patch, more places to break on rebuild).
+  - label: Behavioral check via extracted method bodies, not full-bundle eval
+    rationale: >
+      Executing the 1.3MB IIFE needs DOM/WebAudio/Cesium mocks — brittle.
+      Brace-matched extraction of setMicrophoneEnabled/onaudioprocess runs
+      the SHIPPED code (not a reimplementation) against a mock graph, and
+      the mutation run proves the check would catch the actual regression.
+    alternatives_considered: >
+      static grep only (can't prove the invariant); headless browser
+      (playlive) — heavier, and the invariant is PCM-level, not UI-level.
+
+changes:
+  - file: stacks/tony-dell/gev-gemini/bridge.py
+    summary: pump_responses forwards server_content.model_turn inline_data audio as binary ws frames.
+  - file: stacks/tony-dell/gev-gemini/audio-forward-check.py
+    summary: New stubbed-deps unit check — verbatim binary forwarding, JSON unchanged, interrupted, send-failure resilience. 7 checks.
+  - file: stacks/web/scripts/gev-patch-dist.mjs
+    summary: New idempotent post-build patcher — api/models prefixes, msaaSamples iOS guard, voice playback patch. --check verify mode.
+  - file: stacks/web/public/apps/gev/assets/index-D8kXv0di-v1.js
+    summary: index-D8kXv0di.js + gev-patch-dist voice patch (binary listener, playGeminiAudio/stopGeminiAudio, interrupted flush, cleanup close); renamed per -vN convention.
+  - file: stacks/web/public/apps/gev/index.html
+    summary: Script tag -> index-D8kXv0di-v1.js.
+  - file: stacks/web/input-bridge/gev-voice-check.mjs
+    summary: New regression check — mute invariant (structural + behavioral + mutation), playback path, bridge forward, iOS meta; repo + --live modes.
+  - file: docs/ssot/apps/ssot.apps.gev.yml
+    summary: iOS mic constraint + corrected playback/bundle descriptions; Testing lists both checks.
+  - file: AGENTS.md
+    summary: GEV section — patch list points at gev-patch-dist.mjs, playback caveat replaced with real path, mute check referenced.
+
+followup:
+  verification:
+    - "node stacks/web/input-bridge/gev-voice-check.mjs -> 21/21 PASS (repo bundle)"
+    - "node stacks/web/input-bridge/gev-voice-check.mjs --bundle=<pre-patch bundle from git> -> 17/21, only playback checks FAIL"
+    - "node stacks/web/input-bridge/gev-voice-check.mjs --live -> playback FAIL + drift WARN until tony-dell pulls (expected)"
+    - "python3 stacks/tony-dell/gev-gemini/audio-forward-check.py -> 7/7 PASS"
+    - "node stacks/web/scripts/gev-patch-dist.mjs stacks/web/public/apps/gev/assets --check -> rc 0 (idempotent)"
+  rollback_plan: >
+    Revert the commit; bundle rename back to index-D8kXv0di.js and restore
+    the index.html tag. bridge.py change is additive (old clients ignore
+    binary frames) so partial revert is safe.
+  handoff:
+    - "Deploy still gated: tony-dell chaba pull (single-writer path) + podman build/restart of gev-gemini. --live mode goes green after."
+    - "If gods-eye-view ever gets a pushable remote/dispatch whitelist entry, port the four patch rules back to src/voice/gevGeminiRealtime.js and delete the client-side patch rules from gev-patch-dist.mjs."
+  deferred:
+    - "Real-device iOS Safari mic test — code/meta verified only."
+    - "vcast_say remains the separate non-Latin TTS path; nothing here touches it."
+
+report:
+  status: done
+  completed_at: "2026-10-06 18:05 +07"
+  summary: >
+    gev-voice unblocked inside chaba despite the HELD repo. The mute
+    invariant now has a real regression check that runs the shipped method
+    bodies through a mock graph — muted yields zero outbound frames, and a
+    flag-stripped mutation proves the GainNode carries the invariant (the
+    card's 'flag alone is insufficient' point, demonstrated). The playback
+    gap is closed end-to-end in-repo: bridge.py forwards model_turn audio
+    as binary frames and the staged bundle (index-D8kXv0di-v1.js) plays
+    them through a scheduled BufferSource queue with interrupted-flush and
+    cleanup. All post-build bundle patches are codified idempotently in
+    gev-patch-dist.mjs so the next upstream rebuild doesn't silently drop
+    playback again. iOS standalone-PWA mic constraint documented in SSOT +
+    AGENTS.md. Not deployed — tony-dell pull + gev-gemini rebuild remain.

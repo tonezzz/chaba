@@ -1,0 +1,25 @@
+title: lane-retention.py summary crash — sweep_ops tuple tolerance
+subtitle: ADA-1370 / card lane-retention-py-crashes-at-summary-swe-b888ce
+icon: wrench
+card: lane-retention-py-crashes-at-summary-swe-b888ce
+
+decisions:
+  root_cause_finding: |
+    Git history shows NO tuple path: prune.sweep() has returned a bare str in
+    every committed version of prune-old-docs.py, and sweep_ops() has always
+    appended those strings. The 2026-11-25 09:57 exit-code on all four
+    ada-retention-* lanes therefore means the deployed copy on idc03
+    (~/CascadeProjects/chaba exec checkout) diverges from origin/master —
+    uncommitted local edit or stale file. Verify with
+    `git -C ~/CascadeProjects/chaba status` / `git diff scripts/ada/` on idc03.
+  fix: |
+    sweep_ops() now normalizes each prune.sweep() result: tuple/list -> first
+    element, non-str dropped, so its -> list[str] contract holds regardless of
+    which prune-old-docs.py variant is deployed. The summary regex at
+    `re.search(r"deleted (\d+)/", line)` then can never see a tuple.
+    (card lane-retention-py-crashes-at-summary-swe-b888ce)
+  tests: |
+    tests/ada/test_lane_retention.py gained TestSweepOps (str passthrough,
+    tuple unwrap, non-str drop) and TestMainOpsOnly — an end-to-end --ops-only
+    main() run with tuple-returning prune.sweep. Red/green verified: the test
+    reproduces the exact TypeError on the pre-fix code.

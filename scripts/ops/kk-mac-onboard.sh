@@ -20,8 +20,10 @@
 #   FLEET_KEYS_FILE  file of ssh pubkey lines seeded into adanest (and
 #                    kkkakk with SEED_KKKAKK=1) authorized_keys.
 #   MODELS           ollama pulls as adanest (default "llama3.1:8b qwen3:14b")
-#   OLLAMA_BIND      ollama listen addr (default 127.0.0.1:11434 — tailnet
-#                    or LAN binding is a later, explicit choice)
+#   OLLAMA_BIND      ollama listen addr (default 0.0.0.0:11434 — matches the
+#                    live net.adanest.ollama.plist since 2026-11-19; SEC-0985
+#                    wants narrow-to-tailnet 100.108.217.17, pending KK sudo,
+#                    card kkmac-ollama-durable-bind)
 #   TAILSCALE_SSH    1 → `tailscale up --ssh` after install
 #   ADANEST_UID      override auto-picked UID (first free >= 503)
 #   EXPECT_MODEL     expected hw.model (default Mac16,9) — safety interlock
@@ -29,12 +31,12 @@ set -euo pipefail
 
 BREW=/opt/homebrew/bin/brew
 OLLAMA=/opt/homebrew/bin/ollama
-PLIST_LABEL=ai.adanest.ollama
+PLIST_LABEL=net.adanest.ollama
 PLIST_PATH=/Library/LaunchDaemons/${PLIST_LABEL}.plist
 ADANEST_HOME=/Users/adanest
 EXPECT_MODEL="${EXPECT_MODEL:-Mac16,9}"
 MODELS="${MODELS:-llama3.1:8b qwen3:14b}"
-OLLAMA_BIND="${OLLAMA_BIND:-127.0.0.1:11434}"
+OLLAMA_BIND="${OLLAMA_BIND:-0.0.0.0:11434}"
 
 say()  { printf '\n== %s\n' "$*"; }
 ok()   { printf '   ok: %s\n' "$*"; }
@@ -145,6 +147,8 @@ write_plist() {  # stdout
     <string>${PLIST_LABEL}</string>
     <key>UserName</key>
     <string>adanest</string>
+    <key>GroupName</key>
+    <string>staff</string>
     <key>ProgramArguments</key>
     <array>
         <string>${OLLAMA}</string>
@@ -156,14 +160,21 @@ write_plist() {  # stdout
         <string>${ADANEST_HOME}</string>
         <key>OLLAMA_HOST</key>
         <string>${OLLAMA_BIND}</string>
+        <key>OLLAMA_MODELS</key>
+        <string>${ADANEST_HOME}/.ollama/models</string>
+        <key>OLLAMA_NUM_PARALLEL</key>
+        <string>1</string>
+        <key>OLLAMA_MAX_LOADED_MODELS</key>
+        <string>1</string>
+        <key>OLLAMA_FLASH_ATTENTION</key>
+        <string>1</string>
+        <key>OLLAMA_KV_CACHE_TYPE</key>
+        <string>q8_0</string>
     </dict>
     <key>RunAtLoad</key><true/>
     <key>KeepAlive</key><true/>
-    <key>ProcessType</key><string>Background</string>
-    <key>StandardOutPath</key><string>${ADANEST_HOME}/Library/Logs/ollama.log</string>
-    <key>StandardErrorPath</key><string>${ADANEST_HOME}/Library/Logs/ollama.err.log</string>
-    <key>SoftResourceLimits</key>
-    <dict><key>NumberOfFiles</key><integer>4096</integer></dict>
+    <key>StandardOutPath</key><string>${ADANEST_HOME}/ollama.log</string>
+    <key>StandardErrorPath</key><string>${ADANEST_HOME}/ollama.err</string>
 </dict>
 </plist>
 EOF

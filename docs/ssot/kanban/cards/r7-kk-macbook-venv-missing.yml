@@ -1,0 +1,301 @@
+id: r7-kk-macbook-venv-missing
+title: 'R7: kk-macbook (tony-macbook) missing python3.14-venv capability'
+column: done
+updated: 2026-11-26 20:34
+brief: 'Full-fleet verify-host-software.yml run found tony-macbook/kk-macbook venv probe failing: python3.14-venv
+  package missing.'
+priority: medium
+tags:
+- r7
+- ansible
+- kk-macbook
+spec: 'Source: ansible verify-host-software.yml full-fleet run 2026-11-23 (controller tony-omen). kk-macbook (inventory
+  tony-macbook) fails venv: python3 -m venv /tmp/.r7-venv-check reports ensurepip failure and suggests installing
+  python3.14-venv via apt (needs sudo). python3 3.14.4 passes. Fix: on tony-macbook install python3.14-venv (sudo)
+  or per host-capability-bootstrap.sh/manual path, then rerun verify-host-software --limit tony-macbook. Laptop
+  - fix when on-tailnet/available.'
+ref: SYS-0040
+comms:
+- at: 2026-11-23 17:07
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-23 17:08
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:10
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:10
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:23
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:40
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:07
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 19:44
+  from: devin
+  text: 'Verified live 2026-11-24 19:42: tony-macbook is Linux (not macOS); python3 3.14.4 at /usr/bin/python3;
+    python3 -m venv fails with ensurepip unavailable; apt-cache policy shows python3.14-venv 3.14.4-1ubuntu0.2 available;
+    sudo -n true -> interactive authentication required, so an unattended install is not possible. Failed probe
+    dir cleaned. Blocker narrowed to sudo, not package availability.'
+- at: 2026-11-24 19:44
+  from: devin
+  text: 'raised request install-python3-14-venv-on-tony-macbook-e29487: Install python3.14-venv on tony-macbook
+    (requires your sudo), or leave the R7 venv probe blocked?'
+- at: 2026-11-24 20:00
+  from: tony
+  text: 'answered install-python3-14-venv-on-tony-macbook-e29487: Run sudo apt install -y python3.14-venv on tony-macbook,
+    then rerun verify-host-software --limit tony-macbook (recommended)'
+- at: 2026-11-24 20:00
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-24 20:09
+  from: chaba
+  text: 'answer-sweep: executed ''Run sudo apt install -y python3.14-venv on tony-macbook, the'' -> queued for processing'
+- at: 2026-11-24 20:09
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 4.29 > 1.5)'
+- at: 2026-11-24 20:09
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-24 20:10
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.64 > 0.85)'
+- at: 2026-11-24 20:10
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 20:10
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.06 > 1.0)'
+- at: 2026-11-24 20:10
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.81 > 1.0)'
+- at: 2026-11-24 20:10
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (3/3)'
+- at: 2026-11-24 20:13
+  from: tony-omen
+  text: claimed
+- at: 2026-11-24 20:14
+  from: chaba
+  text: started devin-task-20261124-201439-source-ansible-verify-host-sof on tony-omen (dispatch)
+- at: 2026-11-24 20:14
+  from: chaba
+  text: 'primer injected 8 lesson(s): [r7-kk-macbook-venv-missing] Verified live 2026-11-24 19:42: tony-macbook
+    is Lin; [ansible-verify-host-software-r7] Full-fleet run 2026-11-23 (controller tony-ome; [nest-percussion]
+    primer injected 8 lesson(s): [devnest-queue-consolidation] VER; tony-macbook has no sudo/pipx/pip for dispatch
+    sessions; `uv tool install ansibl; [michael-lane-context-window] primer injected 8 lesson(s): [ansible-verify-host-;
+    [publish-promote-knowledge-capture-ssot-w-d34a39] Phase B+ an'
+- at: 2026-11-24 20:20
+  from: devin
+  text: 'Re-checked tony-macbook 20:2x: venv probe still fails, python3.14-venv still not installed. sudo -n fails
+    (interactive auth required); sudoers NOPASSWD only covers apt-get update/upgrade/devin-desktop — no install
+    path for me. sshd PermitUserEnvironment=no, /usr/local/bin not writable, so no user-space python3 shim. Blocked
+    on root: needs Tony to run the apt install (or grant a NOPASSWD rule).'
+- at: 2026-11-24 20:20
+  from: devin
+  text: 'raised request sudo-on-tony-macbook-needs-your-password-364cd9: sudo on tony-macbook needs your password
+    — I cannot run the approved install unattended. Please either: (a) run `ssh ton'
+- at: 2026-11-24 20:21
+  from: chaba
+  text: 'raised request job-input-r7-kk-macbook-venv-missing: Job needs your input: sudo on tony-macbook needs your
+    password — please run `ssh tony-macbook` then `sudo apt install -y'
+- at: 2026-11-24 20:21
+  from: chaba
+  text: 'needs input: sudo on tony-macbook needs your password — please run `ssh tony-macbook` then `sudo apt install
+    -y python3.14-venv` yourself (board request sudo-on-tony-macbook-needs-your-password-364cd9 has options), or
+    add a NOPASSWD rule so I can do it.'
+- at: 2026-11-24 20:23
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-201439-source-ansible-verify-host-sof no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-11-24 20:23
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261124-201439-source-ansible-verify-host-sof on tony-omen still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-24 20:46
+  from: tony
+  text: 'answered job-input-r7-kk-macbook-venv-missing: answer — Answer — reply in chat'
+- at: 2026-11-24 20:46
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
+- at: 2026-11-24 20:47
+  from: ada
+  text: 'answer received — resuming: answer — Answer — reply in chat'
+- at: 2026-11-24 20:47
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-24 20:51
+  from: devin
+  text: 'Resolved 2026-11-24 (Tony installed python3.14-venv with sudo). Verified live: python3 -m venv /tmp/.r7-venv-check-20261124b
+    succeeds and pip 25.1.1 runs inside it (probe dir cleaned); reran ansible-playbook playbooks/verify-host-software.yml
+    --limit tony-macbook on tony-omen -> RC=0, tony-macbook ok=8 changed=0 unreachable=0 failed=0, summary: tony-macbook
+    ok (2/2 capabilities pass). The 20:14 dispatch BLOCKED finding and the open sudo request are superseded. Closing.'
+- at: 2026-11-24 20:51
+  from: tony
+  text: 'answered sudo-on-tony-macbook-needs-your-password-364cd9: proceed'
+- at: 2026-11-24 20:51
+  from: tony
+  text: closed by tony
+- at: 2026-11-24 20:51
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:48
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:58
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:03
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:34
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+requests:
+- id: install-python3-14-venv-on-tony-macbook-e29487
+  ask: Install python3.14-venv on tony-macbook (requires your sudo), or leave the R7 venv probe blocked?
+  status: answered
+  at: 2026-11-24 19:44
+  from: devin
+  options:
+  - Run sudo apt install -y python3.14-venv on tony-macbook, then rerun verify-host-software --limit tony-macbook
+    (recommended)
+  - Leave blocked; I will handle the install offline
+  suggested: Run sudo apt install -y python3.14-venv on tony-macbook, then rerun verify-host-software --limit tony-macbook
+    (recommended)
+  answer: Run sudo apt install -y python3.14-venv on tony-macbook, then rerun verify-host-software --limit tony-macbook
+    (recommended)
+  executed: 2026-11-24 queue
+- id: sudo-on-tony-macbook-needs-your-password-364cd9
+  ask: 'sudo on tony-macbook needs your password — I cannot run the approved install unattended. Please either:
+    (a) run `ssh tony-macbook` then `sudo apt install -y python3.14-venv` yourself (then I rerun verify --limit
+    tony-macbook), or (b) add a NOPASSWD sudoers entry for `apt-get -y install python3.14-venv` and I will do it,
+    or (c) pick an alternative (e.g. uv-managed python3.14 + manifest probe change). Recommended: (a).'
+  status: answered
+  at: 2026-11-24 20:20
+  from: devin
+  options:
+  - proceed
+  - hold
+  answer: proceed
+- id: job-input-r7-kk-macbook-venv-missing
+  ask: 'Job needs your input: sudo on tony-macbook needs your password — please run `ssh tony-macbook` then `sudo
+    apt install -y python3.14-venv` yourself (board request sudo-on-tony-macbook-needs-your-password-364cd9 has
+    options), or add a NOPASSWD rule so I can do it.'
+  status: answered
+  at: 2026-11-24 20:21
+  from: chaba
+  options:
+  - id: answer
+    label: Answer — reply in chat
+    action: none
+  - id: hold
+    label: Hold — leave blocked
+    action: hold
+  answer: answer — Answer — reply in chat
+action:
+  type: dispatch
+  status: done
+  lane: free_lane
+  lane_source: claim
+  model: swe-2-flash-medium
+  runner: tony-omen
+  attempts: 1
+  sweep:
+    stale_running: 2026-11-24 20:23
+    dirty: 1
+claim:
+  since: 2026-11-24 20:13

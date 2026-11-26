@@ -1,0 +1,82 @@
+id: 2026-11-24-queue-mgr
+title: queue-mgr — ada-nest Drive queue -> WP nest_job mirror (OPS-0759 leg 2)
+card: colab-offload-queue-pack-batch-gpu-jobs-1499a3
+date: 2026-11-24
+host: tony_dell
+status: built-awaiting-deploy
+
+summary: >
+  Builds the queue-mgr daemon named "next in the OPS-0759 build order" by
+  the 2026-10-23 unified-mutations job record and referenced (as designed
+  but unbuilt) across colab-mcp-jobs.md / ssot.wp-boards.yml /
+  ssot.gdrive-roots.yml. One-shot poller on tony-dell reads
+  gdrive:ada-nest queue/packs state over rclone and upserts WP nest_job
+  posts through board-api POST /job — the only write path; this host
+  holds no WP creds.
+
+contract:
+  root: >
+    ada-nest-queue (kind=queue) — status DERIVED from children:
+    running > queued > done/failed-mix; 'stalled' deliberately unused
+    (Colab recycles mid-job as normal; stall detection stays in
+    nest-queue-status.py / nest-queue-health.py)
+  children: packs/<name>/ -> slug=<name> kind=pack;
+    JOBS.py entries -> slug=job-<name> kind=sub; all parent=ada-nest-queue
+  status_map: >
+    pack: done marker -> done | failed marker -> failed | fresh
+    heartbeat names it -> running | claim/ -> claimed | else queued.
+    job:  done marker (work: queue/done; env: freshest env-done/<boot>)
+    -> done | heartbeat names it -> running | else queued.
+  writes: >
+    delta-only — per-slug fingerprint in ~/.local/state/queue-mgr.json;
+    comms lines appended on transitions only; failed POST leaves the
+    fingerprint un-advanced (retried next tick); root POSTs before
+    children (parent resolves by slug at write time).
+  scan_cost: >
+    ~6 rclone calls + one batched pack.yml fetch + per-pack claim/done
+    presence from a single recursive inventory listing. Done-marker
+    CONTENT is never cat'ed (existence is the signal) — that change took
+    the tick from >280s to ~47s on the live store.
+
+files:
+  - scripts/ops/queue-mgr.py            # the daemon (stdlib only)
+  - tests/ops/test_queue_mgr.py         # 21 tests
+  - docs/ssot/infrastructure/ssot.jobs.yml  # queue-mgr job entry, tony_dell 5m
+  - systemd/generated/tony_dell/queue-mgr.{service,timer}  # rendered
+  - docs/kb/colab-mcp-jobs.md           # member-surface mirror section
+  - docs/kb/board-api-write-door.md     # /job caller note
+
+ops:
+  unit: queue-mgr.timer (OnUnitActiveSec=5min, TimeoutStartSec=180)
+  state: ~/.local/state/queue-mgr.json
+  kill_switch: touch ~/.config/queue-mgr.off on tony-dell (or QUEUE_MGR=off)
+  dry_run: python3 scripts/ops/queue-mgr.py --dry-run
+  env: QUEUE_MGR_REMOTE / QUEUE_MGR_API / QUEUE_MGR_STATE /
+    QUEUE_MGR_HB_FRESH_S (120) / QUEUE_MGR_RUNNER_FRESH_S (900)
+
+deploy_dependencies:
+  - merge to master -> tony-dell chaba checkout sync (chaba-repo-sync)
+  - "install units: render-jobs.py --install on tony-dell (or the standard
+    unit-install path) — NOT done by this dispatch"
+  - first live tick backfills ~77 nest_job posts (one-time); WP
+    chaba-boards v0.9.0 nest_job CPT is already deployed (verified
+    2026-10-26, posts 2603-2606)
+
+verify:
+  - python3 -m unittest tests.ops.test_queue_mgr   # 21 tests
+  - python3 scripts/ops/queue-mgr.py --dry-run     # live store, no writes
+  - python3 scripts/render-jobs.py --check         # units in sync
+  - "post-deploy rclone-free check — WP /wp/nest_job/ archive lists
+    ada-nest-queue parent with pack children; queue-mgr.state shows fps"
+
+lessons:
+  - "rclone cat per marker is the scan killer — 60 done markers x ~3s
+    Drive RTT blew the tick budget; inventory presence beats content
+    when downstream never reads it."
+  - runner.id ts is boot-time, not refreshed — heartbeat (15s rewrite)
+    is the only liveness signal; freshness-checking runner.id marks
+    long sessions stale.
+  - board-api /job drops meta keys outside JOB_META_KEYS — queue depth
+    counts ride in comms text, not meta.
+  - env-done/<boot_id> dirs are not time-sortable (random boot_id);
+    pick the runner.id boot when fresh else max dir mtime.

@@ -10,8 +10,9 @@
 # aborts the moment the main queue wants the GPU back.
 #
 # Eligibility — ALL must hold before a pack is claimed, re-checked mid-run:
-#   1. queue/heartbeat is fresh (age <= GAP_STALE_S, default 60s)
-#   2. heartbeat phase is 'prep' or 'prep-wait'
+#   1. main-queue liveness is fresh (queue/lease ts, heartbeat fallback;
+#      age <= GAP_STALE_S, default 60s)
+#   2. liveness phase is 'prep' or 'prep-wait'
 #   3. nvidia-smi reports >= pack.min_free_gpu_gb free VRAM
 #   4. queue/gap-lease is free, stale, or already ours (one gap runner)
 #   5. pack is unclaimed, has no done/failed marker, is not disabled
@@ -87,11 +88,30 @@ def say(msg):
 
 
 def heartbeat():
-    """queue/heartbeat -> (age_s, job, phase). Missing/corrupt = stale."""
+    """Main-queue liveness -> (age_s, job, phase). queue/lease is the
+    unified file (ADA-0806: {worker,epoch,ts,job,phase}); the legacy
+    queue/heartbeat '<epoch> <job> <phase>' text is the fallback for
+    pre-unification runners. Missing/corrupt = stale."""
+    ts = job = phase = ''
     try:
-        p = (Q / 'heartbeat').read_text().split()
-        return time.time() - float(p[0]), ' '.join(p[1:-1]), p[-1]
+        d = json.loads((Q / 'lease').read_text())
+        ts = str(d.get('ts') or '')
+        job = str(d.get('job') or '')
+        phase = str(d.get('phase') or '')
     except Exception:
+        pass
+    if not (ts and phase):
+        try:
+            p = (Q / 'heartbeat').read_text().split()
+            if not ts:
+                ts = p[0]
+            if not phase:
+                job, phase = ' '.join(p[1:-1]), p[-1]
+        except Exception:
+            pass
+    try:
+        return time.time() - float(ts), job, phase
+    except (TypeError, ValueError):
         return float('inf'), '', ''
 
 

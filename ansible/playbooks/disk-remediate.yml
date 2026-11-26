@@ -1,0 +1,217 @@
+---
+# disk-remediate.yml — assess -> verify -> fix disk pressure, idempotently.
+#
+# Companion to disk-headroom.yml (instantaneous df audit + trend feed) and
+# scripts/ada/disk-trend-watch.py (trend -> cards). This playbook adds the
+# missing FIX half, but keeps it opt-in and narrow:
+#
+#   * default run is DRY RUN — it reports thresholds and would-be actions;
+#     nothing is deleted unless `-e disk_remediate_apply=true` is passed;
+#   * only REBUILDABLE caches are cleanup candidates (uv, pip, journal).
+#     Never user documents, never personal caches on macOS member devices;
+#   * thresholds come from docs/ssot/infrastructure/ssot.audit.hosts.yml
+#     (max_root_disk_percent, default 90) plus the 15 GiB absolute floor
+#     shared with the mddb-backup guard;
+#   * always use --limit. No blanket fleet runs, no cleanup on kk-mac.
+#
+# Usage (from ansible/ on the controller):
+#   ansible-playbook -i inventory/hosts.yml playbooks/disk-remediate.yml \
+#     --check --diff --limit tony-macbook
+#   ansible-playbook -i inventory/hosts.yml playbooks/disk-remediate.yml \
+#     --limit tony-macbook -e disk_remediate_apply=true
+#
+# macOS hosts get an audit-only play (read-only df); the Linux fix tasks are
+# tagged `fix` so `--skip-tags fix` is an additional safety net.
+- name: Disk pressure assess, verify and remediate (Linux)
+  hosts: all:!macos:!disabled
+  gather_facts: true
+  become: false
+
+  vars:
+    disk_remediate_apply: false
+    disk_min_free_gib: 15
+    disk_root_max_pct_default: 90
+    disk_uv_cap_gib: 8
+    disk_pip_cap_mib: 1024
+    disk_log_cap_mib: 2048
+    disk_journal_vacuum: 500M
+
+  tasks:
+    - name: Guard against unscoped remediation
+      ansible.builtin.assert:
+        that:
+          - (not (disk_remediate_apply | bool)) or ((ansible_limit | default('')) | length > 0)
+        fail_msg: >-
+          disk_remediate_apply=true requires --limit. Blanket fleet cleanup
+          is not permitted — scope the run to named hosts.
+      tags: [fix]
+
+    - name: Load the host SSOT entry for disk thresholds
+      ansible.builtin.set_fact:
+        disk_ssot_host: >-
+          {{ ((lookup('file', playbook_dir ~
+               '/../../docs/ssot/infrastructure/ssot.audit.hosts.yml')
+               | from_yaml).hosts | default({}))
+               .get(inventory_hostname, {}) }}
+
+    - name: Resolve the declared root-disk ceiling
+      ansible.builtin.set_fact:
+        disk_root_max_pct: >-
+          {{ (disk_ssot_host.get('expected_resources', {}) or {})
+             .get('max_root_disk_percent', disk_root_max_pct_default)
+             | float }}
+
+    - name: Probe root filesystem headroom
+      ansible.builtin.command: df -k /
+      check_mode: false  # read-only: must run even in dry-run/report mode
+      changed_when: false
+      register: disk_df_root
+
+    - name: Parse root headroom
+      ansible.builtin.set_fact:
+        disk_root_pct: "{{ (disk_df_root.stdout_lines[1].split()[4] | replace('%', '')) | int }}"
+        disk_root_avail_kib: "{{ disk_df_root.stdout_lines[1].split()[3] | int }}"
+        disk_root_avail_gib: >-
+          {{ ((disk_df_root.stdout_lines[1].split()[3] | int) / 1048576)
+             | round(1) }}
+
+    - name: Probe rebuildable cache sizes
+      ansible.builtin.command: "du -sk {{ item }}"
+      check_mode: false
+      loop:
+        - "{{ ansible_env.HOME }}/.cache/uv"
+        - "{{ ansible_env.HOME }}/.cache/pip"
+        - /var/log
+      changed_when: false
+      failed_when: false
+      register: disk_du
+
+    - name: Parse cache sizes
+      ansible.builtin.set_fact:
+        disk_uv_kib: >-
+          {{ (disk_du.results[0].stdout.split()[0] | int)
+             if disk_du.results[0].rc == 0 else 0 }}
+        disk_pip_kib: >-
+          {{ (disk_du.results[1].stdout.split()[0] | int)
+             if disk_du.results[1].rc == 0 else 0 }}
+        disk_log_kib: >-
+          {{ (disk_du.results[2].stdout.split()[0] | int)
+             if disk_du.results[2].rc == 0 else 0 }}
+
+    - name: Locate available cleanup tools
+      ansible.builtin.command: "command -v {{ item }}"
+      check_mode: false
+      loop: [uv, journalctl]
+      changed_when: false
+      failed_when: false
+      register: disk_tools
+
+    - name: Record tool paths
+      ansible.builtin.set_fact:
+        disk_uv_bin: "{{ disk_tools.results[0].stdout | trim }}"
+        disk_journal_bin: "{{ disk_tools.results[1].stdout | trim }}"
+
+    - name: Verify whether remediation is warranted
+      ansible.builtin.set_fact:
+        disk_needs_fix: >-
+          {{ (disk_root_pct | int) >= (disk_root_max_pct | float)
+             or (disk_root_avail_gib | float) < (disk_min_free_gib | float) }}
+
+    - name: Report assessment (dry-run by default)
+      ansible.builtin.debug:
+        msg:
+          - >-
+            {{ inventory_hostname }} root={{ disk_root_pct }}%
+            avail={{ disk_root_avail_gib }}GiB
+            ceiling={{ disk_root_max_pct }}% floor={{ disk_min_free_gib }}GiB
+            needs_fix={{ disk_needs_fix }}
+          - >-
+            uv={{ disk_uv_kib }}KiB pip={{ disk_pip_kib }}KiB
+            /var/log={{ disk_log_kib }}KiB
+          - >-
+            apply={{ disk_remediate_apply }}
+            (false = dry run; only rebuildable caches are candidates)
+
+    - name: Purge uv cache when above cap
+      ansible.builtin.command: "{{ disk_uv_bin }} cache clean"
+      register: disk_uv_clean
+      changed_when: true
+      when:
+        - disk_needs_fix | bool
+        - disk_remediate_apply | bool
+        - not ansible_check_mode
+        - disk_uv_bin | length > 0
+        - (disk_uv_kib | int) > (disk_uv_cap_gib | int) * 1048576
+      tags: [fix]
+
+    - name: Purge pip cache when above cap
+      ansible.builtin.command: python3 -m pip cache purge
+      register: disk_pip_purge
+      changed_when: true
+      when:
+        - disk_needs_fix | bool
+        - disk_remediate_apply | bool
+        - not ansible_check_mode
+        - (disk_pip_kib | int) > (disk_pip_cap_mib | int) * 1024
+      tags: [fix]
+
+    - name: Vacuum journal when /var/log is above cap
+      ansible.builtin.command: "{{ disk_journal_bin }} --vacuum-size={{ disk_journal_vacuum }}"
+      become: true
+      register: disk_journal_clean
+      changed_when: true
+      when:
+        - disk_needs_fix | bool
+        - disk_remediate_apply | bool
+        - not ansible_check_mode
+        - disk_journal_bin | length > 0
+        - (disk_log_kib | int) > (disk_log_cap_mib | int) * 1024
+      tags: [fix]
+
+    - name: Re-probe root after remediation
+      ansible.builtin.command: df -k /
+      check_mode: false
+      changed_when: false
+      register: disk_df_after
+      when:
+        - disk_needs_fix | bool
+        - disk_remediate_apply | bool
+        - not ansible_check_mode
+
+    - name: Report post-remediation headroom
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }} after cleanup:
+          {{ disk_df_after.stdout_lines[1] | default('no probe') }}
+          If still above the ceiling, escalate to a human — this playbook
+          never deletes user data.
+      when:
+        - disk_df_after is defined
+        - not (disk_df_after.skipped | default(false))
+
+- name: Disk pressure audit (macOS member hosts — read-only)
+  hosts: macos:!disabled
+  gather_facts: false
+  become: false
+
+  vars:
+    disk_min_free_gib: 15
+    disk_root_max_pct: 90
+
+  tasks:
+    - name: Probe the macOS data volume
+      ansible.builtin.command: /bin/df -k /System/Volumes/Data
+      check_mode: false
+      changed_when: false
+      failed_when: false
+      register: disk_df_mac
+
+    - name: Report macOS headroom (audit only)
+      ansible.builtin.debug:
+        msg:
+          - >-
+            {{ inventory_hostname }} data volume:
+            {{ disk_df_mac.stdout_lines[1] | default('unavailable') }}
+          - >-
+            ceiling={{ disk_root_max_pct }}% floor={{ disk_min_free_gib }}GiB
+            — no cleanup on member devices; escalate to the owner.

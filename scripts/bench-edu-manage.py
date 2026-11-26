@@ -18,6 +18,22 @@ never prod WP:
            primary). Interpretation documented in the report.
   hermes   the identical agent surface pointed at omen ollama /v1
            hermes3:8b (T1 tool-call slot, card try-hermes).
+  local-colibri  the same agent surface pointed at a local colibri
+           serve (`coli serve`, MoE experts streamed from disk) or any
+           other OpenAI-compatible /v1 endpoint — --openai-base sets the
+           URL, --model the served id (colibri 404s on a model mismatch),
+           --openai-timeout the per-call budget (default 600s —
+           disk-streamed experts start slow).
+  opencode headless `opencode run --standalone --session` on
+           --opencode-host (default idc02 over ssh; 'local' for the
+           local binary), --opencode-model per lane (default
+           opencode/big-pickle — Zen free tier; litellm/<alias> rides
+           the gateway). Text-protocol tool loop: the bench renders a
+           deny-all-tools agent config, the model emits
+           {"name","arguments"} JSON per turn, calls execute against
+           the same MockStore. Card opencode-as-bench-challenger-
+           and-exec-lane — an ADA_TEXT_MODEL challenger surface, NOT
+           the OPS-1255 profile-gated executor lane.
 
 Task suite (golden labels in the corpus):
   transcript  capture-judgment (file/skip -> P/R/F1), dedupe/upsert
@@ -33,9 +49,14 @@ Usage:
   python3 scripts/bench-edu-manage.py --lanes hermes --tasks t1-create-bbr-cubic
   python3 scripts/bench-edu-manage.py --no-judge --out /tmp/bench
   python3 scripts/bench-edu-manage.py --lanes clawbot --or-model nvidia/nemotron-3.5-super-vl:free
+  python3 scripts/bench-edu-manage.py --lanes local-colibri \
+      --openai-base http://127.0.0.1:8000/v1 --model qwen3.6-35b
 Env: OLLAMA_URL (default http://100.75.102.88:11434), OPENROUTER_API_KEY
 or ~/.config/secrets/openrouter.env, GEMINI_API_KEY or the usual secrets
-files. Keys are loaded at runtime and never printed.
+files. Keys are loaded at runtime and never printed. The opencode lane
+needs ssh reachability to --opencode-host (idc02) or a local opencode
+binary; litellm/* models additionally need the host's LITELLM_KEY
+(sourced from the remote secrets files, never transmitted).
 """
 from __future__ import annotations
 
@@ -47,7 +68,9 @@ import importlib.util
 import json
 import os
 import re
+import shlex
 import statistics
+import subprocess
 import sys
 import tempfile
 import time
@@ -65,13 +88,31 @@ _spec = importlib.util.spec_from_file_location(
 lm = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(lm)
 
+
+def load_loop_gate():
+    """Optional Jev stagnation probe (scripts/jev/loop-gate.py, card
+    jev-stagnation-gate-...-a70f74). None when absent/unloadable — the
+    --stagnation-gate flag then degrades to a no-op."""
+    p = REPO / "scripts" / "jev" / "loop-gate.py"
+    if not p.exists():
+        return None
+    try:
+        from importlib.machinery import SourceFileLoader
+        return SourceFileLoader("loop_gate", str(p)).load_module()
+    except Exception:
+        return None
+
 CORPUS = REPO / "scripts" / "bench-edu-corpus.json"
 CURRENT_MODEL = "gemini-3.5-flash-lite"
 JUDGE_MODEL = "gemini-3.5-flash-lite"
 OR_BASE = "https://openrouter.ai/api/v1"
 OR_MODEL = "openrouter/free"  # OpenClaw's stated primary
+LITELLM_FREE_MODEL = "gemini-3.5-flash-lite-free"  # gateway free twin
 HERMES_MODEL = "hermes3:8b"
 MAX_ROUNDS = 10
+OPENCODE_DEFAULT_HOST = "idc02"
+OPENCODE_DEFAULT_MODEL = "opencode/big-pickle"
+OPENCODE_TIMEOUT = 300
 
 SECRET_FILES = ("~/.config/secrets/mddb-gemini.env",
                 "~/.config/secrets/gemini-keys.env",
@@ -374,10 +415,11 @@ class AgentLane:
     """
 
     def __init__(self, name, base, key, model, timeout, retries=2,
-                 json_mode=True):
+                 json_mode=True, extra_system=""):
         self.name, self.base, self.key = name, base.rstrip("/"), key
         self.model, self.timeout, self.retries = model, timeout, retries
         self.json_mode_ok = json_mode
+        self.extra_system = extra_system
 
     def _chat(self, messages, tools, response_format=None):
         body = {"model": self.model, "messages": messages,
@@ -507,16 +549,20 @@ class AgentLane:
                 args = {}
         return {"name": obj["name"], "arguments": args}
 
-    def run_task(self, task_user_msg, store, store_aware=False):
+    def run_task(self, task_user_msg, store, store_aware=False,
+                 skill_text=None):
         existing = ""
         if store_aware:
             topics = ", ".join(sorted(
                 r["topic"] for r in store.list_all()))
             existing = EXISTING_TOPICS_BLOCK.format(
                 topics=topics or "(none)")
-        messages = [{"role": "system",
-                     "content": AGENT_SYS.format(
-                         today=date.today(), existing=existing)},
+        sys_prompt = AGENT_SYS.format(
+            today=date.today(), existing=existing)
+        extra = skill_text or self.extra_system
+        if extra:
+            sys_prompt += "\n\n" + extra
+        messages = [{"role": "system", "content": sys_prompt},
                     {"role": "user", "content": task_user_msg}]
         calls, tok_in, tok_out, llm_calls = [], 0, 0, 0
         models_seen, final_text, err = set(), "", None
@@ -604,6 +650,369 @@ class AgentLane:
                 "json_retries": json_retries,
                 "json_mode": self.json_mode_ok,
                 "completed": err is None and bool(final_text)}
+
+
+# ------------------------------------------------------------ opencode lane
+
+# Text-protocol tool loop over headless `opencode run` (card
+# opencode-as-bench-challenger-and-exec-lane, Tony 2026-11-12). Same
+# duties, same MockStore, same scoring as AgentLane — but each model
+# turn is one `opencode run --standalone --session` invocation, default
+# host idc02 over ssh ('local' runs the binary in place). The rendered
+# agent config denies every builtin tool and ships zero MCP, so the
+# model's only channel is reply text carrying the same
+# {"name","arguments"} call protocol; the bench executes the calls
+# against the store itself. This measures the opencode agent harness +
+# the selected model (opencode/<id> = Zen free tier, litellm/<alias> =
+# gateway route) as an ADA_TEXT_MODEL challenger — it is NOT the
+# profile-gated executor lane (lane_gate/opencode_profiles, OPS-1255).
+
+OC_PERMISSION_DENY = [
+    "read", "edit", "glob", "grep", "list", "bash", "task",
+    "external_directory", "todowrite", "question", "webfetch",
+    "websearch", "lsp", "doom_loop", "skill",
+]
+OC_TOOLS_OFF = ["read", "grep", "glob", "list", "todoread", "todowrite",
+                "bash", "write", "edit", "patch", "task", "webfetch",
+                "websearch", "lsp", "skill"]
+OC_REMOTE_DIR = "/tmp/bench-edu-opencode"
+
+OC_PROTOCOL = """
+
+## Tool-call protocol for this surface
+
+You have NO native tools — every ledger capability is invoked by
+emitting EXACTLY ONE JSON object as your entire reply, no prose:
+
+{"name": "<tool>", "arguments": {<arguments>}}
+
+Valid tools (required args marked *):
+{schema}
+
+I reply to each call with `Tool result: <json>`; then emit the next
+call, or — when finished — ONE summary line (the lesson slug for recall
+questions, or "none")."""
+
+TOOL_RESULT_MSG = (
+    "Tool result for {name}:\n{result}\n\n"
+    "Emit your next action as ONE JSON object "
+    "{{\"name\": \"<tool>\", \"arguments\": {{...}}}} — or, if finished, "
+    "the one-line summary.")
+
+
+def _oc_tool_schema() -> str:
+    """Compact {name}(args) listing generated from TOOLS so the text
+    protocol model sees the same surface the function-calling lanes get
+    from the API schema."""
+    out = []
+    for t in TOOLS:
+        fn = t["function"]
+        props = fn["parameters"].get("properties") or {}
+        req = set(fn["parameters"].get("required") or [])
+        args = ", ".join(f"{k}{'*' if k in req else ''}"
+                         for k in props) or "(none)"
+        out.append(f"- {fn['name']}({args})")
+    return "\n".join(out)
+
+
+OC_PROTOCOL_TEXT = OC_PROTOCOL.replace("{schema}", _oc_tool_schema())
+
+
+def opencode_lane_name(model: str) -> str:
+    """Lane key for an opencode model: bare 'opencode' for the default,
+    else opencode-<model-slug> (same convention as local-<model>)."""
+    if model == OPENCODE_DEFAULT_MODEL:
+        return "opencode"
+    short = model.split("/", 1)[1] if model.startswith("opencode/") \
+        else model
+    return "opencode-" + re.sub(
+        r"[^a-z0-9]+", "-", short.lower()).strip("-")
+
+
+class OpencodeLane:
+    """AgentLane-shaped challenger backed by `opencode run`.
+
+    run_task() keeps the AgentLane contract so run_agent_task /
+    score_task / aggregate work unchanged. `models` reports the
+    configured opencode model id; `base`/`host` feed the result config
+    block. Token accounting comes from the --format json step_finish
+    events (input / output+reasoning; cache read/write tracked
+    separately in tokens_cache_*).
+    """
+
+    def __init__(self, name, model, host=OPENCODE_DEFAULT_HOST,
+                 timeout=OPENCODE_TIMEOUT, extra_system="",
+                 work_root=None):
+        self.name, self.model, self.host = name, model, host
+        self.timeout = timeout
+        self.extra_system = extra_system
+        self.base = f"opencode-run@{host}"
+        self.json_mode_ok = None  # text protocol — no response_format
+        self.work_root = Path(work_root) if work_root else Path(
+            tempfile.mkdtemp(prefix="bench-edu-opencode-"))
+        self.work_root.mkdir(parents=True, exist_ok=True)
+        self._seq = 0
+        # parse helpers are AgentLane methods that never touch HTTP
+        # state — reuse them so the text protocol parses identically
+        self._parser = AgentLane(name, "", "", "", 1)
+
+    # ---------------------------------------------------------- config
+
+    def _config(self, sys_prompt: str) -> dict:
+        """Run-local opencode.json: one primary 'bench' agent, builtin
+        agents disabled, every tool + permission denied, zero MCP. The
+        global ~/.config/opencode/opencode.json (litellm provider map,
+        ada-control/mcp-debug/playlive MCP) is deliberately NOT used —
+        OPENCODE_CONFIG points the run at this file instead."""
+        return {
+            "$schema": "https://opencode.ai/config.json",
+            "model": self.model,
+            "agent": {
+                "build": {"disable": True},
+                "plan": {"disable": True},
+                "general": {"disable": True},
+                "bench": {
+                    "mode": "primary",
+                    "model": self.model,
+                    "prompt": sys_prompt + OC_PROTOCOL_TEXT,
+                    "tools": {t: False for t in OC_TOOLS_OFF},
+                    "permission": {k: "deny"
+                                   for k in OC_PERMISSION_DENY},
+                },
+            },
+            "permission": {"external_directory": "deny",
+                           "doom_loop": "deny"},
+            "mcp": {},
+        }
+
+    # ------------------------------------------------------------ remote
+
+    def _ssh_argv(self):
+        return ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10",
+                self.host]
+
+    def _stage(self, tag: str, sys_prompt: str):
+        """Write opencode.json on the run host. -> (events_path,
+        remote_dir, err)."""
+        cfg = json.dumps(self._config(sys_prompt))
+        if self.host == "local":
+            d = self.work_root / tag
+            d.mkdir(parents=True, exist_ok=True)
+            (d / "opencode.json").write_text(cfg)
+            return d / "events.jsonl", str(d), None
+        rdir = f"{OC_REMOTE_DIR}/{os.getpid()}-{tag}"
+        r = subprocess.run(
+            self._ssh_argv() + [
+                f"mkdir -p {shlex.quote(rdir)} && cat > "
+                + shlex.quote(f"{rdir}/opencode.json")],
+            input=cfg, capture_output=True, text=True, timeout=30)
+        if r.returncode:
+            return None, rdir, (r.stderr or r.stdout).strip()[:200]
+        return self.work_root / f"{tag}.events.jsonl", rdir, None
+
+    def _turn(self, remote_dir: str, sid: str | None, message: str):
+        """One `opencode run` turn — message on stdin, --format json
+        events on stdout. -> CompletedProcess."""
+        oc = ("opencode run --standalone --format json --archived "
+              "--agent bench --model " + shlex.quote(self.model))
+        if sid:
+            oc += " --session " + shlex.quote(sid)
+        if self.host == "local":
+            env = dict(os.environ)
+            env["OPENCODE_CONFIG"] = f"{remote_dir}/opencode.json"
+            if self.model.startswith("litellm/") \
+                    and not env.get("LITELLM_KEY"):
+                k = load_secret(
+                    ("LITELLM_KEY",),
+                    env_files=("~/.config/secrets/litellm-keys.env",
+                               "~/.config/secrets/litellm-ada.env"))
+                if k:
+                    env["LITELLM_KEY"] = k
+            argv = ["bash", "-c",
+                    f"cd {shlex.quote(remote_dir)} && exec {oc}"]
+            return subprocess.run(argv, input=message, capture_output=True,
+                                  text=True, timeout=self.timeout,
+                                  env=env)
+        # Source the host's litellm secrets so {env:LITELLM_KEY} in the
+        # provider map resolves; the files never leave the host. $HOME
+        # must stay double-quoted — single quotes would source a
+        # literal "$HOME/..." path and silently skip the files.
+        remote = (
+            "set -a; "
+            '. "$HOME/.config/secrets/litellm-chaba.env"'
+            " 2>/dev/null || true; "
+            '. "$HOME/.config/secrets/litellm-keys.env"'
+            " 2>/dev/null || true; "
+            "set +a; "
+            f"cd {shlex.quote(remote_dir)} && "
+            f"OPENCODE_CONFIG={shlex.quote(remote_dir + '/opencode.json')} "
+            f"{oc}")
+        return subprocess.run(self._ssh_argv() + [remote], input=message,
+                              capture_output=True, text=True,
+                              timeout=self.timeout + 30)
+
+    # ------------------------------------------------------------- parse
+
+    @staticmethod
+    def _scan_events(text: str):
+        """-> (last_text, tok_in, tok_out, tok_cache_in, tok_cache_out,
+        session_id, error). `error` is the last type=error event's
+        message — provider failures arrive as events, not stderr."""
+        last, tin, tout, cin, cout, sid, err = "", 0, 0, 0, 0, None, None
+        for line in text.splitlines():
+            try:
+                ev = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            sid = sid or ev.get("sessionID")
+            if ev.get("type") == "error":
+                e = ev.get("error") or {}
+                err = str(e.get("message") or e)[:300]
+            part = ev.get("part") or {}
+            if part.get("type") == "text" and part.get("text"):
+                last = part["text"]
+            tok = part.get("tokens")
+            if isinstance(tok, dict):
+                tin += int(tok.get("input") or 0)
+                tout += int(tok.get("output") or 0) + \
+                    int(tok.get("reasoning") or 0)
+                c = tok.get("cache") or {}
+                cin += int(c.get("read") or 0)
+                cout += int(c.get("write") or 0)
+        return last.strip(), tin, tout, cin, cout, sid, err
+
+    def _extract_call(self, text: str):
+        """-> (name, args, status) or None — first balanced {...} span
+        that parses to a {"name","arguments"|"parameters"} object.
+        status 'repaired' when the span needed cleanup."""
+        if not text or "{" not in text:
+            return None
+        for i, ch in enumerate(text):
+            if ch != "{":
+                continue
+            frag = AgentLane._outer_braces(text[i:])
+            if not frag:
+                continue
+            obj, status = None, "ok"
+            try:
+                obj = json.loads(frag)
+            except json.JSONDecodeError:
+                for cand in (re.sub(r",\s*([}\]])", r"\1", frag),):
+                    try:
+                        obj = json.loads(cand)
+                        status = "repaired"
+                        break
+                    except json.JSONDecodeError:
+                        pass
+                if obj is None:
+                    try:
+                        v = ast.literal_eval(frag)
+                        if isinstance(v, dict):
+                            obj, status = v, "repaired"
+                    except (ValueError, SyntaxError):
+                        pass
+            if not isinstance(obj, dict) or not isinstance(
+                    obj.get("name"), str):
+                continue
+            args = obj.get("arguments") or obj.get("parameters") or {}
+            if isinstance(args, str):
+                try:
+                    args = json.loads(args)
+                except json.JSONDecodeError:
+                    args = {}
+                status = "repaired"
+            return obj["name"], (args if isinstance(args, dict) else {}), \
+                status
+        return None
+
+    # ------------------------------------------------------------- task
+
+    def run_task(self, task_user_msg, store, store_aware=False,
+                 skill_text=None):
+        existing = ""
+        if store_aware:
+            topics = ", ".join(sorted(
+                r["topic"] for r in store.list_all()))
+            existing = EXISTING_TOPICS_BLOCK.format(
+                topics=topics or "(none)")
+        sys_prompt = AGENT_SYS.format(
+            today=date.today(), existing=existing)
+        extra = skill_text or self.extra_system
+        if extra:
+            sys_prompt += "\n\n" + extra
+
+        self._seq += 1
+        tag = f"{self.name}-{self._seq:03d}"
+        events_path, remote_dir, err = self._stage(tag, sys_prompt)
+        rec = {"final_text": "", "calls": [], "llm_calls": 0,
+               "tokens_in": 0, "tokens_out": 0,
+               "tokens_cache_read": 0, "tokens_cache_write": 0,
+               "models": [self.model], "err": err, "latency": 0.0,
+               "arg_repairs": 0, "arg_errors": 0, "json_retries": 0,
+               "json_mode": None, "completed": False,
+               "events": str(events_path) if events_path else None}
+        if err:
+            rec["latency"] = 0.0
+            return rec
+
+        t0 = time.time()
+        sid, pending = None, task_user_msg
+        try:
+            for _ in range(MAX_ROUNDS):
+                try:
+                    p = self._turn(remote_dir, sid, pending)
+                except subprocess.TimeoutExpired:
+                    rec["err"] = f"timeout {self.timeout}s"
+                    break
+                except Exception as e:
+                    rec["err"] = f"{type(e).__name__}: {e}"
+                    break
+                out = p.stdout or ""
+                if events_path:
+                    with open(events_path, "a") as fh:
+                        fh.write(out)
+                content, tin, tout, cin, cout, sid2, ev_err = \
+                    self._scan_events(out)
+                sid = sid2 or sid
+                rec["llm_calls"] += 1 if (tin or tout or content) else 0
+                rec["tokens_in"] += tin
+                rec["tokens_out"] += tout
+                rec["tokens_cache_read"] += cin
+                rec["tokens_cache_write"] += cout
+                if p.returncode != 0:
+                    detail = ev_err or (p.stderr or "").strip()[-200:]
+                    rec["err"] = f"opencode exit={p.returncode} {detail}"
+                    break
+                if ev_err and not content:
+                    rec["err"] = f"opencode error: {ev_err}"
+                    break
+                call = self._extract_call(content)
+                if call is None:
+                    rec["final_text"] = content
+                    break
+                name, args, cstatus = call
+                missing = REQUIRED_ARGS.get(name, set()) - set(args)
+                if name in REQUIRED_ARGS and missing:
+                    rec["arg_errors"] += 1
+                    result = {"error": (
+                        f"tool call rejected — missing required: "
+                        f"{sorted(missing)}; re-emit {name} with a "
+                        "single valid JSON object matching the tool "
+                        "schema")}
+                else:
+                    if cstatus == "repaired":
+                        rec["arg_repairs"] += 1
+                    result = exec_tool(store, name, args)
+                rec["calls"].append({"tool": name, "args": args,
+                                     "result": result})
+                pending = TOOL_RESULT_MSG.format(
+                    name=name, result=json.dumps(result))
+            else:
+                rec["err"] = f"exceeded {MAX_ROUNDS} tool rounds"
+        finally:
+            rec["latency"] = time.time() - t0
+        rec["completed"] = rec["err"] is None and bool(rec["final_text"])
+        return rec
 
 
 # -------------------------------------------------------------- current lane
@@ -721,6 +1130,20 @@ def stats_drafts(rec, task, store):
     rec["filings"] = filings
 
 
+def _load_skill(name):
+    p = SKILL_DIR / name
+    try:
+        return p.read_text()
+    except OSError:
+        return ""
+
+
+SKILL_DIR = Path("/home/tony/reports/skills")
+_SKILL_FILES = {"transcript": "filing.md", "ops": "ops.md",
+                "recall": "recall.md"}
+TASK_SKILLS = {t: _load_skill(n) for t, n in _SKILL_FILES.items()}
+
+
 def run_agent_task(lane, task, store, store_aware=False):
     if task["type"] == "transcript":
         msg = TRANSCRIPT_INSTR % task["transcript"]
@@ -732,12 +1155,42 @@ def run_agent_task(lane, task, store, store_aware=False):
         msg = ("Tony asks: %s\n\nPoint to the lesson that answers this — "
                "use the tools to find it and reply with its slug, or "
                "reply \"none\" if no lesson covers it." % task["query"])
-    rec = lane.run_task(msg, store, store_aware=store_aware)
+    rec = lane.run_task(msg, store, store_aware=store_aware,
+                        skill_text=TASK_SKILLS.get(task["type"]))
     stats_drafts(rec, task, store)
     return rec
 
 
 # ------------------------------------------------------------------ scoring
+
+def bench_loop_state(lane_name, lane, done_scores, done_recs, rep):
+    """Trajectory state for the Jev stagnation gate: per-task outcomes
+    so far as `recent` lines (same shape as the console print), plus
+    cheap signals (failure streak, completions)."""
+    recent, fails = [], 0
+    for sc, rec in zip(done_scores, done_recs):
+        ok = bool(sc.get("completed"))
+        lat = rec.get("latency") or 0
+        err = rec.get("err") or ""
+        recent.append(f"{sc.get('id')} ok={ok} lat={lat:.0f}s"
+                      + (f" err={err}" if err else ""))
+        fails = fails + 1 if not ok else 0
+    model = getattr(lane, "model", "") or "scripted"
+    return {
+        "loop": "bench",
+        "task": f"bench-edu-manage lane {lane_name} rep {rep + 1} "
+                f"model={model}",
+        "iterations": len(done_recs),
+        "elapsed_s": round(sum(r.get("latency") or 0
+                               for r in done_recs), 1),
+        "heartbeat_age_s": 0,
+        "recent": recent[-12:],
+        "signals": {"consecutive_failures": fails,
+                    "completed": sum(1 for s in done_scores
+                                     if s.get("completed")),
+                    "lane": lane_name, "rep": rep + 1},
+    }
+
 
 def score_task(task, store, rec):
     """-> dict of per-task scores + notes."""
@@ -935,7 +1388,27 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--lanes", nargs="+",
                     default=["current", "clawbot", "hermes"],
-                    choices=["current", "clawbot", "hermes"])
+                    choices=["current", "clawbot", "hermes", "opencode",
+                             "local-colibri"])
+    ap.add_argument("--opencode-model", nargs="+",
+                    default=[OPENCODE_DEFAULT_MODEL],
+                    help="model(s) for the opencode lane, provider/id "
+                         f"(default {OPENCODE_DEFAULT_MODEL} — opencode/ "
+                         "ids are the Zen free tier, litellm/ ids are "
+                         "gateway routes; repeatable via multiple values, "
+                         "each becomes its own lane)")
+    ap.add_argument("--opencode-host", default=OPENCODE_DEFAULT_HOST,
+                    help="host that runs `opencode run` for the "
+                         f"opencode lane (default {OPENCODE_DEFAULT_HOST} "
+                         "over ssh; 'local' runs the local binary)")
+    ap.add_argument("--opencode-timeout", type=int,
+                    default=OPENCODE_TIMEOUT,
+                    help="per-turn timeout (s) for the opencode lane "
+                         f"(default {OPENCODE_TIMEOUT})")
+    ap.add_argument("--opencode-workdir", default=None,
+                    help="local dir for opencode run evidence "
+                         "(events.jsonl per task + staged configs; "
+                         "default: a tempdir)")
     ap.add_argument("--ollama-model", default=HERMES_MODEL,
                     help="model for the local-ollama agent lane "
                          "(default hermes3:8b; lane is renamed "
@@ -944,12 +1417,37 @@ def main():
                     help="per-call timeout (s) for the local-ollama lane "
                          "(default 300 — reasoning models on a shared "
                          "RAM-offloaded GPU need more than the old 150)")
+    ap.add_argument("--openai-base", default=None,
+                    help="OpenAI-compatible base URL for the local-colibri "
+                         "lane (default http://127.0.0.1:8000/v1 — a colibri "
+                         "serve; any /v1 endpoint works)")
+    ap.add_argument("--model", "--openai-model", dest="openai_model",
+                    default="qwen3.6-35b",
+                    help="model id the local-colibri lane requests "
+                         "(default qwen3.6-35b — must equal the served "
+                         "model-id: colibri answers 404 otherwise)")
+    ap.add_argument("--openai-key", default=None,
+                    help="bearer token for the local-colibri lane "
+                         "(default none — local serves usually ignore it)")
+    ap.add_argument("--openai-timeout", type=int, default=600,
+                    help="per-call timeout (s) for the local-colibri lane "
+                         "(default 600 — disk-streamed MoE experts start "
+                         "slow)")
     ap.add_argument("--or-model", default=OR_MODEL,
                     help="OpenRouter model for the clawbot lane "
                          f"(default {OR_MODEL}; pin a named model to "
                          "reduce free-router model-mix confounding)")
+    ap.add_argument("--clawbot-ollama", action="store_true",
+                    help="run the clawbot lane against the local ollama")
+    ap.add_argument("--hermes-gateway", action="store_true",
+                    help="route the hermes lane through the LiteLLM gateway")
     ap.add_argument("--tasks", nargs="+", default=None,
                     help="task ids to run (default: all)")
+    ap.add_argument("--progress-log", default=None,
+                    help="append one JSON progress line per task to this file")
+    ap.add_argument("--agent-prompt", default=None,
+                    help="file whose text is appended to the agent system "
+                         "prompt (the bench's skill text)")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--reps", type=int, default=1)
     ap.add_argument("--no-judge", action="store_true")
@@ -962,7 +1460,26 @@ def main():
                          "result file and rewrite it + the .md")
     ap.add_argument("--out", default=None,
                     help="output prefix (default reports/bench-edu-manage-<date>)")
+    ap.add_argument("--stagnation-gate", action="store_true",
+                    help="Jev loop-gate probe (scripts/jev/loop-gate.py) "
+                         "after each agent-lane task; --gate-strikes "
+                         "consecutive halt verdicts skips the lane's "
+                         "remaining tasks (the 4.4h colibri stall guard)")
+    ap.add_argument("--gate-halt-p", type=float, default=None,
+                    help="noul p at/above which the gate reads halt "
+                         "(default loop-gate's 0.7)")
+    ap.add_argument("--gate-warn-p", type=float, default=None,
+                    help="noul p at/above which the gate reads warn "
+                         "(default loop-gate's 0.5)")
+    ap.add_argument("--gate-strikes", type=int, default=2,
+                    help="consecutive halt verdicts before the lane is "
+                         "stopped (default 2)")
+    ap.add_argument("--gate-every", type=int, default=1,
+                    help="probe cadence in completed tasks (default 1)")
     args = ap.parse_args()
+
+    agent_prompt = (Path(args.agent_prompt).read_text()
+                    if args.agent_prompt else "")
 
     corpus = json.loads(CORPUS.read_text())
     if args.rescore:
@@ -978,6 +1495,14 @@ def main():
                         "GOOGLE_API_KEY"))
     orkey = load_secret(("OPENROUTER_API_KEY",),
                         env_files=("~/.config/secrets/openrouter.env",))
+    litellm_url = load_secret(
+        ("LITELLM_URL",),
+        env_files=("~/.config/secrets/litellm-keys.env",
+                   "~/.config/secrets/litellm-ada.env"))
+    litellm_key = load_secret(
+        ("LITELLM_KEY_BENCH", "LITELLM_KEY"),
+        env_files=("~/.config/secrets/litellm-keys.env",
+                   "~/.config/secrets/litellm-ada.env"))
     ollama = os.environ.get("OLLAMA_URL",
                             "http://100.75.102.88:11434").rstrip("/")
 
@@ -985,23 +1510,62 @@ def main():
     if "current" in args.lanes:
         lanes["current"] = {"kind": "scripted", "model": CURRENT_MODEL}
     if "clawbot" in args.lanes:
-        lanes["clawbot"] = AgentLane("clawbot", OR_BASE, orkey,
-                                     args.or_model, 90)
+        base, key, model = OR_BASE, orkey, args.or_model
+        if args.clawbot_ollama:
+            base, key = ollama + "/v1", "ollama"
+        elif litellm_url and litellm_key:
+            base = litellm_url.rstrip("/")
+            if not base.endswith("/v1"):
+                base += "/v1"
+            key = litellm_key
+            if model == OR_MODEL:
+                model = LITELLM_FREE_MODEL
+        lanes["clawbot"] = AgentLane("clawbot", base, key, model, 90,
+                                     extra_system=agent_prompt)
     if "hermes" in args.lanes:
         lname = ("hermes" if args.ollama_model == HERMES_MODEL
                  else "local-" + re.sub(r"[^a-z0-9]+", "-",
                                         args.ollama_model.lower()))
-        lanes[lname] = AgentLane(lname, ollama + "/v1", "ollama",
-                                 args.ollama_model, args.ollama_timeout)
+        if args.hermes_gateway and litellm_url and litellm_key:
+            hbase = litellm_url.rstrip("/")
+            if not hbase.endswith("/v1"):
+                hbase += "/v1"
+            lanes[lname] = AgentLane(lname, hbase, litellm_key,
+                                     args.ollama_model,
+                                     args.ollama_timeout,
+                                     extra_system=agent_prompt)
+        else:
+            lanes[lname] = AgentLane(lname, ollama + "/v1", "ollama",
+                                     args.ollama_model, args.ollama_timeout,
+                                     extra_system=agent_prompt)
+    if "local-colibri" in args.lanes:
+        obase = (args.openai_base or "http://127.0.0.1:8000/v1").rstrip("/")
+        if not obase.endswith("/v1"):
+            obase += "/v1"
+        lanes["local-colibri"] = AgentLane(
+            "local-colibri", obase, args.openai_key,
+            args.openai_model, args.openai_timeout,
+            extra_system=agent_prompt)
+    if "opencode" in args.lanes:
+        for m in args.opencode_model:
+            lanes[opencode_lane_name(m)] = OpencodeLane(
+                opencode_lane_name(m), m, host=args.opencode_host,
+                timeout=args.opencode_timeout, extra_system=agent_prompt,
+                work_root=args.opencode_workdir)
 
     out_prefix = args.out or str(
         REPO / "reports" / f"bench-edu-manage-{date.today().isoformat()}")
     all_scores, all_recs, drafts = {}, {}, []
+    lg = load_loop_gate() if args.stagnation_gate else None
+    if args.stagnation_gate and lg is None:
+        print("[gate] loop-gate.py not loadable — flag is a no-op",
+              flush=True)
     for rep in range(args.reps):
         for name, lane in lanes.items():
-            print(f"[{name}] rep {rep + 1}")
+            print(f"[{name}] rep {rep + 1}", flush=True)
             t_scores, t_recs = [], []
-            for task in tasks:
+            gate_streak, gate_halt = 0, None
+            for ti, task in enumerate(tasks):
                 store = MockStore(corpus["seeds"][task["seed"]])
                 if name == "current":
                     topics = ([r["topic"] for r in store.list_all()]
@@ -1025,8 +1589,60 @@ def main():
                                        f["topic"])})
                 print(f"  {task['id']:28s} ok={sc['completed']} "
                       f"{sc.get('notes', [])} lat={rec['latency']:.0f}s"
-                      + (f" err={rec['err']}" if rec.get("err") else ""))
+                      + (f" err={rec['err']}" if rec.get("err") else ""),
+                      flush=True)
+                if args.progress_log:
+                    with open(args.progress_log, "a") as fh:
+                        fh.write(json.dumps({
+                            "rep": rep + 1, "lane": name,
+                            "task": task["id"], "ok": sc["completed"],
+                            "err": rec.get("err"),
+                            "latency": rec["latency"]}) + "\n")
+                # --- stagnation gate (opt-in, agent lanes only) ---
+                # After each task the probe judges the trajectory so
+                # far; --gate-strikes consecutive halt verdicts stops
+                # the lane early instead of grinding identical
+                # failures for hours (colibri-bench 2026-10-24).
+                if (lg is not None and name != "current"
+                        and ti + 1 >= 3
+                        and (ti + 1) % max(1, args.gate_every) == 0):
+                    try:
+                        gv = lg.gate(
+                            bench_loop_state(name, lane, t_scores,
+                                             t_recs, rep),
+                            halt_p=args.gate_halt_p,
+                            warn_p=args.gate_warn_p)
+                    except Exception as e:
+                        gv = {"verdict": "unknown",
+                              "error": str(e)[:120]}
+                    gverdict = gv.get("verdict") or "unknown"
+                    gp = (gv.get("noul") or {}).get("p")
+                    gchoice = (gv.get("choice") or {}).get("action")
+                    gback = gv.get("backends")
+                    if gverdict == "halt":
+                        gate_streak += 1
+                    else:
+                        gate_streak = 0
+                    if gverdict != "continue":
+                        print(f"  [gate] {gverdict} after "
+                              f"{len(t_recs)} tasks "
+                              f"(noul p={gp} choice={gchoice} "
+                              f"backends={gback})", flush=True)
+                    if gate_streak >= args.gate_strikes:
+                        gate_halt = {
+                            "at_task": task["id"], "rep": rep + 1,
+                            "verdict": gverdict, "noul": gv.get("noul"),
+                            "choice": gv.get("choice"),
+                            "strikes": gate_streak,
+                            "ran": len(t_recs),
+                            "skipped": len(tasks) - ti - 1}
+                        print(f"  [gate] HALT — stopped lane after "
+                              f"{len(t_recs)}/{len(tasks)} tasks",
+                              flush=True)
+                        break
             agg = aggregate(name, t_scores, t_recs)
+            if gate_halt:
+                agg["gate"] = gate_halt
             all_scores.setdefault(name, []).append(agg)
             all_recs.setdefault(name, []).extend(
                 {"rep": rep + 1, "task": s["id"],
@@ -1062,8 +1678,11 @@ def main():
     result = {"at": time.strftime("%Y-%m-%d %H:%M:%S"),
               "date": date.today().isoformat(),
               "config": {"lanes": {k: (v if isinstance(v, dict) else
-                                     {"base": v.base, "model": v.model,
-                                      "json_mode": v.json_mode_ok})
+                                     {"base": getattr(v, "base", ""),
+                                      "model": getattr(v, "model", ""),
+                                      "json_mode": getattr(
+                                          v, "json_mode_ok", None),
+                                      "host": getattr(v, "host", None)})
                                    for k, v in lanes.items()},
                          "judge": None if args.no_judge else JUDGE_MODEL,
                          "agent_topics": bool(args.agent_topics),
@@ -1202,6 +1821,15 @@ def write_md(path, result):
         if lk.startswith("local-") or lk == "hermes":
             L.append(f"- `{lk}` = identical loop on "
                      f"{lc.get('base', 'Ollama /v1')} {lc.get('model')}.")
+        if lk == "opencode" or lk.startswith("opencode-"):
+            L.append(f"- `{lk}` = text-protocol tool loop over "
+                     f"`opencode run --standalone` on {lc.get('host')} "
+                     f"({lc.get('model')}); the rendered agent denies "
+                     "every builtin tool + MCP and the bench executes "
+                     "{\"name\",\"arguments\"} JSON calls against the "
+                     "same MockStore — measures the opencode surface + "
+                     "model, not an OpenAI-compat endpoint. Latency "
+                     "includes per-turn ssh + opencode startup.")
     if multi_rep:
         fid = "; ".join(
             f"{lane}: " + " | ".join(

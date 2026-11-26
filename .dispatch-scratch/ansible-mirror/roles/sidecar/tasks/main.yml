@@ -1,0 +1,63 @@
+---
+- name: Ensure Python3 and pip are available (Linux hosts)
+  ansible.builtin.package:
+    name: [python3, python3-pip, python3-venv]
+    state: present
+  become: true
+  when: inventory_hostname != 'macbook'
+
+- name: Create sidecar virtual environment
+  ansible.builtin.command:
+    cmd: python3 -m venv /home/tony/.local/venv-sidecar
+    creates: /home/tony/.local/venv-sidecar/bin/activate
+
+- name: Install redis-py in sidecar venv
+  ansible.builtin.pip:
+    name: redis
+    virtualenv: /home/tony/.local/venv-sidecar
+    virtualenv_command: /home/tony/.local/venv-sidecar/bin/activate
+
+- name: Deploy sidecar collector script
+  ansible.builtin.copy:
+    src: collector.py
+    dest: /home/tony/.local/bin/sidecar-collector
+    mode: "0755"
+  register: sidecar_script
+
+- name: Deploy sidecar systemd user unit
+  ansible.builtin.template:
+    src: sidecar.service.j2
+    dest: /home/tony/.config/systemd/user/sidecar-collector.service
+    mode: "0644"
+  register: sidecar_unit
+
+- name: Reload systemd user daemon
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+    scope: user
+  when: sidecar_unit.changed
+  register: sidecar_reload
+
+- name: Enable and start sidecar collector
+  ansible.builtin.systemd_service:
+    name: sidecar-collector.service
+    enabled: true
+    state: started
+    scope: user
+  when: not ansible_check_mode  # service file not written in check mode
+
+- name: Restart sidecar collector after config change
+  ansible.builtin.systemd_service:
+    name: sidecar-collector.service
+    state: restarted
+    scope: user
+  when: not ansible_check_mode and (sidecar_script.changed or sidecar_unit.changed)
+
+- name: Wait for sidecar to publish first metrics
+  ansible.builtin.wait_for:
+    host: "{{ sidecar_redis_host }}"
+    port: 6379
+    delay: 2
+    timeout: 30
+  delegate_to: localhost
+  become: false

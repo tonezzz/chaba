@@ -1,0 +1,270 @@
+id: timer-alert-idc03-consumer-canary
+title: Timer consumer-canary on idc03 failing
+column: done
+updated: 2026-11-23 13:34
+priority: high
+tags:
+- timer-alert
+- auto
+- by:timer-sentinel
+note: 'Last run (11-08 05:21) of `consumer-canary.service` on `idc03` result=exit-code — investigate journal: `journalctl
+  --user -u consumer-canary.service` on the host. See CMS `timer-timeline-idc03`.'
+ref: OPS-1149
+comms:
+- at: 2026-11-08 10:29
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-08 10:39
+  from: devin
+  text: '[still suspicious] Last run (11-08 05:21) of `consumer-canary.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u consumer-canary.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 11:39
+  from: devin
+  text: '[still suspicious] Last run (11-08 11:21) of `consumer-canary.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u consumer-canary.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 11:49
+  from: devin
+  text: '[still suspicious] Last run (11-08 11:21) of `consumer-canary.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u consumer-canary.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 11:59
+  from: devin
+  text: '[still suspicious] Last run (11-08 11:21) of `consumer-canary.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u consumer-canary.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 12:09
+  from: devin
+  text: '[still suspicious] Last run (11-08 11:21) of `consumer-canary.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u consumer-canary.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 12:19
+  from: devin
+  text: '[still suspicious] Last run (11-08 11:21) of `consumer-canary.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u consumer-canary.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 12:29
+  from: devin
+  text: '[still suspicious] Last run (11-08 11:21) of `consumer-canary.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u consumer-canary.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 12:39
+  from: devin
+  text: '[still suspicious] Last run (11-08 11:21) of `consumer-canary.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u consumer-canary.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 12:50
+  from: devin
+  text: '[still suspicious] Last run (11-08 11:21) of `consumer-canary.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u consumer-canary.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 13:00
+  from: devin
+  text: '[still suspicious] Last run (11-08 11:21) of `consumer-canary.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u consumer-canary.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 13:06
+  from: devin
+  text: '2026-10-08 sweep: canary itself works — ran clean, found 2 REAL retired-host refs and only failed on board-api
+    comment timeout (load, now fixed). Findings: (1) mn01 caddy reverse_proxy -> tony-dell.taila0626a.ts.net:443;
+    (2) ada-ha chaba-admin node-red iframe -> same FQDN. Both resolve (100.68.142.13) — convention drift, not outage.
+    Follow-up: repoint to canonical name (verify TLS cert covers short name first). Findings belong on consumer-canary-standing-retired-hostnam-6aa4a2.'
+- at: 2026-11-08 13:06
+  from: devin
+  text: closed by devin
+- at: 2026-11-08 13:10
+  from: devin
+  text: re-spawned from report page
+- at: 2026-11-08 13:16
+  from: chaba
+  text: started devin-task-20261108-131559-timer-consumer-canary-on-idc03 on tony-macbook (dispatch)
+- at: 2026-11-08 13:16
+  from: devin
+  text: Investigating consumer-canary.service failure on idc03 (last run 11-08 05:21, result=exit-code). Pulling
+    journal + timer-timeline now.
+- at: 2026-11-08 13:16
+  from: chaba
+  text: started devin-task-20261108-131637-timer-consumer-canary-on-idc03 on idc02 (dispatch)
+- at: 2026-11-08 13:16
+  from: devin
+  text: '[devin] dispatch picked up card — investigating consumer-canary.service exit-code on idc03 (last run 11-08
+    05:21)'
+- at: 2026-11-08 13:20
+  from: devin
+  text: '[devin] RESOLVED — exit-code was by design (script exits 1 on findings). Root cause: 2 live retired-host
+    refs. Fixed + verified: manual rerun consumer-canary CLEAN exit 0 (journal 13:19 +07). See canary card comms
+    for details; follow-up gap filed as OPS-1195.'
+- at: 2026-11-08 13:20
+  from: devin
+  text: closed by devin
+- at: 2026-11-08 13:20
+  from: devin
+  text: '[still suspicious] Last run (11-08 13:03) of `consumer-canary.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u consumer-canary.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 13:22
+  from: chaba
+  text: 'session-end checkpoint 57994e53: 1 leftover file(s) committed'
+- at: 2026-11-08 13:22
+  from: chaba
+  text: pushed dispatch/20261108-131637-timer-consumer-canary-on-idc03 to origin
+- at: 2026-11-08 13:22
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-08 13:22
+  from: chaba
+  text: auto-merged d34e7483 (dispatch/20261108-131637-timer-consumer-canary-on-idc03) → origin/master
+- at: 2026-11-08 13:22
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261108-131637-timer-consumer-canary-on-idc03,
+    branch dispatch/20261108-131637-timer-consumer-canary-on-idc03'
+- at: 2026-11-08 13:22
+  from: devin
+  text: 'RESOLVED — exit-code was the canary working (exit 1 = findings posted), not a crash. 2 live retired-host
+    refs fixed: (1) mn01 Caddyfile.mn01 /apps/board* upstream tony-dell:443 -> idc02:443, caddy reloaded, /apps/board/
+    200 via mn01:8080; repo copy synced (was live-only drift from 11-07). (2) ada-ha chaba-admin Node-RED iframe
+    -> idc02 /apps/node-red/ (fixed live ~13:19; repo snapshot re-synced). Canary re-ran x2: CLEAN, result=success.
+    Trail: docs/ssot/jobs/monitoring/2026-11-08-consumer-canary'
+- at: 2026-11-08 13:22
+  from: devin
+  text: closed by devin
+- at: 2026-11-08 13:24
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-08 13:24
+  from: chaba
+  text: 'session-end checkpoint fc22d3af: 1 leftover file(s) committed'
+- at: 2026-11-08 13:24
+  from: chaba
+  text: pushed dispatch/20261108-131559-timer-consumer-canary-on-idc03 to origin
+- at: 2026-11-08 13:24
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-08 13:24
+  from: chaba
+  text: auto-merged 3cd9386f (dispatch/20261108-131559-timer-consumer-canary-on-idc03) → origin/master
+- at: 2026-11-08 13:24
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-12 13:42
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-12 13:42
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-12 13:20) of `consumer-canary.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u consumer-canary.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-12 13:52
+  from: devin
+  text: '[still suspicious] Last run (11-12 13:20) of `consumer-canary.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u consumer-canary.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-12 19:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-12 19:22
+  from: devin
+  text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-12 19:22
+  from: tony
+  text: closed by tony
+- at: 2026-11-12 19:42
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-12 19:42
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-12 19:20) of `consumer-canary.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u consumer-canary.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-12 19:52
+  from: devin
+  text: '[still suspicious] Last run (11-12 19:20) of `consumer-canary.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u consumer-canary.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-13 18:14
+  from: devin
+  text: '2026-11-13 sweep: `board-api comment failed: timed out` — board-api write contention again (same class
+    as card-lock stalls).'
+- at: 2026-11-13 23:35
+  from: devin
+  text: '2026-11-13: canary ran but board-api comment POST timed out — same write-lock contention seen fleet-wide
+    today. Infra issue not canary bug; will recur until board-api write latency is addressed (card board-api-write-latency
+    exists).'
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:06
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:15
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:36
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:38
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:05
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:16
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:06
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 19:40
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-18 19:20 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-18 19:40
+  from: tony
+  text: closed by tony
+- at: 2026-11-18 21:19
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:03
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:07
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:50
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:42
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:34
+  from: tony
+  text: archived (1d in done, board over card cap)
+action:
+  status: done
+  type: dispatch
+spec: Investigate the failure of `consumer-canary.service` on host `idc03` where the last run resulted in an exit-code.
+  Target host is idc03, and the logs can be inspected using `journalctl --user -u consumer-canary.service` alongside
+  CMS `timer-timeline-idc03`. The done-condition is verified when the root cause of the service exit-code failure
+  is identified and addressed, ensuring subsequent canary runs complete successfully.

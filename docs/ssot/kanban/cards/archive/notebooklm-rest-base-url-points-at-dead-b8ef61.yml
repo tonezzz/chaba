@@ -1,0 +1,192 @@
+id: notebooklm-rest-base-url-points-at-dead-b8ef61
+title: NOTEBOOKLM_REST_BASE_URL points at dead tony-dell:3011 — lane envs stale after notebooklm-rest moved/retired
+column: done
+updated: 2026-11-26 19:41
+priority: medium
+tags:
+- ada
+- infra
+- config-drift
+spec: 'Found during ada-lanes-run-on-deleted-ada-pi-venv-res-df9c81 dispatch 2026-11-24. All ada lane envs on idc03
+  set NOTEBOOKLM_REST_BASE_URL=http://100.68.142.13:3011/v1 (tony-dell). tony-dell notebooklm-rest.service is masked+dead,
+  nothing listens on :3011 — every NotebooklmClient call fails httpx ConnectError (observed live: ada-chaba journal
+  ERROR voice.conversation: notebooklm failed: All connection attempts failed at 21:34:32 +07 during ws smoke; ws
+  session itself PASSED, so impact is degraded notebooklm memory recall only). The ExecStartPre health gate on kraut/tony
+  curls http://100.102.134.91:11023/health which is MDDB on idc03, NOT notebooklm — so the gate does not cover this
+  dependency. TODO: find where notebooklm-rest-api actually lives now (mn01 runs notebooklm-mcp podman but that
+  is MCP not REST; check whether REST was retired in favor of MDDB chaba-lessons or moved hosts), then either update
+  NOTEBOOKLM_REST_BASE_URL in ~/.config/secrets/{tony-ha,ada-ha,kk-ha,michael-ha}/backend.env + ada-chaba.env +
+  ada-kk-dev.env on idc03 (and mn01 ada-ha-*.env if set) or remove the NotebooklmClient path if the service is retired.
+  Also check ada-transcript-archive.timer weekly job target.'
+ref: ADA-1328
+comms:
+- at: 2026-11-24 21:41
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-25 07:49
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:19
+  from: chaba
+  text: classified as devin (kw:dependency conf 1.00)
+- at: 2026-11-25 09:19
+  from: tony
+  text: queued for processing
+- at: 2026-11-25 09:19
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.57 > 0.85)'
+- at: 2026-11-25 09:19
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 09:20
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 2.19 > 1.0)'
+- at: 2026-11-25 09:28
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 09:29
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 09:31
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (3/3)'
+- at: 2026-11-25 09:35
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-25 09:38
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-25 09:40
+  from: idc02
+  text: claimed
+- at: 2026-11-25 09:41
+  from: chaba
+  text: started devin-task-20261125-094135-found-during-ada-lanes-run-on- on idc02 (dispatch)
+- at: 2026-11-25 09:41
+  from: chaba
+  text: 'primer injected 8 lesson(s): Lane env `NOTEBOOKLM_REST_BASE_URL` points at a masked-dead service on tony-dell;
+    idc02''s kanban-dispatch.service was a linked unit running a stale scripts/-only ; [devin-session-audit-2026-10-29]
+    AUD-0021 complete: OPS-0732 was revalidated as ; mn01 still runs a disabled-but-active ada-ha-michael standby
+    — "the lane moved t; [board-gantt-timeline-view] primer injected 8 lesson(s): idc02''s kanban-dispatch; [runner-per-executor-caps]
+    primer injected 8 lesson(s): Check'
+- at: 2026-11-25 09:44
+  from: devin
+  text: 'dispatch on idc02: confirmed REST is NOT retired — notebooklm-rest.service active on idc02 :3011 (tailnet
+    100.123.163.11), /health/auth ok:true. SSOT services.yml tailnet_url already says http://100.123.163.11:3011/v1;
+    values.yml mcp_host_note "retired" is stale. Now enumerating idc03/mn01 env files.'
+- at: 2026-11-25 09:52
+  from: devin
+  text: 'DONE (dispatch on idc02). REST was NOT retired — notebooklm-rest.service is active on idc02 :3011 (100.123.163.11),
+    /health/auth ok, scoped keys verified (ada-michael key -> 200 + exactly 5 scoped notebooks). Repointed NOTEBOOKLM_REST_BASE_URL
+    http://100.68.142.13:3011/v1 -> http://100.123.163.11:3011/v1 in 11 live env files: idc03 x7 (michael-ha/backend.env,
+    ada-chaba.env, ada-ha/backend.env, tony-ha/backend.env, kk-ha/backend.env, ada-dev.env, ada-kk-dev.env), tony-omen
+    x2 (ada-dev.env, ada-kk'
+- at: 2026-11-25 09:55
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-094135-found-during-ada-lanes-run-on- no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-25 09:56
+  from: chaba
+  text: 'merge-sweep: merged 4d07d554 (dispatch/20261125-094135-found-during-ada-lanes-run-on- from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-094135-found-during-ada-lanes-run-on-.md)
+    — auto-closed'
+- at: 2026-11-25 09:56
+  from: local
+  text: 'pub milestone: card verified: notebooklm-rest-base-url-points-at-dead-b8ef61 on idc03 — merged 4d07d554
+    (dispatch/20261125-094135-found-during-ada-lanes-run-on- from idc02) -> origin/master — verified — auto- — merged
+    4d07d554 (dispatch/20261125-094135-found-during-ada-lanes-run-on- from idc02) -> origin/master — verified —
+    auto-closed [evt-cd5a4a8b9d7a27a4]'
+- at: 2026-11-25 09:56
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-094135-found-during-ada-lanes-run-on-,
+    branch dispatch/20261125-094135-found-during-ada-lanes-run-on- on idc02'
+- at: 2026-11-25 09:56
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 09:56
+  from: chaba
+  text: banked 5 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 09:56
+  from: chaba
+  text: pushed dispatch/20261125-094135-found-during-ada-lanes-run-on- to origin
+- at: 2026-11-25 09:56
+  from: chaba
+  text: 'auto-merge not done: merge: merge: dispatch/20261125-094135-found-during-ada-lanes-run-on- - not something
+    we can merge — close will block until merged'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:01
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:03
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: devin
+  lane_source: kw
+  runner: idc02
+  attempts: 1
+  sweep:
+    stale_running: 2026-11-25 09:55
+  verified: true
+claim:
+  since: 2026-11-25 09:40
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 09:56
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-094135-found-during-ada-lanes-run-on-.md

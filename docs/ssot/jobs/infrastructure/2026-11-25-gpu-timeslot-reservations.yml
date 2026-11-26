@@ -1,0 +1,81 @@
+id: gpu-timeslot-reservations-20261125
+title: GPU time-slot reservations for the Ansible dispatch queue
+date: 2026-11-25
+card: gpu-timeslot-reservations
+ref: OPS-1407
+hosts: [idc02, tony-omen]
+repo: /home/tony/ansible on idc02 (file-deploy, not git — queue/, scripts/, playbooks/ are untracked there)
+status: verified-live
+
+goal: >
+  omen's single GTX 1650 (4GB, shared with bge-rerank.service) had no
+  exclusivity: two queued GPU jobs could both pass the VRAM-fit check and
+  double-book the card. Add optional exclusive GPU time-window reservations
+  to the Redis-backed dispatch queue.
+
+what_changed:
+  queue/queue_manager.py:
+    - "JobSpec: +reserve_gpu_window_sec (default 0), +reservation_id"
+    - "Hold ledger gpu:hold:{host}:{gpu_index} -> JSON payload, PX ttl = window"
+    - "acquire_gpu_holds(): single Lua script — picks first `needed` free indices, rolls back partials (atomic, no double-book)"
+    - "release_reservation(): Lua match on reservation_id OR job_id; wired into complete_job/requeue/move_to_dlq"
+    - "held_gpu_indices()/host_holds()/list_reservations(); stats gains reservations[]"
+    - "CLI: reservations, release, holds subcommands; enqueue --reserve-window/--reservation-id"
+    - "BUGFIX: requeue() now persists metadata — retry_count was never written back, so failed jobs retried forever and never hit max_retries/DLQ"
+    - "BUGFIX: held_gpu_indices() checks EXISTS per key — SCAN can return TTL-lapsed keys not yet collected by active expiry"
+  queue/scheduler.py:
+    - "_select_target_host() excludes held indices for ALL GPU jobs (reservation or not)"
+    - "_acquire_job_gpu_window() acquires holds atomically before dispatch; failure -> {no_host, reason: gpu_window_held} = backpressure, no retry penalty"
+    - "Passes -e gpu_device_indices=... -e gpu_reservation_id=... to dispatch_job.yml"
+    - "BUGFIX: job_cmd now passed as JSON extra-var — key=value -e splits on whitespace so only the first word ever reached podman (every multi-word command ran truncated; e.g. podman got just 'timeout', exit 125)"
+  scripts/dispatch_job.py:
+    - "Same job_cmd JSON -e fix (direct-dispatch path had the identical bug)"
+  playbooks/dispatch_job.yml:
+    - "podman_gpu_devices_fallback = VRAM-eligible minus foreign_held_indices; prefers scheduler-supplied gpu_device_indices"
+    - "Records reservation_id in dispatch:{job_id} hash"
+  scripts/gpu_status.py: "HOLD column + reservations section"
+  playbooks/queue_operations.yml: "pass-through for reservation fields"
+  docs: "GPU-JOBS.md §Option C reservations, README-DISPATCH.md param rows, jobs/examples/gpu-reserved-window.yaml"
+  test: "queue/test_gpu_reservations.py — isolated Redis db 15, seeded sidecar, 14 checks"
+
+verification:
+  unit:
+    - "python3 queue/test_gpu_reservations.py --db 15 on idc02: 14/14 PASS (dequeue order, hold acquire, placement refusal, atomic refuse, plain-job exclusion, release-on-complete, TTL expiry, stats)"
+  live-omen:
+    - "gpu-rsv-a-001 (p0) + gpu-rsv-b-001 (p1), --reserve-window 600: B logged 'No eligible hosts' until A finished; both containers Exited (0)"
+    - "gpu-rsv2-a held gpu:hold:omen:0 (ttl counting down from 600) while gpu-rsv2-b waited ~4min with no retry penalty; after manual release B acquired rsv-gpu-rsv2-b and Exited (0)"
+    - "End state: holds=[], reservations 'No active GPU reservations', queue empty"
+  bge-rerank:
+    - "service was found stopped at 20:46 +07 (stopped during verification window for capacity); restarted — active, enabled, GPU 734MiB used / 2982MiB free and climbing as model loads"
+
+operational_notes:
+  - "reserve_gpu_window_sec should be >= expected job runtime; a job that outlives its window loses exclusivity (holds are per-window, not per-job-lifetime)"
+  - "Scheduler restart orphans in-flight active_jobs (in-memory map) — job stays 'processing' until manually completed; hold self-expires via TTL"
+  - "dispatch-scheduler.service runs on idc02 user systemd, venv /home/tony/.local/venv-sidecar, 5s poll"
+
+lessons:
+  - "ansible -e key=value splits values on whitespace — free-text vars (job_cmd) MUST go as JSON extra-vars or they silently truncate to the first word"
+  - "podman inspect 'can't evaluate field Args/DeviceRequests' = containers.podman collection version drift on target, not a job failure — check which collection version the playbook resolves"
+  - "Redis SCAN can return keys whose TTL expired but active expiry hasn't collected — verify with EXISTS before trusting hold/lock scans"
+  - "In-memory retry counters that are never hset back = infinite retry loop; persist metadata on every requeue"
+  - "Scheduler restart drops active_jobs tracking — drain or accept orphaned 'processing' jobs + TTL-bound holds"
+
+attempt_2_landing:
+  date: 2026-11-26
+  note: >
+    Attempt 1 implemented + verified everything live on idc02 but committed
+    nothing to the dispatch branch (staged mirror only) — merge-sweep failed
+    it. Attempt 2 refreshed .dispatch-scratch/ansible-mirror/ to a full
+    snapshot of the CURRENT live tree (now also containing the sibling
+    gpu-dispatch-webui cancel_job() work and an unrelated homeassistant-plug
+    playbook), re-ran the unit test from tony-dell against idc02 Redis db15
+    (14/14 PASS), and re-verified live with gpu-rsv4-a/b.
+  access_note: >
+    idc02 sshd is sftp-only for user tony AND tony-dell's tailscale IP is
+    refused on :22 (omen->idc02 works) — file ops go through
+    `sftp -o ProxyJump=tony-omen tony@idc02`; queue mutations go through the
+    gpu-dispatch-webui API on 100.123.163.11:8795 or Redis :6379 directly.
+  doc_fixes_pushed_live:
+    - "GPU-JOBS.md Option C example + jobs/examples/gpu-reserved-window.yaml: bash -c \"...\" job_cmd cannot work — containers.podman argv-splits command on whitespace with no quote handling; examples now use flat `nvidia-smi dmon` and a caveat documents the limitation"
+  live_reverify:
+    - "gpu-rsv4-a (nvidia-smi dmon -s pucm -d 5 -c 30, window 300) held gpu:hold:omen:0; gpu-rsv4-b stayed status=waiting with no retry penalty until A completed, then dispatched and exited 0"

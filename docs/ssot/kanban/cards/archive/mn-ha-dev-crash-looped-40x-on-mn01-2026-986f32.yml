@@ -1,0 +1,210 @@
+id: mn-ha-dev-crash-looped-40x-on-mn01-2026-986f32
+title: mn-ha-dev crash-looped ~40x on mn01 2026-11-25 — root cause unknown, self-resolved 05:43 UTC
+column: done
+updated: 2026-11-26 19:41
+priority: medium
+tags:
+- mn01
+- mn-ha-dev
+- stability
+- audit
+spec: 'Found during mn01-yolo-xiaomi-service-stopped-deliber-d2b384 (2026-11-25). After the idc02->mn01 move (card
+  michael-dev-migrate-mn01, ~01:30 UTC), mn-ha-dev.service on mn01 restart-looped: NRestarts reached 40 between
+  ~01:37-05:43 UTC. Each cycle: HA Core ran 2-7min then exited CLEANLY ("Home Assistant Core finish process exit
+  code 0", signal-15 shutdown path) — not OOM (no kernel oom-kill), not a podman failure. Journal shows repeated
+  "The system could not validate that the sqlite3 database at //config/home-assistant_v2.db was shutdown cleanly"
+  + unfinished recorder sessions each boot. Stabilized spontaneously at 05:43 UTC; up ~2h+ since, NRestarts frozen
+  at 40. mn01 has 7.3GB RAM, NO swap, ~1.4GB available — memory pressure plausible contributor but unproven. yolo-xiaomi.service
+  was clean-stopped (systemctl stop, Result=success) at 02:38 UTC mid-loop — likely crisis triage; restarted by
+  the yolo card dispatch once HA stabilized. TODO: identify what issued the clean HA exits (HA-side stop call? recorder/DB
+  fault? watchdog? s6?), decide whether mn-ha-dev needs MemoryMax/RestartSec tuning or a smaller footprint on mn01,
+  and confirm it stays stable. Evidence: journalctl --user -u mn-ha-dev.service on mn01, 2026-11-25 01:30-05:45
+  UTC.'
+ref: AUD-1399
+comms:
+- at: 2026-11-25 14:59
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-25 15:45
+  from: chaba
+  text: classified as devin (jevos conf 0.69)
+- at: 2026-11-25 15:45
+  from: chaba
+  text: queued for processing
+- at: 2026-11-25 15:45
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 0.98 > 0.7)'
+- at: 2026-11-25 15:45
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 15:45
+  from: chaba
+  text: '[auto-dispatch] wave 4 (2026-11-25 15:45): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-25 15:46
+  from: tony-dell
+  text: claimed
+- at: 2026-11-25 15:46
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 4.87 > 0.8)'
+- at: 2026-11-25 15:47
+  from: chaba
+  text: started devin-task-20261125-154657-found-during-mn01-yolo-xiaomi- on tony-dell (dispatch)
+- at: 2026-11-25 15:47
+  from: chaba
+  text: 'primer injected 8 lesson(s): [mn01-yolo-xiaomi-service-stopped-deliber-d2b384] checkpoint failed: commit:
+    Com; [timer-alert-idc02-ada-ocb-agent-runner-converge] root cause (found during idc02; [timer-alert-idc03-chaba-lessons-audit]
+    [still suspicious] Last run (11-11 07:45; [timer-alert-idc03-chaba-lessons-audit] [still suspicious] Last run
+    (11-25 09:58; [devin-session-audit-2026-10-29] finished (failed): journal=exit-code -20261120-; [devin-session-audit-2026-10-29]
+    finished (failed): journal=e'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: devin
+  text: 'ROOT CAUSE FOUND: earlyoom.service (userspace OOM killer), not HA/podman/sqlite. mn01 has 7.3GB RAM + ZERO
+    swap, so earlyoom''s mem<=10% AND swap<=10% arm is permanently true; it SIGTERMs python3 -m homeassistant whenever
+    MemAvailable dips under ~600MiB (dispatch tasks, yolo x3, gnome, ada-standby, netdata, XMEye VMS all share the
+    box). journalctl -u earlyoom shows a kill at EVERY mn-ha-dev exit — 44 of 51 kills since 11-24 were HA python.
+    HA exits gracefully on SIGTERM (code 0) -> Restart=always'
+- at: 2026-11-25 17:04
+  from: devin
+  text: 'raised request mn01-has-no-swap-and-earlyoom-keeps-sigt-dc1d1d: mn01 has no swap and earlyoom keeps SIGTERM-killing
+    mn-ha-dev (43 restarts, still recurring) plus VMS.exe/yolo/chrome co'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: devin
+  text: '[DONE - root cause: earlyoom, not HA] Investigation complete. mn-ha-dev is STILL looping — NRestarts=45
+    at 10:03 UTC, 2 more earlyoom kills since 09:35, MemAvailable hovering ~860MB. earlyoom SIGTERMs python3 -m
+    homeassistant whenever avail<10% of 7.3GB (mn01 has zero swap so the condition is always armed). Deliverables:
+    docs/ssot/jobs/infrastructure/2026-11-25-mn01-mn-ha-dev-earlyoom-kills.yml (full timeline/evidence/verdicts)
+    + dispatch-outcome-20261125-154657-found-during-mn01-yolo-xiaomi-.md'
+- at: 2026-11-25 17:19
+  from: tony-dell
+  text: 'finished (ok): exit=0 p ★ / earlyoom `-m 5` / reduce mn01 load / leave as-is). | devin-task-20261125-154657-found-during-mn01-yolo-xiao'
+- at: 2026-11-25 17:19
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 17:19
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261125-154657-found-during-mn01-yolo-xiaomi-'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-25 17:19
+  from: chaba
+  text: banked 148 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 17:19
+  from: chaba
+  text: pushed dispatch/20261125-154657-found-during-mn01-yolo-xiaomi- to origin
+- at: 2026-11-25 17:19
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 17:19
+  from: chaba
+  text: auto-merged 35962c19 (dispatch/20261125-154657-found-during-mn01-yolo-xiaomi-) → origin/master
+- at: 2026-11-25 17:19
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-25 17:24
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''mn01-has-no-swap-and-earlyoom-''] block close)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 18:28
+  from: tony
+  text: 'answered mn01-has-no-swap-and-earlyoom-keeps-sigt-dc1d1d: proceed'
+- at: 2026-11-25 18:28
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-25 18:39
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:54
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:54
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:56
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: devin
+  lane_source: jevos
+  runner: tony-dell
+  attempts: 1
+  result: 'exit=0 p ★ / earlyoom `-m 5` / reduce mn01 load / leave as-is). | devin-task-20261125-154657-found-during-mn01-yolo-xiaomi-.service:
+    Consumed 2min 54.315s CPU time over 1h 27min 45.201s wall clock time, 946.7M memory peak, 574.1M memory swap
+    peak.'
+  verified: true
+  sweep:
+    close_held: 2026-11-25 17:24
+claim:
+  since: 2026-11-25 15:46
+requests:
+- id: mn01-has-no-swap-and-earlyoom-keeps-sigt-dc1d1d
+  ask: 'mn01 has no swap and earlyoom keeps SIGTERM-killing mn-ha-dev (43 restarts, still recurring) plus VMS.exe/yolo/chrome
+    collateral. Fix? Options: ★A) add ~4G zram swap on mn01 (mirror tony-dell zram-swap.service — proven pattern,
+    no disk wear) B) earlyoom -m 5 threshold only C) reduce mn01 load (dispatch cap 2->1 / consolidate yolo) D)
+    leave as-is (accept periodic HA restarts)'
+  status: answered
+  at: 2026-11-25 17:04
+  from: devin
+  options:
+  - proceed
+  - hold
+  answer: proceed
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 18:39
+  note: verified — evidence checks green, closing itself

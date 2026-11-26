@@ -1,0 +1,219 @@
+id: cf-ssl-strict-migrate-idc02-edge-origin-3fa959
+title: 'CF SSL=strict: migrate idc02 edge origin certs off tls internal, then flip zone'
+column: done
+updated: 2026-11-26 20:33
+priority: medium
+spec: 'Make surf-thailand.com zone SSL mode ''strict'' without breaking any proxied hostname.
+
+
+  Current state (verified 2026-11-24):
+
+  - Zone 4feb4a3682e44e38cce3feed65dba7f3 ssl=full, certificate_status=active
+
+  - ~25 proxied names; origins: idc02 45.136.236.190 (caddy-edge, ALL tls internal), idc03 157.85.102.125 (api+app
+  valid LE YE2), idc01 157.85.110.99 (unreachable), wiki.h3.gizmo-thailand.com 103.99.11.249 (LE cert lacks surf-thailand
+  SANs)
+
+  - idc02 Caddyfile: ~/.config/caddy/Caddyfile on idc02, every block has ''tls internal''
+
+
+  Done when: ssl=strict live AND curl https://<every proxied name> returns its normal response (200/302/308 — never
+  526/525).'
+note: 'Follow-up to cloudflare-setup optional item. Zone ssl=full today; idc02 caddy-edge (~20 site blocks: tony-ha,
+  kk-ha, michael-dev, boards, cms, monitor, status, www, apex, ada-code, ada-ocb, cline, netdata, opencode-*) all
+  use ''tls internal'' = Caddy Local Authority certs — untrusted, strict would 526 every one. idc03 names (api,
+  app) already serve valid LE. Blocked names to fix: idc03.surf-thailand.com (no cert at SNI — likely stale/unused,
+  verify consumers or delete record), idc01.surf-thailand.'
+ref: OPS-0027
+comms:
+- at: 2026-11-24 12:04
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-24 17:02
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:35
+  from: chaba
+  text: classified as devin (fallback conf 0.14)
+- at: 2026-11-24 21:35
+  from: tony
+  text: queued for processing
+- at: 2026-11-24 21:35
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 21:35
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.11 > 0.85)'
+- at: 2026-11-24 21:36
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.70 > 0.85)'
+- at: 2026-11-24 21:36
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 21:36
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (3/3)'
+- at: 2026-11-24 21:36
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-24 21:38
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-24 21:41
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-24 21:48
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.36 > 1.5)'
+- at: 2026-11-24 22:02
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 22:12
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.84 > 1.5)'
+- at: 2026-11-24 22:19
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 22:26
+  from: tony-dell
+  text: claimed
+- at: 2026-11-24 22:27
+  from: chaba
+  text: started devin-task-20261124-222656-make-surf-thailand-com-zone-ss on tony-dell (dispatch)
+- at: 2026-11-24 22:27
+  from: chaba
+  text: 'primer injected 8 lesson(s): [ansible-verify-host-software-r7] Full-fleet run 2026-11-23 (controller tony-ome;
+    [idle-qa-and-backups-idc] DONE. Premise was stale: qc-scoreboard already on idc0; [ada-ocb-ansible-upgrade]
+    LIVE UPGRADE EXECUTED by Tony 2026-11-24 08:25-08:26 +; [boards-member-theme-pick-tune] [attempt2] live state
+    verified: Blocksy 2.1.62 a; [idc01-return-role] standby-edge gap closed: the "cert sync" referenced in Caddy;
+    [rebuild-gesture-controls-using-yolo-190356] DONE (attempt on'
+- at: 2026-11-24 22:32
+  from: devin
+  text: 'attempt-1 starting on tony-dell. Inventory done: zone has 25 proxied names — 17 hit idc02 caddy-edge (tls
+    internal), api+app+idc03 hit idc03 (LE ok), idc01 unreachable, wiki+wiki-internal CNAME->Plesk 103.99.11.249
+    (gizmo cert, no surf SANs), claw=CF worker no origin, edge=dns-only. CF token on idc03 has DNS+zone-settings
+    scope. Next: inspect live caddy configs on idc02/idc03, then Origin-CA cert plan.'
+- at: 2026-11-24 23:14
+  from: devin
+  text: 'DONE — ssl=strict LIVE on surf-thailand.com zone. All 23 proxied names verified: 200/301/302/308/404, zero
+    525/526. Work: (1) idc02 caddy-edge tls internal x15 -> single LE wildcard (*.surf-thailand.com+apex, acme.sh
+    DNS-01 via cfat_ token, certs in /data/certs, cron renewal armed); (2) FOUND+FIXED latent bug: quadlet dir mounts
+    used ,Z comma-form -> podman phantom mounts (apex www webroot, /feeds/usage.json, /kk-ha, /tony-ha were silently
+    dead for weeks) — switched to :z + restart, all healed; '
+- at: 2026-11-24 23:21
+  from: tony-dell
+  text: 'finished (ok): exit=0 tch branch (`1b4cc04ab84`), final comms posted to the card. | devin-task-20261124-222656-make-surf-thailand-com-z'
+- at: 2026-11-24 23:21
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 23:21
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-222656-make-surf-thailand-com-zone-ss'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-24 23:21
+  from: chaba
+  text: banked 42 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 23:21
+  from: chaba
+  text: pushed dispatch/20261124-222656-make-surf-thailand-com-zone-ss to origin
+- at: 2026-11-24 23:21
+  from: chaba
+  text: 'auto-merge not done: merge: commit after conflict resolution failed — close will block until merged'
+- at: 2026-11-24 23:21
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 23:23
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261124-222656-make-surf-thailand-com-z'
+- at: 2026-11-25 07:31
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-25): dispatch branch merged into origin/master as 7bd5e703b90a
+    (conflicts resolved where applicable: generated SSOT snapshots kept from master, substantive code from branch).
+    Deliverable: surf-thailand SSL (47a841c, 3 files). Closing.'
+- at: 2026-11-25 07:31
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 07:49
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:56
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:33
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+action:
+  type: dispatch
+  status: done
+  lane: devin
+  lane_source: fallback
+  runner: tony-dell
+  attempts: 1
+  result: 'exit=0 tch branch (`1b4cc04ab84`), final comms posted to the card. | devin-task-20261124-222656-make-surf-thailand-com-zone-ss.service:
+    Consumed 3min 46.170s CPU time over 52min 1.591s wall clock time, 1023.6M memory peak, 416.4M memory swap peak.'
+  sweep:
+    no_repo: 2026-11-24 23:24
+claim:
+  since: 2026-11-24 22:26
+review_kind: verify

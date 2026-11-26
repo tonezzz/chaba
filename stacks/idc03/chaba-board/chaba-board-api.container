@@ -1,0 +1,38 @@
+[Unit]
+Description=Kanban board write API — unified mutation door (containerized chaba-board-api.service)
+# no After=default.target — same reasoning as the old unit: it queued
+# start behind unrelated crash-looping units (~8min delay, 2026-10-16).
+# WantedBy already puts us in the transaction; we start in parallel.
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=localhost/chaba-board:latest
+ContainerName=chaba-board-api
+# Host networking: binds 127.0.0.1:8787 exactly like the old unit, so
+# Caddy upstreams and the host-side writers that hit loopback
+# (kanban-dispatch, merge-sweep, card-pipeline, runner-agent api.conf)
+# keep working with zero config changes.
+Network=host
+# Whole-home bind: board-api derives REPO from __file__ under
+# chaba-tony-dell; kanban-sync.sh needs its dedicated worktree, ~/.ssh
+# (git@github.com push + fleet health-check ssh aliases) and
+# ~/.config/secrets — all at identical paths. /tmp is mounted so the
+# /tmp/board-api*.lock flock domain stays SHARED with host processes
+# (kanban-dispatch.py, merge-sweep.py, git-safe-pull.sh, ...).
+Volume=/home/tony:/home/tony
+Volume=/tmp:/tmp
+Environment=HOME=/home/tony
+Exec=/home/tony/.config/containers/chaba-board/run-api.sh
+HealthCmd=/usr/local/bin/python3 -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8787/health',timeout=5)"
+HealthInterval=30s
+HealthTimeout=5s
+HealthRetries=3
+HealthStartPeriod=10s
+
+[Service]
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

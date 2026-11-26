@@ -1,0 +1,73 @@
+title: "yt-live-api :8791/status not 200 — restore on tony-omen + pipeline resync"
+subtitle: "Kanban card vcast-auto-yt-live-api — connection refused; root cause = dead+disabled unit after omen reboot, plus month-old installed pipeline"
+icon: target
+
+planning:
+  goal: Restore GET tony-omen:8791/status to 200 and make the yt-live cast pipeline actually work on omen again.
+  scope: "tony-omen user units + ~/.local/bin pipeline scripts + repo scripts/ops + SSOT docs. Out of scope: push/deploy, other omen units found down post-reboot (plug-watch, ha-live, ha-stall-watchdog, playlive-chrome, yolo-detect — left for audit-hosts/health lanes)."
+  owner: devin (dispatch on tony-macbook)
+  related_focus:
+    - label: vcast-auto-yt-live-api
+      file: docs/ssot/kanban/cards/vcast-auto-yt-live-api.yml
+
+processing:
+  status: completed
+  started_at: 2026-11-23T19:00:00+07:00
+  steps:
+    - id: 1
+      label: Reproduce + locate service
+      status: completed
+      notes: >-
+        GET http://tony-omen.taila0626a.ts.net:8791/status -> connection refused/timeout.
+        tailscale ping OK; ssh via tailscale IP 100.75.102.88 (hostname alias timed out once,
+        IP worked). yt-live-api.service user unit on omen: inactive (dead) AND disabled.
+        linger=yes so a disabled unit never starts at boot.
+    - id: 2
+      label: Root cause
+      status: completed
+      notes: >-
+        omen rebooted 2026-11-23 18:51 (+07). yt-live-api was already dead before that
+        (health card filed 16:19) and disabled — likely never re-enabled after the
+        phase-5 migration (2026-10-19/20); sibling raceman-web IS enabled. Deeper find:
+        ~/.local/bin yt-live*.py/sh on omen were the pre-dub Oct-5 snapshot carried from
+        dell — repo versions (voice/dub, YT_LIVE_APP env) never deployed, and the old
+        yt-live.sh hardcodes APP_DIR=~/CascadeProjects/chaba-tony-dell/.../apps/yt-live
+        (does not exist on omen) + BASE_URL=http://192.168.2.67/apps/yt-live (port 80,
+        nothing listens). Last media write in the served dir: Oct 18 — no successful
+        cast on omen since migration.
+    - id: 3
+      label: Fix live
+      status: completed
+      notes: >-
+        systemctl --user enable + start yt-live-api; added drop-in
+        ~/.config/systemd/user/yt-live-api.service.d/override.conf with
+        YT_LIVE_APP=/home/tony/CascadeProjects/chaba-raceman/public/apps/yt-live and
+        YT_LIVE_BASE=http://192.168.2.67:8083/apps/yt-live (omen owns 192.168.2.67 on wlo1;
+        raceman-web nginx :8083 serves /apps/yt-live from the chaba-raceman checkout).
+        Installed repo pipeline file set (yt-pipeline-install.sh manifest) to
+        ~/.local/bin — incl. merged yt-live-api.py (repo env/voice/dub features +
+        fast_cast + /list restored; /list now env-driven via YT_LIVE_APP/YT_LIVE_BASE).
+    - id: 4
+      label: Verify by surface
+      status: completed
+      notes: >-
+        /status 200 with real data (segments=1528, vod_complete, phase=complete —
+        proves APP env reached the api), /list returns 10 cast-ready files with
+        :8083 URLs, one URL fetched 200 (~170MB mp4), /health ok. External check via
+        tailnet name passes. yt-live.sh bash -n clean.
+
+outcome:
+  result: fixed
+  evidence:
+    - "curl http://tony-omen.taila0626a.ts.net:8791/status -> 200 {segments:1528, vod_complete:true, phase:complete}"
+    - "curl http://tony-omen.taila0626a.ts.net:8791/list -> 10 files, urls on :8083"
+    - "systemctl --user is-enabled yt-live-api -> enabled; is-active -> active"
+  residual:
+    - "omen reboot left other user units inactive+disabled (plug-watch, ha-live -> :8444 tailscale-serve 502, ha-stall-watchdog, playlive-chrome, yolo-detect); not covered by this card — audit-hosts daily job / health lanes own those."
+    - "scripts/ops defaults still point at dell paths; the unit env override is the omen contract (documented in ssot.migrated-units.yml + ssot.apps.vcast.yml)."
+
+lessons:
+  - "Migrated user units can be left `disabled` — check is-enabled, not just is-active, after host moves; a disabled unit silently never starts at boot."
+  - "Installed ~/.local/bin pipeline drifted BOTH ways vs repo: omen had pre-dub yt-live.sh (no env support) + hotfixed yt-live-api.py (fast_cast//list never upstreamed). Reconcile before assuming env overrides reach the code."
+  - "Verify-by-surface: /status 200 was true while the cast path was still broken (wrong APP_DIR + dead :80 BASE_URL) — check the consumer path, not just the health endpoint."
+  - "ssh <hostname> timed out once but the tailscale IP worked — keep 100.x addresses handy when a MagicDNS name stalls."

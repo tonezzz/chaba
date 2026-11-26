@@ -1,0 +1,113 @@
+{# worktree-audit.j2 — per-host worktree verdict from a single read-only probe.
+   Context: target, hostvars, wt_policy, audit_ssot, ssot_key_map, probe_ts. #}
+{% set probe = hostvars[target].wt_probe | default({}) -%}
+{% set hs = (audit_ssot['hosts'] | default({})).get(ssot_key_map.get(target, target)) or {} -%}
+{% set unreachable = probe.error is defined -%}
+{% set behind_warn = (wt_policy.behind_warn | default(10)) | int -%}
+{% set findings = [] -%}
+{% set verdicts = [] -%}
+{% if unreachable -%}
+{%   if hs.get('offline_ok') -%}
+{%     set _ = findings.insert(0, '[warn] unreachable (offline_ok in ssot.audit.hosts.yml): ' ~ probe.error) -%}
+{%   else -%}
+{%     set _ = findings.insert(0, '[fail] probe failed: ' ~ probe.error) -%}
+{%   endif -%}
+{% else -%}
+{%   for wt in (probe.checkouts | default([])) -%}
+{# namespace: plain set inside a for loop does not escape the loop scope. #}
+{%     set vns = namespace(verdict='ok') -%}
+{%     set wf = [] -%}
+{%     if wt.declared_role and wt.role and wt.role != wt.declared_role -%}
+{%       set _ = wf.append('[fail] role marker ' ~ wt.role ~ ' != declared ' ~ wt.declared_role) -%}
+{%     endif -%}
+{%     if wt.declared_role and not wt.role -%}
+{%       set _ = wf.append('[warn] no chaba-role marker (expected ' ~ wt.declared_role ~ ') — run scripts/install-hooks.sh --role') -%}
+{%     endif -%}
+{%     if wt.branch == 'master' and not wt.served and not wt.role -%}
+{%       set _ = wf.append('[warn] master-tracking checkout has no role — looks canonical but is not the served writer') -%}
+{%     endif -%}
+{%     if wt.served and wt.significant_count | default(0) > 0 -%}
+{%       set _ = wf.append('[fail] served/live-deploy checkout is dirty with ' ~ wt.significant_count ~ ' uncommitted path(s)') -%}
+{%     endif -%}
+{%     if wt.role == 'exec' and (wt.ahead | default(0)) | int > 0 -%}
+{%       set _ = wf.append('[fail] role=exec checkout has ' ~ wt.ahead ~ ' unpushed commit(s) — commits here are never swept') -%}
+{%     endif -%}
+{%     if wt.served and (wt.ahead | default(0)) | int > 0 -%}
+{%       set _ = wf.append('[warn] served checkout has ' ~ wt.ahead ~ ' unpushed commit(s) — master is the deploy ref') -%}
+{%     endif -%}
+{%     if wt.branch == 'master' and (wt.ahead | default(0)) | int > behind_warn -%}
+{%       set _ = wf.append('[warn] ' ~ wt.ahead ~ ' unpushed commits on master') -%}
+{%     elif (wt.ahead | default(0)) | int > 0 -%}
+{%       set _ = wf.append('[info] ' ~ wt.ahead ~ ' unpushed commit(s)') -%}
+{%     endif -%}
+{%     if (wt.behind | default(0)) | int > behind_warn -%}
+{%       set lvl = '[info]' if not wt.declared else '[warn]' -%}
+{%       set _ = wf.append(lvl ~ ' ' ~ wt.behind ~ ' commit(s) behind ' ~ wt.upstream) -%}
+{%     endif -%}
+{%     if not wt.hooks and wt.declared -%}
+{%       set _ = wf.append('[warn] no core.hooksPath (run scripts/install-hooks.sh)') -%}
+{%     endif -%}
+{%     if wt.inbox_dirty | default(0) > 0 and not wt.served -%}
+{%       set lvl = '[info]' if not wt.declared else '[warn]' -%}
+{%       set _ = wf.append(lvl ~ ' ' ~ wt.inbox_dirty ~ ' uncommitted focus-inbox file(s) — not swept outside the served checkout') -%}
+{%     endif -%}
+{%     if wt.significant_count | default(0) > 0 -%}
+{%       set first = (wt.significant[0].path | default('?')) if wt.significant else '?' -%}
+{%       set _ = wf.append('[warn] ' ~ wt.significant_count ~ ' significant dirty path(s), e.g. ' ~ first) -%}
+{%     endif -%}
+{%     if wt.prunable -%}
+{%       set _ = wf.append('[warn] stale worktree registration (prunable) — git worktree prune needed') -%}
+{%     endif -%}
+{%     if wt.locked and wt.significant_count | default(0) > 0 -%}
+{%       set _ = wf.append('[info] locked worktree with local changes — leave alone') -%}
+{%     endif -%}
+{%     for f in wf -%}
+{%       if f.startswith('[fail]') -%}
+{%         set vns.verdict = 'fail' -%}
+{%       elif f.startswith('[warn]') and vns.verdict != 'fail' -%}
+{%         set vns.verdict = 'drift' -%}
+{%       endif -%}
+{%       set _ = findings.append(f ~ ' (' ~ wt.name ~ ')') -%}
+{%     endfor -%}
+{%     if wt.noise_count | default(0) > 0 and vns.verdict == 'ok' -%}
+{%       set vns.verdict = 'expected-dirty' -%}
+{%     endif -%}
+{%     set _ = verdicts.append({'name': wt.name, 'path': wt.path, 'branch': wt.branch,
+                                'role': wt.role, 'declared_role': wt.declared_role,
+                                'served': wt.served, 'declared': wt.declared,
+                                'ahead': wt.ahead,
+                                'behind': wt.behind, 'hooks': wt.hooks,
+                                'dirty_count': wt.dirty_count,
+                                'significant_count': wt.significant_count | default(0),
+                                'noise_count': wt.noise_count | default(0),
+                                'inbox_dirty': wt.inbox_dirty | default(0),
+                                'prunable': wt.prunable, 'locked': wt.locked,
+                                'significant': wt.significant | default([]),
+                                'noise': wt.noise | default([]),
+                                'verdict': vns.verdict}) -%}
+{%   endfor -%}
+{% endif -%}
+{% set ns = namespace(fail=false) -%}
+{% for f in findings -%}
+{%   if f.startswith('[fail]') -%}
+{%     set ns.fail = true -%}
+{%   endif -%}
+{% endfor -%}
+{% if unreachable and hs.get('offline_ok') -%}
+{%   set summary = 'offline-ok' -%}
+{% elif ns.fail -%}
+{%   set summary = 'fail' -%}
+{% elif findings | length > 0 -%}
+{%   set summary = 'drift' -%}
+{% elif verdicts | selectattr('verdict', 'equalto', 'expected-dirty') | list | length > 0 -%}
+{%   set summary = 'expected-dirty' -%}
+{% else -%}
+{%   set summary = 'ok' -%}
+{% endif -%}
+{{ {'host': target,
+     'ts': probe_ts,
+     'summary': summary,
+     'reachable': not unreachable,
+     'discovered': probe.discovered | default(0),
+     'checkouts': verdicts,
+     'findings': findings} | to_nice_yaml(indent=2, sort_keys=False) }}

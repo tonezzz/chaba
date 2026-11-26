@@ -1,0 +1,520 @@
+title: Knowledge Capture and Pointer Routing
+subtitle: Auto-capture matrix, pointer-note template, and SSOT-aligned routing for durable information
+icon: "🧭"
+version: 1
+
+config:
+  status: active
+  created: "2026-11-20"
+  last_updated: "2026-11-25"  # Phase C.1 capture-router/harvester contract (OPS-1355)
+  maintainer: tony
+  related_files:
+    - docs/ssot/ssot.index.yml
+    - docs/ssot/ssot.registry.yml
+    - docs/ssot/ssot.procedures.yml
+    - docs/ssot/ssot.procedures-index.yml
+    - docs/ssot/ssot.file-control.yml
+    - docs/ssot/ssot.terminology.yml
+    - docs/ssot/chaba/ssot.chaba.memory.yml
+    - AGENTS.md
+    - docs/kb/board-api-write-door.md
+
+overview:
+  purpose: >-
+    Define how useful information is automatically captured, routed, indexed,
+    and promoted so it can be reused later without fragmenting truth. Captured
+    artifacts are pointers, evidence, or promotion candidates unless explicitly
+    promoted into a canonical source.
+  alignment:
+    - "SSOT is authoritative for stable procedures, policies, schemas, definitions, ownership, and approved operational rules."
+    - "The board (kanban cards/requests/comms via board-api) is the authoritative list of pending/actionable work."
+    - "Live systems are authoritative for volatile state; do not freeze live state as captured truth."
+    - "OpenChamber knowledge, KB docs, lessons, reports, and focus-inbox are capture/index surfaces — use them to route and retrieve, not to replace SSOT."
+  retrieval_recipe:
+    canonical:
+      - "Identify intent/domain (procedure, policy, schema, live state, decision, how-to, evidence)."
+      - "SSOT-first: ada_ssot_search(query/domain) -> ada_ssot_get/read canonical SSOT key/path (start at ssot.index.yml, ssot.procedures.yml, ssot.registry.yml, ssot.file-control.yml as relevant)."
+      - "Consult pointer indexes (OpenChamber knowledge notes, KB, lesson topics, report/card links) to jump to the right SSOT keys or artifacts."
+      - "Fetch volatile/live data at time of use (board-api, jobs/health/audit surfaces, current reports/tools)."
+      - "On conflict, SSOT or the designated live authority wins; update/deprecate stale pointers."
+
+sections:
+  - title: Capture Matrix
+    icon: "🗺️"
+    layout: list
+    items:
+      - label: Stable procedure, policy, schema, ownership, quality/audit rule
+        text: >-
+          Canonical sink: SSOT file in docs/ssot/** (promote via normal change workflow:
+          validate, register in ssot.index.yml, log significant changes in CHANGELOG.md per ssot.file-control.yml).
+          Index: SSOT index/registry/procedures pointers; optional short OpenChamber knowledge pointer note.
+          Volatility: low (versioned). Rule: update SSOT in place; do not maintain a parallel truth elsewhere.
+      - label: Actionable work, follow-up, blocked item, unmet request
+        text: >-
+          Canonical sink: Kanban card / card request / card comment via board-api (correct write path per board-write);
+          focus-inbox entry only as a drop-catcher/parking surface when appropriate.
+          Index: board state; OpenChamber todo for user-visible backlog tracking only (never for the agent's current-task steps).
+          Volatility: live workflow state. Rule: open-ask and kanban-first duties apply; a request with no durable record does not exist.
+      - label: Reusable explainer, lesson, comparison, assessment, or "educate-me" answer
+        text: >-
+          Canonical sink: lesson store via /lesson or scripts/lesson-add.py -> MDDB collection chaba-lessons
+          (and Education/wiki surfaces as applicable); upsert by topic slug.
+          Index: topic slug/id, MDDB search, and pointers from cards/KB/notes.
+          Volatility: curated knowledge. Rule: SSOT keeps verdict/decision-layer + pointer; lesson holds research depth
+          (lesson-capture and assessments-to-education split duties).
+      - label: Project-local navigation, pointer map, architecture entry points, lookup recipe
+        text: >-
+          Canonical sink: OpenChamber project knowledge note (kind: note), pointer-first.
+          Index: note id/title/body search within project knowledge.
+          Volatility: medium (update when entry points change). Rule: store IDs/paths/keys/queries, not copied SSOT bodies or live snapshots.
+      - label: Durable repo-local runbook or engineering knowledge
+        text: >-
+          Canonical sink: docs/kb/* or other in-repo docs per placement rules and checkout/writer constraints.
+          Index: KB links, SSOT/registry/procedure references where relevant.
+          Volatility: low-medium. Rule: promote to SSOT when it becomes a governing standard or cross-cutting procedure.
+      - label: Execution evidence and outcomes
+        text: >-
+          Canonical sink: existing evidence surfaces (dispatch-outcome artifacts, reports, CI/audit outputs, card result/comms/report, CMS/report surfaces).
+          Index: card/report indexes and pointer notes linking to artifact paths/IDs.
+          Volatility: append-only or regenerable. Rule: capture evidence refs and conclusions; do not duplicate large logs or volatile metrics without as-of/source.
+      - label: Transient or live operational state
+        text: >-
+          Canonical sink: none (do not persist as captured truth).
+          Index: pointer note/query recipe only, if navigation help is needed.
+          Volatility: high/live. Rule: fetch at time of use via authoritative tools/surfaces
+          (ada_ssot_search/get for SSOT, board-api for cards, jobs/health/audit/report tools for runtime state).
+
+  - title: Pointer-Note Template
+    icon: "📌"
+    layout: list
+    items:
+      - label: Intended use
+        text: >-
+          Use for OpenChamber project knowledge notes (and as a pattern for KB index stubs) that help future sessions
+          find canonical information quickly. Pointer notes accelerate retrieval; they do not replace SSOT or live sources.
+      - label: Required fields
+        text: >-
+          scope (what domain/question this note answers), as_of (date/time context), canonical_refs (SSOT doc IDs/paths/keys
+          and other authoritative artifact refs), retrieval_recipe (exact search/get/live queries to refresh), volatility
+          (static|pointer|live-mix), and summary (short pointer-first map, not copied bodies).
+      - label: Recommended fields
+        text: >-
+          owner (person/team/role), promote_to (ssot|kb|lesson|card|none), related (cards/reports/lessons/procedures),
+          refresh_trigger (when to update), and known_gaps.
+      - label: Content rules
+        text: >-
+          Prefer IDs, file paths, SSOT keys, tool calls/queries, and short descriptions. Do not paste full SSOT documents,
+          secrets, or volatile snapshots. If a value can change, store the query/command to obtain it and mark it live.
+      - label: Dedupe rule
+        text: >-
+          Before creating, list/search existing knowledge notes, SSOT/procedures, lessons, KB, and board artifacts for the
+          same domain; update in place or link instead of forking. Keep one current pointer note per domain/topic where possible.
+
+  - title: Pointer-Note Template (Markdown body)
+    icon: "🧩"
+    layout: text
+    items:
+      - label: Template
+        text: |
+          # <Domain/topic> (pointer note)
+          - scope: <what this helps you find>
+          - as_of: <YYYY-MM-DD[ HH:MM TZ]>
+          - volatility: <static|pointer|live-mix>
+          - owner: <role/person or n/a>
+          - promote_to: <ssot|kb|lesson|card|none>
+
+          ## Canonical refs (authoritative)
+          - SSOT: <doc id/path>::<key/section> — <why>
+          - Procedures/KB/Lesson/Report/Card: <id/path/url/ref> — <why>
+
+          ## Retrieval recipe (refresh, do not cache volatile truth)
+          1. `ada_ssot_search("<query>")` -> identify <collection/doc/key>
+          2. `ada_ssot_get(...)` or read <path> for stable detail
+          3. Live check (if needed): <board-api/job/health/report command or query>
+
+          ## Pointer map
+          - <entry point> -> <canonical ref / query>
+          - <entry point> -> <canonical ref / query>
+
+          ## Gaps / refresh triggers
+          - gap: <unknown or unresolved>
+          - refresh_when: <conditions that require update>
+
+  - title: Session Handoff Packet (required)
+    icon: "📦"
+    layout: list
+    items:
+      - label: Intended use
+        text: >-
+          Required at every session end, handoff, or pause. The packet is the portable, pointer-first summary that lets
+          Devin, OpenChamber/OpenCode, or Tony resume without re-discovery. Store it as an OpenChamber project knowledge
+          note (preferred for resume) and/or attach key refs in card comms/requests; never chat-only.
+      - label: Required fields
+        text: >-
+          objective (what this session/task was doing), current_state (done/in-progress/blocked with evidence refs),
+          canonical_refs (SSOT keys/paths, card IDs, lesson/report/artifact IDs, repo paths/commits), open_asks_decisions
+          (unmet asks, decisions needed, owners/options/defaults; each routed to a durable sink), next_action (single
+          concrete next step), where_filed (every item captured this session and its sink/ID/path — mandatory), and
+          as_of (YYYY-MM-DD[ HH:MM TZ]).
+      - label: Rules
+        text: >-
+          Pointer-first and SSOT-aligned: cite stable IDs/paths/keys/queries, label state as canonical(served)/branch-unmerged/live
+          when relevant, include refresh queries for any live/volatile fact, and do not copy secrets or volatile snapshots.
+          "Filed where" must be explicit; a request with no durable record does not exist.
+      - label: Markdown template
+        text: |
+          # Session handoff — <objective> (<as_of>)
+          - objective: <what this session/task was doing>
+          - as_of: <YYYY-MM-DD[ HH:MM TZ]>
+          - current_state: <done | in progress | blocked> — <evidence refs>
+          - canonical_refs: <SSOT keys/paths, card IDs, lesson/report/artifact IDs, commits/paths>
+          - open_asks_decisions: <none | ask/decision -> owner/options/default + durable sink/ID>
+          - next_action: <single concrete next step>
+          - where_filed: <item -> sink/ID/path> (mandatory, include "none" only if truly nothing captured)
+          - notes: <risks/gaps/refresh queries if any>
+
+  - title: Auto-Capture Triggers and Hooks
+    icon: "⚡"
+    layout: list
+    items:
+      - label: Session boundary / handoff (mandatory)
+        text: >-
+          Before ending, run the session-capture sweep: route every unmet/unfinished request or discovered follow-up to a
+          durable sink (card/request/comment, focus-inbox, lesson, KB/SSOT promotion, or pointer note); log focus decisions/
+          session summaries append-only to docs/ssot/ssot.focus.decisions.yml / docs/ssot/ssot.focus.sessions.yml (prefer
+          mcp-debug mcp_focus session_summary/technical_decision modes where available, else consistent append-only edit);
+          save/update a deduped pointer or handoff note; and produce a Session Handoff Packet. Always report "where filed"
+          (item -> sink/ID/path) in the response and in the packet — no chat-only outcomes.
+      - label: Discovery
+        text: >-
+          When a non-obvious entry point, procedure location, or domain map is resolved, create/update a pointer note with
+          canonical refs and the exact retrieval recipe used.
+      - label: Retainable answer
+        text: >-
+          For reusable explainers/comparisons/assessments/education-shaped answers, apply lesson-capture; keep decision/verdict
+          in SSOT (or card/report context) with a pointer to the lesson when a split applies.
+      - label: Task completion / execution
+        text: >-
+          Attach outcomes and evidence to the card/report/artifact surfaces; capture only reusable deltas (pointers, KB, lesson,
+          or SSOT promotion) rather than transient logs/state.
+      - label: Drift, repeat, or friction
+        text: >-
+          Repeated lookups, stale pointers, or missing procedures trigger pointer updates and, when systemic, a card/proposal to
+          formalize or correct SSOT/KB/procedures.
+      - label: Automated producers
+        text: >-
+          Timers/CI/sweeps/audits emit structured, idempotent outputs to designated sinks; producers must not claim workflow
+          ownership fields they do not own and must include as-of/source/evidence refs.
+
+  - title: Retrieval and Usage Flow
+    icon: "🔎"
+    layout: timeline
+    items:
+      - label: Classify
+        text: Determine whether the need is policy/procedure, live state, prior decision, evidence, or how-to.
+      - label: Resolve canonically
+        text: Query SSOT first (ada_ssot_search -> ada_ssot_get/read) using index/procedures/registry/file-control as entry points.
+      - label: Accelerate
+        text: Use pointer notes, KB, lessons, and report/card links to jump to the right canonical refs; treat them as indexes.
+      - label: Refresh live
+        text: Fetch volatile state at time of use from authoritative runtime surfaces; never rely on embedded stale snapshots.
+      - label: Reconcile
+        text: If sources conflict, prefer SSOT/designated live authority, then correct or deprecate the stale pointer and record the fix.
+
+  - title: Guardrails and Governance
+    icon: "🛡️"
+    layout: list
+    items:
+      - label: Canonicality and freshness
+        text: >-
+          Mark volatility and include as-of + refresh recipe. Pointers must be traceable to canonical refs; no silent "memory-only" truth.
+      - label: No duplication / no secrets
+        text: >-
+          Store refs/queries, not copied SSOT bodies or volatile dashboards. Never capture secrets, tokens, credentials, or private material in disallowed sinks.
+      - label: Correct write path and role
+        text: >-
+          Respect single-writer/served-checkout and checkout-role constraints, board-api mutation door for card/lesson/job/report/inbox writes,
+          and host-hygiene/secret-handling rules. Do not bypass required gates.
+      - label: Idempotence and dedupe
+        text: >-
+          Upsert or link by stable key (SSOT key, card id, topic slug, report/artifact id, note domain); avoid forks and duplicate records.
+      - label: Boundaries
+        text: >-
+          Do not write Ada personal memory banks (ada-*) from Chaba contexts; follow field-ownership rules; promotion to normative SSOT/AGENTS behavior
+          requires the appropriate governed change path.
+      - label: Focus parity
+        text: >-
+          Log focus decisions and session summaries append-only to docs/ssot/ssot.focus.decisions.yml and docs/ssot/ssot.focus.sessions.yml.
+          Prefer mcp-debug mcp_focus (session_summary / technical_decision modes; recommend/status also log decisions) where available;
+          in runtimes lacking mcp_focus, use consistent append-only edits that preserve required fields and never rewrite history.
+      - label: Promotion
+        text: >-
+          When captured knowledge becomes reusable, normative, or cross-cutting, promote it to the correct canonical home (SSOT/KB/procedure/lesson)
+          and reduce the original capture to a pointer with a deprecation/update note.
+
+  - title: Automation Implementation Notes
+    icon: "⚙️"
+    layout: list
+    items:
+      - label: Phase A (now)
+        text: Codify routing matrix and pointer-note template in SSOT; register procedures/pointers so cold sessions can follow the standard.
+      - label: Phase B
+        text: Enforce session-close capture and discovery/lesson hooks in agent prompts, skills, and workflow checklists.
+      - label: Phase C
+        text: Add idempotent capture-router and harvester/index-refresh jobs that write only to approved sinks with audit metadata and dedupe keys.
+      - label: Phase D
+        text: Measure repeat-ask/miss rate, stale-pointer incidents, and time-to-find; tune the matrix and promotion thresholds in SSOT.
+
+  - title: Phase D Baseline (2026-11-23)
+    icon: "📊"
+    layout: list
+    items:
+      - label: Measured signals
+        text: >-
+          Repeat-ask register: 9 topics / 15 asks / 3 open, window 2026-10-14..2026-10-22,
+          last entry 2026-10-22 (32d stale at baseline). Pre-fix matrix precision: 390 kanban
+          creates of which 382 came from focus-inbox producer artifacts (job-fail 315,
+          kanban-cards 31, report-watch 20, handoff 16) - about 2% precision. Tightening FILED_RE
+          also unmasked dispatch-outcome creates; outcomes are filed artifacts too.
+          Miss rate: measured from the `misses:` block of ssot.repeat-asks.yml (instrumented
+          2026-11-23; empty at instrumentation, so 0 so far is not evidence of no misses).
+          Stale-pointer incidents: measured from the local pointer-incidents.yml log; the
+          old-as_of candidate count is retained as a proxy_candidates field, never as incidents.
+          Time-to-find: measured from info_find audit.ndjson — kind:"run" records carry
+          total_elapsed_ms, elapsed_by_source, source_sequence, top_result_ref (renamed from
+          resolved_ref 2026-11-25: it means "top citation exists", NOT verified correctness;
+          verified resolution comes from kind:"result" record --resolved verdicts), plus
+          agent-measured session elapsed_ms; local cache telemetry, cleared cache
+          resets the sample. Empty logs mean the source exists, not that events never happened.
+          Source: scripts/chaba/capture-metrics.py.
+      - label: Unmeasurable signals (no durable source)
+        text: >-
+          None at current instrumentation. Each signal's script retains an `unmeasurable` fallback
+          with a concrete proposal for the case where its source file is absent (older checkout,
+          fresh host). A proxy is still labelled `proxy`, never presented as measured incidents.
+      - label: Miss log write path
+        text: >-
+          A reply-only lesson/answer is a miss. Append via
+          `python3 scripts/chaba/miss-add.py --topic <slug> --location <chat|voice|link>
+          --should-have-been <sink-ref> --evidence <pointer>` (deduped by topic+at+location+
+          should-have-been; textual, comment-preserving write to the `misses:` block only).
+          Commit through the governed SSOT path from a worktree, not the live checkout.
+      - label: Stale-pointer and lookup write paths
+        text: >-
+          Record a stale pointer with `python3 scripts/chaba/pointer-stale-add.py --pointer-ref <ref>
+          --canonical-ref <ref> [--as-of <date>] [--fix <text>]` (local capture log, deduped by
+          pointer_ref+canonical_ref+found_at; --init creates the schema). Time-to-find is written by
+          `python3 scripts/devnest/info_find.py run --query '...'` into its per-session audit.ndjson.
+          Neither writes a canonical sink; both are local-only telemetry.
+      - label: Gated apply write path (OPS-0024, approved 2026-11-23)
+        text: >-
+          `scripts/chaba/capture-apply.py` is the ONLY sink-write door for capture proposals;
+          harvester.py stays read-only. Deliberately no bulk mode: dry-run is the default,
+          --apply additionally requires --confirm with the exact dedupe_key retyped. First slice
+          allows only `kanban/create`, written through board-api via board-cli --ssh idc03 —
+          never a direct canonical file edit. Gates, in order: exact ledger key; allowlisted
+          sink/action; not already applied; source focus-inbox artifact still exists and is live;
+          no duplicate card id or title; bounded 3-attempt write; GET verification of the created
+          card; append to the ledger `applied:` audit block. The harvester preserves that block on
+          every proposal run. Rollback is a reason comm + `action <id> close` on the board.
+          ssot/kb/lesson/oc-note writes are NOT implemented and are refused, never improvised.
+      - label: Promotion thresholds (proposed; apply is gated per-write)
+        text: >-
+          Never auto-create a kanban card from a focus-inbox producer artifact or a dispatch outcome;
+          route to an evidence pointer on the existing artifact. link/skip are safe; create requires
+          an uncaptured source or explicit approval. FILED_RE requires hyphenated card/lesson slugs
+          and excludes 8-digit dates, so "card spec" and "20261119" cannot collapse proposals.
+          3+ stale-pointer hits on one pointer_ref promote to a kanban card (reported, not enforced).
+      - label: Refresh
+        text: >-
+          Run `python3 scripts/chaba/capture-metrics.py` (read-only) against the canonical capture
+          ledger. Update this section only from a fresh report; state the report path and date.
+
+  - title: Phase D Refresh (2026-11-25)
+    icon: "📈"
+    layout: list
+    items:
+      - label: Measured signals
+        text: >-
+          Report: reports/capture/metrics-20261125.md (capture-metrics.py --ledger
+          reports/capture/capture-ledger.yml). Repeat-ask register unchanged: 9 topics / 15 asks /
+          3 open, last entry 2026-10-22 (34d stale). Miss rate 0 since instrumentation 2026-11-23.
+          Stale-pointer: proxy only, 35 ledger candidates older than 30d (oc-note 32, ssot 3) —
+          no pointer-incidents.yml exists on any reachable host. Time-to-find: 3 real
+          info_find.py run samples, median 1647ms / mean 2203ms / max 3320ms; resolved_pct 100%
+          but resolved_ref is only "top citation exists", not verified correctness.
+          Matrix precision on a freshly regenerated ledger: 8 kanban creates, 0 filed-artifact
+          creates (100% vs ~2% pre-fix) — caveat: fresh ledger lacks the applied: audit history.
+      - label: Ledger durability gap
+        text: >-
+          The canonical ledger (~/.local/share/chaba/capture/capture-ledger.yml) and its applied:
+          block were absent on idc03, tony-dell, tony-omen, con01, mn01 and tony-macbook on
+          2026-11-25; the 2026-11-23 baseline numbers survive only in this SSOT section. The
+          2026-11-25 measurement regenerated the ledger in-worktree (reports/capture/). Durable
+          home + declared regeneration job carded as OPS-1368.
+      - label: Thresholds (recorded 2026-11-25; tuning triggers, not enforced)
+        text: >-
+          repeat-ask register last entry >14d old -> sweep duty re-checks register freshness.
+          misses_per_week >2 -> lesson-capture adoption gap, card it. Stale-pointer proxy
+          candidates >30 -> initialise pointer-incidents.yml or declare the signal dead; 3+ hits
+          on one pointer_ref still promote to a card. Time-to-find: run median >5000ms or
+          verified_resolved_pct <80% over >=20 session samples -> tune source order; below 20
+          samples the sample is noise. Matrix precision <90% over >=50 kanban creates -> tighten FILED_RE / producer
+          gate before any --apply discussion.
+      - label: Follow-ups
+        text: >-
+          OPS-1368 (session-capture-d-1-follow-ups-ledger-du-78e13f) — RESOLVED 2026-11-25:
+          (1) ledger durable home = idc02 ~/.local/share/chaba/capture/ — CORRECTION: the d1
+          sweep missed idc02; the 2026-11-23 baseline ledger + applied: block (2220 entries,
+          wiki-login-polish apply) were never lost, they live there. Declared daily job
+          chaba-capture-harvest on idc02 refreshes the canonical copy + metrics-latest.md;
+          applied: audit now also mirrored to a card comm by capture-apply.py (board is the
+          durable record even if the host-local ledger is lost). (2) pointer-stale-add.py wired into session-capture
+          sweep + both info-find skills — agent-reported incidents, not auto-detected.
+          (3) resolved_ref renamed top_result_ref; verified resolution = record --resolved.
+          (4) repeat-ask register freshness check added to AGENTS.md sweep duty (>14d ->
+          decide zero-repeats vs capture gap). (5) skill-path instrumentation: info-find.mjs
+          + info_find.py record now accept --elapsed-ms/--resolved; capture-metrics reports
+          run_* (source time) and session_* (end-to-end) samples separately.
+
+  - title: Capture Router Contract (Phase C.1)
+    icon: "🔀"
+    layout: list
+    items:
+      - label: Scope and posture
+        text: >-
+          Contract for the Phase C capture pipeline (scripts/chaba/capture-router.py,
+          harvester.py, capture-apply.py). Spec only — no runtime behavior change.
+          Posture is propose-first and deterministic (no model calls): the router and
+          harvester are read-only and emit proposals plus audit records to a local
+          runtime dir; the only sink-write door is capture-apply.py, gated one
+          dedupe_key per invocation (OPS-0024, approved 2026-11-23).
+      - label: Event envelope (candidate -> proposal)
+        text: >-
+          Candidate (harvester -> router): source, source_id, text, as_of,
+          already_filed. source_id is the stable native id per surface:
+          "<card-slug>#comms[<i>]" for card comms, the focus-inbox file stem, or
+          the dispatch-outcome filename stem. Proposal (router output): run_id,
+          matrix_version ("ssot.knowledge-capture.yml@YYYY-MM"), source,
+          source_id, as_of, text_excerpt (<=200 chars), proposed_sink,
+          sink_key_type, dedupe_key, action, confidence, rule, already_filed;
+          the harvester adds a "duplicate" flag. Pointer-first: excerpts and
+          refs only — never copied SSOT bodies or volatile snapshots.
+      - label: Approved sinks and actions
+        text: >-
+          Sink namespace mirrors the 7-row Capture Matrix: ssot, kanban,
+          lesson, oc-note, kb, evidence, none (transient -> skip). Actions:
+          create | link | skip; upsert-in-place by dedupe_key, never fork.
+          Write-approved today: ONLY (kanban, create) via capture-apply ->
+          board-api. ssot/kb/lesson/oc-note apply paths are unimplemented and
+          must be refused, never improvised. link/skip need no sink write.
+      - label: Dedupe key
+        text: >-
+          dedupe_key = "<sink>:<native_key>". Native keys are sink-native
+          stable ids, never content blobs: kanban <- parent card id for
+          card-comms sources ("<slug>#comms[i]" collapses to "<slug>"), else
+          the first FILED_RE reference or sha1(source, source_id, normalized
+          text)[:12]; lesson <- topic slug; oc-note <- note-domain slug;
+          ssot/kb <- docs path reference or slug; evidence <- source_id or
+          artifact ref; none <- hash. Ledger dedupe is exact-match on
+          dedupe_key, both within a run and across runs.
+      - label: Audit metadata
+        text: >-
+          Ledger (capture-ledger.yml under $CHABA_CAPTURE_OUT, default
+          ~/.local/share/chaba/capture/ — runtime-local, not a canonical
+          sink): matrix_version, entries[] = {run_id, dedupe_key,
+          proposed_sink, action, source, source_id, as_of, confidence},
+          applied[] = {dedupe_key, applied_at, run_id, sink, action,
+          source_id, artifact_ref, verification: get-ok, actor}. Each run
+          also emits capture-proposal-<run_id>.md. Audit records carry
+          pointers/IDs only — no secrets, no volatile snapshots. Harvester
+          ledger rewrites preserve the applied: block.
+      - label: Idempotency
+        text: >-
+          Replay-safe by dedupe_key: a key already in entries[] is flagged
+          duplicate and adds no ledger entry; within-run duplicates collapse
+          through the ledger's known-key set, so reruns converge instead of
+          forking. Apply is idempotent: the already-applied gate blocks
+          re-applying a key, and a failed GET verification leaves the ledger
+          unmarked for manual reconcile rather than writing a false applied
+          record. There is deliberately no bulk apply mode.
+      - label: Dry-run default
+        text: >-
+          capture-router.py emits proposals only (JSON via --input/--text;
+          --self-test for deterministic rule checks). harvester.py writes
+          only inside $CHABA_CAPTURE_OUT (report + ledger) or nothing at all
+          with --stdout. capture-apply.py with no --apply prints the exact
+          card payload, per-gate PASS/BLOCK results, the apply command and
+          the rollback command, and writes nothing; --apply additionally
+          requires --confirm retyping the exact dedupe_key — no inferred
+          approval.
+      - label: Guards
+        text: >-
+          Source guards: OPS_RE drops ops ceremony from tony comms;
+          MIN_LEN=40; the focus-inbox scan is top-level only and
+          processed/archived/done/superseded entries are already_filed.
+          Precision guards: FILED_RE requires hyphenated card/lesson slugs
+          and excludes 8-digit dates, so "card spec" and "20261119" cannot
+          collapse proposals; scheduled-producer focus artifacts
+          (job-fail-*, *-report-watch-*, kanban-cards-*, handoff-*,
+          *-audit-*) and dispatch outcomes never produce kanban/create —
+          they route to evidence/link on the existing artifact. Apply gates,
+          in order: exact ledger dedupe_key; allowlisted sink/action; not
+          already applied; --confirm retype; source artifact still exists
+          and is non-terminal; no duplicate card id/title (fail-closed when
+          board-api is unreadable); <=3 bounded board-cli attempts via
+          --ssh idc03; GET verification; audit append. Always rejected:
+          secrets, volatile snapshots presented as truth, ada-* personal-
+          memory writes from Chaba, non-approved sinks, missing dedupe_key,
+          SSOT body duplication, writes outside the board-api mutation door.
+
+  - title: Capture Router Contract — Examples
+    icon: "🧪"
+    layout: text
+    items:
+      - label: Worked examples
+        text: |
+          # 1. Candidate -> proposal (real router output shape)
+          candidate: {"source":"card-comms","source_id":"ada-capture-hooks#comms[4]",
+                      "text":"Please wire the capture hooks on tony-dell next action",
+                      "as_of":"2026-11-23","already_filed":false}
+          proposal:  {"run_id":"20261125T094803","matrix_version":"ssot.knowledge-capture.yml@2026-11",
+                      "source":"card-comms","source_id":"ada-capture-hooks#comms[4]",
+                      "as_of":"2026-11-23",
+                      "text_excerpt":"Please wire the capture hooks on tony-dell next action",
+                      "proposed_sink":"kanban","sink_key_type":"card_or_request_id",
+                      "dedupe_key":"kanban:ada-capture-hooks","action":"link",
+                      "confidence":0.88,"rule":"actionable-work","already_filed":true}
+          # card-comms kanban candidates upsert the PARENT card — link, never create.
+
+          # 2. Focus-inbox create candidate (eligible for the gated apply door)
+          proposal: {"run_id":"20261125T094803","matrix_version":"ssot.knowledge-capture.yml@2026-11",
+                     "source":"focus-inbox","source_id":"2026-11-12-wiki-login",
+                     "as_of":"2026-11-12",
+                     "text_excerpt":"Fix the Google button label on the wiki login page",
+                     "proposed_sink":"kanban","sink_key_type":"card_or_request_id",
+                     "dedupe_key":"kanban:04e0aa363440","action":"create",
+                     "confidence":0.8,"rule":"actionable-work","already_filed":false}
+          # keys are sink-native; the kanban hash derives from
+          # sha1(source, source_id, normalized text)[:12] when no ref exists.
+
+          # 3. Ledger shape (capture-ledger.yml, runtime-local)
+          matrix_version: ssot.knowledge-capture.yml@2026-11
+          entries:
+            - {run_id: "20261125T094803", dedupe_key: "kanban:ada-capture-hooks",
+               proposed_sink: kanban, action: link, source: card-comms,
+               source_id: "ada-capture-hooks#comms[4]", as_of: "2026-11-23",
+               confidence: 0.88}
+          applied:
+            - {dedupe_key: "kanban:04e0aa363440", applied_at: "2026-11-24T02:14:09+00:00",
+               run_id: "20261123T112751", sink: kanban, action: create,
+               source_id: "2026-11-12-wiki-login",
+               artifact_ref: "https://idc03.taila0626a.ts.net/apps/board2/?card=2026-11-12-wiki-login",
+               verification: get-ok, actor: opencode}
+
+          # 4. Dry-run is the default — prints gates + payload, writes nothing
+          $ python3 scripts/chaba/capture-apply.py --key kanban:04e0aa363440
+          # capture-apply dry-run — kanban:04e0aa363440
+          # - gates: BLOCK
+          #   - BLOCK: already applied; ledger audit record present (idempotence gate)
+          # DRY-RUN: nothing was written.

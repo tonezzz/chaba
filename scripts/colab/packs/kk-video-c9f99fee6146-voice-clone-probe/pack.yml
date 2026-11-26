@@ -1,0 +1,35 @@
+# Private one-line VYNCX clone probe; raw voice stays in the private project Drive.
+# Tony reports that KK explicitly permitted cloning her voice for private narration.
+name: kk-video-c9f99fee6146-voice-clone-probe
+requires:
+  - kk-video-c9f99fee6146-preview
+needs:
+  gpu_gb: 14
+  ram_gb: 8
+  disk_gb: 8
+  egress_only_ok: true
+venv: true
+timeout_s: 3600
+fetch:
+  - projects/kk-video-c9f99fee6146/voice-reference/manifest.json
+  - projects/kk-video-c9f99fee6146/voice-reference/line-user-kk/20261013-192308.m4a
+  - projects/kk-video-c9f99fee6146/voice-reference/line-user-kk/20261013-194303.m4a
+  - projects/kk-video-c9f99fee6146/voice-reference/line-user-kk/20261014-082811.m4a
+  - packs/kk-video-c9f99fee6146-preview/teaser-preview.th.srt
+artifacts:
+  - packs/kk-video-c9f99fee6146-voice-clone-probe/out/candidate-transcripts.md
+  - packs/kk-video-c9f99fee6146-voice-clone-probe/out/clone-smoke.wav
+  - packs/kk-video-c9f99fee6146-voice-clone-probe/out/verdict.json
+  - packs/kk-video-c9f99fee6146-voice-clone-probe/out/report.md
+prep: |
+  set -eu
+  apt-get install -y -qq ffmpeg >/dev/null
+  pip install -q --no-deps f5-tts-th
+  pip install -q cached-path jieba pypinyin pydub torchdiffeq vocos pythainlp python-crfsuite ssg 'x_transformers>=1.31.14' soundfile faster-whisper
+  pip install -q --no-deps 'numpy>=2'
+  pip install -q --no-deps 'huggingface-hub>=1.32,<3'
+run_sh: |
+  exec python3 "$PACK_DIR/run_probe.py" \
+    --voice-dir "$NEST_ROOT/projects/kk-video-c9f99fee6146/voice-reference" \
+    --srt "$NEST_ROOT/packs/kk-video-c9f99fee6146-preview/teaser-preview.th.srt" \
+    --out-dir "$PACK_DIR/out"

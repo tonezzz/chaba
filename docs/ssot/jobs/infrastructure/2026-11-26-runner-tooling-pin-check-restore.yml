@@ -1,0 +1,62 @@
+title: Restore runner-tooling content-pin checks in fleet health
+subtitle: The stale board write 4af10b4c5c removed the origin/master pin audit; drift could hide in a host's own stale checkout
+icon: shield
+date: 2026-11-26
+status: deployed
+card: runner-tooling-drift-recurs
+check: tests/board/test_fleet_host_parsing.py
+
+context:
+  regression: "4af10b4c5c 'board: live card updates (2026-11-26 13:09)'
+    removed three parts of the content-pin audit from
+    scripts/board/runner-fleet-health.py: the tool-pin HELP entry, the
+    probe block reading scripts/devin/runner-tooling.manifest.json from
+    origin/master, and judge()'s comparison of installed and checkout
+    shas against those pins."
+  why_it_matters: "The remaining installed-vs-checkout sha check is blind
+    to both a stale checkout and a stale install that agree with each
+    other. Reading the manifest from origin/master (which the probe has
+    just fetched) is the only way to catch the 2026-11-20 Jules
+    half-purge pattern: master had deleted jules.py but a stale checkout
+    still shipped 107 Jules refs in runner-agent.py."
+  pin_state: "scripts/devin/runner-tooling.manifest.json still pins
+    runner_agent 1514c75c..., devin_dispatch c5fa3947..., and
+    dispatch_repos d0b3bacf.... The current dispatch_repos.py sha is
+    d0b3bacf... — d7bae483a8 restored exactly the pinned file — so no
+    widespread false violations were introduced."
+
+changes:
+  - "restored the tool-pin HELP remediation text"
+  - "restored the probe's tool_pins block (pins, sources, per-host
+    checkout shas, ok/err) read from origin/master's manifest"
+  - "restored judge() violations for checkout sha != pin and installed
+    sha != pin, plus a note when pins are unreadable"
+  - "added test_judge_flags_installed_tool_pin_drift so a future stale
+    write cannot silently drop the audit again"
+  - "corrected the OPS-1406 restore evidence: free_lane was already
+    restored by d7bae483a8; only the pins were still missing"
+
+verification:
+  tests: "pytest -q tests/board/test_fleet_host_parsing.py
+    tests/board/test_runner_tooling_contract.py -> 21 passed"
+  syntax: "python3 -m py_compile scripts/board/runner-fleet-health.py OK"
+  fleet_health: "runner-fleet-health.py -> 8 hosts, no tool-pin
+    violations; only kk-mac's two genuine gaps remain (no push creds,
+    dispatch_repos import fails on Python 3.9)."
+
+rollback:
+  - "Revert this commit to remove the pin audit; manifest and tool files
+    were not modified."
+
+follow_up:
+  - "Guard generated 'board: live card updates' commits so they cannot
+    replace scripts/ with older revisions — this is the second time
+    4af10b4c5c-class staleness removed working checks."
+  - "kk-mac's installed tools were not flagged as drifting, but its
+    Python 3.9 dispatch_repos import still needs fixing."
+
+lessons:
+  - "An installed-vs-local checkout comparison is not an integrity
+    check: both sides can be stale together. Pin against origin/master."
+  - "When a generated commit removes a check, restore the check and add
+    a test that fails if it disappears again."

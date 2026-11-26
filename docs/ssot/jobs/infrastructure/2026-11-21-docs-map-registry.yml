@@ -1,0 +1,33 @@
+title: Docs-map registry — one index across all doc stores
+job: docs-map-one-registry
+card: docs-map-one-registry-across-all-doc-sto-7ac35a
+date: 2026-11-21
+host: idc02 (dispatch worktree)
+type: registry creation — no content migrated
+
+deliverables:
+  - docs/ssot/infrastructure/ssot.docs-map.yml — the registry itself
+  - scripts/ssot-docs-map-check.py — structure check (+ --live probes)
+  - docs/ssot/ssot.index.yml — registered under System & Environment
+  - docs/ssot/CHANGELOG.md — change entry
+
+verified:
+  structure: "check script green — 7 stores, 14 doc_types resolve"
+  live: "--live probes all HTTP 200: mddb :11023/:11027/:11026 (idc03),
+    :11025 + :11023 follower (idc02), wiki api.php, wp origin REST"
+  measured_collections: "mddb-cms :11027 = 19 collections incl
+    ada-cms-pages 1435, chaba-lessons 181, infrastructure-ssot 7596,
+    kb-operations 279; leader :11023 banks ~13k docs; :11026
+    host-logs 430k; :11025 ada-ha telemetry"
+
+notes:
+  - "mddb leader moved idc01 -> idc03 — docs/kb/mddb-ops-split.md header
+    topology is stale vs live; docs-map records the live plane map"
+  - "docs/kb and kb-* mddb mirror coverage still unverified
+    (mddb-coverage-audit card) — grep remains the trustworthy KB lookup"
+  - "docs/reports/ vs repo-root reports/ name collision recorded as a gap"
+
+follow_ups:
+  - "Optional: mirror the store table onto Wiki:Wiki-Hierarchy (the live
+    wiki page this pattern extends) — needs a board-api /wiki/page write;
+    not done here (read-only registry task)"

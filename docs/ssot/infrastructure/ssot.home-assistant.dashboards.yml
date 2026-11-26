@@ -4,10 +4,10 @@ subtitle: Tony-test dashboard layout, tabs, and active test views
 instances:
   dev:
     name: tony-test
-    instance_ssot: ssot.home-assistant.michael.dev.yml
-    base_url: https://idc02.taila0626a.ts.net:8124/tony-test
+    instance_ssot: ssot.home-assistant.mn-ha-dev.yml
+    base_url: https://mn01.taila0626a.ts.net:8124/tony-test
     active_view: V0
-    storage_path: /home/tony/.config/michael-dev/.storage/lovelace.tony_test
+    storage_path: /home/tony/.config/mn-ha-dev/.storage/lovelace.tony_test
     repo_snapshot: docs/home-assistant/dashboards/tony-test-current.json
     note: >-
       The live Lovelace layout is stored in .storage/lovelace.tony_test. The
@@ -281,8 +281,17 @@ instances:
       is a full-page panel iframe to
       https://tony-ha.surf-thailand.com/apps/board2/index.html?v=1. The
       default /apps/board/ URL remains a redirect to Board2. The live storage
-      has no Ada Control view, although the previous repo snapshot did. The
-      Kanban layout update preserved all other live views. Ada Code is a
+      has no Ada Control view, although the previous repo snapshot did.
+      Drift investigated 2026-11-24 (card ada-ha-dashboard-live-view-drift):
+      the view (ada-voice-card + ada-activity-card pair, added 2026-11-04 as
+      a chaba-home/ai iframe, reshaped to native cards 2026-11-08) was
+      dropped by a manual live edit inside the 2026-11-18→20 window — no
+      agent/dispatch trail exists and HA storage edits are not audit-logged;
+      the Kanban2 mutator provably only inserts its view. Per the answered
+      board request the current live set stays — do not restore Ada Control
+      without an explicit ask (resources remain registered:
+      /local/ada-voice-card.js?v=14). Sanitized live readback 2026-11-24 is
+      byte-identical to the repo snapshot. Ada Code is a
       full-page panel iframe to
       https://ada-code.surf-thailand.com/; OpenChamber (added 2026-11-12 via
       push-dashboard.py + mutate-ada-ha-ocb-tab.py) iframes the OpenChamber
@@ -296,11 +305,18 @@ instances:
       works in the iframe on the public ada-ha URL — the tailnet iframe
       URL could only log in when the dashboard itself was opened via
       tailnet. tailscale serve :8443 remains as a private backup path.
-      Cline is a full-page panel iframe
-      to https://cline.surf-thailand.com/?v=1; its Cloudflare Access app
-      reuses Ada HA's allowlist and session, and its Tailnet proxy verifies
-      the signed app-specific JWT. The snapshot redacts existing CMS api_key
-      query values.
+      Ada Test (added 2026-11-26 via push-dashboard.py --mutate +
+      mutate-ada-ha-ada-test-tab.py) is a full-page panel iframe to
+      https://oswe.surf-thailand.com/?v=1 with OSWE/Robin as its first (only)
+      tab; placed directly after OpenChamber. The iframe target is not yet
+      publicly exposed — backend boot is gated on unfilled credentials and the
+      oswe.surf-thailand.com edge is not provisioned, so the tab is staged
+      pending those items (see card oswe-eval-ada-test-tab).
+      Cline panel retired 2026-11-26 (Tony-approved full Cline retirement):
+      the full-page iframe to https://cline.surf-thailand.com/?v=1 was removed
+      from the live 18→17 view set; edge route, con01 containers/timers and
+      ssot.jobs.yml declarations removed same day. The snapshot redacts
+      existing CMS api_key query values.
   ai:
     name: ai                 # url_path "ai" — renamed from chaba-ai
                              # 2026-10-12 (Tony: /ai/chaba pattern, mirrors
@@ -353,11 +369,11 @@ instances:
       is hardcoded. IMPORTANT: custom:pfg3d-card is NOT part of the
       sunsynk-power-flow-card bundle — it is a standalone bundle. Deployed
       2026-09-23: /local/pfg3d-card-v239.js?v=1 (module resource, copied from
-      michael-dev www; v206-era sunsynk bundle only contains the
+      mn-ha-dev www; v206-era sunsynk bundle only contains the
       pfg3d-hover-plane helper, so the view showed "configuration error" until
       this resource was added). echarts-5.5.1.min.js +
       echarts-gl-2.1.0.min.js were vendored into tony-ha /local/ (copied from
-      michael-dev www) so the 3D chart loads local-first, CDN fallback. Nobito is a
+      mn-ha-dev www) so the 3D chart loads local-first, CDN fallback. Nobito is a
       battery Tuya device (cloud integration) that sleeps between reports —
       entities show unavailable while asleep; a flat card value means stale
       data, not a real reading. 2026-09-24 root cause of stuck values: the
@@ -464,12 +480,12 @@ tabs:
       title: V0
       path: p0
       note: New first tab (sunsynk card).
-      test_url: https://idc02.taila0626a.ts.net:8124/tony-test/p0
+      test_url: https://mn01.taila0626a.ts.net:8124/tony-test/p0
     - order: 1
       title: V1
       path: p0-2
       note: Second sunsynk card view.
-      test_url: https://idc02.taila0626a.ts.net:8124/tony-test/p0-2
+      test_url: https://mn01.taila0626a.ts.net:8124/tony-test/p0-2
     - order: 2
       title: G1
       path: g1
@@ -477,22 +493,22 @@ tabs:
         30-day 3D surface of sensor.inverters_1_pv_power (PV power, 0-10kW,
         scale 0.001) rendered with pfg_charts type 'surface3d' (echarts-gl,
         vendored /local libs, hover plane + click-to-pin).
-      test_url: https://idc02.taila0626a.ts.net:8124/tony-test/g1
+      test_url: https://mn01.taila0626a.ts.net:8124/tony-test/g1
     - order: 3
       title: TPL
       path: tpl
       note: Template/pfg card experiment.
-      test_url: https://idc02.taila0626a.ts.net:8124/tony-test/tpl
+      test_url: https://mn01.taila0626a.ts.net:8124/tony-test/tpl
     - order: 4
       title: TPL2
       path: tpl2
       note: Template variant 2.
-      test_url: https://idc02.taila0626a.ts.net:8124/tony-test/tpl2
+      test_url: https://mn01.taila0626a.ts.net:8124/tony-test/tpl2
     - order: 5
       title: TPL_SOLIS
       path: tpl_solis
       note: Solis template view.
-      test_url: https://idc02.taila0626a.ts.net:8124/tony-test/tpl_solis
+      test_url: https://mn01.taila0626a.ts.net:8124/tony-test/tpl_solis
     - order: 6
       title: Data
       path: data
@@ -530,7 +546,7 @@ tabs:
       path: g1
       note: >-
         30-day 3D surface of sensor.inverters_1_pv_power (PV power, 0-10kW,
-        scale 0.001, surface3d), copied from michael-dev and placed behind V1.
+        scale 0.001, surface3d), copied from mn-ha-dev and placed behind V1.
       test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/g1
     - order: 3
       title: SK
@@ -557,8 +573,8 @@ tabs:
 manual_steps:
   - Preferred: mutate the live dashboard via scripts/home-assistant/push-dashboard.py (websocket lovelace/config/save; applies immediately, no restart — direct .storage/lovelace.tony_test edits only take effect after an HA core restart)
   - Add a sidebar dashboard: websocket lovelace/dashboards/create (url_path must contain a hyphen, e.g. dossier); created 2026-09-06 as 'Dossier' (mdi:folder-file).
-  - Sidebar order is per-user in .storage/frontend.user_data_<uid> under the 'sidebar' key (panelOrder array); set via websocket frontend/set_user_data with key='sidebar'. Current order: lovelace (Overview), tony-test, dossier, then defaults. michael-dev already had dossier-home under tony-test; michael-ha was set 2026-09-08 to place dossier under tony-test.
-  - To snapshot, run scripts/home-assistant/sync-ssot-from-live.sh after each WebSocket dashboard mutation; the default sync refreshes tony-test/michael-dev, `--instance ada-ha` writes the sanitized Ada HA snapshot, and `--instance tony-ha` writes the sanitized `chaba-admin-current.json` snapshot with API-key query values redacted
+  - Sidebar order is per-user in .storage/frontend.user_data_<uid> under the 'sidebar' key (panelOrder array); set via websocket frontend/set_user_data with key='sidebar'. Current order: lovelace (Overview), tony-test, dossier, then defaults. mn-ha-dev already had dossier-home under tony-test; michael-ha was set 2026-09-08 to place dossier under tony-test.
+  - To snapshot, run scripts/home-assistant/sync-ssot-from-live.sh after each WebSocket dashboard mutation; the default sync refreshes tony-test/mn-ha-dev, `--instance ada-ha` writes the sanitized Ada HA chaba-admin + chaba-home snapshots, and `--instance tony-ha` writes the sanitized `chaba-admin-current.json` snapshot with API-key query values redacted
   - Tab order/titles/paths live in the saved config; use `push-dashboard.py` with an idempotent `mutate(config)` helper, then sync the matching instance snapshot
 conventions:
   full_page_iframe:
@@ -574,5 +590,5 @@ conventions:
 
 status:
   last_updated: "2026-10-29"
-  last_verified: '2026-11-20'
+  last_verified: '2026-11-26'
   health: active; G1 on both hosts (dev v171 / ha v161, same md5 b404aab0) — surface3d PV chart on sensor.inverters_1_pv_power, vendored echarts libs in /local; Cast tab removed from live michael-ha tony-test on 2026-09-14; PF3/PF4/PFG/PFG1/PFG2 removed

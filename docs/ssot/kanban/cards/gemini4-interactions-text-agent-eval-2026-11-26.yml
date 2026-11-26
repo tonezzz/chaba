@@ -1,0 +1,182 @@
+id: gemini4-interactions-text-agent-eval-2026-11-26
+title: Evaluate Gemini 4 + Interactions API for a stateful text agent
+column: review
+updated: 2026-11-26 20:58
+brief: Compare gemini-4-hydrogen/neon via the Interactions API against the current 3.x stateless text path on a
+  small multi-turn tool-and-recall task set; measure task accuracy, token growth and latency.
+priority: medium
+program: devnest
+tags:
+- gemini
+- eval
+- agent
+spec: Read-only eval on idc03 with GEMINI_API_KEY_MICHAEL (paid project capped). Use google-genai >=3.2 Interactions
+  API, stateful previous_interaction_id vs stateless full-history path, and a fixed 8-task set with tool calls and
+  cross-turn recall. No key/billing/gateway/pin or production agent changes. Record in docs/ssot/jobs/devnest job
+  yml, commit/push; no wiki publish without a separate go-ahead.
+ref: ADA-1451
+comms:
+- at: 2026-11-26 19:11
+  from: ada
+  text: card captured via board-api
+- at: 2026-11-26 19:16
+  from: chaba
+  text: classified as free_lane (kw:evaluate conf 1.00)
+- at: 2026-11-26 19:16
+  from: chaba
+  text: queued for processing
+- at: 2026-11-26 19:16
+  from: chaba
+  text: '[auto-dispatch] wave 18 (2026-11-26 19:16): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-26 19:16
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-26 19:16
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.07 > 0.7)'
+- at: 2026-11-26 19:16
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-26 19:16
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 2.34 > 0.8)'
+- at: 2026-11-26 19:16
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 2.66 > 1.0)'
+- at: 2026-11-26 19:16
+  from: chaba
+  text: 'kk-mac defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-26 19:17
+  from: mn01
+  text: claimed
+- at: 2026-11-26 19:18
+  from: chaba
+  text: started devin-task-20261126-191819-read-only-eval-on-idc03-with-g on mn01 (dispatch)
+- at: 2026-11-26 19:18
+  from: chaba
+  text: 'primer injected 8 lesson(s): [runner-pin-contract-merge-gate] 2026-11-25 14:10 (+07): gate gap recurred
+    — com; 14 — ada-text-lane-metering, board-api-lesson-delete, context-recall-floor, devn; [devnest-queue-consolidation]
+    VERIFY COMPLETE (attempt 2, tony-omen). Done-condi; [llm-provider-verification-2026-11] 2026-11-23 — step 4
+    attempted (read-only key; [ops-retry-storm-detection] DONE: retry-storm-watch delivered repo-side. scripts;
+    [stagger-idc03-timer-herd] primer injected 8 lesson(s): [ops-'
+- at: 2026-11-26 19:32
+  from: devin
+  text: 'probe on idc03: google-genai 3.6.1 venv at /tmp/gemini-eval-venv; Interactions API needs api_version=v1beta;
+    function_call/function_result steps verified on gemini-3-flash-preview. gemini-4-neon/argon/carbon = 429 (0
+    free-tier quota on MICHAEL key), gemini-4-hydrogen = 503 high-demand (retrying), gemini-3.5/3.6-flash daily
+    quota exhausted. Building 8-task tool+recall harness now.'
+- at: 2026-11-26 19:51
+  from: ada
+  text: 'Partial result recorded in docs/ssot/jobs/devnest/2026-11-26-gemini4-interactions-text-agent-eval.yml.
+    Gemini 4 blocked: free-tier keys have 0 input tokens/min for all Gemini 4 models; paid project keys are monthly-cap
+    blocked. Interactions API trial on gemini-3.5-flash-lite: stateful 6/6 tool + 6/6 recall, stateless 6/6 + 6/6,
+    legacy arm 2/6 quota-limited. Needs Tony go-ahead on cap before Gemini 4 can run.'
+- at: 2026-11-26 19:51
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-26 20:05
+  from: ada
+  text: 'Follow-up per user choice: 20-turn free-tier stateful vs stateless run on gemini-3.5-flash-lite. Stateful
+    9424 input tokens vs stateless 9679 (2.6% saving), recall 7/8 vs 8/8 codenames, both 4/4 dates. Input tokens
+    still grew ~140 to ~830 in both arms. Gemini 4 remains blocked by free-tier 0-token limit and the paid cap.'
+- at: 2026-11-26 20:05
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-26 20:07
+  from: ada
+  text: 'Track concluded (partial): Gemini 4 unreachable on all five existing keys (free tier 0 input tokens/min;
+    PAID/TONY/KK monthly cap). Interactions API evaluated on gemini-3.5-flash-lite: 6/6 tool + 6/6 recall in both
+    stateful/stateless; 20-turn stateful saved only 2.6% input tokens and was slower. Receipt + harness + result
+    JSON committed on master (fe0bf5ec5bf, c21979db286). Awaiting Tony decision on paid cap / alternate paid project
+    before Gemini 4 can be tested. No key, billing, gateway, pin, o'
+- at: 2026-11-26 20:08
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-26 20:08
+  from: tony
+  text: moved doing -> review
+- at: 2026-11-26 20:17
+  from: ada
+  text: 'Free-tier testing continued per user choice. Batch 1: all six Interactions surfaces pass on gemini-3.5-flash-lite
+    (streaming text, streamed function call + resume, structured output both modes, background execution, stored
+    get/delete) — background worked despite docs listing only Gemini 4/3.8. Batch 2: Flex tier accepted and echoed;
+    Priority silently downgraded to standard; server-side code execution returned Fibonacci(20)=6765 with 84 tool-use
+    tokens; Google Search grounding quota-blocked; impl'
+- at: 2026-11-26 20:17
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-26 20:36
+  from: ada
+  text: 'Compared gemini-3.1-flash-lite with 3.5-flash-lite on free tier: same 4-task stateful agent loop gave both
+    4/4 relaxed tool + 4/4 recall with ~3.9k input / ~0.5k output tokens; all five Interactions surfaces pass on
+    both. 3.1 strict-scored 0/4 only because it enriches topic args with recalled context (attendees/date/time exact
+    on 4/4). 3.1 latency was severe and variable (136s/2.9s/69s single calls vs 3-6s for 3.5) — treat as free-tier
+    throttling, not model speed. Evidence pushed on master 67c12'
+- at: 2026-11-26 20:36
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:44
+  from: devin
+  text: 'DONE (read-only). Interactions API verified on gemini-3.5/3.1-flash-lite: stateful prev_interaction_id
+    1.000, stateless full-history 1.000/0.975 adjusted on fixed 8-task tool+recall fixture. gemini-4 BLOCKED on
+    quota: hydrogen 20/day free exhausted, neon/argon/carbon zero free quota, PAID key still monthly-capped (re-verified).
+    Deliverables: docs/ssot/jobs/devnest/2026-11-26-gemini4-interactions-text-agent-eval.yml, reports/gemini-interactions-eval-2026-11-26.{md,json,-gen-rerun,-stateful},
+    harn'
+- at: 2026-11-26 20:47
+  from: mn01
+  text: 'finished (ok): exit=0  supply a gemini-4-entitled key); no key/billing/gateway/production changes were
+    made. | devin-task-20261126-1918'
+- at: 2026-11-26 20:47
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-26 20:47
+  from: chaba
+  text: 'session-end checkpoint abec4f26: 1 leftover file(s) committed'
+- at: 2026-11-26 20:47
+  from: chaba
+  text: banked 799 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 20:47
+  from: chaba
+  text: pushed dispatch/20261126-191819-read-only-eval-on-idc03-with-g to origin
+- at: 2026-11-26 20:47
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-26 20:47
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-26 20:54
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261126-191819-read-only-eval-on-idc03-with-g on mn01 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-26 20:58
+  from: chaba
+  text: 'merge-sweep: devin-task-20261126-191819-read-only-eval-on-idc03-with-g no longer active on mn01 but card
+    still says running — sweeping its branch'
+- at: 2026-11-26 20:58
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261126-191819-read-only-eval-on-idc03-with-g on mn01 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+action:
+  type: dispatch
+  status: done
+  lane: free_lane
+  lane_source: kw
+  model: swe-2-flash-medium
+  runner: mn01
+  attempts: 1
+  result: 'exit=0  supply a gemini-4-entitled key); no key/billing/gateway/production changes were made. | devin-task-20261126-191819-read-only-eval-on-idc03-with-g.service:
+    Consumed 54.294s CPU time over 1h 26min 31.325s wall clock time, 652.7M memory peak.'
+  verified: false
+  sweep:
+    dirty: 1
+    stale_running: 2026-11-26 20:58
+claim:
+  since: 2026-11-26 19:17
+review_kind: verify

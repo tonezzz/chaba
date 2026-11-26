@@ -1,0 +1,102 @@
+title: "ada-scenario-casting.service triage — ProviderCapLatched root cause, service verified healthy"
+subtitle: "idc03 weekly casting benchmark card ada-scenario-casting-service-failed-on-i-340465 (ADA-0507)"
+icon: 🎬
+context:
+  card: ada-scenario-casting-service-failed-on-i-340465
+  trigger: "unit entered failed state 2026-10-12; card re-armed repeatedly by
+    runner-agent drift deferrals. Attempt 4 (this doc) verifies the fix chain
+    end-to-end and records the residual watch items."
+  worktree: dispatch-wt-20261124-080626-investigate-and-resolve-the-fa
+
+findings:
+  runner_agent: "idc03:~/.local/bin/runner-agent was already at repo sha
+    (sha256 33a65f61…, synced 08:01 by chaba-repo-sync); re-copied
+    scripts/board/runner-agent.py per spec, hash-verified identical."
+  root_cause_1: "2026-10-12 original failure — scenario lock :8199 held >30min
+    by a concurrent suite; wrapper timed out exit 1. Fixed by the queueing
+    wrapper ~/.local/share/ada-scenario-runner/scenario-suite-run.sh
+    (card fix-scenario-schedule-collision, done)."
+  root_cause_2: "2026-11 ProviderCapLatched — Gemini lane 'tony' key hit the
+    monthly spending cap (provider 1011), latched in
+    ada-voice/data/lane-budget.json; every scenario session on ada-ha-tony
+    :8002 failed at provider connect → benchmark score 0.0 (42 fail, 0
+    turns). Credits were replenished but the latch only clears on period
+    rollover/rekey/state removal. Prior dispatch deleted the state file;
+    verified absent 2026-11-24 (only .bak-cleared-20261017 remains)."
+  root_cause_3: "suite hang to TimeoutStartSec — card
+    ada-scenario-casting-hang, done 2026-11-23."
+  verification: "ada-scenario-casting.service last ran 2026-11-23
+    20:27→22:48 +07, Result=success, ExecMainStatus=0 — full suite
+    completed, score 0.172 (5 pass / 1 flaky / 26 fail / 3 infra-quota),
+    report + auto-report (33 worthy items) written. Unit is NOT in
+    systemctl --user list-units --failed. Per the wrapper contract
+    (docs/kb/timer-expectations.md) exit 0 on a completed run IS success —
+    scenario fails are benchmark findings, not service failures."
+  current_state: "2026-11-24 08:10 +07: lock :8199 free; no
+    prod-allow-casting sentinel (consumed one-shot); ada-ha-tony active,
+    :8002 HTTP 200; provider gate healthy (0 quota lines)."
+
+watch_items:
+  - "lane-budget latch can recur on the next monthly Gemini spend cap —
+    gemini-wallet-watch.service (the watcher for exactly this) is itself in
+    failed state on idc03; triage separately."
+  - "idc03 load was 12+ (15min avg) at check time; ada-bench-casting.service
+    preflight failed 02:00 (load 13.19 >= 2, embed-probe down) — already
+    carded timer-alert-idc03-ada-bench-casting. High load also makes fresh
+    benchmark runs produce degraded results; do not hand-run the suite
+    while load/core > ~2."
+  - "weekly timer (Sat 05:55) will park without a prod-allow-casting
+    sentinel — paid-lane guard (bench-off-paid-lanes) is intentional, so
+    the prod benchmark now only runs when a card authorizes it. If Tony
+    wants a standing weekly prod run, that is a policy decision (sentinel
+    standing auth or dev-lane retarget), not a bug."
+  - "last run was partial (35/44 scenarios, BENCH_BUDGET_S=8400 exhausted —
+    gev_* scenarios run 200-300s each) → marked 'Invalid run' for
+    trend/baseline. If every run ends partial, consider raising the budget
+    or splitting the gev block into its own suite."
+  - "scenario-level fails (26) are real product findings routed to
+    auto-report — e.g. camera_describe/zone_describe/traffic_camera_describe
+    return empty transcripts after ada_camera_snapshot; tv_cast_control
+    reports TV unreachable; cast_to_screen policy violations on
+    cast_content_types/vcast_snapshot_probe/gev_showcase. Not service bugs."
+
+side_effects:
+  manual_gate_probe: "running scenario-provider-gate.py by hand emitted a
+    throttled 'gate:paid-lane' marker into gate-state.json and attempted a
+    chaba-event POST (connection refused — tony-dell HA endpoint). One
+    spurious skip-quota report record (0/0 scenarios, 3d TTL). Harmless
+    noise; do not hand-run the gate — it is an ExecCondition with side
+    effects."
+
+attempt_5_reverification:
+  at: "2026-11-24 09:15 +07 (dispatch-wt-20261124-090603)"
+  runner_agent: "idc03:~/.local/bin/runner-agent re-copied per spec;
+    sha256 94ce1cb7c20f… identical to repo scripts/board/runner-agent.py
+    (repo file updated since attempt 4's 33a65f61 — both sides moved
+    together via chaba-repo-sync)."
+  service: "ada-scenario-casting.service still Result=success /
+    ExecMainStatus=0; last run 2026-11-23 20:27→22:48 exit 0 (score
+    0.172). Unit absent from --failed list."
+  sentinel: "prod-allow-casting was consumed by the 20:27 run; re-armed
+    09:13 +07 citing this card (one-shot, 168h TTL) so the next scheduled
+    fire actually executes — next fires: ada-bench-casting 02:00 daily
+    (preflight-gated) and ada-scenario-casting Sat 2026-11-28 05:55
+    (weekly timer, ungated). Whichever fires first consumes it."
+  embed_probe: "mddb-embed-probe flapped down ~02:00-08:00 (Gemini
+    embedding HTTP 400, all circuits open, queue depth 3189) — recovered
+    08:00, state=up since. Provider-side transient, self-healed."
+  load: "idc03 load 8-13 sustained — mddbd (~165% CPU across 4 procs) +
+    tailscaled ~50% + ollama embedding fallback are the drivers; the
+    preflight 'load < 2' check (written for a 2-core box) is
+    miscalibrated for this host's current role. Tracked on
+    timer-alert-idc03-ada-bench-casting (backlog)."
+  gemini_wallet_watch: "healthy — ran 08:47 Result=success
+    (GEMINI_API_KEY_PAID=ok); attempt-4 watch item stale."
+
+verification:
+  commands:
+    - "ssh idc03 systemctl --user show ada-scenario-casting.service -p Result,ExecMainStatus"
+    - "ssh idc03 journalctl --user -u ada-scenario-casting.service --since '2026-11-23 20:00'"
+    - "ssh idc03 ss -tln | grep 8199   # expect no output (lock free)"
+    - "ssh idc03 ls ~/CascadeProjects/ada-voice/data/lane-budget.json   # expect absent"
+    - "sha256sum scripts/board/runner-agent.py; ssh idc03 sha256sum ~/.local/bin/runner-agent"

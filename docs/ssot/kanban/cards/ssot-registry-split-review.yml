@@ -3,13 +3,14 @@ title: Registry SSOT files past 350-line review threshold — split or exempt de
 brief: 'Two registry-style SSOT files crossed the bloat threshold: infrastructure/ssot.secrets.yml (465 lines) and
   kanban/ssot.kanban.yml (460). Registries grow linearly with services/cards — decide whether to split them by domain,
   raise the registry threshold, or accept + document as permanent baseline debt.'
-column: backlog
+column: done
 priority: low
 created: 2026-10-09
 tags:
 - ssot
 - bloat
-claim: {}
+claim:
+  since: 2026-11-23 18:36
 ref: KNB-0002
 comms:
 - at: 2026-10-11 08:35
@@ -141,18 +142,228 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:48
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:08
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:21
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:22
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 18:34
+  from: tony
+  text: retry requested
+- at: 2026-11-23 18:35
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.45 > 1.0)'
+- at: 2026-11-23 18:35
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.46 > 0.85)'
+- at: 2026-11-23 18:35
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 18:36
+  from: tony
+  text: retry requested
+- at: 2026-11-23 18:36
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-23 18:37
+  from: chaba
+  text: started devin-task-20261123-183707-registry-ssot-files-past-350-l on tony-macbook (dispatch)
+- at: 2026-11-23 18:37
+  from: chaba
+  text: 'primer injected 8 lesson(s): [ssot-registry-split-review] finished (failed): exit=1 rocess exited, code=exite;
+    [ssot-registry-split-review] finished (failed): exit=1 rocess exited, code=exite; [ssot-registry-split-review]
+    merge-sweep: devin-task-20261109-094042-registry-ss; runbook docs/kb/documentation-disaster-backup.md: Critical
+    Infrastructure Compon; runbook docs/kb/nest-portable-brains-research.md: Chaba Nest — Portable Brains (; no
+    chaba-audit.service/chaba-audit-full.service entries exist'
+- at: 2026-11-23 18:39
+  from: devin
+  text: 'Investigating: secrets.yml now 703 lines (was 465), kanban.yml 679 (was 460) — both nearing the 750 hard
+    cap. Consumers confirmed single-file loaders (secrets-console SECRETS_SSOT, render-board manifest, dispatch_repos/runner-fleet-health
+    recursive runner_fleet find) — a split needs consumer+service changes; evaluating deliberate review-threshold
+    exemption + headroom trims + documented hard-cap split plan.'
+- at: 2026-11-23 18:41
+  from: devin
+  text: 'DONE — decision: reviewed exemption, not a split. Both files added to bloat_exemptions.review_threshold
+    in ssot.file-optimization.yml (750 hard cap stays armed as the declared split trigger; per-file split plans
+    recorded). secrets.yml trimmed 703->671 by moving the ops header to docs/kb/secrets-backup-topology.md. Why
+    not split: every consumer loads a single manifest path (secrets-console SECRETS_SSOT, render-board MANIFEST,
+    dispatch_repos/runner-fleet-health recursive runner_fleet find) — a spl'
+- at: 2026-11-23 18:42
+  from: tony-macbook
+  text: 'finished (ok): exit=0 mjs` reports 0 errors/0 warnings on all touched files and `ssot-optimize-gate.mjs`
+    passes. | devin-task-20261123-'
+- at: 2026-11-23 18:42
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 18:42
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: docs/ssot/focus-inbox/ staged outside the served checkout\n
+    \  (/home/tony/CascadeProjects/chaba-tony-dell). kanban-commit.timer does not sweep"
+- at: 2026-11-23 18:42
+  from: chaba
+  text: banked 197 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 18:42
+  from: chaba
+  text: pushed dispatch/20261123-183707-registry-ssot-files-past-350-l to origin
+- at: 2026-11-23 18:42
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-23 18:42
+  from: chaba
+  text: 'worktree kept: dirty — 6 uncommitted file(s)'
+- at: 2026-11-23 18:46
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261109-094042-registry-ss'
+- at: 2026-11-23 19:13
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:13
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:13
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:24
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:42
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:12
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:04
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 20:39
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-24): dispatch branch 20261123-183707-registry-ssot-files-past-350-l
+    (tip ab3979ac7039) is merged into origin/master; runner reported finished (ok) with an outcome doc. Work is
+    provably landed. Closing.'
+- at: 2026-11-24 20:39
+  from: tony
+  text: closed by tony
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:55
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:01
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:08
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:28
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:40
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:58
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:08
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:37
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
-  status: failed
+  status: done
   lane: codemod
   sweep:
     failed_noted: 2026-11-09 09:49
-  last_failure: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-094042-registry-ssot-files-past-350-l.service:
-    Failed with result ''exit-code''. | devin-task-20261109-094042-registry-ssot-files-past-350-l.service: Consumed
-    2.787s CPU time.'
-  attempts: 1
-  runner: idc02
-  result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261117-094006-registry-ssot-files-past-350-l.service:
+    no_repo: 2026-11-23 18:46
+  last_failure: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261117-094006-registry-ssot-files-past-350-l.service:
     Failed with result ''exit-code''. | devin-task-20261117-094006-registry-ssot-files-past-350-l.service: Consumed
     3.281s CPU time.'
-updated: 2026-11-19 20:06
+  attempts: 1
+  runner: tony-macbook
+  result: 'exit=0 mjs` reports 0 errors/0 warnings on all touched files and `ssot-optimize-gate.mjs` passes. | devin-task-20261123-183707-registry-ssot-files-past-350-l.service:
+    Consumed 19.988s CPU time over 4min 10.397s wall clock time, 308.4M memory peak.'
+updated: 2026-11-26 20:37
+review_kind: verify

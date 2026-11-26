@@ -1,0 +1,827 @@
+id: tony-usb-own-nodekey
+title: 'tony-usb stick: own tailnet node key (stop claiming mn01)'
+column: done
+priority: medium
+created: 2026-10-10
+updated: 2026-11-26 19:41
+note: 'The stick''s /var/lib/tailscale/tailscaled.state is a clone of real mn01''s nodekey — any booted host steals
+  the mn01 session (verified 2026-10-10 on the MacBook). Fix at next stick session: sudo tailscale logout + delete
+  tailscaled.state + tailscale up as its own node (name: tony-usb or rescue). Then document generated per-stick
+  identity in mn01-stick-standard.md.
+
+  '
+links:
+- docs/kb/mn01-stick-standard.md
+- docs/kb/hardware-mn01-tony-usb.md
+ref: SEC-0303
+comms:
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: SEC-0303'
+- at: 2026-10-11 10:20
+  from: devin
+  text: 'note: physical task — needs the tony-usb stick booted to run tailscale logout/up. Correctly parked in backlog
+    until your next stick session; no remote action possible.'
+- at: 2026-10-25 05:33
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-09 09:27
+  from: tony
+  text: queued for processing
+- at: 2026-11-09 09:27
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 3.35 > 1.0)'
+- at: 2026-11-09 09:28
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.73 > 1.0)'
+- at: 2026-11-09 09:28
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-09 09:28
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.37 > 0.85)'
+- at: 2026-11-09 09:28
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 3.11 > 1.0)'
+- at: 2026-11-09 09:29
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-09 09:29
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.32 > 0.85)'
+- at: 2026-11-09 09:30
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.66 > 1.0)'
+- at: 2026-11-09 09:31
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.16 > 0.85)'
+- at: 2026-11-09 09:31
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.05 > 1.0)'
+- at: 2026-11-09 09:31
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 2.01 > 1.0)'
+- at: 2026-11-09 09:32
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.80 > 1.0)'
+- at: 2026-11-09 09:32
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.11 > 0.85)'
+- at: 2026-11-09 09:33
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.86 > 1.0)'
+- at: 2026-11-09 09:34
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.55 > 1.0)'
+- at: 2026-11-09 09:34
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.05 > 0.85)'
+- at: 2026-11-09 09:36
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.36 > 1.0)'
+- at: 2026-11-09 09:36
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.54 > 1.0)'
+- at: 2026-11-09 09:37
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.70 > 1.0)'
+- at: 2026-11-09 09:37
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.64 > 0.85)'
+- at: 2026-11-09 09:38
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.48 > 1.0)'
+- at: 2026-11-09 09:38
+  from: idc02
+  text: claimed
+- at: 2026-11-09 09:38
+  from: chaba
+  text: started devin-task-20261109-093816-the-goal-is-to-stop-the-tony-u on idc02 (dispatch)
+- at: 2026-11-09 09:38
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.32 > 1.0)'
+- at: 2026-11-09 09:38
+  from: idc02
+  text: 'finished (failed): exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093816-the-goal-is-to-stop-the-tony-u.service:'
+- at: 2026-11-09 09:49
+  from: chaba
+  text: 'merge-sweep: devin-task-20261109-093816-the-goal-is-to-stop-the-tony-u failed — its branch isn''t auto-merged
+    (unverified partial work). Retry the card or merge dispatch/20261109-093816-the-goal-is-to-stop-the-tony-u by
+    hand.'
+- at: 2026-11-14 14:11
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:11
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 09:19
+  from: tony
+  text: retry requested
+- at: 2026-11-17 09:20
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-17 09:25
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-17 09:25
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-17 09:25
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.16 > 1.0)'
+- at: 2026-11-17 09:25
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.28 > 0.85)'
+- at: 2026-11-17 09:26
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-17 09:27
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.20 > 0.85)'
+- at: 2026-11-17 09:29
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.06 > 0.85)'
+- at: 2026-11-17 09:31
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.49 > 0.85)'
+- at: 2026-11-17 09:34
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.46 > 0.85)'
+- at: 2026-11-17 09:36
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.17 > 1.0)'
+- at: 2026-11-17 09:39
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-17 09:39
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.09 > 0.85)'
+- at: 2026-11-17 09:39
+  from: chaba
+  text: started devin-task-20261117-093916-the-goal-is-to-stop-the-tony-u on tony-macbook (dispatch)
+- at: 2026-11-17 09:39
+  from: tony-macbook
+  text: 'finished (failed): exit=1 vin-task-20261117-093916-the-goal-is-to-stop-the-tony-u.service: Failed with
+    result ''exit-code''. | devin-task-202'
+- at: 2026-11-17 10:29
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
+    the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-17 18:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:24
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:41
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:44
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 20:09
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
+    the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-17 21:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 22:12
+  from: devin
+  text: moved doing -> backlog
+- at: 2026-11-18 17:24
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:15
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:16
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:21
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:08
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:02
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:05
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 15:16
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
+    the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-21 17:49
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:07
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:20
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 15:59
+  from: tony
+  text: retry requested
+- at: 2026-11-23 16:00
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.66 > 0.85)'
+- at: 2026-11-23 16:01
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.91 > 1.5)'
+- at: 2026-11-23 16:03
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-23 16:12
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.14 > 0.85)'
+- at: 2026-11-23 16:16
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 16:17
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261123-161416-ada-benchmark-coverage-scenari)
+    — claims held ~29m'
+- at: 2026-11-23 16:18
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-160801-investigate-the-live-kk-mac-wo)
+    — claims held ~29m'
+- at: 2026-11-23 16:19
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:21
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-155555-goal-drain-the-review-column-s)
+    — claims held ~29m'
+- at: 2026-11-23 16:23
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-160101-the-kk-mac-local-lane-admits-4)
+    — claims held ~29m'
+- at: 2026-11-23 16:27
+  from: tony-omen
+  text: claimed
+- at: 2026-11-23 16:28
+  from: chaba
+  text: started devin-task-20261123-162813-the-goal-is-to-stop-the-tony-u on tony-omen (dispatch)
+- at: 2026-11-23 16:28
+  from: chaba
+  text: 'primer injected 8 lesson(s): runbook docs/kb/hardware-mn01-tony-usb.md: mn01 — Fujitsu ESPRIMO Q556/2 (real
+    h; [devin-session-audit-2026-10-29] AUD-0973 independent re-check (dispatch 201613 ; runbook docs/kb/mn01-stick-standard.md:
+    USB stick standard — mn01 rescue stick &; [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f] [done] all 3 jobs
+    verified exi; [dispatch-triage-arbiter-label-pass] session up on tony-omen — prior branch neve; [omen-maintenance-preflight-back-up-ha-st-b3738f]
+    2026-10-25 '
+- at: 2026-11-23 16:32
+  from: tony-omen
+  text: 'finished (failed): exit=1 261123-162813-the-goal-is-to-stop-the-tony-u.service: Failed with result ''exit-code''.
+    | devin-task-20261123-16281 — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 16:32
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-162813-the-goal-is-to-stop-the-tony-u (rate limit)
+    — tony-omen holds new claims ~30m
+- at: 2026-11-23 16:32
+  from: chaba
+  text: 'tony-omen retry backoff: fail 1/3 — next claim not before 11-23 17:02'
+- at: 2026-11-23 16:32
+  from: chaba
+  text: 'merge-sweep: devin-task-20261123-162813-the-goal-is-to-stop-the-tony-u no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-11-23 16:32
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=1; auto-retry queued (attempt 2/2)'
+- at: 2026-11-23 16:33
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-162813-the-goal-is-to-stop-the-tony-u)
+    — claims held ~29m'
+- at: 2026-11-23 16:49
+  from: idc02
+  text: claimed
+- at: 2026-11-23 16:50
+  from: chaba
+  text: started devin-task-20261123-165021-the-goal-is-to-stop-the-tony-u on idc02 (dispatch)
+- at: 2026-11-23 16:50
+  from: chaba
+  text: 'primer injected 8 lesson(s): runbook docs/kb/hardware-mn01-tony-usb.md: mn01 — Fujitsu ESPRIMO Q556/2 (real
+    h; runbook docs/kb/mn01-stick-standard.md: USB stick standard — mn01 rescue stick &; [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f]
+    [done] all 3 jobs verified exi; [devin-session-audit-2026-10-29] AUD-0973 independent re-check (dispatch 201613
+    ; [tony-usb-own-nodekey] finished (failed): exit=1 rocess exited, code=exited, sta; [tony-usb-own-nodekey] finished
+    (failed): exit=1 vin-task-202'
+- at: 2026-11-23 16:52
+  from: idc02
+  text: 'finished (failed): exit=1 ocess exited, code=exited, status=1/FAILURE | devin-task-20261123-165021-the-goal-is-to-stop-the-tony-u.service:  —
+    attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-23 16:52
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-165021-the-goal-is-to-stop-the-tony-u (rate limit)
+    — idc02 holds new claims ~30m
+- at: 2026-11-23 16:52
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-23 17:22'
+- at: 2026-11-23 18:48
+  from: tony
+  text: retry requested
+- at: 2026-11-23 18:49
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 0.96 > 0.85)'
+- at: 2026-11-23 18:50
+  from: idc02
+  text: claimed
+- at: 2026-11-23 18:51
+  from: chaba
+  text: started devin-task-20261123-185116-the-goal-is-to-stop-the-tony-u on idc02 (dispatch)
+- at: 2026-11-23 18:51
+  from: chaba
+  text: 'primer injected 8 lesson(s): [tony-usb-own-nodekey] primer injected 8 lesson(s): runbook docs/kb/hardware-mn0;
+    runbook docs/kb/hardware-mn01-tony-usb.md: mn01 — Fujitsu ESPRIMO Q556/2 (real h; [tony-usb-own-nodekey] primer
+    injected 8 lesson(s): runbook docs/kb/hardware-mn0; runbook docs/kb/mn01-stick-standard.md: USB stick standard
+    — mn01 rescue stick &; [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f] [done] all 3 jobs verified exi; [devin-session-audit-2026-10-29]
+    AUD-0973 independent re-chec'
+- at: 2026-11-23 19:03
+  from: devin
+  text: 'dispatch 185116 (idc02): stick verified NOT booted/attached anywhere reachable — tailnet has no tony-usb
+    node (mn01=real ESPRIMO via DMI), LAN sweep via tony-dell found no stick, lsblk clean on 6 hosts. Physical step
+    cannot run from a dispatch. Delivered the prepared fix instead: scripts/ops/stick-own-nodekey.sh (self-contained,
+    pipe-over-ssh), mn01-stick-standard.md per-stick identity section + registry, hardware-mn01-tony-usb.md update,
+    jobs trail docs/ssot/jobs/infrastructure/2026-11-23-tony-'
+- at: 2026-11-23 19:03
+  from: devin
+  text: 'raised request physical-step-remains-the-tony-usb-stick-41f071: Physical step remains — the tony-usb stick
+    is not booted or attached to any reachable host (verified from idc02: tailnet'
+- at: 2026-11-23 19:04
+  from: devin
+  text: 'final: committed fac2c766d3 on dispatch/20261123-185116-the-goal-is-to-stop-the-tony-u (5 files). Deliverables:
+    scripts/ops/stick-own-nodekey.sh, docs/kb/mn01-stick-standard.md (per-stick identity + registry), docs/kb/hardware-mn01-tony-usb.md,
+    docs/ssot/jobs/infrastructure/2026-11-23-tony-usb-own-nodekey.yml, dispatch-outcome md. Board request raised
+    for the physical step. Done-condition half-met: docs+procedure ready; stick auth awaits next stick session (needs
+    Tony to boot stick + approve ton'
+- at: 2026-11-23 19:09
+  from: chaba
+  text: banked 202 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 19:10
+  from: chaba
+  text: pushed dispatch/20261123-185116-the-goal-is-to-stop-the-tony-u to origin
+- at: 2026-11-23 19:10
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 118.4s)
+- at: 2026-11-23 19:10
+  from: chaba
+  text: auto-merged 6acef32c (dispatch/20261123-185116-the-goal-is-to-stop-the-tony-u) → origin/master
+- at: 2026-11-23 19:10
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261123-185116-the-goal-is-to-stop-the-tony-u,
+    branch dispatch/20261123-185116-the-goal-is-to-stop-the-tony-u'
+- at: 2026-11-23 19:10
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:10
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:11
+  from: idc02
+  text: 'finished (ok): exit=0  `tony-usb` node in the admin console — until then every stick boot re-triggers the
+    mn01 session fight. | devin-t'
+- at: 2026-11-23 19:11
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 19:11
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261123-185116-the-goal-is-to-stop-the-tony-u — close will block
+    until merged'
+- at: 2026-11-23 19:17
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261123-185116-the-goal-is-to-stop-the-tony-u on
+    idc02 — if the work was never pushed it may be gone'
+- at: 2026-11-23 19:22
+  from: tony
+  text: 'answered physical-step-remains-the-tony-usb-stick-41f071: proceed'
+- at: 2026-11-23 19:22
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-23 19:34
+  from: chaba
+  text: 'answer-sweep: executed ''proceed'' -> queued for processing'
+- at: 2026-11-23 19:34
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-23 19:34
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.89 > 1.5)'
+- at: 2026-11-23 19:34
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 19:35
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 19:36
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-23 19:42
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-23 19:42
+  from: chaba
+  text: started devin-task-20261123-194248-the-goal-is-to-stop-the-tony-u on tony-macbook (dispatch)
+- at: 2026-11-23 19:42
+  from: chaba
+  text: 'primer injected 8 lesson(s): [tony-usb-own-nodekey] primer injected 8 lesson(s): runbook docs/kb/hardware-mn0;
+    runbook docs/kb/hardware-mn01-tony-usb.md: mn01 — Fujitsu ESPRIMO Q556/2 (real h; [devin-session-audit-2026-10-29]
+    AUD-0973 independent re-check (dispatch 201613 ; [tony-usb-own-nodekey] primer injected 8 lesson(s): runbook
+    docs/kb/hardware-mn0; runbook docs/kb/mn01-stick-standard.md: USB stick standard — mn01 rescue stick &; runbook
+    docs/kb/new-host-onboarding.md: New Host Onboarding —'
+- at: 2026-11-23 19:49
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261123-194248-the-goal-is-to-stop-the-tony-u'
+- at: 2026-11-23 19:49
+  from: tony-macbook
+  text: 'finished (failed): exit=1 ask-20261123-194248-the-goal-is-to-stop-the-tony-u.service: Failed with result
+    ''exit-code''. | devin-task-20261123 — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms
+    it'
+- at: 2026-11-23 19:49
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-194248-the-goal-is-to-stop-the-tony-u (rate limit)
+    — tony-macbook holds new claims ~30m
+- at: 2026-11-23 19:49
+  from: chaba
+  text: 'tony-macbook retry backoff: fail 1/3 — next claim not before 11-23 20:19'
+- at: 2026-11-23 20:15
+  from: tony
+  text: retry requested
+- at: 2026-11-23 20:16
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-191504-investigate-and-resolve-the-fa)
+    — claims held ~6m'
+- at: 2026-11-23 20:16
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-192619-fix-the-executor-model-id-mism)
+    — claims held ~5m'
+- at: 2026-11-23 20:16
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-194248-the-goal-is-to-stop-the-tony-u)
+    — claims held ~3m'
+- at: 2026-11-23 20:16
+  from: chaba
+  text: 'idc03 defers: provider rate-limited (rate limit on devin-task-20261123-195521-goal-address-the-live-voice-to)
+    — claims held ~10m'
+- at: 2026-11-23 20:16
+  from: chaba
+  text: 'mn01 defers: provider rate-limited (rate limit on devin-task-20261123-123122-supersedes-manual-card-wiki-ta)
+    — claims held ~4m'
+- at: 2026-11-23 20:22
+  from: mn01
+  text: claimed
+- at: 2026-11-23 20:22
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=1; auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 20:22
+  from: chaba
+  text: started devin-task-20261123-132246-the-goal-is-to-stop-the-tony-u on mn01 (dispatch)
+- at: 2026-11-23 20:22
+  from: chaba
+  text: 'primer injected 8 lesson(s): `tailscale logout` on cloned-nodekey media is a footgun: it expires the SHARED
+    n; [tony-usb-own-nodekey] primer injected 8 lesson(s): runbook docs/kb/hardware-mn0; runbook docs/kb/hardware-mn01-tony-usb.md:
+    mn01 — Fujitsu ESPRIMO Q556/2 (real h; [tony-usb-own-nodekey] merge-sweep: no session/worktree found for devin-task-202;
+    [tony-usb-own-nodekey] primer injected 8 lesson(s): [tony-usb-own-nodekey] prime; [tony-usb-own-nodekey] primer
+    injected 8 lesson(s): runbook d'
+- at: 2026-11-23 20:23
+  from: tony-dell
+  text: claimed
+- at: 2026-11-23 20:23
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 20:23
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-23 20:24
+  from: chaba
+  text: started devin-task-20261123-202412-the-goal-is-to-stop-the-tony-u on tony-dell (dispatch)
+- at: 2026-11-23 20:40
+  from: devin
+  text: 'dispatch 132246 ran ON mn01 (the contested node, same home LAN). Re-verified stick still not booted/attached:
+    no tony-usb tailnet node, zero tailscaled auth events in 7d, clean 192.168.2.0/24 ssh sweep, no USB storage
+    on mn01, no stick-announce ops-event. Physical step still needs a real stick boot. Hardened the prepared fix
+    instead: stick-own-nodekey.sh now waits for the tailscaled socket + retries tailscale up; runbook ssh example
+    fixed (ssh -t required — sudo reads password from tty not stdin'
+- at: 2026-11-23 20:42
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 20:42
+  from: chaba
+  text: 'session-end checkpoint 9e135cd7: 1 leftover file(s) committed'
+- at: 2026-11-23 20:42
+  from: chaba
+  text: banked 224 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 20:42
+  from: chaba
+  text: pushed dispatch/20261123-132246-the-goal-is-to-stop-the-tony-u to origin
+- at: 2026-11-23 20:42
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-23 20:42
+  from: chaba
+  text: auto-merged 39c38f7b (dispatch/20261123-132246-the-goal-is-to-stop-the-tony-u) → origin/master
+- at: 2026-11-23 20:42
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-23 20:43
+  from: tony-dell
+  text: 'finished (failed): exit=1 s-to-stop-the-tony-u.service: Failed with result ''exit-code''. | devin-task-20261123-202412-the-goal-is-to-stop-th
+    — attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-23 20:43
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-202412-the-goal-is-to-stop-the-tony-u (rate limit)
+    — tony-dell holds new claims ~30m
+- at: 2026-11-23 20:43
+  from: chaba
+  text: 'tony-dell retry backoff: fail 1/3 — next claim not before 11-23 21:13'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:05
+  from: tony
+  text: retry requested
+- at: 2026-11-24 08:05
+  from: tony-omen
+  text: claimed
+- at: 2026-11-24 08:07
+  from: chaba
+  text: 'primer injected 8 lesson(s): `tailscale logout` on cloned-nodekey media is a footgun: it expires the SHARED
+    n; [tony-usb-own-nodekey] primer injected 8 lesson(s): runbook docs/kb/hardware-mn0; runbook docs/kb/hardware-mn01-tony-usb.md:
+    mn01 — Fujitsu ESPRIMO Q556/2 (real h; [devin-session-audit-2026-10-29] AUD-0973 independent re-check (dispatch
+    201613 ; [tony-usb-own-nodekey] merge-sweep: no session/worktree found for devin-task-202; [tony-usb-own-nodekey]
+    primer injected 8 lesson(s): [tony-usb'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: devin
+  text: 'dispatch 080654 (tony-omen): re-verified stick absent — tailnet has no tony-usb/rescue node, ssh mn01 lands
+    on real ESPRIMO Q556/2 (up 34d), LAN port-22 sweep via tony-dell finds only known hosts, ops feed has no stick
+    announce, no USB storage on omen. Physical step still blocked. Adding the missing piece this card kept lacking:
+    scripts/ops/stick-watch.py — a fleet-side detector that alerts (board comment + HA push) the moment the stick
+    boots/steals mn01, with the exact fix command. Commits on t'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: devin
+  text: 'raised request approve-installing-stick-watch-timer-on-cb8082: Approve installing stick-watch.timer on
+    tony-dell? New 5-min user timer runs scripts/ops/stick-watch.py — detects the st'
+- at: 2026-11-24 08:15
+  from: devin
+  text: 'final: committed 7d4cf43f8d + aa09ce3804 on dispatch/20261124-080654-the-goal-is-to-stop-the-tony-u. Stick
+    re-verified absent (tailnet/LAN/ops-feed/local-USB all clean; mn01 = real ESPRIMO up 34d). NEW: scripts/ops/stick-watch.py
+    detector + systemd/stick-watch.timer (5min, tony-dell) — alerts card+HA-push with the exact fix the moment the
+    stick boots or steals mn01s session. Runbook + jobs trail updated. Board request raised: approve timer install
+    on tony-dell. Physical step still needs a real s'
+- at: 2026-11-24 08:20
+  from: tony-omen
+  text: 'finished (ok): exit=0  be paged with the fix automatically instead of the mn01 session theft going unnoticed.
+    | devin-task-20261124-080'
+- at: 2026-11-24 08:20
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 08:20
+  from: chaba
+  text: 'session-end checkpoint 40243c0f: 1 leftover file(s) committed'
+- at: 2026-11-24 08:20
+  from: chaba
+  text: banked 256 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 08:20
+  from: chaba
+  text: pushed dispatch/20261124-080654-the-goal-is-to-stop-the-tony-u to origin
+- at: 2026-11-24 08:20
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 160.7s)
+- at: 2026-11-24 08:20
+  from: chaba
+  text: auto-merged 817943c8 (dispatch/20261124-080654-the-goal-is-to-stop-the-tony-u) → origin/master
+- at: 2026-11-24 08:20
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 08:22
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''approve-installing-stick-watch''] block close)'
+- at: 2026-11-24 08:24
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:27
+  from: tony
+  text: 'answered approve-installing-stick-watch-timer-on-cb8082: install it'
+- at: 2026-11-24 08:27
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:37
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-24 08:41
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:08
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 23:28
+  from: devin
+  text: 'worktree-triage 2026-11-24: dispatch-wt-20261123-202412 dropped — uncommitted scripts/ops/stick-find.sh
+    (7.3KB) + mn01-stick-standard.md/jobs-yml updates preserved on branch dispatch/20261123-202412-the-goal-is-to-stop-the-tony-u
+    (tony-dell local ref).'
+- at: 2026-11-25 07:49
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:58
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:53
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:55
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet session by giving it its own unique
+  node identity. On the tony-usb stick host during the next stick session, run sudo tailscale logout, delete /var/lib/tailscale/tailscaled.state,
+  and run tailscale up as its own node named tony-usb or rescue. Finally, document the generated per-stick identity
+  in mn01-stick-standard.md. The testable done-condition is that the stick successfully authenticates to the tailnet
+  with a distinct node key rather than cloning mn01, and mn01-stick-standard.md is updated with the new identity
+  details.
+action:
+  type: dispatch
+  status: done
+  lane: devin
+  sweep:
+    failed_noted: 2026-11-09 09:49
+    stale_running: 2026-11-23 16:32
+    zero_commit: 2026-11-23 20:22
+    session_gone: 2026-11-23 19:17
+    no_repo: 2026-11-23 19:49
+    close_held: 2026-11-24 08:22
+  last_failure: 'exit=1 s-to-stop-the-tony-u.service: Failed with result ''exit-code''. | devin-task-20261123-202412-the-goal-is-to-stop-the-tony-u.service:
+    Consumed 2min 26.771s CPU time over 18min 51.112s wall clock time, 1.3G memory peak, 460.2M memory swap peak.'
+  attempts: 1
+  runner: tony-omen
+  result: 'exit=0  be paged with the fix automatically instead of the mn01 session theft going unnoticed. | devin-task-20261124-080654-the-goal-is-to-stop-the-tony-u.service:
+    Consumed 1min 52.730s CPU time over 8min 59.760s wall clock time, 1.2G memory peak.'
+  verified: true
+claim:
+  since: 2026-11-24 08:05
+requests:
+- id: physical-step-remains-the-tony-usb-stick-41f071
+  ask: 'Physical step remains — the tony-usb stick is not booted or attached to any reachable host (verified from
+    idc02: tailnet, home-LAN sweep via tony-dell, lsblk on mn01/dell/omen/macbook/con01/idc03). Next time you boot
+    the stick, run FIRST: sudo bash scripts/ops/stick-own-nodekey.sh (or ssh tony@<lan-ip> ''sudo bash -s'' < scripts/ops/stick-own-nodekey.sh
+    from any fleet host), then approve the new tony-usb node in the Tailscale admin console. Everything else is
+    committed on this dispatch branch — docs updated, script ready.'
+  status: answered
+  at: 2026-11-23 19:03
+  from: devin
+  options:
+  - proceed
+  - hold
+  answer: proceed
+  executed: 2026-11-23 queue
+- id: approve-installing-stick-watch-timer-on-cb8082
+  ask: 'Approve installing stick-watch.timer on tony-dell? New 5-min user timer runs scripts/ops/stick-watch.py
+    — detects the stick booting (ops-feed announce / ssh mn01 hostname=tony-usb / tailnet tony-usb node) and HA-pushes
+    the exact fix command. Install: install -m644 systemd/stick-watch.{service,timer} ~/.config/systemd/user/ &&
+    systemctl --user daemon-reload && systemctl --user enable --now stick-watch.timer. Kill switch: touch ~/.config/stick-watch.off.
+    Without it the detector only runs manually.'
+  status: answered
+  at: 2026-11-24 08:14
+  from: devin
+  options:
+  - install it
+  - skip watcher
+  answer: install it
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 08:37
+  note: verified — evidence checks green, closing itself

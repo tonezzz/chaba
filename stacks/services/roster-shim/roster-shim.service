@@ -1,0 +1,13 @@
+[Unit]
+Description=Roster lane shim — ada-lane ws contract for devin + nest roster contacts
+
+[Service]
+Environment=ROSTER_SHIM_BIND=127.0.0.1
+Environment=ROSTER_SHIM_PORT=8796
+EnvironmentFile=-%h/.config/secrets/roster-shim.env
+ExecStart=%h/.local/share/roster-shim/.venv/bin/python %h/.local/share/roster-shim/roster-shim.py --serve
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=default.target

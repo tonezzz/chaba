@@ -1,0 +1,265 @@
+id: ada-bge-memory-search-shadow
+title: Run BGE retrieval as an isolated Ada memory_search shadow
+column: done
+updated: 2026-11-23 13:33
+priority: high
+tags:
+- ada
+- bge
+- shadow
+- memory-search
+spec: Add an opt-in, asynchronous shadow alongside Ada’s existing Gemini memory_search. For the same authorized
+  bank scope, query the isolated local BGE-M3 MDDB plane, rerank a bounded top-10 candidate set through Omen, and
+  record privacy-minimized operational/overlap metrics. The shadow must never change Gemini results, block the voice
+  response, write to MDDB, or log query/document text. Keep Gemini as the only returned retrieval result until separately
+  approved. Validate timeout, queue bounds, ACL/person scoping, failure isolation, and an off switch; test on idc02
+  before any idc03 deployment.
+ref: ADA-1299
+comms:
+- at: 2026-11-09 19:57
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:06
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:35
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:35
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:56
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 19:05
+  from: devin
+  text: 'Soak status check 2026-11-17: shadow is armed on ada-dev (env verified in /proc: ENABLED=1, MDDB_URL=:11028,
+    RERANK_URL=omen:11555, TIMEOUT_S=5; deployed code through PR #15 cancellation-shadow). BUT zero `bge_memory_search
+    shadow` log lines to date — not a bug, a traffic drought: (1) ada-dev sees only dev-scratch (instances_readonly
+    still inert pending ada-memory-dev-lane-runtime), so model calls for tony-projects/cms banks fail ACL before
+    memory_search; (2) the one real bank=''all'' query on 202'
+- at: 2026-11-17 19:47
+  from: devin
+  text: '2026-11-17 ~19:45 ICT: shadow ENABLED on production ada-ha-tony per Tony''s approval — appended the 5 ADA_BGE_SHADOW_*
+    vars to ~/.config/secrets/tony-ha/backend.env (same values as ada-dev: :11028 BGE plane, omen reranker + bearer
+    token, timeout 5s), restarted ada-ha-tony.service at active_sessions=0. Verified: unit active, all 5 vars present
+    in /proc environ, /api/health ok. Result-invisible by design (async, max 2 inflight, 5s cap, no writes, Gemini
+    baseline untouched). Rollback = delete the 5 '
+- at: 2026-11-17 21:07
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 22:11
+  from: devin
+  text: moved doing -> backlog
+- at: 2026-11-17 23:22
+  from: chaba
+  text: classified as codemod (kw:lock conf 1.00)
+- at: 2026-11-17 23:22
+  from: tony
+  text: queued for processing
+- at: 2026-11-17 23:22
+  from: idc02
+  text: claimed
+- at: 2026-11-17 23:22
+  from: chaba
+  text: started devin-task-20261117-232220-add-an-opt-in-asynchronous-sha on idc02 (dispatch)
+- at: 2026-11-17 23:23
+  from: devin
+  text: 'dispatch 23:22 picking up: impl merged (ada-voice #13/#14/#15), enabled on ada-dev + ada-ha-tony earlier
+    today. This session: run validation (timeout/queue/ACL/isolation/off-switch), verify prod soak actually fires
+    shadow lines, write runbook+report.'
+- at: 2026-11-17 23:34
+  from: idc02
+  text: 'finished (failed): exit=1 RE | devin-task-20261117-232220-add-an-opt-in-asynchronous-sha.service: Failed
+    with result ''exit-code''. | devin-t'
+- at: 2026-11-17 23:34
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-18 00:04'
+- at: 2026-11-17 23:39
+  from: chaba
+  text: 'merge-sweep: devin-task-20261117-232220-add-an-opt-in-asynchronous-sha failed — its branch isn''t auto-merged
+    (unverified partial work). Retry the card or merge dispatch/20261117-232220-add-an-opt-in-asynchronous-sha by
+    hand.'
+- at: 2026-11-18 15:11
+  from: devin
+  text: '2026-11-18 synthetic in-process probe on idc03 (prod env, anonymous person_entity=None): full path verified
+    — baseline Gemini returned 3 hits, shadow fired and logged `status=empty collections=2 collection_errors=2 dense_ms=5018
+    total_ms=5018`. ACL confirmed working: anonymous fanout correctly resolved to only general+home (default policy
+    allow-list; dev-scratch not in tony instance). Failure isolation proven live: both :11028 fetches blew the 5s
+    deadline, shadow degraded to empty, baseline unto'
+- at: 2026-11-18 17:29
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:09
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:10
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:18
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:02
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:05
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 08:59
+  from: chaba
+  text: 'stalled-claim reaper: moved doing -> backlog — status=failed with no live claim — /action do=retry re-arms
+    it'
+- at: 2026-11-19 13:04
+  from: chaba
+  text: classified as codemod (kw:lock conf 1.00)
+- at: 2026-11-19 13:04
+  from: tony
+  text: queued for processing
+- at: 2026-11-19 13:05
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 2.53 > 0.85)'
+- at: 2026-11-19 13:05
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.84 > 0.85)'
+- at: 2026-11-19 13:05
+  from: idc02
+  text: claimed
+- at: 2026-11-19 13:06
+  from: devin
+  text: 'Phase-1 eval done 2026-11-19 (HTTP-level, no Ada integration): 40 query x 4 bank pairs against gemini :11023
+    vs bge :11028 shadow bank — mean top-5 overlap 30%, consistent with space-change expectation. Spot-checks: bge
+    top hits at least as relevant (wifi -> literal password note vs gemini persona/self stub). Migration card filed:
+    mddb-leader-bge-m3-migration-11023 (MEM-0235). This shadow card remains valid as the post-cutover ongoing-validation
+    layer.'
+- at: 2026-11-19 13:06
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-19 13:06
+  from: chaba
+  text: started devin-task-20261119-130636-add-an-opt-in-asynchronous-sha on idc02 (dispatch)
+- at: 2026-11-19 13:06
+  from: chaba
+  text: 'primer injected 8 lesson(s): [ada-memory-sync-transient-mddb-hardening] Merged to origin/master as 7d3196d24d;
+    lp.build does a repo walk + a 10s-timeout MDDB bank fetch on first call — unit t; [ada-dev-control-plane-envelope]
+    Recommended terminology for the next phase: use; [ada-proactive-digest-morning-brief-via-t-3abb02] spec: Ada
+    is poll-only — Tony ; [mddb-2-15-4-v2-18-10-upgrade-custom-lsn-aa896c] Deployment-relevant finding 202; [openchamber-ada-context-pack]
+    education:/lesson timeout FIXE'
+- at: 2026-11-19 13:09
+  from: devin
+  text: 'dispatch 13:06 ICT picking up on idc02: impl merged (ada-voice 7c5ba50 incl. MEM-1129 dense+fetch+rerank).
+    Plan: staging pull done; run live shadow validation on idc02 (timeout/queue/ACL/isolation/off-switch), verify
+    idc03 prod soak lines, write runbook+report.'
+- at: 2026-11-19 13:13
+  from: chaba
+  text: 'merge-sweep: devin-task-20261117-232220-add-an-opt-in-asynchronous-sha no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-19 13:13
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261117-232220-add-an-opt-in-asynchronous-sha on idc02 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-19 13:18
+  from: devin
+  text: 'Validation done on idc02 (staging, per spec): 10/10 live scenarios in new scripts/bge-shadow-validate.py
+    — off-switch, missing-endpoint no-op, healthy status=ok total_ms=331, queue bound (MAX_INFLIGHT=2 → 3rd dropped
+    reason=busy), dead-MDDB isolation (status=empty, 4 errors, 0.05s), dead-reranker (status=error via _run_safely),
+    stall endpoint cut at 1.01s of 1.0s deadline, ops-collection excluded, privacy check (no query/doc text, strict
+    kv log lines). +8 unit tests → 12/12 pass, 188 memory/bge '
+- at: 2026-11-19 13:28
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261119-130636-add-an-opt-in-asynchronous-sha.service:
+    Failed to ope'
+- at: 2026-11-19 13:28
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-19 13:28
+  from: chaba
+  text: banked 87 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-19 13:28
+  from: chaba
+  text: pushed dispatch/20261119-130636-add-an-opt-in-asynchronous-sha to origin
+- at: 2026-11-19 13:28
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 210.9s)
+- at: 2026-11-19 13:28
+  from: chaba
+  text: auto-merged 32055b57 (dispatch/20261119-130636-add-an-opt-in-asynchronous-sha) → origin/master
+- at: 2026-11-19 13:28
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261119-130636-add-an-opt-in-asynchronous-sha,
+    branch dispatch/20261119-130636-add-an-opt-in-asynchronous-sha'
+- at: 2026-11-19 13:35
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-19 17:04
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:41
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:33
+  from: tony
+  text: archived (1d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: codemod
+  lane_source: kw
+  result: 'exit=0 ice: No such file or directory | devin-task-20261119-130636-add-an-opt-in-asynchronous-sha.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261119-130636-add-an-opt-in-asynchronous-sha.service:
+    No such file or directory'
+  sweep:
+    failed_noted: 2026-11-17 23:39
+    stale_running: 2026-11-19 13:13
+    dirty: 1
+  runner: idc02
+  attempts: 1
+  verified: true
+claim:
+  since: 2026-11-19 13:05
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-19 13:35
+  note: verified — evidence checks green, closing itself

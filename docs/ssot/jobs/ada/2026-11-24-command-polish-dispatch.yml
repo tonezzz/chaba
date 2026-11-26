@@ -1,0 +1,117 @@
+date: 2026-11-24
+title: Command-polish before AI dispatch — bench harness landed, intake
+       polish stays rejected, composition-time polish unmeasured
+Domain: ada
+job: command-polish-before-ai-dispatch
+cards: [command-polish-before-ai-dispatch, micro-ai-input-polish,
+        ada-expert-consult-tool, ada-devteam-pipeline,
+        jevteam-omen-or-lane-admission]
+refs: [ADA-1088, ADA-1084, BEN-0465, BEN-1050]
+host: tony-dell (dispatch worktree)
+summary: >
+  Tony's goal: polish development-ish commands into canonical spec-grade
+  English before they reach Devin/Ada/OpenCode, without changing intent.
+  The decisive evidence already existed — the 2026-11-07 ADA-1088 bench
+  REJECTED per-turn polish at Ada's intake insertion point (routing score
+  tied 8/12, 0 fabricated, but ~2-4x tokens and latency; strong-model
+  polish tied score at ~3x cost). This dispatch lands the missing piece
+  that bench left unmerged and extends the fixture base with REAL board
+  commands, then records where the goal stands per surface.
+
+what_landed:
+  - 'Cherry-picked e82c40e666b (feat/ada1088-command-polish-20261107 —
+    pushed 2026-11-07 but never merged) onto this branch: micro-bench
+    dispatch_cmd protocol (dispatch_devin / dispatch_opencode /
+    create_card downstream tool surface via lib.downstream_system(fx)),
+    dispatch_spec_v1 route-preserving polish prompt, LiteLLM
+    api_key_env + max_tokens provider support, and 16 synthetic
+    Tony-style fixtures. Clean pick, no conflicts.'
+  - 'Added category dispatch_real — 12 fixtures whose raw input is the
+    VERBATIM title of a live kanban card (stale-local-conflict-files-
+    cleanup, smoke-tier-timeout, live-session-token-diet,
+    openchamber-devnest-project-path, mddb-ops-30g, devin-handoff-ledger,
+    idc02-second-ada-pi-lane, video-render-dispatcher,
+    wiki-page-door-infrastructure-namespace, ansible-verify-r7,
+    timer-alert-idc03, ops-local-conflict-guard). gold = canonical
+    spec-grade rewrite; expected_tool_call mostly dispatch_devin, one
+    dispatch_opencode (read-only verify). Splitting from dispatch_cmd so
+    report.py scores polish on real vs synthetic commands separately.
+    All 12 validate: entity preservation 1.0, gold-similarity 0.53-0.93.'
+  - 'README fixture census updated (40 -> 68 inputs, 10 -> 12 categories).'
+
+verified:
+  - 'python3 scripts/micro-bench/bench.py --variant dry-run-dummy
+    --dry-run — manifest loads, per-category table shows dispatch_cmd
+    n=16 and dispatch_real n=12.'
+  - 'No live bench run this session: LITELLM_KEY_BENCH lives outside the
+    worktree (~/.config/secrets/) and dispatch scope forbids reaching
+    for it; the 2026-11-07 run evidence stands on the card comms.'
+
+decision:
+  chosen: 'Keep the adopt-gate verdict: NO per-turn polish at intake.
+    Ship polish only as on-demand consult for hard cases — already
+    landed as ada-expert-consult-tool (done 2026-11-24): explicit
+    "ask the expert" trigger, LITELLM_KEY_CONSULT capped key, text
+    lanes only, never per-turn. The bench explicitly says consult must
+    be on-demand, not a gate on every command.'
+  rejected:
+    - 'Per-turn dispatch-bound polish in ada-voice input_polish — bench
+      REJECTED 2026-11-07 (e82c40e commit message + card comms): polish
+      does not improve routing score and costs 2-4x tokens/latency.
+      Ungated polish was already measured at ~56% net-token tax on the
+      HA-intake variant (BEN-0465).'
+    - 'Local small-model polish — llama3.2:3b REJECTED on match-rate
+      (BEN-0465); a dispatch-grade rewrite is a harder task than HA
+      normalization, so the bar is higher, not lower.'
+    - 'Silent rewrite at dispatch composition (runner-agent/
+      dispatch_task.build_task_text) — violates the card boundary:
+      polish output must be advisory/show-diff, and the dispatch lane
+      has no human confirm step. Composing polished text straight into
+      the Devin prompt IS the silent rewrite the spec forbids.'
+
+open_surfaces:
+  - 'Composition-time polish (unmeasured): build_task_text is the single
+    seam (scripts/board/dispatch_task.py) — spec + rails + primer for
+    both kanban-dispatch and runner-agent lanes. A polish stage there
+    would measure a DIFFERENT claim than the intake bench: not "does
+    polish fix routing" but "does a polished card spec produce better
+    dispatch outcomes". That needs a new bench metric (downstream
+    dispatch success), which is expensive to score. Not built — no
+    evidence it pays, and the advisory boundary has no confirm surface
+    in the auto-dispatch lane. Reopen only with a bench that shows
+    spec-quality gain.'
+  - 'JevTeam classifier role (spec item 2): open-jev-student :8778 as a
+    cheap needs-polish?/ambiguity detector is available chaba-side
+    (scripts/jev/*, noul-gate.py documents the 8778 caveats — 1b
+    students compress probabilities, pre-filter only, never gate of
+    record). No consumer wired: the consult tool triggers on explicit
+    user request, so a classifier has nothing to gate yet. Wire it only
+    if/when an automatic polish trigger is approved.'
+  - 'devteam-style expert panel second pass for high-stakes dispatches:
+    same story — advisory evidence attachment is designed but has no
+    insertion point that satisfies the no-silent-block boundary.
+    Candidate: attach panel verdict to card comms at claim time for
+    human review, never auto-BLOCK.'
+  - 'Real raw-utterance fixtures: dispatch_real uses card TITLES as the
+    real-command proxy. Tony''s raw voice/chat utterances live in
+    ada-voice transcripts / MDDB banks, outside this repo — a future
+    pass could harvest utterance->spec pairs from ada session archives
+    if the intake question is ever re-benched.'
+
+fleet_note: >
+  This card''s dispatch queue shows ~30 "installed runner-agent
+  drifted from repo" defers across hosts (2026-11-14 -> 2026-11-24) —
+  the claim-time drift check keeps bouncing it between runners. Known
+  class (runner-auto-tony-omen lesson: redeploy repo
+  scripts/board/runner-agent.py to ~/.local/bin/ per host); not this
+  card''s scope but it is why the card sat queued for a week.
+
+recommendation: >
+  Card can move to review/done on the strength of: harness landed,
+  fixture base extended with real commands, verdict restated with
+  pointers. If Tony wants the goal pursued further, the honest next
+  step is NOT more polish plumbing — it is deciding whether
+  composition-time spec polish is worth a new bench, or whether the
+  consult tool''s on-demand model already covers the real need
+  (hard cases only). My read: the consult tool covers it; per-turn
+  polish is a solved-negative.

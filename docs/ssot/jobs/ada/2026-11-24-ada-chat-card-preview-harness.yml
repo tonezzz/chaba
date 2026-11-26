@@ -1,0 +1,81 @@
+title: OpenChamber Preview harness for ada-chat-card media rendering
+id: 2026-11-24-ada-chat-card-preview-harness
+card: openchamber-ada-card-preview-harness
+ref: ADA-1037
+date: 2026-11-24
+status: verified-in-worktree (committed on dispatch branch, not pushed; no HA deploy needed)
+
+summary: |
+  Built a deterministic local browser harness for
+  stacks/tony-dell/ada-ha/www/ada-chat-card.js and ran the whole suite
+  through the real OpenChamber Preview control plane on idc02. All 12
+  fixture scenarios + a mobile-viewport pass are green with zero
+  unexpected console problems; screenshots and per-check results are
+  committed under tests/ha/ada-chat-card/evidence/.
+
+artifacts:
+  harness: tests/ha/ada-chat-card/harness.html
+  server: tests/ha/ada-chat-card/server.py
+  fixtures: tests/ha/ada-chat-card/fixtures/ (png/gif/mp4/webm via ffmpeg, link target, download note)
+  bridge: tests/ha/ada-chat-card/preview-bridge.mjs
+  evidence: tests/ha/ada-chat-card/evidence/ (results.json, .openchamber/screenshots/, shots/)
+  readme: tests/ha/ada-chat-card/README.md
+
+how_preview_works: |
+  OpenChamber's builtin browser provider is a broker: browser.* actions
+  POST /api/openchamber/control, the broker emits an SSE
+  openchamber:browser-control-request to browser-capable clients
+  (GET /api/openchamber/events?browser=1), and the client claims +
+  executes + posts /api/browser-control/result. With no desktop client
+  connected the broker 503s ("a web browser tab can display a page but
+  cannot be driven"). preview-bridge.mjs IS the missing client: it
+  connects the SSE stream, registers via /api/browser-control/active,
+  claims requests, and executes them in headless Chrome (Playwright
+  channel:"chrome", system Chrome 158) — the same engine the desktop
+  BrowserPane drives. Every browser action therefore travels the real
+  preview plane; only the renderer is headless. When Tony's desktop
+  client is connected it wins via preferredConnectionId and the bridge
+  skips those requests.
+  Action coverage: open, snapshot (text/elements/refs/consoleProblems/
+  acc harness state), click, type, select, scroll, back, forward,
+  inspect, capture (base64 + server-side writeScreenshot into
+  evidence/.openchamber/screenshots/), resize (mobile 390x844 /
+  tablet 768x1024 / desktop 1440x900 — the pane's own presets), close
+  (refused — single-page provider, per the guest-provider contract).
+
+scenarios: |
+  connect (FakeWS handshake, channel=web&chat_id=web-tester bind),
+  text-urls (_fillBubble image-ext + /image?v= path rule -> img;
+  page/download -> a[target=_blank rel=noopener]), push-image,
+  push-video (controls+muted+playsinline, videoWidth decode check),
+  push-mixed, push-empty (empty drops quietly; whitespace-only text
+  still renders — observed), push-broken (410/404/200-HTML: elements
+  render, naturalWidth=0; resource errors expected+classified),
+  push-nonhttp (file:/javascript:/data:/protocol-relative/ftp:
+  rejected by ^https?:// guard), stream-rerender (deltas stay raw
+  text, response_completed/interrupted re-render URLs), click-open
+  (img -> window.open(url); anchor contract), download-link
+  (Content-Disposition: attachment served, anchor not img),
+  mobile-layout (360px stage + browser.resize mobile: no overflow,
+  media capped 100%).
+
+console_policy: |
+  "Browser console is clean" = zero pageerror/unhandledrejection on
+  every page and zero unexpected console/resource/http problems.
+  Broken-fixture asset failures (URLs matching /gone/|does-not-exist|
+  /bogus/) are expected and filtered; bare "Failed to load resource"
+  lines are excused only when the same page logged an expected-broken
+  asset.
+
+verify: |
+  cd tests/ha/ada-chat-card
+  ~/.local/node24/bin/node preview-bridge.mjs --spawn-server            # full preview run
+  ~/.local/node24/bin/node preview-bridge.mjs --direct --spawn-server   # debug, no OpenChamber
+  python3 server.py --port 8777   # manual: open harness.html?scenario=all
+  Exit 0 = PASS; evidence/results.json has per-scenario checks.
+
+lessons:
+  - OpenChamber browser-control needs a capable client: SSE /api/openchamber/events?browser=1 + POST /api/browser-control/active; requests arrive as openchamber:browser-control-request events, answered via /api/browser-control/{claim,result}.
+  - browser.capture's base64 never reaches the API caller when input.directory is set — the server writes <dir>/.openchamber/screenshots/ itself; the executor should keep its own copy if it wants one.
+  - Playwright console messages for failed subresources carry the asset URL in msg.location().url, not page.url().
+  - playwright module resolves by absolute path (index.mjs) — directory import fails under ESM.

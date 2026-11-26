@@ -7,6 +7,7 @@ from pathlib import Path
 
 import yaml
 
+from . import REPO
 from .actions import (
     activate_inbox,
     add_ready_safe,
@@ -62,6 +63,26 @@ def main():
     parser.add_argument("--advance", action="store_true", help="Advance to the next focus only if the active one is complete")
     parser.add_argument("--resume-session", default=None, help="Restrict next/advance to a specific session name")
     args = parser.parse_args()
+
+    # Single-writer rule (card exec-checkout-generated-writes-focus-inb-
+    # da698a): on a stamped non-writer checkout every mutation this tool
+    # makes (ssot.focus.* edits, inbox->processed moves, git mv/add) can
+    # never commit — they just pile up as working-tree drift. Run
+    # suggest-only there: NEXT_FOCUS.md (gitignored reports/) is still
+    # written, but no repo files are touched. The served checkout keeps
+    # the full mutating behavior.
+    _role = ""
+    try:
+        sys.path.insert(0, str(REPO / "scripts" / "lib"))
+        from checkout_role import checkout_role
+        _role = checkout_role(REPO)
+    except Exception:
+        pass
+    if _role and _role != "served" and not args.dry_run:
+        print(f"[focus-dispatcher] chaba-role={_role} — non-writer "
+              "checkout; forcing --dry-run (suggest-only, no repo writes)",
+              file=sys.stderr)
+        args.dry_run = True
 
     if args.next:
         if args.dry_run:

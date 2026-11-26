@@ -1,0 +1,198 @@
+id: idc02-capacity-rearrangement
+title: 'idc02 capacity: consolidate local LLM, clamp Ollama, move batch jobs'
+column: done
+updated: 2026-11-24 20:47
+brief: 'idc02 (4c/16G) runs 40 services + 22 timers + TWO local-LLM stacks (open-jev ~4GB torch + ollama 5-7GB).
+  Inference spikes OOM-kill llama-server and starve the OpenCode runner + all services. Observed 2026-11-07: ollama
+  OOM, runner load-gate stalls, board-api flock storm.'
+priority: high
+tags:
+- idc02
+- capacity
+- ollama
+- infra
+spec: '1) Clamp Ollama: OLLAMA_MAX_LOADED_MODELS=1, OLLAMA_KEEP_ALIVE=5m, OLLAMA_NUM_PARALLEL=1 via systemd override.
+  2) Assess open-jev: consolidate onto Ollama or park if experimental — frees ~4GB+CPU. 3) Move embed/lesson batch
+  fleet (embed-lane-lessons, bge-shadow, lessons-audit) to tony-dell (8c/14G, headroom). 4) Route chat-local inference
+  to kk-macbook ollama-*kkmac lanes; shrink idc02 Ollama to embed-only or retire. Keep idc02 as edge+runner (OPENCODE_LANES,
+  jack IDE, ada gateway).'
+ref: SYS-1082
+comms:
+- at: 2026-11-07 12:46
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-07 17:20
+  from: devin
+  text: 'REASSESSMENT 2026-11-07 ~17:20. Done: Ollama clamped (MAX_LOADED_MODELS=1, KEEP_ALIVE=5m, NUM_PARALLEL=2)
+    — idc02 now load ~1.8/4c, 8.5G avail, all services active. OpenJEV kept (active /v1/systemone consumer, torch-only
+    backend). BLOCKED migration paths measured: (1) kk-macbook offline — kkmac-ollama-tunnel restart counter >18000,
+    ssh timeout; all ollama-*kkmac LiteLLM routes dead until it wakes. (2) idc03 CANNOT absorb: load ~8/4c, 2.2G
+    avail — worse than idc02. (3) idc03 ollama lacks qwen2.5:'
+- at: 2026-11-07 17:20
+  from: devin
+  text: 'raised request durable-idc02-offload-needs-a-decision-m-9d2581: Durable idc02 offload needs a decision
+    — measured options on card comment.'
+- at: 2026-11-07 18:39
+  from: tony
+  text: 'answered durable-idc02-offload-needs-a-decision-m-9d2581: ollama-on-tony-dell'
+- at: 2026-11-07 18:39
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-07 19:07
+  from: devin
+  text: 'DONE — option ollama-on-tony-dell executed (PR chaba#96). tony-dell ollama (system service, already present)
+    now serves qwen2.5:7b-instruct + nomic-embed-text via new tonydell-ollama-tunnel.service on idc03 (127.0.0.1:11446
+    -> tony-dell:11434, kkmac pattern). LiteLLM config deployed: chat-local + ollama-qwen7b -> tunnel; ollama-nomic-embed
+    LB leg idc02 -> tunnel; idc02 fully out of LiteLLM routing. VERIFIED: embed 768d x4 + chat-local OK through
+    gateway; qwen generate OK via tunnel. idc02 chat m'
+- at: 2026-11-07 19:07
+  from: devin
+  text: closed by devin
+- at: 2026-11-14 14:07
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:07
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:06
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:35
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:36
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:04
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:01
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:17
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:01
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:05
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:18
+  from: devin
+  text: 'idc02 load findings 2026-11-20 (load 6-11 on 4 cores; runner claim gate 1.5/core blocks ADA-1285 and others).
+    (1) mddb-lab mddbd spins 80-96% CPU; a restart did not fix it, the new process re-spun within ~15 min with no
+    log output; cause unknown, separate from ollama (mddb-lab embeds via idc03:11436, not local ollama). (2) Local
+    ollama (OLLAMA_MAX_LOADED_MODELS=1, SYS-1082 clamp) alternates nomic-embed-text and bge-m3: 26 model reloads
+    in 15 min, a one-word bge-m3 embed took 27.8s. 21 of 25 /api'
+- at: 2026-11-20 18:20
+  from: devin
+  text: 'Follow-up: the 8s-timeout caller is identified. It is embed-pool-shim.service on idc03 (MEM-0805, scripts/nest/embed-pool-shim.py,
+    EMBED_POOL_TIMEOUT_S=8), an ollama /api/embed racing proxy fronting the mddb banks at idc03:11436. EMBED_POOL_UPSTREAMS
+    = idc03:11434, idc02 (100.123.163.11):11434, tony-omen:11434, 100.72.146.39:11434, 127.0.0.1:11447. idc02 is
+    one of five racing upstreams and is CPU-bound with MAX_LOADED_MODELS=1, so it loses races and times out at 8s
+    (the 400s); its ollama keeps w'
+- at: 2026-11-20 18:25
+  from: devin
+  text: 'APPLIED 2026-11-20 ~18:23: idc02 removed from embed-pool-shim races. idc03 drop-in ~/.config/systemd/user/embed-pool-shim.service.d/drop-idc02.conf
+    overrides EMBED_POOL_UPSTREAMS to idc03, tony-omen, 100.72.146.39, 127.0.0.1:11447; shim restarted, bge-m3 via
+    shim 200 in 0.9s. Pre-check: all remaining upstreams up (bge-m3 everywhere; nomic only on idc03+tony-omen; 11447
+    answers bge-m3 in 0.09s). Result on idc02 over 2 min: 0 /api/embed requests, 0 HTTP 400s; ollama CPU ~33% ->
+    ~16% and falling. N'
+- at: 2026-11-20 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 19:09
+  from: devin
+  text: 'STATE 2026-11-20 ~19:10: mddb-lab.service on idc02 is STOPPED (not disabled) — its mddbd pegged ~90% CPU
+    (7h+ before restart, re-spun within 15 min after; no clients, empty index queue, heap growing, cause unknown;
+    vector-refused/HNSW warnings on ada-ha-bank-devin-tony, ada-ha-bank-devin-handoff, ada-ha-scenario-reports).
+    It is a nightly restore of the idc03 backup (mddb-lab-pull.timer 03:15); no unit depends on it (jev-bench/log-shippers
+    use idc03:11023). WARNING: the nightly pull or a reboot m'
+- at: 2026-11-20 19:27
+  from: devin
+  text: 'mddb-lab UPGRADE RESULT 2026-11-20 19:30 (live runtime facts, tested on a COPY of the 3GB db, original
+    untouched): mddb 2.19.8 starts fine (schema migration 4ms, vector index loaded 62 collections / 32931 docs in
+    4m19s, health=healthy, search returns results) BUT still burns ~120-150% CPU for 10+ min after healthy, with
+    ''rebuilding freelist'' stuck at 98.9% (logged every minute) and the same ''vector refused by the HNSW index''
+    warnings. Upgrade does NOT fix the spin; likely cause = freelist rebuil'
+- at: 2026-11-21 17:44
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:35
+  from: tony
+  text: archived (1d in done, board over card cap)
+- at: 2026-11-23 15:58
+  from: devin
+  text: 'ROOT CAUSE INVESTIGATION 2026-11-23 (live runtime, tested on backup copy of 3GB db, original untouched):
+
+
+    Root cause: mddb 2.19.8 runs an internal vector trainer (vectorTrainer.run in vector_train.go) as a background
+    goroutine. Confirmed via SIGQUIT goroutine dump: ''goroutine 63 ... main.(*vectorTrainer).run ... created by
+    main.(*Server).startVectorTraining''. It runs continuously, consuming ~100-150% CPU on a 3GB database. On an
+    empty database, CPU is ~0.5%.
+
+
+    Eliminated causes:
+
+    - Freelist rebuil'
+- at: 2026-11-24 20:47
+  from: devin
+  text: 'RETIRED 2026-11-24: mddb-lab permanently disabled + masked. Service file moved to ~/.local/share/mddb-lab-backup-20261120/mddb-lab.service.orig2;
+    timer file moved to ~/.local/share/mddb-lab-backup-20261120/mddb-lab-pull.timer.orig. Data directory (3.5GB)
+    and backup (2.9GB) deleted — 6.4GB freed. mddb-lab-pull.timer disabled+masked (its script restarts mddb-lab).
+    KB note updated (6c3efee276) to remove mddb-lab from standby replica list. Root cause: internal vector trainer
+    (vectorTrainer.run in ve'
+requests:
+- id: durable-idc02-offload-needs-a-decision-m-9d2581
+  ask: Durable idc02 offload needs a decision — measured options on card comment.
+  status: answered
+  at: 2026-11-07 17:20
+  from: devin
+  options:
+  - wait-kk-mac
+  - ollama-on-tony-dell
+  - accept-post-clamp
+  answer: ollama-on-tony-dell
+action:
+  status: done

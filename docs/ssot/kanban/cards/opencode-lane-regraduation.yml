@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
-column: backlog
-updated: 2026-11-19 20:03
+column: doing
+updated: 2026-11-26 21:24
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -12,11 +12,11 @@ priority: high
 program: chaba-ci
 tags:
 - devnest,opencode,lane,jev,graduated-rout
-spec: '1) Re-run S1 canary on idc02 (ops-readonly profile, quota 3, human watch — record human_minutes). 2) If promote_gate
-  passes, run S2 five-job read-only pilot with independent_devin verification. 3) Continue S3/S4 per promote gates
-  in scripts/devnest/lane_gate.py. 4) Decide S5: keep paid-only STRONG_MODELS or admit a canary-proven free model
-  — input = zen-free-code-corpus-eval result. Context: rollback reason on 2026-10-29 was manual (stage.json history);
-  investigate why before re-climbing.'
+spec: 'DECISION 2026-11-26 Tony: run S1 then S2, hold S5. S1 - re-run the canary on idc02 with the ops-readonly
+  profile, quota 3, human watch, recording human_minutes. If promote_gate passes, S2 - five-job read-only pilot
+  with independent_devin verification. Stop before S3 and report both gate results. Do NOT change STRONG_MODELS
+  or admit any free model; S5 is reserved for Tony policy call. Done: gate evidence and human_minutes recorded on
+  the card.'
 ref: OPS-1255
 comms:
 - at: 2026-11-09 09:25
@@ -313,6 +313,204 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:42
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:05
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:17
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:02
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:11
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:13
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:22
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:30
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:39
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:02
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:02
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:43
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:26
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:38
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:48
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:31
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:52
+  from: chaba
+  text: 'TRIAGE 2026-11-26 batch 2: DECISION NEEDED: staged S1-S5 gate sequence with human watch; S5 model admission
+    is a policy call.'
+- at: 2026-11-26 21:00
+  from: chaba
+  text: 'HUMAN CALL 2026-11-26: DECISION 2026-11-26 Tony: run S1 then S2, hold S5. S1 - re-run the canary on idc02
+    with the ops-readonly profile, quota'
+- at: 2026-11-26 21:00
+  from: tony
+  text: queued for processing
+- at: 2026-11-26 21:01
+  from: chaba
+  text: 'tony-dell defers: runner at local cap (3/3) — remote slots unaffected'
+- at: 2026-11-26 21:01
+  from: idc02
+  text: claimed
+- at: 2026-11-26 21:01
+  from: chaba
+  text: 'mn01 defers: runner at local cap (1/1) — remote slots unaffected'
+- at: 2026-11-26 21:01
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.55 > 0.7)'
+- at: 2026-11-26 21:02
+  from: chaba
+  text: started devin-task-20261126-210219-decision-2026-11-26-tony-run-s on idc02 (dispatch)
+- at: 2026-11-26 21:02
+  from: chaba
+  text: 'primer injected 8 lesson(s): [runner-per-executor-caps] primer injected 8 lesson(s): Check `sha256sum`
+    of BOT; Lane stage is host-local state + committed reviews; the durable truth is `evals/; [kanban-dispatch-lane-doesn-t-report-read-1ee640]
+    primer injected 8 lesson(s): [; [keywatch-absolute-spend-floor] DONE (aa8399e4ef9) — implemented directly. Corre;
+    [opencode-lane-regraduation] REMAINING / keep doing: S3 needs 10-20 genuine read; [runner-load-cap-per-claim-type]
+    primer injected 8 lesson(s):'
+- at: 2026-11-26 21:16
+  from: devin
+  text: 'S1/S2 decision dispatch — gate state verified on idc02: lane is at S1 (since 2026-11-23), NOT S0. jobs_completed
+    S1=15/15 (quota exhausted by OPS-1363 agent-local gate-run traffic on 2026-11-25). lane_gate review -> ROLLBACK
+    to S0: 4 scope_violation safety-critical rows in the post-2026-11-13 S1 ledger (39 rows: 3 genuine canary attempts
+    + 36 gate-run test rows, all human_minutes=0). Scope violations look like false positives — _git_status() diff
+    caught unrelated churn in shared exec checkout du'
+- at: 2026-11-26 21:17
+  from: devin
+  text: 'raised request s1-s2-path-poisoned-ledger: S1 gate returns ROLLBACK, not promote: lane sits at S1 (since
+    Nov-23) with a polluted ledger — 39 post-qualification S1 '
+- at: 2026-11-26 21:18
+  from: devin
+  text: 'Dispatch outcome: BLOCKED pending Tony decision (needs-input.txt + request s1-s2-path-poisoned-ledger).
+    Deliverables in worktree dispatch/20261126-210219-decision-2026-11-26-tony-run-s: promotion-review 2026-11-26
+    (rollback verdict), staged canary envelope s1-opsread-regrad-20261126.yaml, trail doc docs/ssot/jobs/devnest/2026-11-26-opencode-lane-s1-gate-state.yml,
+    dispatch-outcome md. On answer A: demote+requalify+S0 climb then S1 watch needs Tony live.'
+- at: 2026-11-26 21:19
+  from: chaba
+  text: 'raised request job-input-opencode-lane-regraduation: Job needs your input: Proceed with demote+requalify+fresh
+    S0 climb toward your S1->S2 decision (option A), or hold (B) /'
+- at: 2026-11-26 21:19
+  from: chaba
+  text: 'needs input: Proceed with demote+requalify+fresh S0 climb toward your S1->S2 decision (option A), or hold
+    (B) / adjudicate differently (C)?'
+- at: 2026-11-26 21:24
+  from: chaba
+  text: 'merge-sweep: devin-task-20261126-210219-decision-2026-11-26-tony-run-s no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-26 21:24
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261126-210219-decision-2026-11-26-tony-run-s on idc02 still dirty —
+    5 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
@@ -373,4 +571,46 @@ requests:
   - proceed
   - hold
   answer: A
+- id: s1-s2-path-poisoned-ledger
+  ask: 'S1 gate returns ROLLBACK, not promote: lane sits at S1 (since Nov-23) with a polluted ledger — 39 post-qualification
+    S1 rows = 3 genuine canaries + 36 OPS-1363 agent-local gate-run tests (Nov-25, human_minutes=0, incl. 4 scope_violation
+    likely false positives from shared-checkout churn). jobs_completed S1=15/15. To run your S1->S2 decision the
+    lane needs demote S1->S0 + requalify (operator decision) + fresh S0 (5 fixtures, unattended, ~$0) + promote
+    S1 + watched canary that needs YOU live at a terminal ~10min + promote S2 + 5-job pilot with independent_devin
+    review. Evidence: evals/opencode-lane/reports/2026-11-26-promotion-review.json + docs/ssot/jobs/devnest/2026-11-26-opencode-lane-s1-gate-state.yml.
+    How to proceed?'
+  status: open
+  at: 2026-11-26 21:17
+  from: devin
+  options:
+  - 'A — proceed: demote+requalify+fresh S0 now, pause for your live watch on the S1 canary, then S2 pilot'
+  - B — hold lane at S1; card a mechanism fix first (isolated-worktree scope check or epoch/void for non-canary
+    traffic)
+  - C — adjudicate the Nov-25 rows differently (specify)
+  suggested: 'A — proceed: demote+requalify+fresh S0 now, pause for your live watch on the S1 canary, then S2 pilot'
+- id: job-input-opencode-lane-regraduation
+  ask: 'Job needs your input: Proceed with demote+requalify+fresh S0 climb toward your S1->S2 decision (option A),
+    or hold (B) / adjudicate differently (C)?'
+  status: open
+  at: 2026-11-26 21:19
+  from: chaba
+  options:
+  - id: answer
+    label: Answer — reply in chat
+    action: none
+  - id: hold
+    label: Hold — leave blocked
+    action: hold
+action:
+  type: dispatch
+  status: running
+  lane: devin
+  attempts: 1
+  repo: chaba
+  runner: idc02
+  sweep:
+    stale_running: 2026-11-26 21:24
+    dirty: 5
+claim:
+  since: 2026-11-26 21:01
 awaiting_action: true

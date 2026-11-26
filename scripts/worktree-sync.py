@@ -9,7 +9,22 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+try:
+    import yaml
+except ImportError:
+    yaml = None
+
 REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO / "scripts" / "lib"))
+try:
+    from inbox_door import emit_doc, local_writable
+except ImportError:
+    def local_writable(repo):  # noqa: ANN001
+        return True
+
+    def emit_doc(doc, **kw):  # noqa: ANN001, ANN003
+        return "api-failed"
+
 INBOX_DIR = REPO / "docs" / "ssot" / "focus-inbox"
 
 
@@ -64,6 +79,12 @@ source:
   session: ""
   date: '{datetime.now(timezone.utc).strftime("%Y-%m-%d")}'
 """
+    if not local_writable(REPO):
+        res = emit_doc(yaml.safe_load(body), session="worktree-sync") \
+            if yaml else "api-failed"
+        print(f"Draft routed via /inbox: {res}")
+        return
+    INBOX_DIR.mkdir(exist_ok=True)
     path.write_text(body, encoding="utf-8")
     print(f"Drafted: {path}")
 

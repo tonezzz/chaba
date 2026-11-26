@@ -1,0 +1,33 @@
+job: exec-checkout-generated-writes-focus-inb-da698a
+title: Exec-checkout focus-inbox writes routed through board-api
+date: 2026-11-26
+domain: board
+summary: >-
+  Generated focus-inbox writes from non-writer chaba checkouts now route
+  through board-api POST /inbox instead of dying as uncommitted files in
+  exec working trees.
+changes:
+  - scripts/lib/inbox_door.py (new) — local_writable() role check +
+    post_inbox()/emit()/emit_doc() helpers; emit_doc dedupes via
+    ~/.local/state/inbox-door-posted.json (sha256 of session|label|text)
+    because the remote inbox has no open_item view.
+  - scripts/lib/checkout_role.py (new) — reads <gitdir>/chaba-role.
+  - Guarded producers (file write kept for served/unstamped checkouts,
+    API post otherwise) - gh-runs-watch, ha-auth-watch,
+    mcp-health-to-inbox, mcp-health-snapshot.mjs,
+    ssot-optimize-to-inbox.mjs, arp-inventory-scan,
+    check-serve-config, board-invariants, ada/session-audit,
+    devin/render-handoff-inbox, report-watch (non-writer exits early,
+    REPORT_WATCH_FORCE=1 override), focus_dispatcher (suggest-only off
+    served), ada/backup-mddb-banks (--git no-ops off writer).
+verified:
+  - Test emit_doc from tony-omen exec checkout (chaba-role=exec) ->
+    2026-11-26-125957-omen-exec-checkout-test-alert.yml landed in
+    idc03 ~/CascadeProjects/chaba-tony-dell/docs/ssot/focus-inbox/.
+  - Omen ~/CascadeProjects/chaba tree untouched by the test.
+notes:
+  - Producers whose inbox entries carry lifecycle/GC semantics
+    (report-watch) are skipped on non-writers rather than API-posted —
+    they must run on the served checkout.
+  - Deploys to exec checkouts via normal chaba-repo-sync after merge;
+    until then omen still runs the old file-writing code.

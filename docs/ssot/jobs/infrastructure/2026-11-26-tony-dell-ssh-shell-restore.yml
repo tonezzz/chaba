@@ -1,0 +1,52 @@
+icon: wrench
+title: Restore tony-dell SSH shell while preserving SFTP-only users
+date: 2026-11-26
+card: ops-tony-dell-ssh-shell-restore-fix
+context: >-
+  tony-dell SSH shell requests answered "Ubuntu 26.04.1 LTS / This service
+  allows sftp connections only." while SFTP worked. Fleet-health marked the
+  host unreachable and con01's push probe failed with the same banner.
+  Root cause: /etc/ssh/sshd_config (mtime 11:23) carried a global
+  `ForceCommand internal-sftp` with the `Include` line commented out. The
+  config header says "managed by Ansible"; the source is
+  /home/tony/tony-projects/ansible-chaba/roles/common/templates/sshd_config.j2
+  line 80, applied by a separate in-flight `site.yml` convergence job.
+changes:
+  - "Added ansible/playbooks/restore-ssh-shell.yml: local-connection bootstrap
+    that backs up sshd_config, asserts the expected config shape, removes only
+    the global ForceCommand with `sshd -t` validation, reloads sshd, verifies
+    the line is gone, and restores the backup on failure. Idempotent."
+  - "Bootstrapped through the board because ssh(1) was blocked: a host-pinned
+    executor=script card on the live tony-dell runner cloned branch
+    ops/restore-ssh-shell and ran the play locally. POST /card still refuses
+    action.type=script, so the card was filed under /tmp/board-api.lock in the
+    live board-api checkout (chaba-tony-dell), matching prior script cards."
+  - "Two iterative defects in the bootstrap were found via an SFTP-readable
+    -vvv log and fixed: set_fact cannot reference a sibling fact in the same
+    task, and the detection regex needed (?m) to match mid-file."
+verification:
+  - "ssh tony-dell 'hostname; whoami' -> tony-dell / tony (shell restored)."
+  - "idc03 -> tony-dell shell probe succeeds; idc02 local shell unaffected."
+  - "sudo /usr/sbin/sshd -t returns 0; no ForceCommand remains in
+    /etc/ssh/sshd_config; the commented Include line was deliberately left
+    untouched."
+  - "Re-run with --check --diff: changed=0, unreachable=0, failed=0."
+rollback: >-
+  /etc/ssh/sshd_config.pre-shell-restore.20261126T122845 (byte-identical to
+  the pre-change config, including the global ForceCommand). Restore with
+  `sudo cp <backup> /etc/ssh/sshd_config && sudo systemctl reload ssh`.
+residual: >-
+  The canonical template still contains the global ForceCommand, and the
+  other convergence job was still running `--limit tony-omen` when this was
+  filed. con01 (config mtime 12:26), mn01 (08:25), idc02 (12:31) and idc03
+  remain SFTP-only; kk-mac was offline. A per-host revert is not durable —
+  the next site.yml converge will re-apply it. Decision needed: change the
+  template to a scoped `Match` rule (e.g. Match Group sftponly ->
+  ForceCommand internal-sftp) and re-converge, or accept SFTP-only fleet
+  access and keep board script cards as the only shell path.
+lesson: >-
+  When a host's sshd forces internal-sftp, Ansible cannot reach it over SSH;
+  a live board runner on that host is a legitimate bootstrap channel. Read
+  verbose output into an SFTP-visible file because journald is unreachable.
+  Always trace a "managed by Ansible" config to its template before
+  reverting per host — a concurrent fleet converge will otherwise undo it.

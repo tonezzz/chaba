@@ -12,7 +12,17 @@ history, least-squares slope per host+mount over a rolling window:
 
   pct >= CRIT_PCT (90)            -> card (board) + push
   fills in <= FILL_D days (7)     -> card (board) + push
+  / pct >= host max_root_disk_percent (SSOT expected_resources,
+    default = CRIT_PCT)           -> warn card + push
+  / avail < MIN_FREE_GIB (15)     -> warn card + push
   recovered                       -> card auto-closed (done)
+
+Parity with ansible/playbooks/disk-headroom.yml: the flat 90 crit plus
+the SSOT-declared per-host / ceiling (85 on dell/omen/mn01, 90 macbook)
+and the mddb-backup guard's absolute 15 GiB free floor on /. Underused
+mounts (<50% used or >100 GiB free) are flagged in the report so
+over-provisioned capacity surfaces for the storage-rebalance card —
+they are informational, never cards.
 
 Push goes through board_notify (scripts/board/board_notify.py): default
 channels "ha,yomi" — iPhone push now, LINE when the yomi session is
@@ -42,6 +52,8 @@ Usage:
 
 Env: DISK_TREND_HISTORY, DISK_TREND_WINDOW_D (7), DISK_TREND_FILL_D (7),
      DISK_TREND_CRIT_PCT (90), DISK_TREND_MIN_SPAN_H (6),
+     DISK_TREND_MIN_FREE_GIB (15, / guard floor),
+     DISK_TREND_UNDERUSED_PCT (50), DISK_TREND_UNDERUSED_FREE_GIB (100),
      DISK_TREND_HOSTS (csv limit), DISK_TREND_DU_ROOTS (space-sep, remote
      shell-expanded), DISK_TREND_SSH_TIMEOUT (90), DISK_TREND_DU_EACH_S
      (45, per-dir du cap), DISK_TREND_NOTIFY_CHANNELS (default "ha,yomi"),
@@ -80,6 +92,14 @@ HISTORY = Path(os.environ.get(
 WINDOW_D = float(os.environ.get("DISK_TREND_WINDOW_D", "7"))
 FILL_D = float(os.environ.get("DISK_TREND_FILL_D", "7"))
 CRIT_PCT = float(os.environ.get("DISK_TREND_CRIT_PCT", "90"))
+# absolute free-space floor on / — same yardstick as the mddb-backup
+# pre-flight guard (MDDB_BACKUP_MIN_FREE_GB) and disk-headroom.yml.
+MIN_FREE_GIB = float(os.environ.get("DISK_TREND_MIN_FREE_GIB", "15"))
+# underused = capacity report signal (storage-rebalance-underused):
+# mount <50% used OR >100 GiB free. Informational, never a card.
+UNDERUSED_PCT = float(os.environ.get("DISK_TREND_UNDERUSED_PCT", "50"))
+UNDERUSED_FREE_GIB = float(
+    os.environ.get("DISK_TREND_UNDERUSED_FREE_GIB", "100"))
 # a trend alert needs samples spanning this long — blocks single-blip
 # false positives from two points minutes apart.
 MIN_SPAN_H = float(os.environ.get("DISK_TREND_MIN_SPAN_H", "6"))
@@ -108,6 +128,9 @@ SKIP_FSTYPES = {
     "bpf", "hugetlbfs", "mqueue", "devpts", "proc", "sysfs", "cgroup",
     "cgroup2", "nsfs", "fusectl", "configfs", "shm", "none", "selinuxfs",
     "fuse.gvfsd-fuse", "fuse.portal", "fuse.rclone", "fuse.sshfs",
+    # macOS autofs maps ("map auto_home") are parsed as fstype=auto_home
+    # and report 0 blocks / 100% used — never a real disk alert.
+    "map", "auto_home",
 }
 SKIP_MOUNTS = ("/snap", "/var/snap", "/run", "/dev")
 
@@ -126,16 +149,37 @@ done
 } 2>/dev/null""" % (DU_ROOTS, DU_EACH_S)
 
 
-def load_hosts() -> dict[str, str | None]:
+def load_hosts() -> dict[str, dict]:
+    """-> {host: {"ip", "max_root_pct"}} — tailscale_ip plus the declared
+    expected_resources.max_root_disk_percent ceiling for / (default
+    CRIT_PCT when the host doesn't declare one, same as the j2)."""
     doc = yaml.safe_load(HOSTS_SSOT.read_text(encoding="utf-8")) or {}
-    out = {k: (v or {}).get("tailscale_ip")
-           for k, v in (doc.get("hosts") or {}).items()
-           if isinstance(v, dict)}
+    out = {}
+    for k, v in (doc.get("hosts") or {}).items():
+        if not isinstance(v, dict):
+            continue
+        res = v.get("expected_resources") or {}
+        out[k] = {"ip": v.get("tailscale_ip"),
+                  "max_root_pct": float(
+                      res.get("max_root_disk_percent") or CRIT_PCT)}
     limit = os.environ.get("DISK_TREND_HOSTS")
     if limit:
         keep = {h.strip() for h in limit.split(",") if h.strip()}
-        out = {h: ip for h, ip in out.items() if h in keep}
+        out = {h: c for h, c in out.items() if h in keep}
     return out
+
+
+_HOST_CFG: dict[str, dict] | None = None
+
+
+def root_max_pct(host: str) -> float:
+    """Declared / ceiling for host; CRIT_PCT when undeclared — matches
+    disk-headroom.j2 `(max_root_disk_percent or 90)`."""
+    global _HOST_CFG
+    if _HOST_CFG is None:
+        _HOST_CFG = load_hosts()
+    return float((_HOST_CFG.get(host) or {}).get("max_root_pct")
+                 or CRIT_PCT)
 
 
 def _partial_stdout(e: subprocess.TimeoutExpired) -> str:
@@ -208,6 +252,9 @@ def parse_probe(out: str) -> dict:
         except ValueError:
             continue
         mount = tail[4]
+        if size_kb <= 0:
+            # synthetic/zero-capacity mount (autofs map, 0Bi) — skip.
+            continue
         if fstype:
             if fstype in SKIP_FSTYPES or fstype.startswith("fuse."):
                 continue
@@ -293,7 +340,12 @@ def load_history(history: Path, window_s: float) -> dict[str, list[dict]]:
             r = json.loads(l)
         except json.JSONDecodeError:
             continue
-        if r.get("epoch", 0) >= since and r.get("host"):
+        try:
+            epoch = float(r.get("epoch", 0))
+        except (TypeError, ValueError):
+            continue  # injected/hand-written sample with a non-numeric epoch
+        if epoch >= since and r.get("host"):
+            r["epoch"] = epoch
             out.setdefault(r["host"], []).append(r)
     return out
 
@@ -375,8 +427,13 @@ def load_card(path: Path) -> dict:
         return {}
 
 
-def judge(mount: str, t: dict) -> tuple[str, str]:
-    """-> (state, reason): ok|fill|critical."""
+def judge(host: str, mount: str, t: dict) -> tuple[str, str]:
+    """-> (state, reason): ok|fill|warn|critical.
+
+    critical: pct >= flat CRIT_PCT on any real mount (disk-headroom crit).
+    fill:     projected full within FILL_D days.
+    warn:     / over its SSOT-declared max_root_disk_percent, or / avail
+              under the MIN_FREE_GIB guard floor (disk-headroom warn)."""
     m = t["latest"]
     if m["pct"] >= CRIT_PCT:
         return "critical", f"{m['pct']:.0f}% used ({m['avail_kb'] / 2**20:.1f} GiB free)"
@@ -385,7 +442,27 @@ def judge(mount: str, t: dict) -> tuple[str, str]:
         rate = t["slope_kb_day"] / 2**20
         return "fill", (f"{m['pct']:.0f}% used, growing {rate:.1f} GiB/day "
                         f"-> full in ~{days:.1f}d")
+    if mount == "/":
+        reasons = []
+        rmax = root_max_pct(host)
+        if m["pct"] >= rmax:
+            reasons.append(
+                f"{m['pct']:.0f}% used >= ssot max_root_disk_percent "
+                f"{rmax:g}%")
+        if m["avail_kb"] < MIN_FREE_GIB * 2**20:
+            reasons.append(
+                f"{m['avail_kb'] / 2**20:.1f} GiB free < {MIN_FREE_GIB:g} "
+                "GiB guard floor")
+        if reasons:
+            return "warn", "; ".join(reasons)
     return "ok", ""
+
+
+def is_underused(m: dict) -> bool:
+    """Capacity signal for the storage-rebalance card: mount <50% used
+    or >UNDERUSED_FREE_GIB free. Report-only, never opens a card."""
+    return (m["pct"] < UNDERUSED_PCT
+            or m["avail_kb"] > UNDERUSED_FREE_GIB * 2**20)
 
 
 def is_fresh_open(path: Path, card: dict) -> bool:
@@ -405,9 +482,11 @@ def upsert_alert_card(path: Path, host: str, mount: str, state: str,
             time.strptime(str(opened), "%Y-%m-%d"))) / 3600
     except (ValueError, TypeError):
         age_h = 0
+    state_title = {"critical": "critical", "warn": "over limit",
+                   "fill": f"fills in <{int(FILL_D)}d"}.get(state, state)
     card.update({
         "id": path.stem,
-        "title": (f"Disk {host} {mount} {'critical' if state == 'critical' else 'fills in <' + str(int(FILL_D)) + 'd'}"),
+        "title": f"Disk {host} {mount} {state_title}",
         "brief": (f"Disk space on {host} ({mount}) is running "
                   f"{'critically ' if state == 'critical' else ''}low — "
                   "check the note for the rate and top growers, then "
@@ -496,10 +575,12 @@ def build_host_report(rec: dict, trends: dict, growers: list[dict],
             "days_to_full": (round(t["days_to_full"], 1)
                              if t["days_to_full"] is not None else None),
             "alert": states.get(mount, "ok"),
+            "underused": is_underused(m),
             "samples": t["samples"],
         })
     return {
         "host": rec["host"], "unreachable": rec["unreachable"],
+        "ssot_max_root_disk_percent": root_max_pct(rec["host"]),
         "mounts": mounts,
         "top_growers_24h": [
             {"path": g["path"], "gib": gib(g["kb"]),
@@ -520,7 +601,10 @@ def format_report(host_reports: list[dict]) -> str:
             fill = (f"full in {m['days_to_full']:.1f}d"
                     if m["days_to_full"] is not None else "          -")
             flag = {"ok": "", "fill": "  <== FILLS",
+                    "warn": "  <== OVER LIMIT",
                     "critical": "  <== CRITICAL"}[m["alert"]]
+            if m.get("underused"):
+                flag += "  <== UNDERUSED"
             lines.append(f"  {m['mount']:<28} {m['pct']:>5.0f}% "
                          f"{m['avail_gib']:>7.1f} GiB free  {rate}  {fill}"
                          f"{flag}")
@@ -543,8 +627,9 @@ def run(sample_file: Path | None, history: Path, cards_dir: Path,
     else:
         hosts = load_hosts()
         with concurrent.futures.ThreadPoolExecutor(max_workers=6) as ex:
-            recs = list(ex.map(lambda kv: sample_host(*kv),
-                               sorted(hosts.items())))
+            recs = list(ex.map(
+                lambda kv: sample_host(kv[0], kv[1]["ip"]),
+                sorted(hosts.items())))
     append_history(recs, history)
     pruned = prune_history(history)
 
@@ -555,8 +640,10 @@ def run(sample_file: Path | None, history: Path, cards_dir: Path,
     for rec in recs:
         host = rec["host"]
         if rec["unreachable"]:
-            host_reports.append({"host": host, "unreachable": True,
-                                 "mounts": [], "top_growers_24h": []})
+            host_reports.append({
+                "host": host, "unreachable": True,
+                "ssot_max_root_disk_percent": root_max_pct(host),
+                "mounts": [], "top_growers_24h": []})
             continue
         trends = mount_trends(hist.get(host, []))
         growers = top_growers(dir_trends(hist.get(host, [])))
@@ -565,7 +652,7 @@ def run(sample_file: Path | None, history: Path, cards_dir: Path,
                                    for g in growers[:3])) if growers else ""
         states: dict[str, str] = {}
         for mount, t in trends.items():
-            state, reason = judge(mount, t)
+            state, reason = judge(host, mount, t)
             states[mount] = state
             path = card_path(host, mount)
             if state != "ok":
@@ -608,8 +695,11 @@ def run(sample_file: Path | None, history: Path, cards_dir: Path,
     report_path = write_report(host_reports, reports_root)
     n_hosts = sum(1 for r in recs if not r["unreachable"])
     n_mounts = sum(len(h["mounts"]) for h in host_reports)
+    n_underused = sum(1 for h in host_reports
+                      for m in h["mounts"] if m.get("underused"))
     summary = (f"{n_hosts}/{len(recs)} hosts, {n_mounts} mounts trended, "
-               f"{n_alert} alerting, {n_close} auto-recovered")
+               f"{n_alert} alerting, {n_close} auto-recovered"
+               + (f", {n_underused} underused" if n_underused else ""))
     status = "delta" if n_alert else "ok"
     write_meta(
         reports_root / "disk-trend" / "meta.disk-trend.yml",
@@ -620,6 +710,7 @@ def run(sample_file: Path | None, history: Path, cards_dir: Path,
         status=status, summary=summary,
         sources=[str(report_path), str(history)],
         children=[], extra={"alerting": n_alert,
+                            "underused": n_underused,
                             "history": str(history)})
     append_timeline("disk-trend", "L1", status, summary, ref=report_path)
     print(f"disk-trend-watch: {summary}"
@@ -663,6 +754,20 @@ def selftest() -> int:
                  "used_kb": int(0.4 * size), "avail_kb": int(0.6 * size),
                  "pct": 40.0}]},
         }
+        # tony-dell is a real ssot host (max_root_disk_percent 85): / at
+        # 87% must warn below the flat 90 crit. idc03 declares no
+        # expected_resources (rmax defaults 90) but / avail 12 GiB trips
+        # the 15 GiB guard floor. synth-omen at 40%/300 GiB free is the
+        # underused signal.
+        sample["tony-dell"] = {"mounts": [
+            {"mount": "/", "fs": "/dev/sda2", "size_kb": size,
+             "used_kb": int(0.87 * size), "avail_kb": int(0.13 * size),
+             "pct": 87.0}]}
+        small = 60 * 2**20          # 60 GiB — 80% used, 12 GiB free
+        sample["idc03"] = {"mounts": [
+            {"mount": "/", "fs": "/dev/vda1", "size_kb": small,
+             "used_kb": int(0.80 * small), "avail_kb": int(0.20 * small),
+             "pct": 80.0}]}
         sf = td / "sample.json"
         sf.write_text(json.dumps(sample))
         os.environ["DISK_TREND_NOTIFY_CHANNELS"] = "file"
@@ -679,6 +784,27 @@ def selftest() -> int:
             print(f"card: {doc['id']} col={doc['column']} "
                   f"prio={doc['priority']} note={doc['note'][:80]}")
             ok &= doc["column"] == "review" and doc["priority"] == "high"
+        warn_card = cards / "disk-auto-tony-dell-root.yml"
+        if not warn_card.is_file():
+            print("FAIL: ssot warn card not written (87% >= 85 ceiling)")
+            ok = False
+        else:
+            doc = yaml.safe_load(warn_card.read_text())
+            print(f"warn card: {doc['id']} prio={doc['priority']} "
+                  f"note={doc['note'][:90]}")
+            ok &= (doc["column"] == "review"
+                   and doc["priority"] == "medium"
+                   and "max_root_disk_percent" in doc["note"])
+        floor_card = cards / "disk-auto-idc03-root.yml"
+        if not floor_card.is_file():
+            print("FAIL: guard-floor card not written (12 GiB < 15 GiB)")
+            ok = False
+        else:
+            doc = yaml.safe_load(floor_card.read_text())
+            print(f"floor card: {doc['id']} prio={doc['priority']} "
+                  f"note={doc['note'][:90]}")
+            ok &= (doc["column"] == "review"
+                   and "guard floor" in doc["note"])
         if not sink.is_file() or "Disk" not in sink.read_text():
             print("FAIL: notify sink empty")
             ok = False
@@ -691,6 +817,12 @@ def selftest() -> int:
         print(f"trend: pct={m0['pct']} growth={m0['growth_gib_day']} "
               f"GiB/d fill={m0['days_to_full']}d alert={m0['alert']}")
         ok &= m0["alert"] == "critical" and m0["growth_gib_day"] > 0
+        dell = next(h for h in rep["hosts"] if h["host"] == "tony-dell")
+        ok &= (dell["mounts"][0]["alert"] == "warn"
+               and dell["ssot_max_root_disk_percent"] == 85)
+        omen = next(h for h in rep["hosts"] if h["host"] == "synth-omen")
+        ok &= (omen["mounts"][0]["alert"] == "ok"
+               and omen["mounts"][0]["underused"] is True)
         grower = synth["top_growers_24h"]
         print(f"growers: {grower}")
         print(format_report(rep["hosts"]))
@@ -725,7 +857,8 @@ def main() -> int:
         for host, rec in sorted(recs_by_host.items()):
             trends = mount_trends(hist.get(host, []))
             growers = top_growers(dir_trends(hist.get(host, [])))
-            states = {m: judge(m, t)[0] for m, t in trends.items()}
+            states = {m: judge(host, m, t)[0]
+                      for m, t in trends.items()}
             reports.append(build_host_report(rec, trends, growers, states))
         print(format_report(reports))
         return 0

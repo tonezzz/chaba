@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Push live michael-ha states into michael-dev (replaces 30s REST polling).
+"""Push live michael-ha states into mn-ha-dev (replaces 30s REST polling).
 
 Subscribes to state_changed on michael-ha over websocket and POSTs each
-changed entity's state to michael-dev's /api/states/<entity_id>. Only
+changed entity's state to mn-ha-dev's /api/states/<entity_id>. Only
 entities listed in the dev-mocks rest: mirror set are pushed.
 
-Run on tony-dell as systemd user service mha-state-push.service.
+Run on mn01 as systemd user service mha-state-push.service (moved with the dev instance 2026-10-26 -> mn01 2026-11-25).
 Tokens:
   HA_TOKEN  (michael-ha)   ~/.local/share/home-assistant-michael/ha-token
-  DEV_TOKEN (michael-dev)  ~/.config/secrets/ha-michael-dev.env  (HASS_TOKEN=)
+  DEV_TOKEN (mn-ha-dev)  ~/.config/secrets/ha-mn-ha-dev.env  (HASS_TOKEN=)
 """
 import asyncio
 import json
@@ -22,7 +22,7 @@ import websockets
 HA_URL = os.environ.get("HA_URL", "http://michael-ha:8123")
 DEV_URL = os.environ.get("DEV_URL", "http://127.0.0.1:8124")
 MOCKS = os.environ.get(
-    "MOCKS", "/home/tony/.config/michael-dev/packages/a_dev_mocks.yaml"
+    "MOCKS", "/home/tony/.config/mn-ha-dev/packages/a_dev_mocks.yaml"
 )
 
 
@@ -78,7 +78,7 @@ async def main():
         "~/.local/share/home-assistant-michael/ha-token", ["HA_TOKEN"]
     )
     dev_token = token(
-        "~/.config/secrets/ha-michael-dev.env", ["DEV_TOKEN", "HASS_TOKEN"]
+        "~/.config/secrets/ha-mn-ha-dev.env", ["DEV_TOKEN", "HASS_TOKEN"]
     )
     ids = mirror_ids()
     print(f"mirroring {len(ids)} entity ids", flush=True)

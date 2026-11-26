@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://chaba.local/schemas/ada-review-bundle.schema.json",
+  "title": "Ada review bundle — allowlisted read-only projection of an OpenCode/Devin run",
+  "description": "Immutable input snapshot handed to the Ada reviewer. Contains ONLY the original request plus declared results: artifact bytes/hashes, deterministic verifier output, and a summarized tool-call audit. Raw event traces, verifier source, held-out labels, and secrets are structurally excluded — the assembler never reads them into the bundle.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["bundle_schema", "case", "request", "result", "excluded"],
+  "properties": {
+    "bundle_schema": {"const": "ada-review-bundle/1"},
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["case_id", "card_id", "job_id"],
+      "properties": {
+        "case_id": {"type": "string"},
+        "card_id": {"type": "string"},
+        "job_id": {"type": "string"},
+        "snapshot_at": {"type": "string"},
+        "source_commit": {"type": ["string", "null"]}
+      }
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["objective", "prompt"],
+      "properties": {
+        "objective": {"type": "string"},
+        "task_class": {"type": "string"},
+        "target_host": {"type": "string"},
+        "acceptance_criteria": {"type": "array", "items": {"type": "string"}},
+        "prompt": {"type": "string", "description": "executor-visible prompt, capped"}
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifacts", "tests", "tool_audit", "claims"],
+      "properties": {
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "sha256", "bytes", "present"],
+            "properties": {
+              "path": {"type": "string"},
+              "sha256": {"type": ["string", "null"]},
+              "bytes": {"type": ["integer", "null"]},
+              "present": {"type": "boolean"},
+              "content": {"type": "string", "description": "inline content when <= cap; absent when omitted"},
+              "content_omitted": {"type": "boolean"}
+            }
+          }
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "changed_files": {"type": "array", "items": {"type": "string"}},
+            "diff_ref": {"type": "string"},
+            "commit": {"type": ["string", "null"]}
+          }
+        },
+        "tests": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["exit_code", "verifier"],
+          "properties": {
+            "exit_code": {"type": ["integer", "null"]},
+            "verifier": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "verdict"],
+              "properties": {
+                "type": {"type": "string"},
+                "ref": {"type": "string"},
+                "verdict": {"enum": ["pass", "fail", "held", "skipped", "unknown"]},
+                "checks": {"type": "object"}
+              }
+            }
+          }
+        },
+        "tool_audit": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "tool_calls": {"type": ["integer", "null"]},
+            "denials": {"type": "integer"},
+            "write_attempts": {"type": "integer"},
+            "mutating_commands": {"type": "integer"},
+            "verifier_peeks": {"type": "integer"},
+            "scope_violations": {"type": "integer"}
+          }
+        },
+        "claims": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "claimed_status": {"type": ["string", "null"]},
+            "summary_md": {"type": ["string", "null"]}
+          }
+        }
+      }
+    },
+    "excluded": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "what the assembler deliberately stripped (trace, verifier source, labels, secrets)"
+    }
+  }
+}

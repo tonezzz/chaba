@@ -1,0 +1,149 @@
+title: Gemini 3.8 Live promotion gate (voice eval)
+id: 2026-11-24-gemini-38-live-eval
+date: 2026-11-24
+runner: idc03
+kind: bench-result
+
+summary: >
+  Compared gemini-3.8-live (candidate) against gemini-3.1-flash-live-preview
+  (incumbent) on the paid Gemini key with all 20 voice-bench fixtures plus
+  barge-in and session-soak probes. 20/20 ok on both. 3.8-live had lower
+  first-audio latency (306ms vs 411ms), lower WER (0.01 vs 0.02), comparable
+  tool-call accuracy (8 exact / 5 partial / 1 none vs 6 / 8 / 0), equivalent
+  barge-in, and better session stability (9 turns / 507s clean vs a 1008
+  policy close at 168s). Verdict: PASS WITH CONDITIONS.
+
+harness_note: >
+  The stock adapter stopped at the first turnComplete. gemini-3.8-live emits
+  an early turnComplete with a toolCall, then a SECOND spoken turn after the
+  client sends toolResponse. On the stock harness this truncated every
+  tool-call answer (0/20 spoken confirmations, ttfa null). Both runs used a
+  patched copy that skips at most one early turnComplete per tool response and
+  anchors ttfa to end-of-speech. The fix is now upstreamed in
+  scripts/voice-bench/adapters.py, so these numbers are reproducible. A
+  2026-11-25 smoke run with the exact upstreamed adapter file reproduced
+  20/20 ok, 20/20 audio confirmations and mean ttfa 343ms on gemini-3.8-live.
+
+gate:
+  first_token_latency:
+    incumbent_ms: 411.1
+    candidate_ms: 306.2
+    verdict: pass
+  total_round_trip:
+    incumbent_ms: 5955.25
+    candidate_ms: 6197.55
+    verdict: pass-with-note
+    note: ~4% slower overall despite faster first audio.
+  transcript_accuracy:
+    incumbent_wer: 0.02
+    candidate_wer: 0.01
+    verdict: pass
+  tool_calls:
+    incumbent: {exact: 6, partial: 8, none: 0, n/a: 6}
+    candidate: {exact: 8, partial: 5, none: 1, n/a: 6}
+    verdict: pass-with-note
+    note: >
+      One regression in the original run — th-qry-temp; 3.8-live apologised in
+      Thai instead of calling hass_get_state. Not reproduced in the 2026-11-25
+      upstreamed-harness smoke run, where it scored partial (tool call made).
+      Partial matches remain casing/arg-shape issues.
+  barge_in:
+    incumbent: interrupted=1, new transcript correct
+    candidate: interrupted=1, new transcript correct
+    verdict: pass
+  session_stability:
+    incumbent: 3 turns / 168.5s then 1008 policy close
+    candidate: 9 turns / 506.8s, 0 errors, 0 disconnects
+    verdict: pass
+
+findings:
+  - >
+    Two-phase turnComplete on tool calls is a client-visible protocol change.
+    Runtime clients must not treat the first completion as the end when a
+    toolCall is pending, or the spoken confirmation is dropped.
+  - >
+    Barge-in probe does not answer tool calls, so 3.1's second turn never
+    completed; the interruption event and new transcript were still observed.
+  - >
+    Session soak used text turns only — a stability signal, not a full-duplex
+    audio soak.
+  - >
+    PAID, TONY and KK keys share GCP project gen-lang-client-0854236591;
+    quota and spend are pooled. Keep OpenRouter/Ollama as real failover.
+
+results:
+  fixtures_base: scripts/voice-bench/results/gemini-live-eval-3.1-flash-live-preview-patched-20261124.json
+  fixtures_candidate: scripts/voice-bench/results/gemini-live-eval-3.8-live-patched-20261124.json
+  probes: scripts/voice-bench/results/gemini-live-eval-probes-20261124.json
+
+verdict: pass-with-conditions
+promotion:
+  approved_by: tony
+  approved_on: 2026-11-25
+  decision: promote-now
+  pins_changed:
+    - stacks/ha-live/bridge.py
+    - stacks/tony-dell/gev-gemini/bridge.py
+    - stacks/web/gemini-mic-test/server.mjs
+    - stacks/web/public/apps/gev-direct/client.js
+    - scripts/voice-bench/adapters.py
+    - docs/ssot/infrastructure/ssot.home-assistant.voice.yml
+    - docs/ssot/infrastructure/ssot.gemini-models.gemini-3.yml
+    - docs/ssot/infrastructure/ssot.gemini-models.gemini-2.yml
+  harness_fix_upstreamed: true
+  fallback: gemini-3.1-flash-live-preview
+  follow_ups:
+    - Re-run th-qry-temp and confirm the tool call is restored.
+    - Watch HA/GEV bridges for an early 'done' event on tool turns; the harness
+      now handles the two-phase completion, the bridges still forward both.
+
+rollout:
+  deployed_on: "2026-11-25"
+  deployed_by: devin
+  authority: "Tony: roll out the updated source pins and restart the runtime services"
+  services:
+    - host: tony-omen
+      unit: ha-live.service
+      change: "deployed bridge.py both live.connect models -> gemini-3.8-live"
+      verified: "active; bridge on :9005; tailnet :8444 re-established; container sees updated file"
+      rollback: "~/.config/home-assistant/ha-live/bridge.py.bak-20261125-rollout"
+    - host: idc02
+      unit: gev-gemini.service
+      change: "ExecStart env GEV_GEMINI_MODEL=gemini-3.8-live"
+      verified: "active; running container env reports GEV_GEMINI_MODEL=gemini-3.8-live"
+      rollback: "~/.config/systemd/user/gev-gemini.service.bak-20261125-rollout"
+  served_from_repo_no_restart:
+    - "stacks/web/gemini-mic-test/server.mjs — no deployed service running"
+    - "stacks/web/public/apps/gev-direct/client.js — Caddy mounts repo public/ to /srv/public on idc03"
+  th_qry_temp_post_rollout:
+    runner: idc03
+    combo: gemini-baseline
+    key: paid
+    runs: 3
+    wer: 0.0
+    tool_calls: "run 1 none (documented flake); runs 2-3 partial with early_turn_complete + tool_call + final turn_complete"
+    verdict: "no rollout regression; fixture remains nondeterministic exactly as the gate note records"
+
+mode_verification:
+  verified_on: "2026-11-26"
+  runner: idc03
+  key: paid
+  method: "read-only v1beta catalog + short runtime probes with voice-bench wav fixtures; key never printed"
+  catalog: "gemini-3.8-live / gemini-3.5-live-translate-preview / gemini-3.5-transcribe-live support bidiGenerateContent; gemini-3.5-transcribe supports generateContent,countTokens"
+  results:
+    - mode: live
+      model: gemini-3.8-live
+      result: "runtime VERIFIED — 20/20 fixtures pre-promotion, 3x th-qry-temp post-rollout (WER 0.0, 2/3 two-phase tool calls)"
+    - mode: transcribe_rest
+      model: gemini-3.5-transcribe
+      result: "runtime VERIFIED — generateContent HTTP 200, transcript Is the front door locked? from en-q-02.wav"
+    - mode: transcribe_live
+      model: gemini-3.5-transcribe-live
+      result: "runtime VERIFIED — live input transcription Is the front door locked? with responseModalities=[TEXT]; no turnComplete, which is expected for a transcribe-only stream"
+    - mode: live_translate
+      model: gemini-3.5-live-translate-preview
+      result: "runtime VERIFIED — en-cmd-ac-bedroom.wav -> ES output transcription Pon el aire acondicionado de la habitacion a 24, 190 audio chunks"
+  setup_gotchas:
+    - "transcribe-live rejects responseModalities=[AUDIO] with WS 1007; use [TEXT]."
+    - "live-translate requires generationConfig.translationConfig.targetLanguageCode; setupComplete alone means translation will not start."
+    - "live-translate needs a speech segment long enough to trigger continuous translation; 3.5s fixture worked, 2.0s fixture produced no output."

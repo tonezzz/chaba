@@ -190,7 +190,12 @@ def validate_one(file_path):
                 warnings.append(f'Bloat: {metrics["sections"]} sections exceeds hard threshold of {HARD_SECTIONS}')
             if metrics['items'] > HARD_ITEMS:
                 warnings.append(f'Bloat: {metrics["items"]} items exceeds hard threshold of {HARD_ITEMS}')
-        if rel not in REVIEW_EXEMPT and rel not in HARD_EXEMPT:
+        # kanban/cards are board data mutated by board-api on every card
+        # write — comms growth is normal traffic, not debt, so the advisory
+        # review thresholds don't apply. The 750-line hard threshold above
+        # remains the real gate (2026-11-25, ssot-baseline-board-drift-race).
+        is_kanban_card = rel.startswith('kanban/cards/')
+        if not is_kanban_card and rel not in REVIEW_EXEMPT and rel not in HARD_EXEMPT:
             if metrics['lines'] > REVIEW_LINES:
                 warnings.append(f'Bloat: {metrics["lines"]} lines exceeds review threshold of {REVIEW_LINES}')
             if metrics['sections'] > REVIEW_SECTIONS:
@@ -348,6 +353,7 @@ function main() {
       const output = execSync(`python3 ${TEMP_PY}`, {
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe'],
+        maxBuffer: 64 * 1024 * 1024,
       });
       pyResults = JSON.parse(output);
     } catch (error) {

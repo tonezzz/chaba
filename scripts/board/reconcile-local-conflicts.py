@@ -14,6 +14,12 @@ half (card kanban-local-conflict-reconciler):
     file. On any failure the conflict file stays and the card is
     flagged in review — no card write is silently dropped.
 
+Non-card .local-conflict-* files under docs/ssot/ (generated paths)
+are never merged: they flag the alert card, then archive out of the
+tree once older than NONCARD_TTL_S — NONCARD_ORPHAN_TTL_S when the
+canonical base is gone. A file whose flag already landed inside
+FLAG_DEDUP_H stays quiet on repeat runs.
+
 Merge policy
 ------------
   * comms[]      — union, dedup on (at|ts, from, text), time-sorted
@@ -41,10 +47,13 @@ step by git-safe-pull.sh; also safe to run by hand anytime:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import fcntl
+import io
 import json
 import os
 import re
+import shutil
 import sys
 import tempfile
 import time
@@ -79,6 +88,26 @@ BOARD_API_BASES = (
 # chaba-repo-sync died at 5min churning .ref-seq.local-conflict-* files
 # (2026-11-07). Remaining files stay on disk; the next cycle continues.
 BUDGET_S = float(os.environ.get("RECONCILE_BUDGET_S", "60"))
+# Non-card conflicts (generated paths — focus-inbox, sequencer state,
+# report-watch artifacts) are upstream-authoritative: the pulled copy
+# already won, so once the file is older than this TTL it is archived
+# out of the checkout instead of being flagged forever (card
+# reconcile-local-conflicts-expire-stale-n-00974b — stale files kept the
+# tree dirty and looped chaba-repo-sync alerts on tony-dell/tony-omen).
+# Younger files keep the flag-on-recent behaviour.
+NONCARD_TTL_S = float(os.environ.get("RECONCILE_NONCARD_TTL_S", "86400"))
+# Orphan non-card conflicts (no canonical base — e.g. a focus-inbox
+# entry already moved to processed/) get a longer grace window before
+# quarantine: the file may be the only copy of that state, and the
+# flag needs time to be seen. The archive move preserves it, so after
+# NONCARD_ORPHAN_TTL_S it leaves the tree too instead of re-flagging
+# every pull forever (card reconcile-noncard-conflicts-never-resolve —
+# 16 focus-inbox conflicts re-flagged on every run since 2026-11-11).
+NONCARD_ORPHAN_TTL_S = float(os.environ.get(
+    "RECONCILE_NONCARD_ORPHAN_TTL_S", "604800"))
+ARCHIVE_ROOT = Path(os.environ.get(
+    "RECONCILE_NONCARD_ARCHIVE",
+    "~/.local/share/chaba-reconcile-archive")).expanduser()
 TZ = timezone(timedelta(hours=7))
 
 CONFLICT_RE = re.compile(
@@ -308,30 +337,32 @@ def _flag_mark(key: str) -> None:
 
 
 def flag_card(card_dir: Path, cid: str | None, text: str,
-              dry: bool) -> None:
+              dry: bool) -> str:
     """Flag a failed reconcile: comms + column=review on the canonical
     card when it exists; otherwise upsert the ops alert card. Pattern
     mirrors kanban-commit.sh's alert_card. A recurring conflict on the
     same file dedupes to one flag per FLAG_DEDUP_H hours — otherwise a
-    permanent producer collision spams the alert card every cycle."""
+    permanent producer collision spams the alert card every cycle.
+    Returns 'flagged' | 'dedup' | 'lost' | 'dry'; 'dedup' means an
+    identical flag already landed inside the window, so callers can
+    stay quiet for already-seen conflicts instead of re-printing the
+    kept-file line on every pull."""
     if dry:
         print(f"  [dry] flag {cid or ALERT_CARD_ID}: {text[:120]}")
-        return
+        return "dry"
     fkey = _flag_key(text)
     if _flag_recent(fkey):
-        print(f"  dedup: flag for {fkey} already raised "
-              f"<{FLAG_DEDUP_H}h ago — suppressed")
-        return
+        return "dedup"
     if flag_via_api(cid, text) or (
             cid and flag_via_api(None, f"{cid}: {text}")):
         _flag_mark(fkey)
-        return
+        return "flagged"
     if REPO.resolve() != SERVED.resolve():
         print(f"reconcile: flag for {cid or ALERT_CARD_ID} could not reach "
               f"board-api and this checkout is not the served one — "
               f"flag lost locally, surfacing on stderr only",
               file=sys.stderr)
-        return
+        return "lost"
     target = card_dir / f"{cid}.yml" if cid else \
         card_dir / f"{ALERT_CARD_ID}.yml"
     if cid and not target.exists():
@@ -355,15 +386,75 @@ def flag_card(card_dir: Path, cid: str | None, text: str,
         card["updated"] = now()
         dump(target, card)
         _flag_mark(fkey)
+        return "flagged"
     except Exception as e:  # flagging must never crash the reconciler
         print(f"reconcile: flag write failed for {target.name}: {e}",
               file=sys.stderr)
+        return "lost"
 
 
 # ------------------------------------------------------------ reconcile
-def reconcile_one(conflict_path: Path, dry: bool) -> bool:
+def _conflict_base(p: Path) -> Path | None:
+    m = CONFLICT_RE.match(p.name)
+    return p.with_name(m.group("base")) if m else None
+
+
+def _conflict_age_s(p: Path) -> float:
+    """Age in seconds. Prefer the -YYYYMMDD-HHMMSS suffix (the file's
+    own timestamp survives checkouts; mtime can be touched by later
+    git operations); fall back to mtime, then 0 (never expires)."""
+    m = re.search(r"\.local-conflict-(\d{8})-(\d{6})", p.name)
+    if m:
+        try:
+            ts = time.mktime(time.strptime(
+                m.group(1) + m.group(2), "%Y%m%d%H%M%S"))
+            return max(0.0, time.time() - ts)
+        except (ValueError, OverflowError):
+            pass
+    try:
+        return max(0.0, time.time() - p.stat().st_mtime)
+    except OSError:
+        return 0.0
+
+
+def expire_noncard(p: Path, repo: Path, dry: bool) -> str:
+    """Expire a stale non-card conflict file. Returns:
+      'expired' — the file is older than its TTL and the dropped local
+                  side was archived out of the tree (or would be, under
+                  --dry-run);
+      'fresh'   — canonical exists and the file is inside NONCARD_TTL_S;
+      'orphan'  — no canonical base and the file is inside
+                  NONCARD_ORPHAN_TTL_S — caller keeps flagging.
+    Orphans are no longer exempt: the archive move preserves the only
+    copy, so they quarantine on the longer window instead of re-flagging
+    on every pull forever."""
+    base = _conflict_base(p)
+    orphan = base is None or not base.exists()
+    ttl = NONCARD_ORPHAN_TTL_S if orphan else NONCARD_TTL_S
+    if _conflict_age_s(p) < ttl:
+        return "orphan" if orphan else "fresh"
+    if dry:
+        return "expired"
+    try:
+        dest = ARCHIVE_ROOT / p.relative_to(repo)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        n = 1
+        while dest.exists():
+            dest = dest.with_name(f"{dest.name}.{n}")
+            n += 1
+        shutil.move(str(p), str(dest))
+    except (OSError, ValueError):
+        return "orphan" if orphan else "fresh"
+    print(f"reconcile: expired non-card conflict "
+          f"{p.relative_to(repo)} -> {dest}")
+    return "expired"
+
+
+def reconcile_one(conflict_path: Path, repo: Path, dry: bool) -> bool:
     """Merge one .local-conflict file into its canonical card.
-    Returns True when the conflict file was consumed."""
+    Returns True when the conflict file was consumed or needs no new
+    attention this run (an identical flag already landed inside the
+    dedup window); False means a fresh leftover was flagged."""
     m = CONFLICT_RE.match(conflict_path.name)
     if not m:
         print(f"reconcile: unrecognised suffix: {conflict_path.name}",
@@ -375,10 +466,18 @@ def reconcile_one(conflict_path: Path, dry: bool) -> bool:
 
     if canonical_path.suffix != ".yml":
         # Not a card (e.g. .ref-seq sequencer state sitting in the cards
-        # dir) — never card-merge it; flag for manual reconcile, keep it.
-        flag_card(card_dir, None,
-                  f"non-card local-conflict {conflict_path.name} "
-                  f"needs manual reconcile — file kept", dry)
+        # dir) — never card-merge it. Stale files expire once upstream-
+        # wins is verified; recent/orphan ones are flagged and kept,
+        # quiet while the same flag is inside the dedup window.
+        status = expire_noncard(conflict_path, repo, dry)
+        if status == "expired":
+            return True
+        detail = ("no canonical base — kept" if status == "orphan"
+                  else "needs manual reconcile — file kept")
+        if flag_card(card_dir, None,
+                     f"non-card local-conflict {conflict_path.name} "
+                     f"{detail}", dry) == "dedup":
+            return True
         print(f"reconcile: {conflict_path.name}: non-card — flagged",
               file=sys.stderr)
         return False
@@ -470,10 +569,14 @@ def run(repo: Path, dry: bool) -> int:
             if over_budget():
                 deferred += 1
                 continue
-            if not reconcile_one(p, dry):
+            if not reconcile_one(p, repo, dry):
                 leftovers += 1
     # non-card generated conflicts: never silently dropped either —
-    # surfaced on the alert card, merged by hand.
+    # surfaced on the alert card, merged by hand. Files older than
+    # NONCARD_TTL_S (NONCARD_ORPHAN_TTL_S when the canonical base is
+    # gone) are archived instead: upstream already won, keeping them
+    # just dirties the checkout. A file whose flag already landed inside
+    # the dedup window stays quiet — no repeat stderr, no leftover.
     ssot = repo / GENERATED_REL
     if ssot.is_dir():
         stray = [p for p in ssot.rglob("*.local-conflict-*")
@@ -482,9 +585,16 @@ def run(repo: Path, dry: bool) -> int:
             if over_budget():
                 deferred += 1
                 continue
-            flag_card(card_dir, None,
-                      f"non-card local-conflict {p.relative_to(repo)} "
-                      f"needs manual reconcile — file kept", dry)
+            status = expire_noncard(p, repo, dry)
+            if status == "expired":
+                continue
+            detail = ("no canonical base — kept" if status == "orphan"
+                      else "needs manual reconcile — file kept")
+            if flag_card(card_dir, None,
+                         f"non-card local-conflict "
+                         f"{p.relative_to(repo)} {detail}",
+                         dry) == "dedup":
+                continue
             print(f"reconcile: non-card conflict kept: "
                   f"{p.relative_to(repo)}", file=sys.stderr)
             leftovers += 1
@@ -583,6 +693,12 @@ def _selftest() -> None:
     real_flag_api, real_served = flag_via_api, SERVED
     globals()["flag_via_api"] = lambda cid, text: False
     globals()["SERVED"] = REPO
+    # FLAG_STATE dedup (48h) must not leak between selftest runs — the
+    # real ~/.local/share file would suppress the flag writes these
+    # cases assert on after the first run marks them.
+    real_flag_state, real_archive = FLAG_STATE, ARCHIVE_ROOT
+    flag_tmp = tempfile.TemporaryDirectory()
+    globals()["FLAG_STATE"] = Path(flag_tmp.name) / "flags.json"
     try:
         # orphan conflict: file stays, alert card flagged in review
         with tempfile.TemporaryDirectory() as td:
@@ -607,9 +723,67 @@ def _selftest() -> None:
             out = load(d / "t.yml")
             assert out["column"] == "review" and \
                 any("unresolved" in c["text"] for c in out["comms"])
+
+        # non-card expiry: stale + canonical -> archived, consumed;
+        # fresh or recent-orphan -> kept and flagged; an identical
+        # second run is quiet (flag dedup). Ancient orphans archive on
+        # the longer orphan TTL — the move preserves the only copy.
+        with tempfile.TemporaryDirectory() as td, \
+                tempfile.TemporaryDirectory() as adir:
+            repo = Path(td)
+            d = repo / CARD_DIR_REL
+            ssot = repo / GENERATED_REL
+            d.mkdir(parents=True)
+            ssot.mkdir(parents=True, exist_ok=True)
+            globals()["ARCHIVE_ROOT"] = Path(adir)
+            (ssot / "focus-inbox.yml").write_text("a: 1\n")
+            stale = ssot / \
+                "focus-inbox.yml.local-conflict-20200101-000000"
+            stale.write_text("a: 2\n")
+            assert run(repo, dry=False) == 0
+            assert not stale.exists()
+            assert (ssot / "focus-inbox.yml").read_text() == "a: 1\n"
+            archived = Path(adir) / stale.relative_to(repo)
+            assert archived.exists() and \
+                archived.read_text() == "a: 2\n"
+
+        with tempfile.TemporaryDirectory() as td, \
+                tempfile.TemporaryDirectory() as adir:
+            repo = Path(td)
+            d = repo / CARD_DIR_REL
+            ssot = repo / GENERATED_REL
+            d.mkdir(parents=True)
+            ssot.mkdir(parents=True, exist_ok=True)
+            globals()["ARCHIVE_ROOT"] = Path(adir)
+            (ssot / "x.yml").write_text("a: 1\n")
+            ts = time.strftime("%Y%m%d-%H%M%S")
+            fresh = ssot / f"x.yml.local-conflict-{ts}"
+            fresh.write_text("a: 2\n")
+            orphan = ssot / f"gone.yml.local-conflict-{ts}"
+            orphan.write_text("a: 3\n")
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err):
+                assert run(repo, dry=False) == 1
+            assert "non-card conflict kept" in err.getvalue()
+            assert fresh.exists() and orphan.exists()
+            # second run: both flags inside the dedup window -> quiet
+            err = io.StringIO()
+            with contextlib.redirect_stderr(err):
+                assert run(repo, dry=False) == 0
+            assert err.getvalue() == ""
+            # ancient orphan -> quarantined on the orphan TTL
+            old = ssot / "oldgone.yml.local-conflict-20200101-000000"
+            old.write_text("a: 4\n")
+            assert run(repo, dry=False) == 0
+            assert not old.exists()
+            assert (Path(adir) / old.relative_to(repo)) \
+                .read_text() == "a: 4\n"
     finally:
         globals()["flag_via_api"] = real_flag_api
         globals()["SERVED"] = real_served
+        globals()["FLAG_STATE"] = real_flag_state
+        globals()["ARCHIVE_ROOT"] = real_archive
+        flag_tmp.cleanup()
 
     print("reconcile-local-conflicts: selftest OK")
 

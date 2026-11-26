@@ -1,0 +1,11 @@
+[Unit]
+Description=Daytime sleep inhibitor — keep tony-macbook awake as a dispatch runner
+
+[Service]
+ExecStart=%h/.local/bin/macbook-day-awake.sh
+Environment=DAY_START=07:00 DAY_END=23:00 DAY_AWAKE_MIN_BATTERY_PCT=30 DAY_AWAKE_POLL_SECONDS=60
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

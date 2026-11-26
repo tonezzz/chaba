@@ -1,0 +1,76 @@
+title: Land recovered remote-host eval artifacts (devnest host assessment + KK-Mac JEV probe)
+id: audit-miss-remote-eval-results-not-landed
+date: 2026-11-24
+card: audit-miss-remote-eval-results-not-landed
+ref:
+- AUD-0030
+- DEV-0861
+- OPS-0991
+program: audit
+domain: devnest
+status: done
+summary: >-
+  All three artifacts the 2026-11-20 session audit flagged as missing
+  were recovered and landed: the six devnest-host-*.json assessments and
+  devnest-replay-candidates.json from tony-dell:~/evals/results/, and
+  the OPS-0991 KK-Mac JEV probe artifact from the idc03 patch-inbox
+  git bundle (commit 1f16965029, cherry-picked).
+
+context: >-
+  AUD-0973 flagged eval outputs claimed on remote hosts but absent from
+  origin/master. Root causes differ per artifact: the devnest files were
+  written outside any checkout (tony-dell:~/evals/results/, the skill's
+  declared output dir) and never copied into the repo; the kk-mac probe
+  artifact WAS committed (1f16965029) but only reached idc03's
+  patch-inbox as a thin bundle when merge-sweep missed it, and its path
+  evals/kk-mac-lane/out/ is covered by .gitignore `evals/*/out/` so a
+  plain checkout could never resurrect it.
+
+recovered_from:
+  - host: tony-dell
+    path: ~/evals/results/
+    files:
+      - evals/results/devnest-host-tony-omen.json
+      - evals/results/devnest-host-idc02.json
+      - evals/results/devnest-host-idc03.json
+      - evals/results/devnest-host-mn01.json
+      - evals/results/devnest-host-tony-dell.json
+      - evals/results/devnest-host-tony-macbook.json
+      - evals/results/devnest-replay-candidates.json
+    notes: >-
+      Sibling host files landed too — same 2026-10-27 assessment batch,
+      equally absent from the repo. Extra survivors still unlanded on
+      tony-dell:~/evals/results/: devnest-host-fleet-layers/ and
+      devnest-host-tony-dell-layers/ report dirs, plus unrelated
+      kk-mac-*/m1-*/t*-bench outputs (other cards' concern).
+  - host: idc03
+    path: ~/.local/share/devin-dispatch/patch-inbox/kk-mac-live-probe-idc03-20261030-1f16965029.bundle
+    commit: 1f16965029
+    file: evals/kk-mac-lane/out/kk-mac-live-jev-probe-idc03-20261030.json
+    notes: >-
+      Bundle is thin (needs prerequisite 78e52c72); fetch it inside any
+      checkout that has master history. Contains the RETRY artifact
+      (verdict=pass, task_id kk-mac-live-probe-retry-20261030). The
+      earlier fallback artifact (SSH timeout) survives only in the
+      wt-salvage tarball dispatch-wt-kk-mac-live-probe-20261030-20261113.tgz.
+
+changes:
+  - file: evals/results/devnest-*.json (7 files)
+    notes: Copied verbatim from tony-dell:~/evals/results/ (Oct-27 rerun set + Oct-25 replay candidates).
+  - file: evals/kk-mac-lane/out/kk-mac-live-jev-probe-idc03-20261030.json
+    notes: Cherry-picked original commit 1f16965029 onto the dispatch branch.
+
+verify: >-
+  git ls-tree -r origin/master --name-only -- evals/results evals/kk-mac-lane/out
+  after merge; python3 -m json.tool on each landed file.
+
+followups:
+  - >-
+    evals/*/out/ gitignore means declared card artifacts under */out/ can
+    never be committed by normal add — either force-add (what 1f16965029
+    did) or narrow the ignore rule. Worth a card if more */out/ artifacts
+    are declared.
+  - >-
+    tony-dell:~/evals/ is an untracked skill dir + results store — single
+    point of failure already noted on devnest-host-assessment-education-loop;
+    now proven by this miss.

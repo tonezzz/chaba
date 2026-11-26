@@ -21,7 +21,9 @@ else:
     from kk_mac_admission import snapshot
 
 SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{1,60}$")
-KK_CLASSES = {"summary", "operator_brief", "structured_extract", "safe_route"}
+# Mirrors kk_mac_llm.ALLOWED_TASKS — operator_brief/safe_route held
+# pending re-eval (card kk-mac-admitted-classes-narrow).
+KK_CLASSES = {"summary", "structured_extract"}
 DEVNEST_REMOTE = "gdrive:ada-nest/devnest"
 KK_LLM_REMOTE = "gdrive:ada-nest/kk-llm"
 

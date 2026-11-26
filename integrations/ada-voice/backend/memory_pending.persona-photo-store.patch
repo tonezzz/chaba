@@ -1,0 +1,38 @@
+diff --git a/backend/memory_pending.py b/backend/memory_pending.py
+index cd920b0..541d6a8 100644
+--- a/backend/memory_pending.py
++++ b/backend/memory_pending.py
+@@ -63,7 +63,7 @@ PENDING_DIR = Path(os.environ.get(
+ # A flooded review queue is itself an attack — bound it like the outbox.
+ MAX_PENDING = int(os.environ.get("ADA_MEMORY_PENDING_MAX", "200"))
+ 
+-ROUTES = ("bank", "guest", "guest_private", "vocab")
++ROUTES = ("bank", "guest", "guest_private", "vocab", "asset")
+ 
+ 
+ def _now_iso() -> str:
+@@ -208,6 +208,24 @@ async def _apply(
+             session_id=entry.get("source_session"),
+             person_entity=entry.get("identity"),
+         )
++    if route == "asset":
++        # Persona-asset write staged by tools.d/asset_save (card
++        # persona-photo-store): the image file already landed under
++        # persona-assets/ at stage time — approval only commits the
++        # 'assets/<slug>' bank doc carrying meta.image_url.
++        if mddb is None or registry is None:
++            raise RuntimeError("asset apply needs an MDDB client and registry")
++        from backend import memory_ops
++        args = dict(entry.get("args") or {})
++        image_url = str(args.get("image_url") or "")
++        if not image_url.startswith(("http://", "https://", "/v1/")):
++            raise ValueError("staged asset entry is missing image_url")
++        return await memory_ops.asset_remember(
++            mddb, registry, instance, str(entry["bank"]),
++            str(entry.get("key") or ""), str(entry["text"]), image_url,
++            subject=args.get("subject") or args.get("slug"),
++            session_id=entry.get("source_session"),
++            person_entity=entry.get("identity"))
+     if route == "vocab":
+         if mddb is None or registry is None:
+             raise RuntimeError("vocab apply needs an MDDB client and registry")

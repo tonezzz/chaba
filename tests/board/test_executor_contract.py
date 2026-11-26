@@ -50,7 +50,7 @@ def _card(**action_kw):
     a = {"type": "dispatch", "status": "queued", "repo": "chaba"}
     a.update(action_kw)
     return {"id": "ex-card", "title": "executor test", "spec": "do a thing",
-            "action": a}
+            "column": "backlog", "action": a}
 
 
 def _write_card(d: Path, cid: str, **fields) -> Path:
@@ -133,6 +133,7 @@ class ClaimableContractTest(unittest.TestCase):
         self.mod.push_capable = lambda repo: False
         self.assertEqual(
             self.mod.claimable(_card(executor="opencode",
+                                     agent_profile="ops-readonly",
                                      lane_envelope={"id": "e"})), "")
 
     def test_devin_executor_claimable(self):
@@ -259,6 +260,44 @@ class UnstagedOpencodeHoldTest(unittest.TestCase):
         self.assertEqual(self.mod.claimable(c), "")
         self.assertIn("lane_envelope",
                       self.mod.executor_defer_reason(c))
+
+    def test_declared_opencode_mapped_lane_without_profile_claims(self):
+        """executor=opencode + lane=free_lane + staged envelope, no
+        agent_profile: LANE_PROFILES maps free_lane -> ops-readonly,
+        so the card is servable — the OPS-1021 lane-forwarding route."""
+        c = _card(executor="opencode", lane="free_lane",
+                  lane_envelope={"id": "env-1"})
+        self.assertEqual(self.mod.claimable(c), "dispatch")
+        self.assertEqual(self.mod.executor_defer_reason(c), "")
+
+    def test_declared_opencode_unmapped_lane_held(self):
+        """executor=opencode + lane=paid_frontier + staged envelope, no
+        agent_profile: no profile resolves — held at claim instead of
+        the ops-1244d-janitor-merge 'no task profile' start failure."""
+        c = _card(executor="opencode", lane="paid_frontier",
+                  lane_envelope={"id": "env-1"})
+        self.assertEqual(self.mod.claimable(c), "")
+        r = self.mod.executor_defer_reason(c)
+        self.assertIn("agent_profile", r)
+        self.assertIn("paid_frontier", r)
+        self.assertIn("no attempt burned", r)
+
+    def test_declared_opencode_no_lane_no_profile_held(self):
+        """executor=opencode + staged envelope but neither
+        agent_profile nor a mapped lane — deterministic ineligibility,
+        held with the '(none)' lane named."""
+        c = _card(executor="opencode", lane_envelope={"id": "env-1"})
+        self.assertEqual(self.mod.claimable(c), "")
+        r = self.mod.executor_defer_reason(c)
+        self.assertIn("agent_profile", r)
+        self.assertIn("(none)", r)
+
+    def test_declared_opencode_profile_alias_claims(self):
+        """action.profile (pre-contract alias) satisfies the same
+        resolution as agent_profile."""
+        c = _card(executor="opencode", profile="ops-readonly",
+                  lane_envelope={"id": "env-1"})
+        self.assertEqual(self.mod.claimable(c), "dispatch")
 
 
 # ------------------------------------------------------------- routing
@@ -1034,6 +1073,58 @@ class BoardApiContractTest(unittest.TestCase):
                       "deploy": {}},
                      "deploy.target")
 
+    def test_create_preserves_verify_contract(self):
+        # card doc-draft-verifier-semantic-gap: action.verify_* is the
+        # held-out verifier contract — the write door must persist it
+        # (it was silently dropped before, leaving sentinel checks
+        # unreachable — the OPS-1014 miss).
+        self.mod.do_create(
+            {"id": "c-ver", "title": "t",
+             "action": {"type": "dispatch",
+                        "verify_contains": ["sentinel-a"],
+                        "verify_sections": ["legacy-b"],
+                        "verify_regex": [r"## Verified working"],
+                        "verify_min_terms": {"terms": ["alpha", "beta"],
+                                             "at_least": 1}}},
+            "devin")
+        saved = self.mod.load(Path(self.td.name) / "c-ver.yml")
+        a = saved["action"]
+        self.assertEqual(a["verify_contains"], ["sentinel-a"])
+        self.assertEqual(a["verify_sections"], ["legacy-b"])
+        self.assertEqual(a["verify_regex"], [r"## Verified working"])
+        self.assertEqual(a["verify_min_terms"],
+                         {"terms": ["alpha", "beta"], "at_least": 1})
+
+    def test_create_validates_verify_contract(self):
+        def body(**action_kw):
+            return {"id": "c-bad", "title": "t",
+                    "action": {"type": "dispatch", **action_kw}}
+        self.rejects(body(verify_contains={"a": 1}),
+                     "action.verify_contains")
+        self.rejects(body(verify_contains=["ok", 3]),
+                     "action.verify_contains")
+        self.rejects(body(verify_regex=["([unclosed"]),
+                     "does not compile")
+        self.rejects(body(verify_min_terms=42),
+                     "action.verify_min_terms")
+        self.rejects(body(verify_min_terms={"at_least": 1}),
+                     "verify_min_terms.terms")
+        self.rejects(body(verify_min_terms={"terms": ["a"],
+                                            "at_least": 5}),
+                     "at_least")
+        self.rejects(body(verify_min_terms={"terms": ["a"],
+                                            "at_least": True}),
+                     "at_least")
+        # accepted shapes: bare string sentinels, bare term list
+        self.mod.do_create(body(verify_contains="one-sentinel",
+                                verify_min_terms=["alpha", "beta"]),
+                           "devin")
+        saved = self.mod.load(Path(self.td.name) / "c-bad.yml")
+        self.assertEqual(saved["action"]["verify_contains"],
+                         "one-sentinel")
+        self.assertEqual(saved["action"]["verify_min_terms"],
+                         ["alpha", "beta"])
+
     def test_queue_refuses_manual_executor(self):
         card = {"id": "c-em", "column": "backlog",
                 "action": {"type": "dispatch", "executor": "manual"}}
@@ -1098,7 +1189,8 @@ class KanbanDispatchContractTest(unittest.TestCase):
             noop.write_text("")
             m.RENDER = noop
             for cid, fields in cards:
-                _write_card(Path(td), cid, **fields)
+                _write_card(Path(td), cid,
+                            **{"column": "backlog", **fields})
             saved = (m.load_policy, m.overloaded, m.active_tasks,
                      m.push_capable, m.start_pending)
             self.started = []
@@ -1462,6 +1554,148 @@ class KkMacExecutorContractTest(unittest.TestCase):
                 else:
                     os.environ["HOME"] = home
 
+    # --- token-usage evidence (kk-mac-usage-to-lane-savings) ----------
+
+    def test_finish_usage_sets_result_extra_fragment(self):
+        """A landed kk_mac run's Ollama usage becomes a TOKENS_RE
+        fragment on the state entry — finish_pass prepends it so it
+        survives board-api's result[:300] -> action.result cap."""
+        savings = _load("lane-savings.py")
+        with tempfile.TemporaryDirectory() as td:
+            home = os.environ.get("HOME")
+            os.environ["HOME"] = td
+            try:
+                tid = "kk-t4"
+                taskdir = self._taskdir(tid)
+                wt = Path(td) / "wt"
+                (wt / "evals/kk-mac-lane/out").mkdir(parents=True)
+                (wt / "evals/kk-mac-lane/out/c.json").write_text("{}")
+                (taskdir / "meta.json").write_text(json.dumps({
+                    "executor": "kk_mac_local", "worktree": str(wt),
+                    "repo_root": td}))
+                (taskdir / "verdict.json").write_text(json.dumps({
+                    "verdict": "pass", "checks": {"json": True},
+                    "artifact": "evals/kk-mac-lane/out/c.json"}))
+                (taskdir / "kk_mac_result.json").write_text(json.dumps({
+                    "usage": {"prompt_eval_count": 1500,
+                              "eval_count": 200,
+                              "eval_duration": 99}}))
+                ent = {"tid": tid}
+                may, notes, fb = self.mod.finish_kk_mac_lane(
+                    "c", ent, self._kk_card())
+                self.assertTrue(may)
+                frag = ent.get("result_extra") or ""
+                tm = savings.TOKENS_RE.search(frag)
+                self.assertIsNotNone(tm)
+                self.assertEqual(
+                    (int(tm.group(1)), int(tm.group(2)),
+                     int(tm.group(3))), (1700, 1500, 200))
+                # the prepend survives board-api's result[:300] cap
+                stored = (frag + "exit=0 " + "x" * 500)[:300]
+                self.assertIsNotNone(savings.TOKENS_RE.search(stored))
+            finally:
+                if home is None:
+                    os.environ.pop("HOME", None)
+                else:
+                    os.environ["HOME"] = home
+
+    def test_finish_no_usage_no_fragment(self):
+        with tempfile.TemporaryDirectory() as td:
+            home = os.environ.get("HOME")
+            os.environ["HOME"] = td
+            try:
+                tid = "kk-t5"
+                taskdir = self._taskdir(tid)
+                wt = Path(td) / "wt"
+                (wt / "evals/kk-mac-lane/out").mkdir(parents=True)
+                (wt / "evals/kk-mac-lane/out/c.json").write_text("{}")
+                (taskdir / "meta.json").write_text(json.dumps({
+                    "executor": "kk_mac_local", "worktree": str(wt),
+                    "repo_root": td}))
+                (taskdir / "verdict.json").write_text(json.dumps({
+                    "verdict": "pass", "checks": {"json": True},
+                    "artifact": "evals/kk-mac-lane/out/c.json"}))
+                (taskdir / "kk_mac_result.json").write_text(json.dumps({
+                    "usage": {"eval_duration": 99}}))
+                ent = {"tid": tid}
+                may, notes, fb = self.mod.finish_kk_mac_lane(
+                    "c", ent, self._kk_card())
+                self.assertTrue(may)
+                self.assertNotIn("result_extra", ent)
+            finally:
+                if home is None:
+                    os.environ.pop("HOME", None)
+                else:
+                    os.environ["HOME"] = home
+
+
+class KkMacLaneTimeoutTest(unittest.TestCase):
+    """OPS-0999: the kk_mac_local transient unit must carry
+    RuntimeMaxSec — action.timeout_s when declared, else the 900s
+    default — on the systemd-run argv (rt_launch maps timeout_s to
+    --property=RuntimeMaxSec; launchd gets the wrapper watchdog)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load("runner-agent.py")
+
+    def setUp(self):
+        m = self.mod
+        self._saved = {k: getattr(m, k) for k in ("HOST",)}
+        self._saved_fn = {k: getattr(m, k) for k in
+                          ("kk_mac_module", "dr_module", "sh", "api",
+                           "enforce_task_limits", "task_runtime")}
+        m.HOST = "testhost"
+        m.api = lambda *a, **k: {}
+        m.enforce_task_limits = lambda *a, **k: None
+        m.task_runtime = lambda: "systemd"
+        self._home_old = os.environ.get("HOME")
+        self.td = tempfile.TemporaryDirectory()
+        os.environ["HOME"] = self.td.name
+        fake_kme = types.SimpleNamespace(
+            artifact_allowed=lambda p: True,
+            admission_gate=lambda tc, p: {"eligible": True,
+                                          "reasons": [], "gate": {}})
+        m.kk_mac_module = lambda: fake_kme
+        repo = Path(self.td.name) / "repo"
+        repo.mkdir()
+        m.dr_module = lambda: types.SimpleNamespace(
+            repos=lambda: {"chaba": {"path": str(repo),
+                                     "default_branch": "master"}})
+        self.argvs = []
+        m.sh = lambda argv, **kw: (
+            self.argvs.append(list(argv)) or _proc(0))
+
+    def tearDown(self):
+        m = self.mod
+        if self._home_old is None:
+            os.environ.pop("HOME", None)
+        else:
+            os.environ["HOME"] = self._home_old
+        self.td.cleanup()
+        for k, v in {**self._saved, **self._saved_fn}.items():
+            setattr(m, k, v)
+
+    def _run(self, **action_kw):
+        card = _card(executor="kk_mac_local", task_class="summary",
+                     prompt="summarize the host evidence", **action_kw)
+        unit, tid, err = self.mod.start_kk_mac_lane(
+            card, "runner-20260101-000000-kk1")
+        self.assertEqual(err, "")
+        self.assertEqual(unit, "devin-task-20260101-000000-kk1")
+        sdr = [a for a in self.argvs if a and a[0] == "systemd-run"]
+        self.assertTrue(sdr, "no systemd-run argv captured")
+        return sdr[-1]
+
+    def test_default_timeout_armed(self):
+        argv = self._run()
+        self.assertIn("--property=RuntimeMaxSec=900", argv)
+
+    def test_action_timeout_s_wins(self):
+        argv = self._run(timeout_s=123)
+        self.assertIn("--property=RuntimeMaxSec=123", argv)
+        self.assertNotIn("--property=RuntimeMaxSec=900", argv)
+
 
 class KkMacBoardApiTest(unittest.TestCase):
     """board-api validates the kk_mac_local contract at the door."""
@@ -1512,6 +1746,21 @@ class KkMacBoardApiTest(unittest.TestCase):
                                  "executor": "kk_mac_local",
                                  "task_class": "code_mutation"}},
                      "requires action.task_class")
+
+    def test_kk_mac_rejects_held_classes(self):
+        # operator_brief/safe_route held unadmitted pending re-eval
+        # (kk-mac-admitted-classes-narrow)
+        for slug, tc in (("opbrief", "operator_brief"),
+                         ("saferoute", "safe_route")):
+            self.rejects({"id": f"c-bad-{slug}", "title": "t",
+                          "action": {"type": "dispatch",
+                                     "executor": "kk_mac_local",
+                                     "task_class": tc}},
+                         "requires action.task_class")
+            self.rejects({"id": f"c-bad-hint-{slug}", "title": "t",
+                          "action": {"type": "dispatch",
+                                     "task_class": tc}},
+                         "only valid with")
 
     def test_task_class_needs_kk_mac_executor(self):
         self.rejects({"id": "c-bad", "title": "t",
@@ -1619,7 +1868,7 @@ class KkMacBoardApiTest(unittest.TestCase):
             noop = Path(td) / "_render_noop.py"
             noop.write_text("")
             kd.RENDER = noop
-            _write_card(Path(td), "c-kkq",
+            _write_card(Path(td), "c-kkq", column="backlog",
                         action={"status": "queued",
                                 "executor": "kk_mac_local",
                                 "task_class": "summary"})

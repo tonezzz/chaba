@@ -1,8 +1,8 @@
 title: Home Assistant How-To Runbooks
-subtitle: Step-by-step procedures for the tony-test / michael-dev HA environment
+subtitle: Step-by-step procedures for the tony-test / mn-ha-dev HA environment
 prerequisites:
 - ssot: ssot.values.yml
-- instances: ssot.home-assistant.michael.dev.yml
+- instances: ssot.home-assistant.mn-ha-dev.yml
 - cards: ssot.home-assistant.cards.yml
 - mcp: ssot.home-assistant.mcp.yml
 - dashboards: ssot.home-assistant.dashboards.yml
@@ -11,11 +11,11 @@ runbooks:
     purpose: Add a new tab to the tony-test Lovelace dashboard and make it the first
       tab.
     steps:
-    - Edit the live Lovelace config in /home/tony/.config/michael-dev/.storage/lovelace.tony_test
+    - Edit the live Lovelace config in /home/tony/.config/mn-ha-dev/.storage/lovelace.tony_test
     - Insert a new view object with title and path in the desired order
     - Set the new tab at index 0 if it should be the first tab
     - Restart Home Assistant or reload Lovelace if needed
-    - Verify at https://idc02.taila0626a.ts.net:8124/tony-test/<path>
+    - Verify at https://mn01.taila0626a.ts.net:8124/tony-test/<path>
     snapshot_when_done: copy the updated .storage file to docs/home-assistant/dashboards/tony-test-current.json
   copy_card_to_tab:
     purpose: Copy an existing card configuration into another tab.
@@ -32,7 +32,7 @@ runbooks:
         line anchors, speed, max_power, images, entities)
       : use push_dashboard_via_websocket — no rebuild, no restart
     - If the change needs new rendering, new config keys, or a bugfix in card code: use
-        build_deploy_custom_card — rebuild, bump bundle version, restart michael-dev
+        build_deploy_custom_card — rebuild, bump bundle version, restart mn-ha-dev
     - If unsure whether a key exists, grep the card source (src/cards/pfg-card.ts,
       pfg2-card.ts) for the key name
     note: Config pushes apply instantly; bundle deploys need a service restart and
@@ -41,11 +41,11 @@ runbooks:
     purpose: Save tony-test dashboard config changes live without a restart (preferred
       over .storage edits).
     steps:
-    - 'Export the token into the environment first: `source ~/.config/secrets/ha-michael-dev.env`
+    - 'Export the token into the environment first: `source ~/.config/secrets/ha-mn-ha-dev.env`
       (the file exports HASS_TOKEN)'
     - Write a small mutate script defining mutate(config) that edits the views/cards
       dict in place
-    - Run python3 scripts/home-assistant/push-dashboard.py https://idc02.taila0626a.ts.net:8124
+    - Run python3 scripts/home-assistant/push-dashboard.py https://mn01.taila0626a.ts.net:8124
       tony-test --mutate /tmp/mutate.py
     - The script fetches lovelace/config, applies mutate(), and calls lovelace/config/save;
       the frontend refreshes automatically
@@ -61,12 +61,12 @@ runbooks:
 
       '
   build_deploy_custom_card:
-    purpose: Rebuild the forked sunsynk-power-flow-card and deploy it to michael-dev.
+    purpose: Rebuild the forked sunsynk-power-flow-card and deploy it to mn-ha-dev.
     steps:
     - Edit source in /home/tony/CascadeProjects/sunsynk-power-flow-card/src/
     - Run scripts/home-assistant/deploy-card.sh — it builds, reads the current version
       from remote lovelace_resources (single source of truth, race-safe), scp's the
-      new versioned bundle, restarts michael-dev, and waits for HTTP 200
+      new versioned bundle, restarts mn-ha-dev, and waits for HTTP 200
     - Verify the dashboard at /tony-test/pf4, /tony-test/pfg, /tony-test/pfg2
     - Run scripts/home-assistant/sync-ssot-from-live.sh to snapshot the dashboard
       and bundle version
@@ -86,7 +86,7 @@ runbooks:
     - Save it to ~/.config/secrets/ha-{instance}.env as HASS_TOKEN=<PASTE_YOUR_TOKEN>
       with chmod 600
     - Do not commit the token file or paste it into chat
-    note: 'The michael-dev token in ~/.config/secrets/ha-michael-dev.env and the michael-ha
+    note: 'The mn-ha-dev token in ~/.config/secrets/ha-mn-ha-dev.env and the michael-ha
       token in
 
       ~/.local/share/home-assistant-michael/ha-token are both valid for REST and Playlive
@@ -97,15 +97,15 @@ runbooks:
       '
     ssot: ssot.home-assistant.mcp.yml
   reload_core_config:
-    purpose: Reload michael-dev core config via HA-MCP without a full container restart.
+    purpose: Reload mn-ha-dev core config via HA-MCP without a full container restart.
     steps:
-    - Ensure michael-dev.service is active on idc03 (migrated from tony-dell 2026-10-09)
+    - Ensure mn-ha-dev.service is active on mn01 (migrated tony-dell -> idc03 2026-10-09 -> idc02 2026-10-26 -> mn01 2026-11-25)
     - Run scripts/home-assistant/ha-mcp-call.py --url http://127.0.0.1:9585/private_B3WMIAChoseTpDS7fwgwRw
       --tool ha_reload_core
     - Wait for http://127.0.0.1:8124/ to respond with HTTP 200
     - Verify the target view (e.g. /tony-test/pf3) renders the updated cards
-    service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
-    note: 'This avoids a full podman container restart and is the default after deploy-michael-dev.sh.
+    service_ref: infrastructure/ssot.services.yml#tony-dell.mn-ha-dev.quadlet.service_unit
+    note: 'This avoids a full podman container restart and is the default after deploy-mn-ha-dev.sh.
 
       Tested 2026-09-04: reloaded 15 components, API stayed at HTTP 200, and the `groups`
       warning
@@ -135,13 +135,13 @@ runbooks:
       use domain=automation, service=trigger, data='{"entity_id":"automation.<name>"}'
     ssot: ssot.home-assistant.mcp.yml
   restart_ha_instance:
-    purpose: Restart the michael-dev Home Assistant instance. Use only when HA-MCP
+    purpose: Restart the mn-ha-dev Home Assistant instance. Use only when HA-MCP
       reload is not sufficient (e.g. container upgrades or integration installs).
     steps:
-    - ssh idc03
-    - systemctl --user restart michael-dev.service
+    - ssh mn01
+    - systemctl --user restart mn-ha-dev.service
     - Wait for the service to be active and http://127.0.0.1:8124 to respond
-    service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
+    service_ref: infrastructure/ssot.services.yml#tony-dell.mn-ha-dev.quadlet.service_unit
   add_battery_status_line:
     purpose: Add or modify a combined battery status line in the sunsynk card.
     steps:
@@ -217,7 +217,7 @@ runbooks:
     - The same TPL title may map to several cells; retarget entity ids afterward if
       the tile should show a different source (e.g. PV.b1 hard-wires pv_power_1)
   copy_view_between_instances:
-    purpose: Copy a full view (e.g. pfg2 or tpl) from michael-dev to michael-ha for
+    purpose: Copy a full view (e.g. pfg2 or tpl) from mn-ha-dev to michael-ha for
       parity.
     steps:
     - 'Run: SRC_TOKEN=<dev_token> DST_TOKEN=<ha_token> python3 scripts/home-assistant/copy-view.py
@@ -292,7 +292,7 @@ runbooks:
       token for michael-ha REST+websocket
     - ~/.local/share/home-assistant-michael/ha-token went stale 2026-09-08 (auth_invalid)
       — prefer ha-michael-live.env; regenerate if both fail
-    - ~/.config/secrets/ha-michael-dev.env (HASS_TOKEN) works for michael-dev on https://idc02.taila0626a.ts.net:8124
+    - ~/.config/secrets/ha-mn-ha-dev.env (HASS_TOKEN) works for mn-ha-dev on https://mn01.taila0626a.ts.net:8124
   bundle_parity_worktrees:
     purpose: Avoid deploying a main build that is OLDER than a host's live bundle.
     steps:
@@ -340,7 +340,7 @@ runbooks:
 
       Entity: sensor.inverters_1_pv_power.
 
-      michael-dev uses a dev template entity (input_number.dev_pv*_power) so data
+      mn-ha-dev uses a dev template entity (input_number.dev_pv*_power) so data
       is
 
       synthetic; michael-ha uses the real recorder entity.
@@ -381,23 +381,23 @@ runbooks:
     common_failures: "- 'Axis direction not changing: you probably used inverse on\
       \ a value axis; use\n  category + data order instead.'\n- 'Data rising/falling\
       \ at the wrong time: check timezone grouping in\n  fetchHourlyDayGrid — it must\
-      \ use hass.config.time_zone.'\n- 'michael-dev looks synthetic: dev uses dev_pv*_power\
+      \ use hass.config.time_zone.'\n- 'mn-ha-dev looks synthetic: dev uses dev_pv*_power\
       \ input_number template;\n  michael-ha uses real recorder data. The card code\
       \ is not the cause.'\n- 'Bundle version drift / incomplete deploys: verify by\
       \ md5sum or curl the\n  bundle, not just the version number.'\n"
     ssot: ssot.home-assistant.design.yml
     last_updated: '2026-09-18'
   deployment_policy:
-    purpose: Human approval required before any deploy from michael-dev to another
+    purpose: Human approval required before any deploy from mn-ha-dev to another
       host.
     steps:
     - Never run deploy-card.sh with a non-dev target (michael-ha, tony-ha, or --host
       all) without explicit user approval in the same session.
     - Never run promote-michael.sh or promote-tony.sh without explicit user approval
       in the same session.
-    - Iterating and previewing on michael-dev is fine; anything that touches michael-ha
+    - Iterating and previewing on mn-ha-dev is fine; anything that touches michael-ha
       or tony-ha must be approved.
-    note: tony-dell hosts both michael-dev and tony-ha, but they are separate instances;
+    note: tony-dell hosts both mn-ha-dev and tony-ha, but they are separate instances;
       copying a bundle or resource to tony-ha is a deploy, not a local file move.
   tuya_iot_core_trial_renewal:
     purpose: Renew the expired Tuya developer-project IoT Core trial so OpenAPI calls
@@ -457,7 +457,7 @@ runbooks:
     - Check for an existing sunsynk-power-flow-card-fork resource in /home/tony/.config/home-assistant/.storage/lovelace_resources
     - 'If the resource is missing: add a new entry {id: <uuid>, url: "/local/sunsynk-power-flow-card-fork-vN.js",
       type: "module"} and restart tony-ha.service'
-    - Copy the exact dev bundle: cp /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-vN.js
+    - Copy the exact dev bundle: cp /home/tony/.config/mn-ha-dev/www/sunsynk-power-flow-card-fork-vN.js
         /home/tony/.config/home-assistant/www/
     - Update the resource via ws-resource-url.py using HASS_TOKEN from ~/.config/secrets/home-assistant-token.env
       (HA_LONG_LIVED_TOKEN)
@@ -478,28 +478,28 @@ runbooks:
       use tsc as the gate.
     note: The card repo uses Babel to strip types and terser to minify; it never invokes
       the TypeScript compiler.
-  michael_dev_playlive_visual_verify:
-    purpose: Log in to michael-dev via Playlive and capture a screenshot of the tony-test
+  mn_ha_dev_playlive_visual_verify:
+    purpose: Log in to mn-ha-dev via Playlive and capture a screenshot of the tony-test
       Wide view.
     steps:
-    - 'michael-dev and michael-ha share the same UI credentials: ~/.local/share/home-assistant-michael/credentials.json
+    - 'mn-ha-dev and michael-ha share the same UI credentials: ~/.local/share/home-assistant-michael/credentials.json
       (user ''nakva'')'
     - 'Start a temporary http server on the LAN IP: python3 -m http.server 8898 --bind
       0.0.0.0 --directory /tmp'
     - Write /tmp/creds.js with window.__HA_CREDS = {u:'nakva', p:'<PASSWORD>'}; use
       the password from credentials.json
-    - Create a playlive headless session and navigate to https://idc02.taila0626a.ts.net:8124/tony-test/wide
+    - Create a playlive headless session and navigate to https://mn01.taila0626a.ts.net:8124/tony-test/wide
     - 'Inject the creds script: document.head.appendChild(document.createElement(''script'')).src
       = ''http://<lan-ip>:8898/creds.js'''
     - Fill username/password using native HTMLInputElement value setter, dispatch
       input/change, then click the 'Log in' ha-button
     - Set input[type='checkbox'].checked = true (Keep me logged in) before clicking
       Log in
-    - Wait for the page to load; the Wide view renders at https://idc02.taila0626a.ts.net:8124/tony-test/wide
+    - Wait for the page to load; the Wide view renders at https://mn01.taila0626a.ts.net:8124/tony-test/wide
     - Use playlive_screenshot to capture the viewport; scroll with window.scrollTo(0,N)
       for lower content
     - Stop the http server and delete /tmp/creds.js immediately after
-    note: 'Verified 2026-09-10. The michael-dev UI accepts the michael-ha ''nakva''
+    note: 'Verified 2026-09-10. The mn-ha-dev UI accepts the michael-ha ''nakva''
       credentials and the
 
       tony-test/wide view loads. Use screenshots to compare the dial/chart layout
@@ -605,7 +605,7 @@ runbooks:
     last_updated: '2026-09-20'
   config_template_card_variables:
     purpose: Correct variables syntax for config-template-card 1.3.6 (the bundled
-      version on michael-dev).
+      version on mn-ha-dev).
     steps:
     - 'variables must be an OBJECT map (name -> template string), NOT a list of {name,
       template} — the list branch evals each entry object, which eval() returns untouched,
@@ -626,7 +626,7 @@ runbooks:
 
       object form. weather-station-card 404s seen in the same console session
 
-      were transient (page loaded during an michael-dev restart; both files
+      were transient (page loaded during an mn-ha-dev restart; both files
 
       serve 200 once HA is up).
 
@@ -777,7 +777,7 @@ runbooks:
         dev twin, screenshot + JSON verdict in reports/dev-twin-smoke/,
         [smoke] comms on the card. Exit 0 pass / 1 fail / 2 infra."
       - "While tony-dev/ada-dev are unprovisioned (ha-dev-instances):
-        promote-tony.sh --from michael-dev restores the old dev source;
+        promote-tony.sh --from mn-ha-dev restores the old dev source;
         lane runs fail fast with 'registered but not provisioned'."
       - "Lifecycle enforcement: scripts/ada/lifecycle-check.py runs inside
         kanban-sync.sh — `release:`-tracked cards in review/done that lack

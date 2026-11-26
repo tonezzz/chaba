@@ -3,7 +3,7 @@ id: 2026-10-27-cms-publish-slug-derivation
 card: fix-cms-publish-page-slug-argument-missi-96152a
 ref: KNB-0624
 date: 2026-10-27
-status: staged-not-deployed
+status: landed-branch-not-deployed
 summary: |
   Card's audit trail: "Error in cms_publish_page call - slug argument
   not found" (Ada, 2026-10-14). Root cause is a schema-shape mismatch:
@@ -40,7 +40,15 @@ verify: |
   - chaba side: tests/ada/test_cms_slug_derivation_drop.py guards the
     staged artifacts and re-checks applyability vs ~/CascadeProjects/
     ada-voice.
+  - 2026-11-23 (dispatch-20261123-144258, tony-dell): patch applied to
+    worktree off origin/main @ b006cb6 — tests/test_cms_slug_derivation.py
+    7/7 pass, full suite 1891 passed/4 skipped, tool-lint clean.
+    Committed as 85faa77 on ada-voice branch
+    dispatch/20261123-144258-fix-cms-publish-page-slug (worktree
+    ~/CascadeProjects/tony-chaba-dell/worktrees/ada-voice/
+    dispatch-20261123-cms-slug).
 install: |
-  cd <ada-voice> && git apply <chaba>/integrations/ada-voice/backend/
-  cms-slug-derivation.patch — then deploy-ada.sh gates (tool-lint +
-  pytest) and lane restarts. Backend-only; relays untouched.
+  Merged/pushed: land the ada-voice dispatch branch on origin/main,
+  then deploy-ada.sh on tony-dell (gates: tool-lint + pytest — both
+  already green on the branch) and lane restarts. Backend-only;
+  relays untouched.

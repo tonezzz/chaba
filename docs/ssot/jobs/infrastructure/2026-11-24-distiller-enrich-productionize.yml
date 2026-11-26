@@ -1,0 +1,69 @@
+# SSOT Job Lifecycle: enriched T1 distiller productionization + hybrid T1/T2 recall
+# Card: distiller-enrich-productionize (ref OPS-0778).
+# Evidence: reports/bench-recall-v2-20261022.md — enriched T1 oracle
+# coverage 41.7%->86.1%; T1 semantic alone 66.7% hit@3 (<80% AQ);
+# hybrid T1 semantic + T2 transcript keyword = 91.7%.
+
+title: distiller-enrich-productionize — --enrich everywhere + hybrid recall path
+subtitle: T1 enriched docs stay enriched post-delete; T2 transcripts stay local and grep-able
+icon: database
+
+planning:
+  goal: |
+    Ship the bench-validated design: (1) every sync-devin-summaries.py
+    invocation runs --enrich so devin-session/* docs carry the
+    deterministic ## Artifacts section; (2) the recall hook runs the
+    hybrid path — T1 mddb semantic + T2 local transcript keyword;
+    (3) T2 transcripts remain local grep-able .md (not GDrive-only);
+    (4) no FTS in mddb — local BM25/FTS5 over the T2 dir.
+  decisions: |
+    Prior dispatch attempts (tony-macbook x2 exit-code, tony-dell oom-kill) never merged; rebuilt lean on idc02.
+    * Sticky enrichment (sync-devin-summaries.py): once a doc has "## Artifacts", later runs that cannot re-mine transcript re-append the remote section verbatim; byte-exact roundtrip, unchanged-check still hits.
+    * T2 archive dump (default-on): for devin-session/<name>, write ~/.local/share/devin/transcripts/<name>.md while session exists in sessions.db; refresh only when last_activity_at > dump mtime. CLI history_*.md already cover CLI sessions.
+    * session_recall.py (new, scripts/devin/session/): hybrid recall CLI. T1=mddb /v1/vector-search ada-ha-bank-devin-tony (active, threshold 0.45, topK 6, 8s, fail-open). T2=sqlite FTS5 (porter unicode61, bm25, snippet) incremental index at ~/.local/share/devin/session-recall/index.db over transcripts/*.md+cli/summaries/*.md+summaries/*.md. Not in-memory KeywordIndex (likely tony-dell OOM cause); 45s index budget/call.
+    * notebooklm-recall.sh: after session-memory.md tail, run session_recall.py --session <id> --project <name>; append bounded <=4KB hybrid block. Deploy hook pair together to ~/.config/devin/scripts/.
+    * Units: --enrich added to systemd/devin-summaries-sync.service and sync-devin-summaries.py ExecStart in systemd/ada-memory-pull.service; jobs.yml tony_omen already had --enrich.
+
+  changed:
+    - "scripts/ada/sync-devin-summaries.py (sticky ## Artifacts,
+      session_activity/dump_transcripts T2 pass, --no-transcripts/
+      --transcript-dir flags)"
+    - "scripts/devin/session/session_recall.py (new hybrid recall)"
+    - "scripts/devin/session/notebooklm-recall.sh (hybrid injection)"
+    - "systemd/devin-summaries-sync.service, systemd/ada-memory-pull.service
+      (--enrich)"
+    - "docs/ssot/infrastructure/ssot.jobs.yml (devin-summaries-sync note)"
+    - "ansible/playbooks/session-capture.yml (session_recall.py presence
+      check)"
+    - "tests/devin/test_session_recall.py (11 tests)"
+
+verify: |
+  On idc02 (2026-11-24):
+  - python3 scripts/ada/sync-devin-summaries.py --enrich --dry-run -> exit 0,
+    25 pending writes identified, transcripts pass ran.
+  - python3 scripts/ada/sync-devin-summaries.py --enrich --max-writes 3
+    -> exit 0, 3 docs upserted to ada-ha-bank-devin-tony.
+  - enriched() mined a live ## Artifacts section (+1263 chars) from this
+    session's transcript; _artifacts_tail roundtrip byte-exact.
+  - session_recall.py --session chain-fact --project chaba -> T1 6
+    semantic hits + T2 FTS5 hits (top hit = the bench-recall-v2 session
+    transcript itself); --json mode OK; MDDB-down fail-open verified.
+  - notebooklm-recall.sh end-to-end with a SessionStart payload ->
+    additionalContext JSON with the hybrid block (3999 chars).
+  - pytest tests/devin/test_session_recall.py -> 11 passed.
+
+residual: |
+  * Deployment is repo-side only: hosts need the updated
+    sync-devin-summaries.py via chaba-repo-sync (automatic) and the hook
+    pair notebooklm-recall.sh + session_recall.py scp'd to
+    ~/.config/devin/scripts/ (same manual pattern as runner-agent;
+    ansible playbook now stats session_recall.py presence).
+  * idc02 runs dispatch sessions but has NO devin-summaries-sync timer —
+    its cli summaries reach the bank only on manual runs (5 docs were
+    already present). Worth a follow-up card if dispatch-session recall
+    coverage matters.
+  * T2 dump covers devin-session/* (named/desktop) sessions only;
+    CLI-session transcripts are already local as cli/summaries/*.md and
+    are indexed by session_recall directly.
+  * First index_archives run on a host with a large transcripts/ dir is
+    budget-bounded (45s/call) — recall is partial until caught up.

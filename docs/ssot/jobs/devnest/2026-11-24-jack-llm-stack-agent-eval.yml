@@ -1,0 +1,71 @@
+id: jack-llm-stack-agent-eval
+title: Evaluate OpenCode and Cline for Jack LLM-stack construction
+date: 2026-11-24
+card: jack-llm-stack-agent-eval
+ref: OPS-1005
+runner: devin-dispatch @ tony-macbook
+stage_reached: S1-supervised
+model_under_test: litellm alias `bench` -> ollama_chat/qwen2.5:32b on kk-mac ($0 local, tailnet)
+
+spec: >-
+  Matched bounded benchmark: identical brief to OpenCode and Cline —
+  design/configure/test/document a disposable Jack LLM stack (local
+  Ollama model, LiteLLM-compatible routing, OpenCode provider config,
+  health checks, secret placeholders, resource limits, rollback,
+  operator runbook). Isolated worktrees, mock deployment (no container
+  runtime on eval host), no prod DNS/Cloudflare/credentials/Ada-Devin
+  memory/household HA/external spend. Per-arm: committed artifact,
+  deterministic tests, independent verifier result, safety ledger,
+  wall time, token/cost estimate, human minutes, rollback evidence.
+  S0 shadow/replay first, then one supervised S1 build; no unattended
+  routing until the existing S2 evidence gate is satisfied.
+
+method:
+  s0_shadow_replay:
+    verifier: evals/jack-llm-stack-agent-eval/harness/verify_stack.py
+      (written before arms ran; deterministic, stdlib-only)
+    positive: fixtures/reference -> all checks PASS
+      (results/s0-reference-verifier.json)
+    negative: fixtures/bad -> FAIL, 17 findings incl. fake sk-/AKIA
+      secrets and idc02/cloudflare refs (results/s0-bad-verifier.json)
+    verdict: harness discriminates compliant vs violating artifacts
+  s1_arms:
+    opencode:
+      cli: opencode 1.19.4, `run --format json`, OPENCODE_CONFIG=
+        harness/opencode.eval.json (provider litellm-eval -> :4000/v1)
+      workspace: arms/opencode (fresh git repo)
+      attempts: 3 (initial + 2 supervised nudges; model emitted
+        premature finish_reason=stop twice mid-task)
+    cline:
+      cli: cline 3.0.75 (npm @cline/cli-linux-x64), one-shot --json yolo,
+        provider openai-native -> :4000/v1, isolated --data-dir
+      workspace: arms/cline (fresh git repo)
+    matched: identical brief/task-brief.md, same model route, same
+      $0 local backend, sequential execution
+  verifier: independent_devin — verify_stack.py static checks + runs
+    each arm's own verify.sh (600s cap) + secret/scope scan
+  metrics_sources: run.json epochs, events*.jsonl token fields,
+    verifier.json, safety scan, supervisor observation
+
+isolation:
+  arm_repos: evals/jack-llm-stack-agent-eval/arms/{opencode,cline}
+    (gitignored at eval level; snapshots -> results/<arm>/artifact.bundle)
+  agent_state: arms/.opencode.home, arms/.cline-data-cline — outside
+    arm repos so `git add -A` can never commit session data/keys
+  secrets: LITELLM_KEY_BENCH via env only; never written into arm repos;
+    safety scanner enforced on committed trees
+  scope: no changes outside the dispatch worktree; no deploys; no pushes
+
+results: >-
+  evals/jack-llm-stack-agent-eval/reports/comparison.md — verdict:
+  Cline wins this bounded build (57s one-shot, verified, richer
+  artifact but hallucinated opencode.json schema) vs OpenCode
+  (2 nudges, ~78min wall, premature model stops, thinner artifact,
+  correct opencode schema, polluting rollback.sh). Both PASS the
+  independent verifier; both share model-level infra bugs the mock
+  path cannot catch — neither stack deploys correctly as-is.
+promotion_note: >-
+  This eval produces matched evidence only. Unattended routing remains
+  gated by the opencode-lane stage machine (currently S0 after the
+  2026-11-12 stor-01 rollback; opencode-lane-regraduation owns the
+  climb). Nothing here enables S2+ routing.

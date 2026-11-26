@@ -1,0 +1,97 @@
+id: devin-lane-reroute-watch
+title: DEV-0045 slice 3 — keep free_lane-first (Tony proceed), add lane-routing watch to kanban-stats
+date: 2026-11-24
+card: devin-lane-cheap-ops-reroute
+ref: DEV-0045
+host: tony-omen (dispatch worktree)
+status: implemented
+
+goal: >
+  Tony answered "proceed" to request
+  dev-0045-slice-2-decision-measurement-in-4cbe90 — keep the deployed
+  cheapest-capable-first lane order (free_lane before devin) and watch
+  the misroute rate, per the lane contract
+  (kanban-free-lane-routing-contract / OPS-0869). This slice delivers
+  the re-measure plus a durable watch surface; no classifier keyword
+  changes (option b narrowing was NOT chosen).
+
+decision_recorded: >
+  Request dev-0045-slice-2-decision-measurement-in-4cbe90, answered
+  2026-11-24 09:02 "proceed" = option (a): keep free_lane-first as
+  deployed, watch misroute rate. Rejected: (b) narrowing broad
+  free_lane keywords to title hits, (c) restoring devin-before-
+  free_lane order.
+
+measurement_2026_11_24: >
+  classify_lane(with_detail=True) over 339 open cards fetched from
+  board-api (JEVOS unreachable from tony-omen, so no-kw cards record
+  fallback->devin — the safe default; served-host jevos may resolve
+  some of the 96 differently). Final lanes: free_lane 159, devin 117,
+  paid_frontier 40, codemod 21, manual 2. Sources: kw 183,
+  fallback 96, timer-alert 45, explicit 15. Consistent with the
+  prior post-flip measure (devin 220->126, free_lane 64->161 over
+  ~350 open) — the flip is the new steady state, not a regression.
+  devin-bound kw hits remaining (19): kw:pipeline x5, kw:provision x5
+  (4 are runner-auto-* cards already status=done in review),
+  kw:diagnos x2, kw:quadlet x2, kw:experiment x2, kw:warm standby,
+  kw:automation, kw:repoint — all plausibly multi-step/remote/
+  ambiguous per the jevos fallback criteria.
+
+misroute_spot_check: >
+  Confirmed false-cheap flips remain live (backlog, unstamped — they
+  classify at queue time): ai-video-quality-control-plane ->
+  free_lane kw:plan, ops-retry-storm-detection -> free_lane kw:try,
+  kk-mac-launchd-runner-followthrough -> free_lane kw:launch,
+  logs-digest-program -> free_lane kw:report. Blast radius stays
+  bounded per the request's own mitigation: free_lane resolves to
+  the opencode executor which REQUIRES a staged action.lane_envelope;
+  unstaged cards hold at claim without burning attempts — observed
+  live when this card itself classified free_lane kw:report and
+  held on idc02/tony-dell until tony-omen's drifted runner claimed
+  it (fleet runner-agent sync completed 2026-11-24 08:10-08:21,
+  sha256-verified on all 6 hosts). Residual: one timer-alert card
+  (timer-alert-idc03-ada-scenario-smoke) carries a bare devin lane
+  with no lane_source — reads as an author pin and overrides the
+  tag guard; likely a legacy pre-provenance claim stamp (the
+  claim-provenance job doc flags this class as not retro-fixed).
+
+watch_implemented: >
+  scripts/board/kanban-stats.py gains a "Lane routing — open cards"
+  section: a lane x lane_source matrix over non-done cards plus an
+  unstamped type:dispatch count. kanban-stats runs every 15min via
+  kanban-sync.timer on the served checkout and mirrors into the
+  system-report web data, so the free_lane cohort, pin-vs-classifier
+  split, and fallback->devin volume are visible continuously instead
+  of needing a manual classify audit. 'pin' (lane, no lane_source)
+  = author-set, wins forever; kw/claim/fallback/jevos/timer-alert =
+  classifier stamps that re-evaluate on re-queue.
+
+incidental_fix: >
+  test_runner_tooling_contract was RED on master briefly: dispatch
+  20261124-081047 (commit 02eb9ab3a3, merged 40b4c43371 ~08:49)
+  changed scripts/board/dispatch_repos.py without bumping its
+  sha256 pin. This session bumped the pin, but before close-out
+  upstream dispatch 20261124-080849 (executor-aware model routing,
+  merge 347298cdab) landed a NEWER dispatch_repos.py AND correctly
+  bumped all manifest pins — so on rebase this session's pin bump
+  was dropped as obsolete; origin/master is self-consistent
+  (manifest ff858dba == source ff858dba). Lesson stands: pin bumps
+  must ride the same commit as the source change.
+
+verified: >
+  tests/board/test_kanban_stats_lane.py (new, 5 tests) +
+  test_runner_tooling_contract + test_queue_time_classify +
+  test_codemod_lane_gate + test_runner_agent_lane = 81 tests OK.
+  kanban-stats.py --check renders the matrix on live card YAMLs.
+
+followups:
+  - >
+    The 4 confirmed false-cheap backlog cards above are the watch
+    list — if any gets a staged opencode envelope it will misroute;
+    per Tony's proceed they stay as-is, revisit only if the
+    misroute watch shows free_lane failures clustering.
+  - >
+    timer-alert-idc03-ada-scenario-smoke carries a bare devin lane
+    stamp (no lane_source) — either a true author pin (leave) or a
+    legacy claim stamp (needs the card-mutation decision the
+    claim-provenance doc deferred).

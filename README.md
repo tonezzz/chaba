@@ -284,3 +284,4 @@ _Results vary by GPU and scene._
 **X11 / SIBR viewer not working**: Use nerfstudio web viewer (`localhost:7007`) instead, or export `.ply` and open in [SuperSplat](https://playcanvas.com/supersplat/editor).
 
 JEV lane routing live
+opencode free_lane probe tony-omen 2026-11-23

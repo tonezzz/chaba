@@ -1,0 +1,347 @@
+id: mddb-cms-11027-embed-coverage-gap-250-do-e35321
+title: mddb-cms :11027 embed coverage gap — ~250 docs missing vectors, queue dropped=910
+column: done
+updated: 2026-11-26 20:34
+priority: medium
+tags:
+- mddb
+- embedding
+- bge
+- cms
+spec: 'Found by cms-plane-bge-golden-set-eval (MEM-0204, docs/ssot/jobs/mddb/2026-11-24-cms-bge-golden-eval.yml).
+  vector-stats on :11027 shows embedded_documents < total_documents in chaba-archive 2/14, chaba-docs 25/40, chaba-lessons
+  206/207, devin-kb 0/9, documents 274/275, infrastructure-ssot 8450/8611, kb-development 7/20, kb-features 134/145,
+  kb-operations 277/289, kb-system 20/34, ssot 0/1 (~250 docs). Queue stats dropped=910 retried=753 — drops during
+  embed-pool-shim degraded windows silently remove docs from vector search (verified: qrel docs absent from top-50).
+  ALSO: devin-kb/* and ssot.focus have empty contentMd (meta-only) and can never embed — decide backfill vs keyword-only.
+  ACTIONS: (1) non-force POST /v1/vector-reindex per affected collection to embed missing docs (low-traffic window);
+  (2) investigate why queue drops happen and alert on dropped>0; (3) warm-ping cron for bge-m3 upstreams per spike
+  gotcha.'
+ref: MEM-1336
+comms:
+- at: 2026-11-24 23:29
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-25 07:49
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:19
+  from: chaba
+  text: classified as free_lane (kw:docs/ conf 1.00)
+- at: 2026-11-25 09:19
+  from: tony
+  text: queued for processing
+- at: 2026-11-25 09:19
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.57 > 0.85)'
+- at: 2026-11-25 09:19
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 09:20
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 2.19 > 1.0)'
+- at: 2026-11-25 09:28
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 09:29
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 09:31
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (3/3)'
+- at: 2026-11-25 09:35
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-25 09:38
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-25 09:40
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 09:41
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.44 > 1.0)'
+- at: 2026-11-25 09:46
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 10:09
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-25 10:10
+  from: chaba
+  text: started devin-task-20261125-101035-found-by-cms-plane-bge-golden- on tony-macbook (dispatch)
+- at: 2026-11-25 10:10
+  from: chaba
+  text: 'primer injected 8 lesson(s): [embed-pool-fleet-nest-workers-behind-one-85d83b] [status 2026-10-25 14:50]
+    Forc; [mddb-embed-retry-cap] SHIPPED mddb-fork ad7d3f72 (feat/vector-algorithms): fail; [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f]
+    [progress] root causes found: ; embed-pool-shim :11436 504s on 1500-char batches when upstreams are cold/degrade;
+    [audit-miss-ada-voice-job-records] merge-sweep: no session/worktree found for de; [embed-lane-banks-search-pagination]
+    DONE on dispatch branch:'
+- at: 2026-11-25 10:13
+  from: devin
+  text: 'progress: vector-stats rechecked — gap is ~250 docs but chaba-archive docs are ALL meta-only (contentMd
+    empty), same class as devin-kb/ssot.focus. Non-force /v1/vector-reindex is synchronous inline embed (~6s/doc
+    on degraded pool): chaba-archive skipped=14/14 (nothing to embed), kb-development embedded=5 skipped=15 failed=0.
+    Running reindex per affected collection now; will report which gaps are real content vs meta-only.'
+- at: 2026-11-25 10:22
+  from: devin
+  text: 'raised request meta-only-docs-devin-kb-chaba-archive-st-1f3513: Meta-only docs (devin-kb/*, chaba-archive
+    stubs, ssot.focus, + meta-only fraction of chaba-docs/kb-*/documents — content'
+- at: 2026-11-25 10:22
+  from: devin
+  text: 'update: reindex results — the ~250-doc gap is mostly META-ONLY docs (empty contentMd, docs-sync/SSOT pointer
+    stubs): chaba-archive/chaba-docs/kb-system/kb-operations/kb-features/documents/devin-kb/ssot all skipped with
+    totalChunks=0. Real re-embeds so far: kb-development +5, chaba-lessons +3. Queue-drop alerting already exists
+    (embed-probe per-plane, fired today: cms droppedTotal 1716->1729 at depth 4000/4000). Declared in ssot.jobs.yml
+    + rendered units: mddb-cms-vector-reindex (con01 daily :110'
+- at: 2026-11-25 10:42
+  from: devin
+  text: 'DONE (dispatch branch c1beb717d2, outcome doc in worktree). Applied non-force vector-reindex across all
+    12 affected :11027 collections: real re-embeds were only ~8 dropped docs (kb-development +5, chaba-lessons +3)
+    + ada-cms-pages content-churn (200 docs -> 1599/1599); the rest of the ~250 gap is META-ONLY docs-sync stubs
+    with empty contentMd that can never embed — board request raised (recommend keyword-only). infra-ssot sweep
+    still draining server-side (8878+/9025). Declared+rendered: mddb-cms'
+- at: 2026-11-25 10:54
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ull details in `dispatch-outcome-20261125-101035-found-by-cms-plane-bge-golden-.md`.
+    | devin-task-20261125-101035'
+- at: 2026-11-25 10:54
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 10:54
+  from: chaba
+  text: "checkpoint failed: commit: \U0001F50D Validating SSOT files...\n\U0001F4CB Found SSOT files to validate:\ndocs/ssot/ssot.dev-system.assessment.yml\n\U0001F527
+    Checking YAML syntax...\n\e[0;32m✅ YAML syntax valid\e[0m\n\U0001F527 C"
+- at: 2026-11-25 10:54
+  from: chaba
+  text: banked 269 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 10:54
+  from: chaba
+  text: pushed dispatch/20261125-101035-found-by-cms-plane-bge-golden- to origin
+- at: 2026-11-25 10:54
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 10:54
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
+- at: 2026-11-25 10:56
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-101035-found-by-cms-plane-bge-golden- no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-25 10:56
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-101035-found-by-cms-plane-bge-golden- on tony-macbook still
+    dirty — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 11:20
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-25): dispatch branch merged into origin/master as 267d4546c67f
+    (conflicts resolved where applicable: generated SSOT snapshots kept from master, substantive code from branch).
+    Deliverable: mddb-cms embed coverage gap sweep (c1beb71, 7 files). Closing.'
+- at: 2026-11-25 11:20
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 11:20
+  from: tony
+  text: '[verify] VERIFY-QUEUE triage 2026-11-25 (Tony): dispatch branch already in origin/master and verified;
+    held in review for its open request (human decision required). No further merge needed.'
+- at: 2026-11-25 11:20
+  from: tony
+  text: '[verify] correction 2026-11-25: this card has an open request (meta-only-docs-devin-kb-chaba-archive-st-1f3513)
+    and should stay in review for human decision, like bge-production and boards-502. Reverting close.'
+- at: 2026-11-25 11:20
+  from: tony
+  text: moved done -> review
+- at: 2026-11-25 14:01
+  from: tony
+  text: 'answered meta-only-docs-devin-kb-chaba-archive-st-1f3513: proceed'
+- at: 2026-11-25 14:01
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-25 14:03
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-25): dispatch branch merged into origin/master as b8f5e5e697f4.
+    Deliverable: mddb-cms embed coverage gap sweep (c1beb71, 7 files). Closing.'
+- at: 2026-11-25 14:03
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 14:03
+  from: tony
+  text: '[verify] VERIFY-QUEUE triage 2026-11-25 (Tony): dispatch branch already in origin/master and verified;
+    held in review for its open request (human decision required). No further merge needed.'
+- at: 2026-11-25 14:03
+  from: tony
+  text: moved done -> review
+- at: 2026-11-25 14:09
+  from: chaba
+  text: 'answer-sweep: executed ''proceed'' -> queued for processing'
+- at: 2026-11-25 14:09
+  from: chaba
+  text: 'kk-mac defers: installed runner-agent drifted from repo /Users/kkkakk/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 14:10
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 14:11
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.02 > 0.75)'
+- at: 2026-11-25 14:27
+  from: mn01
+  text: claimed
+- at: 2026-11-25 14:28
+  from: chaba
+  text: started devin-task-20261125-072847-found-by-cms-plane-bge-golden- on mn01 (dispatch)
+- at: 2026-11-25 14:28
+  from: chaba
+  text: "primer injected 8 lesson(s): [mddb-cms-11027-embed-coverage-gap-250-do-e35321] progress: vector-stats recheck;
+    [mddb-cms-11027-embed-coverage-gap-250-do-e35321] update: reindex results — the ; [mddb-cms-11027-embed-coverage-gap-250-do-e35321]
+    DONE (dispatch branch c1beb717; [embed-pool-fleet-nest-workers-behind-one-85d83b] [status 2026-10-25 14:50]
+    Forc; [mddb-cms-11027-embed-coverage-gap-250-do-e35321] checkpoint failed: commit: \U0001F50D V; [mddb-embed-retry-cap]
+    SHIPPED mddb-fork ad7d3f72 (feat/vecto"
+- at: 2026-11-25 14:32
+  from: devin
+  text: 'attempt 2: prior run server-side reindex done + merged-claim unverifiable (deliverables absent from origin/master).
+    Tony answered request=proceed -> executing keyword-only declaration for meta-only docs + re-declaring cms-plane
+    reindex job/warm-ping. Verifying :11027 stats first.'
+- at: 2026-11-25 14:45
+  from: devin
+  text: 'progress: decomposed the gap live — 83 meta-only stubs (empty contentMd, can never embed) vs real drops.
+    Stamped meta search_mode=keyword on all 83 via PATCH /v1/update (scripts/mddb/mark-keyword-only.py, idempotent).
+    infra-ssot had 147 real missing vectors — non-force reindex running now (8878->8894+). Declared+rendered: embed-pool-warm
+    (idc03 4m, scripts/embed/embed-pool-warm.py) + mddb-cms-vector-reindex (con01 daily :11027). Job record: docs/ssot/jobs/mddb/2026-11-25-embed-coverage-gap-close'
+- at: 2026-11-25 16:02
+  from: devin
+  text: 'DONE (attempt 2, branch dispatch/20261125-072847-found-by-cms-plane-bge-golden-, outcome doc in worktree).
+    Attempt-1 repo deliverables never landed (verify-queue merge shas not in origin/master) — re-declared here.
+    Live :11027 decomposed: 83 meta-only stubs stamped meta search_mode=keyword via PATCH /v1/update (scripts/mddb/mark-keyword-only.py);
+    infra-ssot re-embedded 8878->8990/9025, last ~35 docs queued during a LIVE pool-degraded window (tony-omen bge-m3
+    cold, 69s load vs 8s shim timeout — w'
+- at: 2026-11-25 16:05
+  from: mn01
+  text: 'finished (ok): exit=0  commits on the dispatch branch; units declared but not installed (deploy gated).
+    | devin-task-20261125-072847-fo'
+- at: 2026-11-25 16:05
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 16:05
+  from: chaba
+  text: 'session-end checkpoint 9491c25b: 1 leftover file(s) committed'
+- at: 2026-11-25 16:05
+  from: chaba
+  text: pushed dispatch/20261125-072847-found-by-cms-plane-bge-golden- to origin
+- at: 2026-11-25 16:05
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 16:05
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-25 16:09
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261125-072847-fo'
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:00
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-25): dispatch branch merged into origin/master as d29d161b0a64,
+    78f028def7b3 (generated SSOT snapshots kept from master, substantive code from branch). Deliverable: embed coverage
+    gap closeout + reindex timers (2 branches, 18 files). Closing.'
+- at: 2026-11-25 17:00
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:02
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:34
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+action:
+  type: dispatch
+  status: done
+  lane: free_lane
+  lane_source: kw
+  model: swe-2-flash-medium
+  attempts: 2
+  result: 'exit=0  commits on the dispatch branch; units declared but not installed (deploy gated). | devin-task-20261125-072847-found-by-cms-plane-bge-golden-.service:
+    Consumed 1min 42.973s CPU time over 1h 34min 10.276s wall clock time, 529.4M memory peak.'
+  sweep:
+    stale_running: 2026-11-25 10:56
+    dirty: 2
+    no_repo: 2026-11-25 16:09
+  runner: mn01
+  verified: false
+claim:
+  since: 2026-11-25 14:27
+requests:
+- id: meta-only-docs-devin-kb-chaba-archive-st-1f3513
+  ask: 'Meta-only docs (devin-kb/*, chaba-archive stubs, ssot.focus, + meta-only fraction of chaba-docs/kb-*/documents
+    — contentMd empty by design, content lives in git repos) can NEVER embed. Options: (A) declare keyword-only
+    — recommended, they are pointer/index docs and vector search was never their surface; (B) backfill contentMd
+    from source repos into MDDB so they embed (duplicates repo content, bigger DB); (C) backfill only selected high-value
+    collections. Which way?'
+  status: answered
+  at: 2026-11-25 10:22
+  from: devin
+  options:
+  - proceed
+  - hold
+  answer: proceed
+  executed: 2026-11-25 queue
+review_kind: verify

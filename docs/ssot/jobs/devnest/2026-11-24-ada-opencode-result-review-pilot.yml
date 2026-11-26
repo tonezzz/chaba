@@ -1,0 +1,117 @@
+title: "Pilot Ada as a read-only OpenCode result reviewer (evaluation-only)"
+id: ada-opencode-result-review-pilot
+date: 2026-11-24
+card: ada-opencode-result-review-pilot
+ref: ADA-1041
+domain: devnest
+status: done
+summary: >-
+  Built the evaluation-only Ada reviewer path: an allowlisted
+  result-bundle assembler, a schema-validated pass|fail|needs_human
+  review contract, pluggable reviewer backends (litellm baseline,
+  gated ada-ws live lane, replay/stub for offline), a frozen
+  seeded-defect corpus, and a shadow eval harness emitting the card's
+  required metrics. First shadow numbers are in — see results.
+
+context: >-
+  Card spec ties ADA-1010 (canonical job envelope), OPS-0956 (OpenCode
+  profiles) and OPS-1037 (command efficiency). The pilot is explicitly
+  NOT an executor=ada lane: ada stays out of
+  ada_job_envelope.EXECUTORS, deterministic tests/verifiers remain
+  hard gates, and Ada cannot waive them, edit the repo, move board
+  state, merge, deploy, or read secrets. Earlier card comms suggested
+  the first S0 set (p1-ops-readonly/ssot-research/storage-dryrun runs)
+  and the strip-list (trace, verifier code, held-out labels,
+  verdict.json until review returns — verdict.json content is
+  projected into result.tests.verifier instead).
+
+changes:
+  - file: scripts/devnest/ada_result_review.py
+    notes: >-
+      New. Subcommands: bundle (assemble ada-review-bundle/1 from an
+      opencode-lane/shadow run dir — declared artifact bytes+sha256
+      inline <=24KB, verifier verdict+checks, summarized tool-call
+      audit with per-tool histogram; raw events.jsonl/stderr/
+      opencode.json/verifier source/secrets structurally excluded),
+      review (one bundle -> schema-validated review -> ada-review.json),
+      eval (frozen corpus -> metrics report md+json with embedded
+      reviews). Backends: litellm (OpenAI-compatible chat completions,
+      LITELLM_URL/key env or litellm-chaba.env), ada-ws (websockets
+      mode=text session, gated by ADA_REVIEW_ALLOW_LIVE=1 — live lane
+      activation requires review per spec), replay, stub. Evidence-ref
+      resolver accepts a.b[0].c and a["key with space"] locators;
+      unresolvable refs fail validation.
+  - file: schemas/ada-review-bundle.schema.json
+    notes: allowlisted bundle contract (draft 2020-12, additionalProperties false)
+  - file: schemas/ada-opencode-review.schema.json
+    notes: >-
+      verdict contract ada-opencode-review/1 — verdict enum
+      pass|fail|needs_human, severity critical|major|minor|info,
+      bounded category enum, evidence_refs with bundle_path locators
+  - file: evals/ada-review/cases/* (8 cases)
+    notes: >-
+      Frozen corpus. Two clean real runs (p1-ops-readonly-203427,
+      p1-ssot-research-202415), one REAL failing run
+      (p1-ssot-research-201939 — malformed artifact, gate fail), and
+      five seeded defects on the clean bundle: artifact hash mismatch,
+      false claim (claim pass vs gate fail), scope violation (mutating
+      commands + verifier peek in audit), missing evidence (->
+      needs_human), spec gap (artifact content claims tony-dell
+      provenance vs idc02 target; gate still passes). expected.yml is
+      the held-out label — never inside bundle.json.
+  - file: evals/ada-review/PROCEDURE.md
+    notes: usage, backend gates, metric definitions, boundaries
+  - file: tests/devnest/test_ada_result_review.py
+    notes: 8 tests — bundle shape, trace-content exclusion, review
+      validation, bracket-key refs, JSON reply parsing, replay/stub,
+      ada-ws gate, scoring/aggregation
+
+results:
+  replay_backend: >-
+    Plumbing oracle: 8/8 expected match, recall 1.0, FP 0,
+    ref-resolution 1.0 (report 20261124-125158-ada-review-eval-replay).
+  litellm_gemini-3.5-flash-lite: >-
+    8/8 reviewed, verdicts pass5/fail2/needs_human1 — critical recall
+    0.5, expected_match 5/8. Missed all three subtle seeded defects
+    that the deterministic gate cannot see (hash mismatch, scope
+    violation, spec gap); caught both gate-visible failures and the
+    missing-evidence case. p50 latency 1.6s. Honest baseline: a cheap
+    model rubber-stamps bundles whose defects need content-level
+    scrutiny.
+  litellm_chat_gemini-3.5-flash: >-
+    8/8 reviewed after fixes (bracket-key evidence refs + 6k token
+    cap), verdicts pass2/fail5/needs_human1 — critical recall 1.0,
+    expected_match 8/8, FP 0, citation quality 1.0, p50 ~9.2s.
+    Stronger tier catches the seeded defects the lite model missed.
+    Report: evals/ada-review/reports/20261124-130138-ada-review-eval-litellm.md
+    (+ raw replies under reports/raw-chat2/).
+  caveats: >-
+    litellm backend measures a MODEL with the Ada-reviewer prompt,
+    not the live Ada assistant — ada-ws is implemented but gated
+    (ADA_REVIEW_ALLOW_LIVE=1) and untested here because ada-dev :8005
+    is loopback-bound on idc03. Cost shows 0 — LiteLLM usage lacks a
+    cost field; token usage is in raw replies. n=8 frozen cases is a
+    smoke corpus, not a powered study; expand before any activation
+    decision.
+
+verification:
+  - "pytest tests/devnest/test_ada_result_review.py — 8 passed"
+  - "eval --backend replay — 8/8 expected match"
+  - "eval --backend litellm --model chat — 8/8 expected match, recall 1.0"
+  - "eval --backend litellm --model gemini-3.5-flash-lite — 5/8, recall 0.5 (model-tier signal)"
+  - "bundle assembler verified to exclude events trace content (test + manual)"
+
+gates:
+  live_ada_lane: >-
+    NOT activated. ada-ws requires ADA_REVIEW_ALLOW_LIVE=1 and a
+    reachable lane (ada-dev :8005 loopback on idc03; run there or via
+    tunnel). Activating the live Ada text lane — and any Ada
+    tools/DevTeam playbook use — requires review before dispatch per
+    card spec.
+  pass_criteria: >-
+    None declared in card; recommendation for review: powered corpus
+    (>=30 cases across profiles), live ada-ws shadow run on idc03,
+    human spot-check of findings, then decide whether review output
+    may inform (never replace) human approval on risky work.
+  human_approval: preserved — reviews are evidence only; risky work
+    keeps its separate approval path untouched.

@@ -1,0 +1,62 @@
+id: render-board-card-parse-cache-20261125
+title: render-board stat-keyed card parse cache + single-pass dispatch refs
+date: 2026-11-25
+card: render-board-real-cost-git-subprocesses
+ref: KNB-0165
+host: mn01 (dispatch worktree)
+status: landed-on-dispatch-branch
+
+goal: >
+  Retire the render's two remaining hot paths per the card spec:
+  per-branch git subprocesses in compute_checks, and per-file
+  yaml.load in load_cards (the ~2min tony-omen render).
+
+what-landed:
+  scripts/render-board.py:
+    - >-
+      _all_dispatch_refs(): ONE `git for-each-ref
+      --format='%(refname:short) %(objectname)' refs/heads/dispatch/`
+      yields (branch, tip) pairs; feeds _run_branches' slug index AND
+      _branch_tip()'s cache keys — zero per-branch rev-parse/merge-base
+      subprocesses. `git cherry` now evaluates the tip sha (robust to
+      branch move/delete mid-render). Merged-set batch + tip-keyed
+      disk cache from #197 unchanged.
+    - >-
+      _load_card_file(): stat-keyed (size, mtime_ns) pickle cache at
+      docs/ssot/kanban/.render-cards-cache.pkl (gitignored, v=1,
+      atomic tmp+replace, atexit flush, exists()-pruned on write).
+      Same stat invariant dir_hash already relies on for --if-changed:
+      writers land via atomic rename/git checkout, both bump mtime.
+      Callers get shallow copies — checks-chip mutations can't poison
+      cached parses. Non-dict YAML still normalizes to {id: stem}.
+  scripts/render-board2.py:
+    - >-
+      archive loop (1176 files) now shares _rb._load_card_file +
+      explicit _rb._flush_cards_cache() before compute_checks.
+  .gitignore: + .render-cards-cache.pkl[.tmp]
+
+measured: >-
+  mn01, libyaml host, 754 live + 1176 archive cards.
+  render-board.py 2.68-2.90s -> 1.25-1.39s warm (~50%);
+  render-board2.py 4.49-4.77s -> 1.57-1.68s warm (~65%);
+  cold first run ~3.2s (one-time cache build, ~13-23MB pkl);
+  libyaml-less hosts (omen) ~40s+ pure-Python YAML -> <1s pickle load.
+  correctness: cards.json/archive.json/html byte-identical to
+  pre-change baseline modulo timestamps; _branch_merged verified
+  against `git merge-base --is-ancestor` on 12-branch sample, 0 bugs.
+
+findings:
+  - >-
+    compute_checks' git path is currently DEAD CODE: zero live cards
+    carry action.task_id (runner-agent era — ids live in runner
+    state.json; done cards only embed the slug in action.result text
+    'devin-task-<slug>.service'). Follow-up carded: KNB-1366
+    render-board-checks-task-id-dead-path.
+  - >-
+    card brief's 13.5s/2m8s numbers predate #197 (merged 2026-11-24),
+    which already landed CSafeLoader + branch --merged batch + cherry
+    disk cache. This change is the remaining delta on top.
+
+verify: python3 scripts/render-board.py && python3 scripts/render-board2.py
+  — second run should be ~1.3s/~1.6s; diff stacks/web/public/apps/**/
+  {cards,archive}.json against a pre-change render for identity.

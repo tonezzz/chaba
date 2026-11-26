@@ -15,7 +15,6 @@ expected_exposure:
   # the Caddy edge is tailnet-only today. Verify externally before relying.
   - { listener: "ts-serve:443", class: tailnet-only, service: "tailscale serve", target: "127.0.0.1:80", note: "Caddy apps edge — tailnet-only; funnel not enabled per serve status 2026-09-25" }
   - { listener: "ts-serve:443/apps/home-assistant/", class: tailnet-only, service: "tailscale serve", target: "127.0.0.1:8123", note: "HA login — tailnet-only in practice" }
-  - { listener: "ts-serve:443/apps/vms/", class: tailnet-only, service: "tailscale serve", target: "127.0.0.1:80", note: "NEEDS VERIFICATION — no Tailscale-User-Login gate found in either Caddyfile 2026-09-25 (page returns 200 tailnet-wide; WS to websockify :6082 appears unrouted). Claimed tailnet-gate 2026-09-24 does not exist in current configs" }
   - { listener: "ts-serve:443/apps/board-api/", class: tailnet-only, service: "tailscale serve -> caddy -> board-api", target: "127.0.0.1:8787", note: "writes gated 2026-10-05 (card board-api-auth): Caddy 403s non-GET without Tailscale-User-Login; board-api re-checks header + all-trusted XFF (loopback|tailnet) or direct loopback caller. GETs open." }
   # Tailnet
   - { listener: "100.68.142.13:5432", class: tailnet-only, service: "tailscale serve --tcp", target: "127.0.0.1:5432", note: "chaba-postgres-16" }
@@ -34,7 +33,6 @@ expected_exposure:
   - { listener: "0.0.0.0:3009",  class: lan, service: node-app, note: "node service — refine name on next audit" }
   - { listener: "0.0.0.0:3389",  class: lan, service: xrdp, note: "xrdp + xrdp-sesman active" }
   - { listener: "0.0.0.0:6379",  class: lan, service: redis }
-  - { listener: "0.0.0.0:6080",  class: lan, service: websockify-macbook }
   - { listener: "0.0.0.0:8000",  class: lan, service: status-api }
   - { listener: "0.0.0.0:8006",  class: lan, service: node-app, note: "node service — refine name on next audit" }
   - { listener: "0.0.0.0:8083",  class: lan, service: nginx }
@@ -48,7 +46,7 @@ expected_exposure:
   - { listener: "0.0.0.0:9001",  class: lan, service: raceman-php, note: "php-fpm" }
   - { listener: "0.0.0.0:9230",  class: lan, service: playlived }
   - { listener: "0.0.0.0:9584",  class: lan, service: ha-mcp-tony, note: "RETIRED 2026-10-26 — tony-ha container evacuated to tony-omen; listener gone" }
-  - { listener: "0.0.0.0:9585",  class: lan, service: ha-mcp-michael-dev, note: "RETIRED 2026-10-26 — michael-dev container migrated to idc03; listener gone" }
+  - { listener: "0.0.0.0:9585",  class: lan, service: ha-mcp-mn-ha-dev, note: "RETIRED 2026-10-26 — mn-ha-dev container migrated to idc02; listener gone" }
   - { listener: "0.0.0.0:11434", class: lan, service: ollama, optional: true, note: "podman container — may be stopped; primary Ollama now on idc03" }
   - { listener: "0.0.0.0:11435", class: lan, service: gemini-ollama-proxy }
   - { listener: "0.0.0.0:18555", class: lan, service: go2rtc }
@@ -81,7 +79,7 @@ firewall:
     - "deny 9001 (php-fpm — only local nginx consumes; LAN blocked)"
     - "allow 22/tcp + 8222/tcp (ssh — key-only)"
     - "allow 3389/tcp (xrdp — pre-existing rule kept)"
-    - "allow 6080/tcp (websockify-macbook) 8083 (nginx) 8090 (frigate)"
+    - "allow 8083 (nginx) 8090 (frigate)"
     - "allow 8125/tcp 8126/tcp (caddy/socat LAN edge)"
     - "allow 1880/tcp (node-red) 8300 8301 (weaviate)"
     - "allow 9584 9585 (HA instances — RETIRED 2026-10-26, moved to tony-omen/idc03) 8791 8789 9005 11435 19584 (identified APIs + GatewayPorts forward — 19584 retired)"

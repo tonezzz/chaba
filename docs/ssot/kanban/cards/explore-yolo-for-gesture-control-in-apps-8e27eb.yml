@@ -1,0 +1,237 @@
+id: explore-yolo-for-gesture-control-in-apps-8e27eb
+title: Explore YOLO for gesture control in /apps/eye/
+column: done
+updated: 2026-11-26 20:38
+priority: medium
+note: Evaluate replacing MediaPipe with in-browser YOLO (ONNX Runtime Web/WebGPU) for hand gesture detection on
+  /apps/eye/
+ref: OPS-1392
+comms:
+- at: 2026-11-25 13:22
+  from: ada
+  text: Evaluate replacing MediaPipe with in-browser YOLO (ONNX Runtime Web/WebGPU) for hand gesture detection on
+    /apps/eye/
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:56
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:00
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 19:23
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-25 19:30
+  from: chaba
+  text: classified as free_lane (kw:evaluate conf 1.00)
+- at: 2026-11-25 19:30
+  from: chaba
+  text: queued for processing
+- at: 2026-11-25 19:30
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 19:30
+  from: chaba
+  text: '[auto-dispatch] wave 7 (2026-11-25 19:30): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-25 19:31
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.29 > 1.5)'
+- at: 2026-11-25 19:31
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 6.74 > 0.8)'
+- at: 2026-11-25 19:31
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (4/4)'
+- at: 2026-11-25 19:31
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.35 > 0.7)'
+- at: 2026-11-25 19:31
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-25 19:31
+  from: chaba
+  text: 'kk-mac defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 19:32
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 19:35
+  from: mn01
+  text: claimed
+- at: 2026-11-25 19:37
+  from: chaba
+  text: started devin-task-20261125-123658-evaluate-replacing-mediapipe-w on mn01 (dispatch)
+- at: 2026-11-25 19:37
+  from: chaba
+  text: 'primer injected 8 lesson(s): [rebuild-gesture-controls-using-yolo-190356] DONE (attempt on tony-omen).
+    runner; Same-named yolo units have different roles per host: omen yolo-xiaomi retired (y; "test_merge_sweep
+    fixture relied on global git identity — tony-dell has none (re; `/home/tony/ada-nest-videos` in card text is
+    stale — real archive is `tony-dell:; [logs-digest-program] primer injected 8 lesson(s): Check `sha256sum` of
+    BOTH `~/; [purge-retained-ada-ha-household-clone-ba-51b853] primer inje'
+- at: 2026-11-25 19:37
+  from: devin
+  text: claimed — exploring /apps/eye (MediaPipe ObjectDetector today); evaluating ONNX Runtime Web/WebGPU + YOLO
+    gesture model
+- at: 2026-11-25 19:51
+  from: mn01
+  text: 'finished (failed): exit=1 0261125-123658-evaluate-replacing-mediapipe-w.service: Failed with result ''exit-code''.
+    | devin-task-20261125-1236 — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-25 19:52
+  from: chaba
+  text: 'mn01 retry backoff: fail 1/3 — next claim not before 11-25 13:22'
+- at: 2026-11-25 19:56
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.91 > 1.0)'
+- at: 2026-11-25 19:56
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 20:12
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 20:14
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-25 20:16
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-25 20:16
+  from: chaba
+  text: started devin-task-20261125-201656-evaluate-replacing-mediapipe-w on tony-macbook (dispatch)
+- at: 2026-11-25 20:16
+  from: chaba
+  text: 'primer injected 8 lesson(s): [explore-yolo-for-gesture-control-in-apps-8e27eb] finished (failed): exit=1
+    0261; [explore-yolo-for-gesture-control-in-apps-8e27eb] primer injected 8 lesson(s): [; [rebuild-gesture-controls-using-yolo-190356]
+    DONE (attempt on tony-omen). runner; "test_merge_sweep fixture relied on global git identity — tony-dell has
+    none (re; The session-audit marker and summary corpus live on tony-macbook (`~/.local/shar; `/home/tony/ada-nest-videos`
+    in card text is stale — real arc'
+- at: 2026-11-25 21:58
+  from: devin
+  text: 'DONE (attempt 2, worktree commit c2a9396). Prototype live: /apps/eye/?det=yolo runs YOLO26n HaGRID 12-class
+    gesture model fully in-browser via vendored onnxruntime-web@1.31.1 (WebGPU EP preferred, WASM fallback). Verified
+    headless Chrome: hagrid-call imgs → call 0.88-0.90; WebGPU EP functional under SwiftShader. Bench (CPU wasm,
+    i7-6700HQ): YOLO p50 ~419ms/2.4fps vs MediaPipe p50 ~103-116ms/~9fps — ~4x slower on CPU; int8 dynamic-quant
+    rejected (6.5x slower). Eval + numbers: docs/ssot/jobs/eye/2'
+- at: 2026-11-25 22:09
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-201656-evaluate-replacing-mediapipe-w no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-25 22:09
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-201656-evaluate-replacing-mediapipe-w on tony-macbook still
+    dirty — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 22:11
+  from: tony-macbook
+  text: 'finished (ok): exit=0 h-outcome-20261125-201656-evaluate-replacing-mediapipe-w.md` written with lessons.
+    | devin-task-20261125-201656-e'
+- at: 2026-11-25 22:11
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 22:11
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261125-201656-evaluate-replacing-mediapipe-w
+    is 135 commits behind origin/master —\n   run 'git pull"
+- at: 2026-11-25 22:11
+  from: chaba
+  text: banked 706 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 22:11
+  from: chaba
+  text: pushed dispatch/20261125-201656-evaluate-replacing-mediapipe-w to origin
+- at: 2026-11-25 22:11
+  from: chaba
+  text: 'auto-merge not done: merge: commit after conflict resolution failed — close will block until merged'
+- at: 2026-11-25 22:11
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-25 22:24
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261125-201656-e'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:54
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:55
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:56
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 08:35
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-26): dispatch branch merged into origin/master as 41ef17d2ac90
+    (generated SSOT snapshots kept from master, substantive code from branch). Deliverable: YOLO/ONNX gesture eval
+    + eye app wiring (19 files). Closing to clear the >10 verify brake.'
+- at: 2026-11-26 08:35
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+spec: Evaluate replacing MediaPipe with in-browser YOLO using ONNX Runtime Web/WebGPU for hand gesture detection
+  within the /apps/eye/ project of the chaba repository. The work must be performed on host tony-dell. Constraints
+  include ensuring all dependencies are compatible with the existing browser-based stack and maintaining local execution
+  without external API dependencies. The verifiable done-condition is a working prototype integrated into /apps/eye/
+  that successfully runs YOLO gesture detection locally via ONNX Runtime Web/WebGPU with a documented evaluation
+  of performance compared to MediaPipe.
+action:
+  type: dispatch
+  status: done
+  lane: free_lane
+  lane_source: kw
+  model: swe-2-flash-medium
+  attempts: 2
+  result: 'exit=0 h-outcome-20261125-201656-evaluate-replacing-mediapipe-w.md` written with lessons. | devin-task-20261125-201656-evaluate-replacing-mediapipe-w.service:
+    Consumed 22min 56.054s CPU time over 1h 51min 23.629s wall clock time, 3.6G memory peak.'
+  last_failure: 'exit=1 0261125-123658-evaluate-replacing-mediapipe-w.service: Failed with result ''exit-code''.
+    | devin-task-20261125-123658-evaluate-replacing-mediapipe-w.service: Consumed 1min 30.560s CPU time over 14min
+    37.652s wall clock time, 2.5G memory peak.'
+  runner: tony-macbook
+  sweep:
+    stale_running: 2026-11-25 22:09
+    dirty: 1
+    no_repo: 2026-11-25 22:24
+claim:
+  since: 2026-11-25 20:16
+review_kind: verify

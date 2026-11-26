@@ -1,0 +1,107 @@
+id: mcp-inventory-scope-status-standard
+title: Standardize MCP scope, status vocabulary and finding IDs
+column: done
+updated: 2026-11-23 13:35
+brief: 'Make the fleet MCP report''s declarations and findings computable and triageable: explicit per-server scope,
+  no-config on the report status contract, and stable finding IDs with human-owned triage state.'
+priority: high
+tags:
+- mcp
+- ssot
+- reports
+- standardization
+spec: 'Context (from Tony 2026-11-20, after the Fleet MCP report was published and the delta/Configured columns
+  were explained in Education:):
+
+  ''please suggest how should we standardize and organize them properly'', then choice: ''MCP declarations + report
+  findings'' and ''Card it and implement''.
+
+
+  Verified gaps (not guesses):
+
+  1. ssot.reports.yml status_enum is finalized (ok/delta/error/stale/missing/unreachable/planned/remote/dormant)
+  but scripts/mcp-inventory.py emits `no-config`; scripts/lib/report.py::resolve_node maps any status outside its
+  STATUSES to `error`, so reachable infra hosts with no agent configs surface as errors in L3.
+
+  2. ssot.mcp.yml declares servers globally except per_host overrides; `declared_for_host` treats global entries
+  as expected on every host, so idc02 (3 configured) shows 13 false ''active declared but not configured'' names.
+
+  3. Findings are free-text strings in meta/L2, so the same fingerprint cannot be tracked, carded or suppressed
+  across daily runs.
+
+
+  Scope / deliverables:
+
+  - Extend ssot.mcp.yml `fleet_observation` with a scope model: default scope + declared agent-lane hosts; give
+  every server an explicit scope (fleet | agent-lanes | [named hosts]); keep per_host overrides as a narrowing rule.
+  Use expected_statuses as the single active-status source. Add a human-owned finding-triage map (open|carded|suppressed
+  with reason/card/by/until).
+
+  - Update scripts/mcp-inventory.py so expected sets are computed from that scope; emit stable finding IDs (deterministic
+  host+kind+names) with kind, severity, servers and triage state into L0 artifacts, L1 meta and the L2 report. Producers
+  never write triage state or card workflow fields.
+
+  - Add `no-config` to ssot.reports.yml status_enum and scripts/lib/report.py STATUSES (documented informational,
+  not red) so resolve_node stops converting it to error. Fail loud on an unknown scope/status instead of silently
+  mis-scoping.
+
+  - Update docs/kb/layered-reporting.md where it describes the status contract, and the existing Fleet MCP Education
+  lesson family in place (upsert, do not fork).
+
+
+  Done when: ssot-validate passes; a producer run on all six hosts emits scoped expected sets and IDed findings;
+  no-config resolves as no-config in L3; the L2 report is republished to Reports:Fleet-MCP-Inventory with finding
+  IDs and triage state; evidence comm on this card; Fleet MCP hub lesson updated. No Infrastructure: namespace writes
+  (still gated on wiki-page-door-infrastructure-namespace).'
+action:
+  type: manual
+  status: done
+ref: OPS-0025
+comms:
+- at: 2026-11-20 18:21
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-20 18:43
+  from: devin
+  text: 'VERIFIED 2026-11-20 (OPS-0025 — MCP scope/status/finding standard). All done-criteria met.
+
+
+    IMPLEMENTED (commit e489e93 -> merged to master ac175474c1, pushed to origin):
+
+    - ssot.mcp.yml: `fleet_observation.scope_model` gives every server an explicit `scope` (fleet | agent-lanes
+    | [named hosts]) + `finding_states`/`finding_triage`; all 23 servers scoped, google-home-lan -> [mn01]. per_host
+    narrows further; unknown scope fails loud.
+
+    - ssot.reports.yml + scripts/lib/report.py: `no-config` added to '
+- at: 2026-11-20 18:44
+  from: devin
+  text: closed by devin
+- at: 2026-11-20 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 19:07
+  from: devin
+  text: 'TRIAGE APPLIED 2026-11-20 (follow-up to OPS-0025). Tony chose one action per finding; written to ssot.mcp.yml
+    fleet_observation.finding_triage by: tony.
+
+
+    1 mcp-tony-omen-missing-active (mcp-kornia) -> CARDED, OPS-0035.
+
+    2 mcp-tony-omen-undeclared-configured -> FIXED AT SOURCE, not suppressed: declared colab-mcp (scope [tony_omen],
+    official Google kernel-level MCP complements mcp-colab) + icloud (scope [tony_omen], both omen surfaces), and
+    widened google-home-lan scope to [mn01, tony_omen] since o'
+- at: 2026-11-20 19:14
+  from: devin
+  text: 'FOLLOW-UP CLOSE 2026-11-20: OPS-0035 and OPS-0036 both done. Final live producer run: all 4 config-bearing
+    hosts clean (tony_omen ok 22, tony_dell ok 17, idc02 ok 3, mn01 no-config, idc03 no-config, michael-ha unreachable/appliance).
+    Fleet report republished (evt-91180d192abb2ef4) with 3 suppressed findings only - no open, no carded. Both carded
+    findings were resolved at source rather than left in triage, so their triage entries were removed; the cards
+    hold the decision trail. Remaining suppress'
+- at: 2026-11-21 17:44
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 13:35
+  from: tony
+  text: archived (1d in done, board over card cap)

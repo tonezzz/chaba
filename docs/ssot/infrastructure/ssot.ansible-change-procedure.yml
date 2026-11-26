@@ -1,0 +1,176 @@
+# ssot.ansible-change-procedure.yml
+# Standard procedure for remote-host / fleet / service / repeatable-config
+# changes. Codified 2026-11-25 after the runner-agent drift converge:
+# all 7 Linux hosts ran a stale installed snapshot, the board-api drift gate
+# marked every host ineligible, and 16 queued cards were stuck. The existing
+# playbook fixed it; what was missing was one governed way to get there.
+title: Ansible change procedure — governed path for host/fleet/service changes
+ref: "2026-11-25 runner-agent drift converge (queue 16 -> 7, 11 claimed)"
+status: active
+created: 2026-11-25
+authority: "AGENTS.md procedure-lookup duty — answer from the system, define partial procedure"
+
+skill_mirror:
+  canonical: ".agents/skills/ansible-first/SKILL.md"
+  local_install: "~/.claude/skills/ansible-first/SKILL.md -> ~/.local/share/chaba-skills/ansible-first/SKILL.md (stable cache copy; workspace checkouts may lag origin/master)"
+  refresh: "git -C <chaba-checkout> show origin/master:.agents/skills/ansible-first/SKILL.md > ~/.local/share/chaba-skills/ansible-first/SKILL.md"
+  discovery: "scripts/skills-wiki-export.py TOOLING ref + docs/kb/ada-ocb-skills-education.md inventory + tests/test_agents_skills_explored.py pin"
+  reason: "single source of truth — edit the repo copy, every OpenCode host with the symlink inherits the procedure"
+
+applies_to:
+  - "remote host config"
+  - "service / timer / container changes"
+  - "fleet-wide or repeatable configuration"
+  - "tool-snapshot deployment to ~/.local/bin"
+
+excludes:
+  - "board-api-owned mutations — use the /card, /comment, /action, /publish, /wiki/page write door; Ansible is not a writer of board state"
+  - "local repo edits, tests, docs — normal tools"
+  - "read-only host diagnosis — MCP debug / plain SSH is fine; --check optional"
+
+# Controller is the host with ansible-playbook on PATH and a checkout whose
+# scripts/board/*.py is the source of truth. Do not run from idc03 (no ansible).
+controller:
+  host: tony-dell
+  checkout: /home/tony/CascadeProjects/chaba
+  note: "tony-dell's runner-agent-converge.timer already invokes deploy-runner-agent.yml nightly"
+inventory: ansible/inventory/hosts.yml
+target_policy: "always --limit or an explicit inventory group; never a blanket all: run"
+
+playbook_registry:
+  deploy-runner-agent.yml: "converge installed ~/.local/bin/runner-agent to repo copy (checksum-gated, restart handler)"
+  runner-cap.yml: "manage RUNNER_CAP / RUNNER_MAX_LOAD_PC drop-in per host"
+  verify-runner-tools-sync.yml: "read-only tool-pin/diff audit"
+  audit-runner-tools.yml: "read-only companion to sync-runner-tools.sh"
+  runner-fleet-health.py: "fleet health probe (not a playbook)"
+  site.yml: "baseline packages / security updates / docker check"
+  ada-ocb-upgrade.yml: "approval-gated pane upgrade (ocb_change_approved=false by default)"
+
+workflow:
+  - step: 1
+    name: locate
+    action: "grep ansible/playbooks + ansible/inventory + docs/ssot/infrastructure for an existing playbook; reuse it rather than writing ssh <host> 'sed -i ...'"
+    gate: "if no playbook exists, one-off = direct shell with explicit host + dry run + rollback note; repeatable = add a playbook with a card/job trail"
+  - step: 2
+    name: confirm_target
+    action: "identify target hosts from docs/ssot/infrastructure and ansible/inventory/hosts.yml, not from memory"
+    gate: "respect macos / disabled / portable groups"
+  - step: 3
+    name: diagnose
+    action: "read-only proof of the actual drift/fault: sha256 both src and dest, check service state and the consumer-side symptom (e.g. /queue blocked reasons)"
+    gate: "never mutate on an unverified symptom"
+  - step: 4
+    name: preflight
+    action: "ansible-playbook --check --diff --limit <host> <playbook> from the controller"
+    gate: "0 unreachable, 0 failed; review which hosts would change"
+  - step: 5
+    name: approval
+    action: "state the disruption and rollback note, then get explicit approval when the play restarts a service or touches edge/Caddy/DNS/firewall/packages"
+    gate: "oneshot timer services (e.g. runner-agent) still count as a restart — call it out"
+  - step: 6
+    name: backup
+    action: "copy current installed artifacts to a timestamped sibling before the run (ansible ad-hoc command module is fine)"
+    gate: "record the backup path in evidence"
+  - step: 7
+    name: converge
+    action: "ansible-playbook <playbook> --limit <host>; let restart handlers fire"
+    gate: "0 unreachable, 0 failed"
+  - step: 8
+    name: verify
+    action: "re-run the exact check from step 3; re-run --check to prove idempotency (all hosts in-sync, changed=0)"
+    gate: "consumer proof required — e.g. queue eligibility restored / card claimed, not just matching hashes"
+  - step: 9
+    name: file_evidence
+    action: "write a job SSOT under docs/ssot/jobs/<area>/ with hashes, check output, consumer proof, rollback path and lessons; mirror the lesson to KB/MDDB where Ada acts on it"
+    gate: "unverified changes are not closed"
+
+verification_standard:
+  - "same check that identified the fault, re-run after the change"
+  - "health endpoint / service status / per-host verdict"
+  - "consumer-level proof that the workload resumed"
+  - "idempotency: second --check shows changed=0 on every host"
+
+rollback:
+  default: "restore the timestamped pre-change copy over the installed artifact"
+  alternative: "re-run the playbook after the repo/checkout is corrected"
+  note: "never hand-edit a playbook-managed file outside the playbook once one exists"
+
+known_ground_truth:
+  runner_agent_pin: "scripts/devin/runner-tooling.manifest.json — both sync-runner-tools.sh and runner-agent._self_update gate on this sha256"
+  drift_semantics: "a drift flag is a lagging indicator between repo-sync and tool-sync; sha256 both sides before touching anything"
+  mtime_caveat: "'newer than repo' guards compare mtime, not content — a newer-mtime installed copy can still be missing features"
+
+prep_plan_apply_verify:
+  status: defined
+  created: 2026-11-26
+  tracking_card: OPS-1424 (ansible-prep-plan-apply-verify)
+  lesson: "lesson-d9a60705d09e (Education:Ansible Prep-Plan-Apply-Verify Workflow)"
+  decisions:
+    pilot_first: "1A — ADA-OCB upgrade prep/verify wrapper"
+    artifacts: "2A — canonical in reports/ansible-benchmark/<playbook>/<ts>/; board-api comment carries short summary + fp= + artifact path; no bulky logs in card comms"
+    traceability: "3A — gated apply runs require card_id/card_ref"
+  intent: >-
+    Standardize non-trivial Ansible fleet changes as prep -> plan -> apply -> verify.
+    Prep produces stable, idempotent baselines and structured logs/artifacts for refinement.
+    Read-only by default; mutation only in gated apply.
+  stages:
+    - stage: prep
+      mode: read-only
+      default: true
+      purpose: "Preflight/baseline: SSOT/paths/secret names (never values), packages/tools, units/timers, disk/headroom, dependency reachability, env contract."
+      outputs:
+        - "reports/ansible-benchmark/<playbook>/<ts>/summary.yml"
+        - "reports/ansible-benchmark/<playbook>/<ts>/<host>.yml"
+        - "optional board-api fp-deduped comment when board_notify=true"
+      gate: "No host mutation. Controller writes report artifacts only."
+    - stage: plan
+      mode: "read-only --check --diff"
+      purpose: "Deterministic preview of what will change; identify blockers before approval."
+      outputs:
+        - "check-diff output captured/referenced"
+        - "parsed delta report referenced on card"
+      gate: "No mutation. Unreachable/missing-secret/drift-conflict = blocker for targeted apply."
+    - stage: apply
+      mode: gated-mutation
+      purpose: "Execute approved change narrowly and idempotently."
+      required_vars:
+        - "*_approved=true (playbook-specific approval var; e.g. ocb_change_approved=true)"
+        - "card_id or card_ref (traceability)"
+      preflight_asserts:
+        - "approval var is true"
+        - "card_id/card_ref present"
+        - "rollback note/path stated before run"
+        - "target scope is --limit or explicit group"
+      gate: "Explicit approval + rollback + narrow --limit. No destructive ops without confirmation."
+    - stage: verify
+      mode: read-only
+      purpose: "Producer and consumer proof; closeout evidence."
+      outputs:
+        - "verify report under reports/ansible-benchmark/<playbook>/<ts>/"
+        - "board-api comment with short summary + fp= + artifact path"
+        - "fp=cleared on resolution when applicable"
+      gate: "Close only with verified evidence. Unverifiable = hold, not done."
+  artifact_contract:
+    canonical_root: "reports/ansible-benchmark/<playbook>/<ts>/"
+    summary_file: "summary.yml"
+    per_host_file: "<host>.yml"
+    per_host_fields: [summary, checks, deltas, evidence, elapsed_s, rc]
+    board_comment: "short human summary + fp=<fingerprint> + artifact path"
+    bulky_logs: "never paste bulky logs into card comms; reference artifact path"
+  var_contract:
+    common: [board_notify, board_api_base, board_from, report_dir]
+    gated_apply: [card_id, card_ref, "<playbook>_approved"]
+  gates:
+    - "Board-api only card write door; no direct docs/ssot/kanban/cards/*.yml edits from Ansible."
+    - "Read-only by default; mutations require explicit approval, rollback, producer+consumer verification."
+    - "No secret values in logs/artifacts/comments; presence/contract checks only."
+    - "--limit for previews; full-fleet for clean baselines/fingerprints."
+    - "rc=4 (unreachable) tolerated in scheduled read-only audits; blocker for targeted apply."
+  pilot_1a:
+    target: "ADA-OCB upgrade flow (ada-ocb-upgrade.yml / ada-ocb-audit.yml / ada-ocb-verify.yml companions)"
+    deliverables:
+      - "preflight playbook or preflight role"
+      - "check-diff plan artifact/report contract"
+      - "gated apply asserts card_ref + approval"
+      - "post-verify report/comment with evidence"
+    success: "one prep/plan cycle (and apply only with explicit approval) with artifacts in reports/ansible-benchmark/ada-ocb-upgrade/<ts>/ and board-api evidence refs on OPS-1424"

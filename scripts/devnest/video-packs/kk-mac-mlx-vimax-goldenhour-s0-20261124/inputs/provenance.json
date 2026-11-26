@@ -1,0 +1,40 @@
+{
+  "pack": "kk-mac-mlx-vimax-goldenhour-s0-20261124",
+  "status": "STAGED-ON-APPROVAL — repo definition only, NOT on the Drive queue",
+  "created": "2026-11-24",
+  "card": "kk-mac-video-library-rerender",
+  "lane": "kk-mac-mlx",
+  "old_project": {
+    "id": "vimax-run3-scene0 / idea2video-local / Golden Hour Catch",
+    "source_of_truth": "adanest@kk-mac:~/ViMax/.working_dir/idea2video-local/scene_0/ (tony-dell:~/CascadeProjects/tony-chaba-dell/archive/ada-nest-videos/vimax-run3-scene0 is a copy)",
+    "old_artifacts": [
+      "scene_0/shots/0/video.mp4",
+      "scene_0/shots/1/video.mp4",
+      "scene_0/final_video.mp4"
+    ],
+    "old_lane": {
+      "script": "/Users/adanest/vimax_gen_video.py (kk-mac)",
+      "pipeline": "diffusers LTXPipeline (base, t2v — no image conditioning)",
+      "params": "768x512, 49 frames, num_inference_steps=30, 24fps, torch.float32 + enable_model_cpu_offload, ~11min/shot",
+      "prompt_rule": "shot_description.motion_desc + '\\n' + shot_description.audio_desc (ViMax script2video_pipeline.py:527)",
+      "seed": "unrecorded"
+    }
+  },
+  "mlx_render_params": {
+    "model": "LTX-Video 0.9.8-distilled 2B", "port": "baisampayans/ltx-mlx",
+    "checkpoint": "ltxv-2b-0.9.8-distilled.safetensors",
+    "model_dir_on_kk_mac": "~/kk-video/ltx-mlx/models/LTX",
+    "width": 768, "height": 512, "frames": 49, "fps": 24,
+    "steps": 8, "seed": 42,
+    "conditioning": "prompt text via real T5 encoder (text_encoder present on kk-mac); t2v like old render",
+    "prompt_sha256": "computed per shot into batch-result.json"
+  },
+  "shots": {
+    "vimax-s0shot0": "wide golden-hour longtail boat glide; motion='Static camera. No movement observed within the frame.'",
+    "vimax-s0shot1": "close-up child+Kaow+fish leap; motion='slow pan to tiller, fish arcs and splashes'"
+  },
+  "inputs": "none required — prompts are inline verbatim in run_vimax_s0.py; shot_description.json sources listed above",
+  "gates": "same owner-use/idle/load/memory gates as scene0 control; memory floor raised to 45% (T5-XXL path)",
+  "comparison_plan": "prompt adherence is directly judgeable (verbatim ViMax prompt); compare vs scene_0/shots/*/video.mp4 mpeg4 768x512 49f",
+  "preserve": "old ViMax working_dir + tony-dell archive untouched"
+}

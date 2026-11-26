@@ -1,0 +1,121 @@
+title: Devin usage-reduction roadmap — assessment verification, first
+  re-route pick, follow-up cards filed
+subtitle: DEV-0044 / card devin-usage-reduction — post-assessment session
+  (dispatch 20261124-224339, idc02). Verified which levers are already
+  landed vs. still open, picked the first low-risk task class to re-route
+  off the devin lane, and filed one follow-up card per open lever.
+icon: trending_down
+version: 1
+
+card: devin-usage-reduction
+date: 2026-11-24
+dispatch: 20261124-224339-assessment-2026-11-23-delivere
+program: devnest
+
+assessment_recheck: |
+  Card spec carried the 2026-11-23 assessment. Re-verified each claim
+  against the repo before acting:
+
+  * devin-usage.py last-30d (idc02 local, this session): 191 sessions /
+    876.7M prompt tokens — dispatch-task shape 169 sess / 754.3M (avg
+    4.46M), audit/assess 12 sess / 56.8M (avg 4.73M), goal-* 9 sess /
+    48.7M, backfill 1 sess / 17.0M. 97% cached holds. Fleet numbers in
+    the card spec (148 sess / 657.1M) are consistent — idc02 alone
+    exceeds them, so the fleet figure was a different window/host mix.
+  * Lane accounting re-run (lane-savings.py --month 2026-11): devin 117
+    cards (102 done / 56 verified), free_lane 69 (61/28, 5
+    token-evidenced), paid_frontier 41, codemod 34, manual 31,
+    deterministic 7, jules 6 (retired lane, historical), kk_mac_local 2,
+    nlm_batch 1, free-opencode 1.
+  * Open-card classifier snapshot (727 cards, 198 open, classify_lane
+    over worktree copy): devin cohort = 72 — 61 jevos-fallback (conf
+    0.00 locally; JEVOS not running on idc02) + 11 keyword hits
+    (kw:pipeline x4, kw:quadlet x2, kw:experiment/diagnos/repoint/
+    warm-standby/dependency x1). free_lane already absorbs
+    timer-alert x28 + kw:report x17 + kw:try x10 + kw:docs/ x10 etc.
+
+lever_status: |
+  1. Route before dispatch — PARTIALLY LANDED. OPS-0838 (queue-time
+     classify) done; OPS-0869 (lane catalog) done; OPS-0885 (free-lane
+     pilot) done; DEV-0045 classifier slices landed (PR #199 merged
+     2026-11-24: kw:host removed, cheapest-first lane order, timer-alert
+     pin, lane_source stamping, kanban-stats lane x source watch).
+     kanban-free-lane-routing-contract still a DRAFT in backlog awaiting
+     Tony review. Open gap = a concrete first class to re-route ->
+     picked below; implementation filed as a card.
+  2. Spec + lane envelope / bound retries — COVERED, no new card.
+     action.lane_envelope claim-hold implemented (runner-agent
+     _claimable + executor_defer_reason, DEV-0253); attempt caps live in
+     board-api/kanban-dispatch; crash-driven retry detection already
+     carded (ops-retry-storm-detection backlog,
+     dispatch-zero-commit-sessions-epidemic backlog,
+     dispatch-retry-storm-worktree-flood done).
+  3. Honest measurement — PARTIAL. devin-usage.py reports free-tier
+     window burn (added 2026-11-23, verified in file). ALLOWANCE
+     REMAINING still not surfaced: `devin` CLI has no usage subcommand
+     (checked `devin --help`), `/usage` is a TUI slash command,
+     transcript.json carries only token metrics (schema_version,
+     session_id, agent, steps, final_metrics — no plan/quota fields).
+     Filed investigation card.
+  4. Session bloat — MEASUREMENT GAP. 4.46M avg session; top decile
+     10-17M. command-polish-before-ai-dispatch (doing) covers upstream
+     command quality; nothing measures per-session token drivers
+     (spec bytes / primer lines / turns / retries). Filed measurement
+     card (read-only -> report artifact).
+  5. Hygiene — REAL GAP VERIFIED. idc02 ~/.local/share/devin-dispatch/
+     tasks = 917 dirs (905 with exit_code, 12 without, 9 stale-no-exit
+     >7d). devin-cleanup.timer declared only for tony-dell + tony-omen
+     (ssot.devin.maintenance.yml); repo systemd/devin-cleanup.* NOT
+     installed on idc02 (`systemctl --user`: unit not found);
+     devin-session-prune job (ssot.jobs.yml) covers tony_omen
+     sessions.db only, not task dirs. CAUTION for the fix: devin-usage.py
+     reads these dirs for usage stats — retention must exceed the
+     measurement window or metrics must be exported first. Filed fleet
+     card.
+
+first_reroute_pick: |
+  CLASS: bounded read-only audit / assessment / review / investigate
+  cards — title-scoped, mutation-verb excluded.
+
+  Why this class:
+  * Evidence: audit/assess sessions = 56.8M prompt on idc02 in 30d
+    (12 sessions, avg 4.73M) and the fleet assessment flagged audit
+    shapes among the 12-17M outliers. Open-card cohort shows recurring
+    audit-miss-*/audit-oc-*/[audit] titles sitting in the devin
+    fallback bucket because 'audit' is not a classifier keyword.
+  * Lane fit: kanban-free-lane-routing-contract §3 already reserves
+    read-only profiles (ops-readonly, ssot-research, info-find) for
+    reports/audits; OPS-0885 pilot + ops-remote-read smoke +
+    ssot-research-verifier-semantic verified-close prove the path.
+  * Low risk: read-only profile cannot mutate; worst case is a failed
+    free-lane attempt that escalates one lane — never devin burn.
+    Cards whose title carries mutation verbs (fix/implement/deploy/
+    migrate/repair) stay on the normal path.
+
+  Why NOT bigger classes: the 61-card jevos-fallback cohort is
+  genuinely ambiguous (conf 0.00) — not a clean class; goal-*/backfill
+  outliers are legitimately devin-shaped (cross-repo, long horizon);
+  kw:pipeline/quadlet hits are too few to justify a rule.
+
+followup_cards_filed: |
+  * classifier-readonly-audit-class-reroute — implement the picked
+    class in dispatch_repos.classify_lane (title-scoped audit/
+    assessment/review/investigate -> free_lane, mutation-verb title
+    exclusion, tests in tests/board/test_queue_time_classify.py).
+    NOTE: spec vocabulary self-classifies free_lane — pin
+    executor=devin or stage an envelope when queueing.
+  * devin-usage-allowance-visibility — find the authoritative
+    allowance-remaining source (api.devin.ai probe with existing
+    creds, app.devin.ai, CLI hidden commands) and surface it in
+    devin-usage.py or document the manual path.
+  * devin-taskdir-gc-dispatch-hosts — fleet survey + declared units so
+    dispatch hosts stop accumulating task dirs; handle stale
+    no-exit_code dirs; respect the devin-usage.py retention caveat.
+  * dispatch-prompt-budget-measure — read-only measurement of
+    per-session token drivers -> report artifact + cap proposals.
+
+decision_gates_respected: |
+  No lane-pinned default adopted (contract card still draft — Tony
+  review). No runner timers touched (KNB-1196 pause stands; resume is
+  a separate approval). No paid_frontier escalation proposed. No deploy,
+  no push, no card-YAML edits — all card writes went through board-api.

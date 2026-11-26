@@ -1,0 +1,36 @@
+{
+ "schema": "ada-opencode-review/1",
+ "case_id": "real-fail-ssot-research",
+ "verdict": "fail",
+ "confidence": 0.9,
+ "summary": "deterministic gate already fails; artifact does not meet contract",
+ "findings": [
+  {
+   "id": "f1",
+   "severity": "critical",
+   "category": "test_failure",
+   "summary": "held-out verifier failed 8/11 checks; artifact malformed",
+   "evidence_refs": [
+    {
+     "bundle_path": "result.tests.verifier.checks",
+     "note": "mostly false"
+    }
+   ]
+  }
+ ],
+ "evidence_refs": [
+  {
+   "bundle_path": "result.tests.verifier.verdict",
+   "note": "gate output"
+  }
+ ],
+ "deterministic_gate": {
+  "verifier_verdict": "fail"
+ },
+ "reviewer": {
+  "backend": "replay",
+  "model": "oracle"
+ },
+ "latency_ms": 1,
+ "cost_usd": 0.0
+}

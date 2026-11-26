@@ -1,0 +1,85 @@
+id: ansible-fleet-change-standard-procedure
+title: Codify Ansible converge as standard procedure for fleet/host/service jobs
+column: done
+updated: 2026-11-26 20:34
+priority: medium
+tags:
+- ops
+- ansible
+- procedure
+- ssot
+spec: 'Goal: make the Ansible converge used for the 2026-11-25 runner-agent drift fix the governed standard for
+  all remote-host / fleet / service / repeatable-config jobs.
+
+
+  Why: the blocker (16 stuck cards, every host drift-blocked) was fixed by an existing playbook, but the *way* to
+  it — diagnose, preflight, approval, backup, converge, verify, evidence — existed only as scattered habit. AGENTS.md
+  procedure-lookup duty says define a partial procedure rather than improvise.
+
+
+  Done conditions:
+
+  1. SSOT spec: docs/ssot/infrastructure/ssot.ansible-change-procedure.yml (9 steps, playbook registry, verification
+  + rollback standard)
+
+  2. Human/Ada mirror: docs/kb/ansible-fleet-change-procedure.md with exact commands + worked example
+
+  3. Discovery pointer in chaba AGENTS.md procedure-lookup duty
+
+  4. Agent skill ansible-first extended with the governed workflow (auto-loaded on host/service jobs)
+
+  5. Evidence of a real run: 7/7 hosts converged, drift-blocked 0, queue 16 -> 7, 11 claimed, second --check changed=0
+
+
+  Out of scope: board-api-owned surfaces (use the write door), local repo-only work, read-only diagnosis.'
+note: Defined 2026-11-25 from the live runner-agent drift converge. See SSOT + KB mirrors.
+ref: OPS-1404
+comms:
+- at: 2026-11-25 19:19
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-25 19:19
+  from: tony
+  text: '[procedure] Codified 2026-11-25. Came from a real run: existing ansible/playbooks/deploy-runner-agent.yml
+    run from tony-dell after --check --diff, timestamped backups, then 7/7 converge. Verified drift-blocked hosts
+    0, queue 16 -> 7, 11 claimed, and a second --check with changed=0 everywhere. Filed as SSOT ssot.ansible-change-procedure.yml
+    + KB ansible-fleet-change-procedure.md + AGENTS.md pointer + ansible-first skill.'
+- at: 2026-11-25 19:24
+  from: tony
+  text: '[procedure] Skill mirrored into repo as canonical: .agents/skills/ansible-first/SKILL.md (origin/master).
+    Registered in tests/test_agents_skills_explored.py (6 passed), scripts/skills-wiki-export.py USAGE + TOOLING
+    ref, docs/kb/ada-ocb-skills-education.md inventory, and the procedure SSOT. On idc02 the local ~/.claude/skills/ansible-first/SKILL.md
+    is now a symlink to a stable cache copy with a documented git show refresh command. All pushed (origin/master
+    6a5218879).'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:54
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:54
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:56
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:34
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'

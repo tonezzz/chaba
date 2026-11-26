@@ -1,0 +1,35 @@
+title: GitHub Copilot Pro as LLM/agent backend — evaluation
+subtitle: Copilot CLI + @github/copilot-sdk verified end-to-end; verdict is agent/IDE surface, not an LLM backend
+icon: flask
+job: github-copilot-backend-eval
+date: 2026-11-25
+host: tony-omen
+card: explore-github-copilot-as-llm-backend
+ref: SYS-1085
+status: done
+summary: >-
+  Evaluated GitHub Copilot Pro (tonezzz, 1500 AI credits/mo) as a
+  programmatic LLM backend for Ada/litellm. Installed/authenticated
+  Copilot CLI 1.0.107 (GH_TOKEN env auth), exercised
+  @github/copilot-sdk 1.0.34 end-to-end (listModels -> 16 frontier
+  models, createSession, sendAndWait ~5s on claude-sonnet-5.5), measured
+  credit burn via session.rpc.usage.getMetrics / rpc.quota.get
+  (~10.9 AIU per trivial turn; ~35k-token agentic floor per call), and
+  verified BYOK to LiteLLM (OpenAI-compatible wire reaches idc03:4000;
+  rejected only by LiteLLM budget gate) and attempted local Ollama
+  (timed out under embed-lane saturation, environmental).
+verdict: >-
+  Copilot Pro is an agent/IDE surface, not an LLM backend. No raw
+  inference endpoint; SDK/CLI is the only sanctioned programmatic path
+  and every call is a full agentic turn. Does not cover Ada/litellm
+  model needs. Useful niches: copilot -p GitHub-aware agent lane, PR
+  review requests, SDK BYOK as agent harness over own models.
+deliverables:
+  - docs/kb/github-copilot-pro-backend-eval.md
+  - experiments/copilot-sdk/probe{,2,3-byok,4-byok-trace}.mjs
+  - dispatch-outcome-20261125-074751-context-github-models-service-.md
+notes:
+  - copilot CLI auth: GH_TOKEN/GITHUB_TOKEN env works with fine-grained PAT; no OAuth needed.
+  - SDK metering hooks: session.rpc.usage.getMetrics() (per-model tokens + nano-AIU), session.rpc.quota.get() (live premium_interactions budget, reset epoch).
+  - BYOK provider types: openai (generic OpenAI-compatible incl. LiteLLM), azure, anthropic, google, winml. wireApi completions|responses.
+  - LiteLLM CHABA key hit its $50 budget cap during testing (422) — pre-existing, unrelated to Copilot.

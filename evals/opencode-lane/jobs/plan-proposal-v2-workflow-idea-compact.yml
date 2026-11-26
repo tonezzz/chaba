@@ -1,0 +1,50 @@
+id: plan-proposal-v2-workflow-idea-compact
+card: opencode-cline-idea-proposal-workflow
+case_id: opencode-cline-idea-proposal-workflow
+task_class: shadow_replay
+stage: S0
+target_host: tony-macbook
+executor: opencode
+profile: proposal-only
+model: ollama/qwen2.5:7b-instruct
+provider: ollama
+mcp_allowlist: []
+allowed_paths:
+  - evals/shadow/task/
+artifact:
+  path: evals/shadow/task/artifacts/plan-proposal-v2-workflow-idea-compact.json
+  schema: evals/opencode-lane/profiles/proposal-only/fixture/task.yaml#contract.required_fields
+verifier:
+  type: held_out_py
+  ref: evals/opencode-lane/profiles/proposal-only/fixture/verify.py
+escalation:
+  on_fail: hold
+  max_retries: 0
+rollback:
+  kind: worktree-drop
+  ref: Proposal-only artifact; no execution tools or MCP are available.
+heartbeat:
+  required: false
+  stale_s: 300
+unattended: false
+timeout_s: 600
+task: >-
+  case_id=opencode-cline-idea-proposal-workflow. Propose the user's workflow:
+  OpenCode clarifies and drafts; JEV routes only; Nest owns claims, retries,
+  heartbeats, and result references; Cline executes in an isolated workspace;
+  an independent verifier checks artifacts; Chaba Kanban is the canonical
+  versioned record.
+
+  Keep these roles distinct: JEV does not create content or verify artifacts;
+  the independent verifier does. The earlier card answer selected
+  repair-adapter first. Cline/Nest artifact completion and a generic
+  OpenCode-to-Nest task API remain unverified. The v1 model plan widened scope
+  and was rejected; proposal-only v2 passed its schema on three synthetic cases.
+
+  Return concise but useful review content. Use the four required viewpoint
+  keys with 8-12 words each. Give a non-empty recommendation in 8-12 words.
+  Provide exactly two labeled options; benefit and tradeoff each 6-10 words.
+  Include only the most important assumptions and open questions. No repo/MCP
+  lookup is available, so matching_existing_work must be not_evaluated.
+  Never output policy/routing fields; they are compiler-owned. This is review
+  material only, not an executable job.

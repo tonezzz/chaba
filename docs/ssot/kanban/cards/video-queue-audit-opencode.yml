@@ -1,7 +1,7 @@
 id: video-queue-audit-opencode
 title: 'OpenCode: audit video queue claims'
-column: backlog
-updated: 2026-11-19 20:04
+column: done
+updated: 2026-11-26 20:38
 brief: Have Ada/OpenCode produce a read-only reconciliation report for video package states and stale claims.
 priority: high
 program: ai-workforce
@@ -17,10 +17,10 @@ spec: Run the existing read-only video queue status tool against both video root
 action:
   type: dispatch
   model: litellm/gemini-3.5-flash-lite
-  executor: opencode
+  executor: devin
   profile: ops-readonly
   target_host: idc02
-  artifact: reports/video-queue-status-opencode.md
+  artifact: reports/card-runner/video-queue-status-opencode.md
   prompt: Audit both video queues read-only. Do not delete/release claims or start renders. Use scripts/devnest/video_queue_status.py
     and write the declared report artifact with evidence and recommendations.
   expect:
@@ -37,12 +37,14 @@ action:
   lane: free_lane
   status: done
   agent_profile: ops-readonly
-  runner: idc02
-  result: 'exit=0 ID":"ses_e60525a60ffej5FVAdPwNPOfyd","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
-    | devin-task-video-queue-audit-opencode-1793680313.service: Consumed 13.632s CPU time.'
-  verified: false
+  result: 'exit=0 ene0 control pack, and optional approved hygiene for residual claims and the stale Drive manifest
+    copy. | devin-task-20261126-152413-run-the-existing-read-only-vid.service: Consumed 20.712s CPU time, 220.6M
+    memory peak, 0B memory swap peak.'
   sweep:
     dirty: 2
+  runner: idc02
+  attempts: 1
+  verified: false
 ref: ADA-1046
 comms:
 - at: 2026-11-03 11:30
@@ -150,5 +152,283 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:50
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:44
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:05
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:19
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:05
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:11
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:13
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:22
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:32
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:39
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:02
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:44
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:56
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:58
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 13:54
+  from: devin
+  text: 'Triage 2026-11-26: action.status=done is WRONG. Comms record ''opencode verifier: fail'', ''artifact landed=False'',
+    and 2026-11-07 ''[KNB-1098] provably failed ... no durable audit artifact ... Back to backlog for retry''. Runner
+    only claims status=queued, so this card can never be re-dispatched as-is. Left open; needs status reset + re-queue
+    decision (artifact path was gitignored).'
+- at: 2026-11-26 14:33
+  from: devin
+  text: 'Prep 2026-11-26 (no re-queue yet): the declared artifact path reports/video-queue-status-opencode.md was
+    gitignored (.gitignore:22 reports/*), which is why the verifier rejected an otherwise landed artifact. Changed
+    the declared spec/artifact path to reports/card-runner/video-queue-status-opencode.md (the exempt dir), editing
+    the card YAML directly under the board-api lock so comms and action state are preserved. Status stays done;
+    re-queue is a separate decision, pending the two-card pilot outc'
+- at: 2026-11-26 15:00
+  from: devin
+  text: queued for processing
+- at: 2026-11-26 15:00
+  from: devin
+  text: Re-queued 2026-11-26 after pilot success (both pilot cards landed real commits). Artifact path now reports/card-runner/video-queue-status-opencode.md
+    (unignored). Verify the artifact is committed this time; if verifier fails again, stop re-queueing and escalate.
+- at: 2026-11-26 15:01
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-26 15:01
+  from: chaba
+  text: 'idc02 defers: executor=opencode declared but action.lane_envelope is not staged — admission would hold
+    at start, so the claim is held too: stage the envelope or pin executor=devin (no attempt burned)'
+- at: 2026-11-26 15:13
+  from: devin
+  text: 'Envelope staging blocked 2026-11-26: runner-agent on idc02 requires action.lane_envelope.stage=S3 (S3_STAGED_PROFILES
+    includes ops-readonly), but idc02 lane_gate.admit requires stage == live stage S1; no envelope can satisfy both.
+    Card remains queued pending a lane-promotion or runner-gate decision. Not a blind retry.'
+- at: 2026-11-26 15:19
+  from: devin
+  text: 'Promotion investigation 2026-11-26 (read-only): idc02 lane stage=S1 with quota 15/15 exhausted. Recomputed
+    lane_gate.review from the live stage.json + 440-line metrics ledger -> decision=ROLLBACK to S0, not promote:
+    4 scope_violation safety failures, verified rate 3/39 (7.7%) vs S1 gate 1.0. Even if the lane were at S2, 10/20
+    S2 jobs are pending independent review, so S3 (needed by the runner''s staged-dispatch gate) is unreachable.
+    No envelope can be staged legally; pin executor=devin or leave q'
+- at: 2026-11-26 15:22
+  from: devin
+  text: 'Pin 2026-11-26: executor changed opencode->devin (lane promotion investigated and ruled out: review=ROLLBACK,
+    stage S1 quota 15/15, 4 scope violations, 3/39 verified; runner needs S3 which S2 ledger cannot supply). Artifact
+    path stays reports/card-runner/video-queue-status-opencode.md. DEV-0958 drop guard should discard the litellm
+    model and use the devin default. Verify a committed artifact on closeout; no blind retry.'
+- at: 2026-11-26 15:23
+  from: idc02
+  text: claimed
+- at: 2026-11-26 15:24
+  from: chaba
+  text: model litellm/gemini-3.5-flash-lite dropped — provider namespace doesn't match executor=devin; running the
+    executor default
+- at: 2026-11-26 15:24
+  from: chaba
+  text: started devin-task-20261126-152413-run-the-existing-read-only-vid on idc02 (dispatch executor=devin profile=ops-readonly
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-26 15:24
+  from: chaba
+  text: 'primer injected 8 lesson(s): [video-render-dispatcher] Defined the standard claim lifecycle in docs/kb/video-;
+    [video-queue-audit-opencode] Triage 2026-11-26: action.status=done is WRONG. Com; [video-render-dispatcher]
+    OPS-1042 v1 implemented and verified. Added read-only ; [video-render-dispatcher] progress: inventory layer
+    extended (all packs both roo; [video-queue-audit-opencode] [KNB-1098] provably failed: idc02 worktree dirty
+    fi; [video-render-dispatcher] STALE CLAIM CLEANUP COMPLETED per c'
+- at: 2026-11-26 15:25
+  from: devin
+  text: 'Devin dispatch picked up: running scripts/devnest/video_queue_status.py read-only against both gdrive roots
+    (kk-mac-video-pilot + ada-nest). No claim release, no Drive mutation.'
+- at: 2026-11-26 15:32
+  from: devin
+  text: 'DONE (read-only audit, devin dispatch). Ran video_queue_status.py on both roots: pilot 14 packs = 11 done/1
+    queued/2 failed; ada-nest 79 = 60 done/19 queued; 0 active + 0 stale claims; 39 residual claim files on done
+    packs aged 492-812h. Zero state delta vs 2026-11-24 report — queues idle ~48h. Sacred Father canonical final-preview
+    re-verified qc_pass=true (mp4+th/en srt). No claims released, no Drive writes. Deliverables committed on dispatch
+    branch: reports/card-runner/video-queue-status-openc'
+- at: 2026-11-26 15:33
+  from: idc02
+  text: 'finished (ok): exit=0 ene0 control pack, and optional approved hygiene for residual claims and the stale
+    Drive manifest copy. | devin-t'
+- at: 2026-11-26 15:33
+  from: chaba
+  text: ran under executor=devin provider=devin profile=ops-readonly
+- at: 2026-11-26 15:33
+  from: chaba
+  text: banked 760 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 15:33
+  from: chaba
+  text: pushed dispatch/20261126-152413-run-the-existing-read-only-vid to origin
+- at: 2026-11-26 15:33
+  from: chaba
+  text: 'auto-merge conflicts: reports/card-runner/video-queue-status-opencode.md — card stays in review for manual
+    resolution'
+- at: 2026-11-26 15:33
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-26 15:39
+  from: devin
+  text: 'Conflict resolved 2026-11-26: repair card''s artifact already merged at ea9ed8e5; this audit branch af8caf5
+    conflicted only on reports/card-runner/video-queue-status-opencode.md. Landed the three unique deliverables
+    from the branch to origin/master as 3c8d3c9 (outcome doc, docs/ssot/jobs/devnest/2026-11-26-video-queue-audit.yml,
+    reports/video-queue-status-2026-11-26.json) from a clean worktree off origin/master; kept the already-merged
+    artifact. No blind re-run needed.'
+- at: 2026-11-26 15:40
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 15:40
+  from: chaba
+  text: 'merge-sweep: dispatch/20261126-152413-run-the-existing-read-only-vid already in origin/master — marked
+    verified (exit_code=0; outcome doc dispatch-outcome-20261126-152413-run-the-existing-read-only-vid.md) — auto-closed'
+- at: 2026-11-26 15:40
+  from: local
+  text: 'pub milestone: card verified: video-queue-audit-opencode on idc03 — dispatch/20261126-152413-run-the-existing-read-only-vid
+    already in origin/master — verified — auto-closed — dispatch/20261126-152413-run-the-existing-read-only-vid
+    already in origin/master — verified — auto-closed [evt-41bc9b9f82094a74]'
+- at: 2026-11-26 15:40
+  from: chaba
+  text: 'merge-sweep: dispatch/20261126-152413-run-the-existing-read-only-vid conflicts with origin/master: reports/card-runner/video-queue-status-opencode.md
+    — merge aborted, card stays for human resolution'
+- at: 2026-11-26 15:40
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261126-152413-run-the-existing-read-only-vid:
+    1 commit(s) conflict with origin/master '
+- at: 2026-11-26 15:50
+  from: tony
+  text: 'answered merge-conflict: resolve — let devin resolve the conflict and land it ★'
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 review_kind: verify
-claim: {}
+claim:
+  since: 2026-11-26 15:23
+requests:
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261126-152413-run-the-existing-read-only-vid: 1 commit(s) conflict with
+    origin/master in chaba — conflicted paths: reports/card-runner/video-queue-status-opencode.md. Merge idc02:/home/tony/CascadeProjects/dispatch-wt-20261126-152413-run-the-existing-read-only-vid
+    by hand, or retry/abandon the card.'
+  status: answered
+  at: 2026-11-26 15:40
+  from: chaba
+  options:
+  - id: resolve
+    action: queue
+    label: let devin resolve the conflict and land it ★
+  - id: drop
+    action: retry
+    label: drop this dispatch — re-dispatch fresh from current main
+  - id: hold
+    action: hold
+    label: hold the card
+  suggested: resolve — let devin resolve the conflict and land it ★
+  answer: resolve — let devin resolve the conflict and land it ★

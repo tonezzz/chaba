@@ -10,7 +10,7 @@ last_updated: "2026-10-10"
 # A "lane" is a dev twin -> prod twin pair. Promotion flows dev -> prod only,
 # and only via promote-lane.sh/promote-<lane>.sh with explicit --confirm
 # (same-session human approval — ssot.release-lifecycle.yml s5, never
-# automatic). The michael-dev -> michael-ha lane predates the two-lane model
+# automatic). The mn-ha-dev -> michael-ha lane predates the two-lane model
 # and is kept for the sunsynk card work; household releases use tony.
 #
 # Never seed a lane by cloning another instance's config (cp -a of
@@ -27,7 +27,7 @@ lanes:
     dashboard: tony-test                    # default --dashboard for promote
     bundle_base: pfg3d-card
     note: household lane — until tony-dev is provisioned (card
-      ha-dev-instances) pass --from michael-dev to promote-tony.sh.
+      ha-dev-instances) pass --from mn-ha-dev to promote-tony.sh.
 
   ada:
     dev: ada-dev
@@ -37,12 +37,13 @@ lanes:
     note: private lane — ada-ha auth is refresh-token exchange (no env token).
 
   michael:
-    dev: michael-dev
+    dev: mn-ha-dev
     prod: michael-ha
     dashboard: tony-test
     bundle_base: pfg3d-card
-    note: legacy card lane — dev lives on idc03 since the 2026-10-09
-      migration; prod is remote (tailscale ssh).
+    note: legacy card lane — dev lives on idc02 since the 2026-10-26
+      migration (idc03 2026-10-09 -> idc02 2026-10-26); prod is remote
+      (tailscale ssh).
 
 instances:
   tony-ha:
@@ -81,14 +82,14 @@ instances:
     planned: true                           # card ha-dev-instances, blocked
     auth: {kind: refresh, client_name: tony-devin}
 
-  michael-dev:
-    ssh: idc03                              # migrated tony-dell -> idc03 2026-10-09
-    config: /home/tony/.config/michael-dev  # path on idc02
-    url: https://idc02.taila0626a.ts.net:8124
-    container: michael-dev
-    auth: {kind: env, file: /home/tony/.config/secrets/ha-michael-dev.env, var: HASS_TOKEN}
-    # ~/.config/michael-dev still exists on tony-dell — it is the STALE
-    # pre-migration copy; scripts must go through ssh idc03, never the local dir.
+  mn-ha-dev:
+    ssh: mn01                              # migrated tony-dell -> idc03 2026-10-09 -> idc02 2026-10-26 -> mn01 2026-11-25
+    config: /home/tony/.config/mn-ha-dev    # path on mn01
+    url: https://mn01.taila0626a.ts.net:8124
+    container: mn-ha-dev
+    auth: {kind: env, file: /home/tony/.config/secrets/ha-mn-ha-dev.env, var: HASS_TOKEN}
+    # ~/.config/mn-ha-dev still exists on tony-dell — it is the STALE
+    # pre-migration copy; scripts must go through ssh mn01, never the local dir.
 
   michael-ha:
     ssh: michael-ha

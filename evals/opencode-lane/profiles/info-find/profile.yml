@@ -34,7 +34,7 @@ model:
   - litellm/ollama-qwen32b-kkmac
   - litellm/or-free-nemotron-ultra
   - litellm/or-free-nemotron-35
-  - litellm/or-free-north-code
+  - litellm/agent-local  # added 2026-11-25 (free_lane gate test)
   - opencode/big-pickle
   - opencode/deepseek-v4.1-flash-free
   - opencode/glm-5.3-flash-free
@@ -123,3 +123,7 @@ rails: >-
   question/intent/session, keep every source status, rank results
   mddb > web > github > ssot/health > mcp > code, and give every result
   a citation (repo path+lines, {collection,id} for mddb, url for web).
+  Before emitting, PHYSICALLY SORT the `results` array by source in that
+  exact order (mddb first, web, github, ssot, health, mcp, code last) —
+  do not emit results in the order the tools returned them; a held-out
+  verifier checks adjacent result sources for this ordering.

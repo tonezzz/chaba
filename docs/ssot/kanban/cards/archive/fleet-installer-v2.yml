@@ -3,7 +3,7 @@ title: 'installer v2: keyless enroll endpoint (input-bridge /enroll -> node regi
 column: done
 priority: medium
 created: 2026-10-10
-updated: 2026-11-08 13:21
+updated: 2026-11-24 11:57
 note: 'v1 (script at api.surf-thailand.com/install) is live+verified. v2 adds the report-back endpoint: installer
   POSTs hostname/lan/tailnet IP to a public edge endpoint -> lands in the node registry/ops feed. Same transport
   the stick-announce unit uses — could share the /enroll contract. Also: DNS record for app.surf-thailand.com needs
@@ -152,6 +152,18 @@ comms:
 - at: 2026-11-08 13:21
   from: tony
   text: archived (13d in done, verified)
+- at: 2026-11-24 11:56
+  from: devin
+  text: 're-dispatch 2026-11-24 (attempt on archived card): re-verified live — POST /enroll on BOTH api. and app.surf-thailand.com
+    -> 200 ok; ops-host-enroll-dispatch-verify-20261124 doc confirmed in ada-ha-events-tony (written_by=input-bridge-enroll,
+    stick-announce meta shape); /install serves v2 on both edges; app. A record proxied via CF. No new work needed
+    — card stays done/archived.'
+- at: 2026-11-24 11:57
+  from: devin
+  text: 'FINAL: stale re-dispatch on archived card — no code change. Re-verified live 2026-11-24: /enroll 200 on
+    api.+app. (event emitted, dedupe working), ops-host-enroll doc in ada-ha-events-tony, /install v2 both edges,
+    app. DNS proxied. Trail: dispatch-outcome-20261124-114952-installer-v2-keyless-enroll-en.md + reverification
+    block in docs/ssot/jobs/infrastructure/2026-10-26-installer-v2-enroll-endpoint.yml'
 requests:
 - id: the-v2-installer-requires-a-re-e1c6d2
   ask: The v2 installer requires a report-back endpoint for keyless enrollment via POST request to land in the node

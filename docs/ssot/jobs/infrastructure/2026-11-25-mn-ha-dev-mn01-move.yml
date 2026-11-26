@@ -1,0 +1,75 @@
+title: Move mn-ha-dev HA instance idc02:8124 -> mn01:8124
+card: michael-dev-migrate-mn01
+date: 2026-11-25
+executor: devin-dispatch
+pattern: ":8124 / 100.106.196.22:8124 / 9585 / mn-ha-dev"
+summary: >-
+  mn-ha-dev (Michael HA dev staging, container mn-ha-dev, renamed from
+  michael-dev 2026-11-24 OPS-0726) moved idc02 -> mn01. Same recipe as the
+  2026-10-26 idc03->idc02 move (see
+  2026-10-26-michael-dev-idc02-move.yml): rsync config, install quadlet +
+  secrets + mha-state-push unit, patch internal_url, tailscale serve
+  --https=8124, repoint caddy edge/web/mn01 redirects and mcp_config.json,
+  park source masked for 24h rollback.
+pre_state:
+  - "idc02: mn-ha-dev.service active/healthy, ports 127.0.0.1:8124+9585 and 100.123.163.11:9585; tailnet-IP :8124 publish added 2026-11-24 had silently killed the tailscale serve :8124 mount (port conflict) — https://idc02...:8124 was already dead, only http://idc02:8124 worked (docs/kb/edge-upstream-audit.md finding)"
+  - "idc02 caddy-edge: michael-dev.surf-thailand.com -> https://idc02...:8124 (CF Access gated)"
+  - "idc02 web.service + mn01 caddy-mn01: /apps/ha/{mn-ha-dev,michael-dev}* 308 -> https://idc02...:8124/"
+  - "mcp_config.json on tony-dell/tony-omen/tony-macbook(+macbook): mn-ha-dev/michael-dev url http://idc02:9585/<token>"
+  - "mha-state-push.service on idc02 pushing 60 live michael-ha entities -> dev :8124"
+steps_done:
+  mn01_prep:
+    - "verified podman 5.7.0, linger=yes, podman bridge 10.88.0.0/16, 148G free, caddy-mn01 active"
+    - "secrets present: ha-mn-ha-dev.env + ha-michael-dev.env symlink + ~/.local/share/home-assistant-michael/ha-token"
+    - "quadlet ~/.config/containers/systemd/mn-ha-dev.container installed (stacks/mn01/mn-ha-dev/)"
+    - "mha-state-push.service + venv installed on mn01"
+    - "image docker.io/homeassistant/home-assistant:2026.9.0 pulled"
+    - "bulk rsync -a idc02:~/.config/mn-ha-dev -> mn01 (~1GB, 635 files)"
+  cutover:
+    - "idc02: systemctl --user stop mn-ha-dev.service mha-state-push.service"
+    - "final delta rsync idc02->mn01 (--delete, core.config excluded to preserve patched internal_url)"
+    - "mn01: .storage/core.config internal_url -> https://mn01.taila0626a.ts.net:8124"
+    - "mn01: systemctl --user daemon-reload + start mn-ha-dev.service -> active; HA /api/ 401 (auth-required = live)"
+    - "mn01: tailscale serve --bg --https=8124 http://127.0.0.1:8124 -> https://mn01...:8124 returns 200 (real HTTPS restored)"
+    - "mn01: mha-state-push.service started -> 'mirroring 60 entity ids'; verified sensor.batteries_1_cell_voltage_average last_updated current"
+  repoints:
+    - "idc02 caddy-edge ~/.config/caddy/Caddyfile: upstream -> https://mn01...:8124 (backup .bak-mn01-move-20261125); caddy-edge.service restarted (single-file bind mount — reload insufficient)"
+    - "idc02 web.service ~/web-srv/caddy/Caddyfile: both /apps/ha/* redirs -> mn01 (backup .bak-mn01-move-20261125); web.service restarted"
+    - "mn01 ~/.config/caddy/Caddyfile.mn01: same redirs -> mn01 (backup .bak-mn01-move-20261125); caddy-mn01.service restarted"
+    - "mcp_config.json: tony-dell + tony-omen (key michael-dev renamed mn-ha-dev) + tony-macbook/macbook -> http://mn01:9585/<token> (backups .bak-mn01-move-20261125)"
+  park:
+    - "idc02: mn-ha-dev.service masked, mha-state-push.service disabled — both inactive; config dir intact for 24h rollback"
+gotchas_hit:
+  - "QUADLET PORT CONFLICT: never PublishPort the tailnet IP for :8124 — tailscale serve binds 100.x:8124 itself; podman publish on same IP:port crash-loops with 'rootlessport listen tcp ...: bind: address already in use'. Fixed by removing PublishPort=100.106.196.22:8124:8124 (kept 127.0.0.1:8124; 9585 keeps tailnet-IP publish — no serve for it). This same conflict is what silently killed idc02's serve :8124 after the 2026-11-24 tailnet-IP publish."
+  - "HEALTHCHECK QUOTING: HealthCmd=/bin/sh -c \"curl ...\" breaks under podman 5.7 (healthcheck runs via sh -c already -> 'unterminated quoted string', container reports unhealthy while HA is fine). Fixed to HealthCmd=curl -sf -o /dev/null http://127.0.0.1:8124 in stacks/mn01 + stacks/idc02 quadlets."
+  - "tailscale serve WITHOUT --bg runs in foreground — use --bg for persistence."
+  - "sed -i on single-file bind-mounted Caddyfiles leaves containers serving the old inode — restart the unit/container (caddy-edge.service, web.service), caddy reload is not enough."
+verified:
+  - "curl https://mn01.taila0626a.ts.net:8124/ -> 200 (tailnet HTTPS via serve)"
+  - "curl -X POST http://mn01:9585/<token> initialize -> ha-mcp 9.2.0"
+  - "idc02 web /apps/ha/mn-ha-dev -> 308 https://mn01...:8124/; mn01 caddy-mn01 same"
+  - "michael-dev.surf-thailand.com -> 302 CF Access login (edge alive; upstream repointed, CF-gated so origin not directly testable)"
+  - "mn01: mn-ha-dev.service active, mha-state-push active mirroring 60 entities, HA /api/ 401"
+  - "idc02: mn-ha-dev masked+inactive, mha-state-push disabled+inactive"
+repo_updates:
+  - "ssot: routes, services, values, system-map, migrated-units, secrets, instances, lanes, mcp, ha.mcp, tools, operations, home-assistant.{mn-ha-dev,michael,dashboards,cards,howto,design,entities} — all idc02:8124/9585 refs -> mn01"
+  - "scripts: deploy-card.sh, deploy-config.sh, mirror-sweep.py, sync-ssot-from-live.sh, promote-view.sh, assess-device.py, apply-tpl.py, copy-view.py, mha-state-push.py, promote-michael.sh, key-watch.py, ha-events-report.py, ha-report.py"
+  - "ansible/playbooks/audit-mcp-verify.yml michael-dev url -> mn01:9585"
+  - "stacks: mn01 quadlet (port fix + healthcmd fix), web/Caddyfile, mn01/Caddyfile.mn01, web/public/apps/{routes.json regen, lab+ha pages, ssot.ui.ha.yml}"
+  - "AGENTS.md Key URLs, docs/kb/edge-upstream-audit.md resolution note"
+consumer_notes:
+  - "no Ada backend HASS_URL targets :8124 (ada-ai-kraut -> live michael-ha)"
+  - "mn-ha-dev-parity.timer on tony-omen runs mirror-sweep.py — DEV_URL now mn01 (repo copy; check the deployed checkout ~/CascadeProjects/chaba on tony-omen picks it up via chaba-repo-sync)"
+  - "ha-card-snapshot/pv1-values automation on tony-dell is de-facto dead (no timer; snapshots stale since Sep) — pre-existing, unrelated"
+rollback: >-
+  idc02: systemctl --user unmask mn-ha-dev.service && systemctl --user start
+  mn-ha-dev.service; systemctl --user enable --now mha-state-push.service;
+  restore ~/.config/caddy/Caddyfile.bak-mn01-move-20261026 +
+  ~/web-srv/caddy/Caddyfile.bak-mn01-move-20261026 + restart caddy-edge/web;
+  mn01: tailscale serve --https=8124 off; restore
+  Caddyfile.mn01.bak-mdev-20261026 + restart caddy-mn01; mcp_config.json
+  .bak-mn01-move-20261125 on 3 hosts. mn01 config dir kept until rollback
+  window closes.
+followups:
+  - "after 24h clean: delete/park mn01 copy decision + remove idc02 ~/.config/mn-ha-dev (or keep masked park per hygiene rules)"
+  - "edge-upstream-audit: tony-omen serve :8444 ha-live dead binding still open; web-srv frigate:5000 dead route still open"

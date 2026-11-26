@@ -1,0 +1,90 @@
+id: chaba-board-quadlet-packaging
+title: Package board-api + render + kanban-sync as one quadlet stack on idc03
+date: 2026-11-24
+card: chaba-board-quadlet
+ref: KNB-0772
+host: idc03 (packaging authored in dispatch worktree on tony-omen)
+status: packaged — awaiting cutover approval
+
+goal: >
+  Post-OPS-0725 consolidation: package the board stack (board-api write
+  door, 60s render sweep, 15-min kanban-sync CMS xmatch, 15-min
+  kanban-commit git persistence) as podman quadlets on idc03.
+
+deliverables:
+  - stacks/idc03/chaba-board/Containerfile — python:3.12-slim + pyyaml
+    6.0.2 + git + openssh-client + curl + bash (all the board stack
+    needs; PyYAML is the only pip dep)
+  - stacks/idc03/chaba-board/chaba-board-api.container — daemon,
+    Network=host (keeps 127.0.0.1:8787 + loopback writers working),
+    Restart=always, /health probe
+  - stacks/idc03/chaba-board/chaba-board-render.{container,timer} —
+    60s oneshot sweep via board-render-guard.py
+  - stacks/idc03/chaba-board/chaba-board-sync.{container,timer} —
+    15-min oneshot, OnCalendar *:0/15 + Persistent, OnFailure ->
+    ada-report-fail@ preserved
+  - stacks/idc03/chaba-board/chaba-board-commit.{container,timer} —
+    15-min oneshot + RandomizedDelaySec=120 (same stagger as before)
+  - stacks/idc03/chaba-board/run-{api,sync,commit}.sh — entrypoints
+    installed to ~/.config/containers/chaba-board/ (api sources the
+    optional board-api.env; sync prefers the kanban-sync worktree copy
+    with served-checkout fallback; commit reproduces the repo-sync kick
+    best-effort)
+  - stacks/idc03/chaba-board/install.sh — build + install; --cutover
+    disables the 7 legacy units and enables the quadlet units
+  - stacks/idc03/chaba-board/stack.yml — declared state/verify/restore
+
+design_decisions:
+  - "one quadlet stack, not one .container file: systemd timers cannot
+    live inside a container, and in-container cron would fork
+    kanban-sync's schedule away from ssot.jobs.yml (render-jobs.py is
+    the schedule source of truth). 4 units share ONE image — that is
+    the packaging unit Tony asked for."
+  - "Volume=/home/tony:/home/tony (rw) + Volume=/tmp:/tmp (rw):
+    identical paths so board-api's __file__-derived REPO, the
+    chaba-kanban-sync worktree, ~/.ssh git+fleet aliases and
+    ~/.config/secrets all work unchanged; the /tmp mount keeps the
+    /tmp/board-api*.lock flock domain shared with host-side writers
+    (kanban-dispatch.py, merge-sweep.py, git-safe-pull.sh,
+    request-sweep.py, ...) — without it the lock splits and card YAML
+    races return."
+  - "Network=host on every unit: board-api keeps its exact
+    127.0.0.1:8787 bind; Caddy upstreams and loopback callers
+    (card-pipeline, runner-agent api.conf, ada-report-fail) need zero
+    changes."
+
+known_deltas_at_cutover:
+  - "kanban-commit.service ExecStartPost kick of chaba-repo-sync.service
+    cannot reach host systemd from inside the container — covered by
+    chaba-repo-sync.timer's own 15-min cadence on idc03."
+  - "kanban-commit.sh's post-pull `systemctl --user try-restart
+    chaba-board-api.service` is a no-op inside the container; the API
+    picks up pulled code on next container restart (quadlet
+    Restart=always only covers crashes)."
+  - "ssot.jobs.yml still declares job kanban-sync dispatch:systemd —
+    a future render-jobs.py --install would recreate the host units
+    alongside the quadlets. Retire or annotate that entry at cutover."
+  - "quadlet-generated names are chaba-board-{api,render,sync,commit}
+    .service — distinct from legacy names, so brief overlap during
+    cutover is possible only if install order is wrong; install.sh
+    disables legacy BEFORE enabling quadlets."
+
+verification:
+  - "bash -n on all run-*.sh + install.sh: pass"
+  - "yaml.safe_load on stack.yml: pass"
+  - "podman quadlet generation NOT dry-run on this host (would write
+    ~/.config/containers/systemd outside the worktree) — first real
+    validation is install.sh on idc03"
+  - "cutover verify block is in install.sh tail + stack.yml verify:"
+
+cutover_runbook: >
+  1. ssh idc03; cd ~/CascadeProjects/chaba-tony-dell (served checkout
+     must have this stack merged first)
+  2. bash stacks/idc03/chaba-board/install.sh          # build+install only
+  3. review generated units: systemctl --user list-timers 'chaba-board-*'
+  4. bash stacks/idc03/chaba-board/install.sh --cutover  # THE switch
+  5. verify: curl -sf http://127.0.0.1:8787/health;
+     POST a test /comment; watch journalctl --user -u chaba-board-sync.service
+  6. rollback: systemctl --user disable --now chaba-board-api.service
+     chaba-board-{render,sync,commit}.timer; re-enable the 7 legacy units
+     (names in install.sh $LEGACY_UNITS); systemctl --user daemon-reload

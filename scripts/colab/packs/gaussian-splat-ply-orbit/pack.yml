@@ -1,0 +1,23 @@
+# gaussian-splat-ply-orbit — render a known Gaussian-splat PLY to an orbit
+# MP4 + still + timing/VRAM report. PoC step 1 of the gaussian-splatting
+# Nest video lane (card gaussian-splatting-nest-video-poc): prove the gsplat
+# renderer on a real reconstruction (kk-mac-hibiscus-7k, 842k GS trained on
+# KK-Mac mpsplat) before photo->PLY training packs. Reads the PLY cross-pack
+# from the Drive store; only egress need is pip installs.
+name: gaussian-splat-ply-orbit
+needs:
+  gpu_gb: 4
+  ram_gb: 6
+  disk_gb: 2
+  egress_only_ok: true
+timeout_s: 1800
+fetch:
+  - packs/kk-mac-hibiscus-7k/point_cloud_6999.ply
+artifacts:
+  - packs/gaussian-splat-ply-orbit/out/gaussian-splat-ply-orbit.mp4
+  - packs/gaussian-splat-ply-orbit/out/gaussian-splat-ply-orbit.png
+  - packs/gaussian-splat-ply-orbit/report.md
+prep: |
+  pip install -q "gsplat>=1.5.3" plyfile imageio imageio-ffmpeg
+run_sh: |
+  exec python3 "$PACK_DIR/render_ply.py"

@@ -1,0 +1,271 @@
+id: ssot-baseline-board-drift-race
+title: SSOT warnings baseline races live board writes
+column: done
+updated: 2026-11-26 19:41
+brief: CI's optimize gate fails on any warning absent from reports/SSOT_OPTIMIZATION_WARNINGS.json, but the board
+  auto-writer mutates cards every ~15min and keeps creating new advisory warnings (review-threshold bloat, request-shape
+  nudges). On 2026-11-24 three master CI runs went red in 20 minutes from one-off board drift. Need a durable fix
+  instead of repeated baseline refreshes.
+priority: medium
+program: chaba-ci
+spec: 'Observed 2026-11-24: after PR #205 restored an emptied baseline, fresh warnings appeared from omen-battery-charge-policy.yml
+  (362 lines > 350 review threshold) and a malformed job doc; PRs #205/#206 fixed those, but 156 cards already exceed
+  the review threshold so any active card can reintroduce the failure. Options: (a) RECOMMENDED — exclude kanban/cards/
+  from the advisory review-threshold bloat check in scripts/ssot-validate-all.mjs; keep the 750-line hard threshold
+  + per-card grandfathering as the real gate. (b) refresh the committed baseline from the board write path after
+  each card mutation (auditable but couples CI to board-api). (c) make optimize-gate treat card-only review warnings
+  as advisory (policy change, weaker signal). Done condition: a card growing from normal comms traffic cannot turn
+  master SSOT CI red; hard-threshold bloat still blocks. Verify by simulating a >350-line card write against the
+  gate.'
+ref: KNB-0040
+comms:
+- at: 2026-11-24 16:55
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:48
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:09
+  from: chaba
+  text: classified as free_lane (kw:report conf 1.00)
+- at: 2026-11-25 09:09
+  from: tony
+  text: queued for processing
+- at: 2026-11-25 09:10
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.07 > 0.85)'
+- at: 2026-11-25 09:10
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 4.46 > 1.0)'
+- at: 2026-11-25 09:10
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 09:10
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-25 09:11
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 09:12
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (3/3)'
+- at: 2026-11-25 09:12
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.56 > 1.5)'
+- at: 2026-11-25 09:12
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 09:28
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-25 09:29
+  from: chaba
+  text: started devin-task-20261125-092906-observed-2026-11-24-after-pr-2 on tony-macbook (dispatch)
+- at: 2026-11-25 09:29
+  from: chaba
+  text: 'primer injected 8 lesson(s): The 750-line SSOT card-bloat gate blocks merge commits that pull in board-api
+    ca; [publish-promote-knowledge-capture-ssot-w-d34a39] [2026-11-24 devin] PR #207 CI ; [education-maintenance-consolidated-report]
+    Control-surface review (2026-10-27):; [timer-sentinel-stale-respawn] [fixed] commit 6068271a46 on master. Closed
+    timer; board-api derives REPO from `__file__`, so bind-mounting the checkout at its rea; [chaba-exec-checkout-idc02-dirty-files]
+    DECISION 2026-11-24: '
+- at: 2026-11-25 09:31
+  from: devin
+  text: 'picked up: implementing option (a) — exclude kanban/cards/ from advisory review-threshold bloat check in
+    ssot-validate-all.mjs; hard 750-line threshold stays gated'
+- at: 2026-11-25 09:39
+  from: tony-macbook
+  text: 'finished (failed): no exit record — unit not-found reports collected defaults (unproven, not ok) | @ IM_CONFIG_ENTRY=''profile''
+    XDG_SESSION_ — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-25 09:39
+  from: chaba
+  text: 'tony-macbook retry backoff: fail 1/3 — next claim not before 11-25 10:09'
+- at: 2026-11-25 09:39
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-092906-observed-2026-11-24-after-pr-2 no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-25 09:39
+  from: chaba
+  text: 'merge-sweep: fetch tony-macbook:/home/tony/CascadeProjects/dispatch-wt-20261125-092906-observed-2026-11-24-after-pr-2
+    HEAD failed — runner down or worktree gone?'
+- at: 2026-11-25 09:46
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 09:48
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 10:30
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.42 > 0.7)'
+- at: 2026-11-25 10:36
+  from: chaba
+  text: 'tony-dell defers: runner at cap (2/2)'
+- at: 2026-11-25 10:56
+  from: chaba
+  text: 'kk-mac defers: installed runner-agent drifted from repo /Users/kkkakk/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 10:57
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.71 > 0.7)'
+- at: 2026-11-25 11:00
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 11:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 11:19
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.59 > 1.5)'
+- at: 2026-11-25 11:23
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 11:48
+  from: mn01
+  text: claimed
+- at: 2026-11-25 11:49
+  from: chaba
+  text: started devin-task-20261125-044950-observed-2026-11-24-after-pr-2 on mn01 (dispatch)
+- at: 2026-11-25 11:49
+  from: chaba
+  text: 'primer injected 8 lesson(s): The 750-line SSOT card-bloat gate blocks merge commits that pull in board-api
+    ca; [publish-promote-knowledge-capture-ssot-w-d34a39] [2026-11-24 devin] PR #207 CI ; [ssot-baseline-board-drift-race]
+    primer injected 8 lesson(s): The 750-line SSOT ; [education-maintenance-consolidated-report] Control-surface
+    review (2026-10-27):; [timer-sentinel-stale-respawn] [fixed] commit 6068271a46 on master. Closed timer; board-api
+    derives REPO from `__file__`, so bind-mounting the '
+- at: 2026-11-25 11:50
+  from: devin
+  text: 'attempt 2 on mn01: reading ssot-validate-all.mjs, implementing option (a) — drop kanban/cards from advisory
+    bloat warnings, keep 750 hard gate'
+- at: 2026-11-25 12:07
+  from: devin
+  text: 'DONE (attempt 2, mn01): option (a) implemented — kanban/cards/ excluded from advisory review-threshold
+    bloat checks in scripts/ssot-validate-all.mjs; 750-line hard gate + exemptions untouched. Verified: 426-line
+    sim card -> 0 warnings; 3824-line card still fires hard warning; full optimize+gate green (139 warnings, all
+    baselined). Baseline refreshed + trail doc docs/ssot/jobs/kanban/2026-11-25-ssot-baseline-board-drift-race.yml.
+    Commit 41986aec99 on dispatch/20261125-044950-observed-2026-11-24-a'
+- at: 2026-11-25 12:09
+  from: chaba
+  text: 'merge-sweep: merged 0d710c94 (dispatch/20261125-044950-observed-2026-11-24-after-pr-2 from mn01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-044950-observed-2026-11-24-after-pr-2.md)
+    — auto-closed'
+- at: 2026-11-25 12:09
+  from: local
+  text: 'pub milestone: card verified: ssot-baseline-board-drift-race on idc03 — merged 0d710c94 (dispatch/20261125-044950-observed-2026-11-24-after-pr-2
+    from mn01) -> origin/master — verified — auto-c — merged 0d710c94 (dispatch/20261125-044950-observed-2026-11-24-after-pr-2
+    from mn01) -> origin/master — verified — auto-closed [evt-2103cc351f19a639]'
+- at: 2026-11-25 12:09
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-044950-observed-2026-11-24-after-pr-2,
+    branch dispatch/20261125-044950-observed-2026-11-24-after-pr-2 on mn01'
+- at: 2026-11-25 12:09
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 12:09
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261125-044950-observed-2026-11-24-after-pr-2 on
+    mn01 — if the work was never pushed it may be gone'
+- at: 2026-11-25 12:09
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261125-044950-observed-2026-11-24-after-pr-2 — close will block
+    until merged'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:58
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:54
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: free_lane
+  lane_source: kw
+  model: swe-2-flash-medium
+  attempts: 2
+  result: no exit record — unit not-found reports collected defaults (unproven, not ok) | @ IM_CONFIG_ENTRY='profile'
+    XDG_SESSION_TYPE ='x11' UID=1000 PID=3558750 PPID=3558625 |   GTK_IM_MODULE='' QT_IM_MODULE='' CLUTTER_IM_MODULE=''
+    SDL_IM_MODULE='' XMODIFIERS='' |   Set IM_CONFIG_CURRENT_DESKTOP <- XDG_CURR
+  last_failure: no exit record — unit not-found reports collected defaults (unproven, not ok) | @ IM_CONFIG_ENTRY='profile'
+    XDG_SESSION_TYPE ='x11' UID=1000 PID=3558750 PPID=3558625 |   GTK_IM_MODULE='' QT_IM_MODULE='' CLUTTER_IM_MODULE=''
+    SDL_IM_MODULE='' XMODIFIERS='' |   Set IM_CONFIG_CURRENT
+  sweep:
+    stale_running: 2026-11-25 09:39
+    fetch_failed: 2026-11-25 09:39
+  runner: mn01
+  verified: true
+claim:
+  since: 2026-11-25 11:48
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 12:09
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-044950-observed-2026-11-24-after-pr-2.md

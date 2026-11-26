@@ -1,0 +1,126 @@
+title: Private KK voice-clone narration probe
+subtitle: Qualify three consented LINE clips and generate one VYNCX Thai smoke line
+icon: mic
+card: kk-video-preview-output-qc-assembly
+date: 2026-10-29
+
+planning:
+  goal: >-
+    Generate a private one-line KK voice-clone sample for the Sacred Father
+    narrator, using the existing voice-ID clips only after local ASR/reference
+    quality checks.
+  scope: >-
+    Use the three LINE M4A samples in the private project voice-reference folder.
+    Transcribe locally with faster-whisper, select a clean 5-12 second reference,
+    and synthesize one line with the previously benchmarked VYNCX v2/F5-TTS
+    pipeline. Do not publish, mux into the teaser, or call a hosted TTS API.
+  consent: >-
+    Tony reports that KK explicitly authorized voice cloning for this private
+    narration probe. This consent is separate from the PDF-image approval and
+    does not authorize public release.
+  success_criteria:
+    - Each input hash matches the private voice-reference manifest.
+    - At least one single-speaker Thai clip passes duration and ASR confidence gates.
+    - VYNCX produces a decodable, non-silent 24kHz clone-smoke.wav.
+    - Transcript, selected reference, model and output metrics are durably reported in private Drive.
+    - Existing Edge-narrated teaser remains unchanged until human listen review.
+  risks:
+    - ASR transcript errors can miscondition the cloned voice; preserve candidate transcripts for review.
+    - VYNCX was benchmarked on CUDA, not this specific KK sample; this is a smoke only.
+    - Raw voice and transcript are sensitive; keep all inputs/outputs private and do not publish.
+  resources:
+    - managed Colab T4; requires fresh boot registration via console Cell 1
+    - private source: ada-nest/projects/kk-video-c9f99fee6146/voice-reference/
+    - existing Thai narration script: kk-video-c9f99fee6146-preview/teaser-preview.th.srt
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+    - label: Sacred Father preview and source revision
+      file: docs/ssot/kanban/cards/kk-video-c9f99fee6146.yml
+
+processing:
+  status: completed
+  started_at: 2026-10-29
+  steps:
+    - id: 1
+      label: Record consent and stage private source clips
+      status: completed
+      notes: Consent is recorded on OPS-0952; three M4A files and hash manifest are in the private project Drive folder.
+    - id: 2
+      label: Stage VYNCX clone-probe pack
+      status: completed
+      notes: >-
+        Pack and private voice samples are staged in Drive. First attempt
+        exposed a PyAV/faster-whisper metadata_errors incompatibility; the
+        probe now decodes with soundfile and passes the waveform to ASR.
+    - id: 3
+      label: Run one-line clone smoke and inspect QC
+      status: completed
+      notes: >-
+        Retry run-20261029-0638 completed in 752s. The private VYNCX v2/F5-TTS
+        verdict reports probe-pass. The selected reference passed local ASR
+        confidence checks; the 24kHz clone sample is non-empty and non-silent.
+        The sample remains private and requires Tony/KK blind listening before
+        any full narration or mux.
+  decisions:
+    - label: Use VYNCX v2/F5-TTS as the first clone probe
+      rationale: It is the project's previously benchmarked Thai zero-shot clone path; no hosted TTS API is used.
+      alternatives_considered: Keep non-cloned Edge TTS or install a new clone stack on KK-Mac.
+  changes:
+    - file: scripts/colab/packs/kk-video-c9f99fee6146-voice-clone-probe/
+      summary: Private VYNCX reference qualification and one-line clone smoke pack.
+
+followup:
+  verification:
+    - Colab pack status is DONE and verdict.json reports probe-pass.
+    - Output is a decodable 24kHz WAV with 5.056s duration, 242732 bytes, and RMS 0.06087.
+    - Probe used 10.07s of the selected source and reported ASR average log-probability -0.054.
+    - Artifact remains private; no full-video mux, hosted TTS call, or public release occurred.
+  rollback_plan:
+    - Do not overwrite or publish existing narration; if the probe fails, preserve the report and stop.
+  handoff:
+    - Tony/KK blind-listen to the private clone sample before full cloned narration or mux.
+  deferred:
+    - Full four-cue cloned narration and teaser mux.
+    - Any public release or WordPress upload.
+
+report:
+  status: completed
+  completed_at: '2026-10-29'
+  summary: >-
+    The private one-line VYNCX v2/F5-TTS clone smoke passed its technical
+    checks on Colab. This is not a voice-quality sign-off: Tony/KK must
+    listen to the private sample before any full cloned narration or mux.
+    No hosted TTS API, publication, or change to the existing teaser occurred.
+  metrics:
+    - metric: probe_verdict
+      value: probe-pass
+    - metric: engine
+      value: VYNCX v2 / F5-TTS-TH
+    - metric: source_segment_used_s
+      value: 10.07
+    - metric: output
+      value: 5.056s, 24kHz, 242732 bytes, RMS 0.06087
+    - metric: gpu_peak_gb
+      value: 2.03
+    - metric: human_review
+      value: Required before full narration or mux
+  links:
+    - title: OPS-0952 preview/QC card
+      file: docs/ssot/kanban/cards/kk-video-preview-output-qc-assembly.yml
+    - title: Private voice-reference manifest
+      url: gdrive:ada-nest/projects/kk-video-c9f99fee6146/voice-reference/manifest.json
+    - title: Existing private preview narration script
+      url: gdrive:ada-nest/packs/kk-video-c9f99fee6146-preview/teaser-preview.th.srt
+    - title: Private clone-smoke pack results
+      url: gdrive:ada-nest/packs/kk-video-c9f99fee6146-voice-clone-probe/out/
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: 2026-10-29
+  last_updated: 2026-10-29
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml

@@ -51,12 +51,21 @@
 		redir * https://tony-omen.taila0626a.ts.net:8123/ 308
 	}
 
+	handle /apps/ha/mn-ha-dev {
+		redir * /apps/ha/mn-ha-dev/ 308
+	}
+
+	handle_path /apps/ha/mn-ha-dev/* {
+		redir * https://mn01.taila0626a.ts.net:8124/ 308
+	}
+
+	# legacy alias kept during transition (instance renamed michael-dev -> mn-ha-dev 2026-11-24)
 	handle /apps/ha/michael-dev {
 		redir * /apps/ha/michael-dev/ 308
 	}
 
 	handle_path /apps/ha/michael-dev/* {
-		redir * https://idc02.taila0626a.ts.net:8124/ 308
+		redir * https://mn01.taila0626a.ts.net:8124/ 308
 	}
 
 	handle /apps/ha/michael-ha {

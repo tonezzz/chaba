@@ -1,0 +1,393 @@
+---
+# verify-host-software.yml — fleet R7 host-software capability audit (read-only).
+#
+# Parallel counterpart to scripts/host-ready-check.py: reads
+# docs/ssot/infrastructure/ssot.host-software.yml, probes declared
+# capabilities per host in one ssh round-trip, renders per-host verdict
+# reports on the controller.
+#
+# Read-only: probes are check_mode:no (they run even under --check);
+# report writes are normal template tasks (skipped/previewed under --check).
+# Does NOT install or change host state. Use
+# scripts/host-capability-bootstrap.sh or a governed convergence play for fixes.
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/verify-host-software.yml
+#   ansible-playbook playbooks/verify-host-software.yml --check --diff
+#   ansible-playbook playbooks/verify-host-software.yml --limit tony-dell
+#
+# Artifacts: reports/ansible-benchmark/host-software/<inventory_host>.yml
+
+- name: Fleet R7 host-software capability audit
+  hosts: all:!disabled
+  gather_facts: false
+  become: false
+
+  vars:
+    audited_hosts: >-
+      {{ groups['all']
+         | difference(groups['disabled'] | default([]))
+         | sort }}
+    controller_idents: >-
+      {{ (lookup('ansible.builtin.pipe', 'hostname -I', errors='ignore')
+          | default('')).split()
+         + [lookup('ansible.builtin.pipe', 'hostname', errors='ignore')
+            | default(''),
+            lookup('ansible.builtin.pipe', 'hostname -f', errors='ignore')
+            | default('')]
+         | select('truthy') | unique | list }}
+    controller_self: >-
+      {{ self_host | default(
+          ((hostvars | dict2items
+            | selectattr('key', 'in', audited_hosts)
+            | selectattr('value.ansible_host', 'defined')
+            | selectattr('value.ansible_host', 'in', controller_idents)
+            | map(attribute='key') | list)
+           + (audited_hosts | select('in', controller_idents) | list))
+          | unique | sort | first | default(''), true) }}
+    benchmark_out: "{{ playbook_dir }}/../../reports/ansible-benchmark/host-software"
+    sw_ssot: >-
+      {{ lookup('ansible.builtin.file',
+                playbook_dir ~ '/../../docs/ssot/infrastructure/ssot.host-software.yml')
+         | from_yaml }}
+    # Inventory name -> ssot.host-software.yml host key (if different).
+    sw_key_map:
+      tony-macbook: kk-macbook
+    probe_timeout: "{{ host_sw_probe_timeout | default(20) }}"
+    probe_timeout_python_ml: "{{ host_sw_probe_timeout_python_ml | default(90) }}"
+    board_notify: false
+    board_api_base: "https://idc03.taila0626a.ts.net:10000"
+    board_from: "devin"
+
+  pre_tasks:
+    - name: Report controller detection
+      ansible.builtin.debug:
+        msg: >-
+          controller_self={{ controller_self or 'none' }}
+          {%- if controller_self %} (probes itself locally)
+          {%- else %} (controller not in inventory — all hosts use ssh)
+          {%- endif %}
+      run_once: true
+
+    - name: Probe the controller locally — ssh to its own tailnet IP may have no key path
+      ansible.builtin.set_fact:
+        ansible_connection: local
+      when: inventory_hostname == controller_self
+
+  tasks:
+    - name: Resolve manifest host key and declared capabilities
+      ansible.builtin.set_fact:
+        sw_host_key: "{{ sw_key_map.get(inventory_hostname, inventory_hostname) }}"
+        sw_host_spec: >-
+          {{ (sw_ssot['hosts'] | default({})).get(sw_key_map.get(inventory_hostname, inventory_hostname), {}) }}
+      changed_when: false
+
+    - name: Build probe payload for this host
+      ansible.builtin.set_fact:
+        sw_probe_payload: >-
+          {% set caps = sw_host_spec.get('capabilities') | default([]) -%}
+          {% set allc = sw_ssot['capabilities'] | default({}) -%}
+          {% set ns = namespace(m={}) -%}
+          {% for c in caps -%}
+          {%   set _ = ns.m.update({c: allc.get(c, {})}) -%}
+          {% endfor -%}
+          {{ ns.m }}
+      when: sw_host_spec.get('capabilities') | default([]) | length > 0
+      changed_when: false
+
+    - name: Probe declared R7 capabilities (read-only, one round-trip)
+      ansible.builtin.shell: |
+        PROBES_JSON='{{ sw_probe_payload | to_json }}' TIMEOUT_S='{{ probe_timeout }}' PYML_TIMEOUT_S='{{ probe_timeout_python_ml }}' python3 - <<'PYEOF'
+        import json, os, re, subprocess, sys
+        probes = json.loads(os.environ["PROBES_JSON"])
+        timeout_default = int(os.environ.get("TIMEOUT_S", "20"))
+        timeout_by_cap = {
+            "python_ml": int(os.environ.get("PYML_TIMEOUT_S", "90")),
+            "python_ml_gpu": int(os.environ.get("PYML_TIMEOUT_S", "90")),
+        }
+        out = {}
+        for cap, spec in probes.items():
+            cmd = spec.get("probe")
+            if not cmd:
+                out[cap] = {"status": "undef", "detail": "no probe in manifest"}
+                continue
+            timeout = timeout_by_cap.get(cap, timeout_default)
+            try:
+                p = subprocess.run(["bash", "-c", cmd], capture_output=True,
+                                   text=True, timeout=timeout)
+            except subprocess.TimeoutExpired:
+                out[cap] = {"status": "timeout", "detail": f">{timeout}s"}
+                continue
+            detail = (p.stdout or p.stderr).strip()[-200:]
+            status = "pass" if p.returncode == 0 else "fail"
+            expect_re = spec.get("expect_re")
+            if status == "pass" and expect_re and not re.search(expect_re, detail or ""):
+                status = "fail"
+                detail = f"expect_re miss: {expect_re} :: {detail}"[-200:]
+            out[cap] = {"status": status, "detail": detail, "rc": p.returncode}
+        print(json.dumps(out))
+        PYEOF
+      args:
+        executable: /bin/bash
+      register: sw_probe
+      changed_when: false
+      failed_when: false
+      ignore_unreachable: true
+      check_mode: no
+      when: sw_host_spec.get('capabilities') | default([]) | length > 0
+
+    - name: Parse capability snapshot
+      ansible.builtin.set_fact:
+        sw_snapshot: >-
+          {{ (sw_probe.stdout | default('') | trim | from_json)
+             if (sw_probe.stdout | default('') | trim | length > 0
+                 and (sw_probe.stdout | default('') | trim)[:1] == '{')
+             else {} }}
+      when:
+        - sw_probe is defined
+        - not (sw_probe.unreachable | default(false))
+        - sw_probe.stdout is defined
+      changed_when: false
+      ignore_unreachable: true
+
+    - name: Mark hosts not declared in ssot.host-software.yml
+      ansible.builtin.set_fact:
+        sw_not_declared: true
+      when: sw_host_spec.get('capabilities') | default([]) | length == 0
+      changed_when: false
+
+    - name: Ensure host-software benchmark report dir exists
+      ansible.builtin.file:
+        path: "{{ benchmark_out }}"
+        state: directory
+        mode: "0755"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Render per-host host-software reports (probed hosts only; --limit preserves others)
+      ansible.builtin.template:
+        src: host-software-verify.j2
+        dest: "{{ benchmark_out }}/{{ target }}.yml"
+        mode: "0644"
+      loop: "{{ audited_hosts }}"
+      loop_control:
+        loop_var: target
+        label: "{{ target }}"
+      when: hostvars[target].sw_probe is defined or hostvars[target].sw_not_declared is defined
+      delegate_to: localhost
+      run_once: true
+
+    - name: Show host-software summary
+      ansible.builtin.debug:
+        msg: >-
+          {{ target }}:
+          {{ (lookup('ansible.builtin.template', 'host-software-verify.j2')
+              | from_yaml).summary }}
+      loop: "{{ audited_hosts }}"
+      loop_control:
+        loop_var: target
+        label: "{{ target }}"
+      when: hostvars[target].sw_probe is defined or hostvars[target].sw_not_declared is defined
+      delegate_to: localhost
+      run_once: true
+
+    - name: Compute host-software alert summary and fingerprint
+      ansible.builtin.set_fact:
+        host_sw_alert_hosts: >-
+          {%- set out = [] -%}
+          {%- for h in audited_hosts -%}
+            {%- if hostvars[h].sw_probe is defined or hostvars[h].sw_not_declared is defined -%}
+            {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
+            {%- if rpt -%}
+              {%- set y = rpt | from_yaml -%}
+              {%- set s = y.get('summary', '') -%}
+              {%- set fc = y.get('failed_count', 0) | int -%}
+              {%- if s.startswith('fail') or s.startswith('unreachable') or fc > 0 -%}
+                {%- set kind = 'unreachable' if s.startswith('unreachable') else 'fail' -%}
+                {%- set _ = out.append({'host': h, 'kind': kind, 'failed': fc, 'summary': s}) -%}
+              {%- endif -%}
+            {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ out }}
+        host_sw_alert_fingerprint: >-
+          {%- set out = [] -%}
+          {%- for h in audited_hosts -%}
+            {%- if hostvars[h].sw_probe is defined or hostvars[h].sw_not_declared is defined -%}
+            {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
+            {%- if rpt -%}
+              {%- set y = rpt | from_yaml -%}
+              {%- set s = y.get('summary', '') -%}
+              {%- set fc = y.get('failed_count', 0) | int -%}
+              {%- if s.startswith('fail') or s.startswith('unreachable') or fc > 0 -%}
+                {%- set kind = 'unreachable' if s.startswith('unreachable') else 'fail' -%}
+                {%- set _ = out.append(h ~ ':' ~ kind ~ ':' ~ fc) -%}
+              {%- endif -%}
+            {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ out | join('|') }}
+      delegate_to: localhost
+      run_once: true
+
+    - name: Notify board-api when host-software alerts found
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card"
+        method: POST
+        body_format: json
+        status_code: [200, 201, 400]
+        return_content: true
+        body:
+          id: ansible-host-software-alert
+          title: "Ansible audit: host software capability drift/fail"
+          column: backlog
+          action: {type: manual}
+          from: "{{ board_from }}"
+          spec: >-
+            Read-only ansible verify-host-software detected capability failures/unreachable hosts
+            vs ssot.host-software.yml. Hosts: {{ host_sw_alert_hosts | map(attribute='host') | join(', ') }}.
+            Report dir: reports/ansible-benchmark/host-software/. No remediation performed.
+      when:
+        - board_notify | bool
+        - (host_sw_alert_hosts | length) > 0
+      register: host_sw_alert_card
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fail on unexpected host-software alert card create error
+      ansible.builtin.fail:
+        msg: "board-api /card create failed: {{ host_sw_alert_card.content | default('') }}"
+      when:
+        - board_notify | bool
+        - (host_sw_alert_hosts | length) > 0
+        - host_sw_alert_card.status not in [200, 201]
+        - "'already exists' not in (host_sw_alert_card.content | default(''))"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fetch host-software alert card for comment dedupe
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card/ansible-host-software-alert"
+        method: GET
+        return_content: true
+        status_code: [200, 404]
+      register: host_sw_alert_card_for_comment
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (host_sw_alert_hosts | length) > 0
+
+    - name: Compute host-software alert comment dedupe
+      ansible.builtin.set_fact:
+        host_sw_alert_comment_text: >-
+          ansible verify-host-software: {{ host_sw_alert_hosts | length }} host(s) alerting.
+          fp={{ host_sw_alert_fingerprint }}. {{ host_sw_alert_hosts | to_json }}
+        host_sw_alert_comment_is_dup: >-
+          {{
+            (host_sw_alert_card_for_comment.status | default(404)) == 200
+            and (
+              ((host_sw_alert_card_for_comment.json.card.comms | default([]))
+                | selectattr('from', 'equalto', board_from)
+                | selectattr('text', 'defined')
+                | selectattr('text', 'search', 'fp=' ~ (host_sw_alert_fingerprint | regex_escape))
+                | list | length) > 0
+            )
+          }}
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (host_sw_alert_hosts | length) > 0
+
+    - name: Comment host-software alert summary
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/comment"
+        method: POST
+        body_format: json
+        status_code: [200, 201]
+        body:
+          id: ansible-host-software-alert
+          from: "{{ board_from }}"
+          text: "{{ host_sw_alert_comment_text }}"
+      when:
+        - board_notify | bool
+        - (host_sw_alert_hosts | length) > 0
+        - not (host_sw_alert_comment_is_dup | default(false) | bool)
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fetch host-software alert card for cleared check
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card/ansible-host-software-alert"
+        method: GET
+        return_content: true
+        status_code: [200, 404]
+      register: host_sw_alert_card_for_cleared
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (host_sw_alert_hosts | length) == 0
+
+    - name: Compute host-software alert cleared comment
+      ansible.builtin.set_fact:
+        host_sw_alert_cleared_comment: >-
+          ansible verify-host-software: all clear, no alert hosts. fp=cleared.
+        host_sw_alert_cleared_needed: >-
+          {{
+            (host_sw_alert_card_for_cleared.status | default(404)) == 200
+            and (
+              (
+                (host_sw_alert_card_for_cleared.json.card.comms | default([]))
+                | selectattr('from', 'equalto', board_from)
+                | selectattr('text', 'defined')
+                | selectattr('text', 'search', 'fp=')
+                | list
+              ) | length > 0
+            )
+            and (
+              'fp=cleared' not in (
+                (
+                  (host_sw_alert_card_for_cleared.json.card.comms | default([]))
+                  | selectattr('from', 'equalto', board_from)
+                  | selectattr('text', 'defined')
+                  | selectattr('text', 'search', 'fp=')
+                  | list | last
+                ).text | default('')
+              )
+            )
+          }}
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (host_sw_alert_hosts | length) == 0
+
+    - name: Comment host-software alert cleared
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/comment"
+        method: POST
+        body_format: json
+        status_code: [200, 201]
+        body:
+          id: ansible-host-software-alert
+          from: "{{ board_from }}"
+          text: "{{ host_sw_alert_cleared_comment }}"
+      when:
+        - board_notify | bool
+        - (host_sw_alert_hosts | length) == 0
+        - host_sw_alert_cleared_needed | default(false) | bool
+      delegate_to: localhost
+      run_once: true
+
+    - name: Show kanban notify summary
+      ansible.builtin.debug:
+        msg:
+          board_notify: "{{ board_notify }}"
+          alert_hosts: "{{ host_sw_alert_hosts | map(attribute='host') | list }}"
+          comment_skipped_as_dup: "{{ host_sw_alert_comment_is_dup | default(false) }}"
+          cleared_comment_posted: "{{ host_sw_alert_cleared_needed | default(false) }}"
+      when: board_notify | bool
+      delegate_to: localhost
+      run_once: true

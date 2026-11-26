@@ -677,9 +677,14 @@ class Case(unittest.TestCase):
              "master:file.txt"], capture_output=True, text=True).stdout
         self.assertIn("upstream", body)
         reqs = c.get("requests") or []
-        self.assertTrue(any(r.get("id") == "merge-conflict"
-                            and "file.txt" in (r.get("ask") or "")
-                            for r in reqs), reqs)
+        mc = next(r for r in reqs if r.get("id") == "merge-conflict")
+        self.assertIn("file.txt", mc.get("ask") or "")
+        # KNB-0178 execute-answer: the options carry explicit actions so
+        # answer-sweep can resolve/drop/hold without a human middleman.
+        self.assertEqual(
+            [(o["id"], o["action"]) for o in mc["options"]],
+            [("resolve", "queue"), ("drop", "retry"),
+             ("hold", "hold")], mc["options"])
         self.assertNotEqual(c["action"].get("verified"), True)
         # a second sweep doesn't raise a duplicate while it stays open
         card2 = self.read_card()
@@ -688,6 +693,72 @@ class Case(unittest.TestCase):
         self.assertEqual(
             sum(1 for r in c2.get("requests") or []
                 if str(r.get("id", "")).startswith("merge-conflict")), 1)
+
+    def _seed_conflict(self):
+        """Set up the stranded branch + upstream edit that conflicts on
+        file.txt; shared by the conflict-request flood tests (KNB-0178)."""
+        commit(self.wt, "file.txt", "session\n", "session change")
+        other = self.tmp / "other"
+        subprocess.run(["git", "clone", "-q", str(self.origin),
+                        str(other)], capture_output=True)
+        commit(other, "file.txt", "upstream\n", "upstream change")
+        r = git(other, "push", "-q", "origin", "master")
+        assert r.returncode == 0, r.stderr
+
+    def _conflict_reqs(self, card: dict) -> list:
+        return [r for r in card.get("requests") or []
+                if str(r.get("id", "")).startswith("merge-conflict")]
+
+    def test_conflict_answered_request_not_reposted(self):
+        # KNB-0178 (2026-11-21): the old open_conflict_req() gate counted
+        # only UNANSWERED requests, so once a human answered, every 15-min
+        # pass minted another merge-conflict-N (~50 duplicates across 3
+        # cards). Answering is not a new event — only a changed head/paths
+        # is. Three passes after answering must add nothing.
+        self._seed_conflict()
+        self.assertTrue(ms.sweep_card(self.write_card(), {}, dry=False))
+        c = self.read_card()
+        sig = (c["action"].get("sweep") or {}).get("conflict_sig")
+        self.assertTrue(sig, c)
+        self.assertEqual(len(self._conflict_reqs(c)), 1, c.get("requests"))
+
+        for r in self._conflict_reqs(c):
+            r["status"] = "answered"
+            r["answer"] = "let devin resolve the conflict and land it"
+        (self.cards / "test-card.yml").write_text(
+            yaml.safe_dump(c, allow_unicode=True, sort_keys=False))
+        for _ in range(3):
+            self.assertTrue(ms.sweep_card(self.read_card(), {}, dry=False))
+        c2 = self.read_card()
+        self.assertEqual(len(self._conflict_reqs(c2)), 1,
+                         c2.get("requests"))
+        self.assertEqual(
+            (c2["action"].get("sweep") or {}).get("conflict_sig"), sig)
+
+    def test_conflict_new_head_reposts_exactly_once(self):
+        # A genuinely new conflict (new commits on the dispatch branch →
+        # new head) must still raise exactly one fresh request, then go
+        # quiet again on the same signature.
+        self._seed_conflict()
+        self.assertTrue(ms.sweep_card(self.write_card(), {}, dry=False))
+        c = self.read_card()
+        old_sig = (c["action"].get("sweep") or {}).get("conflict_sig")
+        self.assertTrue(old_sig, c)
+
+        commit(self.wt, "file.txt", "session v2\n", "session change 2")
+        self.assertTrue(ms.sweep_card(self.read_card(), {}, dry=False))
+        c2 = self.read_card()
+        reqs = self._conflict_reqs(c2)
+        self.assertEqual(len(reqs), 2, c2.get("requests"))
+        self.assertEqual(reqs[-1]["id"], "merge-conflict-2")
+        self.assertNotEqual(
+            (c2["action"].get("sweep") or {}).get("conflict_sig"), old_sig)
+
+        # stable again — the new signature suppresses further reposts
+        self.assertTrue(ms.sweep_card(self.read_card(), {}, dry=False))
+        c3 = self.read_card()
+        self.assertEqual(len(self._conflict_reqs(c3)), 2,
+                         c3.get("requests"))
 
     def _commit_symlink(self, name: str, target: str,
                         msg: str) -> None:

@@ -10,5 +10,6 @@ function names).
 - Emit ONLY the markdown as your final message. You hold no write
   tools; the runner writes the file from your message.
 - No bash, no network, no writes — every denied call fails the job.
-- If the job declares required sentinel strings, they must appear
-  verbatim in the document.
+- If the job declares a verify contract (sentinel strings, regex
+  patterns, or required terms), every declared check must hold in the
+  document — sentinels verbatim, regexes as matches, terms covered.

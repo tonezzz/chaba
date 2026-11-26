@@ -143,6 +143,164 @@ class QueueClassifyTest(unittest.TestCase):
             with_detail=True)
         self.assertEqual((lane, src), ("manual", "kw:hardware"))
 
+    def test_host_mention_does_not_preempt_cheaper_lane(self):
+        """DEV-0045 reroute: a bare 'host' mention in an ops/report spec
+        must not route a bounded read-only task onto devin ahead of
+        free_lane (devin used to be evaluated first)."""
+        lane, src, conf = self.dr.classify_lane({
+            "title": "report graph: producer metas never reach renderer",
+            "spec": "read-only check of the host's failing report graph",
+            "action": {},
+        }, with_detail=True)
+        self.assertEqual((lane, src), ("free_lane", "kw:report"))
+
+    def test_timer_sentinel_alert_classifies_free_lane(self):
+        """DEV-0045 chosen slice: auto-generated timer-sentinel alerts are
+        bounded diagnoses; the generic 'failing' keyword must not send
+        them to devin."""
+        card = {"id": "timer-alert-idc03-log-shipper",
+                "title": "Timer log-shipper on idc03 failing",
+                "tags": ["timer-alert", "auto", "by:timer-sentinel"],
+                "action": {}}
+        self.assertEqual(self.dr.classify_lane(card, with_detail=True)[:2],
+                         ("free_lane", "timer-alert"))
+        card["action"]["lane"] = "devin"
+        self.assertEqual(self.dr.classify_lane(card, with_detail=True)[:2],
+                         ("devin", "explicit"))
+
+    def test_plain_failing_task_still_devin(self):
+        """The narrow sentinel tag rule must not re-route ordinary
+        multi-step failure work."""
+        card = {"title": "deployment pipeline failing", "action": {}}
+        self.assertEqual(self.dr.classify_lane(card), "devin")
+
+    def test_audit_lead_title_classifies_free_lane(self):
+        """classifier-readonly-audit-class-reroute: an audit-class
+        lead-in title routes to free_lane at queue time."""
+        card = {"id": "c1",
+                "title": "Audit unlanded Oct 6 dispatch artifacts "
+                         "on Dell mirror",
+                "action": {}}
+        res = self.api.do_action(card, "queue", "devin")
+        self.assertEqual(card["action"]["lane"], "free_lane")
+        self.assertIn("kw:audit-ro", card["comms"][0]["text"])
+        self.assertTrue(res.startswith("queued"))
+
+
+class AuditRoClassifyTest(unittest.TestCase):
+    """classifier-readonly-audit-class-reroute (parent
+    devin-usage-reduction): titles that LEAD with
+    audit/assessment/review/investigate/sweep route to free_lane
+    (kw:audit-ro, conf 1.0) unless the TITLE carries a mutation verb.
+    Title-scoped only — spec bodies are never scanned; explicit
+    action.lane and the timer-alert pin keep precedence; the vendored
+    runner-agent copy must agree."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.dr = _load("dispatch_repos")
+        cls.ra = _load("runner-agent")
+
+    def setUp(self):
+        # jevos is not under test — force the devin-safe fallback so
+        # non-matching titles resolve identically offline.
+        self._p = patch("urllib.request.urlopen",
+                        side_effect=OSError("jevos stubbed"))
+        self._p.start()
+        self.addCleanup(self._p.stop)
+
+    def _lane(self, title, **card):
+        c = {"id": "a1", "title": title, "action": {}}
+        c.update(card)
+        return self.dr.classify_lane(c, with_detail=True)
+
+    def test_audit_slug_and_bracket_tag_free_lane(self):
+        for title in ("audit-miss-unlanded-oct06-dispatch-artifacts",
+                      "audit-oc-mutating-command-0b3n5bce",
+                      "[audit] mutating_command in opencode session X"):
+            lane, src, conf = self._lane(title)
+            self.assertEqual((lane, src, conf),
+                             ("free_lane", "kw:audit-ro", 1.0), title)
+
+    def test_lead_stems_free_lane(self):
+        for title in ("Assess sys-mon coverage",
+                      "Audit unlanded Oct 6 dispatch artifacts "
+                      "on Dell mirror",
+                      "Investigate devin-handoff job-ledger "
+                      "terminal writes",
+                      "Sweep stale mddb endpoint 100.74.146.0",
+                      "assessment of queue starvation",
+                      "[p1] review retention policy"):
+            lane, src, conf = self._lane(title)
+            self.assertEqual((lane, src), ("free_lane", "kw:audit-ro"),
+                             title)
+
+    def test_mutation_verb_in_title_vetoes(self):
+        """'audit X then fix Y' is mutation work — the title veto
+        keeps it off the read-only lane (spec bodies never scanned,
+        so only TITLE verbs count)."""
+        for title in ("Audit logs then fix the shipper",
+                      "Assess coverage then deploy the fix",
+                      "Review the rollout and create the patch",
+                      "Investigate the leak and implement a guard",
+                      "Sweep stale cards and merge the results"):
+            lane, src, conf = self._lane(title)
+            self.assertNotEqual((lane, src),
+                                ("free_lane", "kw:audit-ro"), title)
+        lane, src, conf = self._lane("Audit logs then fix the shipper")
+        self.assertEqual((lane, src), ("devin", "fallback"))
+
+    def test_fix_first_title_not_rerouted(self):
+        lane, src, conf = self._lane("Fix audit-cast runaway guard")
+        self.assertNotEqual((lane, src), ("free_lane", "kw:audit-ro"))
+
+    def test_single_hyphen_component_name_not_rerouted(self):
+        """vcast-audit-cast regression: 'audit-cast' names a component,
+        not an audit task — the slug form needs >=2 hyphens."""
+        lane, src, conf = self._lane(
+            "audit-cast runaway guard fails — CB_RSS unbound variable")
+        self.assertNotEqual((lane, src), ("free_lane", "kw:audit-ro"))
+
+    def test_explicit_lane_wins(self):
+        lane, src, conf = self.dr.classify_lane(
+            {"title": "Audit unlanded dispatch artifacts",
+             "action": {"lane": "devin"}}, with_detail=True)
+        self.assertEqual((lane, src), ("devin", "explicit"))
+
+    def test_timer_alert_pin_still_wins(self):
+        lane, src, conf = self.dr.classify_lane(
+            {"title": "Audit why the timer fails",
+             "tags": ["timer-alert", "by:timer-sentinel"],
+             "action": {}}, with_detail=True)
+        self.assertEqual((lane, src), ("free_lane", "timer-alert"))
+
+    def test_non_matching_title_jevos_fallback_unchanged(self):
+        lane, src, conf = self._lane("Random ambiguous thing")
+        self.assertEqual((lane, src, conf), ("devin", "fallback", 0.0))
+
+    def test_spec_body_audit_mention_not_rerouted(self):
+        """Only the TITLE decides — a mutation card whose spec says
+        'audit X' must not reroute."""
+        lane, src, conf = self._lane(
+            "Ship the new dispatch pipeline",
+            spec="first audit the current artifacts, then fix the "
+                 "shipper and deploy")
+        self.assertNotEqual((lane, src), ("free_lane", "kw:audit-ro"))
+
+    def test_runner_agent_parity(self):
+        """The vendored runner-agent classifier must agree on every
+        audit-ro shape (dr's jevos is stubbed -> same 'devin')."""
+        for title in ("audit-miss-unlanded-oct06-dispatch-artifacts",
+                      "[audit] mutating_command in opencode session X",
+                      "Assess sys-mon coverage",
+                      "Audit logs then fix the shipper",
+                      "audit-cast runaway guard fails — CB_RSS "
+                      "unbound variable",
+                      "Random ambiguous thing"):
+            card = {"title": title, "action": {}}
+            self.assertEqual(self.dr.classify_lane(card),
+                             self.ra.classify_lane(card), title)
+
 
 class KkMacRouteUnitTest(unittest.TestCase):
     """dr.kk_mac_route — the bounded read-only auto-route rule
@@ -170,8 +328,17 @@ class KkMacRouteUnitTest(unittest.TestCase):
     def test_keyword_infers_task_class(self):
         c = self._card(title="Summarize the overnight host report")
         self.assertEqual(self.dr.kk_mac_route(c), "summary")
-        c = self._card(title="Triage this alert into a lane")
-        self.assertEqual(self.dr.kk_mac_route(c), "safe_route")
+        c = self._card(title="Extract the host list from this digest")
+        self.assertEqual(self.dr.kk_mac_route(c), "structured_extract")
+
+    def test_held_class_keywords_not_routed(self):
+        # safe_route/operator_brief keywords were removed while the
+        # classes are unadmitted (kk-mac-admitted-classes-narrow) — a
+        # held-class inference must never reach queue validation
+        for title in ("Triage this alert into a lane",
+                      "Write an operator brief for last night"):
+            c = self._card(title=title)
+            self.assertEqual(self.dr.kk_mac_route(c), "", title)
 
     def test_executor_pin_wins(self):
         c = self._card(action={"executor": "devin",
@@ -249,7 +416,7 @@ class KkMacAutoRouteQueueTest(unittest.TestCase):
         a = {"type": "dispatch"}
         a.update(kw.pop("action", {}))
         card = {"id": "kkq1", "title": kw.pop("title", "t"),
-                "action": a}
+                "column": "backlog", "action": a}
         card.update(kw)
         return card
 

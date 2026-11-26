@@ -17,6 +17,7 @@ import argparse, os, re, subprocess, sys
 
 NEED_KEYS = {'gpu_gb', 'disk_gb', 'ram_gb', 'egress_only_ok'}
 NAME_RE = re.compile(r'[a-z0-9][a-z0-9-]{0,60}')
+HF_REPO_RE = re.compile(r'[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*')
 
 
 def die(msg):
@@ -89,6 +90,13 @@ def validate(spec, dirname):
         errs.append('timeout_s must be int seconds')
     if spec.get('scope') not in (None, 'work', 'env'):
         errs.append("scope must be 'work' or 'env'")
+    hf = spec.get('hf_repos')
+    if hf is not None:
+        if not (isinstance(hf, list)
+                and all(isinstance(r, str) and HF_REPO_RE.fullmatch(r)
+                        for r in hf)):
+            errs.append("hf_repos must be a list of 'org/name' strings "
+                        '(drives selective restore-hf-cache on Colab)')
     return errs
 
 
@@ -150,6 +158,25 @@ def main():
     rclone('copy', d, f'{args.remote}/packs/{name}',
            '--exclude', 'claim/**', '--exclude', 'done',
            capture=False)
+    # packs-index 'stage' event — fleet/status scans see the pack the
+    # moment it lands instead of discovering it via pack listings
+    # (ADA-0806). Best-effort: a missing index dir must not fail a stage.
+    try:
+        import json, time, socket
+        worker = f'submit-{socket.gethostname()}-{os.getpid()}'
+        fn = (f'{int(time.time() * 1000)}-{worker}-{name}-stage.json')
+        r = subprocess.run(
+            ['rclone', 'rcat',
+             f'{args.remote}/queue/packs-index/{fn}'],
+            input=json.dumps({'ts': time.time(), 'pack': name,
+                              'state': 'stage', 'worker': worker,
+                              'info': ''}),
+            capture_output=True, text=True, timeout=60)
+        if r.returncode != 0:
+            print(f'  (packs-index event skipped: '
+                  f'{r.stderr.strip()[:120]})')
+    except Exception as e:
+        print(f'  (packs-index event skipped: {e})')
     print(f'staged. workers will discover it on their next pass.')
     print(f'check: nest-queue-status.py   (packs section)')
 

@@ -1,7 +1,7 @@
 id: mcp-schema-allowlist-heavy-servers-7c22e9
 title: mcp-schema-allowlist-heavy-servers
-column: backlog
-updated: 2026-11-19 20:05
+column: done
+updated: 2026-11-26 20:34
 priority: medium
 spec: 'Apply mcp-allowlist.py to alphavantage (~5.6k lines/~15k tokens schema — allowlist ~6 core fns: TIME_SERIES_DAILY,
   FX_DAILY, quote, plus top-3 used) and playlive (~30 tools — allowlist ~10 core: create/navigate/click/fill/screenshot/eval/close/list/status).
@@ -132,15 +132,248 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:52
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 15:15
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
+    the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-21 17:49
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 09:42
+  from: chaba
+  text: classified as devin (fallback conf 0.29)
+- at: 2026-11-23 09:42
+  from: devin
+  text: queued for processing
+- at: 2026-11-23 09:43
+  from: devin
+  text: 'Rerouted 2026-11-23: tony-macbook (sole eligible runner) is offline and lacks push:chaba creds; work never
+    landed (no commits). Re-queued so any push-capable runner (tony-dell verified push-capable) can claim it. Task:
+    apply mcp-allowlist.py to alphavantage + playlive (AUD-0886 #1, ~20k tokens/session).'
+- at: 2026-11-23 09:43
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.63 > 1.0)'
+- at: 2026-11-23 09:43
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.68 > 0.85)'
+- at: 2026-11-23 09:43
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.20 > 0.85)'
+- at: 2026-11-23 09:44
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.88 > 1.5)'
+- at: 2026-11-23 09:44
+  from: tony-omen
+  text: claimed
+- at: 2026-11-23 09:45
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 09:46
+  from: chaba
+  text: started devin-task-20261123-094604-apply-mcp-allowlist-py-to-alph on tony-omen (dispatch)
+- at: 2026-11-23 09:46
+  from: chaba
+  text: 'primer injected 8 lesson(s): [mcp-schema-allowlist-heavy-servers-7c22e9] merge-sweep: no session/worktree
+    fou; runbook docs/kb/mcp-server-audit-analysis.md: MCP Server Analysis — - **Tool Cou; [jules-session-create-failed-precondition]
+    Fresh evidence 2026-11-20: POST /sess; [mcp-schema-allowlist-heavy-servers-7c22e9] session produced no commits
+    — the br; _score now intersects the line''s token set (compound _tokens plus alnum parts, e; [ada-tools-command-reference]
+    merge-sweep: no session/worktre'
+- at: 2026-11-23 09:47
+  from: chaba
+  text: 'merge-sweep: devin-task-20261103-114841-apply-mcp-allowlist-py-to-alph no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-11-23 09:49
+  from: devin
+  text: 'started on tony-omen. Found: allowlist infra lives only on dell+idc03 (omen has none); alphavantage is
+    a url: remote server so it needs a stdio->HTTP bridge under mcp-allowlist.py; playlive gets dell''s proven 14-tool
+    list; alphavantage gets ~6 (TIME_SERIES_DAILY, FX_DAILY, GLOBAL_QUOTE, CURRENCY_EXCHANGE_RATE, GOLD_SILVER_SPOT,
+    GOLD_SILVER_HISTORY). Will also teach generate-mcp-config.py about filter:allowlist so regen cannot silently
+    revert.'
+- at: 2026-11-23 09:57
+  from: devin
+  text: 'DONE on tony-omen. alphavantage 133->6 tools (TIME_SERIES_DAILY, FX_DAILY, GLOBAL_QUOTE, CURRENCY_EXCHANGE_RATE,
+    GOLD_SILVER_SPOT, GOLD_SILVER_HISTORY); playlive 25->14 (dell''s proven list). Verified live: tools/call to
+    filtered EMA blocked -32601; CURRENCY_EXCHANGE_RATE USD->THB returns real data via the new mcp-stdio-bridge.py
+    (alphavantage is a url: server, so a stdio->streamable-HTTP bridge sits it behind the proxy). mcp_config.json
+    backed up to mcp-backups/pre-allowlist-av-pl-20261123; roll'
+- at: 2026-11-23 10:10
+  from: tony-omen
+  text: 'finished (ok): exit=0 `dispatch-outcome-20261123-094604-apply-mcp-allowlist-py-to-alph.md`; card comms
+    posted. | devin-task-20261123-09'
+- at: 2026-11-23 10:10
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 10:10
+  from: chaba
+  text: 'session-end checkpoint 7bad5a8e: 2 leftover file(s) committed'
+- at: 2026-11-23 10:10
+  from: chaba
+  text: banked 130 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 10:10
+  from: chaba
+  text: pushed dispatch/20261123-094604-apply-mcp-allowlist-py-to-alph to origin
+- at: 2026-11-23 10:10
+  from: chaba
+  text: 'test gate failed — merge held: suite timeout (240s)'
+- at: 2026-11-23 10:10
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-23 14:08
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:20
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 15:12
+  from: tony
+  text: put on hold
+- at: 2026-11-23 15:13
+  from: tony
+  text: closed by tony
+- at: 2026-11-23 15:13
+  from: chaba
+  text: '[verify] Review pass 2026-11-23 (Tony): 2026-11-23 09:57 devin DONE: alphavantage 133->6 tools, playlive
+    25->14, live tools/call EMA blocked -32601 and CURRENCY_EXCHANGE_RATE USD->THB real data via new bridge; host-config
+    work, no repo merge needed'
+- at: 2026-11-23 16:18
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:07
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:07
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:23
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:40
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:06
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:47
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:01
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:02
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:34
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done
-  runner: tony-macbook
-  result: 'exit=0 . Running in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools.
-    | devin-task-20261103-114841-apply-mcp-allowlist-py-to-alph.service: Consumed 38.582s CPU time over 3min 4.580s
-    wall clock time, 1.1G memory peak.'
+  result: 'exit=0 `dispatch-outcome-20261123-094604-apply-mcp-allowlist-py-to-alph.md`; card comms posted. | devin-task-20261123-094604-apply-mcp-allowlist-py-to-alph.service:
+    Consumed 5min 852ms CPU time over 12min 26.103s wall clock time, 1.5G memory peak.'
   sweep:
     session_gone: 2026-11-03 11:57
     no_repo: 2026-11-04 07:45
+    stale_running: 2026-11-23 09:47
+  lane: devin
+  lane_source: fallback
+  runner: tony-omen
+  attempts: 1
+  verified: false
 review_kind: verify
-claim: {}
+claim:
+  since: 2026-11-23 09:44

@@ -35,8 +35,13 @@ user-level unless marked **[sudo]** or **[Tony]** (needs his hands/password).
 - Outbound: `ssh-keygen -t ed25519` if no key, then push the pubkey to every host in
   `host-capacity.yml hosts:` — fastest is via a host that already reaches them:
   `ssh tony-dell 'for h in tony-omen idc02 idc03 mn01; do ssh $h "echo <pubkey> >> ~/.ssh/authorized_keys"; done'`
-- `ssh-keyscan -t ed25519 <all fleet hosts> >> ~/.ssh/known_hosts` — first BatchMode
-  contact dies silently without this.
+- Seed outbound SSH from the declared inventory — first BatchMode contact dies
+  silently without this:
+  `cd <chaba>/ansible && ansible-playbook playbooks/ssh-bootstrap.yml`
+  (hashed IPs, retired hosts excluded), then
+  `ansible-playbook playbooks/ssh-config-generate.yml` for aliases and
+  `ansible-playbook playbooks/ssh-mesh-verify.yml` as the gate. Preview with
+  `--check --diff` first; `ssh-mesh-sync.sh` still owns remote authorized_keys.
 - Also add the host's own pubkey to its own `authorized_keys` + `ssh-keyscan localhost`
   (lets ssh-mesh-sync run correctly from the host itself).
 - Register: add `hosts:` entry in `ssot.host-capacity.yml`; only hard-exclude in
@@ -101,6 +106,13 @@ user-level unless marked **[sudo]** or **[Tony]** (needs his hands/password).
 - Mirror cap+labels in `ssot.kanban.yml#execution.concurrency.runner_fleet` prose —
   fleet-health parses it and audits declared `push:<repo>` labels against
   the probe (false label = `push-label-false` violation).
+- OpenCode lane hosts: serving `executor=opencode` / lane-routed cards
+  needs BOTH the `OPENCODE_LANES=1` drop-in AND a real binary — the
+  claim gate fails closed on either missing piece. Declare the
+  `opencode` capability in `ssot.host-software.yml` so
+  `host-ready-check.py` catches binary drift (omen ran the flag with
+  no binary for weeks — card tony-omen-declares-opencode-lanes-1-but-4cbe02).
+  Lane enablement itself stays gated per `ssot.devnest-lanes.yml`.
 - Task types: `dispatch` needs the devin login; `container` needs podman;
   `script` needs only git+the toolchain — a host can run script-only while pending.
 - Verify: `journalctl --user -u runner-agent` clean passes; the runner reports

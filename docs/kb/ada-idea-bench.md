@@ -139,3 +139,55 @@ If the tool surface merged/renamed meanwhile, `render-tool-profiles.py
 - Known gap: `cms_publish_page` stays in the surface, so a "confident
   invention" could still write a fabricated page — the scenario
   `no_calls_except` on probe turns catches it in the tool-call list.
+
+### 2026-11-24 profile reconciliation
+
+`persons.kk.tools` is the production surface and the source of truth:
+
+- `kk-parity` is now an exact copy of it. A stale "restore" profile used
+  to leave the dev lane on an October surface after every bench run.
+- `kk-cms-only` is production minus the four memory tools and `web_search`,
+  plus `cms_publish_page` kept **only** as a test-only seed writer for
+  `kk_cms_only_seeded_recall` (prod dropped it 2026-10-14; `wp_post` owns
+  member writes). `cms_edit` is gone — the suite never used it. The seed
+  page carries marker `ZETA-KK-CMS-7741` and is deleted by the scenario's
+  cleanup block, so it cannot contaminate later honest-miss probes.
+  Public writes stay on the production `wp_*`/`cpt_post` path in both
+  profiles.
+- `tests/ada/test_bench_profile_parity.py` fails on any drift in those
+  relationships, on include/exclude overlaps, or if a bench profile ever
+  targets a non-`-dev` env file. Run it before touching either profile.
+- Remove the test-only writers here **and** rewrite the seed scenario
+  together when a production-real seed writer exists.
+
+### 2026-11-24 — deterministic out-of-band seed (current state)
+
+`kk_cms_only_seeded_recall` no longer asks the model to publish. It uses
+`scenario-live.py`'s top-level `seed:` block, which writes the ZETA page
+through MDDB `/v1/add` and verifies it via `/v1/search` before any turn;
+a failed seed exits INFRA (3), never a scored recall turn. `cleanup`
+deletes the page afterwards. MDDB meta values must be `[]string` —
+`seed_payload()` normalizes scalars.
+
+Run the bench with `MDDB_BASE_URL` exported so seeding and cleanup hit the
+same MDDB as `--mddb`, e.g.
+`export MDDB_BASE_URL=http://100.102.134.91:11023/v1`.
+
+Two consecutive runs after this change scored **1.0** (3/3) at 21:04 and
+21:06 — the suite now tests CMS recall rather than the model's
+publish/confirm behaviour. `no_successful_calls_except` in
+`scenario-live.py` ignores calls the lane gate refused; 5 unit tests in
+`ada-voice/tests/test_scenario_live_harness.py` cover both behaviours.
+
+### Creating a requested report for Kaewta
+
+Prod Kaewta has no arbitrary CMS write tool (`cms_publish_page`/`cms_edit`
+were dropped 2026-10-14; `wp_post`/`cpt_post` go to WordPress). A page she
+must recall later is created out of band with
+`scripts/ada/cms-report-add.py --lane kk ... --dry-run` then `--apply`.
+The writer pins lane→collection, validates slug/domain/summary against SSOT,
+refuses overwrite without `--overwrite`, posts with `contentMd` (the
+camelCase MDDB field — `content_md` silently stores an empty body), reads
+the page back, and regenerates `reports-index`. Card template:
+`docs/ssot/templates/kk-cms-report-request.yml`; 6 unit tests in
+`tests/ada/test_cms_report_add.py`.

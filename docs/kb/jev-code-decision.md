@@ -182,3 +182,33 @@ Probes ran the doc-pilot chain with jevos (the arena's choice winner):
    block next), not every edge.
 
 Cards: BEN-0826 (arena), OPS-0825 (composer design v1), BEN-0824 (stagnation gate).
+
+---
+
+## Phase-1 implementation (2026-11-24, OPS-0825 delivered)
+
+Built and verified on tony-omen (dispatch worktree):
+
+- **service** `scripts/jev/code-decision.py` — `{task, code,
+  constraints, candidates}` → Choice + 3 Nouls (semantics / convention /
+  minimality) on the winner; CLI + `decide()` + stdlib `--serve`
+  (`POST /decide`, port 8890). Backend routing per question type with
+  stub detection and honest `degraded[]`; `assume_winner` gates the
+  caller's pick when choice is down.
+- **agent skill** `.agents/skills/code-decision/SKILL.md` — call before
+  construct/template/library/replacement choices; verdict table;
+  live-verdict logging for corpus growth.
+- **eval pack** `scripts/jev/code-decision-corpus.jsonl` (19
+  human-verified cases: 13 choice repo-convention-grounded + 6 gate
+  hand-labeled) + `scripts/jev/code-decision-eval.py`
+  (`--corpus-only` verifier, per-backend scoring, `--out` records).
+
+**Measured finding (evals/results/jev/code-decision-eval-20261124.*):**
+with today's backends the layer cannot decide — jev-student choice is a
+stub (0/13) and its noul head collapses OOD on code-decision gates
+(p≈0.005 ×3 every case; door detects this as `gates-ood-suspect`). Same
+conclusion as the Phase-0 composer probe: every decision slot needs the
+real Jev API (KNB-0822) or a declared jevos unit. The eval pack scores
+that backend the day the key lands.
+
+Job record: `docs/ssot/jobs/bench/2026-11-24-jev-code-decision-layer.yml`.

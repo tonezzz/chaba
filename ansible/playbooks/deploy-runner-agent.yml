@@ -1,0 +1,62 @@
+---
+# deploy-runner-agent.yml — idempotent runner-agent convergence.
+#
+# Source of truth: controller's chaba checkout scripts/board/runner-agent.py
+# (the same file the audit-hosts drift check hashes). Redeploys only when the
+# installed ~/.local/bin/runner-agent on a host differs (md5), so a fleet-wide
+# run is a no-op when everyone is already in sync — safe to run from cron.
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/deploy-runner-agent.yml
+#   ansible-playbook playbooks/deploy-runner-agent.yml --limit tony-dell
+#   ansible-playbook playbooks/deploy-runner-agent.yml --check --diff
+#
+# Automation: tony-dell's runner-agent-converge.timer calls this playbook
+# nightly. macOS hosts are excluded: kk-mac has its own launchd + never-downgrade
+# sync path (scripts/devin/sync-runner-tools.sh), not systemd.
+#
+# Restored 2026-11-25 from the untracked snapshot in commit f6c323dab1 —
+# the nightly unit referenced this path but the file was never committed,
+# which made every nightly run fail with "playbook could not be found".
+
+- name: Converge runner-agent across the fleet
+  hosts: all:!macos:!disabled
+  gather_facts: true
+  become: false
+
+  vars:
+    runner_src: "{{ playbook_dir }}/../../scripts/board/runner-agent.py"
+    runner_dest: "{{ ansible_user_dir }}/.local/bin/runner-agent"
+    runner_mode: "0755"
+
+  tasks:
+    - name: Ensure ~/.local/bin exists
+      ansible.builtin.file:
+        path: "{{ ansible_user_dir }}/.local/bin"
+        state: directory
+        mode: "0755"
+
+    - name: Deploy runner-agent only if it drifted (idempotent, checksum-gated)
+      ansible.builtin.copy:
+        src: "{{ runner_src }}"
+        dest: "{{ runner_dest }}"
+        mode: "{{ runner_mode }}"
+      register: runner_deploy
+      notify: restart runner-agent
+
+    - name: Report convergence result
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }}:
+          {{ 'REDEPLOYED' if (runner_deploy.changed | default(false)) else 'in-sync' }}
+
+  handlers:
+    - name: restart runner-agent
+      # no_block keeps a sleeping/off-net laptop from stalling the whole
+      # fleet run (a synchronous systemctl over SSH hung >2m on tony-macbook).
+      ansible.builtin.systemd_service:
+        name: runner-agent
+        scope: user
+        state: restarted
+        no_block: true
+      ignore_errors: true

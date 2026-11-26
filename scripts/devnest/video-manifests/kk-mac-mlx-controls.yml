@@ -1,0 +1,47 @@
+# MLX control-stage dispatch manifest — golden-hour-catch library rerender
+# (card kk-mac-video-library-rerender follow-ups, recorded here so the
+# dispatcher has one place that knows the approved-stage ordering).
+#
+# NONE of these stages is approved for dispatch yet: the scene0 control
+# must pass AND KK must review quality before scene1/vimax staging
+# (pack.yml files carry the same STAGED-ON-APPROVAL warning). Flip
+# `approved: true` + `approved_by:` only after that gate clears.
+schema: video-dispatch/v1
+project_id: kk-video-goldenhour-library
+manifest: kk-mac-mlx-controls
+title: KK-Mac MLX control chain — colab-scene0 -> scene1 -> vimax-s0
+approved: false
+approved_by: null
+stages:
+  - id: colab-scene0-control
+    pack: kk-mac-mlx-colab-scene0-control-20261124
+    source: scripts/devnest/video-packs/kk-mac-mlx-colab-scene0-control-20261124
+    lane: mlx
+    shots: [s0shot0, s0shot1, s0shot2, s0shot3]
+    variant: control
+    state: queued           # already staged on pilot queue 2026-11-24,
+                            # gated launcher waiting for KK-Mac idle
+  - id: colab-scene1
+    pack: kk-mac-mlx-colab-scene1-20261124
+    source: scripts/devnest/video-packs/kk-mac-mlx-colab-scene1-20261124
+    lane: mlx
+    shots: [s1shot0, s1shot1, s1shot2]
+    variant: rerender
+    inputs:                # embeds per inputs/provenance.json — dispatcher
+      - from: gdrive:ada-nest/renders/ltx-embeds-s1/shot0.pt   # fetches at
+        to: inputs/shot0.pt                                  # apply time
+        sha256: 0733f7cbd41faeefa628539019e50b754bf237e1949c9ea21aab1f8139d2e6f9
+      - from: gdrive:ada-nest/renders/ltx-embeds-s1/shot1.pt
+        to: inputs/shot1.pt
+        sha256: 6f88c431e724b8a955b080f3a6606e6753093983b0ae94b1ca8405b619eebcbd
+      - from: gdrive:ada-nest/renders/ltx-embeds-s1/shot2.pt
+        to: inputs/shot2.pt
+        sha256: c913735f42e687c4318527cd3e96cfca89feed3730965fbb77e659ecc994ebaf
+    # stage only after scene0 control passes + KK review
+  - id: vimax-goldenhour-s0
+    pack: kk-mac-mlx-vimax-goldenhour-s0-20261124
+    source: scripts/devnest/video-packs/kk-mac-mlx-vimax-goldenhour-s0-20261124
+    lane: mlx
+    shots: [vimax-s0shot0, vimax-s0shot1]
+    variant: control       # prompt-adherence control (verbatim prompts)
+    # stage only after colab scene0 control passes + KK review

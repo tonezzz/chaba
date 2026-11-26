@@ -1,0 +1,13 @@
+---
+docker_enabled: true
+
+# idc03 served/writer checkout path differs from workstation default.
+# Use ~ (not ansible_facts.env.HOME): this verifier runs gather_facts: false,
+# so an ansible_facts reference would stay un-templated. The remote shell
+# expands ~ for the login user when the push probe runs.
+chaba_repo_path: ~/CascadeProjects/chaba-tony-dell
+ssh_push_repo_path: ~/CascadeProjects/chaba-tony-dell
+
+# runner-agent cap (managed by ansible/playbooks/runner-cap.yml)
+runner_cap: 2
+runner_max_load_pc: 0.7

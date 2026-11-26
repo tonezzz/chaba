@@ -9,7 +9,7 @@
 #
 # A hit doesn't prove breakage — it proves "something still references the
 # old address; decide whether that's intended". The 2026-10-12 misses
-# (deploy-card.sh still targeting dell for michael-dev; kanban-brief
+# (deploy-card.sh still targeting dell for mn-ha-dev; kanban-brief
 # pointing at a nonexistent ollama) would each have been one ref-sweep line.
 #
 # Hosts default to the audit fleet; pass hosts to limit scope.

@@ -1,0 +1,101 @@
+---
+# Shared read-only probe for the ada-ocb pane (idc02 primary, tony-dell
+# fallback). One shell round-trip per host; JSON on stdout becomes `ocb_probe`.
+# Never writes on the target and runs even under --check (check_mode: no),
+# so `ada-ocb-audit.yml --check` still produces real evidence.
+
+- name: Probe pane state (single round-trip, JSON out)
+  ansible.builtin.shell: |
+    python3 - <<'PYEOF'
+    import json, os, re, subprocess
+
+    def sh(cmd):
+        try:
+            p = subprocess.run(["bash", "-lc", cmd], capture_output=True,
+                               text=True, timeout=30)
+            return p.stdout.strip()
+        except Exception:
+            return ""
+
+    home = os.path.expanduser("~")
+    node = os.path.join(home, ".local/node24/bin/node")
+    npm = os.path.join(home, ".local/node24/bin/npm")
+    prefix = os.path.join(home, ".local/node")
+    pkg = os.path.join(prefix, "lib/node_modules/@openchamber/web")
+    marker = os.path.join(pkg, "build/server/lib/openchamber-control/actions.js")
+    env_file = os.path.join(home, ".config/openchamber/startup.env")
+    dropin = os.path.join(home, ".config/systemd/user/openchamber.service.d/10-litellm-env.conf")
+
+    try:
+        dep = json.loads(sh("%s --prefix %s ls -g --depth=0 --json 2>/dev/null" % (npm, prefix)) or "{}").get("dependencies", {})
+    except Exception:
+        dep = {}
+
+    def ver(name):
+        return (dep.get(name) or {}).get("version", "missing")
+
+    units = {}
+    for u in ["openchamber.service", "openchamber-update.timer",
+              "ada-ocb-smoke.timer", "ada-ocb-bridge-sync.timer"]:
+        units[u] = sh("systemctl --user is-active %s 2>/dev/null" % u) or "inactive"
+
+    bind = sh("ss -ltnp 2>/dev/null | grep -E ':3000 ' | head -1")
+    m = re.search(r"([0-9.]+:3000)", bind)
+    bound = m.group(1) if m else "none"
+
+    def has(path, needle):
+        if not os.path.isfile(path):
+            return False
+        try:
+            return needle in open(path, encoding="utf-8", errors="replace").read()
+        except Exception:
+            return False
+
+    out = {
+        "node_version": sh("%s --version 2>/dev/null" % node),
+        "web_version": ver("@openchamber/web"),
+        "cli_version": ver("@opencode/cli"),
+        "units": units,
+        "update_timer_next": sh(
+            "systemctl --user list-timers openchamber-update.timer "
+            "--no-pager --plain 2>/dev/null | sed -n '2p' | awk '{print $1, $2, $3}'"),
+        "bind_3000": bound,
+        "local_http": sh("curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/"),
+        "patch_present": has(marker, "models.status"),
+        "startup_env_mode": oct(os.stat(env_file).st_mode & 0o777)[2:]
+                            if os.path.isfile(env_file) else "missing",
+        "litellm_dropin": has(dropin, "litellm-ada.env"),
+    }
+    print(json.dumps(out))
+    PYEOF
+  args:
+    executable: /bin/bash
+  register: ocb_probe_raw
+  changed_when: false
+  failed_when: false
+  ignore_unreachable: true
+  check_mode: no
+
+# A reachable host whose probe prints no JSON gets an {error: ...} fact so
+# downstream assert/report phases can mark it unreachable instead of crashing
+# on a missing ocb_probe (same pattern as audit-log-shipper.yml). A host that
+# is unreachable or excluded by --limit simply never gets the fact — callers
+# must treat "ocb_probe is not defined" as not-probed.
+- name: Store the probe as a fact
+  ansible.builtin.set_fact:
+    ocb_probe: >-
+      {{ (ocb_probe_raw.stdout | trim | from_json)
+         if (ocb_probe_raw.stdout is defined
+             and (ocb_probe_raw.stdout | trim | length) > 0
+             and (ocb_probe_raw.stdout | trim)[:1] == '{')
+         else {} }}
+  ignore_unreachable: true
+
+- name: Flag a probe that produced no JSON
+  ansible.builtin.set_fact:
+    ocb_probe:
+      error: >-
+        unreachable or no JSON
+        {%- if ocb_probe_raw.stderr is defined %} :: {{ ocb_probe_raw.stderr | trim | truncate(160) }}{% endif %}
+  ignore_unreachable: true
+  when: ocb_probe is not defined or ocb_probe | length == 0

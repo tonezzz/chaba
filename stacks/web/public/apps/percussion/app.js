@@ -5,6 +5,7 @@
      hosts  ← each host plays its role: kick(heavy)=idc*, snare=dell,
               tom=omen, hat=mn01, shaker=light nodes
      state  ← healthy=solid hit · degraded=ghost · error=accent+stutter
+     load   ← pitch: busier/stressed hosts hit sharper (detune ≤ ~+13%)
      alerts ← failing services = crash on bar downbeat */
 "use strict";
 
@@ -13,48 +14,49 @@ const S = { ac: null, on: false, bpm: 72, step: 0, next: 0,
 const LOOKAHEAD = 0.12, TICK_MS = 30;
 
 /* ---------- synthesized voices ---------- */
-function kick(t, v = 1) {
+// det = pitch multiplier from host load/state (1.0 = neutral)
+function kick(t, v = 1, det = 1) {
   const o = S.ac.createOscillator(), g = S.ac.createGain();
-  o.frequency.setValueAtTime(150, t);
-  o.frequency.exponentialRampToValueAtTime(38, t + 0.11);
+  o.frequency.setValueAtTime(150 * det, t);
+  o.frequency.exponentialRampToValueAtTime(38 * det, t + 0.11);
   g.gain.setValueAtTime(v, t);
   g.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
   o.connect(g).connect(S.ac.destination);
   o.start(t); o.stop(t + 0.4);
 }
-function snare(t, v = 1) {
+function snare(t, v = 1, det = 1) {
   const n = noiseSrc(t, 0.18), bp = S.ac.createBiquadFilter(),
         g = S.ac.createGain();
-  bp.type = "bandpass"; bp.frequency.value = 1800; bp.Q.value = 0.9;
+  bp.type = "bandpass"; bp.frequency.value = 1800 * det; bp.Q.value = 0.9;
   g.gain.setValueAtTime(0.7 * v, t);
   g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
   n.connect(bp).connect(g).connect(S.ac.destination);
   const o = S.ac.createOscillator(), g2 = S.ac.createGain();
-  o.frequency.value = 185;
+  o.frequency.value = 185 * det;
   g2.gain.setValueAtTime(0.35 * v, t);
   g2.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
   o.connect(g2).connect(S.ac.destination); o.start(t); o.stop(t + 0.12);
 }
-function tom(t, v = 1) {
+function tom(t, v = 1, det = 1) {
   const o = S.ac.createOscillator(), g = S.ac.createGain();
-  o.frequency.setValueAtTime(220, t);
-  o.frequency.exponentialRampToValueAtTime(95, t + 0.12);
+  o.frequency.setValueAtTime(220 * det, t);
+  o.frequency.exponentialRampToValueAtTime(95 * det, t + 0.12);
   g.gain.setValueAtTime(0.6 * v, t);
   g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
   o.connect(g).connect(S.ac.destination); o.start(t); o.stop(t + 0.3);
 }
-function hat(t, v = 1, open = false) {
+function hat(t, v = 1, open = false, det = 1) {
   const n = noiseSrc(t, 0.05), hp = S.ac.createBiquadFilter(),
         g = S.ac.createGain();
-  hp.type = "highpass"; hp.frequency.value = 7000;
+  hp.type = "highpass"; hp.frequency.value = 7000 * det;
   g.gain.setValueAtTime(0.32 * v, t);
   g.gain.exponentialRampToValueAtTime(0.001, t + (open ? 0.25 : 0.04));
   n.connect(hp).connect(g).connect(S.ac.destination);
 }
-function shaker(t, v = 1) {
+function shaker(t, v = 1, det = 1) {
   const n = noiseSrc(t, 0.05), bp = S.ac.createBiquadFilter(),
         g = S.ac.createGain();
-  bp.type = "bandpass"; bp.frequency.value = 5200; bp.Q.value = 3;
+  bp.type = "bandpass"; bp.frequency.value = 5200 * det; bp.Q.value = 3;
   g.gain.setValueAtTime(0.2 * v, t);
   g.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
   n.connect(bp).connect(g).connect(S.ac.destination);
@@ -309,6 +311,14 @@ function degToFreq(d, oct = 1) {
 
 /* ---------- pattern engine ---------- */
 const VOICE = { kick, snare, tom, hat, shaker };
+
+// pitch from health: load1m (0-30 → 0-5%) plus a state nudge
+// (degraded +2%, error +5%, unknown -1%) — stressed hosts hit sharper.
+function hostDetune(h) {
+  const load = Math.min(Math.max(parseFloat(h.load) || 0, 0), 30) / 30;
+  const st = { degraded: 0.02, error: 0.05, unknown: -0.01 }[h.state] || 0;
+  return 1 + load * 0.05 + st;
+}
 // 16 steps per bar. state: healthy=1.0, degraded=0.4, error=accent 1.2
 const PATTERN = {
   kick:   [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0],
@@ -331,14 +341,15 @@ function scheduleStep(step, t) {
     let v = { healthy: 1.0, quiet: 0.6, degraded: 0.35,
               error: 1.15, unknown: 0.5 }[h.state] ?? 0.6;
     v *= typeof row[step] === "number" && row[step] < 1 ? row[step] : 1;
+    const det = hostDetune(h);
     if (h.state === "error") {           // error = accent + stutter
-      VOICE[h.role](t, v);
-      VOICE[h.role](t + 0.03, v * 0.7);
+      VOICE[h.role](t, v, det);
+      VOICE[h.role](t + 0.03, v * 0.7, det);
       crashed = true;
       mark(host, "err");
       continue;
     }
-    VOICE[h.role](t, v);
+    VOICE[h.role](t, v, det);
     mark(host, h.state === "degraded" ? "deg" : "hit");
   }
   // style voices without a host mapping (clap/ride/shaker extras)

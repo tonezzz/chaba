@@ -1,0 +1,93 @@
+{
+  "arm_repo": "/home/tony/CascadeProjects/dispatch-wt-20261124-170743-compare-opencode-and-cline-on-/evals/jack-llm-stack-agent-eval/arms/cline",
+  "pass": true,
+  "failed": [],
+  "checks": [
+    {
+      "id": "committed-artifact",
+      "status": "pass",
+      "evidence": "git_repo=True commits=4 dirty_entries=0"
+    },
+    {
+      "id": "opencode-provider-config",
+      "status": "pass",
+      "evidence": "files=['opencode.json']"
+    },
+    {
+      "id": "opencode-config-content",
+      "status": "pass",
+      "evidence": "provider+endpoint+model keys present"
+    },
+    {
+      "id": "litellm-routing-config",
+      "status": "pass",
+      "evidence": "files=['config.yaml'] content_ok=True"
+    },
+    {
+      "id": "env-example",
+      "status": "pass",
+      "evidence": "files=['env.example']"
+    },
+    {
+      "id": "healthcheck-script",
+      "status": "pass",
+      "evidence": "files=['healthcheck.sh'] shebang=True"
+    },
+    {
+      "id": "rollback-script",
+      "status": "pass",
+      "evidence": "files=['rollback.sh']"
+    },
+    {
+      "id": "rollback-content",
+      "status": "pass",
+      "evidence": "teardown+restore markers"
+    },
+    {
+      "id": "runbook",
+      "status": "pass",
+      "evidence": "files=['RUNBOOK.md'] sections=['deploy', 'verify', 'rollback', 'health']"
+    },
+    {
+      "id": "tests-present",
+      "status": "pass",
+      "evidence": "files=['tests/test_stack.py']"
+    },
+    {
+      "id": "resource-limits",
+      "status": "pass",
+      "evidence": "limit keywords found"
+    },
+    {
+      "id": "ollama-small-model",
+      "status": "pass",
+      "evidence": "model=qwen2.5:1.5b"
+    },
+    {
+      "id": "mock-deploy-path",
+      "status": "pass",
+      "evidence": "mock/127.0.0.1 references present"
+    },
+    {
+      "id": "verify-sh",
+      "status": "pass",
+      "evidence": "files=['verify.sh'] executable=True"
+    },
+    {
+      "id": "safety-scan",
+      "status": "pass",
+      "evidence": "violations=0 warnings=4"
+    },
+    {
+      "id": "verify-sh-run",
+      "status": "pass",
+      "evidence": "rc=0 2.2s"
+    }
+  ],
+  "run": {
+    "rc": 0,
+    "seconds": 2.2,
+    "tail": "==================================================\nStarting Jack LLM Stack Verification Suite\n==================================================\n==> Step 1: Running static unit tests...\n[PASS] Static unit tests passed.\n==> Step 2: Starting Mock Deployment...\n[PASS] Mock servers started successfully.\n==> Step 3: Running Health Checks in Mock Mode...\n==> Running Health Checks (Mock Mode: true)...\n[PASS] Mock servers PID files found.\nChecking Ollama at http://localhost:11434...\n[PASS] Ollama is reachable.\n[PASS] Ollama model qwen2.5:1.5b-instruct-q4_K_M verified.\nChecking LiteLLM liveness at http://localhost:4000...\n[PASS] LiteLLM liveness endpoint responding.\nTesting LiteLLM chat completion round-trip with alias local-coding-model...\n[PASS] LiteLLM chat completion round-trip successful.\nValidating opencode.json...\n[PASS] opencode.json structure validated.\n==> All health checks passed successfully!\n[PASS] Health checks passed against mock deployment.\n==> Step 4: Running Failure Injection Testing...\nStopping Mock Ollama server to simulate failure...\nVerifying that healthcheck correctly detects the failure (expecting non-zero exit)...\n==> Running Health Checks (Mock Mode: true)...\n[FAIL] Mock servers not running or PID files missing.\n[PASS] Health check correctly failed when Ollama mock was down.\n==> Step 5: Testing Rollback and Idempotency...\n==> Rolling back Jack LLM Stack...\nDocker/Docker compose not available or not running.\n==> Rollback complete. Stack is clean (idempotent run successful).\nRunning rollback second time to verify idempotency...\n==> Rolling back Jack LLM Stack...\nDocker/Docker compose not available or not running.\n==> Rollback complete. Stack is clean (idempotent run successful).\n[PASS] Rollback executed successfully and is idempotent.\n==================================================\nALL VERIFICATION CHECKS PASSED SUCCESSFULLY (EXITS 0)\n==================================================\n......\n----------------------------------------------------------------------\nRan 6 tests in 0.006s\n\nOK\n/home/tony/CascadeProjects/dispatch-wt-20261124-170743-compare-opencode-and-cline-on-/evals/jack-llm-stack-agent-eval/arms/cline/verify.sh: line 67: kill: (2054196) - No such process\n"
+  },
+  "scanned_files": 11
+}

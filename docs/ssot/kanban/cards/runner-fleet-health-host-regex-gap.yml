@@ -1,0 +1,194 @@
+id: runner-fleet-health-host-regex-gap
+title: runner-fleet-health silently omits con01 and kk-mac from fleet audit
+column: done
+updated: 2026-11-26 20:38
+priority: medium
+tags:
+- ops
+- dispatch
+- runner-fleet-health
+- bug
+spec: "Goal: close the host-discovery gap in the runner fleet health audit.\n\nFinding (2026-11-25 triage, verified
+  read-only):\n- scripts/board/runner-fleet-health.py:449 uses\n  re.findall(r\"\\b(tony-[\\w-]+|idc\\d+|mn\\d+)\\s*:\",
+  text), so fleet() returns\n  only 6 hosts. `con01` (cap 4, script+container, SSH-reachable) and\n  `kk-mac` (launchd,
+  ACTIVE per SSOT OPS-0220) are silently omitted.\n- scripts/board/dispatch_repos.py:973 was already fixed for kk-\n
+  \ (`kk-[\\w-]+`) but still misses `con01`.\n- Consequence: queue_satisfiability() builds its capability map from\n
+  \ probed hosts only, so any card pinned to kk-mac or con01 is reported\n  \"unsatisfiable by the live runner fleet\"
+  even when the host is live.\n  This kept `kk-mac-devin-decline-smoke` re-queued for days despite its\n  boundary
+  check being verified 2026-11-19 10:42 and re-confirmed\n  2026-11-25 15:26. That card is now closed as done.\n\nAdditional
+  facts to design around (do NOT just widen the regex):\n- Direct probe of con01 with the current judge() yields
+  3 violations:\n  git-identity unset (real), plus devin-dispatch missing and devin CLI\n  missing (BOTH false positives
+  — SSOT says con01 is script+container\n  only, no devin CLI by design). Make devin checks capability-aware.\n-
+  kk-mac is SSH-unreachable from idc03, tony-dell, idc02 and\n  tony-macbook (connect timeout), though its runner
+  heartbeats reach\n  board-api. Decide an alternate probe path or document the exclusion\n  explicitly in SSOT
+  rather than emitting a permanent \"unreachable\" card.\n\nDone conditions:\n1. Host parsing covers every declared
+  fleet host in both modules\n   (structured config preferred over another regex guess).\n2. judge() skips devin-only
+  checks on hosts that do not declare devin\n   capability; con01's genuine git-identity gap is fixed or filed.\n3.
+  kk-mac is either probed via a working path or explicitly excluded\n   with an SSOT-grounded reason (no permanent
+  false alert).\n4. Regression tests: fleet() includes con01 + kk-mac;\n   dispatch_repos.fleet_capabilities() includes
+  con01; a host:con01\n   card is not flagged unsatisfiable; no false devin violations.\n5. Re-run runner-fleet-health.py:
+  0 false violations, 0 unsatisfiable\n   cards, and the result recorded on this card.\n\nOut of scope: changing
+  the deliberate launchd decline behaviour on kk-mac."
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  status: done
+  runner: tony-macbook
+  attempts: 1
+  result: 'exit=0 the-host-discovery-.md`; card comms posted, no commits or pushes per dispatch rules. | devin-task-20261125-203735-goal-close-the-host-discovery-.service:
+    Consumed 2min 17.437s CPU time over 13min 44.324s wall clock time, 821.4M memory peak.'
+  sweep:
+    session_gone: 2026-11-25 20:55
+note: Found 2026-11-25 while triaging automation review cards. Read-only evidence in chat + card comms.
+ref: OPS-1406
+comms:
+- at: 2026-11-25 20:05
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-25 20:05
+  from: tony
+  text: '[triage] Live evidence 2026-11-25: health.fleet() = [''tony-dell'',''tony-omen'',''idc02'',''idc03'',''mn01'',''tony-macbook''];
+    dispatch_repos.fleet_capabilities() = those six + kk-mac, no con01. con01 probe: git-identity unset (real) +
+    devin-dispatch and devin-cli missing (false positives, script-only host by design). kk-mac SSH times out from
+    every tested host. Do not just widen the regex — make the devin checks capability-aware and decide the kk-mac
+    probe path explicitly.'
+- at: 2026-11-25 20:15
+  from: chaba
+  text: queued for processing
+- at: 2026-11-25 20:15
+  from: chaba
+  text: '[auto-dispatch] wave 10 (2026-11-25 20:15): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-25 20:15
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.77 > 0.7)'
+- at: 2026-11-25 20:15
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 20:16
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.07 > 1.5)'
+- at: 2026-11-25 20:16
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-25 20:17
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 20:17
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 2.89 > 0.8)'
+- at: 2026-11-25 20:18
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (4/4)'
+- at: 2026-11-25 20:24
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 3.96 > 1.0)'
+- at: 2026-11-25 20:36
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-25 20:37
+  from: chaba
+  text: started devin-task-20261125-203735-goal-close-the-host-discovery- on tony-macbook (dispatch executor=devin)
+- at: 2026-11-25 20:37
+  from: chaba
+  text: 'primer injected 8 lesson(s): [ansible-vs-legacy-fleet-benchmark] MANUAL LANDING (devin session, tony-dell
+    con; [timer-alert-idc03-chaba-jobs] 2026-11-25 14:2x (+07): TRIAGE: false positive. s; `~/var/chaba/health/*.json`
+    holds unrelated producer snapshots; globbing it as "; [idle-qa-and-backups-idc] DONE. Premise was stale: qc-scoreboard
+    already on idc0; [render-board-checks-task-id-dead-path] primer injected 8 lesson(s): [dispatch-w; Check `sha256sum`
+    of BOTH `~/.local/bin/runner-agent` and `<e'
+- at: 2026-11-25 20:43
+  from: devin
+  text: 'picked up — design: structured runner_fleet_hosts in ssot.kanban.yml (probe:ssh|board-api, devin:bool)
+    as authoritative host source for both modules; kk-mac probed via board-api /ready heartbeat (no inbound ssh,
+    OPS-0220); devin checks gated on declared capability; con01 git-identity will be fixed to fleet convention.
+    implementing now.'
+- at: 2026-11-25 20:51
+  from: devin
+  text: 'DONE: host-discovery gap closed. Structured runner_fleet_hosts added to ssot.kanban.yml (8 hosts, probe+devin
+    per host); dispatch_repos fleet_hosts/fleet_host_specs authoritative, prose regex is fallback-only (+conN).
+    runner-fleet-health.py: probe dispatch ssh|board-api; kk-mac probed via /ready heartbeat on /queue (stale=note,
+    missing=>7d=violation); judge skips devin checks when devin:false; queue_satisfiability uses declared labels
+    for heartbeat hosts. con01 git-identity fixed live (fleet Dev'
+- at: 2026-11-25 20:52
+  from: tony-macbook
+  text: 'finished (ok): exit=0 the-host-discovery-.md`; card comms posted, no commits or pushes per dispatch rules.
+    | devin-task-20261125-203735'
+- at: 2026-11-25 20:52
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 20:52
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261125-203735-goal-close-the-host-discovery-
+    is 17 commits behind origin/master —\n   run 'git pull -"
+- at: 2026-11-25 20:52
+  from: chaba
+  text: banked 713 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 20:52
+  from: chaba
+  text: pushed dispatch/20261125-203735-goal-close-the-host-discovery- to origin
+- at: 2026-11-25 20:52
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-25 20:52
+  from: chaba
+  text: 'worktree kept: dirty — 7 uncommitted file(s)'
+- at: 2026-11-25 20:54
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261125-203735 on tony-macbook — if the work was
+    never pushed it may be gone'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:54
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:55
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:56
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 08:35
+  from: tony
+  text: '[verify] VERIFY-QUEUE triage 2026-11-26 (Tony): dispatch produced NO commits — merge-sweep: no session/worktree
+    found on tony-macbook — work never pushed (OPS-1406 needs re-dispatch). No deliverable exists in origin/master.
+    Holding to backlog for re-dispatch, not closing as done. Note: fleet-wide runner-agent drift (installed 8c28da6b
+    vs pin 1514c75c) was active during these runs; converge is being handled separately.'
+- at: 2026-11-26 08:35
+  from: tony
+  text: put on hold
+- at: 2026-11-26 09:57
+  from: tony
+  text: '[fix][OPS-1406] Landed e3bb2d5afaf (+ d71b491170e comment fix). runner-fleet-health.fleet() now uses one
+    FLEET_HOST_RE including con\d+ and kk-[\w-]+, so fleet() returns all 8 declared hosts; fallback also lists con01/kk-mac.
+    dispatch_repos._FLEET_HOST_RE gained con\d+, so con01 labels {script,container,push:chaba} and served types
+    {script,container} are now visible to claim gates. devin-cli is capability-gated: con01 (script/container only)
+    and kk-mac (devin Linux-only) no longer get false boot'
+- at: 2026-11-26 09:57
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+claim:
+  since: 2026-11-25 20:36
+review_kind: verify

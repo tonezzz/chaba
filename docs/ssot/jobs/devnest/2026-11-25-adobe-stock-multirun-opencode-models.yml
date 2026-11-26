@@ -1,0 +1,86 @@
+title: Adobe Stock multirun — identical read-only brief across 3 approved OpenCode models
+id: openchamber-multirun-adobe-stock-prompts
+date: 2026-11-25
+card: openchamber-multirun-adobe-stock-prompts
+ref: OPS-1200
+program: devnest
+domain: devnest
+status: done
+summary: >-
+  Ran the same frozen read-only Adobe Stock campaign brief
+  (AS-2026-11-05-REMOTE-WORK-001) through three approved OpenCode
+  models under a deny-all-tools isolated config. All three arms passed
+  the held-out verifier (16/16 asset coverage, exact provenance,
+  missing-preview F1=1.0, clean policy block, zero tool calls/denials/
+  mutations). Recommended profile: litellm/or-free-nemotron-ultra —
+  $0 (:free), best qc_decision->decision mapping; or-gemini-3.5-flash
+  is the balanced paid alternative; gemini-3.5-flash-lite is fastest/
+  cheapest but shallowest (picked the baseline as upload candidate
+  against its own QC note).
+
+method: >-
+  evals/adobe-stock-multirun/: build_input.py distills the frozen gdrive
+  campaign snapshot (input/) into input.json; brief_template.md embeds
+  it verbatim; run.py renders a per-arm opencode.json with every
+  builtin tool off, permission '*':deny, zero MCP, builtin agents
+  disabled, empty scratch cwd, then runs
+  `opencode run --format json --standalone --model <m> --agent eval-ro`.
+  verify.py is the held-out mechanical verifier; reports/comparison.{json,md}
+  is the acceptance artifact (identical input sha, per-arm outputs,
+  verifier scores, recommended model + rationale).
+
+arms:
+  - model: litellm/or-free-nemotron-ultra
+    provider: litellm (OpenRouter :free)
+    verifier: pass
+    wall_s: 177.7
+    tokens: {input: 8639, output: 4333, reasoning: 1562, cache_read: 26304}
+    provider_cost_usd: 0.0
+    notes: textbook qc_decision mapping; upload pick comparison-e-gemini-fix3-region
+  - model: litellm/or-gemini-3.5-flash
+    provider: litellm (OpenRouter, unpriced in lane_gate table)
+    verifier: pass
+    wall_s: 53.8
+    tokens: {input: 36626, output: 4164, reasoning: 9344}
+    provider_cost_usd: null
+    notes: held d-x4-sharp60 pending QC then named it upload_candidate (inconsistent)
+  - model: litellm/gemini-3.5-flash-lite
+    provider: litellm direct
+    verifier: pass
+    wall_s: 32.9
+    tokens: {input: 36652, output: 4030}
+    provider_cost_usd: 0.005277
+    notes: picked baseline remote-work-home-office-001 as upload despite 'not final submission' QC note
+
+rejected_candidates:
+  - litellm/gemini-3.5-flash — provider.no-route under opencode v2.4.1 (raw API works; models.dev registry gap)
+  - opencode/*-free (big-pickle, deepseek-v4.1-flash-free, glm-5.3-flash-free, mimo-v2.6-flash-free) — provider.free-limit on Zen
+  - litellm/gemini-3.5-flash-free — proxy chat timeout
+
+findings:
+  - >-
+    Deny-all agent config is a stronger isolation primitive than any
+    shipped profile for pure brief-evals: zero tools means zero board/
+    filesystem mutation surface by construction; audit_events confirms.
+  - Mechanical verifier alone ties all three arms at 5/5/5/5 — the
+    discriminating signal was qualitative (verdict mapping fidelity,
+    internal consistency of upload_candidate vs asset_reuse decision).
+    Future multirun cards should add a held-out semantic check or a
+    second verifier pass for recommendation coherence.
+  - V1 input lacked canonical qc_decision fields; verifier's
+    HARD_REJECTS was vacuous until build_input.py gained the
+    QC_DECISIONS table. Always sanity-check that held-out ground truth
+    is non-empty before trusting a pass.
+  - or-free-nemotron-ultra used prompt caching heavily (26.3K
+    cache-read vs 8.6K fresh input) — effective cost still $0 but
+    wall time worst-in-class (177.7s).
+
+artifacts:
+  - evals/adobe-stock-multirun/reports/comparison.md
+  - evals/adobe-stock-multirun/reports/comparison.json
+  - evals/adobe-stock-multirun/runs/<arm>/ (events, artifact, verdict, run.json)
+  - evals/adobe-stock-multirun/{build_input,verify,run}.py + README.md
+
+verify: >-
+  cd evals/adobe-stock-multirun && python3 verify.py runs/<arm>;
+  python3 run.py --compare rebuilds reports/ from stored run.json files.

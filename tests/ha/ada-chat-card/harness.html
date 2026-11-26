@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>ada-chat-card harness</title>
+<style>
+  /* Minimal HA-ish surface so the card's var() fallbacks behave like Lovelace. */
+  :root {
+    --primary-color:#03a9f4; --primary-text-color:#fff;
+    --secondary-text-color:#9aa4b0; --disabled-text-color:#667;
+    --card-background-color:#2b3138; --secondary-background-color:#1c2128;
+    --divider-color:#444; --success-color:#4caf50; --error-color:#f44336;
+    --warning-color:#ffc107;
+  }
+  body { margin:0; background:#12161c; color:var(--primary-text-color);
+         font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+  #stage { max-width:960px; margin:0 auto; padding:16px; }
+  #stage.narrow { max-width:380px; }
+  #stage > section { margin-bottom:28px; }
+  #stage h2 { font-size:.85rem; color:var(--secondary-text-color);
+              text-transform:uppercase; letter-spacing:.08em; margin:0 0 8px; }
+  ada-chat-card, ha-card { display:block; }
+  pre#acc-out { font-size:.72rem; color:#7ee787; background:#0b0f14;
+               padding:10px; border-radius:8px; overflow:auto; max-height:40vh; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<pre id="acc-out">harness loading…</pre>
+
+<script>
+"use strict";
+/* ============================================================
+ * ada-chat-card harness — drives the REAL card
+ * (/stacks/tony-dell/ada-ha/www/ada-chat-card.js) with a fake
+ * WebSocket + stub hass, runs named fixture scenarios, and
+ * publishes window.__accScenario / __accResults for the
+ * OpenChamber Preview bridge (or any browser) to inspect.
+ *
+ * URL params:
+ *   ?scenario=<key>|all   run one scenario or the whole suite
+ *   ?w=360                constrain #stage width (narrow layout)
+ *   ?autorun=0            mount but do not run
+ * ========================================================== */
+
+const qs = new URLSearchParams(location.search);
+const SCENARIO = qs.get("scenario") || "all";
+const STAGE_W = parseInt(qs.get("w") || "0", 10);
+if (STAGE_W > 0) document.getElementById("stage").classList.add("narrow");
+
+/* ---------- instrumentation ---------- */
+window.__accConsole = { errors: [], warnings: [], pageErrors: [], rejections: [], resources: [] };
+(function instrument() {
+  const fmt = (args) => args.map(a => {
+    try { return typeof a === "string" ? a : JSON.stringify(a); }
+    catch { return String(a); }
+  }).join(" ").slice(0, 500);
+  console.error = ((o) => (...a) => { window.__accConsole.errors.push(fmt(a)); o(...a); })(console.error);
+  console.warn  = ((o) => (...a) => { window.__accConsole.warnings.push(fmt(a)); o(...a); })(console.warn);
+  window.addEventListener("error", (e) => {
+    window.__accConsole.pageErrors.push(
+      `${e.message} @ ${e.filename || ""}:${e.lineno || 0}`);
+  });
+  window.addEventListener("unhandledrejection", (e) => {
+    window.__accConsole.rejections.push(String(e.reason && e.reason.message || e.reason));
+  });
+  // resource load failures (img/video/script) — capture phase
+  document.addEventListener("error", (e) => {
+    const t = e.target;
+    if (t && (t.tagName === "IMG" || t.tagName === "VIDEO" || t.tagName === "SOURCE" || t.tagName === "SCRIPT")) {
+      window.__accConsole.resources.push({
+        tag: t.tagName.toLowerCase(),
+        src: t.currentSrc || t.src || "",
+      });
+    }
+  }, true);
+})();
+
+/* window.open / link-click recording — the harness verifies the card's
+ * click contracts without spawning real popup tabs. */
+window.__accOpened = [];
+window.__accLinkClicks = [];
+(function instrumentNav() {
+  const origOpen = window.open.bind(window);
+  window.open = (url, target, features) => {
+    window.__accOpened.push({ url: String(url), target: String(target || "") });
+    return { closed: false, focus() {}, close() {}, location: { href: String(url) } };
+  };
+  document.addEventListener("click", (e) => {
+    const a = e.target && e.target.closest && e.target.closest("a.acc-link");
+    if (a) {
+      window.__accLinkClicks.push({ href: a.href, target: a.target, rel: a.rel });
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, true);
+})();
+
+/* ---------- fake WebSocket + stub hass ---------- */
+class FakeWebSocket {
+  constructor(url) {
+    this.url = url;
+    this.readyState = 0;           // CONNECTING
+    this.binaryType = "";
+    this.sent = [];
+    FakeWebSocket.instances.push(this);
+  }
+  send(data) { this.sent.push(String(data)); }
+  close(code = 1000, reason = "") {
+    if (this.readyState >= 2) return;
+    this.readyState = 3;
+    const self = this;
+    setTimeout(() => self.onclose && self.onclose({ code, reason }), 0);
+  }
+}
+FakeWebSocket.instances = [];
+window.WebSocket = FakeWebSocket;
+window.__FakeWS = FakeWebSocket;
+
+window.__hassStub = {
+  callWS: async () => ({ response: { content: { api_key: "harness-key" } } }),
+  states: {},
+  user: { id: "person.harness-tester" },
+};
+
+/* ---------- harness API ---------- */
+const stage = document.getElementById("stage");
+const out = document.getElementById("acc-out");
+
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+async function waitFor(cond, timeout = 5000, step = 50) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeout) {
+    try { if (cond()) return true; } catch (_) {}
+    await sleep(step);
+  }
+  return false;
+}
+
+function mount(config) {
+  const card = document.createElement("ada-chat-card");
+  card.setConfig(Object.assign({
+    title: "Ada chat (harness)",
+    instance: "tony",
+    member: "tester",
+    api_key: "harness-key",
+    autoconnect: false,
+    screen: "off",
+    height: "190px",
+    picker_url: "",          // QC panel off unless a scenario opts in
+  }, config || {}));
+  card.hass = window.__hassStub;
+  const sec = document.createElement("section");
+  sec.appendChild(card);
+  stage.appendChild(sec);
+  return card;
+}
+
+async function connect(card) {
+  await card._connect();
+  const ws = FakeWebSocket.instances[FakeWebSocket.instances.length - 1];
+  ws.readyState = 1;
+  ws.onopen && ws.onopen();
+  return ws;
+}
+function wsEmit(ws, obj) {
+  ws.onmessage({ data: JSON.stringify(obj) });
+}
+function frame(card, obj) {           // direct _handleControl (pre-connect frames)
+  card._handleControl(JSON.parse(JSON.stringify(obj)));
+}
+
+function checks() { return []; }
+function check(list, name, pass, detail) {
+  list.push({ name, pass: !!pass, detail: detail === undefined ? "" : String(detail).slice(0, 300) });
+  return !!pass;
+}
+const count = (root, sel) => root.querySelectorAll(sel).length;
+const bubbles = (card) => [...card.querySelectorAll(".acc-bubble")];
+const lastBubble = (card) => bubbles(card).at(-1);
+const media = (el, sel) => el ? [...el.querySelectorAll(sel)] : [];
+
+async function imgsSettled(root, timeout = 6000) {
+  return waitFor(() => [...root.querySelectorAll("img.acc-media")]
+    .every(i => i.complete), timeout);
+}
+async function videoMeta(v, timeout = 8000) {
+  if (v.readyState >= 1 && v.videoWidth > 0) return true;
+  return waitFor(() => v.readyState >= 1 && v.videoWidth > 0, timeout, 100);
+}
+
+const BASE = location.origin;
+const M = `${BASE}/tests/ha/ada-chat-card/fixtures/assets`;
+const PNG = `${M}/ada-harness.png`;
+const GIF = `${M}/ada-harness.gif`;
+const MP4 = `${M}/ada-harness.mp4`;
+const WEBM = `${M}/ada-harness.webm`;
+const PAGE = `${BASE}/tests/ha/ada-chat-card/fixtures/pages/target.html`;
+const DL = `${BASE}/dl/download-note.txt`;
+const GONE = `${BASE}/gone/ada-harness.png`;
+const MISSING = `${BASE}/does-not-exist.png`;
+const BOGUS = `${BASE}/bogus/image.png`;
+const PATHIMG = `${BASE}/apps/yolo/api/image?v=42`;   // no ext — /image[/?] rule
+
+/* ---------- scenarios ---------- */
+// Per-scenario card config — qc-panel points picker_url at the fixture
+// server's stateful /qc-picker/* endpoints (see server.py).
+const SCENARIO_CFG = {
+  "qc-panel": { picker_url: `${BASE}/qc-picker`, qc_poll_s: 5 },
+};
+const SCENARIOS = {};
+
+// Full ws handshake sanity: connect → ready → status flips connected.
+SCENARIOS["connect"] = async (card, c) => {
+  const ws = await connect(card);
+  check(c, "ws url binds channel=web&chat_id=web-tester",
+    /channel=web/.test(ws.url) && /chat_id=web-tester/.test(ws.url), ws.url);
+  wsEmit(ws, { type: "ready" });
+  await sleep(30);
+  check(c, "ready frame → Connected status",
+    card._state === "connected" && /Connected/.test(card._status.textContent),
+    `${card._state} / ${card._status.textContent}`);
+  check(c, "input enabled after ready", !card._input.disabled);
+};
+
+// Text URLs inside an assistant turn: image ext → <img>, page → <a>,
+// path-pattern /image?v= → <img>, .txt download → <a>.
+SCENARIOS["text-urls"] = async (card, c) => {
+  frame(card, { type: "chat_push", text:
+    `see ${PNG} and ${GIF} plus ${PATHIMG} ` +
+    `and page ${PAGE} and file ${DL} done` });
+  const b = lastBubble(card);
+  await imgsSettled(b);
+  const imgs = media(b, "img.acc-media");
+  const links = media(b, "a.acc-link");
+  check(c, "three image renders (png+gif+path-pattern)", imgs.length === 3,
+    `imgs=${imgs.length}`);
+  check(c, "png img src", imgs[0] && imgs[0].src === PNG, imgs[0] && imgs[0].src);
+  check(c, "gif img src", imgs[1] && imgs[1].src === GIF, imgs[1] && imgs[1].src);
+  check(c, "path-pattern /image?v= renders img", imgs[2] && imgs[2].src === PATHIMG,
+    imgs[2] && imgs[2].src);
+  check(c, "page + download are anchors", links.length === 2,
+    `links=${links.length}`);
+  check(c, "page anchor href/target/rel",
+    links[0] && links[0].href === PAGE && links[0].target === "_blank" && links[0].rel === "noopener",
+    links[0] && `${links[0].href} ${links[0].target} ${links[0].rel}`);
+  check(c, "download anchor is a link not an img",
+    links[1] && links[1].href === DL && !links.some(a => a.href === DL && a.tagName === "IMG"),
+    links[1] && links[1].href);
+};
+
+// chat_push image_url only.
+SCENARIOS["push-image"] = async (card, c) => {
+  const before = bubbles(card).length;
+  frame(card, { type: "chat_push", image_url: PNG });
+  const b = lastBubble(card);
+  check(c, "bubble appended", bubbles(card).length === before + 1);
+  const img = media(b, "img.acc-media")[0];
+  check(c, "img.acc-media present", !!img);
+  check(c, "img src", img && img.src === PNG, img && img.src);
+  check(c, "img lazy+alt", img && img.loading === "lazy" && img.alt === "pushed image");
+  await imgsSettled(b);
+  check(c, "image decoded (naturalWidth>0)", img && img.naturalWidth > 0,
+    img && `naturalWidth=${img.naturalWidth}`);
+  check(c, "no video element", media(b, "video.acc-media").length === 0);
+};
+
+// chat_push video_url only.
+SCENARIOS["push-video"] = async (card, c) => {
+  frame(card, { type: "chat_push", video_url: MP4 });
+  const b = lastBubble(card);
+  const v = media(b, "video.acc-media")[0];
+  check(c, "video.acc-media present", !!v);
+  check(c, "video src", v && v.src === MP4, v && v.src);
+  check(c, "video controls+muted+playsinline",
+    v && v.controls === true && v.muted === true && v.playsInline === true);
+  check(c, "no img element", media(b, "img.acc-media").length === 0);
+  const ok = await videoMeta(v);
+  check(c, "video metadata decoded (videoWidth>0)", ok,
+    v && `readyState=${v.readyState} videoWidth=${v.videoWidth}`);
+};
+
+// chat_push text + image_url + video_url together.
+SCENARIOS["push-mixed"] = async (card, c) => {
+  frame(card, { type: "chat_push", text: "mixed push",
+                 image_url: PNG, video_url: WEBM });
+  const b = lastBubble(card);
+  check(c, "text rendered", /mixed push/.test(b.textContent));
+  const img = media(b, "img.acc-media")[0];
+  const v = media(b, "video.acc-media")[0];
+  check(c, "image + video both present", !!img && !!v);
+  check(c, "img src", img && img.src === PNG);
+  check(c, "video src", v && v.src === WEBM, v && v.src);
+  await imgsSettled(b);
+  await videoMeta(v);
+};
+
+// Empty / media-less pushes drop quietly.
+SCENARIOS["push-empty"] = async (card, c) => {
+  const n0 = bubbles(card).length;
+  frame(card, { type: "chat_push" });
+  frame(card, { type: "chat_push", text: "" });
+  frame(card, { type: "chat_push", text: "", image_url: "", video_url: "" });
+  check(c, "empty pushes append no bubble", bubbles(card).length === n0,
+    `before=${n0} after=${bubbles(card).length}`);
+  frame(card, { type: "chat_push", text: "   " });
+  check(c, "whitespace-only text still renders a bubble (observed)",
+    bubbles(card).length === n0 + 1, `after=${bubbles(card).length}`);
+};
+
+// Broken / expired URLs: card still creates the element; decode fails.
+SCENARIOS["push-broken"] = async (card, c) => {
+  frame(card, { type: "chat_push", text: "broken media",
+                 image_url: GONE, video_url: `${BASE}/gone/clip.mp4` });
+  frame(card, { type: "chat_push", image_url: MISSING });
+  frame(card, { type: "chat_push", image_url: BOGUS });
+  await sleep(400);
+  await imgsSettled(lastBubble(card).closest("section") || card, 4000).catch(() => {});
+  const allImgs = [...card.querySelectorAll("img.acc-media")];
+  const broken = allImgs.filter(i => i.complete && i.naturalWidth === 0);
+  check(c, "three broken imgs still rendered as elements", allImgs.length >= 3,
+    `imgs=${allImgs.length}`);
+  check(c, "broken imgs fail decode (naturalWidth=0)", broken.length >= 3,
+    `broken=${broken.length}/${allImgs.length}`);
+  const vids = [...card.querySelectorAll("video.acc-media")];
+  check(c, "broken video element rendered", vids.length >= 1 && vids[0].src.includes("/gone/"),
+    vids.map(v => v.src).join(","));
+};
+
+// Non-http(s) media URLs are rejected by the ^https?:// guard.
+SCENARIOS["push-nonhttp"] = async (card, c) => {
+  const n0 = bubbles(card).length;
+  frame(card, { type: "chat_push",
+    image_url: "file:///etc/passwd",
+    video_url: "javascript:alert(1)" });
+  frame(card, { type: "chat_push", image_url: "data:image/png;base64,iVBORw0KGgo=" });
+  frame(card, { type: "chat_push", image_url: "//evil.example/x.png" });
+  frame(card, { type: "chat_push", image_url: "ftp://x/y.png" });
+  check(c, "non-http media pushes drop quietly", bubbles(card).length === n0,
+    `before=${n0} after=${bubbles(card).length}`);
+  frame(card, { type: "chat_push", text: "safe", image_url: "javascript:alert(1)" });
+  const b = lastBubble(card);
+  check(c, "text survives, js: image_url skipped",
+    /safe/.test(b.textContent) && media(b, "img.acc-media").length === 0
+    && media(b, "video.acc-media").length === 0);
+};
+
+// Streaming: deltas append raw text; response_completed re-renders URLs.
+SCENARIOS["stream-rerender"] = async (card, c) => {
+  const ws = await connect(card);
+  wsEmit(ws, { type: "ready" });
+  const url = PNG;
+  const mid = Math.floor(url.length / 2);
+  wsEmit(ws, { type: "response_started" });
+  wsEmit(ws, { type: "assistant_transcript_delta", text: "streaming shot: " + url.slice(0, mid) });
+  wsEmit(ws, { type: "assistant_transcript_delta", text: url.slice(mid) + " — done" });
+  let b = lastBubble(card);
+  check(c, "mid-stream: URL is raw text, no img yet",
+    b && /ada-harness\.png/.test(b.textContent) && media(b, "img.acc-media").length === 0,
+    b && `imgs=${media(b, "img.acc-media").length}`);
+  wsEmit(ws, { type: "response_completed" });
+  await sleep(30);
+  b = lastBubble(card);
+  const img = media(b, "img.acc-media")[0];
+  check(c, "post-completion: URL re-rendered as img", !!img && img.src === PNG,
+    img && img.src);
+  check(c, "surrounding text preserved", /streaming shot/.test(b.textContent) && /done/.test(b.textContent));
+  await imgsSettled(b);
+  // interrupted path flushes too
+  wsEmit(ws, { type: "response_started" });
+  wsEmit(ws, { type: "assistant_transcript_delta", text: "again " + PAGE });
+  wsEmit(ws, { type: "response_interrupted" });
+  await sleep(30);
+  b = lastBubble(card);
+  const a = media(b, "a.acc-link")[0];
+  check(c, "interrupted turn also re-renders links", !!a && a.href === PAGE, a && a.href);
+};
+
+// Click-to-open: img → window.open; anchor → target=_blank contract.
+SCENARIOS["click-open"] = async (card, c) => {
+  window.__accOpened.length = 0;
+  window.__accLinkClicks.length = 0;
+  frame(card, { type: "chat_push", text: `open ${PAGE}`, image_url: PNG });
+  const b = lastBubble(card);
+  const img = media(b, "img.acc-media")[0];
+  const a = media(b, "a.acc-link")[0];
+  img && img.click();
+  await sleep(30);
+  check(c, "img click calls window.open(media url)",
+    window.__accOpened.some(o => o.url === PNG),
+    JSON.stringify(window.__accOpened));
+  a && a.click();
+  await sleep(30);
+  check(c, "anchor click recorded href (target=_blank)",
+    window.__accLinkClicks.some(o => o.href === PAGE),
+    JSON.stringify(window.__accLinkClicks));
+  check(c, "anchor contract target=_blank rel=noopener",
+    a && a.target === "_blank" && a.rel === "noopener");
+};
+
+// Download behavior: attachment URL renders as link; server sends
+// Content-Disposition: attachment (browser downloads, not navigates).
+SCENARIOS["download-link"] = async (card, c) => {
+  frame(card, { type: "chat_push", text: `grab ${DL}` });
+  const b = lastBubble(card);
+  const a = media(b, "a.acc-link")[0];
+  check(c, "attachment url renders as anchor", !!a && a.href === DL, a && a.href);
+  check(c, "anchor opens in new tab", a && a.target === "_blank");
+  const resp = await fetch(DL, { method: "GET" });
+  const cd = resp.headers.get("content-disposition") || "";
+  check(c, "server marks it attachment", /attachment/.test(cd), cd);
+  const body = await resp.text();
+  check(c, "payload is the fixture file", /download fixture/.test(body));
+};
+
+// Narrow/mobile layout: stage constrained to 360px — bubbles and media
+// must not overflow horizontally.
+SCENARIOS["mobile-layout"] = async (card, c) => {
+  frame(card, { type: "chat_push", text:
+    `narrow ${PNG} ${PAGE} ${DL} ` + "word ".repeat(60),
+    image_url: PNG, video_url: MP4 });
+  await imgsSettled(card);
+  await sleep(60);
+  const log = card._log;
+  const stageEl = document.getElementById("stage");
+  check(c, "log has no horizontal overflow",
+    log.scrollWidth <= log.clientWidth + 1,
+    `scrollW=${log.scrollWidth} clientW=${log.clientWidth}`);
+  const bad = [];
+  for (const el of card.querySelectorAll(".acc-bubble, .acc-media, img.acc-media, video.acc-media")) {
+    const r = el.getBoundingClientRect();
+    const sr = stageEl.getBoundingClientRect();
+    if (r.right > sr.right + 1 || r.left < sr.left - 1) bad.push(el.className);
+  }
+  check(c, "all bubbles/media inside stage bounds", bad.length === 0,
+    bad.slice(0, 3).join(" | "));
+  const img = media(lastBubble(card), "img.acc-media")[0];
+  check(c, "media capped at 100% width",
+    img && img.getBoundingClientRect().width <= lastBubble(card).getBoundingClientRect().width + 1,
+    img && `imgW=${Math.round(img.getBoundingClientRect().width)}`);
+};
+
+// Adobe Stock QC panel (card ada-opencode-repair-menu-card): picker_url
+// -> /qc-picker fixture. Hidden with no pending candidate; shows thumb +
+// 4 action buttons when SESSION.json has an undecided last_landed;
+// Keep/Reject/Revise POST /api/qc-decision (recorded fixture-side, then
+// reflected into /api/session like the real SESSION.json write); Repair
+// opens picker ?img=/img/<asset> and records NO decision.
+SCENARIOS["qc-panel"] = async (card, c) => {
+  const QC = `${BASE}/qc-picker`;
+  const ASSET = "qc-fixture-candidate";
+  const ctl = (body) => fetch(`${QC}/__control`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body) }).then(r => r.json());
+  const state = async () => (await (await fetch(`${QC}/__state`)).json());
+  const visible = () => card._qcPanel.style.display !== "none";
+  // _qcPoll no-ops while a previous poll is in flight — loop so a busy
+  // window can't flake the assertions.
+  const pollFor = async (want) => {
+    for (let i = 0; i < 50; i++) {
+      await card._qcPoll();
+      await sleep(60);
+      if (visible() === want) return true;
+    }
+    return visible() === want;
+  };
+
+  await ctl({ pending: null, clear_decisions: true });
+  await sleep(150);   // let the mount-time poll settle
+  await card._qcPoll();
+  check(c, "panel hidden with no pending candidate", !visible());
+
+  await ctl({ pending: ASSET });
+  check(c, "panel appears for pending candidate", await pollFor(true));
+  check(c, "asset label", card._qcAsset.textContent === ASSET,
+    card._qcAsset.textContent);
+  check(c, "lane subtitle", /gemini-image/.test(card._qcSub.textContent),
+    card._qcSub.textContent);
+  const btns = () => [...card.querySelectorAll(".acc-qc-btn")];
+  check(c, "four action buttons", btns().length === 4, `n=${btns().length}`);
+  check(c, "button labels Keep/Reject/Revise/Repair",
+    btns().map(b => b.textContent).join("|") ===
+      "✓ Keep|✗ Reject|↻ Revise|🛠 Repair region",
+    btns().map(b => b.textContent).join("|"));
+  const thumb = card._qcThumb;
+  check(c, "thumb src = picker /img/<asset>",
+    thumb.src === `${QC}/img/${ASSET}`, thumb.src);
+  const decoded = await waitFor(
+    () => thumb.complete && thumb.naturalWidth > 0, 4000);
+  check(c, "thumb decoded (naturalWidth>0)", decoded,
+    `nw=${thumb.naturalWidth} display=${thumb.style.display}`);
+
+  // Keep — records decision, hides panel
+  btns()[0].click();
+  check(c, "panel hides after Keep", await pollFor(false));
+  let st = await state();
+  check(c, "Keep POST recorded decision=keep",
+    st.decisions[ASSET] && st.decisions[ASSET].decision === "keep",
+    JSON.stringify(st.decisions));
+
+  // Reject with note — pending again after clearing recorded decisions
+  await ctl({ clear_decisions: true });
+  check(c, "panel reappears for re-pended candidate", await pollFor(true));
+  card._qcNote.value = "fixture reject note";
+  btns()[1].click();
+  check(c, "panel hides after Reject", await pollFor(false));
+  st = await state();
+  check(c, "Reject recorded decision+note",
+    st.decisions[ASSET] && st.decisions[ASSET].decision === "reject"
+    && st.decisions[ASSET].note === "fixture reject note",
+    JSON.stringify(st.decisions));
+
+  // Revise
+  await ctl({ clear_decisions: true });
+  await pollFor(true);
+  btns()[2].click();
+  await pollFor(false);
+  st = await state();
+  check(c, "Revise recorded decision=revise",
+    st.decisions[ASSET] && st.decisions[ASSET].decision === "revise",
+    JSON.stringify(st.decisions));
+
+  // Repair — opens picker ?img=/img/<asset>, records no decision
+  await ctl({ clear_decisions: true });
+  await pollFor(true);
+  window.__accOpened.length = 0;
+  btns()[3].click();
+  await sleep(30);
+  check(c, "Repair opens picker ?img=/img/<asset>",
+    window.__accOpened.some(o => o.url === `${QC}/?img=/img/${ASSET}`),
+    JSON.stringify(window.__accOpened));
+  st = await state();
+  check(c, "Repair records no QC decision", !st.decisions[ASSET],
+    JSON.stringify(st.decisions));
+};
+
+/* ---------- runner ---------- */
+window.__acc = { mount, connect, wsEmit, frame, SCENARIOS, FakeWebSocket };
+window.__accResults = null;
+window.__accScenario = null;
+window.__accDone = false;
+
+async function runOne(key, label) {
+  const card = mount(SCENARIO_CFG[key]);
+  if (key === "connect" || key === "stream-rerender") {
+    // those scenarios manage their own ws
+  }
+  const list = checks();
+  const t0 = Date.now();
+  try {
+    await SCENARIOS[key](card, list);
+  } catch (e) {
+    check(list, "scenario threw", false, `${e.message || e}`);
+  }
+  // give resource errors a beat to land, then snapshot console slice
+  await sleep(250);
+  const snap = {
+    name: key,
+    label: label || key,
+    pass: list.every(x => x.pass),
+    checks: list,
+    ms: Date.now() - t0,
+    opened: window.__accOpened.slice(),
+    linkClicks: window.__accLinkClicks.slice(),
+    console: {
+      errors: window.__accConsole.errors.slice(),
+      pageErrors: window.__accConsole.pageErrors.slice(),
+      rejections: window.__accConsole.rejections.slice(),
+      resources: window.__accConsole.resources.slice(),
+    },
+  };
+  if (SCENARIO !== "all") window.__accScenario = snap;
+  return snap;
+}
+
+async function main() {
+  out.textContent = "running…";
+  if (SCENARIO === "all") {
+    const results = [];
+    for (const key of Object.keys(SCENARIOS)) {
+      const h = document.createElement("h2");
+      h.textContent = key;
+      stage.appendChild(h);
+      results.push(await runOne(key));
+    }
+    window.__accResults = results;
+    out.textContent = JSON.stringify(results.map(r => ({
+      name: r.name, pass: r.pass,
+      failed: r.checks.filter(x => !x.pass).map(x => x.name),
+    })), null, 2);
+  } else if (SCENARIOS[SCENARIO]) {
+    const h = document.createElement("h2");
+    h.textContent = SCENARIO;
+    stage.appendChild(h);
+    await runOne(SCENARIO);
+    out.textContent = JSON.stringify(window.__accScenario.checks, null, 2);
+  } else {
+    out.textContent = `unknown scenario "${SCENARIO}" — have: ${Object.keys(SCENARIOS).join(", ")}`;
+  }
+  window.__accDone = true;
+}
+
+if (qs.get("autorun") !== "0") {
+  window.addEventListener("load", () => setTimeout(main, 50));
+}
+</script>
+<script src="/stacks/tony-dell/ada-ha/www/ada-chat-card.js"></script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+job: devnest-news-watch-first-scan
+title: DevNest news watch — first landed weekly scan (2026-11-19..26)
+date: 2026-11-26
+card: devnest-news-watch-procedure
+ref: OPS-0900
+host: con01
+kind: weekly-scan
+procedure: docs/kb/devnest-news-watch-procedure.md
+window: "2026-11-19..2026-11-26"
+
+summary: >
+  First landed run of the DevNest news-watch procedure. Scanned board card
+  comms, git log (406 commits in window, mostly board-api noise), reports/,
+  docs/ssot/jobs, bench artifacts, and cost/usage surfaces. Published 4
+  newsworthy items via board-api /publish (kind=news, visibility=members);
+  rejected the rest at the publish gate. Procedure doc created — the
+  missing deliverable that had bounced this card since 2026-10-27.
+
+sources_scanned:
+  - board card comms + git log board-api stream
+  - git log --since=2026-11-19 (406 commits; filtered to substantive)
+  - reports/ (model-efficiency-2026-11-24, bench-recall-*, lane-savings, consultant-bench)
+  - "docs/ssot/jobs/{devnest,models,security,bench} 2026-11-19..26"
+  - scripts/colab/packs (colibri-bench prep only — no results yet)
+  - "kanban cards: nest-mgr-v2-actuation, ha-auth-watch family,
+    model-efficiency-refresh, wire-hybrid-recall, colibri-bench,
+    budget-watch-ada-dev-2, kk-mac-usage-to-lane-savings"
+
+published:
+  - event_id: evt-nw-nestmgr-v2-actuation-20261126
+    trigger: first production milestone / new capability
+    news_post: "news:pub-nw-nestmgr-v2-actuation-20261126 (wp post_id 7907, private)"
+    confidence: verified
+    board_ref: card:nest-mgr-v2-actuation
+  - event_id: evt-nw-ha-auth-watch-loopfix-20261126
+    trigger: important failure/root cause
+    news_post: "news:pub-nw-ha-auth-watch-loopfix-20261126 (wp post_id 7905, private)"
+    confidence: verified
+    board_ref: card:timer-alert-tony-dell-ha-auth-watch
+  - event_id: evt-nw-model-efficiency-20261124
+    trigger: verified benchmark delta + cost data
+    news_post: "news:pub-nw-model-efficiency-20261124 (wp post_id 7906, private)"
+    confidence: measured
+    board_ref: card:model-efficiency-refresh-deepseek-flint-providers
+  - event_id: evt-nw-bench-recall-postprune-20261124
+    trigger: verified benchmark result (post-prune recall reproduction)
+    news_post: "news:pub-nw-bench-recall-postprune-20261124 (wp post_id 7908, private)"
+    confidence: verified
+    board_ref: card:wire-hybrid-recall-t1-semantic-t2-keywor-ef89a0
+
+gate_rejected:
+  - item: colibri-bench pack (BEN-0814)
+    reason: pack prep landed and E2E-verified vs stub, but the Qwen3.6-35B
+      benchmark itself has not run — no results artifact. Watch for the run.
+  - item: ada-dev-2 budget cap $10->20
+    reason: ops hygiene spend change, not savings and not a milestone.
+  - item: gemini-dev-capabilities research
+    reason: already published to its correct surface (wiki Education lesson
+      by Ada); news would duplicate.
+  - item: runner-agent drift defers / merge-sweep churn
+    reason: bookkeeping noise, explicitly non-newsworthy.
+  - item: ha-auth credential audit (all tokens 200)
+    reason: folded into the ha-auth-watch story as evidence, not separate.
+
+receipts:
+  news_sink: all 4 created (post_ids 7905-7908, wp_status private = members surface)
+  board_sink: all 4 delivered as card comms
+  wiki_sink: skipped by design (members < public)
+  telegram: 1 suppressed (600s floor), 3 queued->relay 404
+    "no active topic bound for project=devnest card=<ref>" — outbox will
+    retry then dead-letter; fix is a devnest project topic binding, not resend.
+
+verification: >
+  Producer proof: /publish receipts with WP post_ids. Consumer proof:
+  WP news CPT posts exist at slugs pub-nw-* (private/member status).
+  Telegram gap is a known binding issue, not a publish failure.
+
+followups:
+  - colibri-bench: watch for the actual benchmark run, then publish delta.
+  - devnest telegram topic binding missing for card-scoped news events.
+  - next scan: daily window 2026-11-27.

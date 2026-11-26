@@ -9,7 +9,7 @@ Decision: `docs/ssot/decisions/ssot.technical-decisions.yml` → `tv-casting-gro
 |---|---|---|
 | Camera live view | `camera/play_stream` → `media_player.tony_tv_cast` (HLS) | source cam must be `idle`, not `unavailable` |
 | Dashboard/view | `cast-ha-panel.timer` (60s) → `cast-ha-selected.sh` → `cast-browser :8799` screenshot → cast PNG | driven by `input_select.tv_display` |
-| noVNC/VMS | `input_select.tv_display=vms` → cast-browser nav → `http://tony-dell/apps/vnc/vnc.html` | stale: points at old dell path; update to `/apps/vms/` |
+| ~~noVNC/VMS~~ | **retired 2026-11-23 (OPS-1312)** | `vms`/`macbook` aliases and websockify bridges removed; restore via `docs/kb/retired-apps/vnc-bridges.md` |
 | Desktop | `cast-desktop@1.service` → HLS | CPUQuota 60% |
 | YouTube | `youtube_*` automation chain → `script.cast_youtube_tv` | picker/queue/search helpers |
 | YouTube + subtitles | Ada `yt_cast` tool → `yt-live-api.py` :8791 → `yt-live.sh` → ffmpeg HLS w/ burned subs | subtitle policy + media cache below |

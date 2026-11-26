@@ -1,0 +1,35 @@
+---
+# Ansible Galaxy collections for the Chaba fleet.
+#
+# Install on the controller (tony-dell), from this directory:
+#   ansible-galaxy collection install -r requirements.yml
+#
+# Versions pinned to the set verified on 2026-11-24 and recorded in the wiki
+# lesson Education:Ansible-Galaxy-Collections-For-Chaba-Efficiency.
+#
+# Controller Python packages needed by the validator playbook:
+#   python3 -m pip install 'jsonschema>=4' 'netaddr>=0.10.1'
+#   (ansible.utils.jsonschema validate engine + ansible.utils.ipaddr filter)
+
+collections:
+  - name: ansible.posix
+    version: 2.2.2       # synchronize (rsync wrapper), authorized_keys, sysctl
+
+  - name: ansible.utils
+    version: 6.1.1       # validate module + ipaddr/fact_diff filters
+
+  - name: community.general
+    version: 14.0.1      # macOS modules, archive, htpasswd, ini_file, xattr
+
+  - name: containers.podman
+    version: 1.21.2      # Podman/quadlets on idc02, idc03, con01 (NOT Docker)
+
+  - name: community.crypto
+    version: 3.6.0       # openssh_keypair, openssl cert/key, luks_device
+
+  - name: community.sops
+    version: 2.5.1       # encrypted vars — R4: no plaintext secret values
+
+# Optional, add only where Docker really exists (tony-omen, idc02, idc03):
+#   - name: community.docker
+#     version: 5.4.1

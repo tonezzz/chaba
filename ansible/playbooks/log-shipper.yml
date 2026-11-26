@@ -1,0 +1,341 @@
+---
+# log-shipper.yml — idempotent convergence of the local log-shipper timers.
+#
+# Counterpart to playbooks/audit-log-shipper.yml: the audit reports drift,
+# this playbook converges the same things from the same sources of truth.
+# Always preview with --check --diff before a real run (see Usage below).
+#
+# Sources (all on the controller's chaba checkout):
+#   docs/ssot/infrastructure/ssot.jobs.yml   — which lanes each host owns
+#   systemd/generated/<host>/<id>.{service,timer}
+#                                            — rendered units (re-rendered
+#                                              from the manifest at run time)
+#   scripts/ada/log-shipper.py               — the shipper itself
+#
+# Destinations (per host, as the tony user — never the repo checkout):
+#   ~/.local/share/log-shipper/log-shipper.py
+#   ~/.config/systemd/user/<id>.{service,timer}
+#
+# Idempotence: copy is checksum-gated; daemon-reload + `enable --now` run
+# only when a file actually changed. Re-running is a no-op. User units do
+# not restart a running oneshot service on a file change — the next timer
+# tick picks up the new unit/script, same as install-log-shipper.sh.
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/log-shipper.yml --check --diff
+#   ansible-playbook playbooks/log-shipper.yml --limit idc02
+#   ansible-playbook playbooks/log-shipper.yml -e shipper_run_once=true
+#
+# Scope: baseline hosts plus mn01 (portable, reachable when awake);
+# tony-macbook is excluded — use --limit 'all:!tony-macbook' style filters
+# to shape the run. idc03 is reached directly over Tailscale, same as the
+# audit playbook; if its key path changes, set ansible_ssh_common_args on
+# the command line rather than editing here.
+#
+# -e render_generated=false skips the controller-side re-render (uses the
+# checked-in units as-is). The re-render is scoped with `--ids` to the four
+# shipper lanes, so an unrelated job's generated unit can never be rewritten
+# by this play. -e shipper_run_once=true runs each lane once after
+# convergence — that WRITES to the MDDB ops instance, so it is off by
+# default.
+#
+# Deploy safety: every copy is `backup: yes`, and the deploy block has a
+# rescue that restores the newest backup of each file changed in that run,
+# reloads systemd, then fails the host. A post_tasks gate queries MDDB ops
+# health and host-logs-state; any failed /add fails the play even if all
+# files converged cleanly.
+
+- name: Converge log-shipper across the fleet
+  hosts: all:!macos:!disabled:!tony-macbook
+  gather_facts: true
+  become: false
+
+  vars:
+    repo_root: "{{ (chaba_repo | default(playbook_dir ~ '/../..')) | regex_replace('/+$', '') }}"
+    jobs_ssot: >-
+      {{ lookup('ansible.builtin.file',
+                repo_root ~ '/docs/ssot/infrastructure/ssot.jobs.yml')
+         | from_yaml }}
+    # Used only by the read-only post-converge health gate. Derived from the
+    # same SSOT lane env the units get, with the historical default as
+    # fallback so a missing env can never silently point at the leader.
+    mddb_ops_url: >-
+      {{ (jobs_ssot['jobs'] | default([])
+          | selectattr('id', 'equalto', 'log-shipper')
+          | map(attribute='env')
+          | first | default({}, true)).MDDB_OPS_URL
+         | default('http://100.102.134.91:11026/v1', true) }}
+    shipper_job_ids:
+      - log-shipper
+      - log-shipper-severe
+      - log-shipper-mha
+      - log-shipper-severe-mha
+    shipper_script_src: "{{ repo_root }}/scripts/ada/log-shipper.py"
+    generated_dir: "{{ repo_root }}/systemd/generated"
+    shipper_dest_dir: "{{ ansible_user_dir }}/.local/share/log-shipper"
+    units_dir: "{{ ansible_user_dir }}/.config/systemd/user"
+    render_generated: true
+    shipper_run_once: false
+    controller_idents: >-
+      {{ (lookup('ansible.builtin.pipe', 'hostname -I', errors='ignore')
+          | default('')).split()
+         + [lookup('ansible.builtin.pipe', 'hostname', errors='ignore')
+            | default(''),
+            lookup('ansible.builtin.pipe', 'hostname -f', errors='ignore')
+            | default('')]
+         | select('truthy') | unique | list }}
+    controller_self: >-
+      {{ self_host | default(
+          ((hostvars | dict2items
+            | selectattr('value.ansible_host', 'defined')
+            | selectattr('value.ansible_host', 'in', controller_idents)
+            | map(attribute='key') | list)
+           + (groups['all'] | select('in', controller_idents) | list))
+          | unique | sort | first | default(''), true) }}
+
+  pre_tasks:
+    - name: Report controller detection
+      ansible.builtin.debug:
+        msg: >-
+          controller_self={{ controller_self or 'none' }}
+          {%- if controller_self %} (probes itself locally)
+          {%- else %} (controller not in inventory — all hosts use ssh)
+          {%- endif %}
+      run_once: true
+
+    - name: Probe the controller locally — ssh to its own tailnet IP has no key path
+      ansible.builtin.set_fact:
+        ansible_connection: local
+      when: inventory_hostname == controller_self
+
+    - name: Re-render generated units from ssot.jobs.yml on the controller
+      ansible.builtin.command: >-
+        python3 {{ repo_root }}/scripts/render-jobs.py
+        --ids {{ shipper_job_ids | join(',') }}
+      delegate_to: localhost
+      run_once: true
+      register: render_result
+      changed_when: render_result.stdout_lines | default([]) | length > 0
+      when: render_generated | bool and not ansible_check_mode
+      tags: [units]
+
+    - name: Note that check mode previews against on-disk generated units
+      ansible.builtin.debug:
+        msg: >-
+          check mode: skipping the re-render — previews use the checked-in
+          systemd/generated units (run without --check to converge from SSOT)
+      delegate_to: localhost
+      run_once: true
+      when: ansible_check_mode and render_generated | bool
+
+  tasks:
+    - name: Build shipper lanes owned by this host
+      ansible.builtin.set_fact:
+        shipper_lanes: >-
+          {% set ns = namespace(items=[]) -%}
+          {% for job in jobs_ssot['jobs'] | default([]) -%}
+          {%   if job.id | default('') in shipper_job_ids
+                 and (job.host | default('') | replace('_', '-')) == inventory_hostname -%}
+          {%     set _ = ns.items.append({'id': job.id,
+                                         'host_key': job.host,
+                                         'exec_cmd': job.exec | default(''),
+                                         'env': job.env | default({}, true)}) -%}
+          {%   endif -%}
+          {% endfor -%}
+          {{ ns.items }}
+      changed_when: false
+
+    - name: Fail clearly if the manifest declares no lane for this host
+      ansible.builtin.assert:
+        that: shipper_lanes | length > 0
+        fail_msg: >-
+          no log-shipper job for {{ inventory_hostname }} in ssot.jobs.yml —
+          add one there and re-render, or narrow the play with --limit
+
+    - name: Build the per-lane unit file list
+      ansible.builtin.set_fact:
+        shipper_units: >-
+          {% set ns = namespace(items=[]) -%}
+          {% for lane in shipper_lanes -%}
+          {%   for suffix in ['service', 'timer'] -%}
+          {%     set _ = ns.items.append({'id': lane.id,
+                                          'host_key': lane.host_key,
+                                          'suffix': suffix}) -%}
+          {%   endfor -%}
+          {% endfor -%}
+          {{ ns.items }}
+      changed_when: false
+
+    - name: Ensure shipper and user-unit directories exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+      loop:
+        - "{{ shipper_dest_dir }}"
+        - "{{ units_dir }}"
+
+    - name: Deploy with per-file backup and restore-on-failure
+      block:
+        - name: Deploy log-shipper.py by checksum
+          ansible.builtin.copy:
+            src: "{{ shipper_script_src }}"
+            dest: "{{ shipper_dest_dir }}/log-shipper.py"
+            mode: "0644"
+            backup: true
+          register: shipper_script_copy
+          tags: [script]
+
+        - name: Deploy generated user units by checksum
+          ansible.builtin.copy:
+            src: "{{ generated_dir }}/{{ item.host_key }}/{{ item.id }}.{{ item.suffix }}"
+            dest: "{{ units_dir }}/{{ item.id }}.{{ item.suffix }}"
+            mode: "0644"
+            backup: true
+          register: shipper_units_copy
+          loop: "{{ shipper_units }}"
+          loop_control:
+            label: "{{ item.id }}.{{ item.suffix }}"
+          tags: [units]
+
+        - name: Decide if a reload is needed
+          ansible.builtin.set_fact:
+            shipper_changed: >-
+              {{ (shipper_script_copy.changed | default(false))
+                 or (shipper_units_copy.results | default([])
+                     | selectattr('changed') | list | length > 0) }}
+            shipper_timers: >-
+              {{ shipper_lanes | map(attribute='id')
+                 | map('regex_replace', '$', '.timer') | list }}
+            shipper_changed_dests: >-
+              {{ ([] if not (shipper_script_copy.changed | default(false))
+                  else [shipper_script_copy.dest
+                        | default(shipper_dest_dir ~ '/log-shipper.py')])
+                 + (shipper_units_copy.results | default([])
+                    | selectattr('changed') | map(attribute='dest') | list) }}
+          changed_when: false
+
+        - name: Reload user systemd and arm the timers (only on real changes)
+          ansible.builtin.shell: |
+            uid="$(id -u)"
+            export XDG_RUNTIME_DIR="/run/user/$uid"
+            export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus"
+            systemctl --user daemon-reload
+            systemctl --user enable --now {{ shipper_timers | join(' ') }}
+          when: shipper_changed | bool
+          tags: [enable]
+
+        - name: Run each lane once (opt-in — writes to the MDDB ops instance)
+          ansible.builtin.command: "{{ item.exec_cmd | replace('%h', ansible_user_dir) }}"
+          environment: "{{ item.env | default({}) }}"
+          loop: "{{ shipper_lanes }}"
+          loop_control:
+            label: "{{ item.id }}"
+          when: shipper_run_once | bool
+          tags: [run-once]
+
+      rescue:
+        - name: Restore every file changed in this run from its newest backup
+          ansible.builtin.shell: |
+            set -eu
+            for dest in {{ shipper_changed_dests | default([]) | join(' ') }}; do
+              backup="$(find "$(dirname "$dest")" -maxdepth 1 \
+                -name "$(basename "$dest").*~" -printf '%T@ %p\n' \
+                | sort -n | tail -1 | cut -d' ' -f2-)"
+              if [ -n "$backup" ]; then
+                cp -p "$backup" "$dest"
+                echo "restored $dest from $backup"
+              fi
+            done
+          when: (shipper_changed_dests | default([])) | length > 0
+          changed_when: false
+
+        - name: Reload user systemd after rollback
+          ansible.builtin.shell: |
+            uid="$(id -u)"
+            export XDG_RUNTIME_DIR="/run/user/$uid"
+            export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus"
+            systemctl --user daemon-reload
+          when: (shipper_changed_dests | default([])) | length > 0
+          changed_when: false
+
+        - name: Fail the host after rolling back
+          ansible.builtin.fail:
+            msg: >-
+              log-shipper converge failed on {{ inventory_hostname }};
+              changed files were restored from backup. The original error is
+              above this task.
+
+    - name: Report convergence result
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }}:
+          {{ 'CONVERGED' if (shipper_changed | default(false)) else 'in-sync' }}
+          ({{ shipper_lanes | map(attribute='id') | join(', ') }})
+      changed_when: false
+
+  # Data-plane gate: a clean file converge is not enough. The shipper now
+  # exits 1 on failed /add, and the judge raises logs-auto-*-add-failed cards,
+  # but this makes the play itself fail before anyone reads a dashboard.
+  post_tasks:
+    - name: Check MDDB ops health
+      ansible.builtin.uri:
+        url: "{{ mddb_ops_url }}/health"
+        method: GET
+        status_code: 200
+      delegate_to: localhost
+      run_once: true
+      register: mddb_health
+      changed_when: false
+      check_mode: false
+      tags: [verify]
+
+    - name: Read host-logs-state heartbeats
+      ansible.builtin.uri:
+        url: "{{ mddb_ops_url }}/search"
+        method: POST
+        body_format: json
+        body:
+          collection: host-logs-state
+          query: ""
+          limit: 500
+        status_code: 200
+        return_content: true
+      delegate_to: localhost
+      run_once: true
+      register: mddb_state_search
+      changed_when: false
+      check_mode: false
+      tags: [verify]
+
+    - name: Count failed MDDB adds from state docs
+      ansible.builtin.set_fact:
+        mddb_add_failures: >-
+          {{ (mddb_state_search.json | default([])
+              | map(attribute='contentMd')
+              | select('search', '^\s*\{')
+              | map('from_json')
+              | selectattr('failed', 'defined')
+              | map(attribute='failed')
+              | map('int')
+              | select('gt', 0)
+              | list) }}
+      delegate_to: localhost
+      run_once: true
+      changed_when: false
+      tags: [verify]
+
+    - name: Fail on any failed MDDB /add
+      ansible.builtin.assert:
+        that:
+          - mddb_add_failures | length == 0
+        fail_msg: >-
+          MDDB ops health={{ mddb_health.status }}, but
+          {{ mddb_add_failures | length }} host-logs-state doc(s) report
+          failed>0 — the log pipeline is blind. See logs-auto-*-add-failed
+          cards and the shipper's non-zero exit in systemd.
+        success_msg: >-
+          MDDB ops healthy ({{ mddb_health.status }}); no failed /add in
+          host-logs-state.
+      delegate_to: localhost
+      run_once: true
+      tags: [verify]

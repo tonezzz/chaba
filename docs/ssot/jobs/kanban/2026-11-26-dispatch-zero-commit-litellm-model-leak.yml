@@ -1,0 +1,122 @@
+title: "dispatch zero-commit epidemic — root cause: litellm/* lane model leaked onto `devin --model`"
+subtitle: >-
+  Oct 25 – Nov 8 dispatch sessions across tony-macbook, idc02, mn01 (and
+  likely others) exited 1 within seconds-to-minutes producing zero commits —
+  branch head == base tip, no sessions.db row, no transcript. Common
+  signature found in devin CLI logs + a live repro: claim-time lane
+  classification wrote `action.model = LANE_MODELS[lane]` (a litellm/*
+  proxy alias) which runner-agent passed as DISPATCH_MODEL to
+  devin-dispatch, so `devin -p --model litellm/...` died at launch with
+  "Error: Unknown model". Fixed by devin-executor-model-routing
+  (DEV-0958, landed 2026-11-24) + deployed fleet-wide; verified live.
+icon: 🔍
+id: 2026-11-26-dispatch-zero-commit-litellm-model-leak
+status: done
+owner: devin-dispatch
+project: chaba
+card: dispatch-zero-commit-sessions-epidemic
+ref: OPS-0894
+started: "2026-11-26"
+completed: "2026-11-26"
+
+context:
+  ask: >-
+    Card dispatch-zero-commit-sessions-epidemic: 10+ sessions Oct 26-27
+    across hosts (tony-macbook, idc02, mn01) and lanes produced ZERO
+    commits — pushed branch head = plain master commit, unit often ends
+    Failed-exit-code yet reported ok. Sample a failed session journal on
+    tony-macbook + idc02, find the common signature, fix it.
+  signature: >-
+    Task dirs show exit_code=1, NO transcript.json, NO run.*.log (pre-tee
+    devin-dispatch), and NO row in ~/.local/share/devin/cli/sessions.db —
+    the devin CLI never created a session. Parent log
+    (~/.local/share/devin/cli/logs/devin_<ts>_<pid>.log.gz) ends right
+    after `run_repl_mode: close`, before `Model resolution complete` /
+    `spawned ACP agent child` / `ACP agent child spawned and initialized`.
+    On tony-macbook the unit's exit_code lands <1-3s after prompt.txt is
+    written. On mn01 one failure left a 0-line ACP-child log — the child
+    died during init_cli (after log_maintenance, before unleash flags).
+  smoking_gun: >-
+    A "finished (ok)" card comm tail reads
+    `exit=0 .6, deepseek-v4-pro | devin-task-...service: Main process
+    exited, cod` — the journal tail is the END of devin's "Available:"
+    model list (`...swe-1.6, deepseek-v4-pro`), i.e. the unit journal
+    contains `Error: Unknown model: 'litellm/...'`. Live repro on mn01
+    (devin 3000.15.14): `devin -p --model litellm/gemini-3.5-flash-lite`
+    prints `Error: Unknown model` + the same Available list and exits
+    immediately — no session, no work.
+  root_cause: >-
+    Pre-DEV-0958 runner-agent (git show of the 2026-10-28 revision):
+    claim-time `classify_lane(card)` persisted `a["lane"]` and, for lanes
+    in LANE_MODELS, `a["model"] = LANE_MODELS[lane]` — litellm/* proxy
+    aliases — and the dispatch env block set
+    `env["DISPATCH_MODEL"] = lane_models[lane]` for ANY lane hit,
+    executor-blind. devin-dispatch.sh then ran
+    `devin -p --model "$DEVIN_MODEL"` with no validation (the
+    _model_preflight guard did not exist yet). `devin` rejects foreign
+    provider ids → exit 1 → exit_code=1 → zero commits. Why intermittent:
+    only cards that (a) got lane-classified into LANE_MODELS
+    (free_lane/paid_frontier) AND (b) fell through to the devin path
+    (no OPENCODE_LANES+profile resolution on that host) AND (c) had no
+    valid action.model pin died; executor=devin pins, unclassified cards,
+    and opencode-routed cards survived — the coin flip.
+  secondary_bug: >-
+    The same window's "Finished with result 'exit-code' recorded
+    'finished (ok)'" misreport: old runner-agent collect() read
+    ExecMainStatus=0/Result=success DEFAULTS from --collect'ed units.
+    Current collect() reads task-dir exit_code FIRST, then unit fields
+    only while LoadState=loaded, then journal — unproven exits report
+    not-ok (dispatch_repos.unit_exit_evidence documents the same fix).
+
+changes: []   # no code change needed — fix already landed; this card is the investigation
+
+verification:
+  - >-
+    Reproduced: `devin -p --model litellm/gemini-3.5-flash-lite` →
+    "Error: Unknown model" exit (mn01, devin 3000.15.14).
+  - >-
+    tony-macbook task dirs: ~20 exit-1/no-transcript failures Oct 26-27
+    (incl. BOTH OPS-0894 investigation dispatches 164615/164816 and the
+    named victims grand-rename, inference-provider-watch,
+    household-kanban-appliance); ZERO such failures since 2026-11-25.
+  - >-
+    mn01 task dirs: 13 exit-1/no-transcript total; Oct 25 cluster of 5
+    simultaneous lane-routed failures 13:11-13:17 UTC; Oct 26-27 three
+    more (034507, 105452, 223603 — the last is card
+    devnest-news-watch-procedure).
+  - >-
+    idc02 task dirs: same signature Oct 26-27 (072000, 084604, 100641 =
+    devnest-cache-tokenization-bench, 145840, 190846, 053544, 053546,
+    054002, 093135, 103011, 181224, 185419).
+  - >-
+    Fleet state NOW: installed ~/.local/bin/runner-agent md5 9b50a157 ==
+    repo scripts/board/runner-agent.py on mn01, idc02, idc03, tony-dell,
+    tony-macbook, tony-omen; installed devin-dispatch carries
+    _model_preflight on all six (installed 2026-11-24). con01 ssh denied
+    from mn01 — unverified, last board defer was 'runner at cap'.
+  - >-
+    Guards now in place (all in repo + deployed): executor-aware
+    lane_model split — LANE_MODELS (litellm) only for opencode,
+    DEVIN_LANE_MODELS (swe-2-flash-medium for free_lane; paid_frontier
+    deliberately unpicked) for devin; model_valid_for_executor drops
+    foreign-namespace ids with a comms note in BOTH claimers
+    (runner-agent.start_task, kanban-dispatch.start_pending);
+    devin-dispatch._model_preflight refuses unknown ids BEFORE
+    systemd-run; claude-dispatch self-validates claude ids.
+  - >-
+    Tests: tests/board/test_runner_agent_lane.py
+    (test_litellm_model_dropped_on_devin_path,
+    test_free_lane_devin_path_gets_devin_native_model,
+    test_paid_frontier_devin_path_stays_gated) and
+    tests/devin/test_model_preflight.py cover the regression.
+  - >-
+    Residual: 39 board cards still carry persisted action.model
+    litellm/* — safe under current guards (dropped for devin-bound
+    claims, correct for executor=opencode). Not cleaned — they self-heal
+    on next claim.
+
+lessons:
+  - "lane->model picks must be executor-namespaced at BOTH claimers; a litellm/* id on `devin --model` is a sub-second 'Unknown model' death with zero commits"
+  - "dispatch failure signature: exit_code=1 + no transcript.json + no sessions.db row + devin log ending at run_repl_mode close"
+  - "unit journal tail '.6, deepseek-v4-pro' was the tail of devin's Available-models list — journal fragments of 'Error: Unknown model' output are the tell"
+  - "--collect'ed systemd units report ExecMainStatus=0/Result=success DEFAULTS — exit evidence must come from the task-dir exit_code file first"

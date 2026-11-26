@@ -1,0 +1,219 @@
+id: devin-usage-allowance-visibility
+title: 'devin-usage.py: surface free-tier plan allowance remaining (find authoritative source)'
+column: done
+updated: 2026-11-26 20:33
+brief: 'DEV-0044 lever 3: est-$0 masking is acceptable only after allowance visibility lands. devin-usage.py reports
+  window burn but not plan allowance remaining.'
+priority: medium
+program: devnest
+tags:
+- devin
+- usage
+- allowance
+- observability
+spec: 'Parent: card devin-usage-reduction, job doc docs/ssot/jobs/devnest/2026-11-24-devin-usage-reduction.yml.
+
+
+  GAP (verified 2026-11-24 on idc02): `devin --help` shows NO usage/billing subcommand (auth/models/doctor/cloud/list/rm/ssh/forward/update/version/migrate/sandbox/setup/uninstall/acp
+  only); `/usage` is a TUI slash command, not scriptable headlessly; transcript.json schema = {schema_version, session_id,
+  agent, steps, final_metrics{total_prompt_tokens,total_cached_tokens,total_completion_tokens,total_steps}} — no
+  plan/quota fields; credentials live at ~/.local/share/devin/credentials.toml (api server https://server.codeium.com,
+  Devin API https://api.devin.ai, webapp https://app.devin.ai).
+
+
+  TASK: (1) find the authoritative allowance-remaining source — probe api.devin.ai usage/billing/entitlement endpoints
+  with the EXISTING stored creds (read-only GETs only, no spend, no auth changes); check `devin doctor`/`devin auth
+  status` verbose output and the CLI binary for hidden usage paths; check whether app.devin.ai exposes a usage page
+  Tony can read. (2) Extend scripts/devin/devin-usage.py: if a machine-readable source exists, add allowance remaining
+  + reset window to the footer (and --json); if not, print a documented pointer line (''allowance remaining: not
+  machine-readable — check <URL>'') so the est-$0 caveat is explicit rather than silent. (3) Document the finding
+  in the job doc style under docs/ssot/jobs/devnest/.
+
+
+  DONE WHEN: `python3 scripts/devin/devin-usage.py --days 30` output either shows real allowance remaining/reset
+  or a verified pointer to where Tony reads it; any new code path covered by a test or a documented manual verification;
+  no credentials or secrets committed.'
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  lane: free_lane
+  lane_source: kw
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
+  result: 'exit=0  recorded: the RPC''s `ide_version` metadata must be semver or the server returns HTTP 500. |
+    devin-task-20261125-094133-parent-card-devin-usage-reduct.service: Consumed 44.869s CPU time over 3min 53.142s
+    wall clock time, 538.8M memory peak.'
+  verified: false
+  sweep:
+    dirty: 3
+ref: DEV-1332
+comms:
+- at: 2026-11-24 22:59
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-25 07:49
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:19
+  from: chaba
+  text: classified as free_lane (kw:plan conf 1.00)
+- at: 2026-11-25 09:19
+  from: tony
+  text: queued for processing
+- at: 2026-11-25 09:19
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.57 > 0.85)'
+- at: 2026-11-25 09:19
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 09:20
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 2.19 > 1.0)'
+- at: 2026-11-25 09:28
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 09:29
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 09:31
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (3/3)'
+- at: 2026-11-25 09:33
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 09:35
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-25 09:38
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-25 09:40
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 09:40
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-25 09:41
+  from: chaba
+  text: started devin-task-20261125-094133-parent-card-devin-usage-reduct on tony-macbook (dispatch)
+- at: 2026-11-25 09:41
+  from: chaba
+  text: 'primer injected 8 lesson(s): [video-render-dispatcher] OPS-1042 v1 implemented and verified. Added read-only
+    ; "devin usage" is not in the devin CLI — no `usage` subcommand; `/usage` is TUI-o; idc02''s kanban-dispatch.service
+    was a linked unit running a stale scripts/-only ; [michael-dev-migrate-mn01] DONE: mn-ha-dev moved idc02 ->
+    mn01. Verified: https:; runbook docs/kb/devnest-model-cache.md: DevNest model cache — fetch once on a fa; "The
+    render_job writer" is NOT in chaba — writers are ada-voi'
+- at: 2026-11-25 09:45
+  from: devin
+  text: 'DONE: authoritative allowance source found = Connect RPC SeatManagementService/GetUserStatus on server.codeium.com
+    (api_key in metadata, no auth header). api.devin.ai has no usage endpoints (all 404). devin-usage.py now prints
+    real quota footer (Pro: daily 100% / weekly 96%, resets, overage $3.55) + --json allowance block; 6 unittests
+    pass. Job doc: docs/ssot/jobs/devnest/2026-11-25-devin-usage-allowance.yml'
+- at: 2026-11-25 09:46
+  from: tony-macbook
+  text: 'finished (ok): exit=0  recorded: the RPC''s `ide_version` metadata must be semver or the server returns
+    HTTP 500. | devin-task-20261125-'
+- at: 2026-11-25 09:46
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 09:46
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  pytest not installed — fast test gate skipped (close_out still gates the
+    merge)\n\U0001F50D Validating SSOT files...\n\U0001F4CB Found SSOT files to validate:\ndocs/ssot/jobs/de"
+- at: 2026-11-25 09:46
+  from: chaba
+  text: pushed dispatch/20261125-094133-parent-card-devin-usage-reduct to origin
+- at: 2026-11-25 09:46
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 09:46
+  from: chaba
+  text: 'worktree kept: dirty — 3 uncommitted file(s)'
+- at: 2026-11-25 09:55
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-094133-parent-card-devin-usage-reduct on tony-macbook still
+    dirty — 3 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 11:20
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-25): dispatch branch merged into origin/master as 1cfe64a13693
+    (conflicts resolved where applicable: generated SSOT snapshots kept from master, substantive code from branch).
+    Deliverable: devin usage allowance visibility (dcbe181, 1 file). Closing.'
+- at: 2026-11-25 11:20
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 14:03
+  from: tony
+  text: '[verify] VERIFY-QUEUE close-out (Tony 2026-11-25): dispatch branch merged into origin/master as 7ee99c946f7f.
+    Deliverable: devin usage allowance visibility (dcbe181, 1 file). Closing.'
+- at: 2026-11-25 14:03
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:56
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:00
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:33
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+claim:
+  since: 2026-11-25 09:40
+review_kind: verify

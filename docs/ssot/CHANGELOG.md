@@ -13,6 +13,28 @@ This file tracks significant changes to SSOT files for audit trail and rollback 
 
 ## Recent Changes
 
+### 2026-11-25
+
+- **File**: docs/ssot/ssot.knowledge-capture.yml, docs/ssot/infrastructure/ssot.jobs.yml, AGENTS.md, scripts/{chaba,devnest}/*, .devin/skills/*, .agents/skills/info-find/SKILL.md
+- **Change Type**: minor
+- **Description**: OPS-1368 Phase D follow-ups — (a) added "Phase D Refresh (2026-11-25)" section to ssot.knowledge-capture.yml recording the d1-metrics measurement and resolutions; (b) declared daily job chaba-capture-harvest (idc02 05:30) as the canonical capture-ledger regeneration + metrics refresh, rendered to systemd/generated/idc02/; (c) capture-apply.py now mirrors each applied audit to a card comm (board = durable record, ledger = regenerable cache); (d) info_find.py run audit renamed resolved_ref -> top_result_ref and record gained --elapsed-ms/--resolved; info-find.mjs emits the same typed contract; capture-metrics.py reports run_* vs session_* samples with top_result_pct/verified_resolved_pct; (e) pointer-stale-add.py wired into session-capture + both info-find skills; (f) AGENTS.md sweep duty gained a repeat-ask register freshness check (>14d stale_days).
+- **Impact**: Phase D telemetry now measures the real skill path end-to-end; capture ledger has a declared durable home; applied audit survives ledger regeneration; stale-pointer incidents have a recording path.
+- **Rollback**: git revert the OPS-1368 commit(s); remove systemd/generated/idc02/chaba-capture-harvest.* if the job is unwanted (it was declare-only, never installed by this change).
+
+- **File**: docs/ssot/ssot.knowledge-capture.yml
+- **Change Type**: minor
+- **Description**: Added the Capture Router Contract (Phase C.1) sections — candidate/proposal event envelope, approved sink namespace and write-approved (kanban/create only) posture, sink-native dedupe_key format, ledger/audit metadata, idempotency and dry-run defaults, reject/guard list, plus worked examples. Documents the contract already implemented by scripts/chaba/{capture-router,harvester,capture-apply}.py; no runtime behavior change.
+- **Impact**: Canonical contract for the C.2 router CLI and C.4 harvester jobs; grounded in the OPS-0016/OPS-0024 approved design.
+- **Rollback**: Remove the two appended sections from docs/ssot/ssot.knowledge-capture.yml and revert the last_updated line and this entry.
+
+### 2026-11-21
+
+- **File**: docs/ssot/infrastructure/ssot.docs-map.yml (+ scripts/ssot-docs-map-check.py, docs/ssot/ssot.index.yml)
+- **Change Type**: minor
+- **Description**: Added the docs-map registry — one file answering "where does each doc type live" across the 7 named stores (repo docs/kb, docs/ssot, docs/reports, gdrive:ada-nest, MDDB planes, MediaWiki namespaces, WP boards). Each store records owner, canonical path/prefix/URI, content types, write/update path, authority/volatility, concrete lookup recipe, and notes/gaps; a doc_types map resolves each type to its canonical store. Check entrypoint scripts/ssot-docs-map-check.py verifies structure (+ --live endpoint probes). Registered in ssot.index.yml.
+- **Impact**: Single pointer for doc-placement decisions; extends the Wiki:Wiki-Hierarchy pattern one level up. No content migrated — verdict layer only.
+- **Rollback**: Delete the new file and check script; revert the two ssot.index.yml entries.
+
 ### 2026-11-20
 
 - **File**: docs/ssot/ssot.procedures.yml (+ docs/kb/board-static-deploy.md, scripts/board/deploy-check.sh)
@@ -20,6 +42,18 @@ This file tracks significant changes to SSOT files for audit trail and rollback 
 - **Description**: Added deploy-board-static procedure and runbook — source-path-only deploy for board/board2 static UI (scoped commit + git-safe-push -> idc03 repo-sync -> board render -> web-srv-sync -> deploy-check); explicitly forbids writes to the rsync target /home/tony/web-srv/public. deploy-check wired as ignored-failure ExecStartPost on web-srv-sync.service.
 - **Impact**: Standard deploy path documented and post-sync verification added; stale nested board2/board2 copies removed from idc03 canonical tree and idc02 mirror.
 - **Rollback**: Remove the procedure entry, runbook and deploy-check.sh; remove the ExecStartPost line from ~/.config/systemd/user/web-srv-sync.service and daemon-reload.
+
+- **File**: docs/ssot/ssot.knowledge-capture.yml, docs/ssot/ssot.procedures.yml, docs/ssot/ssot.index.yml
+- **Change Type**: major
+- **Description**: Codified SSOT-aligned auto-capture routing: added knowledge-capture spec with capture matrix (info type -> canonical sink/index/volatility/promotion), pointer-note template and rules, auto-capture triggers/hooks, SSOT-first retrieval flow, guardrails, and phased automation notes. Added procedure pointers (knowledge-capture, pointer-note, session-capture) and registered knowledge-capture/procedures/procedures-index in the core SSOT index.
+- **Impact**: Establishes a canonical, pointer-first standard for capturing useful information alongside SSOT (board/lesson/KB/OpenChamber/evidence routing), reducing duplication and drift and improving later retrieval.
+- **Rollback**: Remove docs/ssot/ssot.knowledge-capture.yml, revert added entries in docs/ssot/ssot.procedures.yml and docs/ssot/ssot.index.yml.
+
+- **File**: docs/ssot/ssot.knowledge-capture.yml, docs/ssot/ssot.procedures.yml, .opencode/instructions/session-capture.md, .opencode/skills/session-capture/SKILL.md, .devin/skills/session-capture/SKILL.md, opencode.jsonc
+- **Change Type**: minor
+- **Description**: Enforced priority-1 session-capture routine: added required Session Handoff Packet (objective, as_of, current_state, canonical_refs, open_asks_decisions, next_action, where_filed, notes) to SSOT spec; strengthened session-boundary trigger to mandate sweep + packet + explicit where_filed reporting; aligned procedures and Devin/OpenCode skills/instructions to require the sweep and packet at every session end/handoff/pause.
+- **Impact**: Makes cross-session capture behavior explicit and consistent across Devin and OpenChamber/OpenCode (pointer-first, SSOT-aligned), reducing chat-only outcomes and lost follow-ups.
+- **Rollback**: Revert the handoff-packet/enforcement edits in the listed files and procedures entries.
 
 ### 2026-09-24
 

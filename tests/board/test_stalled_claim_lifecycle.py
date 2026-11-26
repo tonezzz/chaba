@@ -20,6 +20,7 @@ import os
 import sys
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 import yaml
@@ -124,16 +125,36 @@ class BoardApiLifecycleTest(unittest.TestCase):
         self.api.do_claim(c, {"host": "mn01"})
         self.assertEqual(c["column"], "doing")
 
-    def test_claim_refused_at_attempt_cap(self):
+    def test_claim_refused_at_attempt_cap_parks_card(self):
+        # A capped claim must park the card, not just refuse it: a card
+        # left queued at cap is re-tried by every runner every tick
+        # (2026-11-24 capped-queue churn).
         c = {"id": "lc-cap", "column": "backlog", "comms": [],
              "action": {"type": "dispatch", "status": "queued",
                         "attempts": 2}}
-        try:
+        with self.assertRaises(self.api.AttemptCapError) as ctx:
             self.api.do_claim(c, {"host": "mn01"})
-        except ValueError as e:
-            self.assertIn("attempt cap", str(e))
-            return
-        raise AssertionError("claim at cap should be refused")
+        self.assertIn("attempt cap", str(ctx.exception))
+        a = c["action"]
+        self.assertEqual(a["status"], "failed")
+        self.assertEqual(c["column"], "backlog")
+        self.assertIn("attempt cap", a["last_failure"])
+        self.assertTrue(any("parked at attempt cap" in m["text"]
+                            for m in c["comms"]))
+
+    def test_cap_park_preserves_real_failure_reason(self):
+        # The cap is a lifecycle fact; triage needs the original dispatch
+        # failure (exit code / precondition / OOM) to choose the next fix.
+        c = {"id": "lc-cap-reason", "column": "backlog", "comms": [],
+             "action": {"type": "dispatch", "status": "queued",
+                        "attempts": 2,
+                        "last_failure": "exit=1 FAILED_PRECONDITION"}}
+        with self.assertRaises(self.api.AttemptCapError):
+            self.api.do_claim(c, {"host": "mn01"})
+        self.assertEqual(c["action"]["last_failure"],
+                         "exit=1 FAILED_PRECONDITION")
+        self.assertTrue(any("parked at attempt cap" in m["text"]
+                            for m in c["comms"]))
 
     def test_claim_refused_at_lane_envelope_cap(self):
         c = {"id": "lc-env-cap", "column": "backlog", "comms": [],
@@ -147,6 +168,46 @@ class BoardApiLifecycleTest(unittest.TestCase):
             self.assertIn("attempt cap reached (1/1)", str(e))
             return
         raise AssertionError("claim at lane-envelope cap should be refused")
+
+    # -- claim lane provenance (devin-lane-cheap-ops-reroute) ---------
+    def _queued(self, cid, **action):
+        a = {"type": "dispatch", "status": "queued"}
+        a.update(action)
+        return {"id": cid, "column": "backlog", "comms": [],
+                "action": a}
+
+    def test_claim_lane_stamp_gets_lane_source(self):
+        # A claim-time lane is classifier output — it must persist
+        # lane_source so the next queue re-evaluates it. A bare stamp
+        # reads as an author pin forever (the audit's explicit bucket).
+        c = self._queued("lc-lane-stamp")
+        self.api.do_claim(c, {"host": "mn01", "lane": "free_lane",
+                              "model": "litellm/gemini-3.5-flash-lite"})
+        self.assertEqual(c["action"]["lane"], "free_lane")
+        self.assertEqual(c["action"]["lane_source"], "claim")
+
+    def test_claim_lane_source_from_body_wins(self):
+        c = self._queued("lc-lane-src")
+        self.api.do_claim(c, {"host": "mn01", "lane": "devin",
+                              "lane_source": "kw"})
+        self.assertEqual(c["action"]["lane_source"], "kw")
+
+    def test_claim_preserves_existing_lane_source(self):
+        # Queue-time classify already stamped provenance — a bare claim
+        # lane must not downgrade it to the generic 'claim' marker.
+        c = self._queued("lc-lane-keep", lane="devin",
+                         lane_source="kw")
+        self.api.do_claim(c, {"host": "mn01", "lane": "devin"})
+        self.assertEqual(c["action"]["lane_source"], "kw")
+
+    def test_claim_never_provenances_author_pin(self):
+        # An author-set lane (no lane_source on the card) is explicit
+        # routing — even a claim carrying lane_source must not stamp it.
+        c = self._queued("lc-lane-pin", lane="devin")
+        self.api.do_claim(c, {"host": "mn01", "lane": "devin",
+                              "lane_source": "claim"})
+        self.assertEqual(c["action"]["lane"], "devin")
+        self.assertNotIn("lane_source", c["action"])
 
     # -- verbs --------------------------------------------------------
     def test_retry_resets_attempts_and_column(self):
@@ -170,6 +231,25 @@ class BoardApiLifecycleTest(unittest.TestCase):
         self.api.do_action(c, "queue", "tony")
         self.assertEqual(c["action"]["status"], "queued")
         self.assertEqual(c["column"], "backlog")
+
+    def test_queue_at_cap_parks_instead_of_requeuing(self):
+        # do=queue keeps attempts (unlike do=retry) — at cap it must park
+        # the card, otherwise it is immediately claimable-but-unclaimable.
+        c = {"id": "lc-q-cap", "column": "backlog", "comms": [],
+             "action": {"type": "dispatch", "status": "failed",
+                        "attempts": 2}}
+        msg = self.api.do_action(c, "queue", "tony")
+        self.assertIn("parked at attempt cap", msg)
+        a = c["action"]
+        self.assertEqual(a["status"], "failed")
+        self.assertEqual(c["column"], "backlog")
+        self.assertIn("attempt cap", a["last_failure"])
+        self.assertTrue(any("queue refused" in m["text"]
+                            for m in c["comms"]))
+        # do=retry is the only re-arm and still resets the budget
+        self.api.do_action(c, "retry", "tony")
+        self.assertEqual(c["action"]["status"], "queued")
+        self.assertEqual(c["action"]["attempts"], 0)
 
 
 class DispatchLifecycleTest(unittest.TestCase):

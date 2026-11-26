@@ -15,10 +15,28 @@
 #   2. pull --rebase --autostash; conflicts limited to generated paths
 #      (SAFE_PULL_GENERATED_RE) resolve upstream-wins (--ours mid-rebase),
 #      preserving the dropped local side as <path>.local-conflict-<ts>.
+#      Default generated set includes stacks/web/public/apps/ha/ssot.ui.ha.yml:
+#      network-scan-tony rebuilds it every 15m in the exec checkout, so it
+#      otherwise wedges chaba-repo-sync on every upstream refresh.
 #      Conflicts outside generated paths abort the rebase and exit 1 —
 #      manual resolution, next run retries.
-#   3. autostash-pop conflicts under generated paths resolve to HEAD.
-#      When every contested path resolves (nothing kept for a human),
+#   3. autostash-pop conflicts resolve EVERY contested path to HEAD.
+#      Generated paths keep the old upstream-wins resolution; kanban
+#      card YAMLs additionally preserve the stash side (stage 3) as
+#      <path>.local-conflict-<ts> so step 5's reconcile folds the raced
+#      board write back instead of dropping it
+#      (board-api-queue-write-verify-lost-race-f85f2f). Since card
+#      exec-sync-autostash-conflict-codefile (incident 2026-11-09 —
+#      conflict markers left in scripts/ada/timer-sentinel.py
+#      SyntaxError'd the systemd job on every tick while the sync still
+#      reported success) NON-generated paths get the same safe
+#      treatment: the stash side is preserved as a .local-conflict-*
+#      sidecar and the worktree file resets to HEAD, so no live file
+#      ever carries <<<<<<< markers. Any non-generated pop conflict —
+#      or a retained autostash that could not be dropped — fails the
+#      run so chaba-repo-sync surfaces it instead of reporting success
+#      on a tree that needed manual merge. When every contested path
+#      resolves (nothing kept for a human),
 #      the stash's contested hunks are superseded upstream-wins and its
 #      clean hunks already landed — the retained entry is pure
 #      resurrection fuel (card safe-pull-autostash-resurrection), so it
@@ -175,7 +193,7 @@ for _st in rebase-merge rebase-apply; do
       && echo "git-safe-pull: cleared phantom $_st state -> ${_st}.phantom-$TS" >&2
   fi
 done
-GENERATED_RE="${SAFE_PULL_GENERATED_RE:-^docs/ssot/|^reports/SSOT_OPTIMIZATION_WARNINGS\.json$}"
+GENERATED_RE="${SAFE_PULL_GENERATED_RE:-^docs/ssot/|^reports/SSOT_OPTIMIZATION_WARNINGS\.json$|^stacks/web/public/apps/ha/ssot\.ui\.ha\.yml$}"
 GC_DAYS="${SAFE_PULL_AUTOSTASH_GC_DAYS:-7}"
 ARCHIVE_DIR="${SAFE_PULL_STASH_ARCHIVE:-$HOME/.local/share/chaba-stash-archive}"
 
@@ -338,22 +356,69 @@ _gc_autostash() {
   done
 }
 
+# Resolve one autostash-pop conflicted path to HEAD: preserve the stash
+# side (stage 3 = the autostash copy of the dirty write, stage 2 as
+# fallback) as <path>.local-conflict-<ts>, then reset the worktree file
+# to HEAD so it can never carry <<<<<<< markers — live code executed by
+# systemd jobs must stay syntactically valid (card
+# exec-sync-autostash-conflict-codefile, incident 2026-11-09). Same path
+# can conflict repeatedly inside one $TS second; suffix rather than
+# overwrite a preserved side.
+_pop_resolve_to_head() {
+  local p="$1" dest n
+  dest="$p.local-conflict-$TS"; n=1
+  while [ -e "$dest" ]; do
+    n=$((n + 1)); dest="$p.local-conflict-$TS-$n"
+  done
+  git show ":3:$p" > "$dest" 2>/dev/null \
+    || git show ":2:$p" > "$dest" 2>/dev/null \
+    || rm -f "$dest"
+  if git checkout HEAD -- "$p" 2>/dev/null; then
+    git reset -q HEAD -- "$p" 2>/dev/null || true
+  else
+    # upstream deleted the path — accept the deletion
+    git rm -qf -- "$p" 2>/dev/null || true
+  fi
+}
+
+# True while the autostash entry this pull created is still retained —
+# i.e. its pop could not be fully resolved (conflict leftovers, an
+# untracked-restore failure, or an aborted rebase that never popped).
+# The dirty changes it holds still need a human: `git stash show -p` /
+# `git stash pop` after review, or the .local-conflict-* sidecars.
+_autostash_pending() {
+  local sha msg
+  sha="$(git rev-parse -q --verify 'stash@{0}' 2>/dev/null)" || return 1
+  [ -n "$PRE_STASH_SHA" ] && [ "$sha" = "$PRE_STASH_SHA" ] && return 1
+  msg="$(git stash list | head -1)"; msg="${msg#*: }"
+  case "$msg" in
+    *autostash*|*"Auto stash"*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 _resolve_autostash_pop() {
   # A failed autostash pop leaves unmerged entries + a retained stash.
-  # Generated paths resolve to HEAD; anything else stays for a human.
+  # Every contested path resolves to HEAD via _pop_resolve_to_head —
+  # generated paths upstream-wins as before, and the stash side is
+  # preserved as a .local-conflict-<ts> sidecar. Card YAMLs rely on that
+  # sidecar so the EXIT-trap reconcile-local-conflicts.py merges the
+  # raced board write back semantically (comms union, action per-key
+  # newer-wins) instead of silently dropping it
+  # (card board-api-queue-write-verify-lost-race-f85f2f — the OPS-0200
+  # 'queued' answers that never persisted action.status=queued).
+  # NON-generated paths used to be "kept for manual merge" — which left
+  # <<<<<<< markers in live code that systemd jobs execute
+  # (exec-sync-autostash-conflict-codefile). They now get the same
+  # HEAD-resolution + sidecar, but still flag bad=1: the displaced
+  # local edit needs human review, so the run must fail loudly.
   local p bad=0 saw=0
   while IFS= read -r p; do
     [ -n "$p" ] || continue
     saw=1
-    if [[ "$p" =~ $GENERATED_RE ]]; then
-      if git checkout HEAD -- "$p" 2>/dev/null; then
-        git reset -q HEAD -- "$p" 2>/dev/null || true
-      else
-        # upstream deleted the path — accept the deletion
-        git rm -qf -- "$p" 2>/dev/null || true
-      fi
-    else
-      echo "git-safe-pull: autostash pop conflict kept for manual merge: $p" >&2
+    _pop_resolve_to_head "$p"
+    if [[ ! "$p" =~ $GENERATED_RE ]]; then
+      echo "git-safe-pull: autostash pop conflict on non-generated path $p resolved to HEAD — local side kept as .local-conflict-*, manual merge may be needed" >&2
       bad=1
     fi
   done < <(git diff --name-only --diff-filter=U 2>/dev/null)
@@ -363,7 +428,7 @@ _resolve_autostash_pop() {
        && [ -z "$(git diff --name-only --diff-filter=U 2>/dev/null)" ]; then
     _drop_resolved_autostash
   fi
-  return 0
+  return $bad
 }
 
 # Arm the card-union merge driver: a card that diverged semantically on
@@ -581,7 +646,8 @@ if [ "${SAFE_PULL_NO_REBASE:-0}" != "1" ]; then
   done
 fi
 
-nf _resolve_autostash_pop
+PULL_NEEDS_MANUAL=""
+nf _resolve_autostash_pop || PULL_NEEDS_MANUAL=1
 
 # Deadlock breaker (incident 2026-10-23): when the rebase could not
 # complete — most commonly >25 conflicted steps replaying a big
@@ -590,6 +656,14 @@ nf _resolve_autostash_pop
 if [ -n "$rebase_failed" ] || [ "${SAFE_PULL_NO_REBASE:-0}" = "1" ]; then
   nf _merge_fallback "${rebase_failed:-rebase skipped}" || exit 1
 fi
+
+# A retained autostash means the pop never fully applied — the dirty
+# changes it holds still need a human even when the pull converged
+# (aborted rebase, untracked-restore failure, or a non-generated pop
+# conflict resolved to HEAD above). Fail the run so the sync timer
+# surfaces it instead of reporting success on manual-merge debt
+# (exec-sync-autostash-conflict-codefile).
+nf _autostash_pending && PULL_NEEDS_MANUAL=1
 
 # Autostash pops merge cleanly even when they shouldn't — the stash's
 # stale card `column:` fields re-apply over the rebased tree while newer
@@ -642,6 +716,14 @@ TOOLS_SYNC="$REPO/scripts/devin/sync-runner-tools.sh"
 if git rev-parse --verify -q "$UPSTREAM" >/dev/null 2>&1 \
    && ! git merge-base --is-ancestor "$UPSTREAM" HEAD 2>/dev/null; then
   echo "git-safe-pull: pull did not complete — upstream not in HEAD" >&2
+  exit 1
+fi
+# The tree converged, but the autostash pop displaced local edits that
+# still need a human (sidecars under *.local-conflict-*, retained stash
+# entry). chaba-repo-sync must report failure here — reporting success
+# is what let broken conflict-marker files sit live on exec checkouts.
+if [ -n "${PULL_NEEDS_MANUAL:-}" ]; then
+  echo "git-safe-pull: autostash pop left changes needing manual merge — worktree resolved to HEAD, local sides preserved as .local-conflict-* / retained stash" >&2
   exit 1
 fi
 exit 0

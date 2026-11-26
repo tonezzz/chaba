@@ -32,11 +32,6 @@ dashboard:
   cms_base: https://idc03.taila0626a.ts.net/apps/ha/ada-tony/cms/
   zoom: '1.15'
   tile_aspect: 55%
-  # extra_views = hand-managed panel views prepended before the generated
-  # topic views (added 2026-11-13 — or-panel/hosts/board were live-only and
-  # a --apply would have dropped them). Keep in sync with the live
-  # lovelace config. (board view removed 2026-11-17 — duplicated the
-  # chaba-admin kanban tab's /apps/board app)
   extra_views:
   - type: panel
     title: OR Panel
@@ -46,34 +41,17 @@ dashboard:
     layout: {}
     cards:
     - type: iframe
-      url: https://tony-ha.surf-thailand.com/apps/or-panel/?v=1
-      aspect_ratio: 50%
+      url: https://idc02.taila0626a.ts.net/apps/or-panel/?v=2
       title: OR Spend Panel
       hide_background: false
-  - type: panel
+  - template: host_fleet
     title: Hosts
     path: hosts
     icon: mdi:server-network
-    show_icon_and_title: false
-    layout: {}
-    cards:
-    - type: iframe
-      url: https://tony-ha.surf-thailand.com/chaba-admin/hosts?kiosk  # ?kiosk = kiosk-mode plugin (v14.2.1, /local/kiosk-mode.js on tony-ha) hides sidebar+header inside the iframe
-      aspect_ratio: 50%
-      title: Tony HA — Hosts
-      hide_background: false
-  - type: panel
+  - template: service_fleet
     title: Services
     path: services
     icon: mdi:room-service
-    show_icon_and_title: false
-    layout: {}
-    cards:
-    - type: iframe
-      url: https://tony-ha.surf-thailand.com/chaba-admin/services?kiosk
-      aspect_ratio: 50%
-      title: Tony HA — Services
-      hide_background: false
   - type: panel
     title: Netdata
     path: netdata
@@ -99,13 +77,16 @@ topics:
   - polity-research
   - slug: nest-idc03
     state: proposed
-    why: 'proposed: per-host nest-mgr node report (card nest-manager-node), matched nest|polity|tony-ideas on 2026-10-09'
+    why: 'proposed: per-host nest-mgr node report (card nest-manager-node), matched nest|polity|tony-ideas
+      on 2026-10-09'
   - slug: nest-tony-omen
     state: proposed
-    why: 'proposed: per-host nest-mgr node report (card nest-manager-node), matched nest|polity|tony-ideas on 2026-10-09'
+    why: 'proposed: per-host nest-mgr node report (card nest-manager-node), matched nest|polity|tony-ideas
+      on 2026-10-09'
   - slug: nest-tony-dell
     state: proposed
-    why: 'proposed: per-host nest-mgr node report (card nest-manager-node), matched nest|polity|tony-ideas on 2026-10-09'
+    why: 'proposed: per-host nest-mgr node report (card nest-manager-node), matched nest|polity|tony-ideas
+      on 2026-10-09'
   reports: tab=pages&q=nest
 - name: Polity
   path: polity
@@ -158,10 +139,19 @@ topics:
   reports: tab=flood
 status:
   health: active — generated + pushed 2026-10-09, verified via playlive
-  last_updated: '2026-11-18'
+  last_updated: '2026-11-25'
   note: >-
     2026-11-13: extra_views added (or-panel, hosts, board) — live dashboard
     mutated over websocket on ada-ha; or-panel api route restored on the
     idc02 edge + web origin (see ssot.routes.yml or-panel-api).
     2026-11-17: board view removed (duplicated chaba-admin kanban); services
     view added after hosts (iframes tony-ha chaba-admin/services).
+    2026-11-17: hosts + services views replaced with native entities cards fed
+    by telemetry-ha-push-ada (ssot.jobs.yml) mirroring MDDB device-telemetry
+    into ada-ha :8125; or-panel iframe repointed to the Access-free idc02 web
+    origin and aspect_ratio dropped per the panel-iframe rule in
+    ssot.home-assistant.dashboards.yml. No CF-Access-gated tony-ha iframes
+    remain in the generated views (single sidebar, no Access prompt, usable
+    on mobile). Re-applied 2026-11-25 after the dispatch branch was found
+    unmerged — master still carried the old iframe spec.
+    Card chaba-nest-hosts-view-replace-tony-ha-if-053226 (SYS-0157).

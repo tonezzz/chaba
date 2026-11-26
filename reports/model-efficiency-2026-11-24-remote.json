@@ -1,0 +1,1755 @@
+{
+  "fixture": "model-efficiency-v1",
+  "suite": "remote",
+  "started": "2026-11-24T10:12:11Z",
+  "finished": "2026-11-24T10:23:05Z",
+  "warm_repeats": 2,
+  "runs": [
+    {
+      "alias": "ollama-idc03-llama3.2-3b",
+      "provider": "openai",
+      "model": "llama3.2:3b",
+      "suite": "remote",
+      "fixture": "model-efficiency-v1",
+      "meta": {
+        "license": "model-card license; self-hosted on idc03",
+        "data_policy": "local tailnet inference — no public egress",
+        "hardware_fit": "idc03 Ollama CPU tier; small models only",
+        "cost_class": "electricity only; $0 marginal",
+        "notes": "moondream is the vision leg on idc03"
+      },
+      "api_key_env": null,
+      "cases": [
+        {
+          "name": "qa_japan",
+          "ok": true,
+          "check_ok": true,
+          "s": 34.087,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 36,
+            "completion_tokens": 4,
+            "total_tokens": 40
+          },
+          "tool_calls": null,
+          "text_preview": "Tokyo.",
+          "resolved_model": "llama3.2:3b"
+        },
+        {
+          "name": "json_extract",
+          "ok": true,
+          "check_ok": true,
+          "s": 12.26,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 59,
+            "completion_tokens": 21,
+            "total_tokens": 80
+          },
+          "tool_calls": null,
+          "text_preview": "{\"name\": \"Ada\", \"role\": \"engineer\", \"city\": \"Bangkok\"}",
+          "resolved_model": "llama3.2:3b"
+        },
+        {
+          "name": "tool_weather",
+          "ok": true,
+          "check_ok": true,
+          "s": 16.388,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 166,
+            "completion_tokens": 14,
+            "total_tokens": 180
+          },
+          "tool_calls": [
+            {
+              "name": "get_weather",
+              "arguments": {
+                "city": "Bangkok"
+              }
+            }
+          ],
+          "text_preview": "",
+          "resolved_model": "llama3.2:3b"
+        },
+        {
+          "name": "thai_capital",
+          "ok": true,
+          "check_ok": true,
+          "s": 8.697,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 47,
+            "completion_tokens": 15,
+            "total_tokens": 62
+          },
+          "tool_calls": null,
+          "text_preview": "เมืองหลวงของญี่ปุ่นคือ โตเกียว",
+          "resolved_model": "llama3.2:3b"
+        },
+        {
+          "name": "gen_bottle",
+          "ok": true,
+          "check_ok": true,
+          "s": 160.699,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 41,
+            "completion_tokens": 116,
+            "total_tokens": 157
+          },
+          "tool_calls": null,
+          "text_preview": "Stay hydrated and track your progress with our smart water bottle. This innovative bottle features a built-in sensor that monitors your water intake and sends r",
+          "resolved_model": "llama3.2:3b"
+        },
+        {
+          "name": "vision_colors",
+          "skipped": "no_vision"
+        }
+      ],
+      "warm": [
+        {
+          "s": 1.577,
+          "ok": true,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 36,
+            "completion_tokens": 4,
+            "total_tokens": 40
+          }
+        },
+        {
+          "s": 2.194,
+          "ok": true,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 36,
+            "completion_tokens": 4,
+            "total_tokens": 40
+          }
+        }
+      ],
+      "status": "ok",
+      "summary": {
+        "cold_s": 34.087,
+        "case_p50_s": 16.388,
+        "warm_p50_s": 1.885,
+        "warm_n": 2,
+        "prompt_tokens": 349,
+        "completion_tokens": 170,
+        "total_tokens": 519,
+        "errors": 0,
+        "http_429": 0,
+        "error_rate": 0.0,
+        "checks_passed": 5,
+        "checks_total": 5,
+        "est_cost_usd": null
+      }
+    },
+    {
+      "alias": "ollama-idc03-moondream",
+      "provider": "openai",
+      "model": "moondream",
+      "suite": "remote",
+      "fixture": "model-efficiency-v1",
+      "meta": {
+        "license": "model-card license; self-hosted on idc03",
+        "data_policy": "local tailnet inference — no public egress",
+        "hardware_fit": "idc03 Ollama CPU tier; small models only",
+        "cost_class": "electricity only; $0 marginal",
+        "notes": "moondream is the vision leg on idc03"
+      },
+      "api_key_env": null,
+      "cases": [
+        {
+          "name": "qa_japan",
+          "ok": true,
+          "check_ok": false,
+          "s": 83.705,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 17,
+            "completion_tokens": 16,
+            "total_tokens": 33
+          },
+          "tool_calls": null,
+          "text_preview": "\n\nI hope this helps you,\n\nBest,\n[Your Name",
+          "resolved_model": "moondream"
+        },
+        {
+          "name": "json_extract",
+          "ok": true,
+          "check_ok": false,
+          "s": 44.294,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 33,
+            "completion_tokens": 96,
+            "total_tokens": 129
+          },
+          "tool_calls": null,
+          "text_preview": "\n [\n  {\n   \"name\": \"Ada\",\n   \"role\": \"engineer\",\n   \"city\": \"Bathtub\"\n  },\n  {\n   \"name\": \"Ada\",\n   \"role\": \"engineer\",\n   \"city\": \"Bathtub\"\n  },\n  {\n   \"name\":",
+          "resolved_model": "moondream"
+        },
+        {
+          "name": "tool_weather",
+          "ok": false,
+          "check_ok": false,
+          "s": 0.006,
+          "status": 400,
+          "error": "HTTP 400",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "registry.ollama.ai/library/moondream:latest does not support tools",
+            "type": "invalid_request_error",
+            "param": null,
+            "code": null
+          }
+        },
+        {
+          "name": "thai_capital",
+          "ok": true,
+          "check_ok": false,
+          "s": 51.901,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 100,
+            "completion_tokens": 32,
+            "total_tokens": 132
+          },
+          "tool_calls": null,
+          "text_preview": "เมืองหลวงของญี่ป",
+          "resolved_model": "moondream"
+        },
+        {
+          "name": "gen_bottle",
+          "ok": true,
+          "check_ok": false,
+          "s": 3.526,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 24,
+            "completion_tokens": 10,
+            "total_tokens": 34
+          },
+          "tool_calls": null,
+          "text_preview": "irt smart water bottle that tracks hydration.",
+          "resolved_model": "moondream"
+        },
+        {
+          "name": "vision_colors",
+          "ok": true,
+          "check_ok": false,
+          "s": 86.439,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 776,
+            "completion_tokens": 59,
+            "total_tokens": 835
+          },
+          "tool_calls": null,
+          "text_preview": "\nThe image features two vertical stripes of red and blue colors. The red stripe is located on the left side of the image, while the blue stripe is on the right ",
+          "resolved_model": "moondream"
+        }
+      ],
+      "warm": [
+        {
+          "s": 47.391,
+          "ok": true,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 17,
+            "completion_tokens": 16,
+            "total_tokens": 33
+          }
+        },
+        {
+          "s": 28.818,
+          "ok": true,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 17,
+            "completion_tokens": 16,
+            "total_tokens": 33
+          }
+        }
+      ],
+      "status": "partial_errors",
+      "summary": {
+        "cold_s": 83.705,
+        "case_p50_s": 51.901,
+        "warm_p50_s": 38.105,
+        "warm_n": 2,
+        "prompt_tokens": 950,
+        "completion_tokens": 213,
+        "total_tokens": 1163,
+        "errors": 1,
+        "http_429": 0,
+        "error_rate": 0.167,
+        "checks_passed": 0,
+        "checks_total": 6,
+        "est_cost_usd": null
+      }
+    },
+    {
+      "alias": "colab-gemma3",
+      "provider": "openai",
+      "model": "colab-gemma3",
+      "suite": "remote",
+      "fixture": "model-efficiency-v1",
+      "meta": {
+        "license": "gemma license via Ollama; ephemeral Colab T4",
+        "data_policy": "Colab egress only while VM lives; no durable state",
+        "hardware_fit": "Colab T4 burst — route dies with session",
+        "cost_class": "Colab free quota; $0 marginal",
+        "notes": "tunnel was DOWN at probe time (403 model access)"
+      },
+      "api_key_env": "LITELLM_KEY_CHABA",
+      "cases": [
+        {
+          "name": "qa_japan",
+          "ok": false,
+          "check_ok": false,
+          "s": 2.317,
+          "status": 500,
+          "error": "HTTP 500",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "litellm.APIConnectionError: Ollama_chatException - Cannot connect to host REDACTED:11434 ssl:<ssl.SSLContext object at 0x7417e7c76a80> [Connect call failed ('REDACTED', 11434)]\n\nLiteLLM: model group 'colab-gemma3' failed with the error above and no fallback model group was found for it, so the request was not retried on another model. Fallbacks are configured for: gemini-2.5-flash, tool-call, chat, gemini-3.5-flash-lite, summary, voice-aux, gemini-2.5-flash-lite, classify, chat-local, bench, image, gemini-3.1-flash-image, vision, embedding, gemini-embedding-2. Add a fallbacks entry for that model group (Router fallbacks or proxy router_settings.fallbacks) to retry on another model.",
+            "type": "internal_server_error",
+            "param": null,
+            "code": "500"
+          }
+        },
+        {
+          "name": "json_extract",
+          "ok": false,
+          "check_ok": false,
+          "s": 2.535,
+          "status": 500,
+          "error": "HTTP 500",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "litellm.APIConnectionError: Ollama_chatException - Cannot connect to host REDACTED:11434 ssl:<ssl.SSLContext object at 0x7417e7c76a80> [Connect call failed ('REDACTED', 11434)]\n\nLiteLLM: model group 'colab-gemma3' failed with the error above and no fallback model group was found for it, so the request was not retried on another model. Fallbacks are configured for: gemini-2.5-flash, tool-call, chat, gemini-3.5-flash-lite, summary, voice-aux, gemini-2.5-flash-lite, classify, chat-local, bench, image, gemini-3.1-flash-image, vision, embedding, gemini-embedding-2. Add a fallbacks entry for that model group (Router fallbacks or proxy router_settings.fallbacks) to retry on another model.",
+            "type": "internal_server_error",
+            "param": null,
+            "code": "500"
+          }
+        },
+        {
+          "name": "tool_weather",
+          "ok": false,
+          "check_ok": false,
+          "s": 1.999,
+          "status": 500,
+          "error": "HTTP 500",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "litellm.APIConnectionError: Ollama_chatException - Cannot connect to host REDACTED:11434 ssl:<ssl.SSLContext object at 0x7417e7c76a80> [Connect call failed ('REDACTED', 11434)]\n\nLiteLLM: model group 'colab-gemma3' failed with the error above and no fallback model group was found for it, so the request was not retried on another model. Fallbacks are configured for: gemini-2.5-flash, tool-call, chat, gemini-3.5-flash-lite, summary, voice-aux, gemini-2.5-flash-lite, classify, chat-local, bench, image, gemini-3.1-flash-image, vision, embedding, gemini-embedding-2. Add a fallbacks entry for that model group (Router fallbacks or proxy router_settings.fallbacks) to retry on another model.",
+            "type": "internal_server_error",
+            "param": null,
+            "code": "500"
+          }
+        },
+        {
+          "name": "thai_capital",
+          "ok": false,
+          "check_ok": false,
+          "s": 2.345,
+          "status": 500,
+          "error": "HTTP 500",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "litellm.APIConnectionError: Ollama_chatException - Cannot connect to host REDACTED:11434 ssl:<ssl.SSLContext object at 0x7417e7c76a80> [Connect call failed ('REDACTED', 11434)]\n\nLiteLLM: model group 'colab-gemma3' failed with the error above and no fallback model group was found for it, so the request was not retried on another model. Fallbacks are configured for: gemini-2.5-flash, tool-call, chat, gemini-3.5-flash-lite, summary, voice-aux, gemini-2.5-flash-lite, classify, chat-local, bench, image, gemini-3.1-flash-image, vision, embedding, gemini-embedding-2. Add a fallbacks entry for that model group (Router fallbacks or proxy router_settings.fallbacks) to retry on another model.",
+            "type": "internal_server_error",
+            "param": null,
+            "code": "500"
+          }
+        },
+        {
+          "name": "gen_bottle",
+          "ok": false,
+          "check_ok": false,
+          "s": 3.112,
+          "status": 500,
+          "error": "HTTP 500",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "litellm.APIConnectionError: Ollama_chatException - Cannot connect to host REDACTED:11434 ssl:<ssl.SSLContext object at 0x7417e7c76a80> [Connect call failed ('REDACTED', 11434)]\n\nLiteLLM: model group 'colab-gemma3' failed with the error above and no fallback model group was found for it, so the request was not retried on another model. Fallbacks are configured for: gemini-2.5-flash, tool-call, chat, gemini-3.5-flash-lite, summary, voice-aux, gemini-2.5-flash-lite, classify, chat-local, bench, image, gemini-3.1-flash-image, vision, embedding, gemini-embedding-2. Add a fallbacks entry for that model group (Router fallbacks or proxy router_settings.fallbacks) to retry on another model.",
+            "type": "internal_server_error",
+            "param": null,
+            "code": "500"
+          }
+        },
+        {
+          "name": "vision_colors",
+          "skipped": "no_vision"
+        }
+      ],
+      "warm": [
+        {
+          "s": 2.117,
+          "ok": false,
+          "status": 500,
+          "error": "HTTP 500",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          }
+        },
+        {
+          "s": 2.433,
+          "ok": false,
+          "status": 500,
+          "error": "HTTP 500",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          }
+        }
+      ],
+      "status": "all_failed",
+      "summary": {
+        "cold_s": 2.317,
+        "case_p50_s": null,
+        "warm_p50_s": null,
+        "warm_n": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "errors": 5,
+        "http_429": 0,
+        "error_rate": 1.0,
+        "checks_passed": 0,
+        "checks_total": 5,
+        "est_cost_usd": null
+      }
+    },
+    {
+      "alias": "or-flint-v1.0-free",
+      "provider": "openrouter",
+      "model": "recursive/flint-v1.0:free",
+      "suite": "remote",
+      "fixture": "model-efficiency-v1",
+      "meta": {
+        "license": "open-weight MoE (40B total / ~2.5B active); Recursive",
+        "data_policy": "OpenRouter :free — provider-dependent; OR account sees prompts",
+        "hardware_fit": "text->text, 262K ctx, tools+response_format",
+        "cost_class": "free tier (OR :free daily cap ~1000 req/day)",
+        "notes": "pinned separately per card — do not fold into :free auto"
+      },
+      "api_key_env": "OPENROUTER_API_KEY",
+      "cases": [
+        {
+          "name": "qa_japan",
+          "ok": false,
+          "check_ok": false,
+          "s": 0.474,
+          "status": 429,
+          "error": "HTTP 429",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "Rate limit exceeded: free-models-per-day-high-balance. ",
+            "code": 429,
+            "metadata": {
+              "headers": {
+                "X-RateLimit-Limit": "1000",
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": "1795564800000"
+              },
+              "limit_source": "openrouter_free_tier_daily",
+              "remedy_hint": "Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.",
+              "provider_name": null
+            }
+          }
+        },
+        {
+          "name": "json_extract",
+          "ok": false,
+          "check_ok": false,
+          "s": 0.402,
+          "status": 429,
+          "error": "HTTP 429",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "Rate limit exceeded: free-models-per-day-high-balance. ",
+            "code": 429,
+            "metadata": {
+              "headers": {
+                "X-RateLimit-Limit": "1000",
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": "1795564800000"
+              },
+              "limit_source": "openrouter_free_tier_daily",
+              "remedy_hint": "Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.",
+              "provider_name": null
+            }
+          }
+        },
+        {
+          "name": "tool_weather",
+          "ok": false,
+          "check_ok": false,
+          "s": 0.331,
+          "status": 429,
+          "error": "HTTP 429",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "Rate limit exceeded: free-models-per-day-high-balance. ",
+            "code": 429,
+            "metadata": {
+              "headers": {
+                "X-RateLimit-Limit": "1000",
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": "1795564800000"
+              },
+              "limit_source": "openrouter_free_tier_daily",
+              "remedy_hint": "Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.",
+              "provider_name": null
+            }
+          }
+        },
+        {
+          "name": "thai_capital",
+          "ok": false,
+          "check_ok": false,
+          "s": 0.343,
+          "status": 429,
+          "error": "HTTP 429",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "Rate limit exceeded: free-models-per-day-high-balance. ",
+            "code": 429,
+            "metadata": {
+              "headers": {
+                "X-RateLimit-Limit": "1000",
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": "1795564800000"
+              },
+              "limit_source": "openrouter_free_tier_daily",
+              "remedy_hint": "Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.",
+              "provider_name": null
+            }
+          }
+        },
+        {
+          "name": "gen_bottle",
+          "ok": false,
+          "check_ok": false,
+          "s": 0.321,
+          "status": 429,
+          "error": "HTTP 429",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "Rate limit exceeded: free-models-per-day-high-balance. ",
+            "code": 429,
+            "metadata": {
+              "headers": {
+                "X-RateLimit-Limit": "1000",
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": "1795564800000"
+              },
+              "limit_source": "openrouter_free_tier_daily",
+              "remedy_hint": "Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.",
+              "provider_name": null
+            }
+          }
+        },
+        {
+          "name": "vision_colors",
+          "skipped": "no_vision"
+        }
+      ],
+      "warm": [
+        {
+          "s": 0.624,
+          "ok": false,
+          "status": 429,
+          "error": "HTTP 429",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          }
+        },
+        {
+          "s": 0.439,
+          "ok": false,
+          "status": 429,
+          "error": "HTTP 429",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          }
+        }
+      ],
+      "status": "all_failed",
+      "summary": {
+        "cold_s": 0.474,
+        "case_p50_s": null,
+        "warm_p50_s": null,
+        "warm_n": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "errors": 5,
+        "http_429": 5,
+        "error_rate": 1.0,
+        "checks_passed": 0,
+        "checks_total": 5,
+        "est_cost_usd": null
+      }
+    },
+    {
+      "alias": "or-nemotron-3.5-super-vl-free",
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3.5-super-vl:free",
+      "suite": "remote",
+      "fixture": "model-efficiency-v1",
+      "meta": {
+        "license": "NVIDIA Open Model license",
+        "data_policy": "OpenRouter :free — provider-dependent; OR account sees prompts",
+        "hardware_fit": "text+image+video->text, 1M ctx, tools",
+        "cost_class": "free tier (OR :free daily cap ~1000 req/day)",
+        "notes": "vision-capable free leg"
+      },
+      "api_key_env": "OPENROUTER_API_KEY",
+      "cases": [
+        {
+          "name": "qa_japan",
+          "ok": false,
+          "check_ok": false,
+          "s": 0.364,
+          "status": 429,
+          "error": "HTTP 429",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "Rate limit exceeded: free-models-per-day-high-balance. ",
+            "code": 429,
+            "metadata": {
+              "headers": {
+                "X-RateLimit-Limit": "1000",
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": "1795564800000"
+              },
+              "limit_source": "openrouter_free_tier_daily",
+              "remedy_hint": "Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.",
+              "provider_name": null
+            }
+          }
+        },
+        {
+          "name": "json_extract",
+          "ok": false,
+          "check_ok": false,
+          "s": 0.346,
+          "status": 429,
+          "error": "HTTP 429",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "Rate limit exceeded: free-models-per-day-high-balance. ",
+            "code": 429,
+            "metadata": {
+              "headers": {
+                "X-RateLimit-Limit": "1000",
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": "1795564800000"
+              },
+              "limit_source": "openrouter_free_tier_daily",
+              "remedy_hint": "Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.",
+              "provider_name": null
+            }
+          }
+        },
+        {
+          "name": "tool_weather",
+          "ok": false,
+          "check_ok": false,
+          "s": 0.381,
+          "status": 429,
+          "error": "HTTP 429",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "Rate limit exceeded: free-models-per-day-high-balance. ",
+            "code": 429,
+            "metadata": {
+              "headers": {
+                "X-RateLimit-Limit": "1000",
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": "1795564800000"
+              },
+              "limit_source": "openrouter_free_tier_daily",
+              "remedy_hint": "Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.",
+              "provider_name": null
+            }
+          }
+        },
+        {
+          "name": "thai_capital",
+          "ok": false,
+          "check_ok": false,
+          "s": 0.364,
+          "status": 429,
+          "error": "HTTP 429",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "Rate limit exceeded: free-models-per-day-high-balance. ",
+            "code": 429,
+            "metadata": {
+              "headers": {
+                "X-RateLimit-Limit": "1000",
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": "1795564800000"
+              },
+              "limit_source": "openrouter_free_tier_daily",
+              "remedy_hint": "Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.",
+              "provider_name": null
+            }
+          }
+        },
+        {
+          "name": "gen_bottle",
+          "ok": false,
+          "check_ok": false,
+          "s": 0.316,
+          "status": 429,
+          "error": "HTTP 429",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "Rate limit exceeded: free-models-per-day-high-balance. ",
+            "code": 429,
+            "metadata": {
+              "headers": {
+                "X-RateLimit-Limit": "1000",
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": "1795564800000"
+              },
+              "limit_source": "openrouter_free_tier_daily",
+              "remedy_hint": "Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.",
+              "provider_name": null
+            }
+          }
+        },
+        {
+          "name": "vision_colors",
+          "ok": false,
+          "check_ok": false,
+          "s": 0.432,
+          "status": 429,
+          "error": "HTTP 429",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "Rate limit exceeded: free-models-per-day-high-balance. ",
+            "code": 429,
+            "metadata": {
+              "headers": {
+                "X-RateLimit-Limit": "1000",
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": "1795564800000"
+              },
+              "limit_source": "openrouter_free_tier_daily",
+              "remedy_hint": "Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.",
+              "provider_name": null
+            }
+          }
+        }
+      ],
+      "warm": [
+        {
+          "s": 0.375,
+          "ok": false,
+          "status": 429,
+          "error": "HTTP 429",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          }
+        },
+        {
+          "s": 0.383,
+          "ok": false,
+          "status": 429,
+          "error": "HTTP 429",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          }
+        }
+      ],
+      "status": "all_failed",
+      "summary": {
+        "cold_s": 0.364,
+        "case_p50_s": null,
+        "warm_p50_s": null,
+        "warm_n": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "errors": 6,
+        "http_429": 6,
+        "error_rate": 1.0,
+        "checks_passed": 0,
+        "checks_total": 6,
+        "est_cost_usd": null
+      }
+    },
+    {
+      "alias": "or-nemotron-3.5-lightning-free",
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "suite": "remote",
+      "fixture": "model-efficiency-v1",
+      "meta": {
+        "license": "NVIDIA Open Model license",
+        "data_policy": "OpenRouter :free — provider-dependent; OR account sees prompts",
+        "hardware_fit": "text->text, 1M ctx, tools",
+        "cost_class": "free tier (OR :free daily cap ~1000 req/day)",
+        "notes": "fast free leg"
+      },
+      "api_key_env": "OPENROUTER_API_KEY",
+      "cases": [
+        {
+          "name": "qa_japan",
+          "ok": false,
+          "check_ok": false,
+          "s": 0.4,
+          "status": 429,
+          "error": "HTTP 429",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "Rate limit exceeded: free-models-per-day-high-balance. ",
+            "code": 429,
+            "metadata": {
+              "headers": {
+                "X-RateLimit-Limit": "1000",
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": "1795564800000"
+              },
+              "limit_source": "openrouter_free_tier_daily",
+              "remedy_hint": "Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.",
+              "provider_name": null
+            }
+          }
+        },
+        {
+          "name": "json_extract",
+          "ok": false,
+          "check_ok": false,
+          "s": 0.414,
+          "status": 429,
+          "error": "HTTP 429",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "Rate limit exceeded: free-models-per-day-high-balance. ",
+            "code": 429,
+            "metadata": {
+              "headers": {
+                "X-RateLimit-Limit": "1000",
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": "1795564800000"
+              },
+              "limit_source": "openrouter_free_tier_daily",
+              "remedy_hint": "Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.",
+              "provider_name": null
+            }
+          }
+        },
+        {
+          "name": "tool_weather",
+          "ok": false,
+          "check_ok": false,
+          "s": 0.371,
+          "status": 429,
+          "error": "HTTP 429",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "Rate limit exceeded: free-models-per-day-high-balance. ",
+            "code": 429,
+            "metadata": {
+              "headers": {
+                "X-RateLimit-Limit": "1000",
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": "1795564800000"
+              },
+              "limit_source": "openrouter_free_tier_daily",
+              "remedy_hint": "Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.",
+              "provider_name": null
+            }
+          }
+        },
+        {
+          "name": "thai_capital",
+          "ok": false,
+          "check_ok": false,
+          "s": 0.386,
+          "status": 429,
+          "error": "HTTP 429",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "Rate limit exceeded: free-models-per-day-high-balance. ",
+            "code": 429,
+            "metadata": {
+              "headers": {
+                "X-RateLimit-Limit": "1000",
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": "1795564800000"
+              },
+              "limit_source": "openrouter_free_tier_daily",
+              "remedy_hint": "Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.",
+              "provider_name": null
+            }
+          }
+        },
+        {
+          "name": "gen_bottle",
+          "ok": false,
+          "check_ok": false,
+          "s": 0.366,
+          "status": 429,
+          "error": "HTTP 429",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "Rate limit exceeded: free-models-per-day-high-balance. ",
+            "code": 429,
+            "metadata": {
+              "headers": {
+                "X-RateLimit-Limit": "1000",
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": "1795564800000"
+              },
+              "limit_source": "openrouter_free_tier_daily",
+              "remedy_hint": "Wait for the daily reset (see X-RateLimit-Reset), or purchase credits to raise your free-model daily limit.",
+              "provider_name": null
+            }
+          }
+        },
+        {
+          "name": "vision_colors",
+          "skipped": "no_vision"
+        }
+      ],
+      "warm": [
+        {
+          "s": 0.365,
+          "ok": false,
+          "status": 429,
+          "error": "HTTP 429",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          }
+        },
+        {
+          "s": 0.371,
+          "ok": false,
+          "status": 429,
+          "error": "HTTP 429",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          }
+        }
+      ],
+      "status": "all_failed",
+      "summary": {
+        "cold_s": 0.4,
+        "case_p50_s": null,
+        "warm_p50_s": null,
+        "warm_n": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "errors": 5,
+        "http_429": 5,
+        "error_rate": 1.0,
+        "checks_passed": 0,
+        "checks_total": 5,
+        "est_cost_usd": null
+      }
+    },
+    {
+      "alias": "or-laguna-s-2.1-free",
+      "provider": "openrouter",
+      "model": "poolside/laguna-s-2.1:free",
+      "suite": "remote",
+      "fixture": "model-efficiency-v1",
+      "meta": {
+        "license": "Poolside license (see model card)",
+        "data_policy": "OpenRouter :free — provider-dependent; OR account sees prompts",
+        "hardware_fit": "code-focused free model",
+        "cost_class": "free tier (OR :free daily cap ~1000 req/day)",
+        "notes": "prior scorecard 100 comp; may be delisted — 404 recorded if so"
+      },
+      "api_key_env": "OPENROUTER_API_KEY",
+      "cases": [
+        {
+          "name": "qa_japan",
+          "ok": false,
+          "check_ok": false,
+          "s": 0.349,
+          "status": 404,
+          "error": "HTTP 404",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "poolside/laguna-s-2.1:free is no longer available on OpenRouter: no provider serves this model anymore. See available models at https://openrouter.ai/models",
+            "code": 404
+          }
+        },
+        {
+          "name": "json_extract",
+          "ok": false,
+          "check_ok": false,
+          "s": 0.331,
+          "status": 404,
+          "error": "HTTP 404",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "poolside/laguna-s-2.1:free is no longer available on OpenRouter: no provider serves this model anymore. See available models at https://openrouter.ai/models",
+            "code": 404
+          }
+        },
+        {
+          "name": "tool_weather",
+          "ok": false,
+          "check_ok": false,
+          "s": 0.316,
+          "status": 404,
+          "error": "HTTP 404",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "poolside/laguna-s-2.1:free is no longer available on OpenRouter: no provider serves this model anymore. See available models at https://openrouter.ai/models",
+            "code": 404
+          }
+        },
+        {
+          "name": "thai_capital",
+          "ok": false,
+          "check_ok": false,
+          "s": 0.326,
+          "status": 404,
+          "error": "HTTP 404",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "poolside/laguna-s-2.1:free is no longer available on OpenRouter: no provider serves this model anymore. See available models at https://openrouter.ai/models",
+            "code": 404
+          }
+        },
+        {
+          "name": "gen_bottle",
+          "ok": false,
+          "check_ok": false,
+          "s": 0.609,
+          "status": 404,
+          "error": "HTTP 404",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "error_detail": {
+            "message": "poolside/laguna-s-2.1:free is no longer available on OpenRouter: no provider serves this model anymore. See available models at https://openrouter.ai/models",
+            "code": 404
+          }
+        },
+        {
+          "name": "vision_colors",
+          "skipped": "no_vision"
+        }
+      ],
+      "warm": [
+        {
+          "s": 0.365,
+          "ok": false,
+          "status": 404,
+          "error": "HTTP 404",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          }
+        },
+        {
+          "s": 0.39,
+          "ok": false,
+          "status": 404,
+          "error": "HTTP 404",
+          "usage": {
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null
+          }
+        }
+      ],
+      "status": "all_failed",
+      "summary": {
+        "cold_s": 0.349,
+        "case_p50_s": null,
+        "warm_p50_s": null,
+        "warm_n": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0,
+        "errors": 5,
+        "http_429": 0,
+        "error_rate": 1.0,
+        "checks_passed": 0,
+        "checks_total": 5,
+        "est_cost_usd": null
+      }
+    },
+    {
+      "alias": "deepseek-flash",
+      "provider": "openrouter",
+      "model": "deepseek/deepseek-v4.1-flash",
+      "suite": "remote",
+      "fixture": "model-efficiency-v1",
+      "meta": {
+        "license": "DeepSeek API terms (paid)",
+        "data_policy": "sent to DeepSeek via OpenRouter; paid tier, no :free training assumption",
+        "hardware_fit": "provider-hosted 1M-ctx multimodal MoE; tool+JSON capable",
+        "cost_class": "paid: ~$0.14/M in, $0.42/M out (OR listing 2026-11-24)",
+        "notes": "card asks to add V4.1 Flash as deepseek-flash; measured via OR because no DEEPSEEK_API_KEY exists on fleet; reasoning_effort=low so tiny max_tokens budgets return content"
+      },
+      "api_key_env": "OPENROUTER_API_KEY",
+      "cases": [
+        {
+          "name": "qa_japan",
+          "ok": true,
+          "check_ok": false,
+          "s": 2.15,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 41,
+            "completion_tokens": 16,
+            "total_tokens": 57
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "resolved_model": "deepseek/deepseek-v4.1-flash"
+        },
+        {
+          "name": "json_extract",
+          "ok": true,
+          "check_ok": true,
+          "s": 1.545,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 65,
+            "completion_tokens": 39,
+            "total_tokens": 104
+          },
+          "tool_calls": null,
+          "text_preview": "{\"name\":\"Ada\",\"role\":\"engineer\",\"city\":\"Bangkok\"}",
+          "resolved_model": "deepseek/deepseek-v4.1-flash"
+        },
+        {
+          "name": "tool_weather",
+          "ok": true,
+          "check_ok": true,
+          "s": 3.253,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 307,
+            "completion_tokens": 55,
+            "total_tokens": 362
+          },
+          "tool_calls": [
+            {
+              "name": "get_weather",
+              "arguments": {
+                "city": "Bangkok"
+              }
+            }
+          ],
+          "text_preview": "",
+          "resolved_model": "deepseek/deepseek-v4.1-flash"
+        },
+        {
+          "name": "thai_capital",
+          "ok": true,
+          "check_ok": false,
+          "s": 0.772,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 48,
+            "completion_tokens": 32,
+            "total_tokens": 80
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "resolved_model": "deepseek/deepseek-v4.1-flash"
+        },
+        {
+          "name": "gen_bottle",
+          "ok": true,
+          "check_ok": false,
+          "s": 2.431,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 46,
+            "completion_tokens": 220,
+            "total_tokens": 266
+          },
+          "tool_calls": null,
+          "text_preview": "",
+          "resolved_model": "deepseek/deepseek-v4.1-flash"
+        },
+        {
+          "name": "vision_colors",
+          "ok": true,
+          "check_ok": true,
+          "s": 1.621,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 251,
+            "completion_tokens": 54,
+            "total_tokens": 305
+          },
+          "tool_calls": null,
+          "text_preview": "{\"left_color\":\"red\",\"right_color\":\"blue\"}",
+          "resolved_model": "deepseek/deepseek-v4.1-flash"
+        }
+      ],
+      "warm": [
+        {
+          "s": 0.994,
+          "ok": true,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 41,
+            "completion_tokens": 16,
+            "total_tokens": 57
+          }
+        },
+        {
+          "s": 0.939,
+          "ok": true,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 41,
+            "completion_tokens": 16,
+            "total_tokens": 57
+          }
+        }
+      ],
+      "status": "ok",
+      "summary": {
+        "cold_s": 2.15,
+        "case_p50_s": 1.885,
+        "warm_p50_s": 0.966,
+        "warm_n": 2,
+        "prompt_tokens": 758,
+        "completion_tokens": 416,
+        "total_tokens": 1174,
+        "errors": 0,
+        "http_429": 0,
+        "error_rate": 0.0,
+        "checks_passed": 3,
+        "checks_total": 6,
+        "est_cost_usd": 0.00028084
+      }
+    },
+    {
+      "alias": "deepseek-flash-official",
+      "provider": "openai",
+      "model": "deepseek-flash",
+      "suite": "remote",
+      "fixture": "model-efficiency-v1",
+      "meta": {
+        "license": "DeepSeek API terms",
+        "data_policy": "direct to DeepSeek; paid API",
+        "hardware_fit": "official DeepSeek-V4.1-Flash-1017, 1M ctx, vision+tools",
+        "cost_class": "paid: peak $0.30/M in, $1.20/M out; off-peak half",
+        "notes": "DEEPSEEK_API_KEY not present on idc03/tony-dell/tony-omen — recorded as no_credentials if unset"
+      },
+      "api_key_env": "DEEPSEEK_API_KEY",
+      "cases": [],
+      "warm": [],
+      "status": "no_credentials",
+      "note": "DEEPSEEK_API_KEY not set — provider skipped"
+    },
+    {
+      "alias": "gemini-3.5-flash-lite-gateway",
+      "provider": "openai",
+      "model": "gemini-3.5-flash-lite",
+      "suite": "remote",
+      "fixture": "model-efficiency-v1",
+      "meta": {
+        "license": "Google Gemini API terms via LiteLLM",
+        "data_policy": "via idc03 LiteLLM gateway; paid key upstream",
+        "hardware_fit": "provider-hosted; gateway adds routing/fallback",
+        "cost_class": "metered paid Gemini; spend on LITELLM_KEY_CHABA",
+        "notes": "gateway leg — compare against direct"
+      },
+      "api_key_env": "LITELLM_KEY_CHABA",
+      "cases": [
+        {
+          "name": "qa_japan",
+          "ok": true,
+          "check_ok": true,
+          "s": 0.804,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 12,
+            "completion_tokens": 1,
+            "total_tokens": 13
+          },
+          "tool_calls": null,
+          "text_preview": "Tokyo",
+          "resolved_model": "gemini-3.5-flash-lite"
+        },
+        {
+          "name": "json_extract",
+          "ok": true,
+          "check_ok": true,
+          "s": 0.815,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 35,
+            "completion_tokens": 28,
+            "total_tokens": 63
+          },
+          "tool_calls": null,
+          "text_preview": "{\n  \"name\": \"Ada\",\n  \"role\": \"engineer\",\n  \"city\": \"Bangkok\"\n}",
+          "resolved_model": "gemini-3.5-flash-lite"
+        },
+        {
+          "name": "tool_weather",
+          "ok": true,
+          "check_ok": true,
+          "s": 0.98,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 63,
+            "completion_tokens": 17,
+            "total_tokens": 80
+          },
+          "tool_calls": [
+            {
+              "name": "get_weather",
+              "arguments": {
+                "city": "Bangkok"
+              }
+            }
+          ],
+          "text_preview": "",
+          "resolved_model": "gemini-3.5-flash-lite"
+        },
+        {
+          "name": "thai_capital",
+          "ok": true,
+          "check_ok": true,
+          "s": 0.739,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 15,
+            "completion_tokens": 3,
+            "total_tokens": 18
+          },
+          "tool_calls": null,
+          "text_preview": "โตเกียว",
+          "resolved_model": "gemini-3.5-flash-lite"
+        },
+        {
+          "name": "gen_bottle",
+          "ok": true,
+          "check_ok": true,
+          "s": 2.189,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 20,
+            "completion_tokens": 165,
+            "total_tokens": 185
+          },
+          "tool_calls": null,
+          "text_preview": "Meet HydrateSmart, the ultimate companion for your wellness journey. This sleek, intelligent water bottle takes the guesswork out of staying healthy by automati",
+          "resolved_model": "gemini-3.5-flash-lite"
+        },
+        {
+          "name": "vision_colors",
+          "skipped": "no_vision"
+        }
+      ],
+      "warm": [
+        {
+          "s": 0.706,
+          "ok": true,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 12,
+            "completion_tokens": 1,
+            "total_tokens": 13
+          }
+        },
+        {
+          "s": 0.849,
+          "ok": true,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 12,
+            "completion_tokens": 1,
+            "total_tokens": 13
+          }
+        }
+      ],
+      "status": "ok",
+      "summary": {
+        "cold_s": 0.804,
+        "case_p50_s": 0.815,
+        "warm_p50_s": 0.777,
+        "warm_n": 2,
+        "prompt_tokens": 145,
+        "completion_tokens": 214,
+        "total_tokens": 359,
+        "errors": 0,
+        "http_429": 0,
+        "error_rate": 0.0,
+        "checks_passed": 5,
+        "checks_total": 5,
+        "est_cost_usd": null
+      }
+    },
+    {
+      "alias": "gemini-3.5-flash-lite-direct",
+      "provider": "gemini",
+      "model": "gemini-3.5-flash-lite",
+      "suite": "remote",
+      "fixture": "model-efficiency-v1",
+      "meta": {
+        "license": "Google Gemini API terms",
+        "data_policy": "direct to Google; paid key",
+        "hardware_fit": "provider-hosted",
+        "cost_class": "metered paid Gemini",
+        "notes": "direct leg — no gateway tax"
+      },
+      "api_key_env": "GEMINI_API_KEY_PAID",
+      "cases": [
+        {
+          "name": "qa_japan",
+          "ok": true,
+          "check_ok": true,
+          "s": 0.662,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 12,
+            "completion_tokens": 1,
+            "total_tokens": 13
+          },
+          "tool_calls": null,
+          "text_preview": "Tokyo",
+          "resolved_model": "gemini-3.5-flash-lite"
+        },
+        {
+          "name": "json_extract",
+          "ok": true,
+          "check_ok": true,
+          "s": 0.541,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 35,
+            "completion_tokens": 28,
+            "total_tokens": 63
+          },
+          "tool_calls": null,
+          "text_preview": "{\n  \"name\": \"Ada\",\n  \"role\": \"engineer\",\n  \"city\": \"Bangkok\"\n}",
+          "resolved_model": "gemini-3.5-flash-lite"
+        },
+        {
+          "name": "tool_weather",
+          "ok": true,
+          "check_ok": true,
+          "s": 0.689,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 63,
+            "completion_tokens": 17,
+            "total_tokens": 80
+          },
+          "tool_calls": [
+            {
+              "name": "get_weather",
+              "arguments": {
+                "city": "Bangkok"
+              }
+            }
+          ],
+          "text_preview": "",
+          "resolved_model": "gemini-3.5-flash-lite"
+        },
+        {
+          "name": "thai_capital",
+          "ok": true,
+          "check_ok": true,
+          "s": 0.956,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 15,
+            "completion_tokens": 3,
+            "total_tokens": 18
+          },
+          "tool_calls": null,
+          "text_preview": "โตเกียว",
+          "resolved_model": "gemini-3.5-flash-lite"
+        },
+        {
+          "name": "gen_bottle",
+          "ok": true,
+          "check_ok": true,
+          "s": 1.101,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 20,
+            "completion_tokens": 163,
+            "total_tokens": 183
+          },
+          "tool_calls": null,
+          "text_preview": "Meet the HidrateSpark Pro, the ultimate smart water bottle designed to keep your wellness on track. Say goodbye to guesswork and hello to optimal hydration with",
+          "resolved_model": "gemini-3.5-flash-lite"
+        },
+        {
+          "name": "vision_colors",
+          "skipped": "no_vision"
+        }
+      ],
+      "warm": [
+        {
+          "s": 0.702,
+          "ok": true,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 12,
+            "completion_tokens": 1,
+            "total_tokens": 13
+          }
+        },
+        {
+          "s": 0.856,
+          "ok": true,
+          "status": 200,
+          "error": null,
+          "usage": {
+            "prompt_tokens": 12,
+            "completion_tokens": 1,
+            "total_tokens": 13
+          }
+        }
+      ],
+      "status": "ok",
+      "summary": {
+        "cold_s": 0.662,
+        "case_p50_s": 0.689,
+        "warm_p50_s": 0.779,
+        "warm_n": 2,
+        "prompt_tokens": 145,
+        "completion_tokens": 212,
+        "total_tokens": 357,
+        "errors": 0,
+        "http_429": 0,
+        "error_rate": 0.0,
+        "checks_passed": 5,
+        "checks_total": 5,
+        "est_cost_usd": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+id: chaba-board
+host: idc03
+description: >-
+  Kanban board stack as one podman-quadlet package: board-api (write door,
+  127.0.0.1:8787), 60s render sweep, 15-min kanban-sync (CMS xmatch) and
+  15-min kanban-commit (served-checkout git persistence) — all on one
+  image localhost/chaba-board:latest. Replaces systemd/chaba-board-api.service,
+  systemd/chaba-board-render.{service,timer}, systemd/kanban-commit.{service,timer}
+  and systemd/generated/idc03/kanban-sync.{service,timer}. Card
+  chaba-board-quadlet; packaging only — cutover needs explicit approval.
+verify: >-
+  ssh idc03 'systemctl --user is-active chaba-board-api.service &&
+  curl -sf http://127.0.0.1:8787/health &&
+  systemctl --user list-timers "chaba-board-*" --no-pager'
+secrets:
+  - "~/.config/secrets/board-api.env — optional edge key, sourced by run-api.sh"
+requires:
+  - "tool:podman — rootless quadlet generation"
+  - "host path:/home/tony — bind-mounted whole: served checkout
+     (CascadeProjects/chaba-tony-dell), kanban-sync worktree
+     (CascadeProjects/chaba-kanban-sync), ~/.ssh (git@github.com + fleet
+     health-check aliases), ~/.config/secrets"
+  - "host path:/tmp — bind-mounted so /tmp/board-api*.lock flock domain
+     stays shared with host-side writers (kanban-dispatch, merge-sweep,
+     git-safe-pull)"
+state:
+  - "~/.config/containers/systemd/chaba-board-*.{container,timer} — installed quadlets"
+  - "~/.config/containers/chaba-board/run-*.sh — entrypoint wrappers"
+  - "localhost/chaba-board:latest — image (python:3.12-slim + pyyaml + git + openssh-client)"
+ports:
+  - "127.0.0.1:8787 — board-api (Network=host, unchanged bind)"
+restore: >-
+  bash stacks/idc03/chaba-board/install.sh --cutover on idc03; rollback =
+  disable chaba-board-* units and re-enable the legacy units listed in
+  install.sh ($LEGACY_UNITS) — no state was moved, only process wrappers.
+related_cards: [chaba-board-quadlet, kanban-commit-single-writer, OPS-0725]
+status: packaged   # staged in repo; NOT installed on idc03 yet
+deployed:
+note: >-
+  Design: 4 quadlet units share one image — api .container (daemon),
+  render/sync/commit .container+.timer pairs (oneshot cadence preserved:
+  1min / *:0/15 / 15min+120s jitter). Literal single-.container rejected:
+  systemd timers cannot live inside a container and in-container cron
+  would fork kanban-sync's schedule away from ssot.jobs.yml. Cutover
+  deltas to accept: (1) kanban-commit.service ExecStartPost kick of
+  chaba-repo-sync.service can't reach host systemd — covered by the
+  15-min chaba-repo-sync.timer; (2) kanban-commit.sh's
+  `systemctl --user try-restart chaba-board-api.service` after pull is a
+  no-op inside the container — API picks up new code on next container
+  restart; (3) ssot.jobs.yml still declares job kanban-sync dispatch:systemd
+  — a future render-jobs.py --install would recreate the host units, so
+  retire/annotate that entry at cutover.

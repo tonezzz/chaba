@@ -1,0 +1,97 @@
+id: macbook-audit-drift-reconcile
+title: audit-auto-macbook — reconcile 2026-11-09 audit deltas + nest-mgr declaration gap
+host: tony-dell (dispatch worktree; evidence from audit reports)
+date: 2026-11-24
+card: audit-auto-macbook
+ref: OPS-1296
+status: done
+
+trigger: >
+  Card spec cited the 2026-11-09 audit deltas on tony-macbook:
+  runner-agent.timer expected-missing, runner-agent.service and
+  zram-swap.service failed, vcast-real-macbook.service running but
+  undeclared (reports/audit-hosts/macbook-20261109-184036.yml; related
+  SEC-1286 credential-rotation window). Spec required reconciling SSOT
+  intent before any live fix.
+
+finding:
+  evidence_source: >
+    reports/audit-hosts/macbook-*.yml snapshots in the chaba-tony-dell
+    checkout (reports/ is gitignored; the cited 184036 run was a manual
+    post-rotation probe — the 064556 daily run carries the same 4 deltas).
+  original_four_deltas:
+    runner-agent.timer: >
+      RESOLVED 2026-11-12 — was disabled, re-armed `--now` per SSOT
+      expected:active (card comms). Active in every reachable audit since.
+    runner-agent.service: >
+      RESOLVED — oneshot claim+execute showed `failed` 11-07..11-10 while
+      the user manager was wedged; after Tony's 11-14 cold boot it runs
+      clean (state activating/running, never failed since 11-17).
+    zram-swap.service: >
+      RESOLVED — fleet-standard 8G zstd unit (declared expected 2026-10-13,
+      commit 9240f1e9233) failed at boot 11-07..11-10; active since 11-17.
+    vcast-real-macbook.service: >
+      RESOLVED 2026-11-12 — intentional headed display declared in
+      expected_services (commit da0b6b832d); active in all later audits.
+  stick_announce_ghost: >
+    The 11-12 comms leftover ("needs Tony sudo") self-cleared: last seen
+    failed-system 11-04, absent from failed lists since ~11-05 and gone
+    entirely after the 11-14 reboot. No unit file remains on the host.
+  live_delta_2026_11_24: >
+    The audit chain's regenerated card note shows exactly one current
+    delta: `Unexpected running user service: nest-mgr.service`. Verified
+    intentional — installed 2026-11-17 via card
+    ops-macbook-nestmgr-install (SYS-0158, done+verified); the v2
+    actuation spec's "macbook excluded until installed" condition is now
+    met. Same undeclared-running delta also fired on idc02, con01, mn01
+    in the 2026-11-24 06:45 audits — one fleet-rollout declaration gap,
+    not four separate problems.
+
+decision:
+  - >
+    Declared nest-mgr.service in expected_services for macbook, mn01,
+    idc02, con01 in ssot.audit.hosts.yml — matches the deployed fleet in
+    stacks/services/nest-mgr (README/install.sh), observed active on all
+    four hosts. tony-dell keeps it in expected_absent (phase-5 migration
+    to omen, verified still not running 2026-11-24).
+  - >
+    Declared stick-announce.service expected_absent (system scope) on
+    macbook — formalizes "not installed on rebuilt host" so a resurrected
+    unit files a delta. Failed-state reappearance still trips the
+    failed-units loop regardless; the tripwire stays armed.
+  - >
+    Did NOT add runner-agent.service to macbook expected_services —
+    portable hosts (macbook, mn01) declare only the timer; the oneshot
+    service is ephemeral and declaring it expected-active risks
+    missing-delta flap on a sleeping laptop. Always-on hosts (omen,
+    idc02) do declare it. Current split is consistent fleet convention.
+  - >
+    No live host changes — macbook was unreachable (offline_ok, asleep)
+    and nothing needed enabling/stopping anyway; spec's "don't blindly
+    enable runner execution" guard observed.
+  - >
+    Updated stale fleet references: nest-mgr README deployed-fleet line
+    and install.sh default HOSTS (was still tony-dell + "macbook
+    pending").
+
+verification:
+  - >
+    Replayed scripts/audit-hosts.py diff_against_ssot() against the
+    latest reachable report per host: macbook CLEAN (was 1 delta);
+    nest-mgr delta cleared on mn01/idc02/con01 with no new deltas
+    introduced. Remaining deltas on those hosts belong to their own
+    audit-auto-* cards.
+  - YAML parses; install.sh passes bash -n.
+
+followups:
+  - >
+    audit-auto-idc02 / -con01 / -mn01 cards still carry their other
+    deltas (missing timers/services, failed units) — separate triage,
+    untouched here. This change removes only their nest-mgr line.
+  - >
+    idc03 shows undeclared devnest-tg-relay.service in the same audit
+    cycle — not investigated (out of card scope).
+  - >
+    runner-agent drift deferrals keep posting for tony-macbook — the
+    fleet-wide installed-vs-repo sha gap is tracked by
+    runner-fleet-health cards, not this one.

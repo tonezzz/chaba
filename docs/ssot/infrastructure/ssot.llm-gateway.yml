@@ -44,9 +44,17 @@ auth:
     preserves persona slots across fleet switches.
 
 budgets:
-  proxy_cap: "$75 / 30d (litellm_settings.max_budget — raised 2026-11-07
-    from $50 after ledger hit $69.64; stays the outer brake below the
-    ~$92 sum of key caps)"
+  proxy_cap: "$120 / 30d (litellm_settings.max_budget — live+repo aligned
+    2026-11-25; the 2026-11-07 'raise to $75' was SSOT-only, live config
+    still said $50 and proxy-wide spend crossed it 2026-11-24 ~23:00 ICT
+    (window spend $50.01 → all routes 422 at auth, before fallback chains).
+    Raised $50→$75→$120 on 2026-11-25: window (Nov 1→Dec 1 reset) already
+    at $62 with ~5.8d left at ~$8/day recent burn → projected ~$110, so
+    $75 would have re-capped before reset. $120 stays below the ~$150 sum
+    of capped per-key budgets and is the only bound on uncapped
+    LITELLM_KEY_BENCH. Watcher: budget-watch.py now also judges the
+    proxy-wide row (LiteLLM_UserTable litellm-proxy-budget), hourly timer
+    live since 2026-11-25)"
   keys:
     LITELLM_KEY_ADA: "live $30 / 30d — shared interactive/eval role; virtual
       alias ada-sec1286, budget tier sec1286-ada-20261201. The 2026-11-09
@@ -64,7 +72,7 @@ budgets:
     LITELLM_KEY_MICHAEL: "live $5 / 30d (matches) — michael lane REST"
     LITELLM_KEY_MDDB: "live $10 / 30d (matches) — gemini-ollama-proxy,
       ada-embed-bench, board-api /lesson translation"
-    LITELLM_KEY_BENCH: "live $2 / 30d (matches) — benchmark runs + dev lanes"
+    LITELLM_KEY_BENCH: "live $4 / 30d (raised 2026-11-21, Tony approved — was $2/30d at 100% with 422s; spend carried, reset 2026-12-01) — benchmark runs + dev lanes"
     LITELLM_KEY_KK: "live $5 / 30d (matches) — kk lane side-tools"
   live_audit: >-
     2026-10-28 (card model-key-usage-control): LiteLLM_AuditLog is EMPTY
@@ -95,16 +103,23 @@ budgets:
 providers:
   gemini-paid: "gemini/* via GEMINI_API_KEY_PAID (billing project — no 20/day wall)"
   gemini-free: "gemini/* via GEMINI_API_KEY_FREE (free tier — 20 req/day/model; use only as fallback)"
-  openrouter: "openrouter/<id> via OPENROUTER_API_KEY (weekly-rotated; :free variants for vision/bench)"
+  openrouter: "openrouter/<id> via OPENROUTER_API_KEY (weekly-rotated fleet key, $5/wk since 2026-11-25) — paid or-* chat/model routes moved to OPENROUTER_BENCH_API_KEY (idc03-litellm-bench, $30/wk) on 2026-11-25 so eval weeks can't cap prod resilience lanes; :free variants stay on the fleet key"
   ollama: "ollama_chat/* + ollama/* @ http://100.102.134.91:11434 — llama3.2:3b, moondream, nomic-embed-text"
   ollama-kkmac: >-
     ollama_chat/* @ http://127.0.0.1:11447 on idc03 —
-    kkmac-admission-shim.service, an Ada Nest admission gate in front of
-    kkmac-ollama-tunnel.service (:11445 -> kk-mac:11434). Reuses
+    kkmac-admission-shim.service, an Ada Nest admission gate proxying
+    directly to kk-mac ollama on the tailnet
+    (http://100.108.217.17:11434 — adanest net.adanest.ollama.plist
+    binds 0.0.0.0 since 2026-11-19; card kkmac-ollama-durable-bind).
+    Fallback: kkmac-ollama-tunnel.service (:11445 ssh -L -> kk-mac:11434)
+    is installed-but-disabled — only for a loopback-bind rollback.
+    Reuses
     scripts/devnest/kk_mac_admission.snapshot(): 503s instantly when the
     heartbeat is stale (>900s), ollama unhealthy, disk <20G, load_1m >4,
-    cpu_temp_c >60, or the node is busy (tmux_jobs/load_ok/load1-per-core
-    >1.0) — member device is owner-first, LiteLLM falls back to the paid
+    max(cpu_temp_c, gpu_temp_c) >55 (smctemp -c/-g; the GPU runs hotter
+    under ollama/Metal; sticky temp_cooldown until <=50C), or the node is
+    busy (tmux_jobs/load_ok/load1-per-core >1.0) — member device is owner-first,
+    LiteLLM falls back to the paid
     leg instead of queueing slow calls. GET /health exposes the snapshot;
     drain switch: touch the file at KK_ADMISSION_FORCE_DENY.
   ollama-idc02: >-
@@ -144,12 +159,57 @@ google_ai_pro:
     subscription quota. Consumer-side benefits now in use: 5 TB storage,
     higher NotebookLM limits (nlm/notebooklm MCP, devin-extract-sessions).
 
+gemini_project_isolation:
+  verified: "2026-11-24"
+  method: >-
+    Read-only quota-project membership oracle (card llm-provider-verification-2026-11,
+    OPS-0018 step 4). For each key, GET /v1beta/models with x-goog-user-project set
+    to a candidate project: 200 means the key's owning project may use that project,
+    403 means a different existing project, 400 means no such project. Confirmed on a
+    second endpoint (:countTokens). Key values were never printed. Re-run with
+    scripts/ops/gemini-project-verify.py. Successful responses, 404s and 429s from
+    the Gemini API itself carry NO project number — the earlier "error body names
+    the project" guidance in ssot.secrets.yml was stale.
+  map:
+    GEMINI_API_KEY_PAID: {project: gen-lang-client-0854236591, tier: paid}
+    GEMINI_API_KEY_TONY: {project: gen-lang-client-0854236591, tier: paid}
+    GEMINI_API_KEY_KK: {project: gen-lang-client-0854236591, tier: paid}
+    GEMINI_API_KEY_MICHAEL: {project: gen-lang-client-0722326417, tier: free}
+    GEMINI_API_KEY_F6Pg_ops_archived: {project: gen-lang-client-0694401188, project_number: "517766007004", tier: paid, status: archived-2026-11-18}
+  verdict: >-
+    NOT isolated. PAID, TONY and KK share one GCP project — one quota bucket, one
+    spend cap, one billing outage domain. Only Michael (free-tier) and the archived
+    ops key are in different projects. Per-persona keys are credential separation,
+    not billing/quota redundancy.
+  implications:
+    - "Keep a non-Gemini leg (OpenRouter/Ollama) as the real failover in every critical chain."
+    - "A hard $10/mo cap in AI Studio must be set per project; setting it once does not cap the other projects."
+    - "A 429/RESOURCE_EXHAUSTED or billing latch on the shared project hits Tony, KK and the pooled gateway upstream together."
+    - "Do not promote a Live voice primary on the assumption that persona keys give independent quota."
+
 # canonical routing table — mirrors stacks/idc03/litellm/config.yaml
 # (model_name = what callers send; chain = ordered upstream fallbacks)
 job_classes:
   tool-call:
-    chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
-    note: ada decision/devteam/doc-check calls. Repointed off gemini-2.5-flash 2026-10-11 — Google retired 2.5-flash/2.5-flash-lite upstream (404 "no longer available to new users").
+    chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, ollama-llama32-3b-kkmac, colab-gemma3, llama3.2:3b@ollama]
+    note: ada decision/devteam/doc-check calls. Repointed off gemini-2.5-flash 2026-10-11 — Google retired 2.5-flash/2.5-flash-lite upstream (404 "no longer available to new users"). kk-mac leg-3 added 2026-11-25 (OPS-1363).
+  agent-local:
+    chain: [gemini-3.5-flash-lite@free, qwen2.5:7b@ollama-tonydell, llama3.2@ollama-idc03, colab-gemma3, gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@openrouter]
+    note: >-
+      OPS-1363 free_lane agentic dispatch alias (deployed idc03 2026-11-25,
+      synced into repo/SSOT 2026-11-26). DEVIATION from this file's normal
+      paid-first posture: free-tier lite leads, local Ollama legs follow,
+      paid Gemini and OpenRouter are LAST — this is the free_lane $0
+      contract. Primary model_name `agent-local` is qwen2.5:32b via the
+      kk-mac admission shim (:11447) with timeout 15s (fast-fail on
+      temp_high; the old 120s timeout burned the whole window before
+      fallthrough). Consumers: scripts/board/dispatch_repos.py
+      LANE_MODELS['free_lane'] = litellm/agent-local; opencode profile
+      jobs use an instruction-free cwd outside the repo (AGENTS.md is
+      81KB and inflated the real S1 request to ~35k tokens / 265s+ first
+      byte on qwen7b). Gate: p1-info-find-agent-local-test PASS 16/16,
+      exit 0, 80.9s, $0.00, run 20261125-184706. Local-only legs lack
+      agentic tool-call reliability — keep the $0 free leg first.
   summary:
     chain: [qwen2.5:32b@ollama-kkmac, gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
     note: >-
@@ -164,6 +224,21 @@ job_classes:
   chat:
     chain: [gemini-3.5-flash@paid, gemini-3.5-flash@free, gemini-3.5-flash@openrouter, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
     note: "ada text-mode sessions (ADA_TEXT_MODEL) — full 3.5-flash for voice/text quality parity; lite only as downstream fallback. Added 2026-10-13; virtual keys need 'chat' added to models allowlist."
+  consult-flash:
+    chain: [gemini-3.5-flash@paid]
+    note: >-
+      ADA-1084 isolated consult route. Deliberately no free, OpenRouter, or
+      local fallback; staged in the feature branch, not deployed.
+  consult-pro:
+    chain: [gemini-3.1-pro@paid]
+    note: >-
+      Optional hard-case consult alias with no fallback; staged in the
+      feature branch, not deployed.
+  consult-claude:
+    chain: [or-claude-fable-5.1]
+    note: >-
+      Optional hard-case consult alias with no fallback; staged in the
+      feature branch, not deployed.
   classify:
     chain: [qwen2.5:32b@ollama-kkmac, gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
     note: doc ingest classify, cheap high-volume calls. kk-mac leg-1 since 2026-11-13 via the admission shim (see summary).
@@ -200,6 +275,23 @@ job_classes:
     chain: [gemini-embedding-2@openrouter, gemini-embedding-2@paid]
     note: "768d gemini space ONLY — OR-Vertex ≡ direct (cosine 1.000). ollama/nomic-embed-text is a different space; never chain it silently (would poison mddb retrieval)."
 
+consult_pilot:
+  status: approved_pending_deployment
+  card: ADA-1084
+  first_instance: ada-dev
+  key_alias: consult
+  key_environment_variable: LITELLM_KEY_CONSULT
+  key_budget: "$5 / 30d (Tony-approved 2026-11-17; not yet minted)"
+  allowed_models: [consult-flash, consult-pro, consult-claude]
+  per_call_estimate_cap: "$0.10 (Tony-approved 2026-11-17)"
+  rate_environment: >-
+    Per-alias input/output USD-per-million-token values are required by
+    ada_consult; missing or invalid rates fail closed. No key, provider
+    smoke, or service deployment has been performed.
+  rollout_gate: >-
+    Merge and verify Ada PR #12, configure only ada-dev, then complete the
+    approved dev soak before exposing the tool to production lanes.
+
 real_name_deployments:
   gemini-2.5-flash: [paid, free, openrouter]   # DEAD upstream 2026-10-11 — Google retired; kept only for stale callers
   gemini-2.5-flash-lite: [paid, free, openrouter, ollama-llama3.2]  # DEAD upstream — same retirement
@@ -214,6 +306,7 @@ proof_lanes:
   ada: "ada-embed-bench.service picks up LITELLM_URL/LITELLM_KEY (mddb-gemini.env) — weekly --publish run routes the embedding leg through the gateway."
   chaba: "scripts/litellm/daily-ledger.py + gateway-bench; the whole report/extract/distill chain honors GEMINI_BASE_URL via scripts/ada/gemini_rest.py (2026-10-13, card gateway-batch-opt-in-for-report-extract-aee7d7)."
   chat-local: "verified end-to-end 2026-10-15 (alias reply + 768d embed); adopters wired 2026-10-16: news-digest EN synthesis, wp-comment-sync intent classify, kanban-brief prose (env_file litellm-chaba.env). PRODUCTION-VERIFIED 2026-10-22: lane was silently 100% fallback since merge (5-7min calls vs 90-120s timeouts, NUM_PARALLEL=1 head-of-line blocking) — fixed via parallel=2 + bounded payloads; LANE_OK smoke 2.1s, contended classify ~82s, contended synthesis 263s."
+  backlog-spec-enrich: "ENRICH_PROVIDER=litellm since 2026-11-24 (ops-1037/OPS-1316) — idc03 4x/day spec-draft job rides OpenAI /v1/chat/completions via litellm_chat.py with the chaba virtual key (env_file litellm-chaba.env, tags service/job=backlog-spec-enrich route=spec_draft); default model gemini-3.5-flash-lite real-name chain, ENRICH_MODEL accepts any gateway model_name (ollama-qwen38b-kkmac = free local). gemini_rest direct path kept as fallback (ENRICH_PROVIDER=gemini, or automatic on failed litellm reply for gemini-* models). Smoke-verified live 2026-11-24."
 
 batch_opt_in:
   how: >-
@@ -249,24 +342,46 @@ free_lane_aliases:
   # whitelists updated same day.
   openrouter_free:  # verified through opencode host-health shadow fixture
     - or-free-nemotron-ultra   # nvidia/nemotron-3-ultra-550b-a55b:free, 1M ctx — PASS 26s
-    - or-free-north-code       # cohere/north-mini-code:free — PASS 36s
     - or-free-nemotron-35      # nvidia/nemotron-3.5-lightning:free — PASS 82s
     - or-free-nemotron-nano    # pre-existing: nemotron-3-nano-omni-30b reasoning:free
-    - or-free-gemma31b         # pre-existing: google/gemma-4-31b-it:free
-  cloudflare_workers_ai:       # deployed, NOT yet opencode-verified
+    - or-free-gemma31b         # pre-existing: google/gemma-4-31b-it:free (400 invalid-key on paid OR key 2026-11-20)
+  removed_2026_11_20:
+    - or-free-north-code       # cohere/north-mini-code:free — 404 "no provider serves this model anymore" on OpenRouter
+    - gemini-2.5-flash-free    # free Gemini key: 404 "no longer available to new users" for 2.5 family
+    - gemini-2.5-flash-lite-free # free Gemini key: 404 "no longer available to new users" for 2.5 family
+  openrouter_paid:
+    # paid OR routes — explicit-call only, no job-class chains.
+    # 2026-11-25 (card dedicated-openrouter-key-for-bench-eval-7ff299):
+    # all paid or-* chat/model entries now ride OPENROUTER_BENCH_API_KEY
+    # ($30/wk dedicated bench key) — fleet OPENROUTER_API_KEY keeps only
+    # or-gemini-embedding-2, or-gemini-3.1-flash-image, consult-claude and
+    # the :free routes. SpendLogs proved all paid-OR spend is direct
+    # or-* alias calls by dev-class keys; chain fallback spend is zero.
+    - or-claude-fable-5.1      # anthropic/claude-fable-5.1 — paid_frontier dispatch + supervised bench lane
+    - or-gemini-3.1-pro-preview # google/gemini-3.1-pro-preview — supervised strong-model bench route
+    - or-gemini-3.5-flash       # google/gemini-3.5-flash — chat-chain OR leg + explicit calls
+    - or-gemini-3.5-flash-lite  # google/gemini-3.5-flash-lite — tool-call/chat/summary/etc OR leg + explicit calls
+    - or-gemini-2.5-flash       # DEAD upstream 2026-10-11 — stale callers only
+    - or-gemini-2.5-flash-lite  # DEAD upstream — same retirement
+    - or-deepseek-v4-flash     # deepseek/deepseek-v4-flash $0.09/$0.18 per Mtok — cheap-code-brain
+                               # bench lane (OPS-1256, 2026-11-23); added to chaba key allowlist.
+  cloudflare_workers_ai:       # deployed, opencode-verified in part
     note: >-
       OpenAI-compatible api_base .../accounts/<acct>/ai/v1, CF_API_WORKER_TOKEN.
-      Free tier = 10k neurons/day (exhausted 2026-11-13 during eval).
-      model_info context caps set from CF catalog. Known limits:
-      llama-3.3-70b ctx=24k (too small for opencode), gpt-oss-120b rejects
-      array content parts opencode sends. Retest after daily neuron reset.
+      Free tier = 10k neurons/day. model_info context caps set from the CF
+      catalog. Known limits: llama-3.3-70b ctx=24k (too small for opencode),
+      gpt-oss-120b rejects array content parts opencode sends.
+      2026-11-20: llama-3.1-8b-instruct-fp8, qwen3-30b-a3b-fp8 and
+      nemotron-3-120b-a12b deprecated upstream (410) — routes repointed and
+      renamed to llama-4-scout-17b-16e-instruct, qwen3.8-27b and
+      gemma-4-26b-a4b-it (each probed live through the gateway).
     models:
       - cf-llama-70b            # @cf/meta/llama-3.3-70b-instruct-fp8-fast (24k ctx)
-      - cf-llama-8b             # @cf/meta/llama-3.1-8b-instruct-fp8 (32k)
-      - cf-qwen3-30b            # @cf/qwen/qwen3-30b-a3b-fp8 (32k, reasoning)
+      - cf-llama4-scout         # @cf/meta/llama-4-scout-17b-16e-instruct (131k ctx)
+      - cf-qwen38-27b           # @cf/qwen/qwen3.8-27b (262k, reasoning)
       - cf-gpt-oss-120b         # @cf/openai/gpt-oss-120b (128k, reasoning)
       - cf-mistral-small        # @cf/mistralai/mistral-small-3.1-24b-instruct (128k)
-      - cf-nemotron-120b        # @cf/nvidia/nemotron-3-120b-a12b (256k, reasoning)
+      - cf-gemma4-26b           # @cf/google/gemma-4-26b-a4b-it (256k, reasoning)
       - cf-embed-m3             # @cf/baai/bge-m3 embeddings (1024d)
   not_added:
     opencode_zen: >-
@@ -281,3 +396,15 @@ verification:
   - curl -sf http://100.102.134.91:4000/health/liveliness
   - "POST /v1/chat/completions model=tool-call returns text; x-litellm-model-id header shows which upstream won"
   - "admin UI /ui shows spend per key+model; daily-ledger.py --publish refreshes the CMS page"
+
+knowledge_surface:
+  rollup: Education:LLM Providers
+  url: https://wiki.h3.gizmo-thailand.com/index.php?title=Education%3ALLM_Providers
+  leaves:
+    - Education:LLM Providers/Cloudflare Workers AI
+    - Education:LLM Providers/Gemini API
+    - Education:LLM Providers/Openrouter
+    - Education:LLM Providers/Groq
+    - Education:LLM Providers/Ollama
+  tracking_card: OPS-0018
+  note: "Filed 2026-11-20. Wiki leaves reconciled with this file's 2026-11-20 CF route renames and or-free-north-code removal; re-verify before any route promotion."

@@ -53,6 +53,16 @@ def _act(card: dict) -> dict:
     return a if isinstance(a, dict) else {}
 
 REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO / "scripts" / "lib"))
+try:
+    from inbox_door import emit_doc, local_writable
+except ImportError:
+    def local_writable(repo):  # noqa: ANN001
+        return True
+
+    def emit_doc(doc, **kw):  # noqa: ANN001, ANN003
+        return "api-failed"
+
 CARD_DIR = REPO / "docs/ssot/kanban/cards"
 INBOX = REPO / "docs/ssot/focus-inbox"
 
@@ -185,7 +195,9 @@ def check_cards():
 def write_alerts(finds):
     """One inbox file per non-empty class — deduped by name so a
     persistent violation rewrites rather than stacks."""
-    INBOX.mkdir(parents=True, exist_ok=True)
+    writable = local_writable(REPO)
+    if writable:
+        INBOX.mkdir(parents=True, exist_ok=True)
     names = {
         "R1": "buttonless-requests", "R2": "bad-suggested-option",
         "R3": "dup-open-requests", "R4": "bad-option-action",
@@ -216,6 +228,10 @@ def write_alerts(finds):
             "ownership": {"owner": "tony", "locked": False, "lock_reason": ""},
             "source": {"date": today},
         }
+        if not writable:
+            res = emit_doc(doc, session="board-invariants")
+            wrote.append(f"inbox-api-{res}:{slug}")
+            continue
         p = INBOX / f"invariant-{slug}.yml"
         card_io.atomic_write_text(p, yaml.safe_dump(
             doc, sort_keys=False, width=120))

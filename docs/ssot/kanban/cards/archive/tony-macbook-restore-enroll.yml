@@ -1,0 +1,412 @@
+id: tony-macbook-restore-enroll
+title: 'tony-macbook: restore KK files + enroll runner-agent'
+column: done
+updated: 2026-11-26 19:41
+brief: 'Tony approved on tony-macbook-ubuntu: restore KK files into ~/, enroll runner-agent lane (cap 2, cpu/dev/portable
+  per hardware doc). Skip redis — no backup exists. Backup source: macOS backup recovered during rejoin (see jobs/infrastructure/2026-10-11-tony-macbook-ubuntu-rejoin.yml).'
+priority: medium
+tags:
+- macbook
+- fleet
+- restore
+spec: 'ssh macbook (tony@100.77.76.112). (1) Locate the KK files in the macOS backup used by the rejoin session
+  (check ~/backup* or the path recorded in the rejoin jobs record / dispatch transcript); rsync into ~ on tony-macbook,
+  preserving structure. (2) Install the runner-agent lane: follow the pattern in scripts/board/runner-agent.py systemd-user
+  units on tony-omen/tony-dell — cap 2, labels cpu/dev/portable; enroll in fleet inventory (ssot.host-roles.yml
+  + audit-hosts.py if it lists runners). (3) Verify: runner claims a queued card OR reports capacity in kanban-dispatch;
+  files present in ~. Do NOT install redis (no backup). Report what was restored vs skipped in comms.'
+action:
+  type: dispatch
+  status: done
+  lane: devin
+  lane_source: fallback
+  runner: tony-omen
+  attempts: 1
+  result: 'exit=0 e-20261124-150522-ssh-macbook-tony-100-77-76-112.md`, and full report in card comms. | devin-task-20261124-150522-ssh-macbook-tony-100-77-76-112.service:
+    Consumed 1min 33.715s CPU time over 22min 35.048s wall clock time, 889.1M memory peak.'
+  verified: true
+  sweep:
+    stale_running: 2026-11-24 15:38
+    dirty: 1
+    close_held: 2026-11-24 15:39
+comms:
+- at: 2026-10-11 08:05
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-11 08:31
+  from: devin
+  text: 'SETUP ASSESSMENT (omen+dell → cherry-pick). HW: i7-6700HQ/16G/228G(7%), battery laptop — offload/burst
+    node, never a hard dependency. INSTALL: runner-agent+devin CLI+node (dispatch toolchain), gcr-ssh-agent, mddb-tunnel,
+    barrier-client (desk sharing), playlive/CDP headless (now x86_64-capable fallback browser), devin-cleanup.timer
+    pattern. SKIP: cast-*/gev-* (omen display role), board-api/monitoring/postgres/redis/weaviate/ada-ha/HA (dell
+    control-plane + stateful always-on), gpu-queue/ollama (no'
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: SYS-0452'
+- at: 2026-10-11 08:35
+  from: devin
+  text: ref-addressable check — posted via SYS-0452 (resolves to tony-macbook-restore-enroll)
+- at: 2026-10-11 15:10
+  from: devin
+  text: 'ONBOARDING RUN (on-host session). DONE: ssh mesh both directions (pubkey pushed to dell/omen/idc02/idc03/mn01,
+    hostkeys scanned, self-auth; macbook removed from ssh-mesh-sync EXCLUDE + added to host-capacity hosts); install-hooks.sh
+    armed; node v22.20.0 user-space; devin-dispatch+watch+prune + repos.conf; runner-agent enrolled cap2 cpu,dev,portable
+    in runner_fleet; ~/.config/devin/mcp_config.json = 19 servers satellite-style (command-type re-exec on dell
+    over ssh, URL-type direct, mddb repointed idc01->idc03 — also fixed dell''s stale entry); session scripts +
+    hygiene timers (cleanup/session-prune/dispatch-watch/ dispatch-prune) + watchdog cron; ~/.config/secrets seeded
+    (ha-michael-dev.env); playlive-macbook-tunnel on dell disabled (dead CDP target, per rejoin job). PENDING-TONY:
+    `devin auth login` (session tokens don''t port — CLI says not-logged-in on identical creds), TONY-WIFI join,
+    ufw, CRD pairing code (card tony-macbook-crd). PENDING-WORK: podman for container tasks, KK files restore still
+    untouched. Standard procedure now lives at docs/kb/new-host-onboarding.md (procedures id: new-host).'
+- at: 2026-10-11 16:30
+  from: devin
+  text: 'VERIFY PASS on the 15:10 onboarding claims + extras. Verified live: node v22.20.0, runner-agent.timer firing
+    clean, all ssh edges OK (dell/omen/idc02/idc03/mn01), mcp_config present (19 servers). ADDED: michael-ha ssh
+    edge (root user + macbook key appended to add-on authorized_keys — verified `ha` host reachable); github deploy
+    key for this host + origin repointed to git@github.com (previously only a non-pushable dell-checkout remote);
+    removed a stray duplicate ~/.codeium/windsurf/mcp_config.json (real config is ~/.config/devin/mcp_config.json);
+    HK SoundSticks 4 BT paired+trusted+verified-as-sink; dock MST displays verified (PHL 276E7 + DELL P2425H both
+    enabled 1080p, layout in monitors.xml). STILL TONY: devin auth login (interactive), ufw (sudo), TONY-WIFI when
+    off-dock.'
+- at: 2026-10-13 19:37
+  from: devin
+  text: 'location model (from ssid-location-profiles): host location auto-detected via SSID profiles in ssot.health.yml
+    (home: TONY-WIFI/_5G/_2.4G). mnhome needs NO entry — mn01 LAN != tony-dell local, all access stays tailnet (decision,
+    not a fix). Displays: monitors.xml auto-persists per monitor-set (Philips 276E7 + Dell P2425H docked verified
+    10-11) — nothing manual to save.'
+- at: 2026-10-26 11:20
+  from: devin
+  text: Tony clarified on 2026-10-25 that Barrier KVM is no longer needed while working from MacBook. Do not install
+    the planned `barrier-client` on MacBook; that spec line is superseded. Keep the separate Dell CRD/physical-seat
+    helpers out of this change.
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:10
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:24
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:41
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:44
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:24
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:15
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:16
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:21
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:08
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:02
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:05
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:46
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:07
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:20
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:18
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:07
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:08
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:24
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:40
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:08
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 15:01
+  from: chaba
+  text: classified as devin (fallback conf 0.23)
+- at: 2026-11-24 15:01
+  from: tony
+  text: queued for processing
+- at: 2026-11-24 15:02
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.63 > 0.85)'
+- at: 2026-11-24 15:02
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 15:03
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 15:03
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.39 > 1.0)'
+- at: 2026-11-24 15:03
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.07 > 0.85)'
+- at: 2026-11-24 15:04
+  from: tony-omen
+  text: claimed
+- at: 2026-11-24 15:05
+  from: chaba
+  text: started devin-task-20261124-150522-ssh-macbook-tony-100-77-76-112 on tony-omen (dispatch)
+- at: 2026-11-24 15:05
+  from: chaba
+  text: 'primer injected 8 lesson(s): [chaba-jobs-dispatcher-dead-fleet-wide-di-765e5b] [verify] OPS-0790 close-out
+    (T; [devin-session-audit-2026-10-29] Resume 2026-11-20 18:2x ICT on tony-macbook: re; [devnest-queue-consolidation]
+    VERIFY COMPLETE (attempt 2, tony-omen). Done-condi; [tony-macbook-restore-enroll] SETUP ASSESSMENT (omen+dell
+    → cherry-pick). HW: i7; Check `sha256sum` of BOTH `~/.local/bin/runner-agent` and `<exec checkout>/scrip; [devin-session-audit-2026-10-29]
+    AUD-0973 independent re-chec'
+- at: 2026-11-24 15:24
+  from: devin
+  text: 'Progress: ssh mesh to tony-macbook restored (omen/dell dedicated keys had been dropped from authorized_keys
+    — re-added + ran ssh-mesh-sync; mn01 gained missing Host stanza). Runner-agent verified LIVE: installed sha
+    == origin/master 52cbc072, cap3/gate0.8/labels macbook,local-8c,always-home, claiming cards now (drift defer
+    healed). KK files BLOCKED: ubuntu-usb stick with macbook-backup-2026-10-10 not attached to any reachable host
+    — raising request.'
+- at: 2026-11-24 15:25
+  from: devin
+  text: 'raised request kk-files-restore-is-blocked-on-the-backu-27b870: KK-files restore is blocked on the backup
+    media: the ubuntu-usb stick holding home/tony/macbook-backup-2026-10-10 (23G k'
+- at: 2026-11-24 15:27
+  from: devin
+  text: 'FINAL: (1) KK files — BLOCKED, nothing restored: the ubuntu-usb stick with home/tony/macbook-backup-2026-10-10
+    (23G kkkakk home) is attached to no reachable host (checked macbook/dell/omen/mn01/idc02/idc03/kk-mac; no copy
+    on macbook disk, restic is config-tier only). Board request kk-files-restore-is-blocked-on-the-backu-27b870
+    asks Tony to plug in the stick + pick restore scope (recommended: preserve backup top-level structure into ~).
+    (2) Runner-agent — VERIFIED LIVE, no install needed: sha256'
+- at: 2026-11-24 15:38
+  from: tony-omen
+  text: 'finished (ok): exit=0 e-20261124-150522-ssh-macbook-tony-100-77-76-112.md`, and full report in card comms.
+    | devin-task-20261124-150522'
+- at: 2026-11-24 15:38
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 15:38
+  from: chaba
+  text: 'session-end checkpoint 09e62da6: 3 leftover file(s) committed'
+- at: 2026-11-24 15:38
+  from: chaba
+  text: banked 292 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 15:38
+  from: chaba
+  text: pushed dispatch/20261124-150522-ssh-macbook-tony-100-77-76-112 to origin
+- at: 2026-11-24 15:38
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 75.4s)
+- at: 2026-11-24 15:38
+  from: chaba
+  text: auto-merged c373b3bb (dispatch/20261124-150522-ssh-macbook-tony-100-77-76-112) → origin/master
+- at: 2026-11-24 15:38
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 15:38
+  from: chaba
+  text: 'merge-sweep: devin-task-20261124-150522-ssh-macbook-tony-100-77-76-112 no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-11-24 15:38
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261124-150522-ssh-macbook-tony-100-77-76-112 on tony-omen still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-24 15:39
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''kk-files-restore-is-blocked-on''] block close)'
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 18:43
+  from: tony
+  text: 'answered kk-files-restore-is-blocked-on-the-backu-27b870: proceed'
+- at: 2026-11-24 18:43
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-24 18:54
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:48
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:58
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:53
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:55
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+ref: SYS-0452
+claim:
+  since: 2026-11-24 15:04
+requests:
+- id: kk-files-restore-is-blocked-on-the-backu-27b870
+  ask: 'KK-files restore is blocked on the backup media: the ubuntu-usb stick holding home/tony/macbook-backup-2026-10-10
+    (23G kkkakk home + 211M Shared, per the rejoin job record) is not attached to tony-macbook or any fleet host
+    — checked lsblk/lsusb on macbook, tony-dell, tony-omen, mn01, idc02, idc03 and diskutil on kk-mac; no ~/backup*
+    copy exists on the macbook disk either. Please plug the stick into the macbook (or any fleet host — I can pull
+    from there). Also confirm restore scope: (a) RECOMMENDED — rsync the backup tree into ~/ preserving its top-level
+    structure as stored (e.g. lands as ~/kkkakk/... + ~/Shared/ or whatever the stick layout is), never overwriting
+    existing ~ files; (b) merge the kkkakk home contents directly into ~ — risks clobbering tony''s .ssh/.config,
+    not recommended; (c) user dirs only (Documents/Desktop/Pictures/Music/Movies/Downloads). Redis stays skipped
+    per spec (no backup exists).'
+  status: answered
+  at: 2026-11-24 15:25
+  from: devin
+  options:
+  - proceed
+  - hold
+  answer: proceed
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 18:54
+  note: verified — evidence checks green, closing itself

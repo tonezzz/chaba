@@ -14,7 +14,7 @@
 set -euo pipefail
 
 REPO=$(cd "$(dirname "$0")/../.." && pwd)
-DEV_URL="https://idc02.taila0626a.ts.net:8124"
+DEV_URL="https://mn01.taila0626a.ts.net:8124"
 HA_URL="http://michael-ha:8123"
 DASH="tony-test"
 VIEW="${1:?usage: promote-view.sh <view> [--map ...] [--first|--after <path>] [--no-commit]}"
@@ -32,7 +32,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-set -a; source ~/.config/secrets/ha-michael-dev.env; set +a
+set -a; source ~/.config/secrets/ha-mn-ha-dev.env; set +a
 export SRC_TOKEN="$HASS_TOKEN"
 export DST_TOKEN="$(cat ~/.local/share/home-assistant-michael/ha-token)"
 

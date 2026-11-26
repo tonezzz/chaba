@@ -1,0 +1,101 @@
+title: Runner-agent drift recurrence — retire idc02's stale ada-ocb converge timer
+subtitle: two nightly converges fought each other; the stale one deployed an old
+  runner-agent fleet-wide after the canonical converge. Disabled the stale timer
+  and re-converged all 7 Linux hosts from the pinned source.
+icon: radar
+
+date: 2026-11-26
+card: timer-alert-idc02-ada-ocb-agent-runner-converge
+related_card: runner-tooling-drift-recurs-installed-ru-3aad1e
+status: deployed
+
+context:
+  symptom: "2026-11-26 03:52-03:56 board cards deferred on every host with
+    'installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/
+    scripts/board/runner-agent.py'. Installed hash 8c28da6b4922a207 on all 7
+    Linux hosts vs pin/repo 1514c75c4679a01b; the installed copy was missing the
+    RUNNER_WT_SWEEP_S / worktree-GC features added 2026-11-25."
+  root_cause: "Two nightly ansible converges targeted the same installed file.
+    tony-dell's runner-agent-converge.timer (03:34, committed
+    ansible/playbooks/deploy-runner-agent.yml) deployed the pinned source.
+    idc02's ada-ocb-agent-runner-converge.timer (03:45 + RandomizedDelaySec=300,
+    last run 03:47:44) called an UNTRACKED playbook
+    (/home/tony/CascadeProjects/ada-ocb/ansible/playbooks/agent-runner.yml) in a
+    stale feature-branch checkout (791a3d33f3, ada/fleet-mcp-inventory-report)
+    whose scripts/board/runner-agent.py hashes 8c28da6b4922a207. That run
+    finished 03:48:46 and overwrote the good deploy on every host."
+  misleading_stamp: "the legacy playbook stamps
+    ~/.local/share/runner-agent/installed-version with the controller checkout's
+    git HEAD (sha=791a3d33f3), not a content hash — it looked authoritative but
+    described the wrong repo. Current runner-agent._self_update() compares mtime,
+    not this stamp, so the stamp is informational only."
+  consumer_impact: "verify brake (>10 verify cards in review) had already stalled
+    dispatch; that was cleared separately (7 dispatch branches landed, 7 cards
+    closed, 4 empty dispatches held to backlog). Drift defers were the second
+    blocker and are resolved here."
+
+changes:
+  - "ansible/playbooks/disable-legacy-runner-converge.yml — new idempotent playbook
+    (hosts: idc02, scope=user systemd, explicit XDG_RUNTIME_DIR/DBUS, assert
+    is-enabled == disabled). Committed as 08e42a5f04d."
+  - "idc02: ada-ocb-agent-runner-converge.timer stopped and disabled; verified
+    `is-enabled` -> disabled, `is-active` -> inactive."
+  - "docs/ssot/infrastructure/ssot.audit.hosts.yml — idc02 known_failed entry for
+    ada-ocb-agent-runner-converge.service updated from the old 216/GROUP reason
+    to the retirement reason."
+  - "Fleet: canonical deploy-runner-agent.yml run with explicit --limit over
+    idc03, idc02, mn01, tony-dell, tony-omen, tony-macbook, con01; all 7
+    REDEPLOYED and the restart handler fired."
+
+procedure:
+  - "Step 1 locate: grep found deploy-runner-agent.yml as the committed canonical
+    playbook; the competing agent-runner.yml was untracked."
+  - "Step 2 confirm: ansible inventory baseline/vps + SSOT; all 7 Linux hosts;
+    kk-mac excluded (macos group, own launchd + sync-runner-tools path)."
+  - "Step 3 diagnose: per-host sha256 of installed copy vs repo copy vs manifest
+    pin; journal + installed-version stamp traced the 03:47 overwrite."
+  - "Step 4 preflight: disable play --check --diff --limit idc02 -> 0 unreachable,
+    0 failed, 1 changed. Canonical play --check -> 7/7 would redeploy, 0 failed."
+  - "Step 5 approval: Tony approved 'Disable stale timer + converge' on the
+    approval card; service restarts named explicitly."
+  - "Step 6 backup: 20261126-084041 sibling copies
+    ~/.local/bin/runner-agent.bak-20261126-084041 and installed-version.bak-* on
+    all 7 hosts; unit copies in
+    idc02:~/.config/systemd/user/legacy-converge-backup-20261126-084041/."
+  - "Steps 7-8 converge + verify: see verification below."
+  - "Step 9 evidence: this job file + board comment; lesson carried into the
+    ansible-first skill (mtime guard and dual-converge caveat)."
+
+verification:
+  - "Post-run hash sweep: installed = checkout = pin 1514c75c4679a01b on all 7
+    hosts (idc03, idc02, mn01, tony-dell, tony-omen, tony-macbook, con01)."
+  - "Idempotency: canonical play --check --diff --limit <7 hosts> -> changed=0 on
+    all 7, 0 unreachable, 0 failed; each host reported in-sync."
+  - "Consumer proof: /queue went from 2 queued / 0 claimed to 0 queued / 2 claimed
+    — lesson-polish-run and tony-macbook-daytime-runner claimed on idc02 at
+    08:41 and 08:42 with no new drift defer."
+  - "Timer state: idc02 ada-ocb-agent-runner-converge.timer disabled + inactive;
+    tony-dell runner-agent-converge.timer remains enabled (next 2026-11-27 03:30)."
+
+rollback:
+  - "Restore any installed copy from ~/.local/bin/runner-agent.bak-20261126-084041
+    on the affected host (all backups hash 8c28da6b4922a207)."
+  - "Re-enable the legacy timer only after refreshing the ada-ocb checkout's
+    source to the pinned hash: systemctl --user enable --now
+    ada-ocb-agent-runner-converge.timer. Unit copies are in
+    ~/.config/systemd/user/legacy-converge-backup-20261126-084041/."
+
+residuals:
+  - "The stale ada-ocb checkout and its untracked agent-runner.yml remain on disk
+    on idc02; the timer is disabled so they are inert. Deleting them is user
+    work and was deliberately not done."
+  - "installed-version stamps still say sha=791a3d33f3 from the legacy run; the
+    canonical playbook does not write that file. Backups preserve the old stamps."
+  - "kk-mac / macOS path not exercised: kk-mac heartbeat is stale and it uses its
+    own launchd + sync-runner-tools.sh convergence."
+  - "OPS-1406 fleet-health host-parsing gap (con01/kk-mac omitted by regex) was
+    closed later on 2026-11-26 (commits e3bb2d5afaf + d71b491170e); con01 and
+    kk-mac are parsed and capability-aware again."
+  - "A later one-off debug patch to idc02's installed snapshot and con01's
+    newer-but-stale devin-dispatch were repaired separately in
+    2026-11-26-runner-tool-drift-followup.yml."
