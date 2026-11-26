@@ -1,7 +1,7 @@
 id: timer-alert-idc02-ada-ocb-agent-runner-converge
 title: Timer ada-ocb-agent-runner-converge on idc02 failing
 column: done
-updated: 2026-11-26 03:59
+updated: 2026-11-26 08:45
 priority: high
 tags:
 - timer-alert
@@ -97,6 +97,13 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 08:45
+  from: tony
+  text: '[ansible][2026-11-26] RECURRENCE CLOSED: the nightly drift was not a new code defect — idc02 ada-ocb-agent-runner-converge.timer
+    (03:45, untracked agent-runner.yml in stale ada/fleet-mcp-inventory-report checkout) overwrote the canonical
+    03:34 chaba converge from 791a3d33f3 with installed 8c28da6b4922a207 fleet-wide. Per Tony approval, disabled
+    that timer via new ansible/playbooks/disable-legacy-runner-converge.yml (08e42a5f04d), backed up 7 installs
+    at 20261126-084041, re-ran deploy-runner-agen'
 spec: Investigate and resolve the failure of the timer ada-ocb-agent-runner-converge.service on host idc02, which
   exited with a non-zero code on 11-25 03:48. Based on recent comms from con01, the installed runner-agent drifted
   from the chaba repo script at /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py and needs to be redeployed.
