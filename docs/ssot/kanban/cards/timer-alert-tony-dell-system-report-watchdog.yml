@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-system-report-watchdog
 title: Timer system-report-watchdog on tony-dell failing
-column: review
-updated: 2026-11-26 17:39
+column: done
+updated: 2026-11-26 18:00
 priority: high
 tags:
 - timer-alert
@@ -2106,6 +2106,16 @@ comms:
   from: chaba
   text: 'stalled-claim reaper: moved doing -> review — run reported done with no live claim — the verified gate
     owns the close decision'
+- at: 2026-11-26 18:00
+  from: devin
+  text: '[ops timer batch 18:05 +07] Root cause: deduped alert (audit-hosts/kk-mac=unreachable) exited 1 even though
+    kk-mac is reachable (ping 0% loss, ssh success from tony-dell and idc03). Applied OPS-0581 exit contract to
+    scripts/report/system-report-watchdog.py: completed checks exit 0, findings ride the board inbox; deployed tony-dell
+    + idc03 served checkout, pushed 6d84d98ef5a. Verified live tick: Result=success ("chain ok ...", "node alert
+    suppressed (dedupe)"). Closing.'
+- at: 2026-11-26 18:00
+  from: tony
+  text: closed by tony
 spec: Investigate the failing systemd user service `system-report-watchdog.service` on the host `tony-dell`, which
   has repeatedly exited with a non-zero exit code as recorded in recent timer alerts. Access the host and examine
   the journal using `journalctl --user -u system-report-watchdog.service`, consulting the CMS `timer-timeline-tony-dell`
