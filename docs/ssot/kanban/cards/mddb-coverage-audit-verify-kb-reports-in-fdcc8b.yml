@@ -1,22 +1,21 @@
 id: mddb-coverage-audit-verify-kb-reports-in-fdcc8b
 title: MDDB coverage audit — verify kb/reports indexing
 column: backlog
-updated: 2026-11-26 04:06
+updated: 2026-11-26 20:35
 ref: AUD-1186
 comms:
 - at: 2026-11-08 12:56
   from: devin
-  text: ' spec: Rules declare MDDB semantic search the PRIMARY doc-finding path, but coverage is unverified.
-    Audit: diff docs/kb/*.md (419) + docs/reports (29) + ssot docs against MDDB collections (chaba-lessons,
-    ada-cms-pages, ssot-* etc). Expose silent gaps — agents fall back to grep without knowing coverage
-    is partial. ALSO: mddb leader stats endpoint (100.102.134.91:11023/v1/stats) returned empty on 2026-11-08
-    — check service health first. done_when: coverage report (indexed/missing per collection) +'
+  text: ' spec: Rules declare MDDB semantic search the PRIMARY doc-finding path, but coverage is unverified. Audit:
+    diff docs/kb/*.md (419) + docs/reports (29) + ssot docs against MDDB collections (chaba-lessons, ada-cms-pages,
+    ssot-* etc). Expose silent gaps — agents fall back to grep without knowing coverage is partial. ALSO: mddb leader
+    stats endpoint (100.102.134.91:11023/v1/stats) returned empty on 2026-11-08 — check service health first. done_when:
+    coverage report (indexed/missing per collection) +'
 - at: 2026-11-12 00:06
   from: devin
-  text: 'Progress this session: backup coverage extended to ops/cms/embed in mddb-backup.sh (verification
-    run pending); ops db compacted 31G->2.6G via proc B; prune-old-docs enumeration unblocked by compaction.
-    Remaining coverage gaps: idc02 mddb-ops instance on 11025 has no backup; semantic tier (JSON dumps)
-    still only on tony-omen ada-memory-backup.timer.'
+  text: 'Progress this session: backup coverage extended to ops/cms/embed in mddb-backup.sh (verification run pending);
+    ops db compacted 31G->2.6G via proc B; prune-old-docs enumeration unblocked by compaction. Remaining coverage
+    gaps: idc02 mddb-ops instance on 11025 has no backup; semantic tier (JSON dumps) still only on tony-omen ada-memory-backup.timer.'
 - at: 2026-11-14 14:14
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -113,8 +112,8 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-23 15:29
   from: ada
-  text: 'answered the-runner-agent-scripts-insta-c69502: ★ Redeploy runner-agent to all affected hosts
-    (idc03, tony-macbook, idc02, tony-dell) using scp from the chaba repo'
+  text: 'answered the-runner-agent-scripts-insta-c69502: ★ Redeploy runner-agent to all affected hosts (idc03, tony-macbook,
+    idc02, tony-dell) using scp from the chaba repo'
 - at: 2026-11-23 15:29
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
@@ -232,24 +231,27 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-26 19:23
   from: backlog-spec-enrich
-  text: skipped — The card notes indicate that multiple runner-agents are deferred due to script drift
-    across hosts, meaning the underlying runner infrastructure requires updating before this MDDB coverage
-    audit can be reliably executed.
+  text: skipped — The card notes indicate that multiple runner-agents are deferred due to script drift across hosts,
+    meaning the underlying runner infrastructure requires updating before this MDDB coverage audit can be reliably
+    executed.
+- at: 2026-11-26 20:35
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: the-runner-agent-scripts-insta-c69502
-  ask: The runner-agent scripts installed across hosts idc03, tony-macbook, idc02, and tony-dell have
-    drifted from the repository version at /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py,
-    causing dispatch defers. We need to decide how to remediate this runner-agent drift before proceeding
-    with the MDDB coverage audit.
+  ask: The runner-agent scripts installed across hosts idc03, tony-macbook, idc02, and tony-dell have drifted from
+    the repository version at /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py, causing dispatch defers.
+    We need to decide how to remediate this runner-agent drift before proceeding with the MDDB coverage audit.
   options:
-  - ★ Redeploy runner-agent to all affected hosts (idc03, tony-macbook, idc02, tony-dell) using scp from
-    the chaba repo
+  - ★ Redeploy runner-agent to all affected hosts (idc03, tony-macbook, idc02, tony-dell) using scp from the chaba
+    repo
   - Postpone the MDDB coverage audit until runner-agent deployment is handled separately
   - Scope the audit card exclusively to hosts that do not currently report runner-agent drift
   status: answered
   at: 2026-11-22 19:20
   from: backlog-spec-enrich
   escalated_at: 2026-11-23 07:36
-  answer: ★ Redeploy runner-agent to all affected hosts (idc03, tony-macbook, idc02, tony-dell) using
-    scp from the chaba repo
+  answer: ★ Redeploy runner-agent to all affected hosts (idc03, tony-macbook, idc02, tony-dell) using scp from the
+    chaba repo
 awaiting_action: true
