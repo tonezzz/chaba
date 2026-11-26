@@ -1,7 +1,7 @@
 id: dispatch-zero-commit-sessions-epidemic
 title: dispatch sessions produce zero commits at high rate — root cause
 column: doing
-updated: 2026-11-26 14:06
+updated: 2026-11-26 14:37
 spec: 'OPS-0894 fixed the closeout gate (empty branches no longer auto-close — held in review correctly). The SOURCE
   defect is unfixed and burning dispatches: 10+ sessions Oct 26-27 across hosts (tony-macbook, idc02, mn01) and
   lanes (deepseek-v4-pro, others) produced ZERO commits — pushed branch head = plain master commit, service often
@@ -354,6 +354,13 @@ comms:
     session produced no commits — the branc; Dispatch branches that sit unmerged rot fast: master gained lane_source
     stamping; [cline-nest-model-evaluation] session produced no commits — the branch head is j; [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f]
     session pro'
+- at: 2026-11-26 14:37
+  from: devin
+  text: 'ROOT CAUSE FOUND: litellm/* lane model leaked onto `devin --model`. Pre-DEV-0958 runner-agent stamped action.model=LANE_MODELS[lane]
+    (litellm alias) executor-blind → devin -p --model litellm/... → "Error: Unknown model" exit 1 in <3s → exit_code=1,
+    no transcript, no sessions.db row, branch head==base. Smoking gun: unit journal tail ".6, deepseek-v4-pro" was
+    the end of devin Available-models list. Reproduced live on mn01. Only lane-classified cards falling through
+    to devin path died = coin flip. '
 claim:
   since: 2026-11-26 14:05
 review_kind: verify
