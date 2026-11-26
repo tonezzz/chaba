@@ -35,6 +35,9 @@ comms:
 - at: 2026-11-26 20:47
   from: chaba
   text: 'TRIAGE 2026-11-26: written bounded spec and armed for dispatch (lane=devin).'
+- at: 2026-11-26 20:47
+  from: tony
+  text: queued for processing
 spec: 'Fix chaba-board-api on idc03 wedging its accept loop (2026-11-26 08:56-09:17Z: main thread deadlocked in
   Thread.start()->_started.wait(); every door 503/504 until a manual systemctl --user restart). In scripts/board/board-api.py,
   make handler-thread spawn failures non-fatal and add a watchdog that detects an unresponsive accept loop and restarts
@@ -43,7 +46,8 @@ spec: 'Fix chaba-board-api on idc03 wedging its accept loop (2026-11-26 08:56-09
   the chaba gate suite passes, and the outcome records the deploy note.'
 action:
   type: dispatch
-  status: idle
+  status: queued
   lane: devin
   attempts: 0
   repo: chaba
+claim: {}

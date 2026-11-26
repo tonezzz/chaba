@@ -1,7 +1,7 @@
 id: gemini4-interactions-text-agent-eval-2026-11-26
 title: Evaluate Gemini 4 + Interactions API for a stateful text agent
 column: review
-updated: 2026-11-26 20:44
+updated: 2026-11-26 20:47
 brief: Compare gemini-4-hydrogen/neon via the Interactions API against the current 3.x stateless text path on a
   small multi-turn tool-and-recall task set; measure task accuracy, token growth and latency.
 priority: medium
@@ -129,14 +129,30 @@ comms:
     quota: hydrogen 20/day free exhausted, neon/argon/carbon zero free quota, PAID key still monthly-capped (re-verified).
     Deliverables: docs/ssot/jobs/devnest/2026-11-26-gemini4-interactions-text-agent-eval.yml, reports/gemini-interactions-eval-2026-11-26.{md,json,-gen-rerun,-stateful},
     harn'
+- at: 2026-11-26 20:47
+  from: mn01
+  text: 'finished (ok): exit=0  supply a gemini-4-entitled key); no key/billing/gateway/production changes were
+    made. | devin-task-20261126-1918'
+- at: 2026-11-26 20:47
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-26 20:47
+  from: chaba
+  text: 'session-end checkpoint abec4f26: 1 leftover file(s) committed'
+- at: 2026-11-26 20:47
+  from: chaba
+  text: banked 799 outcome lesson(s) → devin-handoff bank
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: mn01
   attempts: 1
+  result: 'exit=0  supply a gemini-4-entitled key); no key/billing/gateway/production changes were made. | devin-task-20261126-191819-read-only-eval-on-idc03-with-g.service:
+    Consumed 54.294s CPU time over 1h 26min 31.325s wall clock time, 652.7M memory peak.'
+  verified: false
 claim:
   since: 2026-11-26 19:17
 review_kind: verify
