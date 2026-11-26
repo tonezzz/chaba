@@ -1,7 +1,7 @@
 id: audit-miss-unlanded-oct06-dispatch-artifacts
 title: Audit unlanded Oct 6 dispatch artifacts on Dell mirror
 column: doing
-updated: 2026-11-26 21:31
+updated: 2026-11-26 21:48
 brief: Three unique outputs from the Oct 6 audit were found only as untracked files in tony-dell's frozen chaba-tony-dell
   mirror; origin/master does not contain them.
 priority: medium
@@ -257,6 +257,13 @@ comms:
     e7c564f2 content present via later merge) — outcome MD redundant. (2) service-name-indirection outcome MD is
     a summary of the inventory YAML — redundant once YAML lands. (3) inventory YAML still unlanded; PR #196 open,
     CI had failed on 4 unrelated missing-title files now FIXED on master. Updating PR branch, then merge if green.'
+- at: 2026-11-26 21:48
+  from: devin
+  text: 'DONE. Reconciled all three Oct 6 artifacts: (1) GEV verify-after-act outcome MD — redundant, all 6 deliverables
+    already on master (runbook, job yml, gev-cast-verify.mjs, ssot.apps.gev/vcast + runbooks registry; content landed
+    via later merge, only ada-pi→ada-voice rename diff). (2) service-name-indirection outcome MD — summary of the
+    inventory YAML, redundant once YAML lands; OPS-0124 archived card already carries outcome. (3) tailnet-ip-indirection-inventory
+    YAML — SALVAGED: was untracked under'
 review_kind: verify
 claim:
   since: 2026-11-26 21:18
