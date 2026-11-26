@@ -1,7 +1,7 @@
 id: ansible-disk-headroom-alert
 title: 'Ansible audit: disk headroom alert'
 column: done
-updated: 2026-11-26 20:12
+updated: 2026-11-26 20:38
 spec: 'Read-only ansible disk-headroom detected CRIT/warn/unreachable mounts. Hosts: tony-dell. Report dir: reports/ansible-benchmark/disk/.
   No remediation performed.'
 action:
@@ -58,3 +58,7 @@ comms:
     (57e24d03ef..a3790c494a). Live tony-dell header remains `cache-control: no-store`; root still 64% used / 76G
     free. The tony-dell served checkout keeps its local copy of the same edit plus its host-local or-panel route;
     a future pull there may conflict on that file — reconcil'
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
