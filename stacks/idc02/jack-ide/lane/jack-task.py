@@ -49,13 +49,14 @@ REPOS_ENV = "JACK_IDE_REPOS_CONFIG"
 GITENV_ENV = "JACK_IDE_GIT_ENV"
 TIMEOUT_ENV = "JACK_TASK_TEST_TIMEOUT"
 
-LAYOUT_DIRS = ["repos", "worktrees", "shared", "incoming", "outputs"]
+LAYOUT_DIRS = ["repos", "worktrees", "projects", "shared", "incoming", "outputs"]
 BRANCH_PREFIX = "jack/"
 
 AGENTS_MD = """# Jack shared workspace — agent rules
 
 Layout: `repos/` operator-imported clones, `worktrees/` per-task worktrees,
-`shared/`, `incoming/`, `outputs/` (lane state under `outputs/lane/`).
+`projects/` ad-hoc scratch project dirs, `shared/`, `incoming/`, `outputs/`
+(lane state under `outputs/lane/`).
 
 Rules:
 - Work only inside the worktree assigned to your task.
@@ -66,6 +67,15 @@ Rules:
 - When done, leave the worktree clean (all changes committed) and report
   what you changed; the operator runs `jack-task verify|push|pr`.
 - Do not edit anything under `outputs/lane/` — that is operator state.
+"""
+
+PROJECT_README = """# {slug} — ad-hoc Jack project
+
+Scratch project directory created by `jack-task project`. Not a git repo
+and not part of the promotion lane — no verify/push/PR gates apply here.
+
+Rules still apply: never write secrets, keys, tokens, or personal files;
+keep everything inside this directory.
 """
 
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
@@ -365,6 +375,35 @@ def cmd_new(args) -> int:
     print(f"branch: {branch}  (base {info['default_branch']} @ {base_sha[:10]})")
     print("next: Jack edits + commits locally; then `jack-task verify "
           f"{slug}` → `push` → `pr`")
+    return 0
+
+
+def cmd_project(args) -> int:
+    """Create an ad-hoc scratch project dir under projects/ — the safe
+    project-create path for the OpenCode UI, which can only OPEN existing
+    directories (it has no mkdir/project-create API). Never accepts host
+    paths, never creates symlinks, never escapes the workspace root."""
+    slug = args.slug
+    if not SLUG_RE.match(slug):
+        raise SystemExit(f"bad project name '{slug}' — use [a-z0-9-]")
+    root = ws_root().resolve()
+    base = root / "projects"
+    if base.is_symlink():
+        raise SystemExit(f"{base} is a symlink — refusing to write through it")
+    base.mkdir(parents=True, exist_ok=True)
+    target = base / slug
+    resolved = target.resolve()
+    if resolved != target or not str(resolved).startswith(str(base.resolve()) + os.sep):
+        raise SystemExit(f"refusing unsafe project path {target}")
+    if os.path.lexists(target):
+        raise SystemExit(f"projects/{slug} already exists — pick another name")
+    target.mkdir()
+    (target / "README.md").write_text(PROJECT_README.format(slug=slug))
+    print(f"project ready: /workspace/projects/{slug}")
+    print("open it in the OpenCode UI via the project/folder picker — the")
+    print("directory must exist before the UI can open it (verified on")
+    print("opencode 1.19.4 and 2.4.1: location resolution returns")
+    print("LocationNotFoundError for missing dirs).")
     return 0
 
 
@@ -717,6 +756,10 @@ def build_parser() -> argparse.ArgumentParser:
     pp = sub.add_parser("push", help="push jack/<slug> via scoped token (verify must pass)")
     pp.add_argument("slug")
 
+    pj = sub.add_parser("project", aliases=["scratch"],
+                        help="create an ad-hoc project dir under projects/ (UI-safe)")
+    pj.add_argument("slug")
+
     pr = sub.add_parser("pr", help="open a GitHub PR for the pushed branch")
     pr.add_argument("slug")
     pr.add_argument("--title", default=None)
@@ -729,8 +772,9 @@ def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
     return {
         "init": cmd_init, "repos": cmd_repos, "import": cmd_import,
-        "new": cmd_new, "status": cmd_status, "verify": cmd_verify,
-        "push": cmd_push, "pr": cmd_pr,
+        "new": cmd_new, "project": cmd_project, "scratch": cmd_project,
+        "status": cmd_status,
+        "verify": cmd_verify, "push": cmd_push, "pr": cmd_pr,
     }[args.cmd](args)
 
 

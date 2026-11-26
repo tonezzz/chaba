@@ -95,7 +95,7 @@ class LaneTest(unittest.TestCase):
     def test_init_creates_layout(self):
         rc = self.mod.main(["init"])
         self.assertEqual(rc, 0)
-        for d in ("repos", "worktrees", "shared", "incoming", "outputs"):
+        for d in ("repos", "worktrees", "projects", "shared", "incoming", "outputs"):
             self.assertTrue((self.ws / d).is_dir(), d)
         self.assertTrue((self.ws / "AGENTS.md").exists())
         self.assertTrue((self.ws.parent / "tony-workspace").is_dir())
@@ -125,6 +125,36 @@ class LaneTest(unittest.TestCase):
             self.new_task("Fix_One")
         with self.assertRaises(SystemExit):
             self.new_task("fix1")  # duplicate
+
+    # -- project (ad-hoc scratch dirs) ---------------------------------------
+
+    def test_project_creates_dir_and_readme(self):
+        self.assertEqual(self.mod.main(["project", "scratch-one"]), 0)
+        d = self.ws / "projects" / "scratch-one"
+        self.assertTrue(d.is_dir())
+        self.assertIn("scratch-one", (d / "README.md").read_text())
+        # alias works too
+        self.assertEqual(self.mod.main(["scratch", "other-one"]), 0)
+        self.assertTrue((self.ws / "projects" / "other-one").is_dir())
+
+    def test_project_rejects_bad_slug(self):
+        for bad in ("../escape", "a/b", "Has_Caps", "-lead", "", "x" * 64):
+            with self.assertRaises(SystemExit, msg=bad):
+                self.mod.main(["project", bad])
+        self.assertFalse((self.ws.parent / "escape").exists())
+
+    def test_project_rejects_existing(self):
+        self.mod.main(["project", "dup"])
+        with self.assertRaises(SystemExit):
+            self.mod.main(["project", "dup"])
+
+    def test_project_refuses_symlinked_projects_dir(self):
+        outside = self.tmp / "outside"
+        outside.mkdir()
+        (self.ws / "projects").symlink_to(outside, target_is_directory=True)
+        with self.assertRaises(SystemExit):
+            self.mod.main(["project", "sneaky"])
+        self.assertFalse((outside / "sneaky").exists())
 
     # -- verify gates --------------------------------------------------------
 

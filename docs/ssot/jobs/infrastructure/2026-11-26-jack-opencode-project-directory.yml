@@ -1,0 +1,187 @@
+title: Jack OpenCode project-directory flow — diagnosis + safe create path
+subtitle: Card jack-opencode-project-directory-creation; stack found retired 2026-11-24
+icon: search
+
+planning:
+  goal: >-
+    Card jack-opencode-project-directory-creation: diagnose why the Jack
+    OpenCode UI could not create/open a project directory, determine whether
+    the UI needs a pre-existing dir and whether external_directory=deny was
+    confusing the flow, and provide a safe project-create path plus an
+    operator guide and verified smoke.
+  scope: >-
+    Repo-side deliverables only: diagnosis, jack-task project/scratch
+    command, docs updates, tests, job trail. No live idc02 changes, no
+    restore of the retired stack (separate decision).
+  success_criteria:
+    - Real state verified on idc02 (not card-note memory).
+    - UI directory semantics verified empirically on both opencode lines
+      (1.19.4 container version + 2.4.1 current host version).
+    - Safe create path that rejects host paths / escapes / symlinks.
+    - Operator guide updated; disposable-fixture smoke executed.
+  risks:
+    - Card premise stale (stack retired) — mitigated by documenting the
+      retirement prominently and raising a restore-vs-retire request.
+  resources:
+    - stacks/idc02/jack-ide/ (lane/jack-task.py, WORKSPACES.md, README.md, stack.yml)
+    - tests/jack/test_jack_task.py
+  owner: Devin
+  estimated_duration: 1 session
+  related_focus:
+    - label: kanban card jack-opencode-project-directory-creation
+      file: docs/ssot/kanban/cards/jack-opencode-project-directory-creation.yml
+
+processing:
+  status: completed
+  started_at: "2026-11-26"
+  steps:
+    - id: 1
+      label: Verify live state on idc02
+      status: done
+      notes: >-
+        jack-opencode/jack-enroll/jack-ide-network quadlets renamed
+        *.retired-20261124 in ~/.config/containers/systemd; Caddy routes
+        removed (Caddyfile comment 2026-11-24); state backed up at
+        ~/backups/retired-opencode-20261124/jack-ide (workspace EMPTY,
+        state.json 0 codes/0 sessions — Jack never really used it).
+        Live OpenCode on idc02 is now host opencode-serve.service v2.4.1
+        (tailnet :4096) + OpenChamber :3000. Same pattern on tony-dell.
+        Card's "live check" note dated 2026-11-03 — stale premise.
+    - id: 2
+      label: Verify OpenCode project/directory semantics on both versions
+      status: done
+      notes: >-
+        Ran disposable opencode serve instances (v1 = opencode-ai@1.19.4
+        exact container pin, v2 = local 2.4.1 = idc02 live version) against
+        a mock /workspace layout. Findings: UI/location resolution requires
+        an EXISTING directory (v2 GET /api/location -> LocationNotFoundError
+        for missing dirs; v1 picker browses real dirs only). No mkdir or
+        create-project API exists on either version; POST session accepts
+        nonexistent paths but UI cannot open them until the dir exists.
+        v1 project model: git repo dir -> own project (worktree=repo);
+        non-git -> single "global" project worktree="/"; linked git
+        worktrees -> parent project's "sandboxes". v2: each directory gets
+        its own projectID; inside a git repo, subdirs become subpath scopes
+        of the repo-root project.
+    - id: 3
+      label: external_directory analysis
+      status: done
+      notes: >-
+        v1 container config external_directory=deny is honored (verified
+        config loads on 1.19.4). Boundary = project worktree + sandboxes:
+        a session scoped to repos/<name> or worktrees/<repo>--<slug>
+        cannot read /workspace/AGENTS.md, shared/, incoming/, or write
+        outputs/ — breaks the lane workflow's workspace-level files.
+        Non-git/global project (worktree "/") is vacuously unaffected.
+        Live agent-run proof attempted with local ollama qwen2.5:7b —
+        model too slow (ProviderHeaderTimeoutError 300s), mechanism
+        documented instead. v2 uses permissions[] ruleset; live
+        opencode-serve config still carries the deprecated v1
+        "permission" key — flagged for verification on any restore.
+    - id: 4
+      label: Safe project-create path + docs + tests
+      status: done
+      notes: >-
+        jack-task project|scratch <slug> creates projects/<slug> —
+        SLUG_RE validated, refuses existing/symlinked-escape, writes
+        README.md marker. LAYOUT_DIRS + AGENTS_MD + WORKSPACES.md +
+        README.md + stack.yml updated (status: retired). 4 new unit tests;
+        20/20 pass.
+    - id: 5
+      label: Verified smoke (mock workspace + real opencode v2.4.1)
+      status: done
+      notes: >-
+        jack-task project smoke-220819 -> /api/location resolved it as its
+        own project -> POST /api/session opened it (UI-equivalent) ->
+        fs/write artifact.txt -> verified content on disk -> rm -rf only
+        the fixture. Live idc02 smoke impossible — stack retired; restoring
+        it is the pending operator decision.
+  decisions:
+    - label: projects/ as sixth layout dir for ad-hoc scratch work
+      rationale: >-
+        repos/ = allowlisted clones, worktrees/ = git worktrees,
+        shared/incoming/outputs have distinct semantics; a dedicated
+        projects/ keeps ad-hoc OpenCode dirs tidy and self-describing.
+      alternatives_considered: >-
+        Reuse worktrees/ or repos/ (semantic pollution); new top-level
+        was preferred over overloading existing dirs.
+    - label: Repo-side deliverable, no live restore
+      rationale: >-
+        Dispatch rails forbid deploys; the retirement was deliberate
+        (2026-11-24 census reconcile accepted it). Card spec says preserve
+        isolation properties — nothing live was touched.
+      alternatives_considered: >-
+        Restoring quadlets on idc02 — explicitly a separate decision.
+  changes:
+    - file: stacks/idc02/jack-ide/lane/jack-task.py
+      summary: Added projects/ to layout, project|scratch subcommand with escape/symlink/existing guards.
+    - file: tests/jack/test_jack_task.py
+      summary: 4 new tests (create+alias, bad slugs, existing, symlinked projects dir); init layout updated.
+    - file: stacks/idc02/jack-ide/WORKSPACES.md
+      summary: Retirement notice, projects/ in layout, "Opening a project in the OpenCode UI" verified-semantics section.
+    - file: stacks/idc02/jack-ide/README.md
+      summary: Retirement banner + ad-hoc project create snippet.
+    - file: stacks/idc02/jack-ide/stack.yml
+      summary: status retired + retired date + related card.
+
+followup:
+  verification:
+    - python3 -m unittest tests.jack.test_jack_task (20 tests, all pass)
+    - python3 -m py_compile stacks/idc02/jack-ide/lane/jack-task.py
+    - Smoke: mock /workspace + opencode serve v2.4.1 — create/open/write/verify/cleanup all passed
+  rollback_plan: >-
+    Revert this commit; lane state is additive (projects/ dir + README
+    markers only). No live state was modified anywhere.
+  handoff: >-
+    Tony decision needed (board request raised): restore the jack-ide
+    stack from repo sources + idc02 backup, or formally retire the Jack
+    IDE program. If restored: jack-task init creates projects/, redeploy
+    quadlets, re-add Caddy routes, mint fresh enroll code.
+  deferred:
+    - Live external_directory deny proof via agent run (needs a faster
+      model than local qwen2.5:7b — LiteLLM key required).
+    - v2 permissions[] migration for opencode-serve config (deprecated
+      v1 "permission" key currently in use).
+    - Whether Jack still needs a dedicated IDE at all post-retirement.
+
+report:
+  status: completed
+  completed_at: "2026-11-26"
+  summary: >-
+    Card premise was stale: the entire jack-ide container stack was
+    retired on idc02 on 2026-11-24 (with ada-code); verified live —
+    quadlets .retired-20261124, routes removed, backup holds an EMPTY
+    workspace and zero enroll state. Diagnosed the project flow anyway on
+    both opencode versions: the UI can only open EXISTING directories
+    (no mkdir/create API on 1.19.4 or 2.4.1); external_directory=deny on
+    v1 confines repo-scoped sessions away from /workspace-level files
+    (AGENTS.md, shared/, outputs/) — a real workflow break for the
+    promotion lane. Delivered the safe create path (jack-task
+    project|scratch -> projects/<slug>, escape-proof), operator docs,
+    4 new tests (20/20 pass), and a verified create->open->write->verify
+    ->cleanup smoke on a faithful mock workspace.
+  metrics:
+    - metric: opencode versions tested
+      value: 1.19.4 (container pin) + 2.4.1 (current host serve)
+    - metric: tests
+      value: 20 unittest cases passing
+    - metric: live changes
+      value: none — repo-side only
+  links:
+    - title: kanban card
+      card: jack-opencode-project-directory-creation
+    - title: stack docs
+      path: stacks/idc02/jack-ide/WORKSPACES.md
+  kb_review: []
+  lessons_learned:
+    - 'Card "live check" notes go stale — always re-verify service state on the host before treating infra as live.'
+    - 'opencode UI cannot create project dirs on ANY version — the safe path is host-side mkdir inside an allowlisted layout, then open in the picker.'
+    - 'v1 external_directory=deny + per-repo projects = agent locked out of workspace-level files; scope sessions to the workspace/global project or allowlist the shared paths.'
+
+config:
+  version: 1
+  created_at: 2026-11-26
+  last_updated: 2026-11-26
+  maintainer: Devin
+  related_files:
+    - docs/ssot/templates/job.yml
