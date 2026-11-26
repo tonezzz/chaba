@@ -4,56 +4,50 @@
 # Why: on 2026-11-26 tony-dell, devin-desktop 3.14.30833 launched, wrote a
 # fresh crash dump and died ~10s later on every attempt (watchdog restarts
 # included). Relaunching with --disable-gpu stayed healthy for minutes with
-# windows on :20 and the correct singleton socket. This build reads argv.json
-# (mainImpl.js: Rae/xae); the supported key is "disable-hardware-acceleration",
-# which calls app.disableHardwareAcceleration() — NOT "disable-gpu" (ignored).
-# The pin covers desktop/CLI/watchdog launches alike.
+# windows on :20 and the correct singleton socket.
+#
+# IMPORTANT: this product's product.json sets dataFolderName ".devin", so
+# the app reads ~/.devin/argv.json (app.disableHardwareAcceleration() via
+# "disable-hardware-acceleration": true). ~/.config/Devin/argv.json is the
+# user-data dir and is NOT read — earlier revisions wrote there by mistake.
 #
 # Usage:
 #   ansible-playbook playbooks/deploy-devin-desktop-gpu-off.yml --check --diff --limit tony-dell
 #   ansible-playbook playbooks/deploy-devin-desktop-gpu-off.yml --limit tony-dell
 #
 # No handler: takes effect on the NEXT launch; a healthy running instance is
-# not restarted. Existing argv.json is backed up before replacement.
+# not restarted. The helper preserves existing keys/comments and makes a
+# timestamped backup of argv.json when it changes.
 
-- name: Pin Devin Desktop GPU setting on selected hosts
+- name: Pin Devin Desktop software rendering on selected hosts
   hosts: all:!macos:!disabled
   gather_facts: true
   become: false
 
   tasks:
-    - name: Ensure Devin config directory exists
-      ansible.builtin.file:
-        path: "{{ ansible_facts['user_dir'] }}/.config/Devin"
-        state: directory
+    - name: Enable software rendering in the app's argv.json
+      ansible.builtin.script: ../files/devin-argv-pin.py
+      register: argv_pin
+      changed_when: "'CHANGED' in argv_pin.stdout"
+      failed_when: "'ERROR' in argv_pin.stdout or argv_pin.rc != 0"
 
-    - name: Install argv.json with software-rendering pin
-      ansible.builtin.copy:
-        content: |
-          {
-            "disable-hardware-acceleration": true
-          }
-        dest: "{{ ansible_facts['user_dir'] }}/.config/Devin/argv.json"
-        mode: "0644"
-        backup: true
-      register: argv
-
-    - name: Read back argv.json
+    - name: Read back the app's argv.json
       ansible.builtin.slurp:
-        src: "{{ ansible_facts['user_dir'] }}/.config/Devin/argv.json"
+        src: "{{ ansible_facts['user_dir'] }}/.devin/argv.json"
       register: argv_check
-      when: not ansible_check_mode
 
-    - name: Assert software-rendering pin is present
+    - name: Assert software-rendering pin is active
       ansible.builtin.assert:
         that:
-          - (argv_check.content | b64decode | from_json)['disable-hardware-acceleration'] == true
-        fail_msg: "{{ inventory_hostname }}: argv.json does not carry disable-hardware-acceleration=true"
+          - (argv_check.content | b64decode | regex_search('(?m)^\\s*"disable-hardware-acceleration"\\s*:\\s*true')) is not none
+        fail_msg: "{{ inventory_hostname }}: ~/.devin/argv.json lacks disable-hardware-acceleration=true"
       when: not ansible_check_mode
+
+    - name: Remove obsolete pin written to the user-data dir
+      ansible.builtin.file:
+        path: "{{ ansible_facts['user_dir'] }}/.config/Devin/argv.json"
+        state: absent
 
     - name: Report convergence
       ansible.builtin.debug:
-        msg: >-
-          {{ inventory_hostname }}:
-          {{ 'UPDATED' if (argv.changed | default(false)) else 'in-sync' }}
-          (backup {{ argv.backup_file | default('none') }})
+        msg: "{{ inventory_hostname }}: {{ 'UPDATED' if argv_pin.changed else 'in-sync' }}"
