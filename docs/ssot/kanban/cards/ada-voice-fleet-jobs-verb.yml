@@ -1,7 +1,7 @@
 id: ada-voice-fleet-jobs-verb
 title: 'ada-voice: wire fleet-jobs report verb — read rendered fleet-jobs-report CMS page (sub-second, never live-compute)'
 column: doing
-updated: 2026-11-26 21:16
+updated: 2026-11-26 21:29
 priority: medium
 tags:
 - ada
@@ -205,5 +205,12 @@ comms:
   text: dispatch started — contract read (chaba docs/kb/ada-report-verb-contract.md), real fleet-jobs-report page
     fetched from MDDB ada-cms-pages for shape; implementing tools.d/ada_fleet_jobs + manifest + tool_guide + scenario
     + no-network tests
+- at: 2026-11-26 21:29
+  from: devin
+  text: 'DONE — registered tool ada_fleet_jobs (tools.d drop-in, policy=read, secondary_allowed, 10s). One MDDB
+    get on ada-cms-pages/fleet-jobs-report en + freshness gate (meta.updated vs fresh_for 4h): fresh=digest, stale="as
+    of <updated>"+producer-may-be-down, missing="hasn''t been generated"+card offer. focus=spend|timers|lanes|queue|hosts;
+    parser handles both page generations; zero live paths (no aggregator/board-api/psql/ssh/systemctl). Gates: tool-lint
+    clean (73 declared), schema-check 0 viol, pytes'
 claim:
   since: 2026-11-26 21:02
