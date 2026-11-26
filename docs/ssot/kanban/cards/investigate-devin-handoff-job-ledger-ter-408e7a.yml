@@ -1,6 +1,6 @@
 id: investigate-devin-handoff-job-ledger-ter-408e7a
 title: Investigate devin-handoff job-ledger terminal writes (1176/1555 stuck running)
-column: backlog
+column: doing
 updated: 2026-11-26 19:32
 note: 'Found while building devin-dispatch-tg-watch (card implement-and-track-devin-telegram-repor-fc0dc7): the
   shared dispatch ledger in MDDB ada-ha-bank-devin-handoff has 1555 job/answer docs but 1176 still say status=running
@@ -148,6 +148,9 @@ comms:
 - at: 2026-11-26 19:32
   from: chaba
   text: 'tony-omen defers: host overloaded (5m load/core 1.56 > 0.8)'
+- at: 2026-11-26 19:32
+  from: tony-macbook
+  text: claimed
 spec: 'Investigate why the shared dispatch ledger in MDDB ada-ha-bank-devin-handoff has 1176 out of 1555 job/answer
   docs stuck with status=running, specifically examining whether mddb_job writes are failing to land due to runner-agent
   drift across hosts. Inspect the ledger docs and runner behavior to identify the root cause of missing terminal
@@ -155,7 +158,11 @@ spec: 'Investigate why the shared dispatch ledger in MDDB ada-ha-bank-devin-hand
   running status persists and addressing the write landing issue.'
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
+claim:
+  since: 2026-11-26 19:32
