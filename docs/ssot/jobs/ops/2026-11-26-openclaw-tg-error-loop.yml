@@ -1,0 +1,40 @@
+id: openclaw-tg-error-loop-local-ollama
+title: '@myChabaBot TG DM error loop — GhostRoute rotation vs dead free models'
+card: openclaw-authprofile-or-key-stale
+date: 2026-11-26
+host: tony-omen
+status: fix-applied-verified
+
+summary: >
+  The Telegram DM from @myChabaBot received one error message per hourly
+  heartbeat. Each run cycled through ~6 OpenRouter :free slugs (404/400/429)
+  for 4-5 minutes before failing. Root cause: ghostroute-watcher.service
+  (enabled, running since 2026-11-25) auto-rotates agents.defaults.model
+  across the OR :free pool on every throttle/error — 11,523 rotations by
+  23:28. Every free model is currently dead (429 free-models-per-day-high-balance
+  or 404 free version retired), so the watcher kept re-pointing config at
+  another dead slug and overwrote any manual model fix within minutes.
+
+evidence:
+  - 'journalctl --user -u openclaw-gateway.service: 21:23 and 22:23 heartbeats each retried ~6 models then sent an error to chatId 8960073266 (messageId 1730/1731).'
+  - 'Probe of 5 candidate slugs: 4x 429 free-models-per-day, 1x 404 (paid-only). deepseek/deepseek-v4.1-flash (paid) worked but was not adopted to avoid spend.'
+  - '.ghostroute-watcher-state.json rotation_count 11520 -> 11523 while manual config writes were reverted; ghostroute-watcher --daemon pid 333285 was the writer.'
+
+fix:
+  - 'Stopped + disabled ghostroute-watcher.service (manual user service; no Ansible playbook exists). Rollback: systemctl --user enable --now ghostroute-watcher.service.'
+  - 'Registered local Ollama provider in ~/.openclaw/openclaw.json: api=openai-completions, baseUrl=http://localhost:11434/v1, apiKey=ollama-local, contextWindow/contextTokens=32768 with injectNumCtxForOpenAICompat=true (native ollama adapter capped every model at n_ctx=4096, causing heartbeat context overflow).'
+  - 'agents.defaults.model = primary ollama/qwen3:8b, fallbacks ollama/llama3.2:3b and ollama/llama3.2:1b (all local, zero cost).'
+  - 'agents.defaults.heartbeat = model ollama/llama3.2:1b, isolatedSession true, lightContext true, timeoutSeconds 180, target none (internal only).'
+  - 'Backups: ~/.openclaw/openclaw.json.bak-watchfix-* and .bak-ghostroute-stop-*.'
+
+verification:
+  - 'openclaw infer model run with ~8.8K-token prompt: qwen3:8b, llama3.2:3b and llama3.2:1b all return OK (no context overflow).'
+  - 'Manual heartbeat via openclaw cron run <heartbeat-id> --wait --expect-final: status ok / completionStatus succeeded, duration ~52s.'
+  - 'Telegram outbound-send count unchanged (33 before / 33 after) and heartbeat status=skipped — no message delivered to the DM.'
+  - 'ghostroute-watcher inactive + disabled; rotation_count stable at 11523; config held across repeated reads.'
+
+tradeoff: >
+  The bot now runs on local Ollama models (free, no quota) instead of
+  OpenRouter free or paid models. User-facing replies will be lower quality
+  than a frontier model; switching to a paid OpenRouter slug requires Tony's
+  explicit budget approval.
