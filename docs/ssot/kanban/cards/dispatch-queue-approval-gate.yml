@@ -1,7 +1,7 @@
 id: dispatch-queue-approval-gate
 title: Dispatch queue approval gate (RBAC-lite) — /home/tony/ansible on idc02
 column: review
-updated: 2026-11-26 15:48
+updated: 2026-11-26 15:53
 priority: medium
 tags:
 - dispatch
@@ -152,6 +152,16 @@ comms:
   from: chaba
   text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261126-123407-follow-up-from-card-awx-aap-rb:
     3 commit(s) conflict with origin/master '
+- at: 2026-11-26 15:53
+  from: chaba
+  text: 'merge-sweep: merged e19ae1e6 (dispatch/20261126-123407-follow-up-from-card-awx-aap-rb from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261126-123407-follow-up-from-card-awx-aap-rb.md)
+    — held in review (open request(s) [''merge-conflict''] block close)'
+- at: 2026-11-26 15:53
+  from: local
+  text: 'pub milestone: card verified: dispatch-queue-approval-gate on idc03 — merged e19ae1e6 (dispatch/20261126-123407-follow-up-from-card-awx-aap-rb
+    from tony-macbook) -> origin/master — verified — merged e19ae1e6 (dispatch/20261126-123407-follow-up-from-card-awx-aap-rb
+    from tony-macbook) -> origin/master — verified — held in review (open request(s) [''merg [evt-9ebfd960326e760e]'
 action:
   type: dispatch
   status: done
@@ -162,7 +172,7 @@ action:
   attempts: 1
   result: 'exit=0  to con01/idc02/idc03 currently fail — only omen/dell (podman 5.7) can run containers. | devin-task-20261126-123407-follow-up-from-card-awx-aap-rb.service:
     Consumed 2min 28.665s CPU time over 28min 15.782s wall clock time, 2.4G memory peak.'
-  verified: false
+  verified: true
   sweep:
     dirty: 1
     conflict_sig: 0d0552553d73|docs/ssot/ssot.dev-system.assessment.yml
