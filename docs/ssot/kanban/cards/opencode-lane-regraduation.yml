@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: doing
-updated: 2026-11-26 21:18
+updated: 2026-11-26 21:19
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -495,6 +495,14 @@ comms:
     Deliverables in worktree dispatch/20261126-210219-decision-2026-11-26-tony-run-s: promotion-review 2026-11-26
     (rollback verdict), staged canary envelope s1-opsread-regrad-20261126.yaml, trail doc docs/ssot/jobs/devnest/2026-11-26-opencode-lane-s1-gate-state.yml,
     dispatch-outcome md. On answer A: demote+requalify+S0 climb then S1 watch needs Tony live.'
+- at: 2026-11-26 21:19
+  from: chaba
+  text: 'raised request job-input-opencode-lane-regraduation: Job needs your input: Proceed with demote+requalify+fresh
+    S0 climb toward your S1->S2 decision (option A), or hold (B) /'
+- at: 2026-11-26 21:19
+  from: chaba
+  text: 'needs input: Proceed with demote+requalify+fresh S0 climb toward your S1->S2 decision (option A), or hold
+    (B) / adjudicate differently (C)?'
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
@@ -572,6 +580,19 @@ requests:
     traffic)
   - C — adjudicate the Nov-25 rows differently (specify)
   suggested: 'A — proceed: demote+requalify+fresh S0 now, pause for your live watch on the S1 canary, then S2 pilot'
+- id: job-input-opencode-lane-regraduation
+  ask: 'Job needs your input: Proceed with demote+requalify+fresh S0 climb toward your S1->S2 decision (option A),
+    or hold (B) / adjudicate differently (C)?'
+  status: open
+  at: 2026-11-26 21:19
+  from: chaba
+  options:
+  - id: answer
+    label: Answer — reply in chat
+    action: none
+  - id: hold
+    label: Hold — leave blocked
+    action: hold
 action:
   type: dispatch
   status: running
