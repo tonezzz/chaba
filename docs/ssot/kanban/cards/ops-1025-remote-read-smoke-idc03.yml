@@ -852,5 +852,21 @@ comms:
     symlink mcp_debug->scripts/mcp_debug). (2) idc03 is not in ssot.mcp-debug.yml hosts (only tony_omen/tony_dell/macbook/con01)
     — live mcp_debug call returned unknown host:idc03 before any ssh. Artifact: evals/opencode-lane/out/ops-1025-remote-read-smoke-idc03.json
     (failure_class=tooli'
+- at: 2026-11-27 00:01
+  from: devin
+  text: 'raised request remote-read-path-to-idc03-is-broken-at-t-cae463: Remote-read path to idc03 is broken at
+    two layers — how to proceed? (a) register idc03 in ssot.mcp-debug.yml hosts + ins'
 claim:
   since: 2026-11-26 23:44
+requests:
+- id: remote-read-path-to-idc03-is-broken-at-t-cae463
+  ask: Remote-read path to idc03 is broken at two layers — how to proceed? (a) register idc03 in ssot.mcp-debug.yml
+    hosts + install ~/.local/bin/mcp-debug on idc03 + fix devin mcp-debug spawn (PYTHONPATH/wrapper), then retry
+    [recommended — unblocks the whole idc fleet, not just this card]; (b) accept blocker and close OPS-1025 as tooling-gap;
+    (c) other.
+  status: open
+  at: 2026-11-27 00:01
+  from: devin
+  options:
+  - proceed
+  - hold
