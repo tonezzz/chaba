@@ -1,7 +1,7 @@
 id: nest-mgr-v2-actuation
 title: Spec + pilot nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
 column: done
-updated: 2026-11-26 15:24
+updated: 2026-11-26 15:49
 brief: Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes
   eligible queued work to idle hosts — without bypassing owner/quota/leash gates. Build on the v1 census and the
   devnest-capacity-aware-dispatch lane machinery.
@@ -545,6 +545,11 @@ comms:
 - at: 2026-11-26 15:24
   from: tony
   text: closed by tony
+- at: 2026-11-26 15:49
+  from: devin
+  text: 'pub news: nest-mgr v2 actuation enabled on pilot fleet — DevNest can now self-heal — Tony approved full
+    actuation 2026-11-26 ~15:25 +07. nest-mgr moved from observer/recommend mode to guarded actuation on the three
+    pilot hosts (idc02, con01, mn0 [evt-nw-nestmgr-v2-actuation-20261126]'
 action:
   type: dispatch
   status: done
