@@ -1,7 +1,7 @@
 id: gemini-decision-1-gate-eval-2026-11-26
 title: Evaluate gemini-decision-1 as a cheap dispatch-readiness gate
 column: done
-updated: 2026-11-26 20:38
+updated: 2026-11-26 22:49
 brief: Grade calibrated noul decisions on 10 real kanban briefs against a reproducible spec-present label, measure
   confidence and token use, decide whether to replace a full-model yes/no judgment.
 priority: medium
@@ -26,5 +26,12 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 22:49
+  from: ada
+  text: 'Label review complete (Tony, 2026-11-26): both disputed briefs (ada-ha-dashboard-live-view-drift, ada-ocb-skills-wiki-education-2026-11-24)
+    confirmed READY. No label changes; 8/10 (0.80) is a true accuracy figure, not a lower bound. Confusion at p_yes>=0.5:
+    TP=3 FN=2 TN=5 FP=0; approve precision 1.0/recall 0.6, reject precision 0.714/recall 1.0. At model confidence
+    >=0.90 all 5 rejects were correct and no READY card was auto-rejected (the 2 wrong rejects were at 0.6169/0.7970).
+    Verdict stands: h'
 action:
   status: done
