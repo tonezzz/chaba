@@ -1,7 +1,7 @@
 id: ops-1025-remote-read-smoke-idc03
 title: 'OPS-1025 one-shot remote-read verification: idc02 to idc03'
 column: doing
-updated: 2026-11-27 00:04
+updated: 2026-11-27 00:10
 brief: One supervised, read-only S3 verification of the merged remote-read gates.
 priority: medium
 program: OPS-1025
@@ -77,6 +77,7 @@ action:
   sweep:
     stale_running: 2026-11-26 15:53
     zero_commit: 2026-11-26 15:53
+    dirty: 2
   runner: idc02
 ref: OPS-0245
 comms:
@@ -864,6 +865,10 @@ comms:
   from: chaba
   text: 'needs input: How should OPS-1025 proceed now that the remote-read path to idc03 is blocked at two tooling
     layers (mcp-debug spawn config + idc03 missing from the mcp-debug host registry)?'
+- at: 2026-11-27 00:10
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261126-234536-parent-ops-1025-perform-one-bo on idc02 still dirty —
+    2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 claim:
   since: 2026-11-26 23:44
 requests:
