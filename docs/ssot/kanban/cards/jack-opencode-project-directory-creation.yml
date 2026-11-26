@@ -1,7 +1,7 @@
 id: jack-opencode-project-directory-creation
 title: Make project-directory creation clear and safe in Jack OpenCode
-column: backlog
-updated: 2026-11-26 21:23
+column: doing
+updated: 2026-11-26 21:29
 brief: Jack OpenCode is healthy and /workspace is writable, but the UI cannot create/open a new project directory
   as Tony expects.
 priority: medium
@@ -23,9 +23,10 @@ spec: 'Diagnose and improve the Jack OpenCode project flow. The container may wr
   filesystem access, or restore the deleted Tony OpenCode service without a separate decision.'
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
-  attempts: 0
+  attempts: 1
+  runner: tony-dell
 note: 'Live check: jack-opencode.service and jack-enroll.service active; container uid node:node; /workspace, /workspace/repos,
   and /workspace/worktrees are writable. Existing workspace has hello, repos, worktrees, incoming, shared, outputs,
   and tony-workspace. Current likely boundary is UI/project semantics or path scope, not service health.'
@@ -314,4 +315,8 @@ comms:
 - at: 2026-11-26 21:23
   from: chaba
   text: 'idc02 defers: host overloaded (5m load/core 1.53 > 1.5)'
-claim: {}
+- at: 2026-11-26 21:29
+  from: tony-dell
+  text: claimed
+claim:
+  since: 2026-11-26 21:29
