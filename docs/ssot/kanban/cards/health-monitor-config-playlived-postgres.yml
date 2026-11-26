@@ -1,7 +1,7 @@
 id: health-monitor-config-playlived-postgres
 title: Health monitor config — Playlived target and Postgres check threshold
 column: backlog
-updated: 2026-11-26 12:41
+updated: 2026-11-26 12:46
 brief: mcp-health quick_health fails 2/8 (Playlived tony-dell, Postgres) after config reload; evidence suggests
   monitor config/stale state, not confirmed outages.
 priority: medium
@@ -28,3 +28,15 @@ comms:
   from: devin
   text: Filed from read-only mcp-health checks; no services restarted or hosts mutated. Evidence is in the spec.
     Pair with runner drift card OPS-1431 if host work is later approved.
+- at: 2026-11-26 12:46
+  from: chaba
+  text: classified as devin (fallback conf 0.29)
+- at: 2026-11-26 12:46
+  from: chaba
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: devin
+  lane_source: fallback
+claim: {}
