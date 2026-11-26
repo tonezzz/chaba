@@ -1,7 +1,7 @@
 id: embed-lane-banks-bounded-run
 title: 'embed-lane-banks: bound each daily run to its 45min window'
 column: backlog
-updated: 2026-11-26 19:01
+updated: 2026-11-26 19:02
 brief: 'Daily embed-lane-banks oneshot on idc02 is SIGTERMd at TimeoutStartSec=2700 after copying only ~3200/74940
   docs of ada-ha-bank-devin-handoff: the queue throttle (depth>=3000) plus CPU-only bge-m3 embedding yields ~15
   docs/min. Ollama and mddb-embed are healthy; queue drained to 0, dropped=0, no data loss. Result=timeout every
@@ -40,6 +40,10 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-26 19:02
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
 action:
   type: dispatch
   status: queued
