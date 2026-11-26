@@ -1,7 +1,7 @@
 id: gemini-eval-judge-lane
 title: Gemini eval/judge lane — paid-first litellm group with a hard daily cap
-column: doing
-updated: 2026-11-26 23:09
+column: done
+updated: 2026-11-26 23:10
 brief: Use the essentially untouched Gemini paid-tier allowance for NEW bulk eval/judge work — the 2026-11-26 Console
   quota capture showed 1 request used against a 350,000/day flash-lite allowance. This removes the free-tier 429
   failure mode (OPS-1255 run 2) for new work while keeping deterministic verifiers and the pending nemotron canary
@@ -48,13 +48,14 @@ spec: "CONTEXT\n- GCP Console quota capture 2026-11-26 (project gen-lang-client-
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   runner: tony-dell
   attempts: 1
   sweep:
     stale_running: 2026-11-26 23:09
+  verified: true
 ref: ADA-1458
 comms:
 - at: 2026-11-26 21:55
@@ -123,6 +124,11 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261126-220447-context-gcp-console-quota-capt no longer active on tony-dell but
     card still says running — sweeping its branch'
+- at: 2026-11-26 23:10
+  from: chaba
+  text: 'merge-sweep: merged 3d4c5e7d (dispatch/20261126-220447-context-gcp-console-quota-capt from tony-dell) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261126-220447-context-gcp-console-quota-capt.md)
+    — auto-closed'
 claim:
   since: 2026-11-26 22:04
 requests:
@@ -140,3 +146,7 @@ requests:
   - proceed
   - hold
   answer: proceed
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 23:10
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261126-220447-context-gcp-console-quota-capt.md
