@@ -1,7 +1,7 @@
 id: kanban-free-lane-routing-contract
 title: 'Kanban lane-routing contract: free-first dispatch, envelope, verify, escalate'
 column: backlog
-updated: 2026-11-26 20:59
+updated: 2026-11-26 21:00
 brief: 'Codify the lane-routing and closeout contract proven by the ADA-0242 free-lane pilot and the ADA-0042 runner
   fixes: exhaust free/deterministic lanes before paid_frontier and Devin; every opencode dispatch carries a complete
   lane_envelope; verification is held-out and merge-gated; escalation is deliberate and recorded.'
@@ -20,7 +20,7 @@ spec: 'DECISION 2026-11-26 Tony: adopt. Implement the dispatch envelope part of 
   records the envelope shape.'
 action:
   type: dispatch
-  status: idle
+  status: queued
   lane: devin
   attempts: 0
   repo: chaba
@@ -230,3 +230,7 @@ comms:
   from: chaba
   text: 'HUMAN CALL 2026-11-26: DECISION 2026-11-26 Tony: adopt. Implement the dispatch envelope part of the free_lane
     routing contract in chaba - when'
+- at: 2026-11-26 21:00
+  from: tony
+  text: queued for processing
+claim: {}
