@@ -1,11 +1,11 @@
 id: line-lane-lock-retire
 title: Retire LINE_LANE_LOCK once chat_send targeting is verified
-column: doing
-updated: 2026-11-26 23:39
+column: review
+updated: 2026-11-26 23:51
 priority: low
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   attempts: 1
   repo: chaba
@@ -13,6 +13,9 @@ action:
   sweep:
     stale_running: 2026-11-26 23:39
     dirty: 1
+  result: 'exit=0 8-25T14:04:43.052Z, org.opencontainers.image.licenses=MIT) | devin-task-20261126-232308-decision-2026-11-26-tony-verif.service:
+    Consumed 2min 10.891s CPU time over 14min 21.775s wall clock time, 1003.6M memory peak, 423.3M memory swap peak.'
+  verified: true
 note: 'LINE_LANE_LOCK=kk,kk-dev,chaba rewrites chat_send targets to the lane group instead of 403 on bad targets
   — a stopgap until targeting stabilises. Gate: verify lane-targeting correctness first (LINE_LANE_ALLOW allowlist
   + last-room fallback), then remove lock entries. Risk: silent misdelivery if removed early.'
@@ -324,9 +327,39 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261126-232308-decision-2026-11-26-tony-verif on tony-dell still dirty
     — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-26 23:51
+  from: tony-dell
+  text: 'finished (ok): exit=0 8-25T14:04:43.052Z, org.opencontainers.image.licenses=MIT) | devin-task-20261126-232308-decision-2026-11-26-tony-'
+- at: 2026-11-26 23:51
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-26 23:51
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261126-232308-decision-2026-11-26-tony-verif'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-26 23:51
+  from: chaba
+  text: banked 5 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 23:51
+  from: chaba
+  text: pushed dispatch/20261126-232308-decision-2026-11-26-tony-verif to origin
+- at: 2026-11-26 23:51
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_board_api_liveness.py tests/board/test_kanban_act.py
+    tests/board/test_wiki_extension.py tests/board/test_board_ap
+- at: 2026-11-26 23:51
+  from: chaba
+  text: auto-merged 6ba840c3 (dispatch/20261126-232308-decision-2026-11-26-tony-verif) → origin/master
+- at: 2026-11-26 23:51
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 spec: 'DECISION 2026-11-26 Tony: verify then retire. Phase 1 only - read-only verification that chat_send lane targeting
   uses LINE_LANE_ALLOW and the last-room fallback as documented; report exact config locations and observed behavior.
   Do NOT remove the line-lane lock or change routing. Done: verification report posted; retirement stays gated on
   this result.'
 claim:
   since: 2026-11-26 23:22
+review_kind: verify
