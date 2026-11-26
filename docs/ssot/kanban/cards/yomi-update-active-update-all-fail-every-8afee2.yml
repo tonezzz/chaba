@@ -2,7 +2,7 @@ id: yomi-update-active-update-all-fail-every-8afee2
 title: yomi-update-active/update-all fail every run — --network=container:yomi-api but no yomi-api container exists
   on idc03
 column: backlog
-updated: 2026-11-26 20:35
+updated: 2026-11-26 20:41
 priority: medium
 tags:
 - bug
@@ -311,9 +311,12 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:41
+  from: tony
+  text: queue refused — attempt cap reached (2/2) — /action do=retry re-arms it
 action:
   type: dispatch
-  status: idle
+  status: failed
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
@@ -325,6 +328,7 @@ action:
     Consumed 1min 13.833s CPU time over 6min 25.201s wall clock time, 631.1M memory peak.'
   runner: mn01
   verified: false
+  last_failure: attempt cap reached (2/2) — /action do=retry re-arms it
 claim:
   since: 2026-11-25 19:18
 review_kind: verify
