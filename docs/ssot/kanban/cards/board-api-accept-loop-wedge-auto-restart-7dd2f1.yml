@@ -2,7 +2,7 @@ id: board-api-accept-loop-wedge-auto-restart-7dd2f1
 title: 'board-api accept-loop wedge: auto-restart on handler-thread stall (observed 2026-11-26 ~09:00-09:17Z on
   idc03)'
 column: backlog
-updated: 2026-11-26 18:52
+updated: 2026-11-26 20:38
 tags:
 - board-api
 - idc03
@@ -28,3 +28,7 @@ comms:
     alive (main thread blocked in `Thread.start()->_started.wait()`); `/health` exists (`board-api.py:6119`) but
     nothing consumes it for liveness, and the lock-hold watchdog only dumps stacks. `grep -n ''WATCHDOG|sd_notify''`
     in board-api.py returns only lock-watchdog hits — no systemd no'
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
