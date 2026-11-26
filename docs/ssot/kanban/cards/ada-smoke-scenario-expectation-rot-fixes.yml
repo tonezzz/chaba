@@ -1,0 +1,35 @@
+id: ada-smoke-scenario-expectation-rot-fixes
+title: 'Smoke scenarios: fix expectation rot (4 yamls) + scenario-live cleanup MDDB plane bug'
+column: backlog
+updated: 2026-11-26 21:13
+priority: medium
+tags:
+- ada
+- scenario-runner
+- regression
+spec: 'Follow-up to ada-smoke-regressions-20261107 triage (docs/ssot/jobs/ada/2026-11-26-smoke-regressions-triage.yml).
+  All fixes land in ada-voice repo (tests/scenarios-live/*.yaml + scripts/scenario-live.py).
+
+
+  1. ada_opencode_control.yaml turn3 — approval-handshake contract: dispatch now requires a preflight-minted approval_receipt.
+  Rework: either mint a real receipt in setup then dispatch a bogus card, or flip expectation to calls_not:[ada_opencode_dispatch]
+  + response assertion.
+
+  2. auto_report_worthy.yaml turn1 — widen calls_any to [ada_memory_search, cms_read]; canonical source is now the
+  auto-report CMS page (ada-cms-pages key ''auto-report'').
+
+  3. cms_public_url_lane.yaml — kk-lane assertions (/kk-ha/ URL, ada-cms-pages-kk cleanup) run on ada-dev tony lane.
+  Parameterize per lane or repoint to kk instance; ALSO delete stray public page ada-cms-pages/kk-site-test (public=true
+  since 2026-10-11, live on surf-thailand.com — needs Tony OK before delete).
+
+  4. cms_translate.yaml — ''lang'':''th'' never emitted; investigate whether model passes lang=''th'' on Thai turns
+  (th doc untouched since Oct-14 suggests arg-shape miss).
+
+  5. REAL BUG scripts/scenario-live.py run_cleanup (~L1532): mddb_delete posts to single $MDDB_BASE_URL (ops plane
+  :11023) but ada-cms-pages* live on cms plane (:11027) — cleanup 404/400s for every cms_* scenario. Route by collection
+  prefix like scripts/ada/nest-overview.py _base() (ada-cms-*/chaba-*/kb-* -> MDDB_CMS_URL).'
+ref: ADA-1456
+comms:
+- at: 2026-11-26 21:13
+  from: devin
+  text: card captured via board-api
