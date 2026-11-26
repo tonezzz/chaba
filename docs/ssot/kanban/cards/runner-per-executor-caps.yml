@@ -1,8 +1,8 @@
 id: runner-per-executor-caps
 title: 'runner-agent: per-executor claim caps + remote-lane load-gate exemption — stop jules/nlm idle slots starving
   local work'
-column: doing
-updated: 2026-11-26 20:32
+column: review
+updated: 2026-11-26 20:35
 priority: high
 tags:
 - devnest
@@ -35,7 +35,7 @@ spec: 'Problem (observed 2026-11-09): remote-async executors (jules ~1h Google-s
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   sweep:
     failed_noted: 2026-11-09 20:34
     session_gone: 2026-11-24 22:24
@@ -45,8 +45,9 @@ action:
   attempts: 2
   lane: devin
   lane_source: fallback
-  result: 'exit=0 tch-outcome-20261124-211725-problem-observed-2026-11-09-re.md`. | devin-task-20261124-211725-problem-observed-2026-11-09-re.service:
-    Consumed 7min 18.792s CPU time over 59min 25.623s wall clock time, 1.1G memory peak, 511M memory swap peak.'
+  result: 'exit=0 ice: No such file or directory | devin-task-20261126-192633-problem-observed-2026-11-09-re.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261126-192633-problem-observed-2026-11-09-re.service:
+    No such file or directory'
   runner: idc02
 ref: OPS-1284
 comms:
@@ -548,6 +549,30 @@ comms:
     exempt from RUNNER_MAX_LOAD_PC via RUNNER_REMOTE_MAX_LOAD_PC (default 0=load-independent), per-card cap/gate
     defer notes, verdict_pass /ready mirrors. State entries carry ex= for _cap_counts; kk_mac in-claim fallback
     flips class correctly. Ops surface: runner-cap.sh [remote-cap] ar'
+- at: 2026-11-26 20:35
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261126-192633-problem-observed-2026-11-09-re.service:
+    Failed to ope'
+- at: 2026-11-26 20:35
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-26 20:35
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261126-192633-problem-observed-2026-11-09-re
+    is 116 commits behind origin/master —\n   run 'git pull"
+- at: 2026-11-26 20:35
+  from: chaba
+  text: banked 795 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 20:35
+  from: chaba
+  text: pushed dispatch/20261126-192633-problem-observed-2026-11-09-re to origin
+- at: 2026-11-26 20:35
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-26 20:35
+  from: chaba
+  text: 'worktree kept: dirty — 9 uncommitted file(s)'
 claim:
   since: 2026-11-26 19:25
 review_kind: verify
