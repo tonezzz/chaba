@@ -1,7 +1,7 @@
 id: timer-alert-idc02-chaba-repo-sync
 title: Timer chaba-repo-sync on idc02 failing
-column: done
-updated: 2026-11-26 03:59
+column: backlog
+updated: 2026-11-26 10:05
 priority: high
 tags:
 - timer-alert
@@ -181,6 +181,13 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 10:05
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-26 10:05
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-26 10:00) of `chaba-repo-sync.service` on `idc02` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-idc02`.'
 action:
   status: done
 spec: Investigate the failure of `chaba-repo-sync.service` on `idc02` by inspecting the systemd user journal via
