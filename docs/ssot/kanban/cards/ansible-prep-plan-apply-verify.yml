@@ -1,7 +1,7 @@
 id: ansible-prep-plan-apply-verify
 title: Ansible prep→plan→apply→verify workflow standard
 column: done
-updated: 2026-11-26 16:01
+updated: 2026-11-26 17:44
 brief: Standardize Ansible for preparation/baselines, check-diff plan artifacts, gated apply, and verified closeout
   to increase fleet efficiency.
 priority: medium
@@ -266,6 +266,12 @@ comms:
   from: devin
   text: 'ada-ocb-verify 20261126T090125Z: ok=1 drift=0 fail=1 unreachable=0 probed=2/2. edge=200. artifact=/home/tony/CascadeProjects/chaba/ansible/playbooks/../../reports/ansible-benchmark/ada-ocb-verify/20261126T090125Z/summary.yml
     card=OPS-1424'
+- at: 2026-11-26 17:44
+  from: devin
+  text: 'Closeout (2026-11-26, Tony approved B + host apply OPS-1424): Step 1-4 completed. Repo merged 50c5ad925f/bc4f31dcbc/b026faaf10/2caa16de91/f709440216.
+    idc02 host apply done with explicit approval: backup /tmp/ocb-b-backup-20261126T084156Z, chaba pulled, openchamber-update.service
+    pin 2.7.3->2.8.0, daemon-reload, models.status patch applied+syntax-checked, openchamber.service restarted active.
+    Verify PASS (idc02 primary): web 2.8.0, cli 2.4.2, patch_present true, required units active, bind 127.0.'
 action:
   type: dispatch
   status: done
