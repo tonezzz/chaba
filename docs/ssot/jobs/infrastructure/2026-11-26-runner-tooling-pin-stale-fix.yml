@@ -1,0 +1,51 @@
+icon: wrench
+title: Fix stale dispatch_repos.py tooling pin that red-lined the merge gate
+date: 2026-11-26
+card: dispatch-zero-commit-sessions-epidemic
+context: >-
+  Four review cards were held with "test gate failed — merge held: pytest
+  unavailable — no test evidence". tony-omen already has system pytest
+  9.0.2, so the gate should have been runnable there. Running chaba's
+  merge-critical smoke set on tony-omen exposed a second, independent
+  defect: 289 passed but test_runner_tooling_contract.py::test_pin_hashes_match_sources
+  failed because scripts/board/dispatch_repos.py changed in commit
+  d7bae483a8 (OPS-1191/OPS-1363/OPS-1406 restore) without updating its
+  sha256 in scripts/devin/runner-tooling.manifest.json.
+changes:
+  - "Updated only the dispatch_repos sha256 pin in
+    scripts/devin/runner-tooling.manifest.json from
+    990381469cf4f0237a3e149ff0f1469770680d61bfba06e8b8354bffadad38e6 to
+    the real source hash
+    d0b3bacf9876a854ef45a968cf2cb601602adeb80fb009ea22e80a14a8d3ef3c
+    (one-line diff, pushed in a981633484)."
+  - "No source or deployed tool was changed: all eight runners
+    (tony-omen, tony-dell, tony-macbook, mn01, con01, idc02, idc03 and the
+    repo) already carried d0b3bacf..., so the manifest was the only stale
+    artifact."
+verification:
+  - "sha256 of installed dispatch_repos.py matched the repo source on all
+    eight checked hosts before the manifest change."
+  - "Before: 289 passed / 1 failed on tony-omen (pin mismatch).
+    After: 300 passed in 84.25s, GATE_RC=0, using a temporary worktree at
+    origin/master and removing it afterwards."
+  - "On tony-macbook (no system pytest, no pip) the same set gave 54
+    passed / 1 failed: test_gate_skips_venv_without_pytest needs a working
+    system `python3 -m pytest`, which that host lacks. An existing
+    ada-voice worktree venv runs pytest but does not satisfy that test's
+    system-python fallback."
+rollback: >-
+  Revert a981633484 to restore the old pin — but that re-red-lines the
+  gate; the correct rollback for a real source regression is to revert
+  the source change and restore its matching pin together.
+residual: >-
+  The merge gate still cannot run on tony-macbook, mn01, idc02 or idc03
+  because system pytest is absent; only tony-omen, tony-dell and con01
+  can currently satisfy it. The four held dispatch cards remain in review
+  until their branches are merged from a pytest-capable host or pytest is
+  made available on the holding host.
+lesson: >-
+  The OPS-1326 pin contract is enforced by the very gate that dispatch
+  uses: changing a synced tool source requires the manifest sha256 in
+  the same commit. When a gate fails, run it on a host that satisfies its
+  prerequisites before blaming the cards — the visible "pytest
+  unavailable" error masked a real pin mismatch underneath.
