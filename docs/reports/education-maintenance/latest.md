@@ -1,4 +1,4 @@
-# Education maintenance — 2026-11-25
+# Education maintenance — 2026-11-26
 
 **137 lessons** · 137 flagged · 0 clean · compliance **0.8029** · verify **pass**
 
@@ -30,7 +30,7 @@ Reused components: `lessons-audit.py` (R1–R5), `lessons-drift.py` (source refs
 
 ## Compliance trend
 
-0.8029 now vs 0.8029 on 2026-11-24 (Δ+0.0000, flagged Δ+0) · polish anchor 0.9307→0.9916 (2026-10-24)
+0.8029 now vs 0.8029 on 2026-11-25 (Δ+0.0000, flagged Δ+0) · polish anchor 0.9307→0.9916 (2026-10-24)
 
 ## Source drift (lessons-drift)
 
@@ -43,11 +43,11 @@ drifted **17** · source-gone **42** · no-repo-source 81
 | `lesson-36d0ad2a2900` | Collection-scoped vector search — the 35x BGE shad | `drift:docs/ssot/jobs/ada/2026-11-05-bge-m3-space-eval.md(2026-11-08>2026-11-07)` |
 | `lesson-b6a057d429d5` | KK-Mac video rendering: one-cut proof to reviewed  | `drift:docs/kb/colab-mcp-jobs.md(2026-11-24>2026-11-04)` |
 | `lesson-37b6ef0a2561` | Kornia for Gaussian splat capture evaluation | `drift:scripts/gs/image_set_eval.py(2026-11-07>2026-11-03)`<br>`drift:mcp-servers/mcp-kornia/server.py(2026-11-08>2026-11-03)` |
-| `lesson-e3ca7f942dc9` | jevnest-kk-mac-capacity-procedure | `drift:scripts/devnest/kk_mac_admission.py(2026-11-24>2026-10-31)` |
-| `lesson-ad209dd0ef19` | jevteam-jevnest-kk-mac-capacity-procedure | `drift:scripts/devnest/kk_mac_admission.py(2026-11-24>2026-10-30)` |
+| `lesson-e3ca7f942dc9` | jevnest-kk-mac-capacity-procedure | `drift:scripts/devnest/kk_mac_admission.py(2026-11-25>2026-10-31)` |
+| `lesson-ad209dd0ef19` | jevteam-jevnest-kk-mac-capacity-procedure | `drift:scripts/devnest/kk_mac_admission.py(2026-11-25>2026-10-30)` |
 | `lesson-2f962413593c` | NCM plus JEV plus Nest benchmark | `drift:docs/kb/ncm-jev-nest-exploration-procedure.md(2026-11-08>2026-10-28)` |
 | `lesson-549066365c71` | Telegram and LINE messenger control planes | `source-gone:docs/ssot/apps/ssot.messaging-lanes.yml` |
-| `lesson-8102ea768518` | github-pages-as-news-publishing-system | `drift:scripts/board/publication.py(2026-11-24>2026-10-27)`<br>`drift:scripts/board/board-api.py(2026-11-24>2026-10-27)` |
+| `lesson-8102ea768518` | github-pages-as-news-publishing-system | `drift:scripts/board/publication.py(2026-11-25>2026-10-27)`<br>`drift:scripts/board/board-api.py(2026-11-25>2026-10-27)` |
 | `lesson-bf6ce090216d` | Cline Kanban vs WordPress board apps | `source-gone:apps/board/index.html`<br>`drift:docs/ssot/apps/ssot.wp-boards.yml(2026-11-24>2026-10-28)` |
 | `lesson-cec1225f6869` | DevNest voice readiness and Telegram group policy | `drift:docs/kb/telegram-conversation-standard.md(2026-11-07>2026-10-31)`<br>`source-gone:docs/tools/devnest-continuous-improvement-standard.md` |
 | `lesson-d5f4ea8e2f2d` | devnest-continuous-improvement-standard | `source-gone:docs/tools/devnest-continuous-improvement-standard.md` |
@@ -408,4 +408,4 @@ status **pass** · digest `250a4cac02a2e709`
 - card: `education-maintenance-consolidated-report` · education-due page: private WP page slug education-due (post 354)
 - member index: https://boards.surf-thailand.com/wp/lesson/
 - runbook: `docs/ssot/jobs/education/2026-10-27-education-maintenance-report.yml` · exceptions: `scripts/lesson-thai-exceptions.yml`
-- artifacts: `latest.json`/`latest.md` + `history.jsonl` in this dir · generated 2026-11-25T00:52:53+00:00
+- artifacts: `latest.json`/`latest.md` + `history.jsonl` in this dir · generated 2026-11-26T00:51:04+00:00
