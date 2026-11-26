@@ -1,0 +1,22 @@
+{# benchmark-report-host.j2 — standard per-host report (OPS-1424 2A).
+   Contract: summary, checks[], deltas[], evidence[], elapsed_s, rc.
+   Caller sets benchmark_host_report (dict) in scope. #}
+{%- set r = benchmark_host_report | default({}) -%}
+{%- set checks = r.get('checks', []) -%}
+{%- set deltas = r.get('deltas', []) -%}
+{%- set evidence = r.get('evidence', []) -%}
+host: {{ r.get('host', inventory_hostname) | to_json }}
+inventory_host: {{ r.get('inventory_host', inventory_hostname) | to_json }}
+playbook: {{ r.get('playbook', benchmark_report_playbook | default('unknown')) | to_json }}
+ts: {{ r.get('ts', benchmark_report_ts | default('')) | to_json }}
+probed: {{ r.get('probed', true) | bool | to_json }}
+unreachable: {{ r.get('unreachable', false) | bool | to_json }}
+rc: {{ r.get('rc', 0) | int }}
+elapsed_s: {{ r.get('elapsed_s', 0) }}
+summary: {{ r.get('summary', '') | to_json }}
+checks:
+{{ checks | to_nice_yaml | indent(2, true) }}
+deltas:
+{{ deltas | to_nice_yaml | indent(2, true) }}
+evidence:
+{{ evidence | to_nice_yaml | indent(2, true) }}
