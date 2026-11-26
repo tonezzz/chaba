@@ -1,7 +1,7 @@
 id: video-queue-audit-opencode
 title: 'OpenCode: audit video queue claims'
-column: doing
-updated: 2026-11-26 15:32
+column: review
+updated: 2026-11-26 15:33
 brief: Have Ada/OpenCode produce a read-only reconciliation report for video package states and stale claims.
 priority: high
 program: ai-workforce
@@ -35,14 +35,16 @@ action:
     - done
     - failed
   lane: free_lane
-  status: running
+  status: done
   agent_profile: ops-readonly
-  result: 'exit=0 ID":"ses_e60525a60ffej5FVAdPwNPOfyd","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
-    | devin-task-video-queue-audit-opencode-1793680313.service: Consumed 13.632s CPU time.'
+  result: 'exit=0 ene0 control pack, and optional approved hygiene for residual claims and the stale Drive manifest
+    copy. | devin-task-20261126-152413-run-the-existing-read-only-vid.service: Consumed 20.712s CPU time, 220.6M
+    memory peak, 0B memory swap peak.'
   sweep:
     dirty: 2
   runner: idc02
   attempts: 1
+  verified: false
 ref: ADA-1046
 comms:
 - at: 2026-11-03 11:30
@@ -353,6 +355,26 @@ comms:
     packs aged 492-812h. Zero state delta vs 2026-11-24 report — queues idle ~48h. Sacred Father canonical final-preview
     re-verified qc_pass=true (mp4+th/en srt). No claims released, no Drive writes. Deliverables committed on dispatch
     branch: reports/card-runner/video-queue-status-openc'
+- at: 2026-11-26 15:33
+  from: idc02
+  text: 'finished (ok): exit=0 ene0 control pack, and optional approved hygiene for residual claims and the stale
+    Drive manifest copy. | devin-t'
+- at: 2026-11-26 15:33
+  from: chaba
+  text: ran under executor=devin provider=devin profile=ops-readonly
+- at: 2026-11-26 15:33
+  from: chaba
+  text: banked 760 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 15:33
+  from: chaba
+  text: pushed dispatch/20261126-152413-run-the-existing-read-only-vid to origin
+- at: 2026-11-26 15:33
+  from: chaba
+  text: 'auto-merge conflicts: reports/card-runner/video-queue-status-opencode.md — card stays in review for manual
+    resolution'
+- at: 2026-11-26 15:33
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
 review_kind: verify
 claim:
   since: 2026-11-26 15:23
