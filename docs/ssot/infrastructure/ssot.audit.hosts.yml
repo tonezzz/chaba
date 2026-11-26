@@ -252,7 +252,6 @@ hosts:
       - {name: ada-market-report.timer, type: timer, scope: user}
       - {name: cam-frame-refresh.timer, type: timer, scope: user}
       - {name: cam-wall-cms.timer, type: timer, scope: user}
-      - {name: cam-wall-roster-audit.timer, type: timer, scope: user}
       - {name: chaba-cms-reflect.timer, type: timer, scope: user}
       - {name: chaba-dell-health-agent.timer, type: timer, scope: user}
       - {name: chaba-nag.timer, type: timer, scope: user}
@@ -306,6 +305,7 @@ hosts:
       - {name: chaba-standard-drift.timer, scope: user}
       - {name: chaba-starboard-tracker.timer, scope: user}
       - {name: chaba-tony-ideas.timer, scope: user}
+      - {name: cam-wall-roster-audit.timer, scope: user, note: "retired — unit not-found on dell since 2026-11-12 sweep; roster-audit now parked disabled on tony-omen pending MDDB write-failure review (card cms-auto-cctv-roster)"}
       - {name: daily-brief.timer, scope: user}
       - {name: dev-miniapp-v0.service, scope: user}
       - {name: focus-dispatcher-overnight.timer, scope: user}
@@ -834,6 +834,15 @@ hosts:
         critical: false
         note: "Currently disabled 2026-10-11 — pulled from retired idc01,
           permanently broken. Service + timer disabled on tony-omen."
+      - name: cam-wall-roster-audit.timer
+        type: timer
+        scope: user
+        expected_state: inactive
+        critical: false
+        note: "PARKED 2026-11-26 — sole remaining roster-audit host (tony-dell
+          unit retired); disabled after repeated MDDB 'Remote end closed'
+          write failures. Re-enable needs Tony approval — registry doc
+          ada-cms-automation/cctv-roster set enabled:false same day."
       - name: ada-memory-backup.timer
         type: timer
         scope: user
@@ -2105,7 +2114,7 @@ hosts:
       - {name: ada-memory-gaps.timer, type: timer, scope: user}
       - {name: ada-memory-merge-proposals.timer, type: timer, scope: user, note: "rendered from ssot.jobs.yml 2026-11-18 (card memory-extract-merge-proposals) — Sun 10:30 after ada-memory-distill; recommend-mode merge proposals only"}
       - {name: ada-recall-canary.timer, type: timer, scope: user}
-      - {name: cam-wall-cms-vps.timer, type: timer, scope: user}
+      - {name: cam-wall-cms-vps.timer, type: timer, scope: user, expected_state: inactive, note: "PARKED 2026-11-26 — disabled after repeated MDDB 'Remote end closed' write failures; re-enable needs Tony approval (card cms-auto-cctv-roster / timer-alert-idc03-cam-wall-cms-vps)"}
       - {name: cert-sync.timer, type: timer, scope: user}
       - {name: mddb-memory-standard.timer, type: timer, scope: user}
       - {name: mddb-restart.timer, type: timer, scope: user}
