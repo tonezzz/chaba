@@ -1,7 +1,7 @@
 id: ops-1025-remote-read-smoke-idc03
 title: 'OPS-1025 one-shot remote-read verification: idc02 to idc03'
 column: doing
-updated: 2026-11-27 00:01
+updated: 2026-11-27 00:04
 brief: One supervised, read-only S3 verification of the merged remote-read gates.
 priority: medium
 program: OPS-1025
@@ -856,6 +856,14 @@ comms:
   from: devin
   text: 'raised request remote-read-path-to-idc03-is-broken-at-t-cae463: Remote-read path to idc03 is broken at
     two layers — how to proceed? (a) register idc03 in ssot.mcp-debug.yml hosts + ins'
+- at: 2026-11-27 00:04
+  from: chaba
+  text: 'raised request job-input-ops-1025-remote-read-smoke-idc03: Job needs your input: How should OPS-1025 proceed
+    now that the remote-read path to idc03 is blocked at two tooling layer'
+- at: 2026-11-27 00:04
+  from: chaba
+  text: 'needs input: How should OPS-1025 proceed now that the remote-read path to idc03 is blocked at two tooling
+    layers (mcp-debug spawn config + idc03 missing from the mcp-debug host registry)?'
 claim:
   since: 2026-11-26 23:44
 requests:
@@ -870,3 +878,17 @@ requests:
   options:
   - proceed
   - hold
+- id: job-input-ops-1025-remote-read-smoke-idc03
+  ask: 'Job needs your input: How should OPS-1025 proceed now that the remote-read path to idc03 is blocked at two
+    tooling layers (mcp-debug spawn config + idc03 missing from the mcp-debug host registry)?'
+  status: open
+  at: 2026-11-27 00:04
+  from: chaba
+  options:
+  - id: answer
+    label: Answer — reply in chat
+    action: none
+  - id: hold
+    label: Hold — leave blocked
+    action: hold
+awaiting_action: true
