@@ -46,7 +46,8 @@ verified:
   - tony-omen focus-dispatcher auto-recovered (Result=success) and was
     closed without a fix.
 notes:
-  - OPS-0581 is now the contract for watchdog checks: alert state is in
+  - >
+    OPS-0581 is now the contract for watchdog checks: alert state is in
     the board inbox, not the exit code. Do not re-enable "exit 1 when
     alerting" without reversing that decision.
   - board-api GET /cards reloads 18MB cards.json and stats 858 card
@@ -56,5 +57,6 @@ notes:
     board-api restart = explicit approval).
   - Netdata's tailnet TCP/19999 is filtered while ICMP and SSH work;
     the parent watcher must reach the parent over SSH, not direct HTTP.
-  - Rollback: unit backups above; scripts rolled back by reverting the
+  - >
+    Rollback: unit backups above; scripts rolled back by reverting the
     two committed files in chaba master and redeploying to exec hosts.
