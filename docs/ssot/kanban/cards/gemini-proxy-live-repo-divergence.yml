@@ -1,7 +1,7 @@
 id: gemini-proxy-live-repo-divergence
 title: 'gemini-ollama-proxy: reconcile live idc03 variant with repo (uncommitted free-key ring + embed gateway)'
 column: doing
-updated: 2026-11-26 23:47
+updated: 2026-11-27 00:12
 priority: medium
 tags:
 - mddb
@@ -67,6 +67,13 @@ comms:
     2026-11-26] VERIFIED — chaba-repo half re-landed on ori; A dispatch that edits files OUTSIDE its worktree (live
     /home/tony/ansible on idc; Mock-deployment evals have a verification blind spot: both agents "passed" stack;
     Single-file bind mounts + `sed -i` = stale config inside cont'
+- at: 2026-11-27 00:12
+  from: devin
+  text: 'Merged live variant into repo master (option a): free-key ring + LiteLLM gateway leg landed on top of free-lane
+    budgets. scripts/mddb/gemini-ollama-proxy.mjs sha256 c2a618cb91fe...; new tests/embed/test_gemini_proxy_ring_gateway.mjs
+    2/2 + budget suite 3/3 pass; job record docs/ssot/jobs/mddb/2026-11-26-gemini-proxy-variant-reconcile.yml. CRITICAL
+    extra finding: the regenerated quadlet dropped EnvironmentFile=mddb-gemini.env — next unit restart loses ALL
+    secret env (free ring, paid key, gateway) '
 action:
   type: dispatch
   status: running
