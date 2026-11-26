@@ -1,7 +1,7 @@
 id: ada-voice-map-embed-pr22-merge-deploy
 title: 'ada-voice: merge PR #22 (map_embed drop 17), deploy, drop GOOGLE_MAPS_API_KEY'
 column: backlog
-updated: 2026-11-26 20:52
+updated: 2026-11-26 21:00
 brief: 'PR https://github.com/tonezzz/ada-voice/pull/22 is open and green (tool-lint clean, 1942 tests pass). Needs:
   merge -> deploy-ada.sh idc03 -> render-tool-profiles --apply -> key drop (or accept keyless).'
 priority: medium
@@ -126,6 +126,10 @@ comms:
   from: chaba
   text: 'TRIAGE 2026-11-26 batch 2: DECISION NEEDED: human-gated tail - production deploy-ada.sh restart on idc03
     plus re-dropping GOOGLE_MAPS_API_KEY. Requires approval and a real key.'
+- at: 2026-11-26 21:00
+  from: chaba
+  text: 'HUMAN CALL 2026-11-26: production restart approved; awaiting GOOGLE_MAPS_API_KEY via the private secret
+    path before dispatch.'
 action:
   type: dispatch
   status: idle

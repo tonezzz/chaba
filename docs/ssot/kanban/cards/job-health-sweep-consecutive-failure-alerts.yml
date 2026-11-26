@@ -1,7 +1,7 @@
 id: job-health-sweep-consecutive-failure-alerts
 title: Job-health sweep — alert when a declared job fails N consecutive runs
 column: backlog
-updated: 2026-11-26 20:54
+updated: 2026-11-26 21:00
 brief: 'Found 2026-10-30 (KNB-1008 deploy catchup): chaba-audit, mddb-vector-reindex, devin-bank-distill all had
   ZERO successful finishes in 30d on con01 — nobody knew until a human read journalctl. Dead jobs must surface themselves.'
 priority: medium
@@ -41,7 +41,10 @@ spec: 'Context: three con01 jobs sat dead up to a month — causes were per-host
   Verify: point the sweep at a deliberately-broken test unit (or an already-failed one), confirm a card comment
   lands on idc03 board; healthy host produces no card.'
 action:
-  type: manual
+  type: dispatch
+  status: idle
+  lane: devin
+  attempts: 0
 ref: OPS-1015
 comms:
 - at: 2026-10-30 18:32
@@ -300,3 +303,7 @@ comms:
 - at: 2026-11-26 20:40
   from: chaba
   text: action.type=manual — human-owned work, not runner-dispatchable
+- at: 2026-11-26 21:00
+  from: chaba
+  text: 'HUMAN CALL 2026-11-26: DECISION 2026-11-26 Tony: flipped to dispatch. Review consecutive-failure alert
+    semantics and thresholds, then apply the minimal bounded fix.'

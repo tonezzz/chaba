@@ -1,7 +1,7 @@
 id: go2rtc-7-camera-producers-return-empty-f-cc9176
 title: 'go2rtc: 7 camera producers return empty frames on omen'
 column: backlog
-updated: 2026-11-26 20:52
+updated: 2026-11-26 21:00
 program: infrastructure
 tags:
 - ops
@@ -245,6 +245,9 @@ comms:
   from: chaba
   text: 'TRIAGE 2026-11-26 batch 2: DECISION NEEDED: target is tony-omen, currently a stale host with intermittent
     SFTP-only shell access. Confirm runner access before dispatch; not boundable from idc02/kk-mac.'
+- at: 2026-11-26 21:00
+  from: chaba
+  text: 'HUMAN CALL 2026-11-26: hold until tony-omen shell access is confirmed. No dispatch.'
 spec: Fix the remaining go2rtc camera producers on tony-omen that return empty 200/0B frames for ip_cam_65 and the
   xiaomi_c100/c201 variants. Inspect and correct the producer configurations located in ~/.config/go2rtc/*.sh on
   tony-omen and check xiaomi-token-refresh.py. The target host is tony-omen and the relevant repo/environment context
