@@ -5,8 +5,9 @@
 # fresh crash dump and died ~10s later on every attempt (watchdog restarts
 # included). Relaunching with --disable-gpu stayed healthy for minutes with
 # windows on :20 and the correct singleton socket. This build reads argv.json
-# static switches (mainImpl.js), so the pin covers desktop/CLI/watchdog
-# launches alike.
+# (mainImpl.js: Rae/xae); the supported key is "disable-hardware-acceleration",
+# which calls app.disableHardwareAcceleration() — NOT "disable-gpu" (ignored).
+# The pin covers desktop/CLI/watchdog launches alike.
 #
 # Usage:
 #   ansible-playbook playbooks/deploy-devin-desktop-gpu-off.yml --check --diff --limit tony-dell
@@ -26,11 +27,11 @@
         path: "{{ ansible_facts['user_dir'] }}/.config/Devin"
         state: directory
 
-    - name: Install argv.json with disable-gpu pin
+    - name: Install argv.json with software-rendering pin
       ansible.builtin.copy:
         content: |
           {
-            "disable-gpu": true
+            "disable-hardware-acceleration": true
           }
         dest: "{{ ansible_facts['user_dir'] }}/.config/Devin/argv.json"
         mode: "0644"
@@ -43,11 +44,11 @@
       register: argv_check
       when: not ansible_check_mode
 
-    - name: Assert disable-gpu is pinned
+    - name: Assert software-rendering pin is present
       ansible.builtin.assert:
         that:
-          - (argv_check.content | b64decode | from_json)['disable-gpu'] == true
-        fail_msg: "{{ inventory_hostname }}: argv.json does not carry disable-gpu=true"
+          - (argv_check.content | b64decode | from_json)['disable-hardware-acceleration'] == true
+        fail_msg: "{{ inventory_hostname }}: argv.json does not carry disable-hardware-acceleration=true"
       when: not ansible_check_mode
 
     - name: Report convergence
