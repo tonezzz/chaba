@@ -1,7 +1,7 @@
 id: jevnest-kk-mac-capacity-loop
 title: JevNest KK-Mac capacity-aware queue refill
 column: backlog
-updated: 2026-11-26 19:25
+updated: 2026-11-26 19:26
 brief: Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner
   load, disk, and fallback gates.
 priority: high
@@ -363,6 +363,10 @@ comms:
   from: chaba
   text: 'con01 defers: executor=kk_mac_local declared and the lane is live, but this runner can''t serve it (KK_MAC_LANES=0)
     — the card stays queued for a kk_mac-capable runner'
+- at: 2026-11-26 19:26
+  from: chaba
+  text: 'tony-macbook defers: executor=kk_mac_local declared and the lane is live, but this runner can''t serve
+    it (KK_MAC_LANES=0) — the card stays queued for a kk_mac-capable runner'
 action:
   status: queued
   type: dispatch
