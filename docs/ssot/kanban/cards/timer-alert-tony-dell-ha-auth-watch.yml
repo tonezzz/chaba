@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-ha-auth-watch
 title: Timer ha-auth-watch on tony-dell failing
 column: done
-updated: 2026-11-26 14:28
+updated: 2026-11-26 14:37
 priority: high
 tags:
 - timer-alert
@@ -41,5 +41,12 @@ comms:
     sorted(...)[-500:], so new keys sorted before them and were evicted each run. Fixed by dropping legacy keys
     on load, capping by insertion order, and counting state hits as "deduped". Deployed master 27f34c4505, synced
     to tony-dell. Live proof: two consecutive runs went "2 new (0 dedupe'
+- at: 2026-11-26 14:37
+  from: tony
+  text: '[credential audit 14:35 +07] Proceeded as requested: verified every HA long-lived token against its DECLARED
+    endpoint (michael-ha, tony-ha, ada-ha on 8125, mn-ha-dev on 8124) — all HTTP 200; key-watch --dry-run reports
+    0 dead HA slots. No token is stale, so no rotation or HA config change was made. The 14:33 localhost 401s were
+    self-inflicted by my ad-hoc wrong-endpoint sweep; HA logged them and the watcher emitted one false-positive
+    focus-inbox item 2026-11-26-143340-ha-auth-failure-tony-ha-fro'
 action:
   status: done
