@@ -1,6 +1,6 @@
 id: timer-alert-idc02-log-shipper-severe
 title: Timer log-shipper-severe on idc02 failing
-column: backlog
+column: done
 updated: 2026-11-26 09:21
 priority: high
 tags:
@@ -1229,6 +1229,9 @@ comms:
   text: '2026-11-26 verified fix: mddb-ops :11026 HTTP write timeout raised 30s->120s (writes observed 32-79s);
     log-shipper BATCH 10->5; unit TimeoutStartSec->45m fleet-wide. Runner-agent drift cleared (all 6 hosts pinned
     1514c75c...). Re-run Result=success/0; severe state doc 0 failures.'
+- at: 2026-11-26 09:21
+  from: devin
+  text: closed by devin
 spec: Investigate the failing `log-shipper-severe.service` systemd timer on host idc02, which resulted in a timeout
   during its recent run. Access the host logs using `journalctl --user -u log-shipper-severe.service` and review
   the CMS record `timer-timeline-idc02` for historical context. The done-condition is verified when the root cause
