@@ -17,12 +17,14 @@ Alert channel: board-api /inbox — deduped focus-inbox entry, at most
 once per --repeat-h (default 12h) per condition. Recovery is silent +
 journaled, matching the inbox's no-resolve semantics.
 
-Exit 0 healthy, 1 when alerting.
+Exit 0 on completed checks, including alerts (OPS-0581 contract);
+findings ride the board inbox, not the exit code.
 """
 import argparse
 import datetime as dt
 import json
 import os
+import subprocess
 import sys
 import urllib.request
 from pathlib import Path
@@ -41,8 +43,23 @@ DEFAULT_NODES = [
 def get(path: str, timeout: int = 20) -> dict:
     req = urllib.request.Request(
         PARENT + path, headers={"User-Agent": "netdata-nodes-watch/1.0"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.loads(r.read())
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.loads(r.read())
+    except Exception:
+        # Tailscale reaches tony-omen (ping works) but TCP/19999 is
+        # filtered by the mesh policy, so a direct GET times out from
+        # every host except the parent itself. The parent is local there;
+        # use the existing SSH path as a fallback so a policy change is
+        # not misreported as a Netdata outage.
+        cmd = [
+            "ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=5",
+            "tony-omen",
+            f"curl -fsS --max-time {timeout} http://127.0.0.1:19999{path}",
+        ]
+        out = subprocess.run(
+            cmd, check=True, capture_output=True, timeout=timeout + 10).stdout
+        return json.loads(out)
 
 
 def load_state() -> dict:
@@ -128,7 +145,7 @@ def main() -> int:
     rc = 0
     alerts = st.setdefault("alerts", {})
     for cond, text in problems:
-        rc = 1
+        # OPS-0581: a completed check exits 0; alerts ride the inbox.
         if args.no_alert:
             print(f"ALERT {cond}: {text}")
             continue

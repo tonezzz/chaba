@@ -20,8 +20,9 @@ recovered mid-incident — the set hash is part of the dedupe key).
 Recovery is silent in-state and journaled (no resolve API for inbox
 entries): recovered nodes drop out of the next alert's set.
 
-Exit 0 when healthy, 1 when alerting (service-failure semantics so a
-failing check is visible in `systemctl --user failed` too).
+Exit 0 on completed checks, including alerts (OPS-0581 contract);
+findings ride the board inbox, not the exit code. Only a check that
+cannot complete at all is a nonzero timer result.
 """
 import argparse
 import datetime as dt
@@ -145,10 +146,10 @@ def main() -> int:
                     ["ops", "monitor", "system-report", "knb-0786"]):
                 st["conditions"][cond] = now
             print(f"ALERT: idc02 check failed — {err}")
-            rc = 1
+            rc = 0
         else:
             print(f"alert suppressed (dedupe): idc02 check failed — {err}")
-            rc = 1
+            rc = 0
     else:
         gen = rep.get("generated_at") if rep else None
         h = age_hours(gen) if gen else None
@@ -161,10 +162,10 @@ def main() -> int:
                         ["ops", "monitor", "system-report", "knb-0786"]):
                     st["conditions"][cond] = now
                 print(f"ALERT: generated_at unparseable: {gen!r}")
-                rc = 1
+                rc = 0
             else:
                 print(f"alert suppressed (dedupe): generated_at unparseable")
-                rc = 1
+                rc = 0
         elif h > args.stale_h:
             cond = f"stale:{gen}"
             if not recently_alerted(st, cond, args.repeat_h):
@@ -178,10 +179,10 @@ def main() -> int:
                         ["ops", "monitor", "system-report", "knb-0786"]):
                     st["conditions"][cond] = now
                 print(f"ALERT: report {h:.1f}h old")
-                rc = 1
+                rc = 0
             else:
                 print(f"alert suppressed (dedupe): report {h:.1f}h old")
-                rc = 1
+                rc = 0
         else:
             print(f"chain ok — generated {h:.1f}h ago ({gen})")
 
@@ -211,11 +212,11 @@ def main() -> int:
                     st["last_red"] = [n["id"] for n in red]
                 print(f"ALERT: {len(red)} red node(s): "
                       + ", ".join(f"{n['id']}={n['status']}" for n in red))
-                rc = 1
+                rc = 0
             else:
                 print(f"node alert suppressed (dedupe): "
                       + ", ".join(f"{n['id']}={n['status']}" for n in red))
-                rc = 1
+                rc = 0
         else:
             prev_red = st.get("last_red") or []
             if prev_red:
