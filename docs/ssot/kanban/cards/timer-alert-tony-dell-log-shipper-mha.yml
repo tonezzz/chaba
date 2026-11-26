@@ -1,6 +1,6 @@
 id: timer-alert-tony-dell-log-shipper-mha
 title: Timer log-shipper-mha on tony-dell failing
-column: backlog
+column: done
 updated: 2026-11-26 09:21
 priority: high
 tags:
@@ -54,7 +54,12 @@ comms:
   text: '2026-11-26 verified fix: mddb-ops :11026 HTTP write timeout raised 30s->120s (writes observed 32-79s);
     log-shipper BATCH 10->5; unit TimeoutStartSec->45m fleet-wide. Runner-agent drift cleared (all 6 hosts pinned
     1514c75c...). Re-run Result=success/0 for log-shipper-mha.'
+- at: 2026-11-26 09:21
+  from: devin
+  text: closed by devin
 spec: Investigate the failure of the `log-shipper-mha.service` timer on the host `tony-dell` by inspecting the user
   journal using `journalctl --user -u log-shipper-mha.service`. The target host is `tony-dell` and the associated
   repository context references `chaba`. The done-condition is verified when the root cause of the exit-code failure
   is identified from the journal logs and documented on the card.
+action:
+  status: done
