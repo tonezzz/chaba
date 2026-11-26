@@ -1,7 +1,7 @@
 id: ada-capabilities-verb-wiring
 title: 'ada-voice: wire the what-can-you-do verb — ada_capabilities drop-in reading the generated tools snapshot'
 column: doing
-updated: 2026-11-26 19:33
+updated: 2026-11-26 19:40
 priority: medium
 tags:
 - ada
@@ -298,6 +298,13 @@ comms:
   from: devin
   text: 'attempt 2 on tony-dell: prior work recovered from origin/dispatch/20261124-212337 (commit cb7a0351, merge
     was held on pytest-evidence not code). Re-basing onto current main, re-running gates here.'
+- at: 2026-11-26 19:40
+  from: devin
+  text: 'DONE attempt 2 on tony-dell (branch dispatch/20261126-192654, commits 1e11f11 + b463059, NOT pushed). Relanded
+    prior work cb7a0351 via clean cherry-pick onto origin/main b9395fe — attempt-1 merge was held on pytest-evidence
+    (host gate), not code. Gates green here: tool-lint clean (66 scenario-covered), scenario-schema 0 violations,
+    pytest 2032 passed/4 skipped (py3.14 venv), live-fire on real chaba snapshot 3.7ms cold/0.7ms warm (<50ms),
+    deploy-ada.sh step 2b ships backend/data/ada-tools-snapsho'
 claim:
   since: 2026-11-26 19:25
 review_kind: verify
