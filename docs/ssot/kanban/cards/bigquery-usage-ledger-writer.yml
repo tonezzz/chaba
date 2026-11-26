@@ -1,7 +1,7 @@
 id: bigquery-usage-ledger-writer
 title: BigQuery usage ledger — dataset, MERGE writer, 10-row backfill, verification
-column: doing
-updated: 2026-11-26 23:39
+column: review
+updated: 2026-11-26 23:46
 brief: Turn the local usage reports into a durable, queryable ledger now that the BigQuery API is enabled on the
   Chaba project (0 datasets). Implement the schema in infra/bigquery-ledger-schema-2026-11-26.md, a dry-run-first
   MERGE writer, a bounded backfill, and verification queries. Card ADA-1458 (eval-judge lane) stays independent
@@ -41,13 +41,16 @@ spec: "SCHEMA REFERENCE\n- infra/bigquery-ledger-schema-2026-11-26.md (this repo
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   executor: devin
   runner: tony-dell
   attempts: 1
   sweep:
     stale_running: 2026-11-26 23:39
     dirty: 2
+  result: 'exit=0 he dispatch branch with lessons captured in the outcome file. | devin-task-20261126-223833-schema-reference-infra-bigquer.service:
+    Consumed 6min 37.308s CPU time over 51min 19.863s wall clock time, 2.8G memory peak, 534.1M memory swap peak.'
+  verified: true
 ref: OPS-1460
 comms:
 - at: 2026-11-26 22:19
@@ -145,6 +148,35 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261126-223833-schema-reference-infra-bigquer on tony-dell still dirty
     — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-26 23:46
+  from: tony-dell
+  text: 'finished (ok): exit=0 he dispatch branch with lessons captured in the outcome file. | devin-task-20261126-223833-schema-reference-infra'
+- at: 2026-11-26 23:46
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-26 23:46
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261126-223833-schema-reference-infra-bigquer'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 2 le'
+- at: 2026-11-26 23:46
+  from: chaba
+  text: banked 395 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 23:46
+  from: chaba
+  text: pushed dispatch/20261126-223833-schema-reference-infra-bigquer to origin
+- at: 2026-11-26 23:46
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_board_api_liveness.py tests/board/test_kanban_act.py
+    tests/board/test_wiki_extension.py tests/board/test_board_ap
+- at: 2026-11-26 23:46
+  from: chaba
+  text: auto-merged e45e5253 (dispatch/20261126-223833-schema-reference-infra-bigquer) → origin/master
+- at: 2026-11-26 23:46
+  from: chaba
+  text: 'worktree kept: dirty — 17 uncommitted file(s)'
 claim:
   since: 2026-11-26 22:37
 requests:
@@ -168,3 +200,4 @@ requests:
   answer: 'all-rows — Load every artifact row: 9 sessions (7 dispatch + 2 cloud), 1 quota, 5 audit = 15 rows; verification
     becomes 9/1/0/5'
 awaiting_action: true
+review_kind: verify
