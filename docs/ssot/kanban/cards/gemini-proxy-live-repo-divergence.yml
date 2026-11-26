@@ -1,7 +1,7 @@
 id: gemini-proxy-live-repo-divergence
 title: 'gemini-ollama-proxy: reconcile live idc03 variant with repo (uncommitted free-key ring + embed gateway)'
 column: doing
-updated: 2026-11-27 00:12
+updated: 2026-11-27 00:13
 priority: medium
 tags:
 - mddb
@@ -74,6 +74,11 @@ comms:
     2/2 + budget suite 3/3 pass; job record docs/ssot/jobs/mddb/2026-11-26-gemini-proxy-variant-reconcile.yml. CRITICAL
     extra finding: the regenerated quadlet dropped EnvironmentFile=mddb-gemini.env — next unit restart loses ALL
     secret env (free ring, paid key, gateway) '
+- at: 2026-11-27 00:13
+  from: devin
+  text: 'DONE. Commits b1aca5f9a1 (merged proxy + ring/gateway tests + SSOT note + job record) and 3992c5d0a9 (outcome
+    doc) on dispatch/20261126-234625-reconcile-the-two-proxy-varian. Follow-up carded: gemini-proxy-quadlet-envfile-drop
+    (MEM-1469) — quadlet template must restore EnvironmentFile before ANY unit restart.'
 action:
   type: dispatch
   status: running
