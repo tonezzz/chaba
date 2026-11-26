@@ -1,7 +1,7 @@
 id: timer-alert-idc02-runner-agent
 title: Timer runner-agent on idc02 disabled
-column: backlog
-updated: 2026-11-26 20:47
+column: done
+updated: 2026-11-26 21:02
 priority: high
 tags:
 - timer-alert
@@ -27,3 +27,14 @@ comms:
   text: 'TRIAGE 2026-11-26: DECISION NEEDED — runner-agent.timer on idc02 is disabled. Given the confirmed runner
     drift on this host, re-enabling is likely correct, but a disabled timer may be deliberate (local dispatch tests).
     Confirm before enabling.'
+- at: 2026-11-26 21:02
+  from: tony
+  text: 'HUMAN CALL 2026-11-26: re-enabled runner-agent.timer on idc02 with explicit Tony approval. Pre-check: is-enabled=disabled,
+    is-active=inactive; installed ~/.local/bin/runner-agent hash 4259ca6f560551667037c1647f5e283807d4500331ed1632221c0b36ca07b855
+    matches repo scripts/board/runner-agent.py, so no redeploy was needed. No Ansible playbook owns this timer enablement,
+    so this was a one-off change with dry-run (one symlink into timers.target.wants). Backup: /home/tony/.config/systemd/user/runner-age'
+- at: 2026-11-26 21:02
+  from: tony
+  text: closed by tony
+action:
+  status: done
