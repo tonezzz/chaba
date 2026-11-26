@@ -2,7 +2,7 @@ id: runner-auto-con01
 title: Runner host `con01` fails 1 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on con01 that will strand dispatch cards. Read the note, fix
   on the host, close the card.
-column: review
+column: done
 review_kind: triage
 generated: runner-fleet-health
 program: chaba-ci
@@ -20,7 +20,7 @@ help: 'Per-check fixes:
 
   - repo-checkout: A declared dispatch repo checkout is missing/.git-less on the host — reclone it or drop it from
   that host''s repos.conf.'
-updated: '2026-11-26'
+updated: 2026-11-26 17:11
 comms:
 - at: 2026-11-26 13:30
   from: devin
@@ -29,5 +29,12 @@ comms:
 - at: 2026-11-26 13:30
   from: devin
   text: closed by devin
+- at: 2026-11-26 17:11
+  from: tony
+  text: '[triage 16:50 +07] Stale watcher re-file. Closed by devin at 13:30 with resolution recorded: con01 devin-dispatch
+    sha256 c5fa39476cb27cad matches the pin, bootstrap check resolved. No new drift. Closing again.'
+- at: 2026-11-26 17:11
+  from: tony
+  text: closed by tony
 action:
   status: done
