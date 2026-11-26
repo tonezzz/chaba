@@ -30,6 +30,11 @@
 # Usage (from ansible/):
 #   ansible-playbook playbooks/audit-log-shipper.yml --check --diff
 #   ansible-playbook playbooks/audit-log-shipper.yml --limit tony-dell
+#   # scheduled run: board alerts on, deduped by fingerprint
+#   ansible-playbook playbooks/audit-log-shipper.yml -e board_notify=true
+#   # CI gate: no board writes, fail on fail/unreachable/error verdicts
+#   ansible-playbook playbooks/audit-log-shipper.yml \
+#     -e board_notify=false -e audit_fail_on_verdict=true
 #
 # Known drift this surfaces (2026-11-23 baseline):
 #   - idc02: ssot.jobs.yml timeout 30m (OPS-1197) vs generated 600s
@@ -98,6 +103,10 @@
          | hash('sha256') }}
     probe_ts: "{{ now(utc=True).isoformat(timespec='seconds') }}"
     board_notify: false
+    # Opt-in CI gate. Default false so the known baseline drift does not
+    # break scheduled report runs; set true in CI to fail on blocking
+    # verdicts (fail/unreachable/error, not drift).
+    audit_fail_on_verdict: false
     board_api_base: "https://idc03.taila0626a.ts.net:10000"
     board_from: "devin"
 
@@ -605,5 +614,24 @@
           comment_skipped_as_dup: "{{ log_shipper_alert_comment_is_dup | default(false) }}"
           cleared_comment_posted: "{{ log_shipper_alert_cleared_needed | default(false) }}"
       when: board_notify | bool
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fail on blocking verdicts when used as a CI gate
+      ansible.builtin.assert:
+        that:
+          - >-
+            (log_shipper_alert_hosts | default([])
+             | selectattr('kind', 'in', ['fail', 'unreachable', 'error'])
+             | list | length) == 0
+        fail_msg: >-
+          blocking log-shipper verdicts:
+          {{ (log_shipper_alert_hosts | default([])
+              | selectattr('kind', 'in', ['fail', 'unreachable', 'error'])
+              | list) }}
+        success_msg: >-
+          no blocking log-shipper verdicts (drift-only findings do not fail
+          the gate).
+      when: audit_fail_on_verdict | bool
       delegate_to: localhost
       run_once: true

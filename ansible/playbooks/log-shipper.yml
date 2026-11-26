@@ -33,11 +33,17 @@
 # the command line rather than editing here.
 #
 # -e render_generated=false skips the controller-side re-render (uses the
-# checked-in units as-is). Note the re-render covers ALL jobs/hosts in the
-# manifest, not just shipper lanes — it only rewrites files whose content
-# differs from SSOT. -e shipper_run_once=true runs each lane once after
+# checked-in units as-is). The re-render is scoped with `--ids` to the four
+# shipper lanes, so an unrelated job's generated unit can never be rewritten
+# by this play. -e shipper_run_once=true runs each lane once after
 # convergence — that WRITES to the MDDB ops instance, so it is off by
 # default.
+#
+# Deploy safety: every copy is `backup: yes`, and the deploy block has a
+# rescue that restores the newest backup of each file changed in that run,
+# reloads systemd, then fails the host. A post_tasks gate queries MDDB ops
+# health and host-logs-state; any failed /add fails the play even if all
+# files converged cleanly.
 
 - name: Converge log-shipper across the fleet
   hosts: all:!macos:!disabled:!tony-macbook
@@ -50,6 +56,15 @@
       {{ lookup('ansible.builtin.file',
                 repo_root ~ '/docs/ssot/infrastructure/ssot.jobs.yml')
          | from_yaml }}
+    # Used only by the read-only post-converge health gate. Derived from the
+    # same SSOT lane env the units get, with the historical default as
+    # fallback so a missing env can never silently point at the leader.
+    mddb_ops_url: >-
+      {{ (jobs_ssot['jobs'] | default([])
+          | selectattr('id', 'equalto', 'log-shipper')
+          | map(attribute='env')
+          | first | default({}, true)).MDDB_OPS_URL
+         | default('http://100.102.134.91:11026/v1', true) }}
     shipper_job_ids:
       - log-shipper
       - log-shipper-severe
@@ -94,7 +109,9 @@
       when: inventory_hostname == controller_self
 
     - name: Re-render generated units from ssot.jobs.yml on the controller
-      ansible.builtin.command: "python3 {{ repo_root }}/scripts/render-jobs.py"
+      ansible.builtin.command: >-
+        python3 {{ repo_root }}/scripts/render-jobs.py
+        --ids {{ shipper_job_ids | join(',') }}
       delegate_to: localhost
       run_once: true
       register: render_result
@@ -157,54 +174,96 @@
         - "{{ shipper_dest_dir }}"
         - "{{ units_dir }}"
 
-    - name: Deploy log-shipper.py by checksum
-      ansible.builtin.copy:
-        src: "{{ shipper_script_src }}"
-        dest: "{{ shipper_dest_dir }}/log-shipper.py"
-        mode: "0644"
-      register: shipper_script_copy
-      tags: [script]
+    - name: Deploy with per-file backup and restore-on-failure
+      block:
+        - name: Deploy log-shipper.py by checksum
+          ansible.builtin.copy:
+            src: "{{ shipper_script_src }}"
+            dest: "{{ shipper_dest_dir }}/log-shipper.py"
+            mode: "0644"
+            backup: true
+          register: shipper_script_copy
+          tags: [script]
 
-    - name: Deploy generated user units by checksum
-      ansible.builtin.copy:
-        src: "{{ generated_dir }}/{{ item.host_key }}/{{ item.id }}.{{ item.suffix }}"
-        dest: "{{ units_dir }}/{{ item.id }}.{{ item.suffix }}"
-        mode: "0644"
-      register: shipper_units_copy
-      loop: "{{ shipper_units }}"
-      loop_control:
-        label: "{{ item.id }}.{{ item.suffix }}"
-      tags: [units]
+        - name: Deploy generated user units by checksum
+          ansible.builtin.copy:
+            src: "{{ generated_dir }}/{{ item.host_key }}/{{ item.id }}.{{ item.suffix }}"
+            dest: "{{ units_dir }}/{{ item.id }}.{{ item.suffix }}"
+            mode: "0644"
+            backup: true
+          register: shipper_units_copy
+          loop: "{{ shipper_units }}"
+          loop_control:
+            label: "{{ item.id }}.{{ item.suffix }}"
+          tags: [units]
 
-    - name: Decide if a reload is needed
-      ansible.builtin.set_fact:
-        shipper_changed: >-
-          {{ (shipper_script_copy.changed | default(false))
-             or (shipper_units_copy.results | default([])
-                 | selectattr('changed') | list | length > 0) }}
-        shipper_timers: >-
-          {{ shipper_lanes | map(attribute='id')
-             | map('regex_replace', '$', '.timer') | list }}
-      changed_when: false
+        - name: Decide if a reload is needed
+          ansible.builtin.set_fact:
+            shipper_changed: >-
+              {{ (shipper_script_copy.changed | default(false))
+                 or (shipper_units_copy.results | default([])
+                     | selectattr('changed') | list | length > 0) }}
+            shipper_timers: >-
+              {{ shipper_lanes | map(attribute='id')
+                 | map('regex_replace', '$', '.timer') | list }}
+            shipper_changed_dests: >-
+              {{ ([] if not (shipper_script_copy.changed | default(false))
+                  else [shipper_script_copy.dest
+                        | default(shipper_dest_dir ~ '/log-shipper.py')])
+                 + (shipper_units_copy.results | default([])
+                    | selectattr('changed') | map(attribute='dest') | list) }}
+          changed_when: false
 
-    - name: Reload user systemd and arm the timers (only on real changes)
-      ansible.builtin.shell: |
-        uid="$(id -u)"
-        export XDG_RUNTIME_DIR="/run/user/$uid"
-        export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus"
-        systemctl --user daemon-reload
-        systemctl --user enable --now {{ shipper_timers | join(' ') }}
-      when: shipper_changed | bool
-      tags: [enable]
+        - name: Reload user systemd and arm the timers (only on real changes)
+          ansible.builtin.shell: |
+            uid="$(id -u)"
+            export XDG_RUNTIME_DIR="/run/user/$uid"
+            export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus"
+            systemctl --user daemon-reload
+            systemctl --user enable --now {{ shipper_timers | join(' ') }}
+          when: shipper_changed | bool
+          tags: [enable]
 
-    - name: Run each lane once (opt-in — writes to the MDDB ops instance)
-      ansible.builtin.command: "{{ item.exec_cmd | replace('%h', ansible_user_dir) }}"
-      environment: "{{ item.env | default({}) }}"
-      loop: "{{ shipper_lanes }}"
-      loop_control:
-        label: "{{ item.id }}"
-      when: shipper_run_once | bool
-      tags: [run-once]
+        - name: Run each lane once (opt-in — writes to the MDDB ops instance)
+          ansible.builtin.command: "{{ item.exec_cmd | replace('%h', ansible_user_dir) }}"
+          environment: "{{ item.env | default({}) }}"
+          loop: "{{ shipper_lanes }}"
+          loop_control:
+            label: "{{ item.id }}"
+          when: shipper_run_once | bool
+          tags: [run-once]
+
+      rescue:
+        - name: Restore every file changed in this run from its newest backup
+          ansible.builtin.shell: |
+            set -eu
+            for dest in {{ shipper_changed_dests | default([]) | join(' ') }}; do
+              backup="$(find "$(dirname "$dest")" -maxdepth 1 \
+                -name "$(basename "$dest").*~" -printf '%T@ %p\n' \
+                | sort -n | tail -1 | cut -d' ' -f2-)"
+              if [ -n "$backup" ]; then
+                cp -p "$backup" "$dest"
+                echo "restored $dest from $backup"
+              fi
+            done
+          when: (shipper_changed_dests | default([])) | length > 0
+          changed_when: false
+
+        - name: Reload user systemd after rollback
+          ansible.builtin.shell: |
+            uid="$(id -u)"
+            export XDG_RUNTIME_DIR="/run/user/$uid"
+            export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus"
+            systemctl --user daemon-reload
+          when: (shipper_changed_dests | default([])) | length > 0
+          changed_when: false
+
+        - name: Fail the host after rolling back
+          ansible.builtin.fail:
+            msg: >-
+              log-shipper converge failed on {{ inventory_hostname }};
+              changed files were restored from backup. The original error is
+              above this task.
 
     - name: Report convergence result
       ansible.builtin.debug:
@@ -213,3 +272,70 @@
           {{ 'CONVERGED' if (shipper_changed | default(false)) else 'in-sync' }}
           ({{ shipper_lanes | map(attribute='id') | join(', ') }})
       changed_when: false
+
+  # Data-plane gate: a clean file converge is not enough. The shipper now
+  # exits 1 on failed /add, and the judge raises logs-auto-*-add-failed cards,
+  # but this makes the play itself fail before anyone reads a dashboard.
+  post_tasks:
+    - name: Check MDDB ops health
+      ansible.builtin.uri:
+        url: "{{ mddb_ops_url }}/health"
+        method: GET
+        status_code: 200
+      delegate_to: localhost
+      run_once: true
+      register: mddb_health
+      changed_when: false
+      check_mode: false
+      tags: [verify]
+
+    - name: Read host-logs-state heartbeats
+      ansible.builtin.uri:
+        url: "{{ mddb_ops_url }}/search"
+        method: POST
+        body_format: json
+        body:
+          collection: host-logs-state
+          query: ""
+          limit: 500
+        status_code: 200
+        return_content: true
+      delegate_to: localhost
+      run_once: true
+      register: mddb_state_search
+      changed_when: false
+      check_mode: false
+      tags: [verify]
+
+    - name: Count failed MDDB adds from state docs
+      ansible.builtin.set_fact:
+        mddb_add_failures: >-
+          {{ (mddb_state_search.json | default([])
+              | map(attribute='contentMd')
+              | select('search', '^\s*\{')
+              | map('from_json')
+              | selectattr('failed', 'defined')
+              | map(attribute='failed')
+              | map('int')
+              | select('gt', 0)
+              | list) }}
+      delegate_to: localhost
+      run_once: true
+      changed_when: false
+      tags: [verify]
+
+    - name: Fail on any failed MDDB /add
+      ansible.builtin.assert:
+        that:
+          - mddb_add_failures | length == 0
+        fail_msg: >-
+          MDDB ops health={{ mddb_health.status }}, but
+          {{ mddb_add_failures | length }} host-logs-state doc(s) report
+          failed>0 — the log pipeline is blind. See logs-auto-*-add-failed
+          cards and the shipper's non-zero exit in systemd.
+        success_msg: >-
+          MDDB ops healthy ({{ mddb_health.status }}); no failed /add in
+          host-logs-state.
+      delegate_to: localhost
+      run_once: true
+      tags: [verify]
