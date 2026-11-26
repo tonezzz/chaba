@@ -1,7 +1,7 @@
 id: gemini4-interactions-text-agent-eval-2026-11-26
 title: Evaluate Gemini 4 + Interactions API for a stateful text agent
 column: review
-updated: 2026-11-26 20:08
+updated: 2026-11-26 20:17
 brief: Compare gemini-4-hydrogen/neon via the Interactions API against the current 3.x stateless text path on a
   small multi-turn tool-and-recall task set; measure task accuracy, token growth and latency.
 priority: medium
@@ -98,6 +98,16 @@ comms:
 - at: 2026-11-26 20:08
   from: tony
   text: moved doing -> review
+- at: 2026-11-26 20:17
+  from: ada
+  text: 'Free-tier testing continued per user choice. Batch 1: all six Interactions surfaces pass on gemini-3.5-flash-lite
+    (streaming text, streamed function call + resume, structured output both modes, background execution, stored
+    get/delete) — background worked despite docs listing only Gemini 4/3.8. Batch 2: Flex tier accepted and echoed;
+    Priority silently downgraded to standard; server-side code execution returned Fibonacci(20)=6765 with 84 tool-use
+    tokens; Google Search grounding quota-blocked; impl'
+- at: 2026-11-26 20:17
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
 action:
   type: dispatch
   status: running
