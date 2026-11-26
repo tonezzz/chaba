@@ -118,6 +118,10 @@ def _data_isolation_scan(rel, content, warnings):
         # Skip references to environment variables, secret file paths, and placeholders
         if re.match(r'^[A-Z_]+$', value):
             continue
+        # os.environ/NAME is the litellm env-ref syntax, not a secret value
+        # (card gemini-eval-judge-lane quotes it inside a spec string).
+        if re.match(r'^os\.environ/[A-Za-z_][A-Za-z0-9_]*$', value):
+            continue
         if re.match(r'^[~/.]', value):
             continue
         if 'environment variable' in value.lower() or 'do not commit' in value.lower():

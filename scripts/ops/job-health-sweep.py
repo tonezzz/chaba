@@ -70,6 +70,14 @@ BOARD_API = (os.environ.get("BOARD_API") or os.environ.get("RUNNER_API")
 WINDOW = os.environ.get("JOB_SWEEP_WINDOW", "30 days ago")
 
 CONSEC_MIN = 3
+# Some watch jobs (retry-storm-watch, netdata-nodes-watch) deliberately
+# exit 1 when they file an alert — that nonzero exit IS their alerting
+# contract, not a broken activation. The newest activation ending in one
+# of these stdout markers counts as a successful completion for health
+# purposes; a failure without a marker still flags normally.
+ALERT_EXIT_MARKERS = (
+    "alert filed:", "alert muted", "recovered (silent)", "ok — checks=",
+)
 SUMMARY_EVERY_S = 20 * 3600      # still-failing digest cadence (~daily)
 JOURNAL_TIMEOUT = 60
 CTL_TIMEOUT = 15
@@ -104,7 +112,9 @@ def load_jobs(manifest: Path, host: str) -> list[dict]:
         if not j.get("enabled", True):
             continue
         jobs.append({"id": str(j["id"]),
-                     "name": str(j.get("name") or j["id"])})
+                     "name": str(j.get("name") or j["id"]),
+                     "expected_alert_exit":
+                         bool(j.get("expected_alert_exit", False))})
     return jobs
 
 
@@ -159,6 +169,26 @@ def _is_ok(msg: str, unit: str) -> bool:
 def _is_informative(msg: str) -> bool:
     s = msg.strip()
     return len(s) >= 4 and not BOILER_RE.match(s)
+
+
+def alert_exit_ok(unit: str, events: list) -> bool:
+    """Newest activation completed via the watcher's alert-exit contract.
+
+    Scans only the tail after the latest Starting/Started marker, so an
+    older alert cannot mask a newer crash. Callers gate this on the job's
+    `expected_alert_exit` SSOT declaration.
+    """
+    last_start = -1
+    for i, (_ts, msg) in enumerate(events):
+        if msg.startswith(f"Starting {unit}") or \
+                msg.startswith(f"Started {unit}"):
+            last_start = i
+    if last_start < 0:
+        return False
+    tail = [msg for _ts, msg in events[last_start + 1:]]
+    return any(marker in line
+               for line in tail
+               for marker in ALERT_EXIT_MARKERS)
 
 
 def analyze_unit(unit: str, events: list) -> dict:
@@ -300,6 +330,14 @@ def evaluate(jobs: list[dict], since: str,
         if jerr:
             return jid, v, f"{jid}: journalctl failed: {jerr}"
         a = analyze_unit(v["unit"], events)
+        if job.get("expected_alert_exit") and \
+                alert_exit_ok(v["unit"], events):
+            # Nonzero exit with the declared alert marker is a completed
+            # activation (the job's alert contract), not a failed one.
+            # Keep fails/attempts intact for the audit trail, but clear
+            # the streak and credit one success so the verdict stays green.
+            a["consec"] = 0
+            a["successes"] = max(a["successes"], 1)
         v.update(a)
         if a["consec"] >= CONSEC_MIN:
             v["reasons"].append(f"consecutive-failures:{a['consec']}")

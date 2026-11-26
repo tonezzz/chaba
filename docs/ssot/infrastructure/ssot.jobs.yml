@@ -782,6 +782,7 @@ jobs:
     Expected node list defaults to the 8-node fleet — edit --nodes or
     this note if the fleet changes.'
 - id: retry-storm-watch
+  expected_alert_exit: true  # nonzero exit with alert marker is a completed activation
   name: Retry-storm / hot-container watch (podman CPU + log sigs + MDDB queue)
   host: idc03
   dispatch: systemd
@@ -802,6 +803,7 @@ jobs:
     ~/.local/state/retry-storm-watch.json. Trail doc
     docs/ssot/jobs/monitoring/2026-11-25-retry-storm-watch.yml.'
 - id: retry-storm-watch
+  expected_alert_exit: true  # nonzero exit with alert marker is a completed activation
   name: Retry-storm / hot-container watch (podman CPU + log sigs)
   host: idc02
   dispatch: systemd
@@ -812,6 +814,7 @@ jobs:
   note: 'card ops-retry-storm-detection — container checks only; MDDB
     queue leg runs on idc03 where the leader lives.'
 - id: retry-storm-watch
+  expected_alert_exit: true  # nonzero exit with alert marker is a completed activation
   name: Retry-storm / hot-container watch (podman CPU + log sigs)
   host: tony_dell
   dispatch: systemd
@@ -822,6 +825,7 @@ jobs:
   note: 'card ops-retry-storm-detection — container checks only; MDDB
     queue leg runs on idc03 where the leader lives.'
 - id: retry-storm-watch
+  expected_alert_exit: true  # nonzero exit with alert marker is a completed activation
   name: Retry-storm / hot-container watch (podman CPU + log sigs)
   host: tony_omen
   dispatch: systemd
@@ -832,6 +836,7 @@ jobs:
   note: 'card ops-retry-storm-detection — container checks only; MDDB
     queue leg runs on idc03 where the leader lives.'
 - id: retry-storm-watch
+  expected_alert_exit: true  # nonzero exit with alert marker is a completed activation
   name: Retry-storm / hot-container watch (podman CPU + log sigs)
   host: mn01
   dispatch: systemd
@@ -842,6 +847,7 @@ jobs:
   note: 'card ops-retry-storm-detection — container checks only; MDDB
     queue leg runs on idc03 where the leader lives.'
 - id: retry-storm-watch
+  expected_alert_exit: true  # nonzero exit with alert marker is a completed activation
   name: Retry-storm / hot-container watch (podman CPU + log sigs)
   host: con01
   dispatch: systemd
