@@ -1,0 +1,144 @@
+---
+# deploy-con01-ada-warm-standby.yml — install (but DO NOT activate) warm-standby
+# units for the two idc03-only Ada lanes on con01.
+#
+# WHAT THIS PLAY DOES (all non-disruptive):
+#   1. writes inert `*.service.standby` files under ~/.config/systemd/user/standby/
+#      (systemd ignores the unknown `.standby` suffix)
+#   2. MASKs the canonical service names with symlinks -> /dev/null
+#   3. reloads the user systemd manager (no service start/restart)
+# It does NOT start a service, touch Caddy/edge, change DNS/firewall, install
+# packages, or write any secret. The units cannot run while masked.
+#
+# TARGETS CONFIRMED (not from memory):
+#   - docs/ssot/infrastructure/ssot.audit.hosts.yml con01 block: public VPS,
+#     declared DR/absorber tier (mddb-follower, standby caddy-edge, ada-stt,
+#     secrets-backup target; "never a live writer").
+#   - ansible/inventory/hosts.yml: con01 under vps, ansible_host 100.72.146.39.
+#   - stacks/idc03/{ada-line-relay,ada-ha-tony}/stack.yml: both lanes idc03-only.
+#
+# USAGE (always --limit con01; never a blanket fleet run):
+#   ansible-playbook --check --diff --limit con01 \
+#     playbooks/deploy-con01-ada-warm-standby.yml
+#   ansible-playbook --limit con01 \
+#     playbooks/deploy-con01-ada-warm-standby.yml
+#
+# ACTIVATION is a separate, explicitly-approved disruptive step. Do not run it
+# from this play. Exact commands + rollback are in
+# docs/kb/con01-ada-lane-warm-standby.md.
+
+- name: Install con01 Ada lane warm-standby units (masked, inactive)
+  hosts: con01
+  gather_facts: false
+
+  vars:
+    systemd_user_dir: /home/tony/.config/systemd/user
+    standby_dir: "{{ systemd_user_dir }}/standby"
+    standby_units:
+      - { name: ada-ha-tony.service.standby, dir: ada-ha-tony }
+      - { name: ada-line-relay.service.standby, dir: ada-line-relay }
+
+  tasks:
+    - name: Refuse to run against any host other than con01
+      ansible.builtin.assert:
+        that:
+          - inventory_hostname == 'con01'
+        fail_msg: "con01-only play — use --limit con01."
+      tags: [unit]
+
+    - name: Ensure standby directory exists
+      ansible.builtin.file:
+        path: "{{ standby_dir }}"
+        state: directory
+        owner: tony
+        group: tony
+        mode: "0700"
+      tags: [unit]
+
+    - name: Install inert standby unit files from the repo (single source of truth)
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../stacks/con01/{{ item.dir }}/{{ item.name }}"
+        dest: "{{ standby_dir }}/{{ item.name }}"
+        owner: tony
+        group: tony
+        mode: "0600"
+      loop: "{{ standby_units }}"
+      loop_control:
+        label: "{{ item.name }}"
+      notify: reload con01 user systemd
+      tags: [unit]
+
+    - name: Stat canonical unit paths before masking
+      ansible.builtin.stat:
+        path: "{{ systemd_user_dir }}/{{ item.name | regex_replace('\\.standby$', '') }}"
+      loop: "{{ standby_units }}"
+      loop_control:
+        label: "{{ item.name }}"
+      register: canonical_units
+      tags: [unit]
+
+    - name: Refuse to mask over a real unit file
+      ansible.builtin.assert:
+        that:
+          - not (item.stat.exists and not item.stat.islnk)
+        fail_msg: >-
+          {{ item.item }} exists as a regular file/dir on con01 — refusing to
+          overwrite it. Back it up and reconcile before re-running.
+      loop: "{{ canonical_units.results }}"
+      loop_control:
+        label: "{{ item.item.name }}"
+      tags: [unit]
+
+    - name: Mask canonical service names (symlink -> /dev/null)
+      # No owner/group here — the file module would follow the link and try to
+      # chown /dev/null itself (Errno 1). The symlink is created as tony anyway.
+      ansible.builtin.file:
+        src: /dev/null
+        dest: "{{ systemd_user_dir }}/{{ item.name | regex_replace('\\.standby$', '') }}"
+        state: link
+        force: true
+      loop: "{{ standby_units }}"
+      loop_control:
+        label: "{{ item.name }}"
+      notify: reload con01 user systemd
+      tags: [unit]
+
+    - name: Re-stat canonical unit paths after masking
+      ansible.builtin.stat:
+        path: "{{ systemd_user_dir }}/{{ item.name | regex_replace('\\.standby$', '') }}"
+      loop: "{{ standby_units }}"
+      loop_control:
+        label: "{{ item.name }}"
+      register: final_units
+      when: not ansible_check_mode
+      tags: [verify]
+
+    - name: Verify masks and inert unit files (skipped in check mode — nothing changed yet)
+      ansible.builtin.assert:
+        that:
+          - item.stat.islnk
+          - item.stat.lnk_target == '/dev/null'
+        fail_msg: "canonical unit {{ item.item }} is not masked to /dev/null"
+      loop: "{{ final_units.results }}"
+      loop_control:
+        label: "{{ item.item.name }}"
+      when: not ansible_check_mode
+      tags: [verify]
+
+    - name: Report check-mode intent
+      ansible.builtin.debug:
+        msg: >-
+          CHECK MODE: would install 2 inert standby units into
+          {{ standby_dir }} and mask ada-ha-tony.service + ada-line-relay.service
+          on con01. No service/edge/DNS change.
+      when: ansible_check_mode
+      tags: [verify]
+
+  handlers:
+    - name: reload con01 user systemd
+      ansible.builtin.shell:
+        cmd: "XDG_RUNTIME_DIR=/run/user/$(id -u) systemctl --user daemon-reload"
+        executable: /bin/bash
+      changed_when: false
+      when: not ansible_check_mode
+      tags: [unit]

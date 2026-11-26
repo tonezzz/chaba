@@ -305,6 +305,13 @@ instances:
       works in the iframe on the public ada-ha URL — the tailnet iframe
       URL could only log in when the dashboard itself was opened via
       tailnet. tailscale serve :8443 remains as a private backup path.
+      Ada Test (added 2026-11-26 via push-dashboard.py --mutate +
+      mutate-ada-ha-ada-test-tab.py) is a full-page panel iframe to
+      https://oswe.surf-thailand.com/?v=1 with OSWE/Robin as its first (only)
+      tab; placed directly after OpenChamber. The iframe target is not yet
+      publicly exposed — backend boot is gated on unfilled credentials and the
+      oswe.surf-thailand.com edge is not provisioned, so the tab is staged
+      pending those items (see card oswe-eval-ada-test-tab).
       Cline panel retired 2026-11-26 (Tony-approved full Cline retirement):
       the full-page iframe to https://cline.surf-thailand.com/?v=1 was removed
       from the live 18→17 view set; edge route, con01 containers/timers and
@@ -583,5 +590,5 @@ conventions:
 
 status:
   last_updated: "2026-10-29"
-  last_verified: '2026-11-25'
+  last_verified: '2026-11-26'
   health: active; G1 on both hosts (dev v171 / ha v161, same md5 b404aab0) — surface3d PV chart on sensor.inverters_1_pv_power, vendored echarts libs in /local; Cast tab removed from live michael-ha tony-test on 2026-09-14; PF3/PF4/PFG/PFG1/PFG2 removed

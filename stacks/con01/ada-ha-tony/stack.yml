@@ -1,0 +1,42 @@
+id: ada-ha-tony
+host: con01
+description: >-
+  Warm-standby copy of the idc03-only ada-ha-tony voice lane (:8002), installed
+  as an INERT file (ada-ha-tony.service.standby) under
+  ~/.config/systemd/user/standby/ with the canonical service name masked to
+  /dev/null. Part of the con01 DR/absorber tier (OPS-0763), alongside
+  mddb-follower and the standby caddy-edge. No traffic reaches con01 in normal
+  operation; DNS never points here until an approved failover.
+verify: >-
+  Before activation: test -L ~/.config/systemd/user/ada-ha-tony.service &&
+  [ "$(readlink ~/.config/systemd/user/ada-ha-tony.service)" = /dev/null ] &&
+  test -f ~/.config/systemd/user/standby/ada-ha-tony.service.standby
+  After activation: curl -sf http://127.0.0.1:8002/api/health -o /dev/null
+secrets:
+  - "~/.config/secrets/tony-ha/backend.env — restored from idc03's daily
+     age-encrypted secrets-backup tarball; never in git"
+  - "~/.config/secrets/notebooklm-rest-api.env — same tarball"
+  - "~/.config/secrets/tony-ha/keys.json — same tarball (keys.json store)"
+requires:
+  - "tool:python3 + venv at ~/CascadeProjects/ada-voice/.venv — NOT PRESENT on
+     con01 yet (checkout at 65a7464, 2026-10-22); provisioning is an approved
+     failover step, see docs/kb/con01-ada-lane-warm-standby.md"
+  - "tcp:100.72.146.39:11123 — con01 mddb-follower (or promoted leader)"
+  - "tcp:100.123.163.11:3011 — notebooklm-rest on idc02 must still be alive"
+  - "caddy-edge route /apps/ha/ada-tony/* -> 127.0.0.1:8002 (Caddyfile present;
+     caddy-edge.service was inactive on con01 as of 2026-11-26)"
+state:
+  - "~/.config/systemd/user/standby/ada-ha-tony.service.standby — inert source"
+  - "~/.config/systemd/user/ada-ha-tony.service -> /dev/null — mask"
+ports:
+  - "127.0.0.1:8002 — uvicorn pwa_server (inactive until promoted)"
+restore: >-
+  Promote mddb-follower first, restore only the needed env files from the
+  latest ~/secrets-backup/secrets-*.tar.age (never untar .config/systemd/user
+  wholesale — it would unmask/clobber con01 units), provision the venv, remove
+  the mask + copy the .standby file into place, daemon-reload, enable --now.
+  Full step-by-step with exact commands and rollback:
+  docs/kb/con01-ada-lane-warm-standby.md
+related_cards: [con01-ada-lane-warm-standby, idc04-contabo-vps8-provision]
+status: deployed-masked
+deployed: 2026-11-26

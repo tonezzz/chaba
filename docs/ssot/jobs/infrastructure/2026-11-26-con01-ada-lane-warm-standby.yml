@@ -1,0 +1,95 @@
+title: con01 warm standby for idc03-only ada-line-relay + ada-ha-tony
+subtitle: 'Inert, masked standby units + verified secrets path; activation gated on Tony'
+icon: shield
+date: 2026-11-26
+status: deployed-masked
+card: con01-ada-lane-warm-standby
+ref: ADA-0784
+runbook: docs/kb/con01-ada-lane-warm-standby.md
+
+targets_confirmed:
+  - "docs/ssot/infrastructure/ssot.audit.hosts.yml con01 block — public VPS,
+     declared DR/absorber tier (mddb-follower, standby caddy-edge, ada-stt,
+     secrets-backup target); 'con01 is a follower/standby tier only — never a
+     live writer'."
+  - "ansible/inventory/hosts.yml — con01 under vps, ansible_host 100.72.146.39."
+  - "stacks/idc03/ada-line-relay/stack.yml + stacks/idc03/ada-ha-tony/stack.yml
+     — both lanes idc03-only."
+  - "ssot.disaster-recovery.yml — host-level DR / recovery procedures SSOT."
+
+pattern_followed:
+  - "mddb-follower on con01 (stacks/con01/mddb-follower) — local warm promote target"
+  - "caddy-edge standby on con01 (stacks/con01/caddy-edge) — synced cert, local upstreams"
+  - "ada-stt native unit on con01 — no container needed for these lanes"
+
+preflight:
+  automation: "grep found no existing playbook owning con01 Ada standby units;
+    added ansible/playbooks/deploy-con01-ada-warm-standby.yml per ansible-first
+    step 4 (repeatable, one host, --limit)."
+  check_command: "ansible-playbook --check --diff --limit con01 -i ansible/inventory/hosts.yml ansible/playbooks/deploy-con01-ada-warm-standby.yml"
+  check_result: "ok=7 changed=3 unreachable=0 failed=0 skipped=3 — 0 unreachable / 0 failed"
+  read_only_findings:
+    - "idc03 live units: ada-line-relay.service uses tony-ha/backend.env +
+       line-bot.env; ada-ha-tony.service uses tony-ha/backend.env +
+       notebooklm-rest-api.env; both under ~/CascadeProjects/ada-voice/.venv."
+    - "idc03 drop-ins: isolation.conf (MemoryMax=2G/CPUQuota=150%/journal cap),
+       dep-gate.conf (MDDB :11023 + notebooklm :3011), stagger.conf,
+       text-chat.conf — folded/adapted into the standby units as documented."
+    - "con01 ~/secrets-backup/secrets-20261126-0300.tar.age verified (names only)
+       to contain line-bot.env, notebooklm-rest-api.env, tony-ha/backend.env,
+       tony-ha/keys.json and both live unit files."
+    - "con01 caddy-edge Caddyfile already routes /webhook/line and /relay-img/*
+       -> 127.0.0.1:8912 and /apps/ha/ada-tony/* -> 127.0.0.1:8002. No edit made."
+    - "con01 ada-voice checkout at 65a7464 (2026-10-22), NO .venv, no user
+       uvicorn — venv provisioning is a gated failover step."
+    - "con01 caddy-edge.service inactive (stopped 2026-11-25); image
+       docker.io/library/caddy:2 and cert pair present — start is a gated step."
+
+changes:
+  - "stacks/con01/ada-line-relay/{stack.yml,ada-line-relay.service.standby}"
+  - "stacks/con01/ada-ha-tony/{stack.yml,ada-ha-tony.service.standby}"
+  - "ansible/playbooks/deploy-con01-ada-warm-standby.yml (con01-only, inert)"
+  - "docs/kb/con01-ada-lane-warm-standby.md (failover + rollback runbook)"
+  - "on con01: standby files under ~/.config/systemd/user/standby/ and masks
+     ~/.config/systemd/user/ada-{ha-tony,line-relay}.service -> /dev/null"
+
+verification:
+  converge: "ansible-playbook --limit con01 ... — final ok=8 changed=0
+    unreachable=0 failed=0 skipped=1 (idempotent)"
+  idempotency: "--check --diff --limit con01 re-run: ok=7 changed=0
+    unreachable=0 failed=0 skipped=2"
+  source_hashes:
+    - "d7ab3a64c803d07188f9c5bb994c2ea3b3391f5c8d300f104c379481d0a1ffb0
+       ada-ha-tony.service.standby (repo == host)"
+    - "769e560e8f729012b56180a26268f6420845fd1287f996daed52f1d491389163
+       ada-line-relay.service.standby (repo == host)"
+  on_host: "list-unit-files -> both 'masked'; is-enabled -> masked/masked;
+    is-active -> inactive/inactive; daemon-reload applied."
+  consumer_proof: "No live consumer was touched — no service started or
+    restarted, no edge reload, no DNS change. Normal con01 traffic remains zero."
+
+blocked_pending_approval:
+  - "Provision ~/CascadeProjects/ada-voice/.venv from backend/requirements.txt
+     (package install + checkout alignment)."
+  - "Start caddy-edge.service on con01 (edge/service change)."
+  - "Unmask + enable --now ada-ha-tony.service then ada-line-relay.service
+     (service start)."
+  - "Repoint Cloudflare A record api.surf-thailand.com -> 169.58.241.208 (DNS)."
+  - "Exact commands for all four are in docs/kb/con01-ada-lane-warm-standby.md
+     §4, §6, §7, §8. Not run here — no explicit approval in this session."
+
+rollback:
+  - "Re-run --check --limit con01 to confirm masks; activation rollback is
+     documented in the runbook (DNS restore, disable --now, re-mask units)."
+  - "Play itself touches no live state, so rollback is: remove the standby dir
+     and the two /dev/null symlinks."
+
+lessons:
+  - "Masking + a non-systemd .standby suffix is what makes a standby unit
+     genuinely inert; a plain disabled unit is not safe against glob enable."
+  - "secrets-backup bundles all of .config/systemd/user — extract only the
+     named env files on con01, never the whole tree."
+  - "Ansible file: state=link must not set owner/group when masking to /dev/null
+     (it follows the link and chown fails Errno 1). Fixed in this play."
+  - "The edge routes were already present; the real DR gap was activation
+     readiness (venv, masks, inactive edge), not a missing Caddyfile route."
