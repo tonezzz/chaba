@@ -1,0 +1,83 @@
+title: Evaluate Gemini Managed Agents on the free tier
+subtitle: >
+  Interactions API agent=... with remote sandbox, code execution, sandbox reuse
+  and repository source mount — all verified on the free-tier key, 2026-11-26.
+icon: education
+version: 1
+
+card: gemini-dev-capabilities-research-2026-11-26  # ADA-1440
+date: 2026-11-26
+source_session: "2026-11-26 exploration track after the decision-1 label review"
+
+delivered:
+  method:
+    surface: "POST https://generativelanguage.googleapis.com/v1beta/interactions with agent instead of model"
+    agent: antigravity-preview-09-2026
+    key_used: GEMINI_API_KEY_MICHAEL  # free-tier key; value never displayed or copied
+    synthetic_tasks_only: true
+    harnesses:
+      - scripts/voice-bench/g4-managed-agents-eval.py
+      - scripts/voice-bench/g4-ma-repo-bg.py
+    artifacts:
+      - scripts/voice-bench/results/g4-managed-agents-eval-20261126.json
+      - scripts/voice-bench/results/g4-ma-repo-bg-20261126.json
+  results:
+    smoke_probe:
+      elapsed_s: 112.22
+      usage: {input: 5451, output: 5, thought: 20}
+      response: "OK"
+      environment_id_returned: true
+    fresh_sandbox_write_read:
+      ok: true
+      elapsed_s: 31.39
+      status: completed
+      steps: [thought, code_execution_call, code_execution_result, model_output, thought]
+      file_contents: ADA-MA-OK-42
+      usage: {input: 11270, output: 111, thought: 187, cached: 3441}
+    reuse_sandbox:
+      ok: true
+      elapsed_s: 25.13
+      status: completed
+      same_environment_id: true
+      file_contents: ADA-MA-OK-42-REUSED
+      usage: {input: 11979, output: 94, thought: 119, cached: 7559}
+    repo_source_mount:
+      ok: true
+      mode: "background: true + GET polling"
+      elapsed_s: 287.92
+      status: completed
+      source: "https://github.com/octocat/Spoon-Knife -> /workspace/spoon-knife"
+      graded_repo_listed: true
+      synchronous_attempt: "POST without background timed out at 290s; not a capability failure"
+    batch_probe:
+      model_gemini_3_5_flash_lite: "HTTP 400 FAILED_PRECONDITION"
+      model_gemini_3_8_flash: "HTTP 400 FAILED_PRECONDITION"
+      interpretation: "observed on the free key with a one-request inline job; treat as a free-tier boundary until checked on paid capacity"
+
+findings:
+  - "Managed Agents run on the free tier: fresh sandbox, code execution, file write/read, sandbox reuse with persistence, and a mounted public repo all completed."
+  - "Reuse via environment_id + previous_interaction_id returned the same environment_id and preserved the file across turns; cached input rose 3,441 -> 7,559 tokens on the reuse turn."
+  - "A managed-agent turn is expensive for small tasks: 11k-12k input tokens versus ~1.5k for the batched Decisions call. Use it for real sandbox work, not trivial dispatch."
+  - "Raw REST POST /interactions does not include the SDK's output_text field. The answer lives in steps[type=model_output].content and tool output in steps[type=code_execution_result].result; initial false grades were corrected from stored GET /interactions/{id} responses."
+  - "Repository mounting needs background mode: synchronous call timed out at 290s, background POST + GET polling completed in 288s."
+  - "Free-tier generation quota remains exhausted (429, ~16h reset at probe time); the agent runs still succeeded, indicating a separate quota path from the lite-model generation bucket."
+  - "batchGenerateContent returned 400 FAILED_PRECONDITION for two models on the free key. Not sufficient evidence to call the API paid-only; paid verification is still open."
+
+guardrails:
+  - "No key, billing, gateway, model-pin or production-path changes."
+  - "No wiki publish in this track; the Education page is unchanged."
+  - "Synthetic file contents and a public GitHub repo only; no estate repo or host data mounted."
+
+activation_gate:
+  - "DONE 2026-11-26: Tony said 'please proceed' after the decision-1 label review."
+  - "DONE 2026-11-26: free-tier quota checked with one call (429), then agent and batch probed once each before the full harness."
+
+verify:
+  - "DONE 2026-11-26: both file-task grades re-checked via stored GET /interactions/{id}; code_execution_result and model_output both contained the expected strings."
+  - "DONE 2026-11-26: YAML receipts and result JSON parsed; JSONs force-added through a clean detached worktree push."
+
+remaining:
+  - "Compare a real end-to-end task against our hand-built agent loop on token cost and wall time; this run only establishes capability, not an efficiency win."
+  - "Verify triggers and web-search tools inside the managed environment; only filesystem, code execution and repo mount were exercised."
+  - "Check batchGenerateContent on paid capacity, including 50% price claim and 24h SLO, when the shared project cap is resolved."
+  - "Do not promote Managed Agents into any runtime path on this evidence alone."

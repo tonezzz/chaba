@@ -64,9 +64,23 @@ scoring) without generating a paragraph we then have to parse.
 ### Managed Agents
 
 `client.agents` / `agent=...` with a sandboxed filesystem, code execution, web
-search, and triggers. Also `v1beta`-only. Worth a scoped eval against our
-current hand-built agent loops, but it must not be conflated with the
-Interactions API: one is a stateful conversation primitive, the other is a
+search, and triggers. Also `v1beta`-only. **Verified on the free tier on
+2026-11-26** with `agent=antigravity-preview-09-2026` and `environment="remote"`
+(see receipt `docs/ssot/jobs/devnest/2026-11-26-gemini-managed-agents-eval.yml`):
+
+| Task | Result |
+|---|---|
+| Fresh sandbox, Python write + read `/workspace/ada-proof.txt` | 31s, exact `ADA-MA-OK-42` in `code_execution_result` and `model_output`; 11,270 in / 111 out / 187 thought tokens, 3,441 cached |
+| Reuse sandbox via `environment_id` + `previous_interaction_id` | 25s, same `environment_id`, file persisted and appended to `ADA-MA-OK-42-REUSED`; 11,979 in / 94 out / 119 thought tokens, 7,559 cached |
+| Mount public GitHub repo at `/workspace/spoon-knife` and list files | completed in 288s only with `background: true` + GET polling; a synchronous call timed out at 290s |
+
+Two cautions for our loops: raw REST `POST /interactions` has **no**
+`output_text` field (that is SDK-only) — read `steps[].content` and
+`steps[].result`; and a managed-agent call costs far more input tokens than a
+plain model turn (11k–12k vs ~1.5k for the Decisions batch) even when the agent
+only writes one short file. Cache hits rose from 3,441 to 7,559 on the reuse
+turn, so sandbox reuse does reduce billable input. It must not be conflated with
+the Interactions API: one is a stateful conversation primitive, the other is a
 managed execution environment.
 
 ### Official `gemini-api-dev` skill
@@ -144,6 +158,7 @@ and `scripts/voice-bench/results/g4-*20261126.json`.
 | Code execution | correct Fibonacci(20)=6765; 84 tool-use tokens, ~57s |
 | Token counting | `countTokens` works even after generation quota is exhausted |
 | Files API | upload / get / list / delete all work without generation quota; URIs are `/v1/files/<id>` |
+| Managed Agents (`antigravity-preview-09-2026`) | fresh sandbox + code execution, sandbox reuse with file persistence, and GitHub repo mount all work on the free key (see section 2 and the managed-agents receipt); repo mount needs background mode |
 
 ### What does not
 
@@ -153,6 +168,12 @@ and `scripts/voice-bench/results/g4-*20261126.json`.
   prefix; flash-lite is absent from the documented cache-minimum table.
 - **Google Search grounding** returned 429 on the free-tier key (documented as
   paid-tier only), so it is a quota boundary, not a capability result.
+- **Batch `batchGenerateContent`** returned HTTP 400 `FAILED_PRECONDITION` on
+  the free key for both `gemini-3.5-flash-lite` and `gemini-3.8-flash` with a
+  one-request inline job. Documented as 50% of interactive price and with its
+  own rate limits; treat free-tier access as unavailable until confirmed on
+  paid capacity. This is an observed precondition, not a model capability
+  failure.
 - **Generation quota**: 500 requests/day per model. The final surfaces
   (thought summaries, inline-image generation, OpenAI compatibility) all hit
   this cap with ~17h to reset. They are **unverified**, not failed.
@@ -182,6 +203,11 @@ result. Keep 3.5 as the comparison baseline.
   `gemini4-interactions-text-agent-eval-2026-11-26`; harnesses
   `scripts/voice-bench/g4-interactions-{eval,surfaces,advanced,model-compare,misc-nogen}.py`
   and JSONs under `scripts/voice-bench/results/`.
+- Managed Agents: board card ADA-1440 /
+  `docs/ssot/jobs/devnest/2026-11-26-gemini-managed-agents-eval.yml`;
+  harnesses `scripts/voice-bench/g4-managed-agents-eval.py` and
+  `g4-ma-repo-bg.py`, JSONs `g4-managed-agents-eval-20261126.json` and
+  `g4-ma-repo-bg-20261126.json`.
 - Related prior pages: `Education:LLM Providers/Gemini API`,
   `Education:Ada-Developer-Paid-Model-Candidates`,
   `Education:Ada-Dev-Gap-Model-Vs-Harness`.
