@@ -1,7 +1,7 @@
 id: auto-route-bounded-card-classes-to-execu-257c7a
 title: Auto-route bounded card classes to executor=claude (classifier policy)
 column: doing
-updated: 2026-11-26 21:59
+updated: 2026-11-26 22:17
 priority: medium
 tags:
 - claude-lane
@@ -353,6 +353,13 @@ comms:
   text: 'attempt 2: implementation complete + verified. classifier (dispatch_repos.claude_route), queue/claim doors
     (board-api), host gate + try-first fallback (runner-agent), manifest pins bumped. verify cmd: 163 passed / 17
     subtests. writing outcome + jobs doc now.'
+- at: 2026-11-26 22:17
+  from: devin
+  text: 'DONE (attempt 2). Bounded classes (verify_only/repo_fix/report_triage) auto-route to executor=claude via
+    dispatch_repos.claude_route, stamped executor_source=queue|claim so unready hosts fall back to normal lanes
+    while declared executor=claude stays fail-closed. Verify: 163 passed + 17 subtests on the card command; full
+    tests/board sweep 1103 pass / 12 fail — all 12 reproduce on base (env: missing board2/index.html, PEP-668 pytest,
+    disk floor). Deliverables: worktree diff (7 files) + docs/ssot/j'
 claim:
   since: 2026-11-26 20:48
 review_kind: verify
