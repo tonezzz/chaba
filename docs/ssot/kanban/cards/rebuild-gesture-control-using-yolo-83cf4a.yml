@@ -1,7 +1,7 @@
 id: rebuild-gesture-control-using-yolo-83cf4a
 title: Rebuild gesture control using YOLO
 column: doing
-updated: 2026-11-26 13:19
+updated: 2026-11-26 13:28
 priority: medium
 spec: 'Goal: Replace MediaPipe hand tracking with a YOLO-based hand/gesture detection model in the client display
   app. Surface: display UI / vcast client. Sequence: evaluate YOLO pose/hand models suitable for browser/edge, integrate
@@ -64,5 +64,12 @@ comms:
     wand ?engine=yolo + in-browser ONNX YOLO26n-HaGRID eval merged today. Gap found: yolo-gesture backend (port
     8785) is DOWN on all hosts — hand mode currently delivers frames nobody consumes. Delivering ada-voice side:
     detector-health honesty in vcast_gesture + SSOT eval/integration doc.'
+- at: 2026-11-26 13:28
+  from: devin
+  text: 'DONE (dispatch branch dd8a928+3ca1ffc, not pushed). Audit: MediaPipe->YOLO replacement already shipped
+    in chaba — vcast hand mode = camera uplink -> yolo-gesture.service hand_yolov8n -> gesture msgs (2026-10-15);
+    wand ?engine=yolo + in-browser ONNX YOLO26n-HaGRID eval merged today. GAP: detector service is DOWN on all hosts
+    (omen/idc03 :8785 refused, mn01 unreachable) so hand mode was silently dead. Delivered in ada-voice: vcast_gesture(mode=hand)
+    now probes GET /pointer (ADA_YOLO_POINTER_URL) a'
 claim:
   since: 2026-11-26 13:03
