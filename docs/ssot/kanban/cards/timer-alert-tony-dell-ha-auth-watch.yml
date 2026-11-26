@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-ha-auth-watch
 title: Timer ha-auth-watch on tony-dell failing
 column: done
-updated: 2026-11-26 14:45
+updated: 2026-11-26 14:49
 priority: high
 tags:
 - timer-alert
@@ -54,5 +54,12 @@ comms:
     from idc03 served checkout (scoped git rm + commit bd2758fd089, pushed). Backup /tmp/opencode/ha-auth-false-positive-20261126-143340.yml.bak.
     Verified absent in origin/master, focus-inbox status clean, board-api health {"ok":true}. Four older duplicate
     alerts from the 14:18 tick and 14:27 verification run remain for separate triage. Evidence: docs/ssot/jobs/secur'
+- at: 2026-11-26 14:49
+  from: tony
+  text: '[all duplicate alerts cleaned 14:49 +07] Removed the four 14:18/14:27 duplicate alert files in scoped commit
+    64880484a03 (backups /tmp/opencode/ha-auth-dup-backup-20261126/). Push was non-fast-forward because board-api
+    advanced; merged origin/master and pushed e5f972a5a84. All five false/duplicate items (14:18, 14:27, 14:33)
+    are now ABSENT in origin/master; focus-inbox clean; board-api healthy; unrelated dirty files untouched. LIVE
+    PROOF: 14:48:41 tick exited 0/SUCCESS with "0 new auth-failure l'
 action:
   status: done
