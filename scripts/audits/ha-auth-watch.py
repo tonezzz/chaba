@@ -135,18 +135,43 @@ async def fetch_failures(name, base, token):
     return out
 
 
+def _current_key(key):
+    """Only keys with a numeric epoch in slot 3 match failures we emit."""
+    parts = key.split("|")
+    if len(parts) != 3:
+        return False
+    try:
+        float(parts[2])
+    except (TypeError, ValueError):
+        return False
+    return True
+
+
 def load_state():
     try:
-        return set(json.loads(STATE_FILE.read_text()).get("seen", []))
+        data = json.loads(STATE_FILE.read_text())
     except Exception:
-        return set()
+        return []
+    # Legacy keys used an ISO timestamp in slot 3. They can never match a
+    # current failure and used to sort after every new key, evicting new
+    # keys from the 500-entry cap — so the same log line re-alerted forever.
+    # Drop them on load, preserving file order for the survivors.
+    out, seen = [], set()
+    for key in data.get("seen", []):
+        if _current_key(key) and key not in seen:
+            seen.add(key)
+            out.append(key)
+    return out
 
 
 def save_state(seen):
     STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
     tmp = STATE_FILE.with_name(STATE_FILE.name + ".tmp")
+    # Cap by insertion order, NOT lexicographic order: mixed-format keys
+    # made the newest failures sort first and get dropped every tick.
+    ordered = list(dict.fromkeys(seen))[-500:]
     with tmp.open("w") as f:
-        f.write(json.dumps({"seen": sorted(seen)[-500:]}))
+        f.write(json.dumps({"seen": ordered}))
         f.flush()
         os.fsync(f.fileno())
     tmp.replace(STATE_FILE)
@@ -265,7 +290,8 @@ def main():
 
     now_iso = datetime.now(timezone.utc).isoformat(timespec="seconds")
     seen = load_state()
-    failures, errors = [], 0
+    seen_keys = set(seen)
+    failures, errors, suppressed = [], 0, 0
     for name, base, tok_path in INSTANCES:
         token = load_token(tok_path)
         if not token:
@@ -279,13 +305,15 @@ def main():
             continue
         for src, ts, text in found:
             key = f"{name}|{src}|{ts}"
-            if key in seen:
+            if key in seen_keys:
+                suppressed += 1
                 continue
-            seen.add(key)
+            seen_keys.add(key)
+            seen.append(key)
             failures.append((name, src, ts, text))
 
     writable = local_writable(REPO_ROOT)
-    written, api_emitted, suppressed = [], 0, 0
+    written, api_emitted = [], 0
     for inst, src, ts, line in failures:
         # Local-glob dedupe only means something where the files can be
         # committed; on exec checkouts stale files would suppress forever.
