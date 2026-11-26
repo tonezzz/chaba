@@ -6,19 +6,20 @@
 #      (fails fast on malformed config, before any host is touched).
 #   2. ansible.utils.ipaddr refuses targets outside the declared tailnet CIDR.
 #
-# The drift preview itself uses ansible.posix.synchronize with rsync's
-# --dry-run + --itemize-changes. NOTHING is written on any host or on the
-# controller. This complements playbooks/audit-runner-tools.yml (per-host
-# sha256 audit): the rsync preview is faster and shows which files would move.
+# The drift preview uses ansible.posix.synchronize with rsync's --dry-run +
+# --itemize-changes. NOTHING is written on any host. The six canonical tools
+# are staged once on the controller and compared in ONE rsync connection per
+# host (--include/--exclude filters) — important because idc02's UFW has a
+# 22/tcp LIMIT rule (6 new connections / 30s) that rejected the previous
+# six-connection version of this play.
 #
 # Tool classes — required vs leaf:
 #   scripts/devin/sync-runner-tools.sh installs a MISSING dest only for
-#   runner-agent and devin-dispatch (with provisioning evidence); the other
-#   four are leaf tools, update-only and never bootstrapped. Absence of a
-#   leaf tool is therefore normal on VPS hosts (idc02/idc03 CLAUDE_LANES=0,
-#   dispatch-queue is dell-local, prune is a dell-local timer, and
-#   dispatch_repos.py falls back to the checkout copy). Only required-tool
-#   drift fails the play; leaf drift is reported for information.
+#   runner-agent and devin-dispatch; the other four are leaf tools,
+#   update-only and never bootstrapped. Leaf absence is normal on VPS hosts
+#   (idc02/idc03 CLAUDE_LANES=0, dispatch-queue is dell-local, prune is a
+#   dell-local timer, dispatch_repos.py falls back to the checkout copy).
+#   Only required-tool drift fails the play; leaf drift is report-only.
 #
 # Usage (from ansible/ on the controller):
 #   ansible-playbook playbooks/verify-runner-tools-sync.yml
@@ -32,10 +33,8 @@
 #
 # Host scope: baseline only (no macOS, no laptops, no con01). kk-mac and
 # idc01 are excluded by the pattern; portable hosts need an explicit --limit.
-# con01 is the absorber tier with script/container lanes — it has no
-# devin-dispatch provisioning evidence, so it must not fail the required-tool
-# assertion. It IS a declared fleet host: OPS-1406 fixed the fleet parser to
-# include con01 (and kk-mac), so do not re-add a regex exclusion here.
+# con01 is the absorber tier, not a runner host — runner-fleet-health.py
+# excludes it and it has no devin-dispatch provisioning evidence.
 
 - name: Preview runner-tool drift with rsync dry-run
   hosts: baseline:!disabled:!macos:!con01
@@ -46,25 +45,29 @@
       source_root: "{{ playbook_dir }}/../../scripts"
       max_drift_files: 0
       tailnet_cidr: 100.64.0.0/10
+    guard_stage_dir: /tmp/ansible-runner-tool-guard
 
-    # Only these two are provisioned fleet-wide by sync-runner-tools.sh.
-    required_tools:
+    # dest is the filename used in the staging dir and in ~/.local/bin.
+    # required=true -> failure on drift; false -> informational only.
+    runner_tools:
       - src: scripts/board/runner-agent.py
         dest: runner-agent
+        required: true
       - src: scripts/devin/devin-dispatch.sh
         dest: devin-dispatch
-
-    # Leaf tools: update-only, never bootstrapped. Absence is reported,
-    # not treated as drift.
-    leaf_tools:
+        required: true
       - src: scripts/devin/claude-dispatch.sh
         dest: claude-dispatch
+        required: false
       - src: scripts/devin/devin-dispatch-prune.sh
         dest: devin-dispatch-prune
+        required: false
       - src: scripts/devin/dispatch-queue.sh
         dest: dispatch-queue
+        required: false
       - src: scripts/board/dispatch_repos.py
         dest: dispatch_repos.py
+        required: false
 
   tasks:
     - name: Validate the sync policy against its JSON Schema
@@ -90,58 +93,56 @@
           — refusing to rsync
       when: ansible_host is defined
 
-    - name: Dry-run compare — required tool
-      ansible.posix.synchronize:
+    - name: Create staging directory on the controller
+      ansible.builtin.file:
+        path: "{{ guard_stage_dir }}"
+        state: directory
+        mode: "0755"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Stage canonical tool copies under their installed names
+      ansible.builtin.copy:
         src: "{{ playbook_dir }}/../../{{ item.src }}"
-        dest: "/home/{{ ansible_user }}/.local/bin/{{ item.dest }}"
+        dest: "{{ guard_stage_dir }}/{{ item.dest }}"
+        mode: "0755"
+      delegate_to: localhost
+      run_once: true
+      loop: "{{ runner_tools }}"
+      loop_control:
+        label: "{{ item.dest }}"
+
+    - name: Dry-run compare — one rsync connection per host
+      ansible.posix.synchronize:
+        src: "{{ guard_stage_dir }}/"
+        dest: "/home/{{ ansible_user }}/.local/bin/"
         mode: push
         archive: false
+        recursive: true
         checksum: true
         compress: false
         delete: false
         rsync_opts:
           - --dry-run
           - --itemize-changes
-      loop: "{{ required_tools }}"
-      loop_control:
-        label: "{{ item.dest }}"
-      register: required_preview
+          - --include=runner-agent
+          - --include=devin-dispatch
+          - --include=claude-dispatch
+          - --include=devin-dispatch-prune
+          - --include=dispatch-queue
+          - --include=dispatch_repos.py
+          - --exclude=*
+      register: sync_preview
       changed_when: false  # --dry-run never writes
 
-    - name: Dry-run compare — optional leaf tool (report only)
-      ansible.posix.synchronize:
-        src: "{{ playbook_dir }}/../../{{ item.src }}"
-        dest: "/home/{{ ansible_user }}/.local/bin/{{ item.dest }}"
-        mode: push
-        archive: false
-        checksum: true
-        compress: false
-        delete: false
-        rsync_opts:
-          - --dry-run
-          - --itemize-changes
-      loop: "{{ leaf_tools }}"
-      loop_control:
-        label: "{{ item.dest }}"
-      register: leaf_preview
-      changed_when: false
-
-    - name: Collect drift lines from both previews
+    - name: Collect itemized changes
       ansible.builtin.set_fact:
-        required_drift: >-
-          {{ required_preview.results
-             | map(attribute='stdout_lines')
-             | map('default', [])
-             | flatten
-             | select('search', '^[<>*]')
-             | list }}
-        leaf_drift: >-
-          {{ leaf_preview.results
-             | map(attribute='stdout_lines')
-             | map('default', [])
-             | flatten
-             | select('search', '^[<>*]')
-             | list }}
+        drift_all: "{{ sync_preview.stdout_lines | default([]) | select('search', '^[<>*]') | list }}"
+
+    - name: Classify drift into required and leaf
+      ansible.builtin.set_fact:
+        required_drift: "{{ drift_all | select('search', '(runner-agent|devin-dispatch)$') | list }}"
+        leaf_drift: "{{ drift_all | reject('search', '(runner-agent|devin-dispatch)$') | list }}"
 
     - name: Report per-host drift
       ansible.builtin.debug:
