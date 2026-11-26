@@ -1,7 +1,7 @@
 id: audit-miss-unlanded-oct06-dispatch-artifacts
 title: Audit unlanded Oct 6 dispatch artifacts on Dell mirror
 column: doing
-updated: 2026-11-26 21:19
+updated: 2026-11-26 21:31
 brief: Three unique outputs from the Oct 6 audit were found only as untracked files in tony-dell's frozen chaba-tony-dell
   mirror; origin/master does not contain them.
 priority: medium
@@ -251,6 +251,12 @@ comms:
   from: devin
   text: 'dispatch started on tony-dell worktree; reading the 3 untracked files on the frozen chaba-tony-dell mirror
     (read-only) and comparing vs origin/master + prior PR #196 state.'
+- at: 2026-11-26 21:31
+  from: devin
+  text: 'reconcile findings: (1) GEV verify-after-act fully landed on master (runbook+job+verify script+ssot entries;
+    e7c564f2 content present via later merge) — outcome MD redundant. (2) service-name-indirection outcome MD is
+    a summary of the inventory YAML — redundant once YAML lands. (3) inventory YAML still unlanded; PR #196 open,
+    CI had failed on 4 unrelated missing-title files now FIXED on master. Updating PR branch, then merge if green.'
 review_kind: verify
 claim:
   since: 2026-11-26 21:18
