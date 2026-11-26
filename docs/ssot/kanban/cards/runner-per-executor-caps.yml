@@ -2,7 +2,7 @@ id: runner-per-executor-caps
 title: 'runner-agent: per-executor claim caps + remote-lane load-gate exemption — stop jules/nlm idle slots starving
   local work'
 column: doing
-updated: 2026-11-26 20:07
+updated: 2026-11-26 20:32
 priority: high
 tags:
 - devnest
@@ -541,6 +541,13 @@ comms:
   text: 'attempt 2 (devin lane): per-executor caps implemented in runner-agent.py — RUNNER_CAP=local ceiling, RUNNER_REMOTE_CAP=6
     for {jules,nlm_batch,kk_mac_local}, remote exempt from RUNNER_MAX_LOAD_PC (REMOTE_MAX_LOAD_PC default 0=load-independent),
     per-card cap/gate defer notes, verdict_pass mirrors. Tests green so far; suite running.'
+- at: 2026-11-26 20:32
+  from: devin
+  text: 'DONE (attempt 2, devin lane). Per-executor caps live in scripts/board/runner-agent.py: RUNNER_CAP=local
+    ceiling, RUNNER_REMOTE_CAP=6 for {jules,nlm_batch,kk_mac_local} (RUNNER_REMOTE_EXECUTORS override), remote claims
+    exempt from RUNNER_MAX_LOAD_PC via RUNNER_REMOTE_MAX_LOAD_PC (default 0=load-independent), per-card cap/gate
+    defer notes, verdict_pass /ready mirrors. State entries carry ex= for _cap_counts; kk_mac in-claim fallback
+    flips class correctly. Ops surface: runner-cap.sh [remote-cap] ar'
 claim:
   since: 2026-11-26 19:25
 review_kind: verify
