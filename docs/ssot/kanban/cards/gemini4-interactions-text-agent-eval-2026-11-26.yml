@@ -1,7 +1,7 @@
 id: gemini4-interactions-text-agent-eval-2026-11-26
 title: Evaluate Gemini 4 + Interactions API for a stateful text agent
 column: doing
-updated: 2026-11-26 19:32
+updated: 2026-11-26 19:51
 brief: Compare gemini-4-hydrogen/neon via the Interactions API against the current 3.x stateless text path on a
   small multi-turn tool-and-recall task set; measure task accuracy, token growth and latency.
 priority: medium
@@ -68,6 +68,15 @@ comms:
     function_call/function_result steps verified on gemini-3-flash-preview. gemini-4-neon/argon/carbon = 429 (0
     free-tier quota on MICHAEL key), gemini-4-hydrogen = 503 high-demand (retrying), gemini-3.5/3.6-flash daily
     quota exhausted. Building 8-task tool+recall harness now.'
+- at: 2026-11-26 19:51
+  from: ada
+  text: 'Partial result recorded in docs/ssot/jobs/devnest/2026-11-26-gemini4-interactions-text-agent-eval.yml.
+    Gemini 4 blocked: free-tier keys have 0 input tokens/min for all Gemini 4 models; paid project keys are monthly-cap
+    blocked. Interactions API trial on gemini-3.5-flash-lite: stateful 6/6 tool + 6/6 recall, stateless 6/6 + 6/6,
+    legacy arm 2/6 quota-limited. Needs Tony go-ahead on cap before Gemini 4 can run.'
+- at: 2026-11-26 19:51
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
 action:
   type: dispatch
   status: running
