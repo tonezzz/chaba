@@ -60,6 +60,28 @@
             benchmark_host_report: >-
               {%- set p = hostvars[item].ocb_probe | default({}) -%}
               {%- set role = hostvars[item].ocb_role | default('fallback') -%}
+              {%- set probed = (hostvars[item].ocb_probe is defined) and (hostvars[item].ocb_probe.error is not defined) -%}
+              {%- if not probed -%}
+              {{ {
+                'host': item,
+                'inventory_host': item,
+                'playbook': benchmark_report_playbook,
+                'ts': benchmark_report_ts,
+                'probed': false,
+                'unreachable': true,
+                'rc': 1,
+                'elapsed_s': 0,
+                'summary': 'unreachable role=' ~ role ~ ' web=? cli=? local=? (no ocb_probe — excluded by --limit or host unreachable)',
+                'checks': [
+                  {'name': 'ocb_probe', 'status': 'unreachable', 'detail': p.get('error', 'ocb_probe fact missing')}
+                ],
+                'deltas': [],
+                'evidence': [
+                  {'kind': 'probe', 'error': p.get('error', 'ocb_probe fact missing — host not in probe play')},
+                  {'kind': 'edge', 'http': ocb_edge.http | default('?'), 'csp_contains': ocb_edge_csp_must_contain in (ocb_edge.csp | default(''))}
+                ]
+              } }}
+              {%- else -%}
               {%- set strict = role in (ocb_strict_roles | default(['primary'])) -%}
               {%- set required_units = (ocb_required_units | default([])) + ((ocb_primary_extra_units | default([])) if role == 'primary' else []) -%}
               {%- set unit_actual = p.get('units', {}) -%}
@@ -97,11 +119,27 @@
                   {'kind': 'contract', 'ocb_web_version': ocb_web_version, 'ocb_cli_version': ocb_cli_version}
                 ]
               } }}
+              {%- endif -%}
           loop: "{{ benchmark_report_hosts }}"
           loop_control:
             label: "{{ item }}"
           delegate_to: "{{ item }}"
           delegate_facts: true
+          ignore_unreachable: true
+
+        - name: Name pane hosts that produced no probe this run
+          ansible.builtin.debug:
+            msg: >-
+              {{ item }}: no usable ocb_probe (excluded by --limit or
+              unreachable{% if hostvars[item].ocb_probe is defined %}
+              :: {{ hostvars[item].ocb_probe.error }}{% endif %}) — reported
+              unreachable in benchmark evidence.
+          loop: "{{ benchmark_report_hosts }}"
+          loop_control:
+            label: "{{ item }}"
+          when: >-
+            hostvars[item].ocb_probe is not defined
+            or hostvars[item].ocb_probe.error is defined
 
         - name: Write standard benchmark reports
           ansible.builtin.include_tasks: tasks/benchmark-report-write.yml

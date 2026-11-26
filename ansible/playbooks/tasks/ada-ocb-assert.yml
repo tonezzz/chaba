@@ -27,34 +27,53 @@
       Pins in inventory/group_vars/ocb_pane.yml are stale — update them
       together with ssot.audit.hosts.yml (single source of truth).
 
-- name: Producer contract on each pane host
+- name: Producer contract on each probed pane host
   ansible.builtin.assert:
     that:
       - "p.web_version == ocb_web_version or ocb_role_val not in ocb_strict_roles"
       - "p.cli_version == ocb_cli_version or ocb_role_val not in ocb_strict_roles"
-      - "(required_units | difference(p.units.keys() | list)) | length == 0"
-      - "(required_units | map('extract', p.units) | reject('equalto', 'active') | list) | length == 0"
-      - "p.bind_3000 == ocb_bind"
-      - "p.local_http == '200'"
-      - "p.patch_present | bool or ocb_role_val not in ocb_strict_roles"
-      - "p.startup_env_mode == '600'"
-      - "p.litellm_dropin | bool"
+      - "(required_units | difference((p.get('units', {}) | dict2items | map(attribute='key') | list))) | length == 0"
+      - "(required_units | map('extract', p.get('units', {})) | reject('equalto', 'active') | list) | length == 0"
+      - "p.get('bind_3000') == ocb_bind"
+      - "p.get('local_http') == '200'"
+      - "p.get('patch_present') | bool or ocb_role_val not in ocb_strict_roles"
+      - "p.get('startup_env_mode') == '600'"
+      - "p.get('litellm_dropin') | bool"
     success_msg: "{{ target }} ({{ ocb_role_val }}) producer contract OK"
     fail_msg: >-
-      {{ target }} ({{ ocb_role_val }}) producer drift: web={{ p.web_version }}
-      cli={{ p.cli_version }} required_units={{ required_units }}
-      units={{ p.units }} bind={{ p.bind_3000 }} local={{ p.local_http }}
-      patch={{ p.patch_present }} startup_mode={{ p.startup_env_mode }}
-      litellm={{ p.litellm_dropin }}
+      {{ target }} ({{ ocb_role_val }}) producer drift: web={{ p.get('web_version') }}
+      cli={{ p.get('cli_version') }} required_units={{ required_units }}
+      units={{ p.get('units') }} bind={{ p.get('bind_3000') }} local={{ p.get('local_http') }}
+      patch={{ p.get('patch_present') }} startup_mode={{ p.get('startup_env_mode') }}
+      litellm={{ p.get('litellm_dropin') }}
+      probe_error={{ p.get('error') }}
   loop: "{{ groups['ocb_pane'] }}"
   loop_control:
     loop_var: target
   vars:
-    p: "{{ hostvars[target].ocb_probe }}"
+    p: "{{ hostvars[target].ocb_probe | default({}) }}"
     ocb_role_val: "{{ hostvars[target].ocb_role | default('fallback') }}"
     required_units: "{{ ocb_required_units + (ocb_primary_extra_units if ocb_role_val == 'primary' else []) }}"
+  when: >-
+    hostvars[target].ocb_probe is defined
+    and hostvars[target].ocb_probe.error is not defined
 
-- name: Report (non-fatal) drift on the soak fallback
+- name: Strict-role hosts must have been probed this run
+  ansible.builtin.assert:
+    that:
+      - "hostvars[target].ocb_probe is defined"
+      - "hostvars[target].ocb_probe.error is not defined"
+    success_msg: "{{ target }} ({{ hostvars[target].ocb_role | default('fallback') }}) probe present"
+    fail_msg: >-
+      {{ target }} is role={{ hostvars[target].ocb_role | default('fallback') }}
+      (strict) but produced no usable ocb_probe — excluded by --limit or
+      unreachable. The contract gate cannot pass an unverified strict host.
+  loop: "{{ groups['ocb_pane'] }}"
+  loop_control:
+    loop_var: target
+  when: (hostvars[target].ocb_role | default('fallback')) in ocb_strict_roles
+
+- name: Report (non-fatal) drift on the probed soak fallback
   ansible.builtin.debug:
     msg: >-
       INFO {{ target }} is role={{ hostvars[target].ocb_role | default('fallback') }}
@@ -66,7 +85,26 @@
   loop: "{{ groups['ocb_pane'] }}"
   loop_control:
     loop_var: target
-  when: hostvars[target].ocb_role | default('fallback') not in ocb_strict_roles
+  when: >-
+    hostvars[target].ocb_role | default('fallback') not in ocb_strict_roles
+    and hostvars[target].ocb_probe is defined
+    and hostvars[target].ocb_probe.error is not defined
+
+- name: Report unprobed soak fallback (non-strict, not a gate failure)
+  ansible.builtin.debug:
+    msg: >-
+      INFO {{ target }} (fallback) produced no ocb_probe this run —
+      excluded by --limit or unreachable{% if hostvars[target].ocb_probe is defined %}
+      :: {{ hostvars[target].ocb_probe.error }}{% endif %}. Reported as
+      unreachable in benchmark evidence; not a contract failure
+      (pre-migration soak copy pending Tony's retire decision).
+  loop: "{{ groups['ocb_pane'] }}"
+  loop_control:
+    loop_var: target
+  when: >-
+    hostvars[target].ocb_role | default('fallback') not in ocb_strict_roles
+    and (hostvars[target].ocb_probe is not defined
+         or hostvars[target].ocb_probe.error is defined)
 
 - name: Consumer contract (public edge a user actually touches)
   ansible.builtin.assert:

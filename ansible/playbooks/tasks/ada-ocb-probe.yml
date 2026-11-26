@@ -73,15 +73,29 @@
   register: ocb_probe_raw
   changed_when: false
   failed_when: false
+  ignore_unreachable: true
   check_mode: no
 
-- name: Fail clearly when the probe produced no JSON
-  ansible.builtin.assert:
-    that: ocb_probe_raw.stdout is defined and (ocb_probe_raw.stdout | length) > 0
-    fail_msg: >-
-      ada-ocb probe returned no JSON on {{ inventory_hostname }}:
-      {{ ocb_probe_raw.stderr | default('no stderr') }}
-
+# A reachable host whose probe prints no JSON gets an {error: ...} fact so
+# downstream assert/report phases can mark it unreachable instead of crashing
+# on a missing ocb_probe (same pattern as audit-log-shipper.yml). A host that
+# is unreachable or excluded by --limit simply never gets the fact — callers
+# must treat "ocb_probe is not defined" as not-probed.
 - name: Store the probe as a fact
   ansible.builtin.set_fact:
-    ocb_probe: "{{ ocb_probe_raw.stdout | from_json }}"
+    ocb_probe: >-
+      {{ (ocb_probe_raw.stdout | trim | from_json)
+         if (ocb_probe_raw.stdout is defined
+             and (ocb_probe_raw.stdout | trim | length) > 0
+             and (ocb_probe_raw.stdout | trim)[:1] == '{')
+         else {} }}
+  ignore_unreachable: true
+
+- name: Flag a probe that produced no JSON
+  ansible.builtin.set_fact:
+    ocb_probe:
+      error: >-
+        unreachable or no JSON
+        {%- if ocb_probe_raw.stderr is defined %} :: {{ ocb_probe_raw.stderr | trim | truncate(160) }}{% endif %}
+  ignore_unreachable: true
+  when: ocb_probe is not defined or ocb_probe | length == 0
