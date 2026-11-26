@@ -373,11 +373,18 @@ def main() -> int:
     if "mddb" in checks:
         problems += check_mddb(st, args)
 
+    # A filed (or dedup-muted) alert is a SUCCESSFUL activation: this job's
+    # output is the board inbox message, not the exit status. Reserving
+    # nonzero for delivery failure keeps timer-sentinel from flagging every
+    # real finding as a broken timer (card timer-alert-idc02-retry-storm-watch)
+    # and keeps job-health-sweep's journal verdict green without a special
+    # exemption. --no_alert keeps the old fail-on-findings contract so
+    # dry runs/tests still signal what they found via rc.
     rc = 0
     alerts = st.setdefault("alerts", {})
     for cond, text in problems:
-        rc = 1
         if args.no_alert:
+            rc = 1
             print(f"ALERT {cond}: {text}")
             continue
         if recently_alerted(st, cond, args.repeat_h):
@@ -387,6 +394,7 @@ def main() -> int:
             alerts[cond] = iso(now_utc())
             print(f"alert filed: {cond}")
         else:
+            rc = 1
             print(f"alert FAILED to file: {cond}", file=sys.stderr)
     active = {c for c, _ in problems}
     for cond in list(alerts):
