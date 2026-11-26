@@ -1,7 +1,7 @@
 id: ansible-prep-plan-apply-verify
 title: Ansible prep→plan→apply→verify workflow standard
 column: backlog
-updated: 2026-11-26 09:52
+updated: 2026-11-26 11:26
 brief: Standardize Ansible for preparation/baselines, check-diff plan artifacts, gated apply, and verified closeout
   to increase fleet efficiency.
 priority: medium
@@ -57,3 +57,9 @@ comms:
     New: ansible/playbooks/tasks/benchmark-report-write.yml + templates/benchmark-report-host.j2 + benchmark-report-summary.j2.
     Schema: summary,checks[],deltas[],evidence[],elapsed_s,rc. Next: Step 3 ADA-OCB prep/plan/verify wrapper pilot
     (1A).'
+- at: 2026-11-26 11:26
+  from: devin
+  text: 'Step 3 done (2026-11-26): ADA-OCB prep/plan/verify wrapper pilot (1A). Merged origin/master@b026faaf10.
+    Added ada-ocb-preflight.yml, ada-ocb-plan.yml; verify writes benchmark report+optional board evidence; upgrade
+    now asserts card_ref/card_id when ocb_change_approved=true (3A). Next: Step 4 dry-run prep+plan --check --diff
+    --limit <safe-host>, evidence on OPS-1424.'
