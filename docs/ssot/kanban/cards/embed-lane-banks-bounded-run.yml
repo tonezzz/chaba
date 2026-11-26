@@ -1,7 +1,7 @@
 id: embed-lane-banks-bounded-run
 title: 'embed-lane-banks: bound each daily run to its 45min window'
-column: doing
-updated: 2026-11-26 21:53
+column: done
+updated: 2026-11-26 21:56
 brief: 'Daily embed-lane-banks oneshot on idc02 is SIGTERMd at TimeoutStartSec=2700 after copying only ~3200/74940
   docs of ada-ha-bank-devin-handoff: the queue throttle (depth>=3000) plus CPU-only bge-m3 embedding yields ~15
   docs/min. Ollama and mddb-embed are healthy; queue drained to 0, dropped=0, no data loss. Result=timeout every
@@ -157,9 +157,19 @@ comms:
     now `banks --budget 2400` (40min < 45m TimeoutStartSec); generated idc02 unit re-rendered (not hand-edited);
     jobs doc updated. Re-render also swept stale generated drift (retired cline units on con01, wp-comment-sync
     desc, ansible-runner-tool-guard on tony_dell) — tests/ops/test_rend'
+- at: 2026-11-26 21:55
+  from: chaba
+  text: 'merge-sweep: merged c3c24393 (dispatch/20261126-214429-make-the-daily-run-finish-insi from con01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261126-214429-make-the-daily-run-finish-insi.md)
+    — auto-closed'
+- at: 2026-11-26 21:56
+  from: local
+  text: 'pub milestone: card verified: embed-lane-banks-bounded-run on idc03 — merged c3c24393 (dispatch/20261126-214429-make-the-daily-run-finish-insi
+    from con01) -> origin/master — verified — auto- — merged c3c24393 (dispatch/20261126-214429-make-the-daily-run-finish-insi
+    from con01) -> origin/master — verified — auto-closed [evt-fbef5afe7999d67e]'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   attempts: 1
@@ -171,6 +181,11 @@ action:
     and the card has a DONE comms entry. | devin-task-20261126-190355-make-the-daily-run-finish-insi.service: Consumed
     27.560s CPU time.'
   runner: con01
+  verified: true
 claim:
   since: 2026-11-26 21:43
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 21:55
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261126-214429-make-the-daily-run-finish-insi.md
