@@ -1,0 +1,200 @@
+---
+# open-jev-guard.yml — bound OpenMP threads and reclaim accumulated swap.
+#
+# Follow-up to the 2026-11-25 load incident and the 2026-11-26 08:07 reclaim.
+# open-jev.service (gemma-3-4b-it on CPU) runs under CPUQuota=200% but the
+# torch runtime still starts ~43 threads, and over ~15h its working set
+# accumulates multi-GiB of swap at the MemoryHigh=4G cap.  Restarting the unit
+# reclaims it (1m load 93.91 -> 5.74, zram 23.9 -> 18.2 GiB on 2026-11-26).
+#
+# Changes (all idempotent):
+#   * ~/.config/systemd/user.control/open-jev.service.d/60-OMPThreads.conf
+#     Environment=OMP_NUM_THREADS=2 to match the 2-CPU quota.
+#   * ~/.local/bin/open-jev-reclaim.sh — reads MemorySwapCurrent and restarts
+#     open-jev only when it exceeds 4 GiB; logs the decision to the journal.
+#   * ~/.config/systemd/user/open-jev-reclaim.{service,timer} — daily 04:00
+#     check, Persistent=true (a missed run fires at next boot).
+#   * /home/tony/netdata/etc/health.d/tony-openjev.conf — swap-in thrash alarm.
+#     Netdata cannot see user cgroups in this container, so the alarm watches
+#     mem.swapio (the actual incident signature: ~14-17 MiB/s swap-in during
+#     the 08:07 shutdown) rather than a per-service cgroup dimension.  The
+#     exact MemorySwapCurrent > 4G check lives in the reclaim script.
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/open-jev-guard.yml --check --diff --limit tony-omen
+#   ansible-playbook playbooks/open-jev-guard.yml --limit tony-omen
+#
+# Disruption: this play RESTARTS open-jev.service once, when the OMP drop-in
+# changes, so the new environment takes effect. In-flight /v1/systemone
+# requests are interrupted. Rollback: delete the 4 installed files + alarm,
+# `systemctl --machine=tony@.host --user disable --now open-jev-reclaim.timer`,
+# daemon-reload, reload-health, restart open-jev.service.
+
+- name: Guard open-jev threads and reclaim swap
+  hosts: tony-omen
+  gather_facts: false
+
+  vars:
+    user_systemd_dir: /home/tony/.config/systemd/user
+    openjev_dropin_dir: /home/tony/.config/systemd/user.control/open-jev.service.d
+    bin_dir: /home/tony/.local/bin
+    netdata_health_dir: /home/tony/netdata/etc/health.d
+
+  tasks:
+    - name: Ensure user config directories exist
+      # No mode: preserve ~/.config/systemd/user at its existing 0700.
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: tony
+        group: tony
+      loop:
+        - "{{ user_systemd_dir }}"
+        - "{{ openjev_dropin_dir }}"
+        - "{{ bin_dir }}"
+      tags: [always]
+
+    - name: Install OMP thread cap drop-in for open-jev
+      ansible.builtin.copy:
+        dest: "{{ openjev_dropin_dir }}/60-OMPThreads.conf"
+        owner: tony
+        group: tony
+        mode: "0644"
+        content: |
+          # Managed by chaba/ansible (open-jev-guard.yml). Do not edit on host.
+          # CPUQuota=200% allows 2 CPUs; cap the torch/OpenMP pool to match so
+          # inference does not pay for ~43 threads against a 2-CPU quota.
+          [Service]
+          Environment=OMP_NUM_THREADS=2
+      notify: Restart open-jev for new environment
+      tags: [omp]
+
+    - name: Install conditional swap-reclaim script
+      ansible.builtin.copy:
+        dest: "{{ bin_dir }}/open-jev-reclaim.sh"
+        owner: tony
+        group: tony
+        mode: "0755"
+        content: |
+          #!/bin/bash
+          # Managed by chaba/ansible (open-jev-guard.yml). Do not edit on host.
+          # Restart open-jev only when its cgroup swap exceeds the threshold.
+          set -u
+          unit=open-jev.service
+          threshold_mb=4096
+          raw=$(systemctl --user show "$unit" -p MemorySwapCurrent --value 2>/dev/null || echo 0)
+          case "$raw" in
+            ''|'[not set]') raw=0 ;;
+          esac
+          swap_mb=$((raw / 1048576))
+          if [ "$swap_mb" -gt "$threshold_mb" ]; then
+            echo "open-jev swap ${swap_mb}MiB > ${threshold_mb}MiB - restarting $unit"
+            systemctl --user restart "$unit"
+          else
+            echo "open-jev swap ${swap_mb}MiB <= ${threshold_mb}MiB - no restart needed"
+          fi
+      tags: [reclaim]
+
+    - name: Install reclaim oneshot unit
+      ansible.builtin.copy:
+        dest: "{{ user_systemd_dir }}/open-jev-reclaim.service"
+        owner: tony
+        group: tony
+        mode: "0644"
+        content: |
+          # Managed by chaba/ansible (open-jev-guard.yml). Do not edit on host.
+          [Unit]
+          Description=Reclaim open-jev swapped pages when above 4 GiB
+
+          [Service]
+          Type=oneshot
+          ExecStart={{ bin_dir }}/open-jev-reclaim.sh
+      tags: [reclaim]
+
+    - name: Install daily reclaim timer
+      ansible.builtin.copy:
+        dest: "{{ user_systemd_dir }}/open-jev-reclaim.timer"
+        owner: tony
+        group: tony
+        mode: "0644"
+        content: |
+          # Managed by chaba/ansible (open-jev-guard.yml). Do not edit on host.
+          [Unit]
+          Description=Daily open-jev swap reclaim check
+
+          [Timer]
+          OnCalendar=*-*-* 04:00:00
+          Persistent=true
+          Unit=open-jev-reclaim.service
+
+          [Install]
+          WantedBy=timers.target
+      tags: [reclaim]
+
+    - name: Reload user systemd manager
+      # SSH has no user bus; use the machine bus as root (same as host-load-guard).
+      ansible.builtin.command: systemctl --machine=tony@.host --user daemon-reload
+      become: true
+      changed_when: false
+      tags: [always]
+
+    - name: Enable and start the reclaim timer
+      # Idempotent by nature; changed_when false keeps rechecks clean.
+      ansible.builtin.command: systemctl --machine=tony@.host --user enable --now open-jev-reclaim.timer
+      become: true
+      changed_when: false
+      tags: [reclaim]
+
+    - name: Ensure Netdata health.d exists
+      ansible.builtin.file:
+        path: "{{ netdata_health_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      become: true
+      tags: [alarms]
+
+    - name: Install swap-in thrash alarm
+      ansible.builtin.copy:
+        dest: "{{ netdata_health_dir }}/tony-openjev.conf"
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          # Managed by chaba/ansible (open-jev-guard.yml). Do not edit on host.
+          # Netdata cannot see user cgroups here; this watches the real incident
+          # signature instead: sustained swap-in while open-jev is reclaimed.
+          # Stock used_swap already notifies; this is not a duplicate of it.
+
+                alarm: tony_openjev_swap_in
+                   on: mem.swapio
+                class: Utilization
+                 type: System
+            component: Swap
+          host labels: _os=linux
+               lookup: average -2m unaligned of in
+                units: KiB/s
+                every: 1m
+                 warn: $this > (($status >= $WARNING) ? (6000) : (8000))
+                 crit: $this > (($status == $CRITICAL) ? (10000) : (12000))
+                delay: down 10m multiplier 1.5 max 1h
+              summary: Sustained swap-in - open-jev reclaim thrash
+                 info: Average swap-in over 2m; ~15 MiB/s was seen during the 08:07 open-jev reclaim
+                   to: sysadmin
+      become: true
+      notify: Reload Netdata health configuration
+      tags: [alarms]
+
+  handlers:
+    - name: Reload Netdata health configuration
+      ansible.builtin.command: docker exec netdata netdatacli reload-health
+      become: true
+      changed_when: false
+      tags: [alarms]
+
+    - name: Restart open-jev for new environment
+      ansible.builtin.command: systemctl --machine=tony@.host --user restart open-jev.service
+      become: true
+      changed_when: false
+      tags: [omp]
