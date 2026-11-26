@@ -1,7 +1,7 @@
 id: system-report-chain-17h-stale-watchdog-e-ab1511
 title: system-report chain 17h+ stale; watchdog exit-1 is by design but nodes missing
-column: doing
-updated: 2026-11-26 21:23
+column: done
+updated: 2026-11-26 21:25
 program: infrastructure
 tags:
 - ops
@@ -368,6 +368,17 @@ comms:
     sha256 installed==checkout==pin on all 7 runner hosts (kk-mac pending its next sync, consistent-old). system-report:
     chain healthy — generator on con01 ran clean twice today; served idc02 system-report.yml generated_at 21:18+07
     (minutes old, was the Nov-10 freeze). Nodes: red c'
+- at: 2026-11-26 21:25
+  from: chaba
+  text: 'merge-sweep: merged 6c3cb405 (dispatch/20261126-204406-fix-the-stuck-system-report-ch from tony-dell) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261126-204406-fix-the-stuck-system-report-ch.md)
+    — auto-closed'
+- at: 2026-11-26 21:25
+  from: local
+  text: 'pub milestone: card verified: system-report-chain-17h-stale-watchdog-e-ab1511 on idc03 — merged 6c3cb405
+    (dispatch/20261126-204406-fix-the-stuck-system-report-ch from tony-dell) -> origin/master — verified — a — merged
+    6c3cb405 (dispatch/20261126-204406-fix-the-stuck-system-report-ch from tony-dell) -> origin/master — verified
+    — auto-closed [evt-afeb6e9f1cad6b49]'
 spec: Fix the stuck system-report chain by locating its generator on idc02 and resolving the 17h+ stale generated_at
   timestamp. Address the persistent missing and unreachable nodes across audit-hosts, health-monitor, host-loads,
   disk-trend, kanban, daily-brief, nest-lanes/brains/bench nodes, and chaba-nest. Redeploy the drifted runner-agent
@@ -376,7 +387,7 @@ spec: Fix the stuck system-report chain by locating its generator on idc02 and r
   generator on idc02 resumes normal execution, and the generated_at timestamp advances past the stale threshold.
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: kw
   attempts: 2
@@ -387,6 +398,11 @@ action:
   result: 'exit=0 gent-drift.yml`, with progress and final comms posted to the card. | devin-task-20261125-190933-fix-the-stuck-system-report-ch.service:
     Consumed 48.390s CPU time over 42min 10.418s wall clock time, 813M memory peak, 656.3M memory swap peak.'
   runner: tony-dell
+  verified: true
 claim:
   since: 2026-11-26 20:43
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 21:25
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261126-204406-fix-the-stuck-system-report-ch.md
