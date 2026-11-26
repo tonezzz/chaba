@@ -1,7 +1,7 @@
 id: idc02-exec-checkout-117-staged-files-of-70de51
 title: 'idc02 exec checkout: 117 staged files of autostash-pop residue break repo-sync exit code'
-column: doing
-updated: 2026-11-26 23:10
+column: done
+updated: 2026-11-26 23:29
 program: infrastructure
 tags:
 - ops
@@ -93,9 +93,20 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261126-223935-on-idc02-cascadeprojects-chaba on con01 still dirty —
     1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-26 23:29
+  from: chaba
+  text: 'merge-sweep: merged a8bb9e82 (dispatch/20261126-223935-on-idc02-cascadeprojects-chaba from con01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261126-223935-on-idc02-cascadeprojects-chaba.md)
+    — auto-closed'
+- at: 2026-11-26 23:29
+  from: local
+  text: 'pub milestone: card verified: idc02-exec-checkout-117-staged-files-of-70de51 on idc03 — merged a8bb9e82
+    (dispatch/20261126-223935-on-idc02-cascadeprojects-chaba from con01) -> origin/master — verified — auto- — merged
+    a8bb9e82 (dispatch/20261126-223935-on-idc02-cascadeprojects-chaba from con01) -> origin/master — verified —
+    auto-closed [evt-4852f7ba35867401]'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: kw
   runner: con01
@@ -103,5 +114,10 @@ action:
   sweep:
     stale_running: 2026-11-26 23:10
     dirty: 1
+  verified: true
 claim:
   since: 2026-11-26 22:38
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 23:29
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261126-223935-on-idc02-cascadeprojects-chaba.md
