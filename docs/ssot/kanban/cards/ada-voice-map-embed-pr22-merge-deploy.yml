@@ -1,7 +1,7 @@
 id: ada-voice-map-embed-pr22-merge-deploy
 title: 'ada-voice: merge PR #22 (map_embed drop 17), deploy, drop GOOGLE_MAPS_API_KEY'
-column: review
-updated: 2026-11-26 22:38
+column: done
+updated: 2026-11-26 23:00
 brief: 'PR https://github.com/tonezzz/ada-voice/pull/22 is open and green (tool-lint clean, 1942 tests pass). Needs:
   merge -> deploy-ada.sh idc03 -> render-tool-profiles --apply -> key drop (or accept keyless).'
 priority: medium
@@ -168,9 +168,19 @@ comms:
 - at: 2026-11-26 22:38
   from: tony
   text: moved backlog -> review
+- at: 2026-11-26 23:00
+  from: tony
+  text: '[verify 2026-11-26] VERIFIED — all four steps green. (1) PR #22 squash-merged as 0892c82 on ada-voice main;
+    idc03 served checkout head 5d1d383 has backend/tools.d/map_embed.py, manifest and tool_guide entries. (2) deploy-ada.sh
+    ran: ada-ha-tony.service restarted 22:35:42, journal shows tools.loader loaded 35 tools including map_embed.
+    (3) render-tool-profiles.py --host idc03 --check => UNCHANGED for both tony and kk; tony managed block includes
+    map_embed in ADA_INCLUDED_TOOLS. (4) GOOGLE_MAPS_AP'
+- at: 2026-11-26 23:00
+  from: tony
+  text: closed by tony
 action:
   type: dispatch
-  status: idle
+  status: done
   lane: manual
   lane_source: jevos
 claim: {}
