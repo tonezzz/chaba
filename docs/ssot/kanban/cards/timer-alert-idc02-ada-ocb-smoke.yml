@@ -1,7 +1,7 @@
 id: timer-alert-idc02-ada-ocb-smoke
 title: Timer ada-ocb-smoke on idc02 failing
-column: backlog
-updated: 2026-11-26 12:14
+column: done
+updated: 2026-11-26 15:04
 priority: high
 tags:
 - timer-alert
@@ -512,6 +512,12 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-26 12:00) of `ada-ocb-smoke.service` on `idc02` result=exit-code — investigate
     journal: `journalctl --user -u ada-ocb-smoke.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-26 15:04
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-26 15:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-26 15:04
+  from: tony
+  text: closed by tony
 action:
   status: done
 spec: Investigate the failure of `ada-ocb-smoke.service` on host idc02 by checking the user journal via `journalctl
