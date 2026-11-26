@@ -2,7 +2,7 @@ id: runner-agent-stale-answer-resume-churn-a-9f9ffe
 title: 'runner-agent stale-answer resume churn: answered job-input-* request auto-resumes every needs-input park
   forever'
 column: backlog
-updated: 2026-11-27 02:25
+updated: 2026-11-27 02:31
 brief: runner-agent._request_answer() returns the answer of card request job-input-<cid> whenever status==answered
   — forever. The request is answered once (generic option echo) and _raise_input_request dedupes on the same request_id
   so it is never re-opened. Every _enter_awaiting park therefore instantly sees a stale answer and _job_answer_tick
@@ -42,3 +42,15 @@ comms:
 - at: 2026-11-27 02:25
   from: devin
   text: card captured via board-api
+- at: 2026-11-27 02:31
+  from: chaba
+  text: classified as devin (fallback conf 0.33)
+- at: 2026-11-27 02:31
+  from: chaba
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: devin
+  lane_source: fallback
+claim: {}
