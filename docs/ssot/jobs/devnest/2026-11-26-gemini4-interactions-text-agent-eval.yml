@@ -1,0 +1,107 @@
+title: Gemini 4 + Interactions text-agent eval (partial — Gemini 4 access blocked)
+id: 2026-11-26-gemini4-interactions-text-agent-eval
+date: 2026-11-26
+runner: idc03
+kind: eval-result
+card: gemini4-interactions-text-agent-eval-2026-11-26  # ADA-1451
+
+summary: >
+  Gemini 4 could not be exercised: free-tier keys have a zero-token rate limit
+  for every Gemini 4 model, and the shared paid project is monthly-cap blocked.
+  The Interactions API itself was evaluated with gemini-3.5-flash-lite on six
+  synthetic multi-turn tool-and-recall tasks. Stateful and stateless both scored
+  6/6 tool calls and 6/6 cross-turn recall; stateful used ~2% fewer input tokens
+  and was ~2.5x slower. The legacy generateContent arm hit free-tier quota after
+  two tasks and lost both recall checks.
+
+access_blocker:
+  probed_via: "REST POST /v1beta/interactions, one minimal text turn per model/key"
+  key_names_only: true
+  key_values_logged: false
+  results:
+    - "GEMINI_API_KEY_MICHAEL / GEMINI_API_KEY_FREE: HTTP 429, 'limit: 0 input tokens per minute on Free Tier' for gemini-4-neon, gemini-4-carbon, gemini-4-argon"
+    - "gemini-4-hydrogen: HTTP 503 'currently experiencing high demand' on free-tier keys"
+    - "GEMINI_API_KEY_PAID / GEMINI_API_KEY_TONY / GEMINI_API_KEY_KK: HTTP 429 'project has exceeded its monthly spending cap'"
+    - "gemini-3.8-flash: HTTP 503 high demand on free tier; gemini-3.6-flash: HTTP 429 20 requests/day already used"
+    - "gemini-3.5-flash-lite and gemini-3.1-flash-lite: HTTP 200 on Interactions API"
+  no_action_taken: "No key, billing, cap, gateway, or model-pin change; no retry of the capped paid project."
+
+method:
+  key_used: GEMINI_API_KEY_MICHAEL
+  model: gemini-3.5-flash-lite
+  harness: scripts/voice-bench/g4-interactions-eval.py (google-genai 3.6.1)
+  tasks: "6 synthetic 4-turn tasks: remember a fact, schedule a meeting via one function tool, return the tool result, then recall both the fact and the meeting detail"
+  arms:
+    - interactions_stateful: "previous_interaction_id chains; tools + system_instruction re-sent every turn"
+    - interactions_stateless: "store=False; full step history replayed in input, including thought/function_call steps"
+    - legacy_generatecontent: "client.models.generate_content with client-held contents and preserved thought_signature"
+  grading:
+    tool: "exact tool name, attendees, date, time; topic accepted with minor phrasing normalization (the/a prefix and parentheticals removed)"
+    recall: "all expected fact/date/time groups present in the final answer (date variants accepted)"
+  result_json: scripts/voice-bench/results/gemini4-interactions-eval-20261126.json
+
+results:
+  interactions_stateful:
+    completed: "6/6"
+    tool_exact: "6/6"
+    recall: "6/6"
+    both: "6/6"
+    input_tokens: 5868
+    output_tokens: 747
+    mean_elapsed_s: 27.92
+    turn1_input_tokens: [161, 161, 162, 160, 161, 161]
+    turn4_input_tokens: [340, 325, 339, 324, 327, 296]
+  interactions_stateless:
+    completed: "6/6"
+    tool_exact: "6/6"
+    recall: "6/6"
+    both: "6/6"
+    input_tokens: 5968
+    output_tokens: 735
+    mean_elapsed_s: 11.26
+    turn1_input_tokens: [161, 161, 162, 160, 161, 161]
+    turn4_input_tokens: [325, 348, 345, 351, 363, 320]
+  legacy_generatecontent:
+    completed: "2/6"
+    tool_exact: "2/2 completed"
+    recall: "0/2 completed"
+    input_tokens: 1295
+    output_tokens: 200
+    mean_elapsed_s: 11.73
+    note: "HTTP 429 quota exhausted on tasks 2-5; incomplete arm, not a reliable baseline score"
+
+findings:
+  - "Interactions API is usable on the free tier with gemini-3.5-flash-lite, and both stateful and stateless modes completed the tool-plus-recall loop perfectly on this small set."
+  - "Server-side state gave only ~1.7% fewer total input tokens (5868 vs 5968) and ~7% fewer turn-4 input tokens on average. On short sessions the caching benefit is not meaningful."
+  - "Stateful calls were much slower here (27.9s vs 11.3s mean per 4-call task). Treat as free-tier/environment noise until repeated on a paid key; it is not evidence that state is faster."
+  - "Legacy generateContent lost the remembered fact on both completed tasks (0/2 recall) while Interactions scored 6/6. Suggestive but underpowered: 4 of 6 legacy tasks failed on free-tier quota."
+  - "Interaction-scoped parameters (tools, system_instruction, generation_config) must be re-sent on every turn, including turns using previous_interaction_id."
+  - "Stateless mode requires replaying thought and function_call steps verbatim; legacy generateContent requires preserving thought_signature on function_call parts or the next request returns HTTP 400."
+  - "Strict topic exact-match produced 4/6 on both Interactions arms; all six were correct once minor phrasing differences ('migration' vs 'the migration', 'Rollout (Comet)' vs 'rollout') were normalized. The rubric, not the model, was the initial problem."
+
+verdict: >
+  Interactions API is a viable stateful text-agent primitive and is worth a
+  paid-tier trial with a Gemini 4 model, but this run cannot validate the
+  Gemini 4 half of the track. Do not change the production agent path on this
+  evidence.
+
+guardrails:
+  - "No key, billing, gateway, model-pin or production agent change."
+  - "No wiki publish in this track."
+  - "Synthetic task text only; no customer or secret material sent."
+
+activation_gate:
+  - "DONE 2026-11-26: card ADA-1451 created in backlog via board-api."
+  - "DONE 2026-11-26: fetched Interactions and function-calling docs before writing API code (per gemini-api-dev skill)."
+  - "DONE 2026-11-26: access probe across all five existing key names, values never displayed."
+  - "DONE 2026-11-26: partial eval completed on the accessible lite model."
+
+verify:
+  - "DONE 2026-11-26: result JSON stored under scripts/voice-bench/results/."
+  - "DONE 2026-11-26: strict and normalized tool grades both recorded."
+
+remaining:
+  - "Needs Tony's explicit go-ahead on the paid-project monthly cap or another paid project before Gemini 4 can be tested."
+  - "Re-run the same six tasks on Gemini 4 Neon/Carbon/Hydrogen and on gemini-3.8-flash once access exists; keep the model fixed across arms."
+  - "Repeat with longer sessions (20+ turns) before claiming a token-cost benefit from previous_interaction_id."
+  - "Re-run the legacy arm on a paid quota to replace the 2/6 partial baseline."

@@ -1,0 +1,1148 @@
+{
+  "schema": "g4-interactions-eval",
+  "schema_version": 1,
+  "date": "2026-11-26T12:46:00.247730+00:00",
+  "host": "idc03",
+  "key_printed": false,
+  "model": "gemini-3.5-flash-lite",
+  "baseline": "gemini-3.5-flash-lite",
+  "arms": {
+    "interactions_stateful_gemini-3.5-flash-lite": {
+      "rows": [
+        {
+          "tool_ok": true,
+          "tool_args": {
+            "attendees": [
+              "Bob",
+              "Alice"
+            ],
+            "date": "2025-03-14",
+            "time": "10:00",
+            "topic": "Q3 planning"
+          },
+          "expected_args": {
+            "attendees": [
+              "Bob",
+              "Alice"
+            ],
+            "date": "2025-03-14",
+            "time": "10:00",
+            "topic": "Q3 planning"
+          },
+          "recall_ok": true,
+          "final_text": "Your project codename is Lighthouse, and the Q3 planning meeting is scheduled for 2025-03-14 at 10:00.",
+          "usage": {
+            "input": 1007,
+            "output": 145
+          },
+          "calls": [
+            {
+              "turn": 1,
+              "usage": {
+                "input": 161,
+                "output": 23,
+                "total": 184
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 2,
+              "usage": {
+                "input": 217,
+                "output": 54,
+                "total": 271
+              },
+              "steps": [
+                "thought",
+                "function_call"
+              ]
+            },
+            {
+              "turn": 3,
+              "usage": {
+                "input": 289,
+                "output": 33,
+                "total": 322
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 4,
+              "usage": {
+                "input": 340,
+                "output": 35,
+                "total": 375
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            }
+          ],
+          "steps": [
+            "function_call",
+            "model_output",
+            "thought"
+          ],
+          "elapsed_s": 20.35,
+          "task": 1,
+          "tool_ok_relaxed": true
+        },
+        {
+          "tool_ok": false,
+          "tool_args": {
+            "attendees": [
+              "Carol",
+              "Dan"
+            ],
+            "date": "2025-04-02",
+            "time": "13:30",
+            "topic": "migration"
+          },
+          "expected_args": {
+            "attendees": [
+              "Carol",
+              "Dan"
+            ],
+            "date": "2025-04-02",
+            "time": "13:30",
+            "topic": "the migration"
+          },
+          "recall_ok": true,
+          "final_text": "Your staging cluster is called Birch, and the migration meeting is scheduled for 13:30 on 2025-04-02.",
+          "usage": {
+            "input": 966,
+            "output": 130
+          },
+          "calls": [
+            {
+              "turn": 1,
+              "usage": {
+                "input": 161,
+                "output": 12,
+                "total": 173
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 2,
+              "usage": {
+                "input": 205,
+                "output": 52,
+                "total": 257
+              },
+              "steps": [
+                "thought",
+                "function_call"
+              ]
+            },
+            {
+              "turn": 3,
+              "usage": {
+                "input": 275,
+                "output": 33,
+                "total": 308
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 4,
+              "usage": {
+                "input": 325,
+                "output": 33,
+                "total": 358
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            }
+          ],
+          "steps": [
+            "function_call",
+            "model_output",
+            "thought"
+          ],
+          "elapsed_s": 26.09,
+          "task": 2,
+          "tool_ok_relaxed": true
+        },
+        {
+          "tool_ok": true,
+          "tool_args": {
+            "attendees": [
+              "Erin"
+            ],
+            "date": "2025-05-19",
+            "time": "09:15",
+            "topic": "renewal terms"
+          },
+          "expected_args": {
+            "attendees": [
+              "Erin"
+            ],
+            "date": "2025-05-19",
+            "time": "09:15",
+            "topic": "renewal terms"
+          },
+          "recall_ok": true,
+          "final_text": "The customer account you mentioned is Northwind, and the renewal meeting is on 2025-05-19.",
+          "usage": {
+            "input": 1010,
+            "output": 138
+          },
+          "calls": [
+            {
+              "turn": 1,
+              "usage": {
+                "input": 162,
+                "output": 29,
+                "total": 191
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 2,
+              "usage": {
+                "input": 221,
+                "output": 49,
+                "total": 270
+              },
+              "steps": [
+                "thought",
+                "function_call"
+              ]
+            },
+            {
+              "turn": 3,
+              "usage": {
+                "input": 288,
+                "output": 33,
+                "total": 321
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 4,
+              "usage": {
+                "input": 339,
+                "output": 27,
+                "total": 366
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            }
+          ],
+          "steps": [
+            "function_call",
+            "model_output",
+            "thought"
+          ],
+          "elapsed_s": 21.05,
+          "task": 3,
+          "tool_ok_relaxed": true
+        },
+        {
+          "tool_ok": true,
+          "tool_args": {
+            "attendees": [
+              "Frank",
+              "Grace"
+            ],
+            "date": "2025-06-07",
+            "time": "16:45",
+            "topic": "the audit"
+          },
+          "expected_args": {
+            "attendees": [
+              "Frank",
+              "Grace"
+            ],
+            "date": "2025-06-07",
+            "time": "16:45",
+            "topic": "the audit"
+          },
+          "recall_ok": true,
+          "final_text": "Your preferred timezone is Bangkok, and Frank and Grace are attending the audit meeting.",
+          "usage": {
+            "input": 963,
+            "output": 114
+          },
+          "calls": [
+            {
+              "turn": 1,
+              "usage": {
+                "input": 160,
+                "output": 12,
+                "total": 172
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 2,
+              "usage": {
+                "input": 204,
+                "output": 53,
+                "total": 257
+              },
+              "steps": [
+                "thought",
+                "function_call"
+              ]
+            },
+            {
+              "turn": 3,
+              "usage": {
+                "input": 275,
+                "output": 33,
+                "total": 308
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 4,
+              "usage": {
+                "input": 324,
+                "output": 16,
+                "total": 340
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            }
+          ],
+          "steps": [
+            "function_call",
+            "model_output",
+            "thought"
+          ],
+          "elapsed_s": 16.03,
+          "task": 4,
+          "tool_ok_relaxed": true
+        },
+        {
+          "tool_ok": false,
+          "tool_args": {
+            "attendees": [
+              "Heidi"
+            ],
+            "date": "2025-07-21",
+            "time": "11:00",
+            "topic": "rollout"
+          },
+          "expected_args": {
+            "attendees": [
+              "Heidi"
+            ],
+            "date": "2025-07-21",
+            "time": "11:00",
+            "topic": "the rollout"
+          },
+          "recall_ok": true,
+          "final_text": "The release train is called Comet, and the topic of the meeting is the rollout.",
+          "usage": {
+            "input": 984,
+            "output": 117
+          },
+          "calls": [
+            {
+              "turn": 1,
+              "usage": {
+                "input": 161,
+                "output": 23,
+                "total": 184
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 2,
+              "usage": {
+                "input": 214,
+                "output": 50,
+                "total": 264
+              },
+              "steps": [
+                "thought",
+                "function_call"
+              ]
+            },
+            {
+              "turn": 3,
+              "usage": {
+                "input": 282,
+                "output": 27,
+                "total": 309
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 4,
+              "usage": {
+                "input": 327,
+                "output": 17,
+                "total": 344
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            }
+          ],
+          "steps": [
+            "function_call",
+            "model_output",
+            "thought"
+          ],
+          "elapsed_s": 59.83,
+          "task": 5,
+          "tool_ok_relaxed": true
+        },
+        {
+          "tool_ok": true,
+          "tool_args": {
+            "attendees": [
+              "Ivan",
+              "Judy"
+            ],
+            "date": "2025-08-11",
+            "time": "08:30",
+            "topic": "failover"
+          },
+          "expected_args": {
+            "attendees": [
+              "Ivan",
+              "Judy"
+            ],
+            "date": "2025-08-11",
+            "time": "08:30",
+            "topic": "failover"
+          },
+          "recall_ok": true,
+          "final_text": "Your fallback provider is Ollama, and the failover meeting is scheduled for August 11, 2025, at 08:30.",
+          "usage": {
+            "input": 938,
+            "output": 103
+          },
+          "calls": [
+            {
+              "turn": 1,
+              "usage": {
+                "input": 161,
+                "output": 12,
+                "total": 173
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 2,
+              "usage": {
+                "input": 205,
+                "output": 53,
+                "total": 258
+              },
+              "steps": [
+                "thought",
+                "function_call"
+              ]
+            },
+            {
+              "turn": 3,
+              "usage": {
+                "input": 276,
+                "output": 4,
+                "total": 280
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 4,
+              "usage": {
+                "input": 296,
+                "output": 34,
+                "total": 330
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            }
+          ],
+          "steps": [
+            "function_call",
+            "model_output",
+            "thought"
+          ],
+          "elapsed_s": 24.16,
+          "task": 6,
+          "tool_ok_relaxed": true
+        }
+      ],
+      "n": 6,
+      "completed": 6,
+      "tool_exact": 4,
+      "recall_ok": 6,
+      "both_ok": 4,
+      "input_tokens": 5868,
+      "output_tokens": 747,
+      "mean_elapsed_s": 27.92,
+      "tool_exact_strict": 4,
+      "tool_exact_relaxed": 6,
+      "both_ok_relaxed": 6
+    },
+    "interactions_stateless_gemini-3.5-flash-lite": {
+      "rows": [
+        {
+          "tool_ok": true,
+          "tool_args": {
+            "attendees": [
+              "Bob",
+              "Alice"
+            ],
+            "date": "2025-03-14",
+            "time": "10:00",
+            "topic": "Q3 planning"
+          },
+          "expected_args": {
+            "attendees": [
+              "Bob",
+              "Alice"
+            ],
+            "date": "2025-03-14",
+            "time": "10:00",
+            "topic": "Q3 planning"
+          },
+          "recall_ok": true,
+          "final_text": "Your project codename is Lighthouse, and the Q3 planning meeting is scheduled for 2025-03-14 at 10:00.",
+          "usage": {
+            "input": 976,
+            "output": 111
+          },
+          "calls": [
+            {
+              "turn": 1,
+              "usage": {
+                "input": 161,
+                "output": 15,
+                "total": 176
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 2,
+              "usage": {
+                "input": 209,
+                "output": 54,
+                "total": 263
+              },
+              "steps": [
+                "thought",
+                "function_call"
+              ]
+            },
+            {
+              "turn": 3,
+              "usage": {
+                "input": 281,
+                "output": 7,
+                "total": 288
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 4,
+              "usage": {
+                "input": 325,
+                "output": 35,
+                "total": 360
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            }
+          ],
+          "steps": [
+            "function_call",
+            "model_output",
+            "thought"
+          ],
+          "elapsed_s": 11.02,
+          "task": 1,
+          "tool_ok_relaxed": true
+        },
+        {
+          "tool_ok": true,
+          "tool_args": {
+            "attendees": [
+              "Carol",
+              "Dan"
+            ],
+            "date": "2025-04-02",
+            "time": "13:30",
+            "topic": "the migration"
+          },
+          "expected_args": {
+            "attendees": [
+              "Carol",
+              "Dan"
+            ],
+            "date": "2025-04-02",
+            "time": "13:30",
+            "topic": "the migration"
+          },
+          "recall_ok": true,
+          "final_text": "Your staging cluster is called Birch, and the migration meeting is scheduled for 13:30 on 2025-04-02.",
+          "usage": {
+            "input": 996,
+            "output": 134
+          },
+          "calls": [
+            {
+              "turn": 1,
+              "usage": {
+                "input": 161,
+                "output": 15,
+                "total": 176
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 2,
+              "usage": {
+                "input": 208,
+                "output": 53,
+                "total": 261
+              },
+              "steps": [
+                "thought",
+                "function_call"
+              ]
+            },
+            {
+              "turn": 3,
+              "usage": {
+                "input": 279,
+                "output": 33,
+                "total": 312
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 4,
+              "usage": {
+                "input": 348,
+                "output": 33,
+                "total": 381
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            }
+          ],
+          "steps": [
+            "function_call",
+            "model_output",
+            "thought"
+          ],
+          "elapsed_s": 14.09,
+          "task": 2,
+          "tool_ok_relaxed": true
+        },
+        {
+          "tool_ok": false,
+          "tool_args": {
+            "attendees": [
+              "Erin"
+            ],
+            "date": "2025-05-19",
+            "time": "09:15",
+            "topic": "Northwind renewal terms"
+          },
+          "expected_args": {
+            "attendees": [
+              "Erin"
+            ],
+            "date": "2025-05-19",
+            "time": "09:15",
+            "topic": "renewal terms"
+          },
+          "recall_ok": true,
+          "final_text": "The customer account is Northwind, and the renewal meeting is scheduled for 2025-05-19.",
+          "usage": {
+            "input": 988,
+            "output": 124
+          },
+          "calls": [
+            {
+              "turn": 1,
+              "usage": {
+                "input": 162,
+                "output": 14,
+                "total": 176
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 2,
+              "usage": {
+                "input": 206,
+                "output": 51,
+                "total": 257
+              },
+              "steps": [
+                "thought",
+                "function_call"
+              ]
+            },
+            {
+              "turn": 3,
+              "usage": {
+                "input": 275,
+                "output": 33,
+                "total": 308
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 4,
+              "usage": {
+                "input": 345,
+                "output": 26,
+                "total": 371
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            }
+          ],
+          "steps": [
+            "function_call",
+            "model_output",
+            "thought"
+          ],
+          "elapsed_s": 12.99,
+          "task": 3,
+          "tool_ok_relaxed": true
+        },
+        {
+          "tool_ok": true,
+          "tool_args": {
+            "attendees": [
+              "Frank",
+              "Grace"
+            ],
+            "date": "2025-06-07",
+            "time": "16:45",
+            "topic": "the audit"
+          },
+          "expected_args": {
+            "attendees": [
+              "Frank",
+              "Grace"
+            ],
+            "date": "2025-06-07",
+            "time": "16:45",
+            "topic": "the audit"
+          },
+          "recall_ok": true,
+          "final_text": "Your preferred timezone is Bangkok, and Frank and Grace are attending the audit meeting.",
+          "usage": {
+            "input": 1006,
+            "output": 122
+          },
+          "calls": [
+            {
+              "turn": 1,
+              "usage": {
+                "input": 160,
+                "output": 20,
+                "total": 180
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 2,
+              "usage": {
+                "input": 212,
+                "output": 53,
+                "total": 265
+              },
+              "steps": [
+                "thought",
+                "function_call"
+              ]
+            },
+            {
+              "turn": 3,
+              "usage": {
+                "input": 283,
+                "output": 33,
+                "total": 316
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 4,
+              "usage": {
+                "input": 351,
+                "output": 16,
+                "total": 367
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            }
+          ],
+          "steps": [
+            "function_call",
+            "model_output",
+            "thought"
+          ],
+          "elapsed_s": 13.28,
+          "task": 4,
+          "tool_ok_relaxed": true
+        },
+        {
+          "tool_ok": false,
+          "tool_args": {
+            "attendees": [
+              "Heidi"
+            ],
+            "date": "2025-07-21",
+            "time": "11:00",
+            "topic": "Rollout (Comet)"
+          },
+          "expected_args": {
+            "attendees": [
+              "Heidi"
+            ],
+            "date": "2025-07-21",
+            "time": "11:00",
+            "topic": "the rollout"
+          },
+          "recall_ok": true,
+          "final_text": "The release train is called Comet, and the topic of the meeting with Heidi is the rollout.",
+          "usage": {
+            "input": 1036,
+            "output": 136
+          },
+          "calls": [
+            {
+              "turn": 1,
+              "usage": {
+                "input": 161,
+                "output": 29,
+                "total": 190
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 2,
+              "usage": {
+                "input": 220,
+                "output": 54,
+                "total": 274
+              },
+              "steps": [
+                "thought",
+                "function_call"
+              ]
+            },
+            {
+              "turn": 3,
+              "usage": {
+                "input": 292,
+                "output": 34,
+                "total": 326
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 4,
+              "usage": {
+                "input": 363,
+                "output": 19,
+                "total": 382
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            }
+          ],
+          "steps": [
+            "function_call",
+            "model_output",
+            "thought"
+          ],
+          "elapsed_s": 5.13,
+          "task": 5,
+          "tool_ok_relaxed": true
+        },
+        {
+          "tool_ok": true,
+          "tool_args": {
+            "attendees": [
+              "Ivan",
+              "Judy"
+            ],
+            "date": "2025-08-11",
+            "time": "08:30",
+            "topic": "failover"
+          },
+          "expected_args": {
+            "attendees": [
+              "Ivan",
+              "Judy"
+            ],
+            "date": "2025-08-11",
+            "time": "08:30",
+            "topic": "failover"
+          },
+          "recall_ok": true,
+          "final_text": "Your fallback provider is Ollama. The failover meeting is scheduled for August 11, 2025, at 08:30.",
+          "usage": {
+            "input": 966,
+            "output": 108
+          },
+          "calls": [
+            {
+              "turn": 1,
+              "usage": {
+                "input": 161,
+                "output": 14,
+                "total": 175
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 2,
+              "usage": {
+                "input": 207,
+                "output": 54,
+                "total": 261
+              },
+              "steps": [
+                "thought",
+                "function_call"
+              ]
+            },
+            {
+              "turn": 3,
+              "usage": {
+                "input": 278,
+                "output": 7,
+                "total": 285
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            },
+            {
+              "turn": 4,
+              "usage": {
+                "input": 320,
+                "output": 33,
+                "total": 353
+              },
+              "steps": [
+                "thought",
+                "model_output"
+              ]
+            }
+          ],
+          "steps": [
+            "function_call",
+            "model_output",
+            "thought"
+          ],
+          "elapsed_s": 11.04,
+          "task": 6,
+          "tool_ok_relaxed": true
+        }
+      ],
+      "n": 6,
+      "completed": 6,
+      "tool_exact": 4,
+      "recall_ok": 6,
+      "both_ok": 4,
+      "input_tokens": 5968,
+      "output_tokens": 735,
+      "mean_elapsed_s": 11.26,
+      "tool_exact_strict": 4,
+      "tool_exact_relaxed": 6,
+      "both_ok_relaxed": 6
+    },
+    "legacy_generatecontent_gemini-3.5-flash-lite": {
+      "rows": [
+        {
+          "tool_ok": true,
+          "tool_args": {
+            "time": "10:00",
+            "attendees": [
+              "Bob",
+              "Alice"
+            ],
+            "date": "2025-03-14",
+            "topic": "Q3 planning"
+          },
+          "expected_args": {
+            "attendees": [
+              "Bob",
+              "Alice"
+            ],
+            "date": "2025-03-14",
+            "time": "10:00",
+            "topic": "Q3 planning"
+          },
+          "recall_ok": false,
+          "final_text": "Meeting scheduled with Bob and Alice for 2025-03-14 at 10:00 about Q3 planning.",
+          "usage": {
+            "input": 649,
+            "output": 99
+          },
+          "elapsed_s": 10.1,
+          "task": 1,
+          "tool_ok_relaxed": true
+        },
+        {
+          "task": 2,
+          "error": "ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-",
+          "tool_ok_relaxed": true
+        },
+        {
+          "task": 3,
+          "error": "ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-",
+          "tool_ok_relaxed": true
+        },
+        {
+          "task": 4,
+          "error": "ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-",
+          "tool_ok_relaxed": true
+        },
+        {
+          "task": 5,
+          "error": "ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-",
+          "tool_ok_relaxed": true
+        },
+        {
+          "tool_ok": true,
+          "tool_args": {
+            "topic": "failover",
+            "time": "08:30",
+            "attendees": [
+              "Ivan",
+              "Judy"
+            ],
+            "date": "2025-08-11"
+          },
+          "expected_args": {
+            "attendees": [
+              "Ivan",
+              "Judy"
+            ],
+            "date": "2025-08-11",
+            "time": "08:30",
+            "topic": "failover"
+          },
+          "recall_ok": false,
+          "final_text": "The meeting with Ivan and Judy has been scheduled for 2025-08-11 at 08:30 to discuss failover.",
+          "usage": {
+            "input": 646,
+            "output": 101
+          },
+          "elapsed_s": 13.36,
+          "task": 6,
+          "tool_ok_relaxed": true
+        }
+      ],
+      "n": 6,
+      "completed": 2,
+      "tool_exact": 2,
+      "recall_ok": 0,
+      "both_ok": 0,
+      "input_tokens": 1295,
+      "output_tokens": 200,
+      "mean_elapsed_s": 11.73,
+      "tool_exact_strict": 2,
+      "tool_exact_relaxed": 6,
+      "both_ok_relaxed": 0
+    }
+  }
+}
