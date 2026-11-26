@@ -1,0 +1,689 @@
+{
+  "schema": "voice-bench-result",
+  "schema_version": 1,
+  "combo": {
+    "id": "gemini-live-extended-thinking",
+    "stt": "gemini-live-native",
+    "llm": "gemini-live-extended-thinking",
+    "tts": "gemini-live-native",
+    "orchestrator": "gev-gemini-client-shape",
+    "host_labels": [],
+    "gemini_model": "gemini-3.8-live-extended-thinking",
+    "thinking_level": "LOW",
+    "notes": "Extended-thinking Live variant (bidiGenerateContent-only). Requires generationConfig.thinkingConfig.thinkingLevel (low|medium| high; minimal unsupported) and NON_BLOCKING function declarations; session lifecycle is tracked by interactionStatus IN_PROGRESS/IDLE, not turnComplete. Same HA_TOOLS surface and PCM16@16k streaming as gemini-baseline. Benchmarked 2026-11-26 vs the 3.8-live pin — see docs/ssot/jobs/voice/2026-11-26-gemini-38-live-extended-thinking-eval.yml."
+  },
+  "dry_run": false,
+  "meta": {
+    "at": "20261126T112841Z",
+    "host": "idc02"
+  },
+  "summary": {
+    "n": 20,
+    "ok": 20,
+    "mean_ttfa_ms": 10.05,
+    "mean_total_ms": 10864.5,
+    "mean_wer": 0.01,
+    "tool_call": {
+      "exact": 8,
+      "partial": 6,
+      "none": 0,
+      "n/a": 6
+    }
+  },
+  "fixtures": [
+    {
+      "id": "en-cmd-light-kitchen",
+      "lang": "en",
+      "category": "ha_command",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 0,
+      "total_ms": 11352,
+      "transcript": "Turn on the kitchen lights.",
+      "expected_transcript": "turn on the kitchen lights",
+      "wer": 0.0,
+      "tool_call": {
+        "name": "hass_turn_on",
+        "args": {
+          "domain": "light",
+          "area": "kitchen"
+        }
+      },
+      "expected_tool_call": {
+        "name": "hass_turn_on",
+        "args": {
+          "domain": "light",
+          "area": "kitchen"
+        }
+      },
+      "tool_call_match": "exact",
+      "assistant_text": "Sure, turning those lights on for you.I have turned on the kitchen lights for you.",
+      "events_seen": [
+        "audio",
+        "input_transcription",
+        "interaction_idle",
+        "interaction_in_progress",
+        "output_transcription",
+        "tool_call",
+        "turn_complete",
+        "utterance_turn_complete"
+      ]
+    },
+    {
+      "id": "en-cmd-ac-bedroom",
+      "lang": "en",
+      "category": "ha_command",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 1,
+      "total_ms": 14804,
+      "transcript": "Set the bedroom air conditioner to 24°.",
+      "expected_transcript": "set the bedroom air conditioner to 24 degrees",
+      "wer": 0.125,
+      "tool_call": {
+        "name": "hass_set_temperature",
+        "args": {
+          "temperature": 24,
+          "area": "bedroom"
+        }
+      },
+      "expected_tool_call": {
+        "name": "hass_set_temperature",
+        "args": {
+          "area": "bedroom",
+          "temperature": 24
+        }
+      },
+      "tool_call_match": "exact",
+      "assistant_text": "Sure, adjusting the temperature now.I've set the bedroom air conditioner to 24 degrees.",
+      "events_seen": [
+        "audio",
+        "input_transcription",
+        "interaction_idle",
+        "interaction_in_progress",
+        "output_transcription",
+        "tool_call",
+        "turn_complete",
+        "utterance_turn_complete"
+      ]
+    },
+    {
+      "id": "en-cmd-fan-off",
+      "lang": "en",
+      "category": "ha_command",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 1,
+      "total_ms": 12113,
+      "transcript": "Turn off the living room fan.",
+      "expected_transcript": "turn off the living room fan",
+      "wer": 0.0,
+      "tool_call": {
+        "name": "hass_turn_off",
+        "args": {
+          "domain": "fan",
+          "area": "living room"
+        }
+      },
+      "expected_tool_call": {
+        "name": "hass_turn_off",
+        "args": {
+          "domain": "fan",
+          "area": "living_room"
+        }
+      },
+      "tool_call_match": "partial",
+      "assistant_text": "Sure, turning off the living room fan for you.I've turned off the living room fan.",
+      "events_seen": [
+        "audio",
+        "input_transcription",
+        "interaction_idle",
+        "interaction_in_progress",
+        "output_transcription",
+        "tool_call",
+        "turn_complete",
+        "utterance_turn_complete"
+      ]
+    },
+    {
+      "id": "en-cmd-lock-door",
+      "lang": "en",
+      "category": "ha_command",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 0,
+      "total_ms": 12079,
+      "transcript": "Lock the front door.",
+      "expected_transcript": "lock the front door",
+      "wer": 0.0,
+      "tool_call": {
+        "name": "hass_lock",
+        "args": {
+          "entity": "lock.front_door"
+        }
+      },
+      "expected_tool_call": {
+        "name": "hass_lock",
+        "args": {
+          "entity": "front_door"
+        }
+      },
+      "tool_call_match": "partial",
+      "assistant_text": "Sure, I'll lock that for you right now.The front door is locked now.",
+      "events_seen": [
+        "audio",
+        "input_transcription",
+        "interaction_idle",
+        "interaction_in_progress",
+        "output_transcription",
+        "tool_call",
+        "turn_complete",
+        "utterance_turn_complete"
+      ]
+    },
+    {
+      "id": "en-qry-temp-outside",
+      "lang": "en",
+      "category": "ha_query",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 9,
+      "total_ms": 12555,
+      "transcript": "What is the temperature outside right now?",
+      "expected_transcript": "what is the temperature outside right now",
+      "wer": 0.0,
+      "tool_call": {
+        "name": "hass_get_state",
+        "args": {
+          "entity": "sensor.outdoor_temperature"
+        }
+      },
+      "expected_tool_call": {
+        "name": "hass_get_state",
+        "args": {
+          "entity": "sensor.outside_temperature"
+        }
+      },
+      "tool_call_match": "partial",
+      "assistant_text": "Let me check the temperature for you.It's currently 24 degrees outside.",
+      "events_seen": [
+        "audio",
+        "input_transcription",
+        "interaction_idle",
+        "interaction_in_progress",
+        "output_transcription",
+        "tool_call",
+        "turn_complete",
+        "utterance_turn_complete"
+      ]
+    },
+    {
+      "id": "en-qry-washer",
+      "lang": "en",
+      "category": "ha_query",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 0,
+      "total_ms": 12838,
+      "transcript": "Is the washing machine still running?",
+      "expected_transcript": "is the washing machine still running",
+      "wer": 0.0,
+      "tool_call": {
+        "name": "hass_get_state",
+        "args": {
+          "entity": "sensor.washing_machine_status"
+        }
+      },
+      "expected_tool_call": {
+        "name": "hass_get_state",
+        "args": {
+          "entity": "sensor.washer_power"
+        }
+      },
+      "tool_call_match": "partial",
+      "assistant_text": "Let me check the status of the washing machine for you.No, the washing machine is done.",
+      "events_seen": [
+        "audio",
+        "input_transcription",
+        "interaction_idle",
+        "interaction_in_progress",
+        "output_transcription",
+        "tool_call",
+        "turn_complete",
+        "utterance_turn_complete"
+      ]
+    },
+    {
+      "id": "en-qry-solar",
+      "lang": "en",
+      "category": "ha_query",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 27,
+      "total_ms": 13710,
+      "transcript": "How much solar power are we generating?",
+      "expected_transcript": "how much solar power are we generating",
+      "wer": 0.0,
+      "tool_call": {
+        "name": "hass_get_state",
+        "args": {
+          "entity": "sensor.solar_power"
+        }
+      },
+      "expected_tool_call": {
+        "name": "hass_get_state",
+        "args": {
+          "entity": "sensor.solar_power"
+        }
+      },
+      "tool_call_match": "exact",
+      "assistant_text": "Let me check the current solar generation for you.You are currently generating solar power.",
+      "events_seen": [
+        "audio",
+        "input_transcription",
+        "interaction_idle",
+        "interaction_in_progress",
+        "output_transcription",
+        "tool_call",
+        "turn_complete",
+        "utterance_turn_complete"
+      ]
+    },
+    {
+      "id": "en-chat-hello",
+      "lang": "en",
+      "category": "chit_chat",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 1,
+      "total_ms": 6209,
+      "transcript": "Hey, how are you doing today?",
+      "expected_transcript": "hey how are you doing today",
+      "wer": 0.0,
+      "tool_call": null,
+      "expected_tool_call": null,
+      "tool_call_match": "n/a",
+      "assistant_text": "I'm doing great, thank you! How are you doing today?",
+      "events_seen": [
+        "audio",
+        "input_transcription",
+        "interaction_idle",
+        "output_transcription",
+        "turn_complete"
+      ]
+    },
+    {
+      "id": "en-chat-thanks",
+      "lang": "en",
+      "category": "chit_chat",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 0,
+      "total_ms": 6925,
+      "transcript": "Thanks, that is exactly what I needed.",
+      "expected_transcript": "thanks that is exactly what i needed",
+      "wer": 0.0,
+      "tool_call": null,
+      "expected_tool_call": null,
+      "tool_call_match": "n/a",
+      "assistant_text": "You are very welcome! I am glad I could help.",
+      "events_seen": [
+        "audio",
+        "input_transcription",
+        "interaction_idle",
+        "output_transcription",
+        "turn_complete"
+      ]
+    },
+    {
+      "id": "en-chat-joke",
+      "lang": "en",
+      "category": "chit_chat",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 0,
+      "total_ms": 6653,
+      "transcript": "Tell me something funny.",
+      "expected_transcript": "tell me something funny",
+      "wer": 0.0,
+      "tool_call": null,
+      "expected_tool_call": null,
+      "tool_call_match": "n/a",
+      "assistant_text": "Why don't scientists trust atoms? Because they make up everything!",
+      "events_seen": [
+        "audio",
+        "input_transcription",
+        "interaction_idle",
+        "output_transcription",
+        "turn_complete"
+      ]
+    },
+    {
+      "id": "th-cmd-light-kitchen",
+      "lang": "th",
+      "category": "ha_command",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 4,
+      "total_ms": 11488,
+      "transcript": "เปิดไฟครัวหน่อย",
+      "expected_transcript": "เปิดไฟครัวหน่อย",
+      "wer": 0.0,
+      "tool_call": {
+        "name": "hass_turn_on",
+        "args": {
+          "domain": "light",
+          "area": "kitchen"
+        }
+      },
+      "expected_tool_call": {
+        "name": "hass_turn_on",
+        "args": {
+          "domain": "light",
+          "area": "kitchen"
+        }
+      },
+      "tool_call_match": "exact",
+      "assistant_text": "ได้ค่ะ กำลังเปิดไฟครัวให้ค่ะเปิดไฟห้องครัวให้เรียบร้อยแล้วค่ะ",
+      "events_seen": [
+        "audio",
+        "input_transcription",
+        "interaction_idle",
+        "interaction_in_progress",
+        "output_transcription",
+        "tool_call",
+        "turn_complete",
+        "utterance_turn_complete"
+      ]
+    },
+    {
+      "id": "th-cmd-ac-off",
+      "lang": "th",
+      "category": "ha_command",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 0,
+      "total_ms": 12010,
+      "transcript": "ปิดแอร์ห้องนอน",
+      "expected_transcript": "ปิดแอร์ห้องนอน",
+      "wer": 0.0,
+      "tool_call": {
+        "name": "hass_turn_off",
+        "args": {
+          "area": "bedroom",
+          "domain": "climate"
+        }
+      },
+      "expected_tool_call": {
+        "name": "hass_turn_off",
+        "args": {
+          "domain": "climate",
+          "area": "bedroom"
+        }
+      },
+      "tool_call_match": "exact",
+      "assistant_text": "กำลังปิดแอร์ในห้องนอนให้ค่ะปิดแอร์ห้องนอนเรียบร้อยแล้วค่ะ",
+      "events_seen": [
+        "audio",
+        "input_transcription",
+        "interaction_idle",
+        "interaction_in_progress",
+        "output_transcription",
+        "tool_call",
+        "turn_complete",
+        "utterance_turn_complete"
+      ]
+    },
+    {
+      "id": "th-cmd-tv-on",
+      "lang": "th",
+      "category": "ha_command",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 0,
+      "total_ms": 13445,
+      "transcript": "เปิดทีวีห้องนั่งเล่น",
+      "expected_transcript": "เปิดทีวีห้องนั่งเล่น",
+      "wer": 0.0,
+      "tool_call": {
+        "name": "hass_turn_on",
+        "args": {
+          "area": "living room",
+          "domain": "media_player"
+        }
+      },
+      "expected_tool_call": {
+        "name": "hass_turn_on",
+        "args": {
+          "domain": "media_player",
+          "area": "living_room"
+        }
+      },
+      "tool_call_match": "partial",
+      "assistant_text": "กำลังเปิดทีวีให้ค่ะกำลังเช็คสถานะทีวีในห้องนั่งเล่นนะคะเปิดทีวีในห้องนั่งเล่นให้เรียบร้อยแล้วค่ะ",
+      "events_seen": [
+        "audio",
+        "input_transcription",
+        "interaction_idle",
+        "interaction_in_progress",
+        "output_transcription",
+        "tool_call",
+        "turn_complete",
+        "utterance_turn_complete"
+      ]
+    },
+    {
+      "id": "th-cmd-fan-on",
+      "lang": "th",
+      "category": "ha_command",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 23,
+      "total_ms": 11796,
+      "transcript": "เปิดพัดลมหน่อยครับ",
+      "expected_transcript": "เปิดพัดลมหน่อยครับ",
+      "wer": 0.0,
+      "tool_call": {
+        "name": "hass_turn_on",
+        "args": {
+          "domain": "fan"
+        }
+      },
+      "expected_tool_call": {
+        "name": "hass_turn_on",
+        "args": {
+          "domain": "fan"
+        }
+      },
+      "tool_call_match": "exact",
+      "assistant_text": "ได้ค่ะ กำลังเปิดพัดลมให้ค่ะเปิดพัดลมให้เรียบร้อยแล้วค่ะ",
+      "events_seen": [
+        "audio",
+        "input_transcription",
+        "interaction_idle",
+        "interaction_in_progress",
+        "output_transcription",
+        "tool_call",
+        "turn_complete",
+        "utterance_turn_complete"
+      ]
+    },
+    {
+      "id": "th-qry-temp",
+      "lang": "th",
+      "category": "ha_query",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 11,
+      "total_ms": 14878,
+      "transcript": "ตอนนี้อุณหภูมิข้างนอกเท่าไหร่",
+      "expected_transcript": "ตอนนี้อุณหภูมิข้างนอกเท่าไหร่",
+      "wer": 0.0,
+      "tool_call": {
+        "name": "hass_get_state",
+        "args": {
+          "entity": "sensor.outdoor_temperature"
+        }
+      },
+      "expected_tool_call": {
+        "name": "hass_get_state",
+        "args": {
+          "entity": "sensor.outside_temperature"
+        }
+      },
+      "tool_call_match": "partial",
+      "assistant_text": "ขอตรวจสอบอุณหภูมิสักครู่ค่ะ\nกำลังค้นหาข้อมูลอุณหภูมิภายนอกให้ค่ะอุณหภูมิภายนอกตอนนี้อยู่ที่ 30 องศาเซลเซียสค่ะ",
+      "events_seen": [
+        "audio",
+        "input_transcription",
+        "interaction_idle",
+        "interaction_in_progress",
+        "output_transcription",
+        "tool_call",
+        "turn_complete",
+        "utterance_turn_complete"
+      ]
+    },
+    {
+      "id": "th-qry-door",
+      "lang": "th",
+      "category": "ha_query",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 14,
+      "total_ms": 11715,
+      "transcript": "ประตูหน้าล็อกอยู่ไหม",
+      "expected_transcript": "ประตูหน้าล็อกอยู่ไหม",
+      "wer": 0.0,
+      "tool_call": {
+        "name": "hass_get_state",
+        "args": {
+          "entity": "lock.front_door"
+        }
+      },
+      "expected_tool_call": {
+        "name": "hass_get_state",
+        "args": {
+          "entity": "lock.front_door"
+        }
+      },
+      "tool_call_match": "exact",
+      "assistant_text": "เดี๋ยวตรวจสอบให้ครับประตูหน้าล็อกอยู่เรียบร้อยครับ",
+      "events_seen": [
+        "audio",
+        "input_transcription",
+        "interaction_idle",
+        "interaction_in_progress",
+        "output_transcription",
+        "tool_call",
+        "turn_complete",
+        "utterance_turn_complete"
+      ]
+    },
+    {
+      "id": "th-qry-light",
+      "lang": "th",
+      "category": "ha_query",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 33,
+      "total_ms": 12198,
+      "transcript": "ไฟในครัวเปิดอยู่ไหม",
+      "expected_transcript": "ไฟในครัวเปิดอยู่ไหม",
+      "wer": 0.0,
+      "tool_call": {
+        "name": "hass_get_state",
+        "args": {
+          "entity": "light.kitchen"
+        }
+      },
+      "expected_tool_call": {
+        "name": "hass_get_state",
+        "args": {
+          "entity": "light.kitchen"
+        }
+      },
+      "tool_call_match": "exact",
+      "assistant_text": "กำลังตรวจสอบให้ค่ะกำลังตรวจสอบสถานะไฟในครัวอยู่ค่ะไฟในครัวเปิดอยู่ค่ะ",
+      "events_seen": [
+        "audio",
+        "input_transcription",
+        "interaction_idle",
+        "interaction_in_progress",
+        "output_transcription",
+        "tool_call",
+        "turn_complete",
+        "utterance_turn_complete"
+      ]
+    },
+    {
+      "id": "th-chat-hello",
+      "lang": "th",
+      "category": "chit_chat",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 0,
+      "total_ms": 6998,
+      "transcript": "สวัสดีครับ วันนี้เป็นไงบ้าง",
+      "expected_transcript": "สวัสดีครับ วันนี้เป็นไงบ้าง",
+      "wer": 0.0,
+      "tool_call": null,
+      "expected_tool_call": null,
+      "tool_call_match": "n/a",
+      "assistant_text": "สวัสดีค่ะ วันนี้ฉันพร้อมช่วยเหลือคุณเต็มที่เลยค่ะ",
+      "events_seen": [
+        "audio",
+        "input_transcription",
+        "interaction_idle",
+        "output_transcription",
+        "turn_complete"
+      ]
+    },
+    {
+      "id": "th-chat-thanks",
+      "lang": "th",
+      "category": "chit_chat",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 69,
+      "total_ms": 5457,
+      "transcript": "ขอบคุณมากครับ",
+      "expected_transcript": "ขอบคุณมากครับ",
+      "wer": 0.0,
+      "tool_call": null,
+      "expected_tool_call": null,
+      "tool_call_match": "n/a",
+      "assistant_text": "ยินดีค่ะ มีอะไรให้ช่วยอีกไหมคะ",
+      "events_seen": [
+        "audio",
+        "input_transcription",
+        "interaction_idle",
+        "output_transcription",
+        "turn_complete"
+      ]
+    },
+    {
+      "id": "th-chat-weather",
+      "lang": "th",
+      "category": "chit_chat",
+      "status": "ok",
+      "error": null,
+      "ttfa_ms": 8,
+      "total_ms": 8067,
+      "transcript": "วันนี้อากาศดีจังเลย",
+      "expected_transcript": "วันนี้อากาศดีจังเลย",
+      "wer": 0.0,
+      "tool_call": null,
+      "expected_tool_call": null,
+      "tool_call_match": "n/a",
+      "assistant_text": "ใช่ครับ ท้องฟ้าแจ่มใส เหมาะแก่การออกไปทำกิจกรรมกลางแจ้งมากเลยครับ",
+      "events_seen": [
+        "audio",
+        "input_transcription",
+        "interaction_idle",
+        "output_transcription",
+        "turn_complete"
+      ]
+    }
+  ]
+}

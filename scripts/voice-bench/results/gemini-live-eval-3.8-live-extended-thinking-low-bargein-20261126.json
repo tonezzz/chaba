@@ -1,0 +1,43 @@
+{
+  "schema": "voice-live-probes",
+  "schema_version": 1,
+  "model": "gemini-3.8-live-extended-thinking",
+  "thinking_level": "LOW",
+  "at": "20261126T113954Z",
+  "host": "idc02",
+  "barge_in": {
+    "fixture_a": "en-chat-joke",
+    "fixture_b": "en-cmd-light-kitchen",
+    "expected_b": "turn on the kitchen lights",
+    "lang_b": "en",
+    "first_audio_a_ms": 2686,
+    "barge_ts": 2733,
+    "total_ms": 20922,
+    "interrupted": 1,
+    "post_barge_transcript": "Turn on the kitchen lights.",
+    "post_barge_wer": 0.0,
+    "transcript_ok": true,
+    "assistant_text": "Why don't scientists trust atoms?I'll turn those on for you.I've turned on the kitchen lights.",
+    "tool_calls": [
+      {
+        "name": "hass_turn_on",
+        "args": {
+          "domain": "light",
+          "area": "kitchen"
+        }
+      }
+    ],
+    "events_seen": [
+      "audio",
+      "input_transcription",
+      "interaction_idle",
+      "interaction_in_progress",
+      "interrupted",
+      "output_transcription",
+      "tool_call",
+      "turn_complete",
+      "utterance_turn_complete"
+    ],
+    "status": "ok"
+  }
+}

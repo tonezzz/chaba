@@ -102,6 +102,26 @@ combos:
       gemini-3.1-flash-live-preview is the fallback); key from
       GEMINI_API_KEY or ~/.config/secrets/gemini-api-key.env."
 
+  - id: gemini-live-extended-thinking
+    stt: gemini-live-native
+    llm: gemini-live-extended-thinking
+    tts: gemini-live-native
+    orchestrator: gev-gemini-client-shape
+    adapter: gemini_live
+    gemini_model: gemini-3.8-live-extended-thinking
+    thinking_level: LOW
+    host_labels: []
+    runtime:
+      kind: none
+    endpoint: wss://generativelanguage.googleapis.com
+    notes: "Extended-thinking Live variant (bidiGenerateContent-only).
+      Requires generationConfig.thinkingConfig.thinkingLevel (low|medium|
+      high; minimal unsupported) and NON_BLOCKING function declarations;
+      session lifecycle is tracked by interactionStatus IN_PROGRESS/IDLE,
+      not turnComplete. Same HA_TOOLS surface and PCM16@16k streaming as
+      gemini-baseline. Benchmarked 2026-11-26 vs the 3.8-live pin — see
+      docs/ssot/jobs/voice/2026-11-26-gemini-38-live-extended-thinking-eval.yml."
+
   - id: dry-run-dummy
     stt: none
     llm: none

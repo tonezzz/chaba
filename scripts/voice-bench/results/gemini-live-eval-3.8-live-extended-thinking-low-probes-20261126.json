@@ -1,0 +1,152 @@
+{
+  "schema": "voice-live-probes",
+  "schema_version": 1,
+  "model": "gemini-3.8-live-extended-thinking",
+  "thinking_level": "LOW",
+  "at": "20261126T114041Z",
+  "host": "idc02",
+  "barge_in": {
+    "fixture_a": "en-chat-joke",
+    "fixture_b": "en-cmd-light-kitchen",
+    "expected_b": "turn on the kitchen lights",
+    "lang_b": "en",
+    "first_audio_a_ms": 2400,
+    "barge_ts": 2428,
+    "total_ms": 20622,
+    "interrupted": 1,
+    "post_barge_transcript": "Turn on the kitchen lights.",
+    "post_barge_wer": 0.0,
+    "transcript_ok": true,
+    "assistant_text": "Why don't scientists Sure, let me turn that on for you.I've turned on the kitchen lights for you.",
+    "tool_calls": [
+      {
+        "name": "hass_turn_on",
+        "args": {
+          "domain": "light",
+          "area": "kitchen"
+        }
+      }
+    ],
+    "events_seen": [
+      "audio",
+      "input_transcription",
+      "interaction_idle",
+      "interaction_in_progress",
+      "interrupted",
+      "output_transcription",
+      "tool_call",
+      "turn_complete",
+      "utterance_turn_complete"
+    ],
+    "status": "ok"
+  },
+  "soak": {
+    "turns": [
+      {
+        "i": 1,
+        "prompt": "Soak check 1: reply with exactly 'soak turn 1 ok' and nothing else.",
+        "elapsed_ms": 2583,
+        "ok": true,
+        "first_audio_ms": 793,
+        "transcript": null,
+        "assistant_text": "soak turn 1 ok"
+      },
+      {
+        "i": 2,
+        "prompt": "Soak check 2: what is 9 plus 14? Reply with just the number.",
+        "elapsed_ms": 1314,
+        "ok": true,
+        "first_audio_ms": 489,
+        "transcript": null,
+        "assistant_text": "soak turn 1 ok23"
+      },
+      {
+        "i": 3,
+        "prompt": "Soak check 3: say the word 'pineapple' once, nothing else.",
+        "elapsed_ms": 1396,
+        "ok": true,
+        "first_audio_ms": 428,
+        "transcript": null,
+        "assistant_text": "soak turn 1 ok23pineapple"
+      },
+      {
+        "i": 4,
+        "prompt": "Soak check 4: reply with exactly 'still here 4'.",
+        "elapsed_ms": 1580,
+        "ok": true,
+        "first_audio_ms": 367,
+        "transcript": null,
+        "assistant_text": "soak turn 1 ok23pineapplestill here 4"
+      },
+      {
+        "i": 5,
+        "prompt": "Soak check 5: what day comes after Monday? One word answer.",
+        "elapsed_ms": 1203,
+        "ok": true,
+        "first_audio_ms": 405,
+        "transcript": null,
+        "assistant_text": "soak turn 1 ok23pineapplestill here 4Tuesday"
+      },
+      {
+        "i": 6,
+        "prompt": "Soak check 6: count from 37 to 26. Just the numbers.",
+        "elapsed_ms": 2002,
+        "ok": true,
+        "first_audio_ms": 519,
+        "transcript": null,
+        "assistant_text": "soak turn 1 ok23pineapplestill here 4Tuesday37, 36, 35, 34,"
+      },
+      {
+        "i": 7,
+        "prompt": "Soak check 7: reply with exactly 'soak turn 7 ok' and nothing else.",
+        "elapsed_ms": 235,
+        "ok": true,
+        "first_audio_ms": null,
+        "transcript": null,
+        "assistant_text": "soak turn 1 ok23pineapplestill here 4Tuesday37, 36, 35, 34, 33, 32,"
+      },
+      {
+        "i": 8,
+        "prompt": "Soak check 8: what is the capital of France? One word.",
+        "elapsed_ms": 123,
+        "ok": true,
+        "first_audio_ms": null,
+        "transcript": null,
+        "assistant_text": "soak turn 1 ok23pineapplestill here 4Tuesday37, 36, 35, 34, 33, 32,soak turn 7 ok"
+      },
+      {
+        "i": 9,
+        "prompt": "Soak check 9: say 'session stable' and nothing else.",
+        "elapsed_ms": 1702,
+        "ok": true,
+        "first_audio_ms": 352,
+        "transcript": null,
+        "assistant_text": "soak turn 1 ok23pineapplestill here 4Tuesday37, 36, 35, 34, 33, 32,soak turn 7 okParissession stable"
+      }
+    ],
+    "prompts_sent": [
+      "Soak check 1: reply with exactly 'soak turn 1 ok' and nothing else.",
+      "Soak check 2: what is 9 plus 14? Reply with just the number.",
+      "Soak check 3: say the word 'pineapple' once, nothing else.",
+      "Soak check 4: reply with exactly 'still here 4'.",
+      "Soak check 5: what day comes after Monday? One word answer.",
+      "Soak check 6: count from 37 to 26. Just the numbers.",
+      "Soak check 7: reply with exactly 'soak turn 7 ok' and nothing else.",
+      "Soak check 8: what is the capital of France? One word.",
+      "Soak check 9: say 'session stable' and nothing else."
+    ],
+    "total_ms": 30156,
+    "n_turns": 9,
+    "n_ok": 9,
+    "disconnects": 0,
+    "errors": [],
+    "events_seen": [
+      "audio",
+      "idle_no_tc_done",
+      "interaction_idle",
+      "interrupted",
+      "output_transcription",
+      "turn_complete"
+    ]
+  }
+}

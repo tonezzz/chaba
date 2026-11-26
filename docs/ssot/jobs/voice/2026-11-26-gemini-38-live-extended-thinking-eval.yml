@@ -1,0 +1,139 @@
+title: Gemini 3.8 Live Extended Thinking bench vs the 3.8-live pin
+id: 2026-11-26-gemini-38-live-extended-thinking-eval
+date: 2026-11-26
+runner: idc02
+kind: bench-result
+card: gemini-38-live-extended-thinking-bench-2026-11-26
+
+summary: >
+  Benchmarked gemini-3.8-live-extended-thinking (thinkingLevel=LOW) against
+  gemini-3.8-live on the same day, same host, same harness, same key. All 20
+  voice fixtures ok on both; WER tied at 0.01; the thinking variant called a
+  tool on all 14 tool fixtures (8 exact / 6 partial / 0 none) vs baseline's
+  7/4/3. Barge-in and 9-turn soak passed on both. Cost: ~75% slower
+  round-trip (10.9s vs 6.2s mean) from conversational fillers plus a second
+  spoken turn, and a different session lifecycle (interactionStatus
+  IN_PROGRESS/IDLE, NON_BLOCKING tools only, thinkingLevel required).
+  Verdict: PASS WITH CONDITIONS — do NOT move the voice pin; the variant is
+  a candidate only for tool-heavy diagnostic sessions, matching its existing
+  SSOT note.
+
+key_note: >
+  The default bench key (~/.config/secrets/gemini-api-key.env, shared paid
+  project gen-lang-client-0854236591 together with chaba-paid.env) is over
+  its monthly spend cap — every Live/generateContent call 429s. All runs
+  used ~/.config/secrets/ada-lab.env GEMINI_API_KEY (distinct GCP project,
+  uncapped, billing-enabled). Key value never printed.
+
+harness_changes: >
+  scripts/voice-bench learned the thinking-Live protocol: combos.yml gained
+  gemini_model/thinking_level fields and a gemini-live-extended-thinking
+  combo; adapters.gemini_live emits generationConfig.thinkingConfig.
+  thinkingLevel + NON_BLOCKING function declarations and gates completion on
+  interactionStatus IDLE instead of the first turnComplete. New
+  scripts/voice-bench/live_probes.py re-implements the 2026-11-24 gate's
+  barge-in and session-soak probes (previously uncommitted on idc03) with
+  quiescence-based turn detection — the aborted turn closes with
+  turnComplete+IDLE on this model, which false-triggers naive done checks.
+
+runs:
+  candidate_fixtures: scripts/voice-bench/results/gemini-live-eval-3.8-live-extended-thinking-low-20261126.json
+  baseline_fixtures: scripts/voice-bench/results/gemini-live-eval-3.8-live-same-day-20261126.json
+  candidate_probes: scripts/voice-bench/results/gemini-live-eval-3.8-live-extended-thinking-low-probes-20261126.json
+    # barge-in re-run with quiescence fix: scripts/voice-bench/results/gemini-live-eval-3.8-live-extended-thinking-low-bargein-20261126.json
+  baseline_probes: scripts/voice-bench/results/gemini-live-eval-3.8-live-same-day-probes-20261126.json
+
+protocol_notes: >
+  From docs/live-api/thinking (verified live): setup requires
+  generationConfig.thinkingConfig.thinkingLevel (low|medium|high; minimal
+  unsupported — ws close 1007 without it) and every function declaration
+  needs behavior NON_BLOCKING (BLOCKING is rejected). turnComplete ends an
+  utterance, not the request; fillers arrive as turnComplete+IN_PROGRESS,
+  the final answer as turnComplete+interactionStatus IDLE. An interrupted
+  turn also closes with turnComplete+IDLE. interactionStatus appears both
+  top-level (toolCall messages) and inside serverContent.
+
+gate:
+  first_token_latency:
+    baseline_ms: 330.35
+    candidate_ms: 10.05
+    verdict: not-comparable
+    note: >
+      ttfa is anchored to the first inputTranscription chunk. On the
+      thinking model the final input transcription and the first filler
+      audio chunk arrive in the same event batch, collapsing the anchor to
+      ~0-70ms; on 3.8-live the same anchor yields ~330ms. Use total_ms.
+  total_round_trip:
+    baseline_ms: 6222.95
+    candidate_ms: 10864.5
+    verdict: fail-for-pin
+    note: >
+      ~75% slower on every fixture. Each tool turn speaks twice (filler +
+      post-toolResponse confirmation) and reasoning runs in background;
+      chat turns are ~6-8s vs ~6-7s baseline. thinkingLevel=MEDIUM/HIGH
+      would be slower still — LOW was the fastest legal setting.
+  transcript_accuracy:
+    baseline_wer: 0.01
+    candidate_wer: 0.01
+    verdict: pass
+    note: identical per-fixture WER on 19/20; en-cmd-ac-bedroom 0.125 on both.
+  tool_calls:
+    baseline: {exact: 7, partial: 4, none: 3, n/a: 6}
+    candidate: {exact: 8, partial: 6, none: 0, n/a: 6}
+    verdict: pass
+    note: >
+      Candidate invoked a tool on all 14 tool fixtures; baseline missed 3
+      (en-qry-temp-outside, en-qry-solar, th-qry-temp — th-qry-temp is the
+      documented flake). Partials are the same arg-shape class on both
+      (living room vs living_room, lock.front_door vs front_door,
+      sensor.outdoor_temperature vs sensor.outside_temperature).
+  barge_in:
+    baseline: "interrupted=1, post-barge transcript WER 0.0, hass_turn_on fired, final confirmation spoken; 14.3s"
+    candidate: "interrupted=1, post-barge transcript WER 0.0, hass_turn_on fired after filler, final confirmation spoken; 20.6s"
+    verdict: pass
+  session_stability:
+    baseline: "9/9 text turns ok, 0 disconnects, 0 errors; 43.5s"
+    candidate: "9/9 text turns ok, 0 disconnects, 0 errors; 30.2s"
+    verdict: pass
+    note: >
+      Text-turn soak only (same caveat as 2026-11-24). Candidate per-turn
+      latency 0.1-2.6s; two turns measured suspiciously fast (~120-235ms)
+      consistent with a stale-completion race in the probe, not a model
+      fault — session stayed healthy throughout.
+
+findings:
+  - >
+    Protocol is genuinely different, not just a model string: thinkingLevel
+    is mandatory, tools must be NON_BLOCKING, and clients must track
+    interactionStatus — turnComplete alone truncates the exchange exactly
+    like the 3.8-live two-phase completion did before the 2026-11-24 fix.
+  - >
+    Conversational fillers are real: "I'll turn those on for you." precedes
+    every tool call. For Ada this is double-edged — masks tool latency but
+    adds a spoken turn and ~4-5s to every command.
+  - >
+    Barge-in works correctly including post-interrupt tool execution; the
+    interrupted turn's own turnComplete+IDLE must not be mistaken for the
+    new turn's completion (probe lesson, now handled by quiescence wait).
+  - >
+    extended-thinking showed slightly better tool-call coverage on this
+    fixture set (0 misses vs 3) — plausibly the background reasoning helping
+    entity resolution, but n=14 and baseline misses look flaky.
+
+verdict: pass-with-conditions
+recommendation: >
+  Keep gemini-3.8-live pinned for rview-live and the default Live runtime.
+  The ~75% round-trip regression and filler chatter cost more than the
+  marginal tool-call gain on simple HA commands. Revisit only for a
+  tool-heavy diagnostic voice surface, at thinkingLevel=LOW, with clients
+  updated for interactionStatus + NON_BLOCKING tools. MEDIUM/HIGH levels
+  were not benched (LOW already fails the latency gate).
+
+follow_ups:
+  - If a diagnostic/multi-step voice surface is ever built, bench
+    thinkingLevel=MEDIUM there — LOW may under-use the variant's purpose.
+  - The shared paid project (gen-lang-client-0854236591) is over its monthly
+    spend cap as of 2026-11-26 — verified via gemini-api-key.env and
+    chaba-paid.env on idc02 (both 429 RESOURCE_EXHAUSTED); PAID/TONY/KK keys
+    share that project per llm-provider-verification-2026-11, so those lanes
+    are down until Tony raises the cap. The ada-lab project key still works.

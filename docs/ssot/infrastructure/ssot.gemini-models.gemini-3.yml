@@ -164,7 +164,11 @@ models:
     notes: >-
       High-reasoning Live API variant with interactionStatus IN_PROGRESS / IDLE
       and asynchronous tool calls. Pilot only on tool-heavy diagnostic sessions.
-    last_verified: "2026-11-24"
+      Benched 2026-11-26 vs the 3.8-live pin (job
+      2026-11-26-gemini-38-live-extended-thinking-eval): 20/20 fixtures, WER
+      tied, slightly better tool coverage, but ~75% slower round-trip and a
+      mandatory thinkingLevel + NON_BLOCKING-tools protocol — pin unchanged.
+    last_verified: "2026-11-26"
   gemini-3.1-flash-live-preview:
     display_name: Gemini 3.1 Flash Live Preview
     api_name: gemini-3.1-flash-live-preview

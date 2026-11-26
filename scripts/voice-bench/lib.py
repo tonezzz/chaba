@@ -48,6 +48,8 @@ def load_combos():
             "runtime": rt,
             "endpoint": c.get("endpoint", ""),
             "adapter": c.get("adapter"),
+            "gemini_model": c.get("gemini_model"),
+            "thinking_level": c.get("thinking_level"),
             "notes": c.get("notes", ""),
         }
     return combos
@@ -160,8 +162,9 @@ def result_doc(combo, fixture_results, *, dry_run=False, meta=None):
     return {
         "schema": "voice-bench-result",
         "schema_version": RESULT_SCHEMA_VERSION,
-        "combo": {k: combo[k] for k in
-                  ("id", "stt", "llm", "tts", "orchestrator", "host_labels", "notes")},
+        "combo": {k: combo.get(k) for k in
+                  ("id", "stt", "llm", "tts", "orchestrator", "host_labels",
+                   "gemini_model", "thinking_level", "notes")},
         "dry_run": dry_run,
         "meta": meta or {},
         "summary": summary,

@@ -250,6 +250,62 @@ def _clean_schema(schema):
     return schema
 
 
+def load_gemini_key():
+    """GEMINI_API_KEY from env, else GEMINI_KEY_FILE / the default secrets
+    file. Raises RuntimeError when neither yields a key."""
+    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        secret = os.environ.get(
+            "GEMINI_KEY_FILE",
+            os.path.expanduser("~/.config/secrets/gemini-api-key.env"))
+        try:
+            for line in Path(secret).read_text().splitlines():
+                line = line.strip().lstrip("export ").strip()
+                if line.startswith("GEMINI_API_KEY="):
+                    api_key = line.split("=", 1)[1].strip().strip('"\'')
+        except OSError:
+            pass
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY not set and key file unreadable")
+    return api_key
+
+
+def thinking_mode_for(model, thinking_level=None):
+    """gemini-3.8-live-extended-thinking needs thinkingConfig.thinkingLevel
+    (low|medium|high) and NON_BLOCKING tool declarations; plain 3.8-live
+    rejects thinkingLevel (docs/live-api/thinking)."""
+    level = thinking_level or os.environ.get("GEMINI_THINKING_LEVEL")
+    mode = "extended-thinking" in (model or "") or bool(level)
+    return mode, (level or ("LOW" if mode else None))
+
+
+def live_setup(model, thinking_level=None):
+    """BidiGenerateContent setup message for the harness HA_TOOLS surface."""
+    thinking_mode, level = thinking_mode_for(model, thinking_level)
+    declarations = []
+    for t in HA_TOOLS:
+        d = {"name": t["name"], "description": t.get("description", ""),
+             "parameters": _clean_schema(t.get("parameters")
+                                         or {"type": "object"})}
+        if thinking_mode:
+            # extended-thinking runs tools asynchronously; BLOCKING
+            # declarations are rejected at setup (docs/live-api/thinking).
+            d["behavior"] = "NON_BLOCKING"
+        declarations.append(d)
+    generation_config = {"responseModalities": ["AUDIO"]}
+    if thinking_mode:
+        generation_config["thinkingConfig"] = {
+            "thinkingLevel": level.upper()}
+    return {"setup": {
+        "model": f"models/{model}",
+        "generationConfig": generation_config,
+        "inputAudioTranscription": {},
+        "outputAudioTranscription": {},
+        "systemInstruction": {"parts": [{"text": INSTRUCTIONS}]},
+        "tools": [{"functionDeclarations": declarations}],
+    }}
+
+
 def gemini_live(combo, fx, timeout):
     """Stream a fixture through the current Gemini Live path — same client
     shape as gev-gemini/bridge.py: google-genai aio.live.connect with AUDIO
@@ -274,20 +330,7 @@ def gemini_live(combo, fx, timeout):
     """
     import asyncio
 
-    api_key = os.environ.get("GEMINI_API_KEY", "").strip()
-    if not api_key:
-        secret = os.environ.get(
-            "GEMINI_KEY_FILE",
-            os.path.expanduser("~/.config/secrets/gemini-api-key.env"))
-        try:
-            for line in Path(secret).read_text().splitlines():
-                line = line.strip().lstrip("export ").strip()
-                if line.startswith("GEMINI_API_KEY="):
-                    api_key = line.split("=", 1)[1].strip().strip('"\'')
-        except OSError:
-            pass
-    if not api_key:
-        raise RuntimeError("GEMINI_API_KEY not set and key file unreadable")
+    api_key = load_gemini_key()
 
     wav = Path(fx["wav"])
     pcm, rate = _wav_pcm(wav)
@@ -298,7 +341,14 @@ def gemini_live(combo, fx, timeout):
     chunk_ms = 100
     chunk_bytes = int(rate * chunk_ms / 1000) * 2
 
-    model = os.environ.get("GEMINI_LIVE_MODEL", GEMINI_MODEL)
+    # combos.yml `gemini_model`/`thinking_level` win over env so a combo is
+    # self-describing; env stays the override for ad-hoc runs.
+    model = (combo.get("gemini_model")
+             or os.environ.get("GEMINI_LIVE_MODEL", GEMINI_MODEL))
+    thinking_level = (combo.get("thinking_level")
+                      or os.environ.get("GEMINI_THINKING_LEVEL"))
+    thinking_mode, thinking_level = thinking_mode_for(model, thinking_level)
+    setup_msg = live_setup(model, thinking_level)
 
     async def run():
         import websockets
@@ -310,29 +360,20 @@ def gemini_live(combo, fx, timeout):
         url = ("wss://generativelanguage.googleapis.com/ws/"
                "google.ai.generativelanguage.v1beta.GenerativeService."
                f"BidiGenerateContent?key={api_key}")
-        declarations = [
-            {"name": t["name"], "description": t.get("description", ""),
-             "parameters": _clean_schema(t.get("parameters")
-                                         or {"type": "object"})}
-            for t in HA_TOOLS]
         start = time.monotonic()
         async with websockets.connect(url, max_size=None) as ws:
             # NOTE: this raw BidiGenerateContent JSON shape is the same one
             # stacks/web/gemini-mic-test/server.mjs drives. The google-genai
             # SDK path (aio.live.connect + send_realtime_input) connected but
             # had its audio turns silently ignored on this host (2026-10-09).
-            await ws.send(json.dumps({"setup": {
-                "model": f"models/{model}",
-                "generationConfig": {"responseModalities": ["AUDIO"]},
-                "inputAudioTranscription": {},
-                "outputAudioTranscription": {},
-                "systemInstruction": {"parts": [{"text": INSTRUCTIONS}]},
-                "tools": [{"functionDeclarations": declarations}],
-            }}))
+            await ws.send(json.dumps(setup_msg))
             send_done = None
             speech_end = None
             awaiting_final = False
             early_skipped = False
+            last_status = None
+            status_seen = False
+            idle_since = None
             done_ev = asyncio.Event()
 
             async def sender():
@@ -349,16 +390,39 @@ def gemini_live(combo, fx, timeout):
 
             async def receiver():
                 nonlocal speech_end, awaiting_final, early_skipped
+                nonlocal last_status, status_seen, idle_since
+                deadline = time.monotonic() + timeout
                 while not done_ev.is_set():
+                    # 2 s slices so an IDLE-without-turnComplete safety
+                    # timer can fire; overall deadline preserves `timeout`.
+                    slice_to = min(2.0, max(0.05, deadline - time.monotonic()))
                     try:
-                        raw = await asyncio.wait_for(ws.recv(), timeout=timeout)
+                        raw = await asyncio.wait_for(ws.recv(),
+                                                     timeout=slice_to)
                     except asyncio.TimeoutError:
-                        break
+                        if (thinking_mode and idle_since
+                                and time.monotonic() - idle_since > 4):
+                            out["events_seen"].append("idle_no_tc_done")
+                            done_ev.set()
+                            return
+                        if time.monotonic() >= deadline:
+                            break
+                        continue
                     try:
                         m = json.loads(raw)
                     except json.JSONDecodeError:
                         continue
                     sc = m.get("serverContent") or {}
+                    # interactionStatus rides top-level (toolCall msgs) or
+                    # inside serverContent (utterance msgs) on thinking Live.
+                    st = m.get("interactionStatus") or sc.get("interactionStatus")
+                    if st:
+                        status_seen = True
+                        last_status = st
+                        out["events_seen"].append(
+                            f"interaction_{str(st).lower()}")
+                        idle_since = (time.monotonic()
+                                      if st == "IDLE" else None)
                     it = sc.get("inputTranscription") or {}
                     if it.get("text"):
                         out["events_seen"].append("input_transcription")
@@ -383,6 +447,18 @@ def gemini_live(combo, fx, timeout):
                     if sc.get("interrupted"):
                         out["events_seen"].append("interrupted")
                     if sc.get("turnComplete"):
+                        if thinking_mode and status_seen:
+                            # Thinking Live: turnComplete ends an utterance,
+                            # not the request — fillers complete with
+                            # IN_PROGRESS; only IDLE means the session is
+                            # done (docs/live-api/thinking).
+                            if last_status == "IDLE":
+                                out["events_seen"].append("turn_complete")
+                                done_ev.set()
+                                return
+                            out["events_seen"].append(
+                                "utterance_turn_complete")
+                            continue
                         # 3.8-live can emit an early turnComplete with a tool
                         # call, then a final spoken turn after toolResponse.
                         # Skip at most one such early completion per tool.
