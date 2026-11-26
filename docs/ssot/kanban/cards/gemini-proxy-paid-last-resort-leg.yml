@@ -1,7 +1,7 @@
 id: gemini-proxy-paid-last-resort-leg
 title: 'gemini-ollama-proxy: add paid-Gemini leg between free and Ollama (bounded outage spend)'
-column: backlog
-updated: 2026-11-26 22:56
+column: doing
+updated: 2026-11-26 23:00
 priority: low
 tags:
 - mddb
@@ -293,6 +293,9 @@ comms:
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
     an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-26 23:00
+  from: tony-dell
+  text: claimed
 spec: 'Add a paid-Gemini leg AFTER free-Gemini and BEFORE Ollama in ~/.config/containers/mddb/proxy/gemini-ollama-proxy.mjs
   (fetchBackupBatch), passing GEMINI_API_KEY_PAID through the container env. Intended for outage windows only (OR
   401 + free key 429), never normal operation. Document the vector-space caveat (paid vs free embeddings) and a
@@ -301,7 +304,9 @@ spec: 'Add a paid-Gemini leg AFTER free-Gemini and BEFORE Ollama in ~/.config/co
   or print any key.'
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
-  attempts: 0
-claim: {}
+  attempts: 1
+  runner: tony-dell
+claim:
+  since: 2026-11-26 23:00
