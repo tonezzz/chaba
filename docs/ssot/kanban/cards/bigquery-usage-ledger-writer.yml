@@ -1,7 +1,7 @@
 id: bigquery-usage-ledger-writer
 title: BigQuery usage ledger — dataset, MERGE writer, 10-row backfill, verification
 column: doing
-updated: 2026-11-26 22:59
+updated: 2026-11-26 23:00
 brief: Turn the local usage reports into a durable, queryable ledger now that the BigQuery API is enabled on the
   Chaba project (0 datasets). Implement the schema in infra/bigquery-ledger-schema-2026-11-26.md, a dry-run-first
   MERGE writer, a bounded backfill, and verification queries. Card ADA-1458 (eval-judge lane) stays independent
@@ -106,6 +106,13 @@ comms:
   from: devin
   text: 'raised request bq-backfill-counts: Backfill spec vs verification counts do not reconcile. Card says exactly
     10 rows: 6 local dispatch + 2 devin_cloud + 1 d'
+- at: 2026-11-26 23:00
+  from: tony
+  text: 'answered bq-backfill-counts: all-rows — Load every artifact row: 9 sessions (7 dispatch + 2 cloud), 1 quota,
+    5 audit = 15 rows; verification becomes 9/1/0/5'
+- at: 2026-11-26 23:00
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
 claim:
   since: 2026-11-26 22:37
 requests:
@@ -114,7 +121,7 @@ requests:
     + 1 daily_quota + 1 model_audit, but verification expects sessions=9. The 2026-11-26 daily report actually contains
     7 local dispatch sessions (not 6) and 5 model_audit host rows (not 1). Which composition should --backfill --limit
     10 produce?'
-  status: open
+  status: answered
   at: 2026-11-26 22:59
   from: devin
   options:
@@ -126,3 +133,5 @@ requests:
   - id: literal-10
     label: Exactly the written 10 (requires arbitrarily dropping 1 dispatch session and 4 audit hosts)
   suggested: all-rows
+  answer: 'all-rows — Load every artifact row: 9 sessions (7 dispatch + 2 cloud), 1 quota, 5 audit = 15 rows; verification
+    becomes 9/1/0/5'
