@@ -1,7 +1,7 @@
 id: ansible-ada-ocb-tony-dell-fallback
 title: ADA-OCB tony-dell fallback probe/contract alignment
 column: doing
-updated: 2026-11-26 17:49
+updated: 2026-11-26 17:54
 brief: 'Follow-up from OPS-1424: tony-dell ocb_pane fallback probe incomplete in ada-ocb-verify; align pin/patch/service
   state or harden verify for missing fallback probe.'
 priority: medium
@@ -73,6 +73,13 @@ comms:
     MANUAL LANDING (devin session, tony-dell con; [awx-aap-rbac-approval-gates] primer injected 8 lesson(s): [camwall-retire-to-wi;
     [ada-ocb-ansible-upgrade] CLOSED. Live upgrade executed 08:26 +07 (unit success,; [ansible-prep-plan-apply-verify]
     primer injected 8 lesson(s):'
+- at: 2026-11-26 17:54
+  from: devin
+  text: 'Diagnosing tony-dell ocb_pane fallback read-only. Probe deps OK over SSH (python3, node24/npm, pkg dirs);
+    live state: openchamber.service+update.timer+bridge-sync.timer active, bind 127.0.0.1:3000, local 200, startup.env
+    600, litellm dropin present; drift: cli 2.4.1 (pin 2.4.2), patch absent, smoke.timer inactive. Root cause of
+    noisy recap: probe play skipped tony-dell (--limit) or unreachable, but localhost assert/report still iterates
+    full ocb_pane group -> missing ocb_probe crash/fail. Harden'
 action:
   type: dispatch
   status: running
