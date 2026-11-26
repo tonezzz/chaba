@@ -1,7 +1,7 @@
 id: deploy-ada-sh-services-resurrects-retire-c2346b
 title: deploy-ada.sh SERVICES resurrects retired idc03 dev twins on every ada-voice deploy
 column: doing
-updated: 2026-11-26 21:52
+updated: 2026-11-26 21:55
 priority: medium
 tags:
 - idc03
@@ -19,6 +19,8 @@ action:
   lane: devin
   attempts: 1
   runner: tony-dell
+  sweep:
+    stale_running: 2026-11-26 21:55
 note: follow-up from idc03-ada-hygiene-20261107
 ref: ADA-1395
 comms:
@@ -143,5 +145,9 @@ comms:
     Verified: restart set = 8 units no ada-dev; ada-kk-dev real restart healthy :8009 in 11s; kk-bench-env.py --profile
     kk-cms-only --check OK rc=0; ada-dev ActiveEnterTimestamp baseline 18:24:39+07 (unchanged = proof next deploy
     skips it). NOTE: self-drift gate now pauses deploy'
+- at: 2026-11-26 21:55
+  from: chaba
+  text: 'merge-sweep: devin-task-20261126-212322-decision-2026-11-26-tony-keep- no longer active on tony-dell but
+    card still says running — sweeping its branch'
 claim:
   since: 2026-11-26 21:22
