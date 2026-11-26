@@ -1,7 +1,7 @@
 id: ansible-ada-ocb-tony-dell-fallback
 title: ADA-OCB tony-dell fallback probe/contract alignment
 column: review
-updated: 2026-11-26 18:19
+updated: 2026-11-26 18:24
 brief: 'Follow-up from OPS-1424: tony-dell ocb_pane fallback probe incomplete in ada-ocb-verify; align pin/patch/service
   state or harden verify for missing fallback probe.'
 priority: medium
@@ -120,6 +120,10 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261126-174901-context-ops-1424-ansible-prep-,
     branch dispatch/20261126-174901-context-ops-1424-ansible-prep-'
+- at: 2026-11-26 18:24
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261126-174901-context-ops-1424-ansible-prep- on
+    con01 — if the work was never pushed it may be gone'
 action:
   type: dispatch
   status: done
@@ -130,6 +134,7 @@ action:
   sweep:
     stale_running: 2026-11-26 18:10
     dirty: 7
+    session_gone: 2026-11-26 18:24
   result: 'exit=0 ice: No such file or directory | devin-task-20261126-174901-context-ops-1424-ansible-prep-.service:
     Failed to open /run/user/1001/systemd/transient/devin-task-20261126-174901-context-ops-1424-ansible-prep-.service:
     No such file or directory'
