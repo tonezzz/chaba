@@ -1,7 +1,7 @@
 id: runner-fleet-health-host-regex-gap
 title: runner-fleet-health silently omits con01 and kk-mac from fleet audit
-column: review
-updated: 2026-11-26 04:04
+column: backlog
+updated: 2026-11-26 08:35
 priority: medium
 tags:
 - ops
@@ -33,7 +33,7 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: done
+  status: idle
   runner: tony-macbook
   attempts: 1
   result: 'exit=0 the-host-discovery-.md`; card comms posted, no commits or pushes per dispatch rules. | devin-task-20261125-203735-goal-close-the-host-discovery-.service:
@@ -166,6 +166,15 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 08:35
+  from: tony
+  text: '[verify] VERIFY-QUEUE triage 2026-11-26 (Tony): dispatch produced NO commits — merge-sweep: no session/worktree
+    found on tony-macbook — work never pushed (OPS-1406 needs re-dispatch). No deliverable exists in origin/master.
+    Holding to backlog for re-dispatch, not closing as done. Note: fleet-wide runner-agent drift (installed 8c28da6b
+    vs pin 1514c75c) was active during these runs; converge is being handled separately.'
+- at: 2026-11-26 08:35
+  from: tony
+  text: put on hold
 claim:
   since: 2026-11-25 20:36
 review_kind: verify
