@@ -1,7 +1,7 @@
 id: jack-opencode-project-directory-creation
 title: Make project-directory creation clear and safe in Jack OpenCode
 column: doing
-updated: 2026-11-26 21:49
+updated: 2026-11-26 22:11
 brief: Jack OpenCode is healthy and /workspace is writable, but the UI cannot create/open a new project directory
   as Tony expects.
 priority: medium
@@ -335,5 +335,22 @@ comms:
     empty backup workspace, zero enroll state. Card premise is stale. Verifying OpenCode project semantics on the
     surviving v2.4.1 surface and preparing repo-side safe project-create path + docs; will raise a restore-vs-retire
     decision request.'
+- at: 2026-11-26 22:11
+  from: devin
+  text: 'raised request the-jack-ide-container-stack-was-retired-c53712: The jack-ide container stack was RETIRED
+    on idc02 2026-11-24 (with ada-code) — quadlets .retired, routes removed, backup'
 claim:
   since: 2026-11-26 21:29
+requests:
+- id: the-jack-ide-container-stack-was-retired-c53712
+  ask: 'The jack-ide container stack was RETIRED on idc02 2026-11-24 (with ada-code) — quadlets .retired, routes
+    removed, backup ~/backups/retired-opencode-20261124/jack-ide holds an EMPTY workspace + zero enroll state. Card
+    premise was stale. Repo-side work is done (safe jack-task project path + verified OpenCode semantics + docs,
+    commit b5f5e88e566). Decision needed: (a) restore the Jack IDE stack from repo sources + idc02 backup — separate
+    deploy decision; or (b) formally retire the Jack IDE program and close related cards?'
+  status: open
+  at: 2026-11-26 22:11
+  from: devin
+  options:
+  - proceed
+  - hold
