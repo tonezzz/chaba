@@ -155,6 +155,15 @@ HELP = {
         "scripts/devin/devin-dispatch.sh <host>:~/.local/bin/"
         "devin-dispatch && ssh <host> chmod +x ~/.local/bin/"
         "devin-dispatch",
+    "tool-pin":
+        "A deployed tool's sha differs from the pin read from "
+        "origin/master (scripts/devin/runner-tooling.manifest.json). "
+        "Refresh the checkout FIRST (git -C ~/CascadeProjects/chaba "
+        "pull --ff-only), then run scripts/devin/sync-runner-tools.sh. "
+        "If the checkout matches the pin but the install does not, the "
+        "sync was skipped — check the sync-runner-tools journal line "
+        "(dirty source / no pin / never-downgrade). Do not edit the "
+        "manifest on a host; bump it in the same commit as the tool.",
     "dispatch-repos":
         "Refresh ~/CascadeProjects/chaba on the host (pull --ff-only) — "
         "runner-agent imports dispatch_repos.py from that checkout.",
@@ -297,6 +306,29 @@ for name, ent in repos_table().items():
     e["behind_err"] = "" if brc == 0 else (bse or "")[:160]
     repos[name] = e
 out["repos"] = repos
+
+# Content pins read from origin/master, NOT from the host's checkout: a
+# stale checkout carries a stale manifest and would happily agree with a
+# stale install (the 2026-11-20 Jules half-purge pattern — master had
+# deleted jules.py but still shipped 107 Jules refs in runner-agent.py).
+# The probe has just fetched origin above, so this is today's reference.
+pins = {"ok": False, "tools": {}, "sources": {}, "checkout": {}, "err": ""}
+try:
+    prc, pso, pse = run(["git", "-C", str(HOME / "CascadeProjects/chaba"),
+                         "show", "origin/master:scripts/devin/"
+                                 "runner-tooling.manifest.json"])
+    if prc == 0:
+        for key, val in json.loads(pso).get("tools", {}).items():
+            pins["tools"][key] = (val.get("sha256") or "")[:16]
+            rel = val.get("source") or ""
+            pins["sources"][key] = rel
+            pins["checkout"][key] = sha(HOME / "CascadeProjects/chaba" / rel)
+        pins["ok"] = bool(pins["tools"])
+    else:
+        pins["err"] = (pse or pso or "")[:160]
+except Exception as ex:
+    pins["err"] = (f"{type(ex).__name__}: {ex}")[:160]
+out["tool_pins"] = pins
 
 # installed dispatch executables — deployed as single-file copies
 inst = {}
@@ -644,6 +676,29 @@ def judge(host: str, d: dict, refsha: dict) -> tuple[list, list]:
                   "host can only strand dispatch branches"))
 
     inst = d.get("installed") or {}
+
+    # Content pins from origin/master catch stale checkouts that agree
+    # with stale installs, and stale installs whose local checkout was
+    # itself behind. The sha comparison below only covers installed vs
+    # THIS host's checkout, which is blind to both.
+    pins = d.get("tool_pins") or {}
+    if not pins.get("ok"):
+        notes.append("tool pins unreadable from origin/master "
+                     f"({pins.get('err') or 'manifest missing'})")
+    else:
+        for key, want in (pins.get("tools") or {}).items():
+            label = key.replace("_", "-")
+            got_checkout = (pins.get("checkout") or {}).get(key)
+            if got_checkout and got_checkout != want:
+                v.append(("tool-pin",
+                          f"{label}: checkout sha {got_checkout} != pin "
+                          f"{want} — chaba clone is stale/divergent"))
+            got_inst = (inst.get(key) or {}).get("sha")
+            if got_inst and got_inst != want:
+                v.append(("tool-pin",
+                          f"~/.local/bin/{label} sha {got_inst} != pin "
+                          f"{want} — installed build is stale"))
+
     for key, label in (("runner_agent", "runner-agent"),
                        ("devin_dispatch", "devin-dispatch")):
         if key == "devin_dispatch" and not devin_expected(host):

@@ -102,6 +102,35 @@ class FleetHostParsing(unittest.TestCase):
         self.assertIn("checkout is on feat/vector-algorithms", msgs[0])
         self.assertNotIn("origin/feat/vector-algorithms", msgs[0])
 
+    def test_judge_flags_installed_tool_pin_drift(self):
+        # 4af10b4c5c dropped the tool-pin audit entirely; a stale install
+        # then looked healthy as long as the host's own checkout agreed.
+        probe = {
+            "git_ok": True,
+            "runner_env": {"RUNNER_LABELS": "push:chaba"},
+            "repos": {"chaba": {
+                "exists": True, "has_git": True, "behind": 0,
+                "remote": "git@github.com:tonezzz/chaba.git",
+                "fetch_ok": True, "push_probe": True}},
+            "installed": {"runner_agent": {"sha": "deadbeefdeadbeef"}},
+            "tool_pins": {
+                "ok": True,
+                "tools": {"runner_agent": "1514c75c4679a01b",
+                          "devin_dispatch": "c5fa39476cb27cad"},
+                "checkout": {"runner_agent": "1514c75c4679a01b",
+                             "devin_dispatch": "c5fa39476cb27cad"},
+            },
+            "dispatch_repos": {"resolved_dir": "/tmp/x", "import_ok": True,
+                               "missing": []},
+            "devin": {"path": "/usr/local/bin/devin"},
+        }
+        violations, _ = fh.judge("tony-dell", probe, {})
+        msgs = [m for key, m in violations if key == "tool-pin"]
+        self.assertEqual(len(msgs), 1, msgs)
+        self.assertIn("~/.local/bin/runner-agent sha deadbeefdeadbeef "
+                      "!= pin 1514c75c4679a01b", msgs[0])
+        self.assertIn("installed build is stale", msgs[0])
+
 
 if __name__ == "__main__":
     unittest.main()
