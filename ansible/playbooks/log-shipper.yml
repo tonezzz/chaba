@@ -324,6 +324,36 @@
       changed_when: false
       tags: [verify]
 
+    - name: Extract report/24h scan telemetry
+      ansible.builtin.set_fact:
+        log_report_scan: >-
+          {{ ((mddb_state_search.json | default([])
+               | selectattr('key', 'equalto', 'report/24h')
+               | map(attribute='contentMd')
+               | map('from_json')
+               | first | default({}, true)).scan | default({}, true)) }}
+      delegate_to: localhost
+      run_once: true
+      changed_when: false
+      tags: [verify]
+
+    - name: Assert the last digest scan was complete
+      ansible.builtin.assert:
+        that:
+          - not (log_report_scan.truncated | default(false) | bool)
+        fail_msg: >-
+          report/24h says the last host-logs scan was truncated
+          ({{ log_report_scan | to_json }}). 🆕 flags and coverage are not
+          trustworthy until the collection is compacted/pruned.
+        success_msg: >-
+          report/24h scan complete
+          ({{ log_report_scan.scanned | default('?') }} docs in
+          {{ log_report_scan.elapsed_s | default('?') }}s).
+      when: log_report_scan | length > 0
+      delegate_to: localhost
+      run_once: true
+      tags: [verify]
+
     - name: Fail on any failed MDDB /add
       ansible.builtin.assert:
         that:

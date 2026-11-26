@@ -29,9 +29,17 @@ incidents hide. Exact semantics, no state file: the baseline is just
 the older slice of the same full scan.
 
 Repeat-cap counts: the shipper caps duplicate (unit,line) signatures at
-REPEAT_CAP copies per run and marks the last copy with meta.suppressed;
-offender xN counts weigh those docs by 1+suppressed so crash-loop
-magnitude stays truthful.
+REPEAT_CAP copies per run and marks the last copy with meta.suppressed
+plus the first/last timestamp of the dropped copies; offender xN counts
+weigh those docs by 1+suppressed so crash-loop magnitude stays truthful
+and the digest shows when the loop happened.
+
+Scan telemetry: report/24h now carries `scan` (scanned pages, elapsed
+seconds, truncated) so an empty digest caused by the /v1/search
+enumeration wall is measurable instead of looking like a quiet fleet.
+When the scan truncates the baseline is incomplete, so 🆕 flags are
+suppressed for that run. A `fleet repeat offenders` section groups one
+signature seen on multiple hosts into a single incident.
 
 Usage:
   logs-report.py [--hours 24] [--out DIR]
@@ -46,6 +54,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.request
 from collections import Counter
 from pathlib import Path
@@ -100,8 +109,9 @@ def _sig(line: str) -> str:
 
 
 def fetch_logs(hours: int, baseline_days: int, max_docs: int):
-    """Full collection scan, client-side windowing. -> (rows,
-    baseline_sigs, truncated).
+    """Full collection scan, client-side windowing.
+
+    -> (rows, baseline_sigs, truncated, stats)
 
     rows          — docs with meta.ts inside the last `hours`
                     (unparseable ts counts as in-window — the shipper
@@ -111,12 +121,16 @@ def fetch_logs(hours: int, baseline_days: int, max_docs: int):
                     membership set behind the 🆕 new-today flag
     truncated     — the page budget ran out mid-collection; both the
                     window and the baseline may be incomplete
+    stats         — scan telemetry published to report/24h so the wall
+                    is measurable instead of inferred from an empty digest
     """
     now = datetime.datetime.now(datetime.timezone.utc)
     win_start = now - datetime.timedelta(hours=hours)
     base_start = now - datetime.timedelta(days=baseline_days)
     rows, base_sigs = [], set()
-    offset = scanned = 0
+    offset = scanned = pages = 0
+    last_page = 0
+    started = time.monotonic()
     while scanned < max_docs:
         page = _post("/search", {"collection": LOG_COLLECTION,
                                  "query": "", "limit": PAGE,
@@ -130,6 +144,8 @@ def fetch_logs(hours: int, baseline_days: int, max_docs: int):
             break
         if not page:
             break
+        pages += 1
+        last_page = len(page)
         scanned += len(page)
         offset += PAGE
         for d in page:
@@ -157,14 +173,23 @@ def fetch_logs(hours: int, baseline_days: int, max_docs: int):
                 "kind": (meta.get("kind") or ["?"])[0],
                 "line": line,
                 "suppressed": sup,
+                "suppressed_first_ts":
+                    (meta.get("suppressed_first_ts") or [""])[0],
+                "suppressed_last_ts":
+                    (meta.get("suppressed_last_ts") or [""])[0],
             })
         if len(page) < PAGE:
             break
-    if scanned >= max_docs:
+    truncated = scanned >= max_docs
+    stats = {"truncated": truncated, "scanned": scanned,
+             "pages": pages, "last_page": last_page,
+             "elapsed_s": round(time.monotonic() - started, 2),
+             "max_docs": max_docs}
+    if truncated:
         print(f"warn: scan hit {max_docs}-doc budget — window/baseline "
-              "coverage partial, 🆕 flags may over-report",
+              "coverage partial, 🆕 flags suppressed this run",
               file=sys.stderr)
-    return rows, base_sigs, scanned >= max_docs
+    return rows, base_sigs, truncated, stats
 
 
 def distill(rows: list[dict], base_sigs: set | None = None) -> list[dict]:
@@ -186,6 +211,12 @@ def distill(rows: list[dict], base_sigs: set | None = None) -> list[dict]:
             if base_sigs is not None and (host, sig) not in base_sigs:
                 new_sigs.add(sig)
         tss = sorted(r["ts"] for r in hs if r["ts"])
+        sup_lo = sorted(r["suppressed_first_ts"] for r in hs
+                        if r.get("suppressed_first_ts"))
+        sup_hi = sorted(r["suppressed_last_ts"] for r in hs
+                        if r.get("suppressed_last_ts"))
+        suppressed_window = [sup_lo[0], sup_hi[-1]] \
+            if sup_lo and sup_hi else None
         out.append({
             "host": host,
             "total": len(hs),
@@ -201,17 +232,53 @@ def distill(rows: list[dict], base_sigs: set | None = None) -> list[dict]:
                           for ln, n in offenders.most_common(5) if n > 1],
             "first": tss[0] if tss else "",
             "last": tss[-1] if tss else "",
+            "suppressed_window": suppressed_window,
         })
     return out
 
 
-def logs_block(rows: list[dict], since: str) -> str:
+def fleet_rollup(rows: list[dict]) -> list[dict]:
+    """Signatures seen on more than one host — one fleet-level incident
+    instead of N identical per-host rows. Counts include `suppressed`."""
+    agg: dict[str, dict] = {}
+    for r in rows:
+        sig = _sig(r["line"])
+        a = agg.setdefault(sig, {"n": 0, "hosts": set(), "severe": 0})
+        n = 1 + r.get("suppressed", 0)
+        a["n"] += n
+        a["hosts"].add(r["host"])
+        if r["kind"] in SEVERE:
+            a["severe"] += n
+    return [{"sig": sig, "n": a["n"], "hosts": sorted(a["hosts"]),
+             "severe": a["severe"]}
+            for sig, a in sorted(agg.items(), key=lambda kv: -kv[1]["n"])
+            if len(a["hosts"]) > 1][:5]
+
+
+def logs_block(rows: list[dict], since: str, stats: dict | None = None,
+               fleet: list[dict] | None = None) -> str:
+    scan_note = ""
+    if stats:
+        scan_note = (f" [scan {stats['scanned']} docs in "
+                     f"{stats['elapsed_s']}s"
+                     + (", TRUNCATED" if stats.get("truncated") else "")
+                     + "]")
     if not rows:
-        return f"## host-logs ({since})\nno shipped log lines"
+        return (f"## host-logs ({since}){scan_note}\n"
+                "no shipped log lines")
     total = sum(r["total"] for r in rows)
     severe = sum(r["severe"] for r in rows)
     lines = [f"## host-logs ({since} — {total} lines"
-             + (f", {severe} severe ⚠" if severe else "") + ")"]
+             + (f", {severe} severe ⚠" if severe else "")
+             + scan_note + ")"]
+    if fleet:
+        lines.append("## fleet repeat offenders")
+        for f in fleet:
+            lines.append(
+                f"  x{f['n']} across {len(f['hosts'])} hosts "
+                f"({','.join(f['hosts'])})"
+                + (" ⚠" if f["severe"] else "")
+                + f" — {f['sig'][:95]}")
     for r in rows:
         lines.append(
             f"{r['host']}: {r['total']} lines — "
@@ -223,6 +290,9 @@ def logs_block(rows: list[dict], since: str) -> str:
         for u, c in sorted(r["top_units"].items(),
                            key=lambda kv: -kv[1])[:4]:
             lines.append(f"  {u} x{c}")
+        w = r.get("suppressed_window")
+        if w:
+            lines.append(f"  suppressed drops {w[0][:16]}..{w[1][11:16]}")
         shown = set()
         for t in r["new_lines"][:4]:
             shown.add(t["line"])
@@ -235,7 +305,26 @@ def logs_block(rows: list[dict], since: str) -> str:
     return "\n".join(lines)
 
 
-def post_report_state(summary: list[dict], hours: int) -> None:
+def report_payload(summary: list[dict], hours: int,
+                   stats: dict | None = None, now=None) -> dict:
+    """Pure payload builder — testable without touching MDDB."""
+    now = now or datetime.datetime.now(datetime.timezone.utc)
+    stamp = now.isoformat(timespec="seconds")
+    content = {
+        "kind": "log-report", "hours": hours, "ts": stamp,
+        "hosts": {r["host"]: {"total": r["total"],
+                              "severe": r["severe"]}
+                  for r in summary},
+    }
+    if stats:
+        content["scan"] = stats
+    return {"collection": STATE_COLLECTION, "key": "report/24h",
+            "lang": "en", "contentMd": json.dumps(content),
+            "meta": {"kind": ["log-report"], "ts": [stamp]}}
+
+
+def post_report_state(summary: list[dict], hours: int,
+                      stats: dict | None = None) -> None:
     """Sidecar state doc so logs-kanban can judge severe counts without
     re-reading the collection — one doc, same-key upsert, ~1 rev/day.
     Posted even with --no-publish (that flag is about the ops-digests
@@ -243,19 +332,7 @@ def post_report_state(summary: list[dict], hours: int) -> None:
     try:
         req = urllib.request.Request(
             f"{STATE_URL}/add",
-            data=json.dumps({
-        "collection": STATE_COLLECTION, "key": "report/24h",
-        "lang": "en",
-        "contentMd": json.dumps(
-            {"kind": "log-report", "hours": hours,
-             "ts": datetime.datetime.now(datetime.timezone.utc)
-             .isoformat(timespec="seconds"),
-             "hosts": {r["host"]: {"total": r["total"],
-                                   "severe": r["severe"]}
-                       for r in summary}}),
-        "meta": {"kind": ["log-report"],
-                 "ts": [datetime.datetime.now(datetime.timezone.utc)
-                        .isoformat(timespec="seconds")]}}).encode(),
+            data=json.dumps(report_payload(summary, hours, stats)).encode(),
             headers={"content-type": "application/json"}, method="POST")
         with urllib.request.urlopen(req, timeout=10) as r:
             r.read()
@@ -295,17 +372,22 @@ def main() -> int:
     args = ap.parse_args()
 
     args.out.mkdir(parents=True, exist_ok=True)
-    rows, base_sigs, _truncated = fetch_logs(
+    rows, base_sigs, truncated, stats = fetch_logs(
         args.hours, args.baseline_days, args.max_docs)
-    summary = distill(rows, base_sigs)
+    # A truncated scan has an incomplete baseline: 🆕 would be guesses.
+    # Keep the counts, drop the novelty flags rather than cry wolf.
+    summary = distill(rows, None if truncated else base_sigs)
+    fleet = fleet_rollup(rows)
     ops = args.out / "hostlogs-ops.jsonl"
     with ops.open("w") as fh:
         for r in summary:
             fh.write(json.dumps(r, ensure_ascii=False) + "\n")
-    block = logs_block(summary, f"{args.hours}h")
+    block = logs_block(summary, f"{args.hours}h", stats=stats, fleet=fleet)
     print(f"{len(rows)} lines from {len(summary)} hosts -> {ops}")
+    if truncated:
+        print("note: 🆕 flags suppressed — baseline scan incomplete")
     print(block)
-    post_report_state(summary, args.hours)
+    post_report_state(summary, args.hours, stats)
 
     if not args.no_publish and summary:
         ok = publish_digest(block, args.hours)

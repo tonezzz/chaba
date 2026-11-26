@@ -184,13 +184,14 @@ REPEAT_CAP = 25  # docs per normalized (unit,line) signature per run
 
 def _cap_repeats(rows: list[dict]) -> tuple[list[dict], int]:
     """Drop copies of a (unit,line) signature beyond REPEAT_CAP, in
-    journal order. Suppressed counts accumulate onto the last kept row's
-    `suppressed` field (posted as meta); rows are skipped entirely, so
-    the cursor still advances past them — a deliberate drop, not a
-    shipping failure."""
+    journal order. Suppressed counts and the first/last timestamp of the
+    dropped copies accumulate onto the last kept row's `suppressed*` fields
+    (posted as meta); rows are skipped entirely, so the cursor still
+    advances past them — a deliberate drop, not a shipping failure."""
     kept: list[dict] = []
     counts: dict[str, int] = {}
     last_idx: dict[str, int] = {}
+    span: dict[str, list[str]] = {}
     suppressed = 0
     for r in rows:
         sig = RX_VOLATILE.sub("#", f"{r['unit']}|{r['line']}")[:140]
@@ -198,10 +199,19 @@ def _cap_repeats(rows: list[dict]) -> tuple[list[dict], int]:
         if counts[sig] <= REPEAT_CAP:
             last_idx[sig] = len(kept)
             kept.append(r)
-        else:
-            suppressed += 1
-            kept[last_idx[sig]]["suppressed"] = \
-                kept[last_idx[sig]].get("suppressed", 0) + 1
+            continue
+        suppressed += 1
+        marker = kept[last_idx[sig]]
+        marker["suppressed"] = marker.get("suppressed", 0) + 1
+        # Keep the drop window so the digest can show when the crash loop
+        # happened, without shipping every suppressed copy.
+        lo, hi = span.setdefault(sig, [r.get("ts", ""), r.get("ts", "")])
+        if r.get("ts"):
+            lo = r["ts"] if not lo or r["ts"] < lo else lo
+            hi = r["ts"] if not hi or r["ts"] > hi else hi
+            span[sig] = [lo, hi]
+        marker["suppressed_first_ts"] = span[sig][0]
+        marker["suppressed_last_ts"] = span[sig][1]
     return kept, suppressed
 
 
@@ -468,6 +478,9 @@ def _doc(r: dict) -> dict:
             "kind": [r["kind"]]}
     if r.get("suppressed"):
         meta["suppressed"] = [str(r["suppressed"])]
+        for k in ("suppressed_first_ts", "suppressed_last_ts"):
+            if r.get(k):
+                meta[k] = [r[k]]
     return {"key": r["key"], "lang": "en",
             "contentMd": f"`{r['ts']}` [{r['unit']}] {r['line']}",
             "meta": meta}
