@@ -171,11 +171,16 @@ persons:
       instance: kk
       env_file: kk-ha/backend.env
       host: idc03
+      # CMS-only memory pilot (card kk-cms-only-memory-pilot-acceptance,
+      # approved 2026-11-26): bank recall + web_search withheld below;
+      # these knobs stop stale session prime (recent-sessions summary,
+      # channel tails, headlines) from answering in their place while
+      # keeping identity + the CMS catalog. Revert = restore the five
+      # tools to include:, drop env_knobs, re-render + restart ada-kk.
+      env_knobs:
+        ADA_SESSION_PRIME: "1"
+        ADA_PRIME_SKIP_HISTORY: "1"
       include:
-        - ada_memory_search
-        - ada_remember
-        - ada_forget
-        - ada_session_recall
         - cms_read
         # conv_journal re-added 2026-10-23 (card conv-journal-manifest-gap):
         # manifest-enabled in ada-voice — compiles the LINE journal into a
@@ -206,7 +211,6 @@ persons:
         - calendar_write
         - plan_day
         - tasks
-        - web_search
         - ada_persona
         - speaker_profiles
         - voice_fx
@@ -254,6 +258,16 @@ persons:
         # rendered (the managed block covers INCLUDED/EXCLUDED only).
         - place_report
       exclude:
+        # CMS-only memory pilot drops (card
+        # kk-cms-only-memory-pilot-acceptance, 2026-11-26): the four
+        # bank-recall tools + web_search move here for the 3-7d pilot —
+        # uncovered questions must miss honestly, not silently recall or
+        # live-search. Restore to include: on revert.
+        - ada_memory_search
+        - ada_remember
+        - ada_forget
+        - ada_session_recall
+        - web_search
         # Explicit drop-list — Tony-lane lures + cross-lane data leak
         # (Tony calendar/tasks on a member-tier session). Rendered as
         # ADA_EXCLUDED_TOOLS alongside the allowlist; the deploy lint
@@ -358,14 +372,17 @@ tool_profiles:
     instance: ADA_INSTANCE_ID the profile applies to (the person's dedicated backend)
     env_file: basename under ~/.config/secrets/ on the host (default ada-<instance>.env)
     host: deploy host that runs the instance (render-tool-profiles.py --host)
+    env_knobs: "optional KEY->value map of non-tool env vars — renders a second managed block (ada-env-knobs, same marker format as kk-bench-env.py). Used by the kk CMS-only pilot for ADA_SESSION_PRIME/ADA_PRIME_SKIP_HISTORY. Absent = knob block unmanaged; empty map = managed block cleared."
     include: tools the persona KEEPS — renders ADA_INCLUDED_TOOLS (allowlist; all else stripped)
     exclude: tools deliberately dropped — renders ADA_EXCLUDED_TOOLS too, and completes lint coverage
   render: |
     scripts/ada/render-tool-profiles.py merges a managed block
     (>>> chaba-rendered: ada-tool-profile … <<<) into the env file —
     ADA_INCLUDED_TOOLS when include: is non-empty, ADA_EXCLUDED_TOOLS
-    when exclude: is non-empty. deploy-ada.sh applies profiles whose
-    host: matches the deploy target and restarts when the block drifts.
+    when exclude: is non-empty — plus a second managed block
+    (>>> chaba-rendered: ada-env-knobs … <<<) when env_knobs: is
+    declared. deploy-ada.sh applies profiles whose host: matches the
+    deploy target and restarts when the block drifts.
   lint: |
     A deploy-time warning (render-tool-profiles.py --lint, also run
     inside --apply): for every profiled instance, any tool DECLARED in
@@ -473,13 +490,31 @@ lifecycle:
 #   kk-cms-only = production MINUS the declared experimental drops (memory
 #   tools + web_search), PLUS two test-only seed writers (see below). Any
 #   other delta is drift; the same test pins that delta too.
+#
+# 2026-11-26 pilot promotion (card kk-cms-only-memory-pilot-acceptance):
+#   the kk-cms-only surface WAS promoted to persons.kk.tools — prod now
+#   runs CMS-only memory for the 3-7d pilot. Consequences:
+#   - kk-parity tracks the NEW prod tool surface but keeps the PRE-PILOT
+#     prime knobs (ADA_PRIME_SKIP_HISTORY=0) — it is now the control arm
+#     that isolates the skip-history knob, not a full prod mirror.
+#   - kk-cms-only is now prod tools + the test-only seed writer + the
+#     same pilot knobs — i.e. the exact pilot surface the scenario
+#     regresses against. Its lists are unchanged; the parity test's
+#     prod-relative math keeps it valid.
+#   - kk-parity's knob divergence (SKIP_HISTORY=0 vs prod 1) is
+#     deliberate — the control arm — and pinned by the same test.
 # ---------------------------------------------------------------------------
 bench_profiles:
   # CMS-only memory — Kaewta answers from her own CMS reports +
   # conv_journal; public writes stay on the production wp_*/cpt_post path.
-  # Experimental drops vs persons.kk.tools: the four memory-bank tools and
-  # web_search (a live-search fallback would mask honest misses — add
-  # web_search back to include: to test "cms memory + honest search").
+  # POST-PILOT (2026-11-26): persons.kk.tools now carries the same drops,
+  # so this profile's ONLY delta vs prod is the test-only seed writer
+  # below (plus identical pilot knobs) — it is the pilot regression
+  # surface for kk_memory_cms, not an candidate-vs-prod experiment.
+  # Historical note: the drops vs the PRE-pilot prod surface were the
+  # four memory-bank tools and web_search (a live-search fallback would
+  # mask honest misses — add web_search back to include: to test "cms
+  # memory + honest search").
   #
   # cms_publish_page is the ONE TEST-ONLY seed writer: prod dropped it
   # 2026-10-14 (wrong-system trap; wp_post owns member writes). It remains
@@ -564,23 +599,23 @@ bench_profiles:
       - ada_ops
       - percussion
 
-  # Parity restore — EXACT copy of persons.kk.tools (2026-11-24). Do not
-  # hand-edit one side; tests/ada/test_bench_profile_parity.py fails on
-  # drift. The dev lane also needs ADA_CMS_PUBLIC_BASE for place_report
-  # public_url — hand-set, outside the managed tool block.
+  # Parity restore — EXACT copy of persons.kk.tools include/exclude
+  # (2026-11-24; updated 2026-11-26 for the CMS-only pilot promotion).
+  # Do not hand-edit one side; tests/ada/test_bench_profile_parity.py
+  # fails on drift. env_knobs deliberately keep the PRE-PILOT prime
+  # (ADA_PRIME_SKIP_HISTORY=0): the dev lane stays the control arm that
+  # isolates the skip-history knob against prod's =1. The dev lane also
+  # needs ADA_CMS_PUBLIC_BASE for place_report public_url — hand-set,
+  # outside the managed tool block.
   kk-parity:
     instance: kk-dev
     env_file: ada-kk-dev.env
     host: idc03
     port: 8009  # health probe after --apply (/api/health)
     env_knobs:
-      ADA_SESSION_PRIME: "1"        # restore default prime on parity
-      ADA_PRIME_SKIP_HISTORY: "0"   # restore cross-session context
+      ADA_SESSION_PRIME: "1"        # matches prod
+      ADA_PRIME_SKIP_HISTORY: "0"   # control arm — pre-pilot prime on dev
     include:
-      - ada_memory_search
-      - ada_remember
-      - ada_forget
-      - ada_session_recall
       - cms_read
       - conv_journal
       - wp_post
@@ -592,7 +627,6 @@ bench_profiles:
       - calendar_write
       - plan_day
       - tasks
-      - web_search
       - ada_persona
       - speaker_profiles
       - voice_fx
@@ -604,6 +638,11 @@ bench_profiles:
       - doc_read
       - place_report
     exclude:
+      - ada_memory_search
+      - ada_remember
+      - ada_forget
+      - ada_session_recall
+      - web_search
       - cms_publish_page
       - cms_edit
       - ada_render_video
