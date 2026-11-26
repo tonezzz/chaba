@@ -24,10 +24,14 @@ MDBB = os.environ.get("DEVICE_TELEMETRY_MDBB",
 DAYS = int(os.environ.get("DEVICE_TELEMETRY_RETENTION_DAYS", "7"))
 COLLECTION = "device-telemetry"
 PAGE = 5000
-CHUNK = 1000
+# 1000-doc delete batches took >120s on mddb-ops under load (2026-11-26,
+# timer-alert-idc03-device-telemetry-prune) and the client timed out mid-
+# sweep. Smaller chunks keep each write well inside the server's 120s
+# window; the job timeout was raised to 30m for the extra round trips.
+CHUNK = 100
 
 
-def _post(path: str, body: dict, timeout: int = 120) -> object:
+def _post(path: str, body: dict, timeout: int = 300) -> object:
     req = urllib.request.Request(
         f"{MDBB}{path}", data=json.dumps(body).encode(),
         headers={"content-type": "application/json"}, method="POST")
