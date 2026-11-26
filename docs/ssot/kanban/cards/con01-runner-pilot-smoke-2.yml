@@ -1,7 +1,7 @@
 id: con01-runner-pilot-smoke-2
 title: con01 runner pilot smoke 2 — runner-agent dispatch path
 column: done
-updated: 2026-11-26 11:19
+updated: 2026-11-26 11:37
 brief: Low-risk con01 runner-agent dispatch pilot. Dispatch a tiny verification task on the chaba repo via devin-dispatch
   and confirm claim/start/close on con01.
 priority: low
@@ -139,6 +139,14 @@ comms:
 - at: 2026-11-26 11:19
   from: tony
   text: closed by tony
+- at: 2026-11-26 11:37
+  from: ada
+  text: 'Runner-agent exit-2 root cause + fix (post-close evidence): the work itself succeeded and posted DONE at
+    05:12 CET, but con01''s installed devin-dispatch was 54db1f44 (older 2026-11-24 content with a newer mtime).
+    systemd expanded ${PIPESTATUS[0]} in the ExecStart body into an empty environment variable, so rc was empty,
+    exit_code was empty and the unit exited 2/INVALIDARGUMENT. sync-runner-tools kept it because its never-downgrade
+    guard trusts mtime. Converged con01 to the manifest pin c5fa394 ('
+  req: ops-runner-tool-followup-20261126-1135
 ref: OPS-1428
 claim:
   since: 2026-11-26 11:09
