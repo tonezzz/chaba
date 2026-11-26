@@ -2,7 +2,7 @@ id: runner-auto-tony-omen
 title: Runner host `tony-omen` fails 7 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on tony-omen that will strand dispatch cards. Read the note,
   fix on the host, close the card.
-column: review
+column: done
 review_kind: triage
 generated: runner-fleet-health
 program: chaba-ci
@@ -53,9 +53,20 @@ help: 'Per-check fixes:
 
   - devin-dispatch: Usually self-heals within one chaba-repo-sync tick (sync-runner-tools.sh via git-safe-pull).
   Manual: scp scripts/devin/devin-dispatch.sh <host>:~/.local/bin/devin-dispatch && ssh <host> chmod +x ~/.local/bin/devin-dispatch'
-updated: 2026-11-26 20:59
+updated: 2026-11-26 22:47
 comms:
 - at: 2026-11-26 20:59
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 22:47
+  from: tony
+  text: 'RECHECK 2026-11-26: runner-fleet-health read-only probe now reports 0 violations on tony-omen. Ansible
+    audit-runner-tools shows all six/seven pinned tools OK vs host checkout; deploy-runner-tools from clean origin/master
+    worktree (16ab001) confirms pinned tools in sync (sha 705bfff9 devin-dispatch, 364aaa03 devin-dispatch-watch).
+    Closing as recovered.'
+- at: 2026-11-26 22:47
+  from: tony
+  text: closed by tony
+action:
+  status: done
