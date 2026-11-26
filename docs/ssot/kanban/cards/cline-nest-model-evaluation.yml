@@ -1,6 +1,6 @@
 id: cline-nest-model-evaluation
 title: Evaluate Cline models through the Nest worker adapter
-column: backlog
+column: doing
 updated: 2026-11-26 15:34
 priority: medium
 tags:
@@ -284,9 +284,12 @@ comms:
 - at: 2026-11-26 15:34
   from: devin
   text: queued for processing
+- at: 2026-11-26 15:34
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261028-065757-after-knb-0932-is-deployed-and.service: Main
     process exited, code=exited, status=1/FAILURE | devin-task-20261028-065757-after-knb-0932-is-deployed-and.service:
     Failed with result ''exit-code''.'
@@ -294,5 +297,8 @@ action:
     session_gone: 2026-10-28 07:02
   lane: paid_frontier
   lane_source: kw
+  runner: idc02
+  attempts: 1
 review_kind: verify
-claim: {}
+claim:
+  since: 2026-11-26 15:34
