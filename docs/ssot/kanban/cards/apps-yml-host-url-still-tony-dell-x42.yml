@@ -1,7 +1,7 @@
 id: apps-yml-host-url-still-tony-dell-x42
 title: 'apps.yml: 42 entries still host_url tony-dell + canary blind to deployed apps index'
-column: doing
-updated: 2026-11-26 21:14
+column: review
+updated: 2026-11-26 21:21
 priority: medium
 tags:
 - ops
@@ -358,18 +358,36 @@ comms:
     Producers repointed so regen cannot reintroduce: apps-yml-generate defaults+BASE_URL, apps-health-sync fallbacks
     + SYNCABLE_HOSTS->{mn01}, ssot.apps.yml apps-hosts (tony-dell group -> idc02, yomi folded in, ada-voice/speaker-enroll
     -> idc03), publ'
+- at: 2026-11-26 21:21
+  from: tony-dell
+  text: 'finished (ok): exit=0 cause nothing was committed — this run committed everything. | devin-task-20261126-204208-migrate-the-42-entries-'
+- at: 2026-11-26 21:21
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-26 21:21
+  from: chaba
+  text: banked 803 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 21:21
+  from: chaba
+  text: pushed dispatch/20261126-204208-migrate-the-42-entries-in-stac to origin
+- at: 2026-11-26 21:21
+  from: chaba
+  text: 'auto-merge not done: merge: commit after conflict resolution failed — close will block until merged'
+- at: 2026-11-26 21:21
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
 spec: Migrate the 42 entries in stacks/web/public/apps/apps.yml that still carry host_url https://tony-dell.taila0626a.ts.net
   to the correct host configuration, and ensure the consumer canary covers the deployed apps index. The repository
   is chaba and the host is tony-dell. The done-condition is verified when zero entries in stacks/web/public/apps/apps.yml
   reference tony-dell.taila0626a.ts.net and the consumer canary successfully greps the deployed apps index.
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   attempts: 2
-  result: 'exit=0 /infrastructure/2026-11-24-apps-yml-host-url-migration.yml` and the dispatch-outcome doc. | devin-task-20261124-215344-migrate-the-42-entries-in-stac.service:
-    Consumed 2min 2.740s CPU time over 21min 51.313s wall clock time, 1G memory peak.'
+  result: 'exit=0 cause nothing was committed — this run committed everything. | devin-task-20261126-204208-migrate-the-42-entries-in-stac.service:
+    Consumed 4min 770ms CPU time over 34min 41.427s wall clock time, 1009.8M memory peak, 406.9M memory swap peak.'
   sweep:
     dirty: 16
   runner: tony-dell
