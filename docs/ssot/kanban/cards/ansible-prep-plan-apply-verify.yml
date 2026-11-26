@@ -1,7 +1,7 @@
 id: ansible-prep-plan-apply-verify
 title: Ansible prep→plan→apply→verify workflow standard
 column: backlog
-updated: 2026-11-26 11:26
+updated: 2026-11-26 12:31
 brief: Standardize Ansible for preparation/baselines, check-diff plan artifacts, gated apply, and verified closeout
   to increase fleet efficiency.
 priority: medium
@@ -63,3 +63,15 @@ comms:
     Added ada-ocb-preflight.yml, ada-ocb-plan.yml; verify writes benchmark report+optional board evidence; upgrade
     now asserts card_ref/card_id when ocb_change_approved=true (3A). Next: Step 4 dry-run prep+plan --check --diff
     --limit <safe-host>, evidence on OPS-1424.'
+- at: 2026-11-26 12:31
+  from: chaba
+  text: classified as free_lane (kw:plan conf 1.00)
+- at: 2026-11-26 12:31
+  from: chaba
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: free_lane
+  lane_source: kw
+claim: {}
