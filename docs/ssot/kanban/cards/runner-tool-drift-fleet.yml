@@ -1,0 +1,24 @@
+id: runner-tool-drift-fleet
+title: Runner tool drift from audit-runner-tools.yml — re-arm convergence
+column: backlog
+updated: 2026-11-26 12:21
+brief: Runner tool drift from audit-runner-tools.yml — re-arm convergence
+priority: high
+program: chaba-ci
+tags:
+- ansible
+- runner-tools
+- drift
+spec: 'Found by scripts/board/runner-drift-rearm.py from an audit-runner-tools.yml transcript: {"tony-dell": ["MISSING-DEST
+  dispatch_repos.py"], "tony-macbook": ["MISSING-DEST claude-dispatch", "MISSING-DEST dispatch-queue", "MISSING-DEST
+  dispatch_repos.py"], "idc03": ["MISSING-DEST claude-dispatch", "MISSING-DEST devin-dispatch-prune", "MISSING-DEST
+  dispatch-queue", "MISSING-DEST dispatch_repos.py"], "idc02": ["DRIFT runner-agent", "MISSING-DEST claude-dispatch",
+  "MISSING-DEST devin-dispatch-prune", "MISSING-DEST dispatch-queue", "MISSING-DEST dispatch_repos.py"], "con01":
+  ["DRIFT devin-dispatch", "MISSING-DEST claude-dispatch", "MISSING-DEST devin-dispatch-prune", "MISSING-DEST dispatch-queue",
+  "MISSING-DEST dispatch_repos.py"]}. Fix by running ansible/playbooks/deploy-runner-tools.yml (check then apply),
+  then re-audit with --verify.'
+ref: OPS-1431
+comms:
+- at: 2026-11-26 12:21
+  from: tony
+  text: card captured via board-api
