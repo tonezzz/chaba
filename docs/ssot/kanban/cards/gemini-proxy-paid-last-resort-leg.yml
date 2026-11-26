@@ -1,7 +1,7 @@
 id: gemini-proxy-paid-last-resort-leg
 title: 'gemini-ollama-proxy: add paid-Gemini leg between free and Ollama (bounded outage spend)'
 column: backlog
-updated: 2026-11-26 20:36
+updated: 2026-11-26 20:47
 priority: low
 tags:
 - mddb
@@ -249,3 +249,17 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:47
+  from: chaba
+  text: 'TRIAGE 2026-11-26: written bounded spec and armed for dispatch (lane=devin).'
+spec: 'Add a paid-Gemini leg AFTER free-Gemini and BEFORE Ollama in ~/.config/containers/mddb/proxy/gemini-ollama-proxy.mjs
+  (fetchBackupBatch), passing GEMINI_API_KEY_PAID through the container env. Intended for outage windows only (OR
+  401 + free key 429), never normal operation. Document the vector-space caveat (paid vs free embeddings) and a
+  daily paid-call cap. Done: proxy config and env passthrough updated, a forced free-429 probe shows paid used before
+  Ollama as last resort, and the spend cap is stated in the outcome. Host: idc03/con01 as applicable; do not rotate
+  or print any key.'
+action:
+  type: dispatch
+  status: idle
+  lane: devin
+  attempts: 0

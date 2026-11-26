@@ -1,12 +1,15 @@
 id: open-ada-cms-tool-lang-arg-beyond-en-th-37f8a0
 title: Open Ada cms tool lang arg beyond en/th (de verified working)
 column: backlog
-updated: 2026-11-26 20:36
+updated: 2026-11-26 20:47
 priority: low
 action:
   type: dispatch
   repo: ada-voice
   executor: devin
+  status: idle
+  lane: devin
+  attempts: 0
 note: 'Follow-up from support-german-language-variants-on-cms-69ef23. Store + chaba readers now support any lang
   (de variant of translate-probe live, cms-render ?lang=de verified, board-api /report create accepts lang). Remaining
   gate is ada-voice: cms_publish_page / cms_edit / cms_read lang argument still presents en/th only — find whether
@@ -89,3 +92,11 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:47
+  from: chaba
+  text: 'TRIAGE 2026-11-26: written bounded spec and armed for dispatch (lane=devin).'
+spec: 'Follow-up to support-german-language-variants-on-cms-69ef23: store and chaba readers accept any language
+  tag, but ada-voice cms_publish_page / cms_edit / cms_read still present en/th only. Determine whether the gate
+  is a tool-declaration enum or CMS_INSTRUCTIONS wording in backend/realtime_provider.py (see integrations/ada-voice/backend/cms-slug-derivation.patch),
+  then widen it to accept arbitrary language tags (e.g. de) with backward compatibility. Done: tool-lint + full
+  pytest green, a live lang=de publish/read round-trip verified, and the outcome states which layer was the gate.'
