@@ -1,7 +1,7 @@
 id: dispatch-podman-conmon-49-incompat
 title: Dispatch fails on podman 4.9.3 hosts — conmon rejects --log-tag (con01/idc02/idc03)
-column: doing
-updated: 2026-11-26 13:13
+column: review
+updated: 2026-11-26 13:14
 priority: high
 tags:
 - dispatch
@@ -68,13 +68,37 @@ comms:
     the log_tag line on the three 4.9.3 hosts (backups at containers.conf.bak-20261126); log_driver kept. Verified:
     raw podman run OK on all three + full dispatch_job.yml run to con01 ok=19/failed=0. Caveat: the fleet-wide containers.conf
     is managed by nothing in ansible despite its comm'
+- at: 2026-11-26 13:14
+  from: tony-macbook
+  text: 'finished (ok): exit=0 tally removed a pre-existing stopped `verify2` container on idc02 during test cleanup.
+    | devin-task-20261126-1303'
+- at: 2026-11-26 13:14
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-26 13:14
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261126-130316-found-during-dispatch-queue-ap
+    is 29 commits behind origin/master —\n   run 'git pull -"
+- at: 2026-11-26 13:14
+  from: chaba
+  text: pushed dispatch/20261126-130316-found-during-dispatch-queue-ap to origin
+- at: 2026-11-26 13:14
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-26 13:14
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 tally removed a pre-existing stopped `verify2` container on idc02 during test cleanup. | devin-task-20261126-130316-found-during-dispatch-queue-ap.service:
+    Consumed 2min 36.912s CPU time over 10min 42.219s wall clock time, 1.1G memory peak.'
 claim:
   since: 2026-11-26 13:02
+review_kind: verify
