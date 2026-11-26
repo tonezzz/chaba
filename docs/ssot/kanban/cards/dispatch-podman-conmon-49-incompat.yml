@@ -1,7 +1,7 @@
 id: dispatch-podman-conmon-49-incompat
 title: Dispatch fails on podman 4.9.3 hosts — conmon rejects --log-tag (con01/idc02/idc03)
 column: review
-updated: 2026-11-26 13:14
+updated: 2026-11-26 13:24
 priority: high
 tags:
 - dispatch
@@ -89,6 +89,10 @@ comms:
 - at: 2026-11-26 13:14
   from: chaba
   text: 'worktree kept: dirty — 2 uncommitted file(s)'
+- at: 2026-11-26 13:24
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261126-130316-found-during-dispatch-queue-ap on tony-macbook still
+    dirty — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: done
@@ -99,6 +103,8 @@ action:
   attempts: 1
   result: 'exit=0 tally removed a pre-existing stopped `verify2` container on idc02 during test cleanup. | devin-task-20261126-130316-found-during-dispatch-queue-ap.service:
     Consumed 2min 36.912s CPU time over 10min 42.219s wall clock time, 1.1G memory peak.'
+  sweep:
+    dirty: 2
 claim:
   since: 2026-11-26 13:02
 review_kind: verify
