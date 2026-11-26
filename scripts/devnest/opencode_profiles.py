@@ -941,6 +941,26 @@ def _partial_text(data) -> str:
     return data or ""
 
 
+def instruction_free_cwd(project_dir: Path, rd: Path) -> Path:
+    """Scratch cwd for agent-local runs: opencode auto-injects the project's
+    AGENTS.md (81KB in chaba) into every system prompt. On the local Ollama
+    legs that inflates first-token latency to 265s+ on a real agent request
+    (past opencode's 300s header timeout and this lane's 420s wall clock).
+    Run from a cwd with no AGENTS.md; symlink the two trees the info-find
+    bash allowlist and artifact path need. Scoped to agent-local only —
+    other profiles keep their repository/worktree cwd (OPS-1363 followup).
+    """
+    # must be OUTSIDE the repo: an in-repo scratch cwd still inherits
+    # <repo>/AGENTS.md by ancestor walk (verified 2026-11-25).
+    cwd = Path("/tmp/opencode-lane-cwd") / rd.name
+    cwd.mkdir(parents=True, exist_ok=True)
+    for name in ("scripts", "evals"):
+        src, dst = project_dir / name, cwd / name
+        if src.is_dir() and not dst.exists():
+            dst.symlink_to(src)
+    return cwd
+
+
 def run_profile_process(cmd, rd, timeout, env, observer="", cwd=None):
     if observer:
         print(f"LIVE_EVENTS {rd / 'events.jsonl'}", flush=True)
@@ -1049,9 +1069,12 @@ def _run_attempt(env, prof, pre, args, attempt, observer, max_attempts):
     cmd += ["--model", str(env["model"]),
             "--agent", agent_name(prof["id"]), prompt]
     rec = {"exit_code": None, "error": None}
+    exec_cwd = project_dir
+    if str(env.get("model") or "") == "litellm/agent-local":
+        exec_cwd = instruction_free_cwd(project_dir, rd)
     watch_start = time.monotonic()
     try:
-        r = run_profile_process(cmd, rd, timeout, oenv, observer=observer, cwd=str(project_dir))
+        r = run_profile_process(cmd, rd, timeout, oenv, observer=observer, cwd=str(exec_cwd))
         rec["exit_code"] = r.returncode
     except subprocess.TimeoutExpired:
         rec["exit_code"] = -2

@@ -191,8 +191,25 @@ gemini_project_isolation:
 # (model_name = what callers send; chain = ordered upstream fallbacks)
 job_classes:
   tool-call:
-    chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
-    note: ada decision/devteam/doc-check calls. Repointed off gemini-2.5-flash 2026-10-11 — Google retired 2.5-flash/2.5-flash-lite upstream (404 "no longer available to new users").
+    chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, ollama-llama32-3b-kkmac, colab-gemma3, llama3.2:3b@ollama]
+    note: ada decision/devteam/doc-check calls. Repointed off gemini-2.5-flash 2026-10-11 — Google retired 2.5-flash/2.5-flash-lite upstream (404 "no longer available to new users"). kk-mac leg-3 added 2026-11-25 (OPS-1363).
+  agent-local:
+    chain: [gemini-3.5-flash-lite@free, qwen2.5:7b@ollama-tonydell, llama3.2@ollama-idc03, colab-gemma3, gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@openrouter]
+    note: >-
+      OPS-1363 free_lane agentic dispatch alias (deployed idc03 2026-11-25,
+      synced into repo/SSOT 2026-11-26). DEVIATION from this file's normal
+      paid-first posture: free-tier lite leads, local Ollama legs follow,
+      paid Gemini and OpenRouter are LAST — this is the free_lane $0
+      contract. Primary model_name `agent-local` is qwen2.5:32b via the
+      kk-mac admission shim (:11447) with timeout 15s (fast-fail on
+      temp_high; the old 120s timeout burned the whole window before
+      fallthrough). Consumers: scripts/board/dispatch_repos.py
+      LANE_MODELS['free_lane'] = litellm/agent-local; opencode profile
+      jobs use an instruction-free cwd outside the repo (AGENTS.md is
+      81KB and inflated the real S1 request to ~35k tokens / 265s+ first
+      byte on qwen7b). Gate: p1-info-find-agent-local-test PASS 16/16,
+      exit 0, 80.9s, $0.00, run 20261125-184706. Local-only legs lack
+      agentic tool-call reliability — keep the $0 free leg first.
   summary:
     chain: [qwen2.5:32b@ollama-kkmac, gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
     note: >-

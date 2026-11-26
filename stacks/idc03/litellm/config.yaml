@@ -129,6 +129,17 @@ model_list:
       model: ollama_chat/qwen2.5:7b-instruct
       api_base: http://127.0.0.1:11446
 
+  # -- agent-local — OPS-1363: free_lane agentic dispatch alias (GATE PASS
+  # 2026-11-25, p1-info-find-agent-local-test 16/16 @ $0). kk-mac leg-1 via
+  # the admission shim, fast-fail 15s — thermally throttled 32b previously
+  # burned the full 120s timeout before fallthrough (AGENTS.md 81KB system
+  # prompt inflation; see job doc post_gate_tuning_2026_11_25).
+  - model_name: agent-local
+    litellm_params:
+      model: ollama_chat/qwen2.5:32b
+      api_base: http://127.0.0.1:11447
+      timeout: 15  # fail fast: kkmac thermally throttled -> fallback qwen7b
+
   # ── OpenRouter :free tier (KNB-0932 Cline lane — zero-cost upstreams) ──
   - model_name: or-free-nemotron-nano
     litellm_params:
@@ -347,7 +358,8 @@ router_settings:
   # second, OpenRouter third, local ollama last for text-only classes.
   fallbacks:
     - gemini-2.5-flash: [or-gemini-2.5-flash]
-    - tool-call: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
+    - tool-call: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, ollama-llama32-3b-kkmac, colab-gemma3, ollama-llama3.2]
+    - agent-local: [gemini-3.5-flash-lite-free, ollama-qwen7b, ollama-llama3.2, colab-gemma3, gemini-3.5-flash-lite, or-gemini-3.5-flash-lite]  # free-lite first: local legs 265s+ / no S1 tool-call artifact (OPS-1363)
     - chat: [gemini-3.5-flash-free, or-gemini-3.5-flash, gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
     - gemini-3.5-flash-lite: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
     - summary: [gemini-3.5-flash-lite, gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]

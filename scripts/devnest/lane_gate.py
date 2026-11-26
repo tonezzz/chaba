@@ -230,7 +230,7 @@ STAGES = {
         "classes": ["report", "read_only"],
         "mcp_tools": LANE_MCP_TOOLS,
         "concurrency": 1,
-        "quota": 3,
+        "quota": 15,  # raised 2026-11-25 (OPS-1363 repoint gate run); was 3
         "env_required": {"OPENCODE_LANES": "1"},
         "independent_verifier": False,
         "supervised": True,          # human_minutes must be recorded
