@@ -1,7 +1,7 @@
 id: ansible-prep-plan-apply-verify
 title: Ansible prep→plan→apply→verify workflow standard
 column: doing
-updated: 2026-11-26 12:33
+updated: 2026-11-26 12:34
 brief: Standardize Ansible for preparation/baselines, check-diff plan artifacts, gated apply, and verified closeout
   to increase fleet efficiency.
 priority: medium
@@ -102,6 +102,9 @@ comms:
     SLICE 1 DONE — verifier first (per answered scope ; editing `ssot.jobs.yml` requires re-running `scripts/render-jobs.py
     --host <h>` ; idc02''s kanban-dispatch.service was a linked unit running a stale scripts/-only ; [camwall-retire-to-wiki]
     primer injected 8 lesson(s): no chab'
+- at: 2026-11-26 12:34
+  from: devin
+  text: 'resume (step 4): running prep+plan dry-run --check --diff --limit safe host, then evidence on card'
 action:
   type: dispatch
   status: running
