@@ -1,7 +1,7 @@
 id: cast-loop-breaker-test-failure
 title: Fast pytest gate fails on cast_loop_breaker patch divergence
 column: backlog
-updated: 2026-11-26 23:17
+updated: 2026-11-26 23:19
 brief: Current master fast pytest gate (python3 -m pytest tests -x -q) fails on tests/ada/test_cast_loop_breaker.py::test_patches_apply_clean
   — one patch reports diverged.
 priority: medium
@@ -51,6 +51,9 @@ comms:
   from: chaba
   text: 'mn01 defers: executor=claude declared but this runner can''t serve it (CLAUDE_LANES=0) — the card stays
     queued for a Claude-capable runner; it will never silently fall back to devin'
+- at: 2026-11-26 23:19
+  from: chaba
+  text: 'mn01 defers: runner at local cap (1/1) — remote slots unaffected'
 action:
   type: dispatch
   status: queued
