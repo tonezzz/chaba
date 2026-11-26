@@ -18,15 +18,20 @@
  *              + nest_job CPT — ada-nest Drive-queue job mirror: queue-mgr
  *              upserts one post per job/pack via board-api POST /job so
  *              members can browse the offload queue on the board site.
+ *              + chaba_agent role — devin/ada/chaba WP users for agent
+ *              comment replies (card lesson-comments-dev-board): real
+ *              author identity + moderate_comments so replies post
+ *              approved, never held. Provisioned by
+ *              scripts/wp-boards/ensure-agent-users.py.
  *              All CPTs are REST-writable (show_in_rest) so the
  *              fleet writers can create them via App Password. Meta keys are
  *              registered REST-writable AND shown as admin list columns.
- * Version: 0.10.0
+ * Version: 0.11.0
  */
 
 if (!defined('ABSPATH')) exit;
 
-const CHABA_BOARDS_VER = '0.10.0';
+const CHABA_BOARDS_VER = '0.11.0';
 
 // ============================================================================
 // CPTs — member-visible records, private by post status (same model as the
@@ -157,6 +162,39 @@ add_action('init', function () {
         register_post_type($slug, array_merge($common, $extra));
     }
 });
+
+// ============================================================================
+// chaba_agent role — agent comment identities (card
+// lesson-comments-dev-board). wp-comment-sync's digest lane routes member
+// comments to kanban cards; the actioning agent replies in-thread via
+// board-api POST /wp-comment under its own WP user (devin/ada/chaba).
+// The role grants exactly what an in-thread reply needs:
+//   read                  — logged-in REST principal
+//   read_private_posts    — comment on private CPT posts (lesson, news…)
+//   moderate_comments     — pass `status:"approve"` on create instead of
+//                           landing in the hold queue (the REST comments
+//                           controller requires this cap to set status)
+// No post-edit, no unfiltered_html — agents comment, they don't author.
+// ensure-agent-users.py creates the users; this hook keeps the role's
+// caps converged on every init (idempotent, cheap).
+// ============================================================================
+add_action('init', function () {
+    $caps = [
+        'read'                 => true,
+        'read_private_posts'   => true,
+        'moderate_comments'    => true,
+    ];
+    $role = get_role('chaba_agent');
+    if (!$role) {
+        add_role('chaba_agent', 'Chaba Agent', $caps);
+        return;
+    }
+    foreach ($caps as $cap => $grant) {
+        if ($grant && !$role->has_cap($cap)) {
+            $role->add_cap($cap);
+        }
+    }
+}, 6);
 
 // Rewrite rules only change on version bumps (new has_archive types) —
 // flush once per deployed version, stored as an option so it never repeats.

@@ -54,6 +54,9 @@ from datetime import datetime, timedelta, timezone
 ENV_PATH = os.environ.get(
     "WP_BOARDS_ENV",
     os.path.expanduser("~/.config/secrets/wp-boards.env"))
+AGENT_ENV_PATH = os.environ.get(
+    "WP_AGENT_ENV",
+    os.path.expanduser("~/.config/secrets/wp-agent-users.env"))
 ICT = timezone(timedelta(hours=7))
 UA = "chaba-news-situation/1.0"
 TAG_RE = re.compile(r"<[^>]+>")
@@ -103,12 +106,15 @@ class WP:
         self._cats = None
         self._tags = None
 
-    def api(self, route, data=None, method=None):
+    def api(self, route, data=None, method=None, auth=None):
         u = (f"{self.base}/index.php?rest_route="
              f"{urllib.parse.quote(route, safe='/&=')}")
         body = json.dumps(data).encode() if data is not None else None
+        h = dict(self.h)
+        if auth:
+            h["Authorization"] = auth
         req = urllib.request.Request(
-            u, data=body, headers=self.h,
+            u, data=body, headers=h,
             method=method or ("POST" if data is not None else "GET"))
         try:
             with urllib.request.urlopen(req, timeout=45) as r:
@@ -195,11 +201,37 @@ def source_count(post):
     return max(counts) if counts else 0
 
 
+def agent_auth(name):
+    """'Basic ...' for a wp-agent-users.env identity (card
+    lesson-comments-dev-board), else None — transition comments then
+    post under the real agent author with status=approve instead of
+    the shared app user landing in the hold queue."""
+    env = _load_env(AGENT_ENV_PATH)
+    u = env.get(f"WP_AGENT_{name.upper()}_USER", "").strip()
+    p = env.get(f"WP_AGENT_{name.upper()}_APP_PASSWORD", "").strip()
+    if not u or not p:
+        return None
+    return "Basic " + base64.b64encode(f"{u}:{p}".encode()).decode()
+
+
 def comment(wp, post_id, text, dry_run=False):
-    """Transition trail — every flag change is announced on the post."""
+    """Transition trail — every flag change is announced on the post.
+    Prefers the 'chaba' agent identity (real author + approved status);
+    falls back to the shared app user when wp-agent-users.env isn't
+    provisioned on this host."""
     if dry_run:
         print(f"  [dry] comment on {post_id}: {text}")
         return None
+    auth = agent_auth("chaba")
+    if auth:
+        try:
+            return wp.api("/wp/v2/comments",
+                          {"post": post_id, "content": text,
+                           "status": "approve"},
+                          auth=auth).get("id")
+        except Exception as e:
+            print(f"  warn: chaba-identity comment on {post_id} failed "
+                  f"({e}); retrying as app user", file=sys.stderr)
     try:
         return wp.api("/wp/v2/comments",
                       {"post": post_id, "content": text}).get("id")

@@ -1,0 +1,121 @@
+title: comment->dev-board bridge — classify, card, loop-close (lesson-comments-dev-board)
+host: idc03 (wp-comment-sync.timer, board-api.service) + tony-omen (wp-admin provisioning)
+date: '2026-11-26'
+card: lesson-comments-dev-board
+phase: 1
+
+problem: |
+  Member comments on boards.surf-thailand.com posts were digest-only:
+  wp-comment-sync routed everything outside memory-mirror/asset/place/
+  trip/news to digest.jsonl plus a generic "Noted" ack. Lesson/CMS post
+  comments (the comment surface Tony actually uses — lesson post 2040,
+  session 2026-10-22) produced no work item and no real reply identity:
+  a manual REST comment landed status=hold waiting admin approval.
+  Deferred to a later card: status badges on pages, bbPress (kanban is
+  the single work list; comments are the front door).
+
+what_changed: |
+  - scripts/ada/wp-comment-sync.py — digest-bound comments (lesson, CMS
+    posts, cam/bench/render_job, unknown types) now get one chat-local
+    classification (WCS_BOARD_CLASSIFY, default on, model
+    WCS_BOARD_CLASSIFY_MODEL default chat-local):
+      actionable -> kanban card via board-api POST /card, id
+                    wpc-<comment_id> (dedupes re-polls; "already exists"
+                    counts as filed), column backlog, priority medium,
+                    spec carries post_id + comment_id + permalink + the
+                    loop-close contract. Ack replies "Filed ... card
+                    wpc-N".
+      question   -> focus-inbox entry via board-api POST /inbox
+                    (tags wp-comment/wp-question, owner devin) + local
+                    ~/.local/share/wp-comment-sync/questions/q-<cid>.yml
+                    record + digest line. Questions are conversation,
+                    not work orders — no card; an agent answers
+                    in-thread via /wp-comment.
+      discussion -> digest.jsonl only (class field recorded).
+    Comments authored by the devin/ada/chaba WP agent identities are
+    skipped outright (marked processed, never re-routed) — they ARE the
+    loop-close replies. In-thread acks now post as the 'chaba' agent
+    identity when wp-agent-users.env exists (WCS_AGENT_ENV override),
+    falling back to the shared app user.
+    Env: WCS_BOARD_API (default http://127.0.0.1:8787 loopback ->
+    board-api 'local' write identity), WCS_AGENT_ENV.
+  - scripts/board/board-api.py — new remote-write endpoint
+    POST /wp-comment {post|post_id, parent?, content|text,
+    as: devin|ada|chaba}: posts an in-thread WP comment under a REAL
+    agent identity. devin/ada callers may only post `as` themselves;
+    chaba/tony/loopback may use any configured identity. Payload sends
+    status:"approve" — an identity missing moderate_comments gets a 403
+    instead of a silent hold. wp_api() gained an `agent` kwarg that
+    swaps in the per-identity app password from
+    ~/.config/secrets/wp-agent-users.env (BOARD_API_WP_AGENT_ENV
+    override). Identities: WP_AGENT_IDENTITIES = {devin, ada, chaba}.
+  - integrations/wp-boards/chaba-boards.php v0.10.0 -> v0.11.0 —
+    registers the `chaba_agent` role on init (idempotent cap
+    convergence): read + read_private_posts + moderate_comments. No
+    post-edit, no unfiltered_html — agents comment, they don't author.
+    moderate_comments is what lets status:"approve" pass the REST
+    comments controller's cap check; read_private_posts lets agents
+    reply on private CPT posts (lesson/news are status=private).
+  - scripts/wp-boards/ensure-agent-users.py (new) — provisions the
+    devin/ada/chaba WP users + chaba_agent role + Application
+    Passwords, writes wp-agent-users.env (0600). Auth: wp-login cookie
+    + wp_rest nonce scraped off profile.php (the
+    boards-surf-thailand-com-wp-admin-credential file on tony-omen —
+    there is NO WP-CLI/SSH path to the h3 Plesk host), or
+    --admin-app-password Basic auth once an admin app password exists.
+    --check verifies identities; --rotate revokes+remints.
+  - scripts/ada/news-situation.py — transition comments now prefer the
+    'chaba' agent identity (real author, status=approve) with fallback
+    to the shared app user when wp-agent-users.env is absent.
+  - tests/board/test_board_api_wp_comment.py (new, 11 tests),
+    tests/ada/test_wp_comment_sync_board.py (new, 16 tests).
+
+loop_close: |
+  The contract the filing agent follows (also embedded in each auto
+  card's spec): action the comment, then
+    curl -X POST https://idc03.taila0626a.ts.net:10000/wp-comment \
+      -d '{"post":<post_id>,"parent":<comment_id>,
+           "content":"<result + card link>","as":"devin|ada",
+           "from":"<you>"}'
+  and record the returned comment_id in the card's comms via POST
+  /comment. wp-comment-sync skips agent-authored comments so the reply
+  never re-enters the front door.
+
+provisioning_runbook: |
+  ORDER MATTERS — the role must exist before users can carry it:
+  1. Deploy chaba-boards 0.11.0: zip integrations/wp-boards ->
+     scripts/wp-boards/deploy-plugin-zip.sh on tony-omen (wp-admin
+     upload; Tony gate per ssot.health.home.web.yml).
+  2. On tony-omen (holds the wp-admin credential):
+       python3 scripts/wp-boards/ensure-agent-users.py
+     writes ~/.config/secrets/wp-agent-users.env (0600).
+  3. Ship the env to the consumers:
+       scp ~/.config/secrets/wp-agent-users.env \
+         idc03:~/.config/secrets/wp-agent-users.env
+     (idc03 runs board-api.service + wp-comment-sync.timer +
+     news-situation; chmod 600).
+  4. Verify:
+       python3 scripts/wp-boards/ensure-agent-users.py --check
+     then a live probe: POST /wp-comment {post:<lesson id>, content:
+     "identity probe", as:"chaba", from:"tony"} -> comment_id +
+     status "approved", author shows "Chaba".
+  5. Unit env note: wp-comment-sync.timeout in ssot.jobs.yml stays 2m;
+     per-comment chat-local classify adds seconds per digest comment —
+     watch the first live cycles for TimeoutStartSec kills (a kill
+     loses the in-memory processed set; cards dedupe on wpc-<cid> so
+     re-runs converge, but acks can double-post).
+
+verify: |
+  - Unit: python3 -m unittest tests.ada.test_wp_comment_sync_board
+    tests.board.test_board_api_wp_comment (27 tests, no network).
+  - Live (post-provisioning): comment on a lesson/CMS post -> within one
+    15-min digest cycle a wpc-<cid> card appears in backlog (actionable)
+    or a q-<cid>.yml lands in the questions queue (question); the ack is
+    threaded under the comment authored by "Chaba", status approved —
+    no hold queue.
+
+deferred: |
+  Status badges on the page (state stays on kanban), bbPress/forums —
+  kanban is the single work list, comments are the front door. An
+  agent-side sweep that picks up wpc-* backlog cards and auto-answers
+  q-* questions is follow-up work, not this card.
