@@ -1,7 +1,7 @@
 id: ada-voice-fleet-jobs-verb
 title: 'ada-voice: wire fleet-jobs report verb — read rendered fleet-jobs-report CMS page (sub-second, never live-compute)'
-column: doing
-updated: 2026-11-26 21:29
+column: review
+updated: 2026-11-26 21:34
 priority: medium
 tags:
 - ada
@@ -18,10 +18,14 @@ spec: 'Implement a report-verb tool in ada-voice per docs/kb/ada-report-verb-con
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: done
   lane: devin
   attempts: 1
   runner: idc02
+  result: 'exit=0 port-verb-tool-i.md` — committed as `624ae55` on the dispatch branch, not pushed; card comms posted.
+    | devin-task-20261126-210303-implement-a-report-verb-tool-i.service: Consumed 2min 24.983s CPU time, 1.1G memory
+    peak, 0B memory swap peak.'
+  verified: true
 ref: ADA-0041
 comms:
 - at: 2026-11-20 20:10
@@ -212,5 +216,30 @@ comms:
     of <updated>"+producer-may-be-down, missing="hasn''t been generated"+card offer. focus=spend|timers|lanes|queue|hosts;
     parser handles both page generations; zero live paths (no aggregator/board-api/psql/ssh/systemctl). Gates: tool-lint
     clean (73 declared), schema-check 0 viol, pytes'
+- at: 2026-11-26 21:34
+  from: idc02
+  text: 'finished (ok): exit=0 port-verb-tool-i.md` — committed as `624ae55` on the dispatch branch, not pushed;
+    card comms posted. | devin-task'
+- at: 2026-11-26 21:34
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-26 21:34
+  from: chaba
+  text: banked 89 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 21:34
+  from: chaba
+  text: pushed dispatch/20261126-210303-implement-a-report-verb-tool-i to origin
+- at: 2026-11-26 21:34
+  from: chaba
+  text: test gate passed (/home/tony/CascadeProjects/ada-voice/.venv/bin/python -m pytest tests -k 'not slow' -x
+    -q, 225.3s)
+- at: 2026-11-26 21:34
+  from: chaba
+  text: auto-merged 27ee4162 (dispatch/20261126-210303-implement-a-report-verb-tool-i) → origin/main
+- at: 2026-11-26 21:34
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261126-210303-implement-a-report-verb-tool-i,
+    branch dispatch/20261126-210303-implement-a-report-verb-tool-i'
 claim:
   since: 2026-11-26 21:02
+review_kind: verify
