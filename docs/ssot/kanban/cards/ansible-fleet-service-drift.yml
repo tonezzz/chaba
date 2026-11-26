@@ -1,7 +1,7 @@
 id: ansible-fleet-service-drift
 title: 'Ansible audit: fleet service drift detected'
 column: backlog
-updated: 2026-11-26 18:52
+updated: 2026-11-26 20:38
 spec: 'Read-only ansible audit-fleet-services detected service/resource drift vs ssot.audit.hosts.yml. Hosts: con01,
   idc02, idc03, mn01, tony-dell, tony-omen. Report dir: reports/ansible-benchmark/services/. No remediation performed.'
 action:
@@ -90,3 +90,7 @@ comms:
     services: 7→6→7 hosts, idc03 31→33→31; runner tools: 7→6 hosts). Runner-tool details show genuine drift (runner-agent
     src=1514c75c4679 vs installed 8c28da6b4922 on con01/idc02) plus MISSING-DEST entries for claude-dispatch/devin-dispatch-prune/dispatch-queue/dispatch_repos.py
     on severa'
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
