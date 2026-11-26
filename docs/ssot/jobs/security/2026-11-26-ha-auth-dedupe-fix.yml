@@ -24,8 +24,11 @@ verification:
   - "Harness with a 500-key legacy state file: `load_state()` returned 0;
     run 1 reported `1 new ... (0 deduped)`, run 2 reported
     `0 new ... (1 deduped)`; state then held exactly 1 current-format key."
-  - "Live consumer proof: next ha-auth-watch.timer ticks after deploy
-    should report 0 new failures and no new focus-inbox entries."
+  - "Live consumer proof on tony-dell (master 05d31b6527, synced): ran the
+    exact service command twice. Run 1: `2 new ... (0 deduped)` and state
+    reseeded to 2 current keys. Run 2: `0 new ... (2 deduped)`. State file
+    now holds exactly those 2 keys, so the 14:33:40 scheduled tick and
+    later ones stay silent."
 rollback: >-
   Revert the single script file. The state file is rewritten on the next
   tick; keep a copy of ~/.local/state/chaba/ha-auth-watch.json if the old
