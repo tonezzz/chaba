@@ -1,0 +1,110 @@
+title: BigQuery usage ledger — dataset live, MERGE writer, backfill verified
+subtitle: >
+  chaba_usage dataset on gen-lang-client-0694401188 (asia-southeast1) with
+  sessions/daily_quota/eval_verdicts/model_audit; idempotent MERGE writer;
+  15 rows backfilled and verified.
+icon: chart
+version: 1
+
+card: bigquery-usage-ledger-writer  # OPS-1460
+date: 2026-11-26
+schema_doc: infra/bigquery-ledger-schema-2026-11-26.md
+ddl: scripts/bigquery/chaba_usage.ddl.sql
+writer: scripts/bigquery/ledger_write.py
+
+store:
+  project: gen-lang-client-0694401188
+  dataset: chaba_usage
+  location: asia-southeast1
+  owner: tony
+  created: 2026-11-26
+
+tables:
+  sessions:
+    rows: 9
+    key: session_id
+    purpose: per-session cost, tokens, PR outcome (devin_cloud | devin_dispatch | cli)
+  daily_quota:
+    rows: 1
+    key: [quota_date, source]
+    purpose: Devin allowance meter readings (console captures)
+  eval_verdicts:
+    rows: 0
+    key: [run_id, fixture_id, model]
+    purpose: model verdicts paired with deterministic verifier — empty until ADA-1458 produces verdicts
+  model_audit:
+    rows: 5
+    key: [host, checked_at]
+    purpose: which free model each dispatch host was pinned to per check
+
+decisions:
+  region: >
+    asia-southeast1 (schema default). No co-location needed — Chaba project
+    had 0 datasets and no other BigQuery analytics dataset to join; the
+    BigQuery-enabled analytics projects (flood-watch/noble-a/thakarn-web)
+    are unrelated workloads.
+  retention: >
+    partition_expiration_days kept at schema values — sessions/eval_verdicts
+    365d, daily_quota 730d, model_audit 180d — all >= local task-dir pruning
+    window so history cannot be lost.
+  ddl_deviations:
+    - >
+      schema doc's `ingested_at ... DEFAULT CURRENT_TIMESTAMP()` is not
+      valid BigQuery column-default syntax; applied DDL declares
+      `ingested_at TIMESTAMP NOT NULL` and the writer sets
+      CURRENT_TIMESTAMP() explicitly on INSERT and UPDATE.
+    - >
+      daily_quota partitions by the bare DATE column (`PARTITION BY
+      quota_date`), not DATE(quota_date) — DATE() is only for
+      TIMESTAMP/DATE truncation of temporal columns.
+  auth: >
+    BigQuery REST API + existing ADC on idc02 (gcloud auth
+    application-default print-access-token). No keys in repo/cards/comms.
+    maximumBytesBilled=256MiB on every query.
+  writer_semantics:
+    limit: "--limit N caps rows per table per run (default 1000), not a global total"
+    backfill: "all matching artifacts; dispatch+cloud+quota+audit+eval (no local_cli)"
+    daily: "newest artifact of each kind only; includes local_cli (cli:<id> namespaced, timestamped from sessions.db)"
+    merge_update: "IFNULL(S.col, T.col) — sparse sources never erase fields"
+  local_cli_note: >
+    cli rows carry only num_tokens (no prompt/cache/output split) → stored
+    in prompt_tokens with tag num_tokens_approx; cli: session_id prefix
+    avoids collision with dispatch session names.
+  gcp_quota_dump: >
+    vendored as context but emits no rows — GCP API quota (Gemini
+    requests/day), not the Devin allowance meter daily_quota tracks.
+  console_capture: >
+    4%→12% Devin meter reading was operator-read (not machine-readable on
+    Pro); recorded as infra/devin-usage-console-2026-11-26.{md,json}.
+
+verification:
+  row_counts: "sessions=9 daily_quota=1 eval_verdicts=0 model_audit=5"
+  duplicate_keys: "0 rows on all four tables (GROUP BY natural key HAVING COUNT(*)>1)"
+  cost_per_pr: "daily_quota 2026-11-26: verified_prs=2, delta=8.0pts, quota_points_per_pr=4.0"
+  provenance: "0 NULL source_artifact (sessions), 0 NULL dump_path (daily_quota)"
+  idempotency: "second --backfill --limit 10 → counts unchanged"
+  full_output: posted to card bigquery-usage-ledger-writer comms
+
+spec_discrepancy:
+  issue: >
+    card said "exactly 10 rows: 6 local + 2 cloud + 1 quota + 1 audit" but
+    verification expected sessions=9; the daily report actually has 7
+    dispatch sessions and 5 audit hosts — the spec math did not reconcile.
+  resolution: >
+    board request bq-backfill-counts → Tony chose all-rows: every artifact
+    row loaded (9 sessions, 1 quota, 5 audit = 15 rows); verification
+    counts are 9/1/0/5.
+
+followups:
+  - >
+    Billing budget alert on gen-lang-client-0694401188 REQUIRED before any
+    downstream scaling job (recorded in ssot.reports.yml data_stores).
+  - >
+    No scheduled --daily job installed (card: no auto-deploy). Candidate:
+    ride the devin-daily-usage report timer.
+  - >
+    eval_verdicts loader exists (rows_from_eval_verdicts, glob
+    **/*verdict*.json*) but untested against a real ADA-1458 artifact.
+  - >
+    Live script+DDL staged at idc02 ~/tony-projects/scripts/bigquery/
+    (host where ADC + infra artifacts live).
