@@ -1,0 +1,19 @@
+id: board-api-accept-loop-wedge-auto-restart-7dd2f1
+title: 'board-api accept-loop wedge: auto-restart on handler-thread stall (observed 2026-11-26 ~09:00-09:17Z on
+  idc03)'
+column: backlog
+updated: 2026-11-26 09:18
+tags:
+- board-api
+- idc03
+- reliability
+note: 'During lesson-polish dispatch 20261126-084458: chaba-board-api on idc03 stopped answering ALL requests for
+  ~20min (last 200 at 08:56:12Z, then only 503/504). Stack dump showed main thread deadlocked in Thread.start()->_started.wait()
+  (socketserver process_request) — no new handler threads could spawn; backlog=6 filled; every door (/cards /comment
+  /lesson /health) timed out. Lock watchdog fired LOCK-HOLD-ALERTs and dumped stacks but cannot recover a dead accept
+  thread. Manual `systemctl --user re'
+ref: KNB-1423
+comms:
+- at: 2026-11-26 09:18
+  from: devin
+  text: card captured via board-api

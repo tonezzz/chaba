@@ -1,7 +1,7 @@
 id: tony-macbook-daytime-runner
 title: tony-macbook as daytime-elastic dispatch runner
-column: doing
-updated: 2026-11-26 08:43
+column: review
+updated: 2026-11-26 09:18
 spec: 'Macbook (15G RAM) already has runner-agent.timer enabled + devin-dispatch-watch. If it stays awake during
   day at home: inhibit suspend during day hours (systemd-inhibit wrapper on lid-blank-watch or gnome power setting),
   then it serves as a second runner slot for dispatches/bench/media batch + LAN-fast backup target. offline_ok semantics
@@ -349,17 +349,46 @@ comms:
     self-heals via chaba-repo-sync — always sha256 both sides bef; tony-macbook has no pytest and no chaba .venv
     — chaba dispatch merges routed the; [runner-fleet-health-host-regex-gap] [triage] Live evidence 2026-11-25:
     health.f; [ssot-baseline-board-drift-race] merge-sweep: fetch tony-macb'
+- at: 2026-11-26 09:18
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261126-084311-macbook-15g-ram-already-has-ru.service:
+    Failed to ope'
+- at: 2026-11-26 09:18
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-26 09:18
+  from: chaba
+  text: banked 729 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 09:18
+  from: chaba
+  text: pushed dispatch/20261126-084311-macbook-15g-ram-already-has-ru to origin
+- at: 2026-11-26 09:18
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-26 09:18
+  from: chaba
+  text: auto-merged 2e206951 (dispatch/20261126-084311-macbook-15g-ram-already-has-ru) → origin/master
+- at: 2026-11-26 09:18
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261126-084311-macbook-15g-ram-already-has-ru,
+    branch dispatch/20261126-084311-macbook-15g-ram-already-has-ru'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   attempts: 2
-  result: 'exit=0 ull details in `dispatch-outcome-20261125-190949-macbook-15g-ram-already-has-ru.md`. | devin-task-20261125-190949-macbook-15g-ram-already-has-ru.service:
-    Consumed 5min 22.668s CPU time over 2h 1min 53.597s wall clock time, 1.7G memory peak.'
+  result: 'exit=0 ice: No such file or directory | devin-task-20261126-084311-macbook-15g-ram-already-has-ru.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261126-084311-macbook-15g-ram-already-has-ru.service:
+    No such file or directory'
   sweep:
     no_repo: 2026-11-25 21:24
   runner: idc02
+  verified: true
 claim:
   since: 2026-11-26 08:42
 requests:
