@@ -90,6 +90,10 @@ comms:
     offset 29630464 -> PM: Image not found code -22). Likely cause: /swap.img fragmented (22 extents) so resume_offset
     cannot locate image; prior Oct fix attempts failed. s2idle suspend verified working today. Staged scripts/ops/macbook-disable-hibernate.sh
     (also copied to macbook:~/). Needs Tony sudo — request raised.'
+- at: 2026-11-26 12:43
+  from: devin
+  text: 'raised request hibernate-fix-option: tony-macbook hibernate-resume diagnosed on-host: every suspend->hibernate
+    cycle cold-boots (''Unable to resume offset 296'
 action:
   type: dispatch
   status: running
@@ -99,3 +103,24 @@ action:
   attempts: 1
 claim:
   since: 2026-11-26 12:32
+requests:
+- id: hibernate-fix-option
+  ask: 'tony-macbook hibernate-resume diagnosed on-host: every suspend->hibernate cycle cold-boots (''Unable to
+    resume offset 29630464'' -> ''PM: Image not found (code -22)''). Likely root cause: /swap.img is fragmented
+    (22 extents) so the kernel cannot locate the image via resume_offset; your Oct fix-hibernate.sh attempts did
+    not converge. s2idle suspend verified working today. Applying the fix needs your sudo (no NOPASSWD path for
+    /etc). Recommended (a): ssh macbook && sudo bash ~/macbook-disable-hibernate.sh — already staged on-host; it
+    backs up + rewrites hibernate.conf HandleLidSwitch suspend-then-hibernate -> suspend and restarts logind (battery
+    lid-close becomes reliable s2idle suspend; AC lid-close stays ignored; revert = restore .bak + restart logind).
+    (b) debug resume properly: recreate /swap.img contiguously (dd), recompute resume_offset, update-grub + initramfs,
+    reboot, test-hibernate — multi-step sudo on the runner, may still hit Polaris11 amdgpu resume issues. (c) keep
+    suspend-then-hibernate and find another resume fix.'
+  status: open
+  at: 2026-11-26 12:43
+  from: devin
+  options:
+  - a — disable hibernate, run staged script now (recommended)
+  - 'b — debug resume: recreate swapfile contiguously + retest'
+  - c — keep suspend-then-hibernate, other approach
+  - hold — leave as-is
+  suggested: a — disable hibernate, run staged script now (recommended)
