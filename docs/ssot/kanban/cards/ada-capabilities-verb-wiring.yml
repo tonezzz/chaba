@@ -1,7 +1,7 @@
 id: ada-capabilities-verb-wiring
 title: 'ada-voice: wire the what-can-you-do verb — ada_capabilities drop-in reading the generated tools snapshot'
-column: doing
-updated: 2026-11-26 19:40
+column: review
+updated: 2026-11-26 19:49
 priority: medium
 tags:
 - ada
@@ -35,13 +35,14 @@ action:
   type: dispatch
   repo: ada-voice
   executor: devin
-  status: running
+  status: done
   attempts: 2
-  result: 'exit=0  are uncommitted in the worktree for the dispatcher to checkpoint — no push, no deploy. | devin-task-20261124-212337-repo-work-ada-voice-wire-the-a.service:
-    Consumed 2min 4.497s CPU time over 26min 41.180s wall clock time, 1.2G memory peak.'
+  result: 'exit=0 tch-outcome-20261126-192654-repo-work-ada-voice-wire-the-a.md`. | devin-task-20261126-192654-repo-work-ada-voice-wire-the-a.service:
+    Consumed 2min 39.972s CPU time over 13min 35.658s wall clock time, 2G memory peak, 370.2M memory swap peak.'
   sweep:
     merge_err: 2026-11-24 21:54
   runner: tony-dell
+  verified: false
 ref: ADA-0020
 comms:
 - at: 2026-11-23 07:40
@@ -305,6 +306,24 @@ comms:
     (host gate), not code. Gates green here: tool-lint clean (66 scenario-covered), scenario-schema 0 violations,
     pytest 2032 passed/4 skipped (py3.14 venv), live-fire on real chaba snapshot 3.7ms cold/0.7ms warm (<50ms),
     deploy-ada.sh step 2b ships backend/data/ada-tools-snapsho'
+- at: 2026-11-26 19:49
+  from: tony-dell
+  text: 'finished (ok): exit=0 tch-outcome-20261126-192654-repo-work-ada-voice-wire-the-a.md`. | devin-task-20261126-192654-repo-work-ada-voice-'
+- at: 2026-11-26 19:49
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-26 19:49
+  from: chaba
+  text: banked 88 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 19:49
+  from: chaba
+  text: pushed dispatch/20261126-192654-repo-work-ada-voice-wire-the-a to origin
+- at: 2026-11-26 19:49
+  from: chaba
+  text: 'test gate failed — merge held: tests/test_sync_ocb_bridge.py::test_refuses_dirty_tree_in_dry_run'
+- at: 2026-11-26 19:49
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/main'
 claim:
   since: 2026-11-26 19:25
 review_kind: verify
