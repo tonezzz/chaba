@@ -2,7 +2,7 @@ id: runner-agent-stale-answer-resume-churn-a-9f9ffe
 title: 'runner-agent stale-answer resume churn: answered job-input-* request auto-resumes every needs-input park
   forever'
 column: doing
-updated: 2026-11-27 02:40
+updated: 2026-11-27 02:56
 brief: runner-agent._request_answer() returns the answer of card request job-input-<cid> whenever status==answered
   — forever. The request is answered once (generic option echo) and _raise_input_request dedupes on the same request_id
   so it is never re-opened. Every _enter_awaiting park therefore instantly sees a stale answer and _job_answer_tick
@@ -77,6 +77,13 @@ comms:
     forever), _last_answer (resume writes stale answer into new taskdir answers.jsonl), _mddb_answer (answer/<cid>
     doc persists). Plan: per-park request_id job-input-<cid>-<epoch> stored in job_awaiting + freshness-gate the
     jsonl/mddb channels against job_awaiting.at'
+- at: 2026-11-27 02:56
+  from: devin
+  text: 'FIXED on dispatch/20261127-023321-bug-scripts-board-runner-agent (5df508399d1). All 3 stale channels fixed:
+    per-park request_id job-input-<cid>-<epoch> in job_awaiting.rid (fresh open ask every park + supersede sweep
+    of stale opens), _request_answer scoped to current rid, _last_answer/_mddb_answer freshness-gated vs job_awaiting.at
+    (300s skew grace). Tests: 22/22 lifecycle incl. new second-park-does-not-resume regression; 81 runner-agent
+    suite green. Trail: docs/ssot/jobs/devnest/2026-11-27-runn'
 action:
   type: dispatch
   status: running
