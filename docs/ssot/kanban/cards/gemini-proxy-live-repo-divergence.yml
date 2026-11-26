@@ -1,0 +1,32 @@
+id: gemini-proxy-live-repo-divergence
+title: 'gemini-ollama-proxy: reconcile live idc03 variant with repo (uncommitted free-key ring + embed gateway)'
+column: backlog
+updated: 2026-11-26 23:29
+priority: medium
+tags:
+- mddb
+- embedding
+- resilience
+- drift
+spec: 'Reconcile the two proxy variants. Repo master scripts/mddb/gemini-ollama-proxy.mjs (sha256 d58adf9b59ce608b7db0e681671d16b51370e1086c76cd7038d4e05cd52a1fda)
+  has: paid leg + caps (verified), free-lane hourly/bulk budgets, bulk lane markers, single free key + circuit.
+  Live idc03 file has: paid leg + caps (verified live env PAID_GEMINI_DAILY_CAP=2000, PAID_GEMINI_HOURLY_CAP=150),
+  free-key ring (~6 effective keys = ~6x free quota), LiteLLM gateway leg — but no budgets. The ansible-regenerated
+  quadlet (~/.config/containers/systemd/gemini-ollama-proxy.container, generated 2026-11-26T02:17Z, managed-by=ansible)
+  now mounts the REPO file at /app/proxy.mjs — so the NEXT gemini-ollama-proxy.service restart silently swaps live->repo
+  code: loses the free-key ring (~6x free daily quota -> more paid spend, still capped) and the gateway leg; gains
+  the budgets. Options: (a) commit the live variant''s ring+gateway work into repo master on top of budgets, redeploy
+  from repo; (b) port budgets into the live variant and commit that; (c) accept repo version as canonical and document
+  the quota loss. DO NOT restart the unit until decided — restart triggers the swap. Probe harness used for verification:
+  dispatch worktree .dispatch-scratch/probe-paid-leg.mjs + fetch-intercept.mjs (node --import fetch rewrite of generativelanguage.googleapis.com
+  -> local mock; live file hardcodes the API base, no GEMINI_API_BASE env).'
+note: 'Found during gemini-proxy-paid-last-resort-leg verify (2026-11-26). The RUNNING proxy on idc03 (~/.config/containers/mddb/proxy/gemini-ollama-proxy.mjs,
+  sha256 a8c3df805614b191009bb2990a72922734d248d66c470e9a4e6f481b8bb275ba, deployed 2026-11-25 19:15, container
+  Up since then) runs a variant that exists NOWHERE in git: free-key ring (GEMINI_API_KEY + GEMINI_FREE_KEYS_01..10
+  env, per-key circuit breakers, health free_keys:6) + LiteLLM embed-gateway leg (EMBED_GATEWAY_BASE/LITELLM_KEY
+  -> litellm:e'
+ref: MEM-1464
+comms:
+- at: 2026-11-26 23:29
+  from: devin
+  text: card captured via board-api
