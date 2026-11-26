@@ -1,7 +1,7 @@
 id: ansible-disk-headroom-alert
 title: 'Ansible audit: disk headroom alert'
 column: done
-updated: 2026-11-26 19:37
+updated: 2026-11-26 20:12
 spec: 'Read-only ansible disk-headroom detected CRIT/warn/unreachable mounts. Hosts: tony-dell. Report dir: reports/ansible-benchmark/disk/.
   No remediation performed.'
 action:
@@ -51,3 +51,10 @@ comms:
 - at: 2026-11-26 19:37
   from: tony
   text: closed by tony
+- at: 2026-11-26 20:12
+  from: tony
+  text: '[follow-up 20:10 +07] The no-store fix is now durable in git: committed as a3790c494a ("web: no-store on
+    board routes to stop PWA cache growth") from a role=branch worktree chaba-wt-caddy-no-store and pushed to origin/master
+    (57e24d03ef..a3790c494a). Live tony-dell header remains `cache-control: no-store`; root still 64% used / 76G
+    free. The tony-dell served checkout keeps its local copy of the same edit plus its host-local or-panel route;
+    a future pull there may conflict on that file — reconcil'
