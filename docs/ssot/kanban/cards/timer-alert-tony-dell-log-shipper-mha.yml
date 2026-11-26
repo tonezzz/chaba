@@ -1,14 +1,14 @@
 id: timer-alert-tony-dell-log-shipper-mha
 title: Timer log-shipper-mha on tony-dell failing
 column: backlog
-updated: 2026-11-26 03:57
+updated: 2026-11-26 09:21
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-26 01:39) of `log-shipper-mha.service` on `tony-dell` result=exit-code — investigate
-  journal: `journalctl --user -u log-shipper-mha.service` on the host. See CMS `timer-timeline-tony-dell`.'
+note: 'Last run (11-26 01:39) of `log-shipper-mha.service` on `tony-dell` result=exit-code — investigate journal:
+  `journalctl --user -u log-shipper-mha.service` on the host. See CMS `timer-timeline-tony-dell`.'
 ref: OPS-1412
 comms:
 - at: 2026-11-26 01:54
@@ -49,7 +49,12 @@ comms:
 - at: 2026-11-26 07:23
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
-spec: Investigate the failure of the `log-shipper-mha.service` timer on the host `tony-dell` by inspecting
-  the user journal using `journalctl --user -u log-shipper-mha.service`. The target host is `tony-dell`
-  and the associated repository context references `chaba`. The done-condition is verified when the root
-  cause of the exit-code failure is identified from the journal logs and documented on the card.
+- at: 2026-11-26 09:21
+  from: devin
+  text: '2026-11-26 verified fix: mddb-ops :11026 HTTP write timeout raised 30s->120s (writes observed 32-79s);
+    log-shipper BATCH 10->5; unit TimeoutStartSec->45m fleet-wide. Runner-agent drift cleared (all 6 hosts pinned
+    1514c75c...). Re-run Result=success/0 for log-shipper-mha.'
+spec: Investigate the failure of the `log-shipper-mha.service` timer on the host `tony-dell` by inspecting the user
+  journal using `journalctl --user -u log-shipper-mha.service`. The target host is `tony-dell` and the associated
+  repository context references `chaba`. The done-condition is verified when the root cause of the exit-code failure
+  is identified from the journal logs and documented on the card.
