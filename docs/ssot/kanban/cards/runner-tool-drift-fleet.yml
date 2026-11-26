@@ -1,7 +1,7 @@
 id: runner-tool-drift-fleet
 title: Runner tool drift from audit-runner-tools.yml — re-arm convergence
-column: doing
-updated: 2026-11-26 12:35
+column: done
+updated: 2026-11-26 12:51
 brief: Runner tool drift from audit-runner-tools.yml — re-arm convergence
 priority: high
 program: chaba-ci
@@ -74,9 +74,15 @@ comms:
   from: devin
   text: 'dispatch started on tony-macbook: manifest pins verified against worktree sources (6/6 match); running
     deploy-runner-tools.yml --check next'
+- at: 2026-11-26 12:51
+  from: devin
+  text: 're-audit clean: no DRIFT / MISSING-DEST in audit-after.txt'
+- at: 2026-11-26 12:51
+  from: devin
+  text: closed by devin
 action:
   type: dispatch
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   runner: tony-macbook
