@@ -1,0 +1,56 @@
+title: Wiki education — Gemini developer capabilities beyond the 3.8 Live pin
+subtitle: >
+  Live catalog and Decisions API probe, official Gemini skill and docs
+  research, then one card-gated /publish to the wiki-education sink.
+icon: education
+version: 1
+
+card: gemini-dev-capabilities-research-2026-11-26  # ADA-1440
+date: 2026-11-26
+source_session: "2026-11-26 session history — answer the 3.8-version and advanced-feature status questions"
+
+delivered:
+  kb:
+    file: docs/kb/gemini-developer-capabilities-2026-11-26.md
+    type: education
+    role: "pointer-first record; catalog table, verified probe, recommendations, evidence"
+  wiki:
+    title: Education:Gemini-Developer-Capabilities-2026-11-26
+    pageid: 368
+    revid: 792
+    event_id: gemini-dev-capabilities-2026-11-26
+    idempotency_key: pub-191728ddbca5376b7604b6b0
+    topic: gemini-developer-capabilities
+    level: working
+    next_review: 2026-12-10
+    visibility: private
+    slug: lesson-34d534c1f525
+  findings:
+    - "v1beta catalog has 65 models: gemini-3.8-flash + flash-tts/flash-lite-tts, gemini-3.8-live-extended-thinking, gemini-4-argon/carbon/hydrogen/neon, gemini-omni 1.1/1.2, gemini-decision-1"
+    - "gemini-decision-1 probe returned noul confidence 0.9703 with 96 input / 0 output tokens"
+    - "unexplored surfaces: Interactions API (previous_interaction_id, v1), Decisions API (v1beta), Managed Agents (v1beta), official gemini-api-dev skill, thinking_level, structured output, caching/batch, TTS, computer-use acknowledgement"
+    - "no existing wiki lesson covered these surfaces before this publish (230 lessons listed, filtered)"
+
+guardrails:
+  - "No billing, key, gateway, or model-pin changes."
+  - "gemini-3.8-live stays pinned for rview-live and the default Live runtime."
+  - "OpenRouter/Ollama remain real failover."
+  - "No secrets, key names, project IDs, or topology in the KB doc or wiki page."
+  - "Wiki write went through board-api /publish sinks=['wiki-education']; no direct MediaWiki call."
+
+activation_gate:
+  - "DONE 2026-11-26: card ADA-1440 (gemini-dev-capabilities-research-2026-11-26) created in backlog via board-api."
+  - "DONE 2026-11-26: live catalog probe and Decisions API probe completed read-only."
+  - "DONE 2026-11-26: user explicitly authorized publication (answer to the scope question)."
+  - "DONE 2026-11-26: POST /publish kind=lesson, meta format=wikitext + wiki_title/topic/level/source/learned_at/next_review/status, sinks=['wiki-education'] -> delivered, pageid 368 revid 792."
+
+verify:
+  - "DONE 2026-11-26: POST /lesson {op:get, source=wiki, topic=gemini-developer-capabilities} -> ok, slug lesson-34d534c1f525, Education:Gemini-Developer-Capabilities-2026-11-26, full body present."
+  - "DONE 2026-11-26: key/billing/gateway/model-pin files untouched; only the KB doc and this job yml added to git."
+  - "DONE 2026-11-26: card ADA-1440 closed via board-api /action."
+
+remaining:
+  - "Evaluate gemini-3.8-live-extended-thinking on the same 20-fixture voice bench before any Live pin change."
+  - "Scope an eval of gemini-decision-1 as a cheap triage/rubric gate."
+  - "Trial the official gemini-api-dev skill in a Gemini API coding task."
+  - "Re-check the catalog before reusing any model ID; this page is a dated snapshot."
