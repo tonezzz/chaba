@@ -1,7 +1,7 @@
 id: ansible-runner-tools-drift
 title: 'Ansible audit: runner tool drift detected'
 column: backlog
-updated: 2026-11-26 20:10
+updated: 2026-11-26 20:38
 spec: Read-only ansible audit-runner-tools detected drift/missing runner tools. Re-run playbooks/audit-runner-tools.yml;
   inspect reports or stdout; converge via approved sync flow.
 action:
@@ -74,3 +74,7 @@ comms:
     next 2026-11-27 04:24, service exited 0. It found 0 candidates at 04:22 for the same reason the manual sweep
     did — the bulk "installed runner-agent drifted" comment sweep rewrote `updated` on hundreds of done cards, so
     the >7d gate is starved. No timer install is needed. The real fo'
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
