@@ -1,7 +1,7 @@
 id: dispatch-queue-approval-gate
 title: Dispatch queue approval gate (RBAC-lite) — /home/tony/ansible on idc02
 column: doing
-updated: 2026-11-26 12:34
+updated: 2026-11-26 12:39
 priority: medium
 tags:
 - dispatch
@@ -108,6 +108,11 @@ comms:
     primer injected 8 lesson(s): Prior attempt''s work was; [runner-fleet-health-host-regex-gap] [verify] VERIFY-QUEUE
     triage 2026-11-26 (To; "Only kraut/tony have a gate" understated it: the gate was an untracked ad-hoc d; dispatch-outcome
     docs live at worktree/repo ROOT, not docs/ss'
+- at: 2026-11-26 12:39
+  from: devin
+  text: 'started on tony-macbook: pulled /home/tony/ansible queue+playbooks via sftp (idc02 ssh is sftp-only, no
+    exec). Implementing approval gate locally, will test against live Redis, upload via sftp. git init+remote on
+    idc02 not possible without exec — will document.'
 action:
   type: dispatch
   status: running
