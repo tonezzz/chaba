@@ -1,7 +1,7 @@
 id: ada-smoke-scenario-expectation-rot-fixes
 title: 'Smoke scenarios: fix expectation rot (4 yamls) + scenario-live cleanup MDDB plane bug'
-column: doing
-updated: 2026-11-26 22:24
+column: review
+updated: 2026-11-26 22:25
 priority: medium
 tags:
 - ada
@@ -100,15 +100,26 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261126-220949-follow-up-to-ada-smoke-regress no longer active on con01 but card
     still says running — sweeping its branch'
+- at: 2026-11-26 22:25
+  from: chaba
+  text: 'merge-sweep: merged 98d8ac7d (dispatch/20261126-220949-follow-up-to-ada-smoke-regress from con01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261126-220949-follow-up-to-ada-smoke-regress.md)
+    — held in review (open request(s) [''ok-to-delete-the-stray-public-''] block close)'
+- at: 2026-11-26 22:25
+  from: local
+  text: 'pub milestone: card verified: ada-smoke-scenario-expectation-rot-fixes on idc03 — merged 98d8ac7d (dispatch/20261126-220949-follow-up-to-ada-smoke-regress
+    from con01) -> origin/master — verified — held — merged 98d8ac7d (dispatch/20261126-220949-follow-up-to-ada-smoke-regress
+    from con01) -> origin/master — verified — held in review (open request(s) [''ok-to-delet [evt-d018b5e6cfd1735f]'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   runner: con01
   attempts: 1
   sweep:
     stale_running: 2026-11-26 22:24
+  verified: true
 claim:
   since: 2026-11-26 22:08
 requests:
