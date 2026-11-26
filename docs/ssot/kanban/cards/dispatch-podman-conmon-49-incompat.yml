@@ -1,7 +1,7 @@
 id: dispatch-podman-conmon-49-incompat
 title: Dispatch fails on podman 4.9.3 hosts — conmon rejects --log-tag (con01/idc02/idc03)
 column: doing
-updated: 2026-11-26 13:03
+updated: 2026-11-26 13:11
 priority: high
 tags:
 - dispatch
@@ -56,6 +56,11 @@ comms:
     was a linked unit running a stale scripts/-only ; [ops-retry-storm-detection] DONE: retry-storm-watch delivered
     repo-side. scripts; Dispatch task dirs accumulate forever on hosts without devin-cleanup.timer — onl; Duplicate
     systemd units survive job migrations: ssot.jobs.yml'
+- at: 2026-11-26 13:11
+  from: devin
+  text: 'Investigating. Reproduced on idc02: podman 4.9.3 + conmon 2.1.10, containers.conf sets log_driver=k8s-file
+    AND log_tag — conmon 2.1.10 k8s-file rejects --log-tag. Verified fixes: --log-driver=journald works; removing
+    log_tag line makes k8s-file work. omen/dell fine (conmon 2.1.13). Applying minimal fix: drop log_tag on con01/idc02/idc03.'
 action:
   type: dispatch
   status: running
