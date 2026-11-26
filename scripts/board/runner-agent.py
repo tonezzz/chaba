@@ -2758,9 +2758,55 @@ def job_ledger_write(job_id: str, status: str, question: str = "",
         return False
 
 
-def _last_answer(ent: dict) -> str:
+# Cross-host clock-skew allowance for answer freshness: an answer stamped
+# slightly before job_awaiting.at still counts (NTP skew between the
+# runner host and board-api/MDDB writers). Stale answers are never this
+# close — they predate a whole task run.
+ANSWER_FRESH_GRACE_S = 300
+
+
+def _parse_ts(value) -> float | None:
+    """epoch seconds from an ISO-8601 string, numeric epoch, or numeric
+    string; None when unparseable."""
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    s = str(value).strip()
+    if not s:
+        return None
+    try:
+        return float(s)
+    except ValueError:
+        pass
+    try:
+        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.timestamp()
+
+
+def _answer_is_fresh(ts_value, since_iso: str) -> bool:
+    """True when the answer's timestamp parses and is not older than the
+    park it claims to resolve. An unparseable park `since` disables the
+    gate (legacy/corrupt state — keep the old behavior); an unparseable
+    answer timestamp fails closed so an undated stale line can never
+    resume a job."""
+    park = _parse_ts(since_iso)
+    if park is None:
+        return True
+    ans = _parse_ts(ts_value)
+    return ans is not None and ans > park - ANSWER_FRESH_GRACE_S
+
+
+def _last_answer(ent: dict, since: str = "") -> str:
     """Newest authoritative answer delivered by board-api /respond to
-    the task dir (kind:answer wins over review kind:comment lines)."""
+    the task dir (kind:answer wins over review kind:comment lines).
+    `since` is the job_awaiting.at park stamp — answers recorded before
+    it (e.g. the line _job_answer_tick carries into each resumed task
+    dir) are stale and must not re-resolve the next park."""
     try:
         lines = (_job_taskdir(ent) / "answers.jsonl").read_text(
             errors="replace").splitlines()
@@ -2771,19 +2817,27 @@ def _last_answer(ent: dict) -> str:
             row = json.loads(raw)
         except json.JSONDecodeError:
             continue
-        if row.get("kind") == "answer" and \
-                str(row.get("answer") or "").strip():
-            return str(row["answer"]).strip()[:1000]
+        if row.get("kind") != "answer":
+            continue
+        answer = str(row.get("answer") or "").strip()
+        if not answer:
+            continue
+        if not _answer_is_fresh(row.get("at"), since):
+            continue
+        return answer[:1000]
     return ""
 
 
-def _request_answer(card: dict, cid: str) -> str:
+def _request_answer(card: dict, cid: str, rid: str = "") -> str:
     """Answer recorded on the board request we raised. Runner claims
     don't carry action.task_id, so board-api's answers.jsonl delivery
     can't reach these task dirs — the card's own requests[] is the
-    authoritative board-side channel."""
+    authoritative board-side channel. `rid` is the per-park request id
+    stored in job_awaiting; without it (legacy parks) fall back to the
+    original stable id job-input-<cid>."""
+    want = rid or f"job-input-{cid}"
     for r in card.get("requests") or []:
-        if not isinstance(r, dict) or r.get("id") != f"job-input-{cid}":
+        if not isinstance(r, dict) or r.get("id") != want:
             continue
         if r.get("status") == "answered":
             answer = str(r.get("answer") or "").strip()
@@ -2792,10 +2846,30 @@ def _request_answer(card: dict, cid: str) -> str:
     return ""
 
 
-def _mddb_answer(cid: str) -> str:
+def _mddb_answer_ts(doc: dict, txt: str):
+    """Best answer-time candidate from an answer/<id> doc: meta.ts (the
+    writer's stamp), then updatedAt epoch, then the (<ts>) embedded in
+    the contentMd header."""
+    meta = doc.get("meta") or {}
+    ts = meta.get("ts")
+    if isinstance(ts, list) and ts:
+        ts = ts[0]
+    if _parse_ts(ts) is not None:
+        return ts
+    if _parse_ts(doc.get("updatedAt")) is not None:
+        return doc.get("updatedAt")
+    m = re.search(r"\(([^()\n]{10,40})\)\s*:", txt)
+    if m and _parse_ts(m.group(1)) is not None:
+        return m.group(1)
+    return None
+
+
+def _mddb_answer(cid: str, since: str = "") -> str:
     """Ada voice answers (devin_answer) land as answer/<id> in the same
     bank; they never touch the board request. Read the doc by key so the
-    voice channel works without a task_id/answers.jsonl path."""
+    voice channel works without a task_id/answers.jsonl path. `since` is
+    the job_awaiting.at park stamp — the doc is upserted per answer, so
+    an old voice reply must not resolve a later park."""
     if not JOB_LIFECYCLE_ON:
         return ""
     try:
@@ -2810,20 +2884,30 @@ def _mddb_answer(cid: str) -> str:
         txt = str((doc or {}).get("contentMd") or "")
         # devin_answer writes "Answer for job <id> (<ts>):\n\n<message>"
         answer = txt.partition(":\n\n")[2].strip()
+        if not answer:
+            return ""
+        if not _answer_is_fresh(_mddb_answer_ts(doc or {}, txt), since):
+            return ""
         return answer[:1000]
     except Exception:
         return ""
 
 
-def _raise_input_request(cid: str, question: str) -> None:
+def _raise_input_request(cid: str, question: str, rid: str) -> None:
     """Ask on the card so the normal answer path (board /respond, or a
     voice reply written into the requests[] entry) reaches the blocked
-    task. Stable request id dedupes re-observation; a duplicate reply is
-    expected and ignored."""
+    task. The request id is per-park (job-input-<cid>-<epoch>): a stable
+    id deduped against the already-answered entry, so a NEW question
+    never got an open request and the OLD answer kept resolving every
+    later park (the stale-answer resume churn). Still-open requests
+    from earlier parks are superseded after the raise so the board
+    shows exactly one live ask per blocked job."""
+    prefix = f"job-input-{cid}"
+    raised = False
     try:
         resp = api("/request", {
             "id": cid, "from": "chaba",
-            "request_id": f"job-input-{cid}",
+            "request_id": rid,
             "ask": f"Job needs your input: {question}",
             "options": [
                 {"id": "answer", "label": "Answer — reply in chat",
@@ -2833,8 +2917,27 @@ def _raise_input_request(cid: str, question: str) -> None:
         err = str((resp or {}).get("error") or "")
         if err and "duplicate" not in err.lower():
             print(f"{cid}: board input request failed: {err}")
+        else:
+            raised = True
     except Exception as e:
         print(f"{cid}: board input request failed: {e}")
+    if not raised:
+        return
+    try:
+        card = (api(f"/card/{cid}") or {}).get("card") or {}
+        for r in card.get("requests") or []:
+            if not isinstance(r, dict):
+                continue
+            old = str(r.get("id") or "")
+            if old == rid or r.get("status") in ("answered", "closed"):
+                continue
+            if old != prefix and not old.startswith(prefix + "-"):
+                continue
+            api("/respond", {"id": cid, "from": "chaba",
+                             "request_id": old,
+                             "answer": "superseded — newer needs-input"})
+    except Exception as e:
+        print(f"{cid}: stale job-input sweep failed: {e}")
 
 
 def _enter_awaiting(cid: str, ent: dict, question: str,
@@ -2842,12 +2945,14 @@ def _enter_awaiting(cid: str, ent: dict, question: str,
     """Park a finished task on Tony. Deliberately does NOT post
     /action finish — do_finish(ok=False) burns retries and auto-requeues,
     and a blocked job is not a failed job."""
+    rid = f"job-input-{cid}-{int(time.time())}"
     ent["job_awaiting"] = {
         "question": question,
         "at": datetime.now(timezone.utc).isoformat(),
+        "rid": rid,
         "tid": ent.get("tid") or "", "unit": ent.get("unit") or ""}
     job_ledger_write(cid, "awaiting-user", question=question, detail=detail)
-    _raise_input_request(cid, question)
+    _raise_input_request(cid, question, rid)
     api("/comment", {"id": cid, "from": "chaba",
                      "text": f"needs input: {question}",
                      "awaiting_action": True})
@@ -2863,9 +2968,13 @@ def _job_answer_tick(cid: str, ent: dict, cards_get) -> bool:
     card = cards_get().get(cid) or {}
     # Three answer channels, in authority order: a live answers.jsonl
     # (if a task_id was stamped), the board request we raised, or Ada's
-    # voice-written MDDB answer doc.
-    answer = (_last_answer(ent) or _request_answer(card, cid)
-              or _mddb_answer(cid))
+    # voice-written MDDB answer doc. All three are freshness-gated
+    # against the park stamp — an answer recorded before this park
+    # resolved an earlier question and must not resume this one.
+    since = str(aw.get("at") or "")
+    answer = (_last_answer(ent, since)
+              or _request_answer(card, cid, str(aw.get("rid") or ""))
+              or _mddb_answer(cid, since))
     if not answer:
         return False
     job_ledger_write(cid, "answered", question=aw.get("question", ""),
