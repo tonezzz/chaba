@@ -1,0 +1,59 @@
+---
+# deploy-devin-desktop-gpu-off.yml — pin Devin Desktop to software rendering.
+#
+# Why: on 2026-11-26 tony-dell, devin-desktop 3.14.30833 launched, wrote a
+# fresh crash dump and died ~10s later on every attempt (watchdog restarts
+# included). Relaunching with --disable-gpu stayed healthy for minutes with
+# windows on :20 and the correct singleton socket. This build reads argv.json
+# (mainImpl.js: Rae/xae); the supported key is "disable-hardware-acceleration",
+# which calls app.disableHardwareAcceleration() — NOT "disable-gpu" (ignored).
+# The pin covers desktop/CLI/watchdog launches alike.
+#
+# Usage:
+#   ansible-playbook playbooks/deploy-devin-desktop-gpu-off.yml --check --diff --limit tony-dell
+#   ansible-playbook playbooks/deploy-devin-desktop-gpu-off.yml --limit tony-dell
+#
+# No handler: takes effect on the NEXT launch; a healthy running instance is
+# not restarted. Existing argv.json is backed up before replacement.
+
+- name: Pin Devin Desktop GPU setting on selected hosts
+  hosts: all:!macos:!disabled
+  gather_facts: true
+  become: false
+
+  tasks:
+    - name: Ensure Devin config directory exists
+      ansible.builtin.file:
+        path: "{{ ansible_facts['user_dir'] }}/.config/Devin"
+        state: directory
+
+    - name: Install argv.json with software-rendering pin
+      ansible.builtin.copy:
+        content: |
+          {
+            "disable-hardware-acceleration": true
+          }
+        dest: "{{ ansible_facts['user_dir'] }}/.config/Devin/argv.json"
+        mode: "0644"
+        backup: true
+      register: argv
+
+    - name: Read back argv.json
+      ansible.builtin.slurp:
+        src: "{{ ansible_facts['user_dir'] }}/.config/Devin/argv.json"
+      register: argv_check
+      when: not ansible_check_mode
+
+    - name: Assert software-rendering pin is present
+      ansible.builtin.assert:
+        that:
+          - (argv_check.content | b64decode | from_json)['disable-hardware-acceleration'] == true
+        fail_msg: "{{ inventory_hostname }}: argv.json does not carry disable-hardware-acceleration=true"
+      when: not ansible_check_mode
+
+    - name: Report convergence
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }}:
+          {{ 'UPDATED' if (argv.changed | default(false)) else 'in-sync' }}
+          (backup {{ argv.backup_file | default('none') }})
