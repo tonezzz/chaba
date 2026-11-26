@@ -726,6 +726,39 @@ async function validateCaddyProxyConfig() {
 }
 
 // HTTP health check
+const LOCAL_SSH_HOSTS = ["tony_dell", "tony-dell", "localhost"];
+
+function isLocalHealthHost(host) {
+  return !host || LOCAL_SSH_HOSTS.includes(host);
+}
+
+// Run a shell command on a (possibly remote) health-check host. Local hosts
+// run the command directly; remote hosts go over ssh. A direct tailnet
+// connection is tried first so a stale or policy-broken ProxyJump in
+// ~/.ssh/config cannot wedge every remote check, then the operator's ssh
+// config is used as fallback.
+async function execOnHealthHost(host, cmd) {
+  const { execSync } = await import("child_process");
+  const opts = { encoding: "utf8", stdio: "pipe" };
+  if (isLocalHealthHost(host)) {
+    return execSync(cmd, opts);
+  }
+  const target = String(host).replace(/_/g, "-");
+  const base = "ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=5";
+  let lastError;
+  for (const prefix of [
+    `${base} -o ProxyJump=none -o ProxyCommand=none ${target} `,
+    `${base} ${target} `,
+  ]) {
+    try {
+      return execSync(`${prefix}${cmd}`, opts);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError;
+}
+
 async function checkHTTPService(service) {
   const { execSync } = await import("child_process");
   const startTime = Date.now();
@@ -794,42 +827,16 @@ async function checkContainerService(service) {
     // Try docker ps first (does not depend on a compose project)
     let output = "";
     try {
-      if (remoteHost && !["tony_dell", "tony-dell", "localhost"].includes(remoteHost)) {
-        output = execSync(
-          `ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=5 ${remoteHost} podman ps -a --filter "name=${service.container}" --format "table {{.Names}}\\t{{.Status}}"`,
-          {
-            encoding: "utf8",
-            stdio: "pipe",
-          }
-        );
-      } else {
-        output = execSync(
-          `podman ps -a --filter "name=${service.container}" --format "table {{.Names}}\\t{{.Status}}"`,
-          {
-            encoding: "utf8",
-            stdio: "pipe",
-          }
-        );
-      }
+      output = await execOnHealthHost(
+        remoteHost,
+        `podman ps -a --filter "name=${service.container}" --format "table {{.Names}}\\t{{.Status}}"`
+      );
     } catch {}
 
     // Fallback to docker compose ps if docker ps found nothing
     if (!output.trim() || !output.includes("Up")) {
       try {
-        if (remoteHost && !["tony_dell", "tony-dell", "localhost"].includes(remoteHost)) {
-          output = execSync(
-            `ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=5 ${remoteHost} podman ps -a | grep ${service.container}`,
-            {
-              encoding: "utf8",
-              stdio: "pipe",
-            }
-          );
-        } else {
-          output = execSync(`podman ps -a | grep ${service.container}`, {
-            encoding: "utf8",
-            stdio: "pipe",
-          });
-        }
+        output = await execOnHealthHost(remoteHost, `podman ps -a | grep ${service.container}`);
       } catch {}
     }
 
@@ -944,25 +951,14 @@ async function checkContainerService(service) {
 
 // Systemd health check
 async function checkSystemService(service) {
-  const { execSync } = await import("child_process");
   const startTime = Date.now();
   const expectedState = service.expected_state || "active";
   const systemctlCmd = service.scope === "system" ? "systemctl" : "systemctl --user";
 
-  // Run remote systemctl via SSH for non-local hosts
-  const localHosts = ["tony_dell", "tony-dell", "localhost"];
-  const sshPrefix =
-    service.host && !localHosts.includes(service.host)
-      ? `ssh -o StrictHostKeyChecking=no -o BatchMode=yes ${service.host.replace(/_/g, "-")} `
-      : "";
-
   try {
-    const output = execSync(
-      `${sshPrefix}${systemctlCmd} show ${service.service} --property=ActiveState --property=SubState`,
-      {
-        encoding: "utf8",
-        stdio: "pipe",
-      }
+    const output = await execOnHealthHost(
+      service.host,
+      `${systemctlCmd} show ${service.service} --property=ActiveState --property=SubState`
     );
     const responseTime = Date.now() - startTime;
 
@@ -974,14 +970,14 @@ async function checkSystemService(service) {
     // Check if this is a timer service
     let isTimer = false;
     try {
-      const serviceType = execSync(
-        `${sshPrefix}${systemctlCmd} show ${service.service} --property=Type --value`,
-        { encoding: "utf8" }
+      const serviceType = await execOnHealthHost(
+        service.host,
+        `${systemctlCmd} show ${service.service} --property=Type --value`
       );
       isTimer = serviceType.trim() === "oneshot" || serviceType.trim() === "simple";
-      const unitFile = execSync(
-        `${sshPrefix}${systemctlCmd} show ${service.service} --property=Id --value`,
-        { encoding: "utf8" }
+      const unitFile = await execOnHealthHost(
+        service.host,
+        `${systemctlCmd} show ${service.service} --property=Id --value`
       );
       isTimer = isTimer || unitFile.trim().includes(".timer");
     } catch {
@@ -2225,14 +2221,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           throw new Error(`Service ${args.service_name} not found in configuration`);
         }
 
-        // Get current health status
+        // Get current health status — stored rows use the resolved service
+        // name (service.name || service.id), which may differ in case from
+        // the requested id (e.g. "postgres" vs "Postgres").
         const stmt = db.prepare(`
-          SELECT * FROM health_checks 
-          WHERE service_name = ? 
-          ORDER BY timestamp DESC 
+          SELECT * FROM health_checks
+          WHERE service_name = ?
+          ORDER BY timestamp DESC
           LIMIT 1
         `);
-        const lastCheck = await stmt.get(args.service_name);
+        const lastCheck = await stmt.get(service.name || service.id);
 
         // Use the resolved URL from config (after profile substitution)
         // The service.url should already be resolved by loadHealthConfig

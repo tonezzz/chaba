@@ -1,0 +1,83 @@
+icon: heart-pulse
+date: 2026-11-26
+card: health-monitor-config-playlived-postgres
+context: >-
+  quick_health reported 6/8 with Playlived (tony-dell) and Postgres FAIL.
+  Investigation showed the card's premise was partly wrong: the mcp-health
+  MCP server is spawned per-session via `ssh tony-dell` and runs from
+  ~/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-health on tony-dell
+  itself, so `url: http://127.0.0.1:9230/sessions` DOES target tony-dell.
+  The Playlived FAIL is a real outage, not a config bug.
+findings:
+  playlived_dell: >-
+    playlived-dell.container on tony-dell is `failed` — podman create dies
+    with `conmon failed: exit status 1` / `k8s-file doesn't support
+    --log-tag`, restart counter maxed at 11:56 +07. Nothing listens on
+    :9230. curl 127.0.0.1:9230/sessions -> rc=7 in ~10ms. idc02 runs the
+    preferred playlived lane (playlived.service active, :9240); tony-dell is
+    the declared fallback (2026-11-03-playlived-idc02-provisioning.yml) and
+    should be kept alive. Repair = container/quadlet fix + service restart
+    -> needs approval (no host service restarts without it).
+  postgres: >-
+    Canonical chaba-postgres-16 lives on idc03 (quadlet
+    stacks/idc03/chaba-postgres.container; publishes 100.102.134.91:5432 +
+    127.0.0.1:5433; mcp-health's own POSTGRES_HOST=100.102.134.91). The
+    tony-dell container of the same name is a frozen leftover (last
+    health_checks write 2026-11-16). A staged-but-uncommitted edit on
+    tony-dell's chaba-tony-dell checkout already pointed the health entry at
+    host: idc03; master still said host: tony_dell.
+  ssh_root_cause: >-
+    tony-dell's ~/.ssh/config has `Host idc03 -> ProxyJump tony-omen`.
+    Today's scoped-SSH hardening (ops-ssh-shell-policy-scoped-sftp,
+    sshd_config `AllowTcpForwarding no` fleet-wide) refuses the
+    direct-tcpip channel ProxyJump needs -> `channel 0: open failed:
+    administratively prohibited`. Direct ssh tony-dell->idc03 works fine
+    (verified with ProxyJump=none). Blast radius: every mcp-health
+    container/systemd check with host: idc03 — postgres (once config lands)
+    plus mddb-container, gemini-ollama-proxy, litellm, yomi-update-*-timer.
+  get_health_status_timeout: >-
+    Not reproduced — call succeeds (130 services, ~seconds). Likely MCP
+    client timeout under concurrent load; health_checks rows are only
+    written by check_health/check_group, and no scheduled job runs them, so
+    last_checked ages until someone calls check_health.
+  troubleshooting_case_bug: >-
+    get_troubleshooting_info queried health_checks by the raw requested id
+    ("postgres") while rows are stored under service.name ("Postgres") ->
+    last_checked null. Fixed to resolve service.name || service.id first.
+changes:
+  - "docs/ssot/infrastructure/ssot.health.home.datastore.yml: postgres ->
+    host: idc03 (matches the staged live edit on tony-dell verbatim so the
+    mirror sync converges cleanly)."
+  - "docs/ssot/infrastructure/ssot.health.mobile.yml: same postgres retarget
+    (entry stays disabled:true; consistency only)."
+  - "mcp-servers/mcp-health/server.js: new execOnHealthHost() — remote
+    container/systemd checks try `ssh -o ProxyJump=none -o ProxyCommand=none`
+    (direct tailnet) first, then fall back to the operator's ssh config.
+    Fixes all host: idc03 checks without touching tony-dell's ssh config or
+    tony-omen's sshd policy. Also added ConnectTimeout=5 to systemd ssh."
+  - "mcp-servers/mcp-health/server.js: get_troubleshooting_info resolves
+    service.name || service.id before reading health_checks."
+verification:
+  - "Manual equivalents of the patched code paths run from tony-dell:
+    `ssh -o ProxyJump=none -o ProxyCommand=none idc03 podman ps -a --filter
+    name=chaba-postgres-16` -> 'Up 2 days (healthy)'; same prefix +
+    `systemctl --user show chaba-postgres.service` -> active/running."
+  - "check_health service=postgres (pre-fix, live): status=error 'Container
+    chaba-postgres-16 not found' @ ~1s — reproduces the quick_health FAIL."
+  - "node --check server.js OK; yaml.safe_load on both edited yml OK."
+  - "Post-merge expectation: after dispatch close-out merge + hourly
+    chaba-served-mirror-sync on tony-dell, new mcp-health spawns pick up the
+    fix; quick_health should go 7/8 with only Playlived FAIL until the
+    playlived-dell container is repaired (8/8 requires that restart)."
+residual: >-
+  playlived-dell.service repair on tony-dell needs approval (conmon
+  --log-tag / quadlet log-driver issue). tony-dell's stale `ProxyJump
+  tony-omen` for idc03 is now dead weight for any tool that still uses it —
+  worth removing or documenting; the health checks no longer depend on it.
+  The uncommitted staged datastore.yml edit on tony-dell's readonly mirror
+  should be dropped once this lands on master (identical content).
+lesson: >-
+  mcp-health runs ON tony-dell — 127.0.0.1 URLs are correct there; check the
+  server's actual host (ps aux | grep server.js) before calling a localhost
+  URL a config bug. And `AllowTcpForwarding no` silently kills ProxyJump —
+  any ssh config relying on a jump host breaks fleet-wide after hardening.
