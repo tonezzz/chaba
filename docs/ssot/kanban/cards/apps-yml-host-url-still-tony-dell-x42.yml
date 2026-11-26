@@ -1,7 +1,7 @@
 id: apps-yml-host-url-still-tony-dell-x42
 title: 'apps.yml: 42 entries still host_url tony-dell + canary blind to deployed apps index'
-column: review
-updated: 2026-11-26 21:24
+column: done
+updated: 2026-11-26 21:38
 priority: medium
 tags:
 - ops
@@ -379,6 +379,16 @@ comms:
 - at: 2026-11-26 21:24
   from: chaba
   text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261126-204208-migrate-the-42-entries-'
+- at: 2026-11-26 21:38
+  from: tony
+  text: '[verify 2026-11-26] VERIFIED — fix landed and deployed. The dispatch work was re-landed cleanly as 9535142624
+    on origin/master (the stale ssot.dev-system.assessment.yml checkpoint commit was skipped). Repo: stacks/web/public/apps/apps.yml
+    has 0 tony-dell.taila0626a.ts.net refs (was 47), 47 idc02 refs; producers (apps-yml-generate.py, apps-health-sync.py)
+    and ssot.apps.yml copies repointed; ssot.health.home.apps.yml regenerated (55 services). SSOT validation: 7245
+    files, 0 errors; touched YAML pa'
+- at: 2026-11-26 21:38
+  from: tony
+  text: closed by tony
 spec: Migrate the 42 entries in stacks/web/public/apps/apps.yml that still carry host_url https://tony-dell.taila0626a.ts.net
   to the correct host configuration, and ensure the consumer canary covers the deployed apps index. The repository
   is chaba and the host is tony-dell. The done-condition is verified when zero entries in stacks/web/public/apps/apps.yml
