@@ -1,7 +1,7 @@
 id: dispatch-queue-approval-gate
 title: Dispatch queue approval gate (RBAC-lite) — /home/tony/ansible on idc02
 column: review
-updated: 2026-11-26 15:54
+updated: 2026-11-26 15:56
 priority: medium
 tags:
 - dispatch
@@ -169,6 +169,16 @@ comms:
 - at: 2026-11-26 15:54
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''merge-conflict''] block close)'
+- at: 2026-11-26 15:55
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''merge-conflict''] block close)'
+- at: 2026-11-26 15:56
+  from: tony
+  text: 'answered merge-conflict: Resolved: generated assessment file conflict fixed upstream-wins in commit 5150728;
+    merge-sweep landed the merge to origin/master e19ae1e673, verified=True, worktree GC removed.'
+- at: 2026-11-26 15:56
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -183,7 +193,7 @@ action:
   sweep:
     dirty: 1
     conflict_sig: 0d0552553d73|docs/ssot/ssot.dev-system.assessment.yml
-    close_held: 2026-11-26 15:54
+    close_held: 2026-11-26 15:55
 claim:
   since: 2026-11-26 12:33
 review_kind: verify
@@ -192,7 +202,7 @@ requests:
   ask: 'merge-sweep can''t land dispatch/20261126-123407-follow-up-from-card-awx-aap-rb: 3 commit(s) conflict with
     origin/master in chaba — conflicted paths: docs/ssot/ssot.dev-system.assessment.yml. Merge tony-macbook:/home/tony/CascadeProjects/dispatch-wt-20261126-123407-follow-up-from-card-awx-aap-rb
     by hand, or retry/abandon the card.'
-  status: open
+  status: answered
   at: 2026-11-26 15:48
   from: chaba
   options:
@@ -206,3 +216,6 @@ requests:
     action: hold
     label: hold the card
   suggested: resolve — let devin resolve the conflict and land it ★
+  answer: 'Resolved: generated assessment file conflict fixed upstream-wins in commit 5150728; merge-sweep landed
+    the merge to origin/master e19ae1e673, verified=True, worktree GC removed.'
+awaiting_action: true
