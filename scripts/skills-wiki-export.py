@@ -75,6 +75,12 @@ BENCHMARK = {
     "result": "8 offline tasks: direct grep 8/8 correct at ~92 narrow / 826 cross tokens vs info-find 0/8 at ~1700 tokens. Decision: keep info-find optional; no enforcement until routing improves. Card BEN-1359 closed.",
 }
 
+LESSON = {
+    "name": "Build is not apply (2026-11-26)",
+    "ref": "PR #229 / PR #236 — card OPS-1447",
+    "result": "Adding deploy-runner-tools.yml was not convergence: only --check --diff had been run, so drift stayed live. Apply the playbook, install the schedule, then re-audit independently. The first timer install failed with BadUnitSetting because OnCalendar/Persistent/Unit were in [Unit] instead of [Timer] — validate user units with systemd-analyze --user verify before rollout. After PR #236 all hosts are in-sync, the daily timer is active, and the audit shows no DRIFT.",
+}
+
 TOOLING = {
     "name": "ansible-first",
     "ref": ".agents/skills/ansible-first/SKILL.md (repo-canonical; ~/.claude/skills/ansible-first is a symlink on OpenCode hosts)",
@@ -221,6 +227,9 @@ def render_page(skills: list[dict], today: str, next_review: str,
         "",
         f"* '''{_cell(BENCHMARK['name'])}''' — {_cell(BENCHMARK['ref'])}: "
         f"{_cell(BENCHMARK['result'])}",
+        "*",
+        f"* '''{_cell(LESSON['name'])}''' — {_cell(LESSON['ref'])}: "
+        f"{_cell(LESSON['result'])}",
         "",
         "== Related tooling ==",
         "",
