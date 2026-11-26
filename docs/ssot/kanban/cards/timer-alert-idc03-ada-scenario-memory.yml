@@ -1,6 +1,6 @@
 id: timer-alert-idc03-ada-scenario-memory
 title: Timer ada-scenario-memory on idc03 failing
-column: backlog
+column: done
 updated: 2026-11-26 10:18
 priority: high
 tags:
@@ -114,6 +114,9 @@ comms:
     suite holds the shared TCP :8199 lock (still running >2h). Re-armed the same user-authorized sentinel with this
     card id (no new paid-lane authorization) and confirmed the existing ada-scenario-memory-retry watcher is active;
     it will start the unit when the lock clears. Card will reopen i'
+- at: 2026-11-26 10:18
+  from: devin
+  text: closed by devin
 requests:
 - id: the-timer-ada-scenario-memory-fbdac5
   ask: The timer ada-scenario-memory.service on idc03 failed with a resource error because EnvironmentFile ~/.config/secrets/ada-ha-tony.env
@@ -128,3 +131,5 @@ requests:
   at: 2026-11-25 19:23
   from: backlog-spec-enrich
   escalated_at: 2026-11-26 07:24
+action:
+  status: done
