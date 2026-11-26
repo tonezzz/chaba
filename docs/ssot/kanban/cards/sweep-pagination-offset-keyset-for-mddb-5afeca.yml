@@ -1,7 +1,7 @@
 id: sweep-pagination-offset-keyset-for-mddb-5afeca
 title: 'sweep pagination: offset -> keyset for mddb pruning scripts'
 column: doing
-updated: 2026-11-26 12:35
+updated: 2026-11-26 12:39
 brief: 'prune-old-docs.py and device-telemetry prune.py enumerate via /v1/search offset paging (skip += kept). Under
   concurrent bulk writes the offset window shifts: stale docs get skipped, scanned under-counts, sweeps report deleted
   0 while work remains (observed 2026-11-12 on ops host-logs during refill). Fix = iterate by key cursor (seek from
@@ -456,6 +456,13 @@ comms:
     primer injected 8 lesson(s): [board-api-wiki-read-s; [embed-lane-banks-search-pagination] Dispatch scope: fix
     scripts/embed/embed-lan; [logs-auto-con01-add-failed] [triage 2026-11-26] Still active: another ''mddb add;
     [logs-auto-idc02-add-failed] [triage 2026-11-26] Still active'
+- at: 2026-11-26 12:39
+  from: devin
+  text: 'DONE attempt 2 — attempt-1 work (verified but uncommitted) is now committed on dispatch/20261126-123501-sweep-pagination-offset-keyset
+    as d0cca8f89c6, rebased onto current master (kept the newer CHUNK=100/timeout=300 prune.py tuning). Changes:
+    sort=key asc + X-Limit cap-aware termination + MAX_PASSES=5 convergence in scripts/ada/prune-old-docs.py and
+    scripts/device-telemetry/prune.py; meta filter on host-logs expiry; job trail docs/ssot/jobs/mddb/2026-11-26-sweep-pagination-keyset.yml;
+    outcome d'
 action:
   type: dispatch
   status: running
