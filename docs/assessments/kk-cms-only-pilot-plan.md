@@ -37,6 +37,22 @@ this is better for KK in daily use.
    Applied via `render-tool-profiles.py --host idc03 --apply` after the
    board approval, not via the bench toggle.
 
+## What the pilot actually changes (plain language)
+
+Kaewta keeps her normal persona, LINE lane, calendar/tasks and the ability
+to write to KK's WordPress/boards (`wp_post`, `cpt_post`). What changes is
+where she is allowed to *recall* from: the memory-bank tools
+(`ada_memory_search`, `ada_remember`, `ada_forget`, `ada_session_recall`),
+`web_search` and stale session history are withheld. Her recall surface is
+her own CMS pages (`cms_read`, `conv_journal`) plus live calendar/tasks.
+
+Session-start context is also tuned: `ADA_SESSION_PRIME=1` stays on (it
+carries identity and the CMS page catalog), while
+`ADA_PRIME_SKIP_HISTORY=1` drops recent-session summaries, channel tails,
+headlines and prime-flagged facts. This is what makes "CMS-only" true — a
+full prime-off removes the CMS catalog too and the model stops looking at
+pages (measured 0.5 on the bench).
+
 ## Apply (only after approval)
 
 1. Snapshot `~/.config/secrets/kk-ha/backend.env` (or the rendered prod
@@ -57,6 +73,23 @@ this is better for KK in daily use.
   a review of session-audit events for fabrication / tool-denied storms.
 - Keep the dev lane on the bench profile; re-run `kk_memory_cms` twice
   after any ada-voice or prompt change — it must stay 3/3.
+
+## What happens when CMS has no covering information
+
+```text
+user asks something
+  -> she may list/read CMS (cms_read / cms_list_pages / cms_verify_page)
+  -> NO covering report found
+  -> honest miss: "I don't have a report about that" / "ไม่มีข้อมูลในรายงาน"
+     + no invented page, no made-up URL, no silent bank recall, no web search
+     + she may offer to ask Tony to create a report (wp_post/cpt_post path)
+  -> the gap is visible; nothing is fabricated to fill it
+```
+
+This is the property the bench measures as `honest_miss`. If a stripped
+tool is attempted anyway, the provider refuses it at dispatch with a
+`tool_denied` (lane_excluded) event; the bench counts only successful calls.
+Live state (calendar/tasks) is still allowed — that is not memory recall.
 
 ## Stop / rollback conditions
 

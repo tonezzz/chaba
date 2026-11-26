@@ -1,0 +1,41 @@
+title: Education lesson — Kaewta CMS-only memory pilot flow and honest-miss path
+subtitle: Board-gated wiki-education publish of the pilot acceptance request; no production profile change
+icon: education
+version: 1
+
+card: kk-cms-only-memory-pilot-acceptance  # MEM-1429
+date: 2026-11-26
+
+summary: |
+  Published the CMS-only memory pilot flow to Education: so KK's acceptance
+  request has a readable, auditable lesson. Covers what changes on ada-kk,
+  the exact behaviour when CMS has no covering report, the apply/rollback
+  flow, and the evidence from the 2026-11-24/25 bench runs.
+
+publish:
+  door: board-api /publish sinks=["wiki-education"] visibility=private
+  render: offline wikitext (no direct MediaWiki writes)
+  event_id: kk-cms-only-pilot-20261126-v1
+  idempotency_key: kk-cms-only-pilot-20261126-v1
+  wiki_title: Education:Kaewta-CMS-only-memory-pilot
+  topic: kk-cms-only-memory-pilot
+  level: working
+  source: board-session
+  learned_at: "2026-11-26"
+  next_review: "2026-12-03"
+
+delivered:
+  - "POST /publish -> wiki-education=delivered, wiki:Education:Kaewta-CMS-only-memory-pilot pageid 367 revid 789 action=success."
+  - "POST /lesson {op:get, source:wiki, wiki_title:Education:Kaewta-CMS-only-memory-pilot} -> ok:true, source:'wiki', slug lesson-401234d85872, flow + honest-miss section present."
+
+design_notes:
+  why_private: >-
+    Education: is a Lockdown-protected staff namespace; the lesson records
+    a pending product decision, not public guidance.
+  why_the_door: the board-api /publish door owns credentials and the idempotency key; direct MediaWiki writes are never used.
+  fresh_event_id: a new event_id was used for this first publish; republishing must mint a new one or the door dedupes it.
+
+related:
+  - docs/assessments/kk-cms-only-memory-retest-2026-11-24.md
+  - docs/assessments/kk-cms-only-pilot-plan.md
+  - Education:Kaewta-CMS-only-memory-pilot
