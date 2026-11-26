@@ -120,10 +120,30 @@ def push_device(dev: str, token: str) -> str:
     doc = _latest(dev)
     now = int(time.time())
     if not doc or not doc.get("ts"):
+        # No telemetry doc (host never reported, or MDDB miss): surface the
+        # host as offline/stale instead of leaving the last pushed online
+        # state (which can stay "on" for a sleeping laptop like kk-mac).
+        # Battery/metric sensors are left untouched (quiet failure).
+        try:
+            _push(token, f"binary_sensor.{eid}_online", "off", {
+                "friendly_name": f"{dev} online",
+                "device_class": "connectivity",
+            })
+            _push(token, f"binary_sensor.{eid}_telemetry_fresh", "off", {
+                "friendly_name": f"{dev} telemetry fresh",
+                "device_class": "connectivity",
+                "age_seconds": None,
+            })
+        except Exception:
+            pass
         return f"{dev}: no telemetry doc"
     age = now - int(doc["ts"])
     fresh = "on" if age <= STALE_S else "off"
-    online = "on" if (doc.get("tailnet") or {}).get("online") else "off"
+    # Stale telemetry means the host has not reported recently (e.g. asleep /
+    # off-net), so it must not be shown as online even if the last doc's
+    # tailnet.online was true.
+    online = "on" if ((doc.get("tailnet") or {}).get("online")
+                      and age <= STALE_S) else "off"
     _push(token, f"binary_sensor.{eid}_online", online, {
         "friendly_name": f"{dev} online",
         "device_class": "connectivity",
@@ -164,7 +184,7 @@ def push_device(dev: str, token: str) -> str:
             if k.startswith("pch_"):
                 return "pch"
             return k
-        top = sorted(zones.items(), key=lambda kv: -kv[1])[:5]
+        top = sorted(zones.items(), key=lambda kv: -kv[1])[:1]
         pairs = ",".join(f"{_zname(k)}:{v:g}°" for k, v in top)
         _push(token, f"sensor.{eid}_temps", pairs[:200], {
             "friendly_name": f"{dev} temps",

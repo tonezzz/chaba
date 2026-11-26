@@ -98,7 +98,7 @@ def _fleet_summary():
            "{% set ls = state_attr('sensor.'~d~'_load','last_seen') %}"
            "| {{ ls[:10].replace('-','') ~ '-' ~ ls[11:16] if ls else '—' }} "
            "| {{ d.replace('_','-') }} "
-           "| {{ 'on' if is_state('binary_sensor.'~d~'_online','on') else 'off' }} "
+           "| {{ 'on' if is_state('binary_sensor.'~d~'_online','on') and is_state('binary_sensor.'~d~'_telemetry_fresh','on') else 'off' }} "
            "| {{ states('sensor.'~d~'_load') }} "
            "| {{ states('sensor.'~d~'_mem') }}% "
            "| {{ states('sensor.'~d~'_disk') }}% "
