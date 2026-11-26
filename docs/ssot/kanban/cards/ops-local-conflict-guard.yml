@@ -1,8 +1,8 @@
 id: ops-local-conflict-guard
 title: local-conflict reconcile failed
-column: review
+column: done
 review_kind: triage
-updated: 2026-11-26 18:15
+updated: 2026-11-26 18:25
 note: non-card local-conflict docs/ssot/ssot.dev-system.assessment.yml.local-conflict-20261126-130116 needs manual
   reconcile — file kept
 ref: OPS-0526
@@ -1909,6 +1909,16 @@ comms:
   from: devin
   text: '[review sweep 18:15 +07] Picking up recurrence: the 18:00 .ref-seq sidecar was reconciled by a later safe-pull
     tick; verifying live state before closing.'
+- at: 2026-11-26 18:25
+  from: devin
+  text: '[review sweep 18:2x +07] Resolved the flagged conflicts: (1) idc03 served docs/ssot/ssot.dev-system.assessment.yml.local-conflict-20261126-130116
+    was older than canonical (13:01 vs 15:55) — archived to ~/.local/share/chaba-reconcile-archive/ preserving relative
+    path; (2) idc02 exec checkout had the same assessment sidecar plus .ref-seq.local-conflict-20261126-180002 —
+    both archived; (3) idc02 .ref-seq canonical contained conflict markers (<<<<<<< Updated upstream 1445 =======
+    1442 >>>>>>> Stashe'
+- at: 2026-11-26 18:25
+  from: tony
+  text: closed by tony
 action:
   status: done
 claim: {}
