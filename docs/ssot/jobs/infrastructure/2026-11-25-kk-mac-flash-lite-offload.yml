@@ -180,7 +180,12 @@ proposal:
       2026-11-26: the live-only agent-local model + fallback, the 15s
       timeout and the tool-call leg-3 were written back to
       stacks/idc03/litellm/config.yaml and agent-local added as a
-      job_class in ssot.llm-gateway.yml. Unrelated live-vs-repo drift
+      job_class in ssot.llm-gateway.yml. LANE_MODELS['free_lane'] was
+      ALSO repointed to litellm/agent-local in
+      scripts/board/dispatch_repos.py on 2026-11-26 — that code change
+      was missing from the earlier gate-run session despite being
+      reported as done; the PR commit now carries it. Unrelated
+      live-vs-repo drift
       (consult-* aliases, embed extra_body, tunnel comments,
       ssot.jobs.yml timeouts) was left untouched.
   P3_optional_caller_repoints:
