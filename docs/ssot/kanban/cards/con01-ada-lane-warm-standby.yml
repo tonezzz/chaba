@@ -1,7 +1,7 @@
 id: con01-ada-lane-warm-standby
 title: con01 warm standby for ada-line-relay + ada-ha-tony
 column: backlog
-updated: 2026-11-26 20:47
+updated: 2026-11-26 21:12
 priority: low
 action:
   type: manual
@@ -230,3 +230,9 @@ comms:
   from: chaba
   text: 'TRIAGE 2026-11-26: multi-step infra work (DR standby units + env/secret sync + caddy failover + restore
     docs) — needs a dedicated session, not a bounded runner dispatch.'
+- at: 2026-11-26 21:12
+  from: chaba
+  text: 'WARM STANDBY STAGED on con01 (2026-11-26, dedicated session). Repo: stacks/con01/{ada-line-relay,ada-ha-tony}/{stack.yml,*.service.standby},
+    ansible/playbooks/deploy-con01-ada-warm-standby.yml, docs/kb/con01-ada-lane-warm-standby.md, docs/ssot/jobs/infrastructure/2026-11-26-con01-ada-lane-warm-standby.yml.
+    Ansible-first: targets confirmed from ssot.audit.hosts.yml + inventory; --check --diff --limit con01 clean (0
+    unreachable/0 failed); converged --limit con01, idempotent (changed=0). On host: 2'
