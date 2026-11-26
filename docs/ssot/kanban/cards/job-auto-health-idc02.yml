@@ -1,7 +1,7 @@
 id: job-auto-health-idc02
 title: Job health sweep — declared-job failures on idc02
 column: review
-updated: 2026-11-26 22:54
+updated: 2026-11-26 22:55
 brief: Automated per-host sweep (scripts/ops/job-health-sweep.py, ssot.jobs.yml job-health-sweep) found declared
   jobs that are failing, never firing, or running stale units. Each comment names the job, the journal/systemd evidence,
   and the consecutive-fail count. Fix on the host; the card auto-closes when green.
@@ -74,3 +74,9 @@ comms:
   text: '[job-health-sweep] RECOVERED on idc02: retry-storm-watch — was failing (units-missing:retry-storm-watch.service,retry-storm-watch.timer),
     now green.'
   req: jhs-idc02-retry-storm-watch-rec-e1
+- at: 2026-11-26 22:55
+  from: chaba
+  text: '[job-health-sweep] NEW failure on idc02: retry-storm-watch (Retry-storm / hot-container watch (podman CPU
+    + log sigs)) — zero-successes:1 attempt(s), 0 success(es) in journal window — journal: 1 attempt(s), 0 success(es),
+    consec-fail=1 — last error: ''alert filed: log-storm:mddb-lab'''
+  req: jhs-idc02-retry-storm-watch-new-e1
