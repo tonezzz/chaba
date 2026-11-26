@@ -1,7 +1,7 @@
 id: video-queue-audit-opencode
 title: 'OpenCode: audit video queue claims'
 column: backlog
-updated: 2026-11-26 15:19
+updated: 2026-11-26 15:22
 brief: Have Ada/OpenCode produce a read-only reconciliation report for video package states and stale claims.
 priority: high
 program: ai-workforce
@@ -17,7 +17,7 @@ spec: Run the existing read-only video queue status tool against both video root
 action:
   type: dispatch
   model: litellm/gemini-3.5-flash-lite
-  executor: opencode
+  executor: devin
   profile: ops-readonly
   target_host: idc02
   artifact: reports/card-runner/video-queue-status-opencode.md
@@ -316,5 +316,11 @@ comms:
     4 scope_violation safety failures, verified rate 3/39 (7.7%) vs S1 gate 1.0. Even if the lane were at S2, 10/20
     S2 jobs are pending independent review, so S3 (needed by the runner''s staged-dispatch gate) is unreachable.
     No envelope can be staged legally; pin executor=devin or leave q'
+- at: 2026-11-26 15:22
+  from: devin
+  text: 'Pin 2026-11-26: executor changed opencode->devin (lane promotion investigated and ruled out: review=ROLLBACK,
+    stage S1 quota 15/15, 4 scope violations, 3/39 verified; runner needs S3 which S2 ledger cannot supply). Artifact
+    path stays reports/card-runner/video-queue-status-opencode.md. DEV-0958 drop guard should discard the litellm
+    model and use the devin default. Verify a committed artifact on closeout; no blind retry.'
 review_kind: verify
 claim: {}
