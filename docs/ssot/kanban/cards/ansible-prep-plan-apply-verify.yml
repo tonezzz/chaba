@@ -1,7 +1,7 @@
 id: ansible-prep-plan-apply-verify
 title: Ansible prep→plan→apply→verify workflow standard
 column: done
-updated: 2026-11-26 15:23
+updated: 2026-11-26 15:40
 brief: Standardize Ansible for preparation/baselines, check-diff plan artifacts, gated apply, and verified closeout
   to increase fleet efficiency.
 priority: medium
@@ -255,6 +255,13 @@ comms:
     False (fail); units/bind/local/startup_mode/litellm OK; edge 200 CSP ok. tony-dell fallback probe incomplete
     in this run (web/cli/local unknown). upgrade --check --diff -e card_ref=OPS-1424 failed at post-gate contract
     assert as expected (no mutation, ocb_change_approved=fa'
+- at: 2026-11-26 15:40
+  from: devin
+  text: 'OPS-1424 B repo done (2026-11-26): merged f709440216. Updated ocb_pane pins to web 2.8.0/cli 2.4.2, refreshed
+    SSOT, replaced models.status patch with 2.8.x-compatible version (dry-run clean on idc02 2.8.0). Host apply
+    PENDING explicit approval: pull idc02 chaba exec checkout, update openchamber-update.service ExecStart to @openchamber/web@2.8.0,
+    daemon-reload, run apply-models-status-patch.sh, restart openchamber.service, verify producer+consumer. No host
+    mutation performed.'
 action:
   type: dispatch
   status: done
