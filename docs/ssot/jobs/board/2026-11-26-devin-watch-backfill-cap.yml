@@ -60,6 +60,17 @@ rollout:
   backup: 'ansible copy: backup=true (timestamped sibling on each host)'
   no_service_restart: oneshot timer picks up the new file on the next tick
 
+rollout_result:
+  deployed_at: '2026-11-26 21:46 +07'
+  backups:
+    tony-omen: '/home/tony/.local/bin/devin-dispatch-watch.3609344.2026-11-26@21:46:17~'
+    mn01: '/home/tony/.local/bin/devin-dispatch-watch.1419386.2026-11-26@21:46:16~'
+  installed_sha256: 364aaa0319b510c27081dcba0563a571db418aa7aa8b50fa8f87396c212ec04c
+  real_run: 'mn01 ok=6 changed=1; tony-omen ok=8 changed=1; 0 unreachable / 0 failed'
+  idempotency_check: '--check --diff --limit tony-omen,mn01 -> changed=0 on both hosts'
+  consumer_proof: '21:50 tick finished on both hosts with 0 task reports and no backfill/deferred line; no repeat burst'
+  commit: 3b9f2b27fad
+
 rollback: >
   Restore the timestamped ~/.local/bin/devin-dispatch-watch.<stamp> backup
   on the affected host and revert the manifest pin. The change is a shell
