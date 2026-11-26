@@ -1,6 +1,6 @@
 id: deploy-ada-sh-services-resurrects-retire-c2346b
 title: deploy-ada.sh SERVICES resurrects retired idc03 dev twins on every ada-voice deploy
-column: doing
+column: done
 updated: 2026-11-26 21:55
 priority: medium
 tags:
@@ -15,12 +15,13 @@ spec: 'DECISION 2026-11-26 Tony: keep ada-kk-dev (declared kk CMS-only bench tar
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: done
   lane: devin
   attempts: 1
   runner: tony-dell
   sweep:
     stale_running: 2026-11-26 21:55
+  verified: true
 note: follow-up from idc03-ada-hygiene-20261107
 ref: ADA-1395
 comms:
@@ -149,5 +150,20 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261126-212322-decision-2026-11-26-tony-keep- no longer active on tony-dell but
     card still says running — sweeping its branch'
+- at: 2026-11-26 21:55
+  from: chaba
+  text: 'merge-sweep: merged 149b3dde (dispatch/20261126-212322-decision-2026-11-26-tony-keep- from tony-dell) ->
+    origin/main — marked verified (exit_code=0; outcome doc dispatch-outcome-20261126-212322-decision-2026-11-26-tony-keep-.md)
+    — auto-closed'
+- at: 2026-11-26 21:55
+  from: local
+  text: 'pub milestone: card verified: deploy-ada-sh-services-resurrects-retire-c2346b on idc03 — merged 149b3dde
+    (dispatch/20261126-212322-decision-2026-11-26-tony-keep- from tony-dell) -> origin/main — verified — aut — merged
+    149b3dde (dispatch/20261126-212322-decision-2026-11-26-tony-keep- from tony-dell) -> origin/main — verified
+    — auto-closed [evt-e3a2d3bc676f66e5]'
 claim:
   since: 2026-11-26 21:22
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 21:55
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261126-212322-decision-2026-11-26-tony-keep-.md
