@@ -154,6 +154,35 @@ proposal:
       LITELLM_KEY_CHABA allowlist (ada/bench keys unrestricted or
       allowlisted — verify per-key /v1/models before repoint) +
       litellm restart on idc03.
+    post_gate_tuning_2026_11_25: >-
+      VERIFIED DEVIATION from local-first ordering. opencode injects
+      chaba/AGENTS.md (81,199 bytes) into every system prompt: the real
+      S1 request was 117,919 bytes / ~35k input tokens. qwen2.5:7b took
+      265.6s to first byte (past opencode's 300s headerTimeout and the
+      420s lane wall clock); llama3.2 150s+; kk-mac legs 503 temp_high.
+      Fixes: agent-local primary timeout 120s -> 15s (fast-fail); agent-local
+      profile runs use a scratch cwd OUTSIDE the repo with scripts/ + evals/
+      symlinks (103,723 -> 17,383 system-prompt chars; qwen7b 265.6s ->
+      64.1s first byte); agent-local fallbacks begin with the $0
+      gemini-3.5-flash-lite-free leg (2.05s on the full payload), local
+      Ollama legs follow, paid Gemini stays LAST. The $0 contract holds
+      (best run cost $0.0). Local-only legs produced no tool calls or
+      artifact on S1 — capability limit, not latency. The info-find rails
+      now require the results array to be physically sorted by source
+      (profile.yml), not emitted in tool order. FINAL GATE: PASS —
+      evals/opencode-lane/runs/p1-info-find-agent-local-test-20261125-184706,
+      16/16 verifier checks, artifact landed, exit 0, wall 80.9s,
+      $0.00 provider cost, no denials/mutations/scope violations. The
+      OPS-1363 repoint of LANE_MODELS['free_lane'] to litellm/agent-local
+      is therefore verified. LiteLLM 1.105.0 custom pre-call callbacks
+      loaded but async_pre_call_hook did not fire on proxy requests — do
+      not rely on gateway-side prompt trimming there. RECONCILED
+      2026-11-26: the live-only agent-local model + fallback, the 15s
+      timeout and the tool-call leg-3 were written back to
+      stacks/idc03/litellm/config.yaml and agent-local added as a
+      job_class in ssot.llm-gateway.yml. Unrelated live-vs-repo drift
+      (consult-* aliases, embed extra_body, tunnel comments,
+      ssot.jobs.yml timeouts) was left untouched.
   P3_optional_caller_repoints:
     what: >-
       ~$1.7 Nov spend on real-name/-free calls from batch jobs:
