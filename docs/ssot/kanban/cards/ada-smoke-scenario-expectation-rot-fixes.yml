@@ -1,7 +1,7 @@
 id: ada-smoke-scenario-expectation-rot-fixes
 title: 'Smoke scenarios: fix expectation rot (4 yamls) + scenario-live cleanup MDDB plane bug'
 column: backlog
-updated: 2026-11-26 21:31
+updated: 2026-11-26 21:32
 priority: medium
 tags:
 - ada
@@ -52,6 +52,10 @@ comms:
 - at: 2026-11-26 21:31
   from: chaba
   text: 'mn01 defers: runner at local cap (1/1) — remote slots unaffected'
+- at: 2026-11-26 21:32
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
 action:
   type: dispatch
   status: queued
