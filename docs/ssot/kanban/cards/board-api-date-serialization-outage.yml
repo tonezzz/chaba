@@ -1,7 +1,7 @@
 id: board-api-date-serialization-outage
 title: board-api /cards 502 — YAML bare dates crash json.dumps (fleet-wide Ada status outage 2026-11-09)
 column: doing
-updated: 2026-11-26 21:03
+updated: 2026-11-26 21:09
 priority: medium
 tags:
 - devnest
@@ -289,5 +289,9 @@ comms:
     was invalid YAML (unquoted colon in jules status) until u; flag_card''s ''lost'' status (board-api unreachable
     AND not the served checkout) is; [ansible-runner-tools-drift] [archive side effect 19:50 +07] While running
     the K; [board-janitor-locked-edit-atomic-write-db7bed] primer inject'
+- at: 2026-11-26 21:09
+  from: devin
+  text: 'dispatch started: mapped card-YAML write paths — all funnel through board-api.save() and card_io.atomic_dump_card();
+    adding json_safe normalization at both + regression test'
 claim:
   since: 2026-11-26 21:03
