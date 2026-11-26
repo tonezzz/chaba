@@ -1,7 +1,7 @@
 id: gemini-38-live-extended-thinking-bench-2026-11-26
 title: Bench gemini-3.8-live-extended-thinking against the 3.8-live pin
 column: done
-updated: 2026-11-26 18:37
+updated: 2026-11-26 18:40
 brief: Run the 20-fixture voice bench plus barge-in and soak probes on the extended-thinking Live variant; compare
   to the promoted 3.8-live baseline before any pin decision.
 priority: medium
@@ -52,6 +52,13 @@ comms:
 - at: 2026-11-26 18:37
   from: ada
   text: closed by ada
+- at: 2026-11-26 18:40
+  from: devin
+  text: '[devin] 20-fixture bench DONE on gemini-3.8-live-extended-thinking (thinkingLevel=LOW): 20/20 ok, WER 0.01,
+    tools 8e/6p/0n — vs same-day 3.8-live re-run 20/20, WER 0.01, tools 7e/4p/3n. Extended-thinking round-trip ~10.9s
+    vs ~6.2s (fillers+background reasoning = ~75% slower). ttfa_ms not comparable (anchor artifact ~10ms vs 330ms
+    — inputTranscription final lands with first filler audio). Barge-in + soak probes running; harness gained thinking-mode
+    support (thinkingConfig + NON_BLOCKING + interac'
 action:
   type: dispatch
   status: done
