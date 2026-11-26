@@ -309,6 +309,10 @@ comms:
     idc03:4000 or-free-nemotron-nano). BLOCKER: all OpenRouter :free models return 429 free-models-per-day-high-balance,
     account quota exhausted until 2026-11-27 00:00 UTC (07:00 ICT); bench OR key is same OR account so no alternate
     key helps. Proceeding with Ollama arm (3 reps) now; OR arm '
+- at: 2026-11-26 15:58
+  from: devin
+  text: 'raised request openrouter-free-arm-is-hard-blocked-the-7ac805: OpenRouter :free arm is hard-blocked: the
+    fleet OR account hit its 1000/day free-model quota (all or-free-* 429 until 20'
 action:
   type: dispatch
   status: running
@@ -324,3 +328,16 @@ action:
 review_kind: verify
 claim:
   since: 2026-11-26 15:34
+requests:
+- id: openrouter-free-arm-is-hard-blocked-the-7ac805
+  ask: 'OpenRouter :free arm is hard-blocked: the fleet OR account hit its 1000/day free-model quota (all or-free-*
+    429 until 2026-11-27 07:00 ICT; bench key is the same account). Ollama qwen3:4b arm is running now. How should
+    the OR arm proceed? Options: (a) wait for quota reset and re-dispatch tomorrow — recommended, $0 and spec-compliant;
+    (b) approve paid reference arm now (or-deepseek-v4-flash ~$0.30 for 3 reps) as an extra arm; (c) approve a different
+    free route (not OpenRouter — would deviate from spec).'
+  status: open
+  at: 2026-11-26 15:58
+  from: devin
+  options:
+  - proceed
+  - hold
