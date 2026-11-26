@@ -97,6 +97,9 @@
                 errors='ignore', rstrip=False)
          | hash('sha256') }}
     probe_ts: "{{ now(utc=True).isoformat(timespec='seconds') }}"
+    board_notify: false
+    board_api_base: "https://idc03.taila0626a.ts.net:10000"
+    board_from: "devin"
 
   pre_tasks:
     - name: Report controller detection
@@ -407,5 +410,200 @@
       loop_control:
         loop_var: target
         label: "{{ target }}"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Compute log-shipper alert summary and fingerprint
+      ansible.builtin.set_fact:
+        log_shipper_alert_hosts: >-
+          {%- set out = [] -%}
+          {%- for h in probed_hosts -%}
+            {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
+            {%- if rpt -%}
+              {%- set y = rpt | from_yaml -%}
+              {%- set s = y.get('summary', '') -%}
+              {%- if s.startswith('fail') or s.startswith('drift') or s.startswith('unreachable') or s.startswith('error') -%}
+                {%- set kind = 'fail' if s.startswith('fail') else ('drift' if s.startswith('drift') else ('unreachable' if s.startswith('unreachable') else 'error')) -%}
+                {%- set _ = out.append({'host': h, 'kind': kind, 'summary': s}) -%}
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ out }}
+        log_shipper_alert_fingerprint: >-
+          {%- set out = [] -%}
+          {%- for h in probed_hosts -%}
+            {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
+            {%- if rpt -%}
+              {%- set y = rpt | from_yaml -%}
+              {%- set s = y.get('summary', '') -%}
+              {%- if s.startswith('fail') or s.startswith('drift') or s.startswith('unreachable') or s.startswith('error') -%}
+                {%- set kind = 'fail' if s.startswith('fail') else ('drift' if s.startswith('drift') else ('unreachable' if s.startswith('unreachable') else 'error')) -%}
+                {%- set _ = out.append(h ~ ':' ~ kind) -%}
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ out | join('|') }}
+      delegate_to: localhost
+      run_once: true
+
+    - name: Notify board-api when log-shipper alerts found
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card"
+        method: POST
+        body_format: json
+        status_code: [200, 201, 400]
+        return_content: true
+        body:
+          id: ansible-log-shipper-alert
+          title: "Ansible audit: log-shipper drift/fail"
+          column: backlog
+          action: {type: manual}
+          from: "{{ board_from }}"
+          spec: >-
+            Read-only ansible audit-log-shipper detected fail/drift/unreachable hosts.
+            Hosts: {{ log_shipper_alert_hosts | map(attribute='host') | join(', ') }}.
+            Report dir: reports/ansible-benchmark/log-shipper/. No remediation performed.
+      when:
+        - board_notify | bool
+        - (log_shipper_alert_hosts | length) > 0
+      register: log_shipper_alert_card
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fail on unexpected log-shipper alert card create error
+      ansible.builtin.fail:
+        msg: "board-api /card create failed: {{ log_shipper_alert_card.content | default('') }}"
+      when:
+        - board_notify | bool
+        - (log_shipper_alert_hosts | length) > 0
+        - log_shipper_alert_card.status not in [200, 201]
+        - "'already exists' not in (log_shipper_alert_card.content | default(''))"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fetch log-shipper alert card for comment dedupe
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card/ansible-log-shipper-alert"
+        method: GET
+        return_content: true
+        status_code: [200, 404]
+      register: log_shipper_alert_card_for_comment
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (log_shipper_alert_hosts | length) > 0
+
+    - name: Compute log-shipper alert comment dedupe
+      ansible.builtin.set_fact:
+        log_shipper_alert_comment_text: >-
+          ansible audit-log-shipper: {{ log_shipper_alert_hosts | length }} host(s) alerting.
+          fp={{ log_shipper_alert_fingerprint }}. {{ log_shipper_alert_hosts | to_json }}
+        log_shipper_alert_comment_is_dup: >-
+          {{
+            (log_shipper_alert_card_for_comment.status | default(404)) == 200
+            and (
+              ((log_shipper_alert_card_for_comment.json.card.comms | default([]))
+                | selectattr('from', 'equalto', board_from)
+                | selectattr('text', 'defined')
+                | selectattr('text', 'search', 'fp=' ~ (log_shipper_alert_fingerprint | regex_escape))
+                | list | length) > 0
+            )
+          }}
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (log_shipper_alert_hosts | length) > 0
+
+    - name: Comment log-shipper alert summary
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/comment"
+        method: POST
+        body_format: json
+        status_code: [200, 201]
+        body:
+          id: ansible-log-shipper-alert
+          from: "{{ board_from }}"
+          text: "{{ log_shipper_alert_comment_text }}"
+      when:
+        - board_notify | bool
+        - (log_shipper_alert_hosts | length) > 0
+        - not (log_shipper_alert_comment_is_dup | default(false) | bool)
+      delegate_to: localhost
+      run_once: true
+
+    - name: Fetch log-shipper alert card for cleared check
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/card/ansible-log-shipper-alert"
+        method: GET
+        return_content: true
+        status_code: [200, 404]
+      register: log_shipper_alert_card_for_cleared
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (log_shipper_alert_hosts | length) == 0
+
+    - name: Compute log-shipper alert cleared comment
+      ansible.builtin.set_fact:
+        log_shipper_alert_cleared_comment: >-
+          ansible audit-log-shipper: all clear, no alert hosts. fp=cleared.
+        log_shipper_alert_cleared_needed: >-
+          {{
+            (log_shipper_alert_card_for_cleared.status | default(404)) == 200
+            and (
+              (
+                (log_shipper_alert_card_for_cleared.json.card.comms | default([]))
+                | selectattr('from', 'equalto', board_from)
+                | selectattr('text', 'defined')
+                | selectattr('text', 'search', 'fp=')
+                | list
+              ) | length > 0
+            )
+            and (
+              'fp=cleared' not in (
+                (
+                  (log_shipper_alert_card_for_cleared.json.card.comms | default([]))
+                  | selectattr('from', 'equalto', board_from)
+                  | selectattr('text', 'defined')
+                  | selectattr('text', 'search', 'fp=')
+                  | list | last
+                ).text | default('')
+              )
+            )
+          }}
+      delegate_to: localhost
+      run_once: true
+      when:
+        - board_notify | bool
+        - (log_shipper_alert_hosts | length) == 0
+
+    - name: Comment log-shipper alert cleared
+      ansible.builtin.uri:
+        url: "{{ board_api_base }}/comment"
+        method: POST
+        body_format: json
+        status_code: [200, 201]
+        body:
+          id: ansible-log-shipper-alert
+          from: "{{ board_from }}"
+          text: "{{ log_shipper_alert_cleared_comment }}"
+      when:
+        - board_notify | bool
+        - (log_shipper_alert_hosts | length) == 0
+        - log_shipper_alert_cleared_needed | default(false) | bool
+      delegate_to: localhost
+      run_once: true
+
+    - name: Show kanban notify summary
+      ansible.builtin.debug:
+        msg:
+          board_notify: "{{ board_notify }}"
+          alert_hosts: "{{ log_shipper_alert_hosts | map(attribute='host') | list }}"
+          comment_skipped_as_dup: "{{ log_shipper_alert_comment_is_dup | default(false) }}"
+          cleared_comment_posted: "{{ log_shipper_alert_cleared_needed | default(false) }}"
+      when: board_notify | bool
       delegate_to: localhost
       run_once: true
