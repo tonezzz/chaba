@@ -1,0 +1,98 @@
+title: "tony-macbook hibernate-resume — diagnosed, disable-hibernate fix staged pending sudo"
+subtitle: "Kanban card tony-macbook-hibernate-resume-broken-eve-8ac607 (SYS-1410) — every suspend->hibernate cycle cold-boots; root cause evidence gathered on-host (fragmented /swap.img -> 'PM: Image not found'); option (a) scripted, needs Tony's sudo"
+icon: power-plug
+
+planning:
+  goal: "Stop every battery lid-close on tony-macbook from becoming a fleet-offline event. Card offered (a) drop hibernate, (b) debug resume path, (c) keep suspend-then-hibernate and fix resume."
+  scope: "tony-macbook power policy + repo artifacts + SSOT mirror. Out of scope: physically applying the logind change (no NOPASSWD sudo path on host — board request raised), hibernate resume repair itself (option b/c deferred)."
+  owner: devin (dispatch on tony-dell, on-host read-only via ssh macbook)
+  related_focus:
+    - label: tony-macbook-hibernate-resume-broken-eve-8ac607
+      file: docs/ssot/kanban/cards/tony-macbook-hibernate-resume-broken-eve-8ac607.yml
+
+processing:
+  status: awaiting-decision
+  started_at: 2026-11-26T12:35:00+07:00
+  steps:
+    - id: 1
+      label: Establish real state on-host
+      status: completed
+      notes: >-
+        SSH to tony-macbook works (fleet-wide SSH pitfall in primer is stale).
+        Kernel 7.0.0-44-generic. /etc/systemd/logind.conf.d/: headless-crd.conf
+        (HandleLidSwitch=ignore, HandleLidSwitchExternalPower=ignore) +
+        hibernate.conf (HandleLidSwitch=suspend-then-hibernate, Oct 20).
+        /etc/systemd/sleep.conf.d/hibernate.conf: HibernateMode=shutdown,
+        HibernateDelaySec=7200 (Oct 21). /swap.img 19.9G file swap, fstab
+        entry, resume=PARTUUID=cf9d881c-... resume_offset=29630464 on cmdline,
+        /sys/power/resume=259:2 resume_offset matches. /sys/power/state
+        'freeze mem disk', mem_sleep '[s2idle] deep'. logind CanHibernate
+        returns 'no' via busctl — verified in systemd v259 source this is a
+        POLKIT answer for the SSH caller (allow_active session required),
+        not a capability report — red herring.
+    - id: 2
+      label: Root-cause evidence
+      status: completed
+      notes: >-
+        Journal boot boundaries show the failure signature precisely: boot -6
+        uptime 4.7d ends 11-21 07:13:58, next boot 07:14:11 (13s gap);
+        11-23 16:51->16:55 (9s gap); 11-25 09:36:58->09:38:03. Each is
+        hibernate->power-on->systemd-hibernate-resume 'Unable to resume ...
+        offset 29630464' -> kernel 'PM: Image not found (code -22)' -> cold
+        boot. Swap-on line: 'Adding 19922940k swap on /swap.img ... extents:22
+        across:23609340k' — the swapfile is heavily fragmented; the kernel
+        resume path gets only resume_offset (file start) and cannot locate
+        the image in a non-contiguous swapfile — the known 'Image not found'
+        failure mode (cf. amazon-linux-2023#1088). bash_history shows prior
+        manual fix attempts (/tmp/enable-hibernate.sh, fix-hibernate.sh,
+        fix-hibernate2.sh ~Oct 20, then repeated 'sudo systemctl hibernate'
+        tests) — option (b) was already tried interactively and did not
+        converge. s2idle suspend verified live: 'PM: suspend entry (s2idle)'
+        11-26 11:36 -> 'suspend exit' 12:16, clean resume.
+    - id: 3
+      label: Choose option + stage fix
+      status: completed
+      notes: >-
+        Option (a) chosen: for a dispatch runner, plain s2idle suspend keeps
+        bag-safe sleep with a proven resume path; hibernate's only benefit
+        (multi-day S4 on battery) is moot while resume is broken, and even a
+        fixed resume still leaves the host OFF until a power event — worse
+        for fleet availability than suspend. Option (b) would need swapfile
+        recreation (dd, contiguous), new resume_offset, update-grub +
+        initramfs, reboot, and hibernate test cycles — all sudo, all risking
+        the runner, plus residual amdgpu/Polaris11 resume risk. Staged
+        scripts/ops/macbook-disable-hibernate.sh: idempotent, backs up
+        hibernate.conf, writes HandleLidSwitch=suspend, restarts
+        systemd-logind, prints effective config. Manual 'systemctl hibernate'
+        remains possible but still broken — documented as do-not-use.
+    - id: 4
+      label: Apply on-host
+      status: pending
+      notes: >-
+        Blocked on sudo: tony has (ALL:ALL) ALL but no NOPASSWD for file
+        edits; only apt-get update/upgrade(specific pkgs), modprobe
+        brcmfmac_wcc, nmcli wifi, reboot are passwordless. Board request
+        raised with options (a recommended) + exact command:
+        'sudo bash ~/CascadeProjects/chaba/scripts/ops/macbook-disable-hibernate.sh'
+        (or paste the heredoc inline — script also in this branch).
+
+outcome:
+  result: investigating
+  evidence:
+    - "journalctl --list-boots: 3 hibernate->cold-boot boundaries (11-21, 11-23 x2 via two boots, 11-25) each bracketed by systemd-hibernate-resume failure"
+    - "kernel swap-on: 'Adding 19922940k swap on /swap.img ... extents:22 across:23609340k' — fragmented swapfile"
+    - "cmdline resume=PARTUUID=cf9d881c-20ee-4834-b22c-071666307ca5 resume_offset=29630464; /sys/power/resume=259:2 — resume plumbing present, image unreadable"
+    - "s2idle verified: PM suspend entry/exit pair 2026-11-26 11:36-12:16"
+    - "scripts/ops/macbook-disable-hibernate.sh — staged, bash -n clean, idempotent"
+    - "docs/ssot/ssot.mysystem.macbook.yml Power & Sleep updated"
+  residual:
+    - "Needs Tony's sudo on tony-macbook (board request on card) — until then every battery lid-close is still a hibernate->cold-boot event; day-awake inhibit only reduces exposure"
+    - "If option (b) is ever wanted: recreate /swap.img contiguously (dd not fallocate), recompute resume_offset via filefrag, update /etc/default/grub + update-grub + update-initramfs, reboot, then test-hibernate — expect possible amdgpu resume issues on Polaris11 regardless"
+    - "Manual 'systemctl hibernate' on this host remains broken-resume — do not use; consider 'AllowHibernation=no' later if we want to hard-disable"
+
+lessons:
+  - "logind CanHibernate/CanSuspendThenHibernate 'no' over SSH is a POLKIT answer (needs an active session), not a capability report — check systemd source before treating it as 'hibernation unsupported'."
+  - "Kernel 'PM: Image not found (code -22)' on resume = image header unreadable at resume_offset — first suspect a fragmented swapfile ('extents:N' in the swap-on kernel line); fallocate-created swapfiles fragment easily."
+  - "tony-macbook sudo is password-only for everything except a small NOPASSWD list (apt-get update/upgrade, brcmfmac modprobe, nmcli wifi, reboot) — any /etc change needs a board request for one interactive sudo, same pattern as the day-awake polkit rule."
+  - "journalctl --list-boots boot-boundary gaps of seconds-to-a-minute are the signature of failed-resume cold boots; uptime spanning days means no hibernate happened in between."
+  - "Prior interactive fix attempts leave traces in ~/.bash_history (/tmp/fix-*.sh) — read it before re-debugging; option (b) was already tried and didn't converge."
