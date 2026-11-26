@@ -1,0 +1,4 @@
+# Keep apt non-interactive on the IDC hosts. A modified conffile (e.g.
+# /etc/cloud/cloud.cfg) otherwise makes `apt-get -y upgrade` block forever
+# waiting for input - see the idc02 recovery on 2026-11-24.
+apt_upgrade_flags: '-y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold'

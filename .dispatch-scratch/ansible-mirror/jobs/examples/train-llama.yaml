@@ -1,0 +1,37 @@
+# NOTE: This is an ASPIRATIONAL spec for a future multi-GPU host.
+# Current fleet (omen, GTX 1650 4GB) CANNOT run this — it stays queued forever.
+# For a real job on this fleet, use gpu-torch-inference.yaml instead.
+#
+# Multi-GPU LLM Training (requires future 4×A100/H100 host, 80GB VRAM each)
+# Dispatch when a suitable host is added to the `gpu` group.
+#   ansible-playbook playbooks/queue_operations.yml \
+#     -e operation=enqueue \
+#     -e job_spec_file=/home/tony/ansible/jobs/examples/train-llama.yaml
+
+job_id: "train-llama-7b-{{ '%Y%m%d-%H%M' | strftime }}"
+job_image: "ghcr.io/huggingface/trl:latest"
+job_cmd: >
+  torchrun --nproc_per_node={{ job_gpus }} train_sft.py
+  --model_name_or_path meta-llama/Llama-2-7b-hf
+  --dataset_name tatsu-lab/alpaca
+  --output_dir /output
+  --per_device_train_batch_size 4
+  --num_train_epochs 3
+
+# Resource requirements — 4 GPUs, 20GB+ VRAM each
+job_gpus: 4
+job_min_vram_gb: 20
+job_max_load_pct: 70
+job_max_mem_pct: 80
+job_timeout_sec: 172800  # 48 hours
+
+# Placement: multi-GPU hosts only (none currently)
+job_require_tags: ["gpu", "multigpu"]
+job_exclude_tags: ["laptop"]
+target_group: "all"
+priority: 7
+user: "tony"
+project: "llm-training"
+
+container_runtime: "podman"
+sidecar_redis_host: "100.123.163.11"

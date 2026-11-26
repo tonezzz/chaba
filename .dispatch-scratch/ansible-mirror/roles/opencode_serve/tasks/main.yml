@@ -1,0 +1,109 @@
+---
+- name: Resolve controller-side secrets and provider config
+  ansible.builtin.set_fact:
+    opencode_serve_secret: "{{ lookup('file', opencode_serve_password_source) | trim }}"
+    opencode_litellm_key: "{{ (lookup('file', opencode_litellm_env_source) | regex_search('(?m)^LITELLM_KEY=.*$')).split('=')[1] | trim }}"
+    opencode_litellm_url: "{{ (lookup('file', opencode_litellm_env_source) | regex_search('(?m)^LITELLM_URL=.*$')).split('=')[1] | trim }}"
+    opencode_litellm_provider: "{{ (lookup('file', opencode_provider_config_source) | from_json).provider.litellm }}"
+  no_log: true
+
+- name: Ensure serve directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0700"
+  loop:
+    - "{{ opencode_serve_home }}/.config/systemd/user"
+    - "{{ opencode_serve_home }}/.config/opencode-serve"
+    - "{{ opencode_serve_home }}/.opencode/bin"
+
+- name: Check for OpenCode CLI at the configured path
+  ansible.builtin.stat:
+    path: "{{ opencode_bin }}"
+  register: opencode_serve_bin
+
+- name: Download the self-contained OpenCode release
+  ansible.builtin.get_url:
+    url: "https://github.com/anomalyco/opencode/releases/download/v{{ opencode_version }}/opencode-linux-x64.tar.gz"
+    dest: "/tmp/opencode-{{ opencode_version }}-linux-x64.tar.gz"
+    mode: "0600"
+  when: not opencode_serve_bin.stat.exists
+
+- name: Install the OpenCode CLI binary
+  ansible.builtin.unarchive:
+    src: "/tmp/opencode-{{ opencode_version }}-linux-x64.tar.gz"
+    dest: "{{ opencode_bin | dirname }}"
+    remote_src: true
+    mode: "0755"
+  when: not opencode_serve_bin.stat.exists
+
+- name: Install the serve-only OpenCode config
+  ansible.builtin.template:
+    src: opencode.json.j2
+    dest: "{{ opencode_serve_home }}/.config/opencode-serve/opencode.json"
+    mode: "0600"
+  register: serve_config
+
+- name: Install the serve environment file
+  ansible.builtin.template:
+    src: opencode-serve.env.j2
+    dest: "{{ opencode_serve_home }}/.config/opencode-serve.env"
+    mode: "0600"
+  no_log: true
+  register: serve_env
+
+- name: Install opencode-serve user unit
+  ansible.builtin.template:
+    src: opencode-serve.service.j2
+    dest: "{{ opencode_serve_home }}/.config/systemd/user/opencode-serve.service"
+    mode: "0600"
+  register: serve_unit
+
+- name: Reload systemd user manager
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+    scope: user
+  when: serve_unit.changed
+
+- name: Enable and start opencode-serve
+  ansible.builtin.systemd_service:
+    name: opencode-serve.service
+    state: started
+    enabled: true
+    scope: user
+
+- name: Restart opencode-serve after config or credential changes
+  ansible.builtin.systemd_service:
+    name: opencode-serve.service
+    state: restarted
+    scope: user
+  when: serve_config.changed or serve_env.changed
+
+- name: Wait for the API port
+  ansible.builtin.wait_for:
+    host: "{{ opencode_serve_host }}"
+    port: "{{ opencode_serve_port }}"
+    delay: 2
+    timeout: 60
+
+- name: Verify the API rejects unauthenticated requests
+  ansible.builtin.uri:
+    url: "http://{{ opencode_serve_host }}:{{ opencode_serve_port }}/api/info"
+    status_code: 401
+
+- name: Verify the authenticated API
+  ansible.builtin.uri:
+    url: "http://{{ opencode_serve_host }}:{{ opencode_serve_port }}/api/info"
+    method: GET
+    user: opencode
+    password: "{{ opencode_serve_secret }}"
+    status_code: 200
+  register: serve_api
+  retries: 5
+  delay: 3
+  until: serve_api.status == 200
+  no_log: true
+
+- name: Report endpoint
+  ansible.builtin.debug:
+    msg: "{{ inventory_hostname }}: opencode-serve on {{ opencode_serve_host }}:{{ opencode_serve_port }} - auth required, health OK"

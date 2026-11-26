@@ -1,0 +1,8 @@
+# con01 has unrestricted passwordless sudo, so it can safely use the same
+# non-interactive conffile handling as the IDC hosts.
+apt_upgrade_flags: '-y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold'
+
+# OpenCode serve: install the self-contained v2 CLI via the official installer.
+opencode_method: curl
+opencode_bin: /home/tony/.opencode/bin/opencode
+opencode_serve_host: 100.72.146.39

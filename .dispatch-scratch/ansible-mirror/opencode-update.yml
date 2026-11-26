@@ -1,0 +1,76 @@
+- name: Upgrade OpenCode CLI to the latest release
+  hosts: opencode
+  gather_facts: false
+
+  vars:
+    opencode_version: "2.4.1"
+
+  tasks:
+    - name: Record version before
+      ansible.builtin.shell: "{{ opencode_bin }} --version 2>&1 | head -1"
+      register: opencode_before
+      changed_when: false
+
+    - name: Check for legacy V1 package
+      ansible.builtin.shell: npm list -g opencode-ai --depth=0 2>/dev/null | grep -q opencode-ai
+      register: v1_present
+      changed_when: false
+      failed_when: false
+      when: opencode_remove_v1 | default(false)
+
+    - name: Remove legacy V1 package
+      ansible.builtin.command: npm uninstall -g opencode-ai
+      when: opencode_remove_v1 | default(false) and v1_present.rc == 0
+
+    - name: Upgrade curl-installed OpenCode
+      ansible.builtin.command: "{{ opencode_bin }} upgrade --method curl"
+      register: opencode_upgrade
+      changed_when: false
+      when: opencode_method == 'curl'
+
+    - name: Upgrade user npm-installed OpenCode
+      ansible.builtin.command: "npm install -g @opencode/cli@{{ opencode_version }}"
+      register: opencode_upgrade
+      changed_when: false
+      when: opencode_method == 'npm' and not (opencode_npm_sudo | default(false))
+
+    - name: Upgrade system npm-installed OpenCode
+      ansible.builtin.command: "sudo npm install -g @opencode/cli@{{ opencode_version }}"
+      register: opencode_upgrade
+      changed_when: false
+      when: opencode_method == 'npm' and (opencode_npm_sudo | default(false))
+
+    - name: Upgrade secondary curl-installed OpenCode
+      ansible.builtin.command: "{{ opencode_extra_bin }} upgrade --method curl"
+      register: opencode_extra_upgrade
+      changed_when: false
+      when: opencode_extra_method | default('') == 'curl'
+
+    - name: Record version after
+      ansible.builtin.shell: "{{ opencode_bin }} --version 2>&1 | head -1"
+      register: opencode_after
+      changed_when: false
+
+    - name: Show result
+      ansible.builtin.debug:
+        msg:
+          - "Before: {{ opencode_before.stdout | trim }}"
+          - "After:  {{ opencode_after.stdout | trim }}"
+          - "Expected: opencode v{{ opencode_version }}"
+
+    - name: Record secondary version after
+      ansible.builtin.shell: "{{ opencode_extra_bin }} --version 2>&1 | head -1"
+      register: opencode_extra_after
+      changed_when: false
+      when: opencode_extra_method | default('') == 'curl'
+
+    - name: Assert target version is active
+      ansible.builtin.assert:
+        that: "'v' ~ opencode_version in opencode_after.stdout"
+        fail_msg: "OpenCode is not at {{ opencode_version }} on {{ inventory_hostname }}"
+
+    - name: Assert secondary binary is at target version
+      ansible.builtin.assert:
+        that: "'v' ~ opencode_version in opencode_extra_after.stdout"
+        fail_msg: "Secondary OpenCode is not at {{ opencode_version }} on {{ inventory_hostname }}"
+      when: opencode_extra_method | default('') == 'curl'

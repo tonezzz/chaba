@@ -1,0 +1,15 @@
+[Unit]
+Description=Ansible Dispatch Scheduler
+After=network-online.target redis-server.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/home/tony/.local/venv-sidecar/bin/python /home/tony/ansible/queue/scheduler.py --redis {{ sidecar_redis_host }} --interval 5 --max-concurrent 3
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

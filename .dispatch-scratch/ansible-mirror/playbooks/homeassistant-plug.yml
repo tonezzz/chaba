@@ -1,0 +1,90 @@
+---
+# Control a Home Assistant switch (smart plug) through the HA REST API.
+#
+# Run from the control host (idc02). The API request originates on `omen` and
+# uses http://127.0.0.1:8123, so no firewall/Tailscale exposure is needed.
+# The token is read from the private secret file on omen — none is stored here.
+#
+# Usage:
+#   ansible-playbook -i inventory.ini playbooks/homeassistant-plug.yml
+#   ansible-playbook -i inventory.ini playbooks/homeassistant-plug.yml -e plug_action=turn_off
+#   ansible-playbook -i inventory.ini playbooks/homeassistant-plug.yml -e plug_action=turn_on
+#   ansible-playbook -i inventory.ini playbooks/homeassistant-plug.yml \
+#     -e plug_action=turn_off -e plug_entity=switch.plug_tv
+
+- name: Read or control a Home Assistant smart plug
+  hosts: omen
+  gather_facts: false
+  become: false
+
+  vars:
+    ha_api_url: "http://127.0.0.1:8123/api"
+    ha_token_file: "/home/tony/.config/secrets/home-assistant-token.env"
+    plug_entity: "switch.mac_plug"
+    plug_action: "status"  # status | turn_on | turn_off
+
+  tasks:
+    - name: Validate requested action
+      ansible.builtin.assert:
+        that: plug_action in ["status", "turn_on", "turn_off"]
+        fail_msg: "plug_action must be status, turn_on or turn_off"
+        quiet: true
+
+    - name: Read HA long-lived token from private secret file
+      ansible.builtin.slurp:
+        src: "{{ ha_token_file }}"
+      register: ha_token_file_read
+      no_log: true
+
+    - name: Extract token
+      ansible.builtin.set_fact:
+        ha_token: >-
+          {{ (ha_token_file_read.content | b64decode).splitlines()
+             | select('match', '^HA_LONG_LIVED_TOKEN=') | first
+             | split('=', 1) | last | trim }}
+      no_log: true
+
+    - name: Get current plug state
+      ansible.builtin.uri:
+        url: "{{ ha_api_url }}/states/{{ plug_entity }}"
+        headers:
+          Authorization: "Bearer {{ ha_token }}"
+        return_content: true
+        status_code: 200
+      register: plug_before
+
+    - name: Show current state
+      ansible.builtin.debug:
+        msg: "{{ plug_entity }} = {{ plug_before.json.state }}"
+
+    - name: Call HA switch service
+      ansible.builtin.uri:
+        url: "{{ ha_api_url }}/services/switch/{{ plug_action }}"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ ha_token }}"
+          Content-Type: "application/json"
+        body:
+          entity_id: "{{ plug_entity }}"
+        body_format: json
+        status_code: 200
+      register: plug_service
+      when: plug_action != "status"
+      changed_when: plug_before.json.state != (plug_action | replace('turn_', ''))
+
+    - name: Verify plug state after service call
+      ansible.builtin.uri:
+        url: "{{ ha_api_url }}/states/{{ plug_entity }}"
+        headers:
+          Authorization: "Bearer {{ ha_token }}"
+        return_content: true
+        status_code: 200
+      register: plug_after
+      when: plug_action != "status"
+
+    - name: Assert expected state
+      ansible.builtin.assert:
+        that: plug_after.json.state == (plug_action | replace('turn_', ''))
+        fail_msg: "Plug {{ plug_entity }} is {{ plug_after.json.state }}, expected {{ plug_action }}"
+        quiet: true
+      when: plug_action != "status"
