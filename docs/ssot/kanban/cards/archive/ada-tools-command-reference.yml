@@ -1,0 +1,799 @@
+id: ada-tools-command-reference
+title: Ada tools command reference — generated reviewable catalog (name/purpose/trigger/cost) + Ada what-can-you-do
+  verb
+column: done
+updated: 2026-11-26 19:40
+priority: high
+tags:
+- ada
+- docs
+spec: 'REPO work, two parts:
+
+
+  1) GENERATED CATALOG — script that parses Ada tool declarations (ada-voice realtime_provider.py tools block) +
+  writes docs/kb/ada-tools-commands.md: table per tool — name, purpose, trigger phrases, backend (board-api|MCP|exec),
+  token/cost note, last-changed. Generated, not handwritten — mark do-not-edit + regenerate on decl change (tie
+  into the tools-merge-* consolidation work).
+
+  2) ADA VERB — a what-can-you-do read path so she answers her own capability questions from the same generated
+  source (sub-second, deterministic — producer/consumer split, never computes live).
+
+
+  DONE-CONDITION: docs/kb/ada-tools-commands.md generated + reviewable; Ada verb contract documented (wiring card
+  follows in ada-voice if needed).'
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  sweep:
+    stale_running: 2026-11-09 19:19
+    session_gone: 2026-11-09 19:19
+    failed_noted: 2026-11-09 19:34
+    dirty: 6
+  last_failure: 'journal=exit-code s": "FAILED_PRECONDITION" |   } | } | devin-task-ada-tools-command-reference-1794932598.service:
+    Main process exited, code=exited, status=1/FAILURE | devin-task-ada-tools-command-reference-1794932598.service:
+    Failed with result ''exit-code''.'
+  attempts: 2
+  executor: devin
+  result: 'exit=0  is 29 days stale (59562cf) — the doc flags it and a fresh pull will update counts on regen. |
+    devin-task-20261121-185407-repo-work-two-parts-1-generate.service: Consumed 44.654s CPU time over 7min 37.526s
+    wall clock time, 524M memory peak.'
+  runner: idc02
+  verified: true
+ref: ADA-1285
+comms:
+- at: 2026-11-09 17:24
+  from: tony
+  text: queued for jules — generated catalog + read-path verb; deterministic, reviewable
+- at: 2026-11-09 18:16
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.14 > 0.85)'
+- at: 2026-11-09 18:17
+  from: chaba
+  text: 'mn01 defers: executor=jules declared but this runner can''t serve it (JULES_LANES=0, no jules key) — the
+    card stays queued for a Jules-capable runner; it will never silently fall back to devin'
+- at: 2026-11-09 18:17
+  from: chaba
+  text: 'idc02 defers: executor=jules declared but this runner can''t serve it (JULES_LANES=0, no jules key) — the
+    card stays queued for a Jules-capable runner; it will never silently fall back to devin'
+- at: 2026-11-09 18:18
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.28 > 0.85)'
+- at: 2026-11-09 18:18
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-09 18:18
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-09 18:18
+  from: tony-omen
+  text: claimed
+- at: 2026-11-09 18:18
+  from: chaba
+  text: started devin-task-ada-tools-command-reference-1794223105 on tony-omen (dispatch executor=jules)
+- at: 2026-11-09 19:19
+  from: tony-omen
+  text: 'finished (failed): no exit record — unit not-found reports collected defaults (unproven, not ok) SDL_IM_MODULE=''''
+    XMODIFIERS='''' |   Set IM_'
+- at: 2026-11-09 19:19
+  from: chaba
+  text: 'merge-sweep: devin-task-ada-tools-command-reference-1794223105 no longer active on tony-omen but card still
+    says running — sweeping its branch'
+- at: 2026-11-09 19:19
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-ada-tools-command-reference-1794223105 on tony-omen
+    — if the work was never pushed it may be gone'
+- at: 2026-11-09 19:34
+  from: chaba
+  text: 'merge-sweep: devin-task-ada-tools-command-reference-1794223105 failed — its branch isn''t auto-merged (unverified
+    partial work). Retry the card or merge dispatch/ada-tools-command-reference-1794223105 by hand.'
+- at: 2026-11-10 22:23
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-12 00:21
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-12 06:21
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-12 10:05
+  from: devin
+  text: retry requested
+- at: 2026-11-12 10:07
+  from: tony-omen
+  text: claimed
+- at: 2026-11-12 10:07
+  from: chaba
+  text: 'idc02 defers: executor=jules declared but this runner can''t serve it (JULES_LANES=0, no jules key) — the
+    card stays queued for a Jules-capable runner; it will never silently fall back to devin'
+- at: 2026-11-12 10:08
+  from: devin
+  text: put on hold
+- at: 2026-11-12 10:09
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 3.19 > 1.0)'
+- at: 2026-11-12 10:09
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.51 > 0.85)'
+- at: 2026-11-12 14:08
+  from: devin
+  text: 'Jules EOL 2026-11-12: Google panel shows read-only until Dec 31 2026 — session creation disabled account-wide
+    (this was the FAILED_PRECONDITION root cause, not quota). Lane is dead for new work. Reroute needed: devin lane
+    for code work, script/kk_mac for routine, or wait for opencode lane re-graduation (OPS-1255, now re-earning
+    at S0). Held idle — no claim churn.'
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:06
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:35
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:36
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:52
+  from: devin
+  text: queued for processing
+- at: 2026-11-17 18:53
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-17 18:53
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-17 18:53
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.51 > 0.85)'
+- at: 2026-11-17 18:53
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.30 > 1.0)'
+- at: 2026-11-17 18:55
+  from: chaba
+  text: 'mn01 defers: executor=jules declared but this runner can''t serve it (JULES_LANES=0, no jules key) — the
+    card stays queued for a Jules-capable runner; it will never silently fall back to devin'
+- at: 2026-11-17 18:59
+  from: chaba
+  text: 'tony-dell defers: executor=jules declared but this runner can''t serve it (JULES_LANES=0, no jules key)
+    — the card stays queued for a Jules-capable runner; it will never silently fall back to devin'
+- at: 2026-11-17 19:03
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-17 19:06
+  from: chaba
+  text: 'tony-macbook defers: executor=jules declared but this runner can''t serve it (JULES_LANES=0, no jules key)
+    — the card stays queued for a Jules-capable runner; it will never silently fall back to devin'
+- at: 2026-11-17 19:13
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.93 > 1.5)'
+- at: 2026-11-17 19:13
+  from: chaba
+  text: 'idc02 defers: executor=jules declared but this runner can''t serve it (JULES_LANES=0, no jules key) — the
+    card stays queued for a Jules-capable runner; it will never silently fall back to devin'
+- at: 2026-11-17 19:26
+  from: tony-omen
+  text: claimed
+- at: 2026-11-17 19:26
+  from: chaba
+  text: started devin-task-ada-tools-command-reference-1794918380 on tony-omen (dispatch executor=jules)
+- at: 2026-11-17 19:26
+  from: tony-omen
+  text: 'finished (failed): journal=exit-code s": "FAILED_PRECONDITION" |   } | } | devin-task-ada-tools-command-reference-1794918380.service:
+    Main '
+- at: 2026-11-17 21:07
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 22:11
+  from: devin
+  text: moved doing -> backlog
+- at: 2026-11-17 23:22
+  from: tony
+  text: queued for processing
+- at: 2026-11-17 23:23
+  from: tony-omen
+  text: claimed
+- at: 2026-11-17 23:23
+  from: chaba
+  text: started devin-task-ada-tools-command-reference-1794932598 on tony-omen (dispatch executor=jules)
+- at: 2026-11-17 23:24
+  from: tony-omen
+  text: 'finished (failed): journal=exit-code s": "FAILED_PRECONDITION" |   } | } | devin-task-ada-tools-command-reference-1794932598.service:
+    Main '
+- at: 2026-11-17 23:24
+  from: chaba
+  text: 'tony-omen retry backoff: fail 1/3 — next claim not before 11-17 23:54'
+- at: 2026-11-18 17:19
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:08
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:18
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:02
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:06
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 08:59
+  from: chaba
+  text: 'stalled-claim reaper: moved doing -> backlog — status=failed with no live claim — /action do=retry re-arms
+    it'
+- at: 2026-11-19 17:03
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:32
+  from: tony
+  text: retry requested
+- at: 2026-11-19 19:32
+  from: tony
+  text: claimed
+- at: 2026-11-19 19:37
+  from: tony
+  text: closed by tony
+- at: 2026-11-19 20:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 12:32
+  from: devin
+  text: Jules lane is retired (provider EOL, session creation disabled; see OPS-0156). The earlier failures were
+    this, not a code bug. Do not requeue as executor=jules. Staged ada-control dispatch only admits read-only profiles,
+    so run via card-run.py --lifecycle on opencode, or pick up manually.
+- at: 2026-11-20 13:14
+  from: tony
+  text: re-spawned from report page
+- at: 2026-11-20 13:15
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.81 > 0.85)'
+- at: 2026-11-20 13:15
+  from: tony
+  text: put on hold
+- at: 2026-11-20 13:15
+  from: tony
+  text: re-spawned from report page
+- at: 2026-11-20 13:16
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-20 13:16
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-20 13:16
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.15 > 1.0)'
+- at: 2026-11-20 13:16
+  from: chaba
+  text: 'kk-mac defers: executor=devin declared but this runner is launchd — devin-dispatch drives systemd-run internally;
+    the card stays queued for a Linux runner (executor=opencode/script serve here)'
+- at: 2026-11-20 13:18
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 2.22 > 0.85)'
+- at: 2026-11-20 13:20
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-20 13:26
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.04 > 1.0)'
+- at: 2026-11-20 13:58
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.65 > 1.5)'
+- at: 2026-11-20 18:36
+  from: devin
+  text: 2026-11-20 Jules lane RETIRED — provider EOL, session creation disabled account-wide (OPS-0156; ssot.devnest-lanes.yml
+    jules.status=retired, JULES_LANES drop-ins removed on tony-omen/idc03). lane=jules/executor=jules pins on this
+    card are dead and being stripped so a future re-queue classifies onto a live lane. This card was status=queued
+    with executor=devin — held to stop a paid-lane claim on a stale pin. Work is still valid; needs re-lane decision.
+- at: 2026-11-20 18:36
+  from: devin
+  text: put on hold
+- at: 2026-11-20 18:40
+  from: chaba
+  text: classified as codemod (kw:lock conf 1.00)
+- at: 2026-11-20 18:40
+  from: devin
+  text: queued for processing
+- at: 2026-11-20 18:42
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-20 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 19:02
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-20 19:08
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261120-184035-symptom-tony-2026-11-17-answer)
+    — claims held ~29m'
+- at: 2026-11-20 19:14
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.03 > 1.5)'
+- at: 2026-11-20 19:15
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261120-185849-repo-work-chaba-scripts-board-)
+    — claims held ~29m'
+- at: 2026-11-20 19:16
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.82 > 0.85)'
+- at: 2026-11-20 19:17
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-20 19:19
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.31 > 0.85)'
+- at: 2026-11-20 19:21
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261120-192009-canonicalize-the-opencode-ada-)
+    — claims held ~29m'
+- at: 2026-11-20 19:28
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.84 > 1.0)'
+- at: 2026-11-20 19:47
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-20 19:52
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-20 19:53
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.11 > 1.0)'
+- at: 2026-11-20 20:05
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate-limit on devin-task-20261120-195551-finish-artifact-landing-verifi)
+    — claims held ~28m'
+- at: 2026-11-20 20:06
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-20 20:08
+  from: chaba
+  text: 'idc03 defers: disk headroom 2039MB < 2048MB floor'
+- at: 2026-11-20 20:11
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.09 > 0.85)'
+- at: 2026-11-20 20:20
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-20 20:20
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-20 20:23
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261120-201723-two-part-deliverable-repo-work)
+    — claims held ~29m'
+- at: 2026-11-20 20:24
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261120-201948-scripts-embed-embed-lane-py-do)
+    — claims held ~29m'
+- at: 2026-11-20 20:24
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261120-201909-use-the-existing-ada-document-)
+    — claims held ~29m'
+- at: 2026-11-20 20:28
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261120-200526-canonicalize-the-opencode-ada-)
+    — claims held ~29m'
+- at: 2026-11-20 20:29
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261120-194516-repo-work-chaba-scripts-board-)
+    — claims held ~29m'
+- at: 2026-11-20 20:38
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261120-194941-approved-strategy-b-per-the-bo)
+    — claims held ~29m'
+- at: 2026-11-20 20:59
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-20 21:03
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261120-205837-ada-voice-backend-realtime-pro)
+    — claims held ~29m'
+- at: 2026-11-20 21:03
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261120-205952-goal-drain-the-review-column-s)
+    — claims held ~29m'
+- at: 2026-11-20 21:05
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261120-210221-fix-the-cms-publish-page-call-)
+    — claims held ~29m'
+- at: 2026-11-20 21:07
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261120-210254-scripts-embed-embed-lane-py-do)
+    — claims held ~28m'
+- at: 2026-11-20 21:10
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261120-210532-evaluate-opencode-as-a-supervi)
+    — claims held ~29m'
+- at: 2026-11-20 21:15
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261120-211214-fix-the-cms-publish-page-call-)
+    — claims held ~29m'
+- at: 2026-11-20 21:16
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261120-211338-two-lane-comparison-on-kk-mac-)
+    — claims held ~29m'
+- at: 2026-11-20 21:44
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate-limit on devin-task-20261120-213459-evaluate-opencode-as-a-supervi)
+    — claims held ~28m'
+- at: 2026-11-21 00:05
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.50 > 1.5)'
+- at: 2026-11-21 01:30
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.36 > 1.0)'
+- at: 2026-11-21 04:36
+  from: chaba
+  text: 'mn01 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-21 04:37
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.91 > 0.85)'
+- at: 2026-11-21 04:37
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-21 05:57
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 0.90 > 0.85)'
+- at: 2026-11-21 06:14
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate-limit on devin-task-20261121-060957-finish-artifact-landing-verifi)
+    — claims held ~29m'
+- at: 2026-11-21 06:19
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.13 > 1.0)'
+- at: 2026-11-21 06:24
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate-limited on devin-task-20261121-061736-finish-artifact-landing-verifi)
+    — claims held ~29m'
+- at: 2026-11-21 06:26
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-21 07:31
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 3.24 > 1.0)'
+- at: 2026-11-21 07:41
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.52 > 1.5)'
+- at: 2026-11-21 10:37
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.42 > 0.85)'
+- at: 2026-11-21 10:38
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-21 13:32
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.80 > 1.0)'
+- at: 2026-11-21 14:36
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.81 > 1.5)'
+- at: 2026-11-21 14:55
+  from: chaba
+  text: 'tony-macbook defers: host overloaded (5m load/core 0.82 > 0.8)'
+- at: 2026-11-21 15:17
+  from: chaba
+  text: 'tony-macbook defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-21 16:04
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.06 > 0.85)'
+- at: 2026-11-21 16:13
+  from: devin
+  text: 'routing edited: lane cleared, executor=devin, tags by devin: jules lane retired (OPS-0156); pin executor=devin
+    so the classifier skips it (kw:lock false positive routed it to codemod; see OPS-0028)'
+- at: 2026-11-21 16:38
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.31 > 0.85)'
+- at: 2026-11-21 16:39
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-21 16:52
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.00 > 1.0)'
+- at: 2026-11-21 17:49
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 18:52
+  from: devin
+  text: retry requested
+- at: 2026-11-21 18:53
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-21 18:54
+  from: chaba
+  text: started devin-task-20261121-185407-repo-work-two-parts-1-generate on tony-macbook (dispatch executor=devin)
+- at: 2026-11-21 18:54
+  from: chaba
+  text: 'primer injected 8 lesson(s): [ada-tools-command-reference] Jules EOL 2026-11-12: Google panel shows read-only;
+    [ada-tools-command-reference] tony-macbook defers: executor=jules declared but t; [assessments-to-education-split-ssot-keep-113ca4]
+    ALL DONE. (1) chaba-lessons co; [ada-tool-consolidation-merge-overlapping-615ba9] spec (ada-voice repo, main):
+    o; [ada-tools-command-reference] Jules lane is retired (provider EOL, session creat; [ada-tools-command-reference]
+    idc02 defers: executor=jules de'
+- at: 2026-11-21 18:57
+  from: devin
+  text: 'attempt 3 in worktree (executor=devin this run, not jules — prior failures were the dead jules lane). Found
+    the pieces: scripts/ada/tools-report.py AST-parses realtime_provider.py already; ssot.tools.yml registry has
+    per-tool backend; ada-voice has tool_guide.yml (trigger cues) + ssot.tool-surface.yml (merge families). Building
+    generator scripts/ada/tools-commands-catalog.py -> docs/kb/ada-tools-commands.md + .json snapshot for the verb
+    read path.'
+- at: 2026-11-21 19:01
+  from: devin
+  text: 'DONE (attempt 3, devin executor). Deliverables in worktree: scripts/ada/tools-commands-catalog.py (generator:
+    AST-parses realtime_provider decls + tools.d, joins manifest/tool_guide/_ALIASES/tool-surface families + chaba
+    ssot.tools.yml backend registry) → docs/kb/ada-tools-commands.md (57 tools: 34 builtin/20 drop-in/3 guest; do-not-edit
+    + managed block; merge-family + drift tables; --check regen gate) + docs/kb/ada-tools-commands.json (verb snapshot)
+    + docs/kb/ada-tools-verb-contract.md (sub-se'
+- at: 2026-11-21 19:02
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261121-185407-repo-work-two-parts-1-generate on tony-macbook still
+    dirty — 6 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-21 19:02
+  from: tony-macbook
+  text: 'finished (ok): exit=0  is 29 days stale (59562cf) — the doc flags it and a fresh pull will update counts
+    on regen. | devin-task-2026112'
+- at: 2026-11-21 19:02
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-21 19:02
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261121-185407-repo-work-two-parts-1-generate
+    is 13 commits behind origin/master —\n   run 'git pull -"
+- at: 2026-11-21 19:02
+  from: chaba
+  text: banked 120 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-21 19:02
+  from: chaba
+  text: pushed dispatch/20261121-185407-repo-work-two-parts-1-generate to origin
+- at: 2026-11-21 19:02
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-21 19:03
+  from: chaba
+  text: 'worktree kept: dirty — 6 uncommitted file(s)'
+- at: 2026-11-23 07:18
+  from: devin
+  text: moved review -> backlog
+- at: 2026-11-23 07:19
+  from: devin
+  text: queued for processing
+- at: 2026-11-23 07:19
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.01 > 1.5)'
+- at: 2026-11-23 07:19
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.79 > 0.85)'
+- at: 2026-11-23 07:20
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 3.89 > 1.0)'
+- at: 2026-11-23 07:20
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 07:21
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 0.89 > 0.85)'
+- at: 2026-11-23 07:22
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.27 > 1.0)'
+- at: 2026-11-23 07:31
+  from: idc02
+  text: claimed
+- at: 2026-11-23 07:32
+  from: chaba
+  text: started devin-task-20261123-073239-repo-work-two-parts-1-generate on idc02 (dispatch executor=devin)
+- at: 2026-11-23 07:32
+  from: chaba
+  text: 'primer injected 8 lesson(s): [ada-tools-command-reference] Jules EOL 2026-11-12: Google panel shows read-only;
+    [ada-tools-command-reference] checkpoint failed: commit: ⚠️ single-writer: /home; [ada-tools-command-reference]
+    idc02 defers: executor=jules declared but this run; [assessments-to-education-split-ssot-keep-113ca4] ALL DONE.
+    (1) chaba-lessons co; [ada-tool-consolidation-merge-overlapping-615ba9] spec (ada-voice repo, main): o; [ada-tools-command-reference]
+    Jules lane is retired (provider'
+- at: 2026-11-23 07:33
+  from: devin
+  text: 'attempt 4 started on idc02 (executor=devin). Prior run did the work but checkpoint failed (worktree 13
+    behind origin/master, hook blocked commit). Redoing: generator script + generated md/json + verb contract, this
+    time on a current base.'
+- at: 2026-11-23 07:40
+  from: devin
+  text: 'DONE (attempt 4, devin @ idc02, committed on dispatch branch this time — prior run lost work to a checkpoint
+    hook on a 13-behind base). Deliverables: scripts/ada/tools-commands-catalog.py (parses realtime_provider builtin+CHABA
+    guest, tools.d+manifest; joins tool_guide/_ALIASES/tool-surface families/scenario triggers/ssot.tools.yml backends/git-blame
+    last-changed; --check drift gate) -> docs/kb/ada-tools-commands.md (71 tools: 37 builtin/31 drop-in/3 guest;
+    26 merge families all merged; 92 absor'
+- at: 2026-11-23 07:47
+  from: chaba
+  text: 'merge-sweep: merged 73c7f9ee (dispatch/20261123-073239-repo-work-two-parts-1-generate from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261123-073239-repo-work-two-parts-1-generate.md)
+    — auto-closed'
+- at: 2026-11-23 07:47
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261123-073239-repo-work-two-parts-1-generate,
+    branch dispatch/20261123-073239-repo-work-two-parts-1-generate on idc02'
+- at: 2026-11-23 07:50
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 07:50
+  from: chaba
+  text: banked 125 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 07:50
+  from: chaba
+  text: pushed dispatch/20261123-073239-repo-work-two-parts-1-generate to origin
+- at: 2026-11-23 07:50
+  from: chaba
+  text: 'test gate failed — merge held: suite timeout (240s)'
+- at: 2026-11-23 14:08
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:19
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:02
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:11
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:13
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:21
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:30
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:39
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:01
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:01
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:42
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:26
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:38
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:48
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:40
+  from: tony
+  text: archived (0d in done, verified)
+claim:
+  since: 2026-11-23 07:31
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-23 07:47
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261123-073239-repo-work-two-parts-1-generate.md

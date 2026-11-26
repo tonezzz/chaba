@@ -1,0 +1,362 @@
+id: evaluate-resshift-rsd-class-distilled-sr-8d9c80
+title: Evaluate ResShift/RSD-class distilled SR as mid-tier upscale lane
+column: done
+updated: 2026-11-26 19:41
+brief: Non-T2I distilled diffusion SR (ResShift/RSD) — fits omen 4GB GPU; benchmark vs realesrgan/swinir on campaign
+  assets.
+priority: low
+tags:
+- adobe-stock
+- image-quality
+- eval
+spec: Follow-up from adobe-stock-upscaler-eval (OPS-1077). ResShift (174M, ~1.2GB VRAM, 15 steps) and RSD (one-step
+  distilled, ~0.5GB) are non-T2I diffusion SR that fit the GTX1650 — unlike SeeSR/OSEDiff/SUPIR (9-30GB). Benchmark
+  on comparison-b x4 via the same upscale-eval.py matrix; compare fidelity vs GAN texture invention vs classical
+  SR. If it beats Real-ESRGAN perceptually without hallucination risk, it becomes the quality tier between realesrgan
+  and rented SUPIR.
+ref: SYS-0210
+comms:
+- at: 2026-11-18 23:16
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-19 17:03
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:55
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:06
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:48
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:08
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:21
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:21
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:12
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:13
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:24
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:42
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:11
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:04
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:52
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 12:20
+  from: chaba
+  text: classified as paid_frontier (kw:benchmark conf 1.00)
+- at: 2026-11-25 12:20
+  from: tony
+  text: queued for processing
+- at: 2026-11-25 12:21
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.61 > 0.7)'
+- at: 2026-11-25 12:21
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 12:21
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 12:21
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 12:22
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 6.90 > 0.8)'
+- at: 2026-11-25 12:22
+  from: chaba
+  text: 'kk-mac defers: installed runner-agent drifted from repo /Users/kkkakk/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 12:23
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.10 > 0.7)'
+- at: 2026-11-25 12:24
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 12:30
+  from: idc02
+  text: claimed
+- at: 2026-11-25 12:31
+  from: chaba
+  text: started devin-task-20261125-123106-follow-up-from-adobe-stock-ups on idc02 (dispatch)
+- at: 2026-11-25 12:31
+  from: chaba
+  text: 'primer injected 8 lesson(s): Dispatch task dirs accumulate forever on hosts without devin-cleanup.timer
+    — onl; embed-pool-shim :11436 504s on 1500-char batches when upstreams are cold/degrade; lane state is per-host
+    on idc02; tony-omen has no opencode-lane state dir; member-device lanes (kk-mac) sleep without warning — bench
+    gates fail closed; sc; shadow_eval.bench_key() only knew LITELLM_KEY_BENCH/CHABA + litellm-keys.env — h; same
+    search over chaba-lessons + kb-{development,features, operation'
+- at: 2026-11-25 12:43
+  from: devin
+  text: dispatch started on idc02 -> executing benchmark on tony-omen GTX1650. Source asset + OPS-1077 receipts
+    pulled from gdrive campaign 60-upscale-eval. Setting up ResShift (zsyOAOA) + RSD (Selikhanovych, 1-step distill)
+    inference env; GPU currently ~1.3GB free (bge-rerank + ollama resident) so will run amp/chopped.
+- at: 2026-11-25 13:26
+  from: devin
+  text: 'progress: env built on omen (torch2.5.1+cu121 venv, repos patched for modern deps). GPU blocked: only ~970MiB
+    VRAM free (bge-rerank 2.2GB + ollama 0.5GB resident) — ResShift fp16 weights+activations need ~1.5GB; even chop-tiled
+    it OOMs in VQGAN encode conv. Running CPU path instead (chop256). RSD one-step in flight; ResShift v3(4-step)/v1(15-step)
+    queued next. Added --backend precomputed to upscale-eval.py so external-engine outputs score through the same
+    metric matrix.'
+- at: 2026-11-25 14:52
+  from: devin
+  text: 'GPU path unblocked: hybrid CPU-VAE + GPU-UNet patches applied (VAE encode/decode on CPU, diffusion on cuda).
+    ResShift v3-s4 chop128 running on tony-omen now; v1-s15 and RSD-one-step queued next (GPU is 4GB shared with
+    bge-rerank+ollama, sequential only). CPU-only runs were earlyoom-killed.'
+- at: 2026-11-25 15:00
+  from: tony
+  text: 'infra note: use run-cpu-job.sh for CPU-heavy omen runs'
+- at: 2026-11-25 15:00
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-25 15:01
+  from: tony
+  text: 'Load-guard follow-up (2026-11-25 incident): the earlier nohup CPU-only runs drove 1m load ~57 on 12 cores,
+    swap 15/15 GiB and OOM-killed open-jev. For any CPU-heavy step on tony-omen, launch through /home/tony/.local/bin/run-cpu-job.sh
+    <name> <cmd...> — e.g. run-cpu-job.sh resshift-v1-s15 ./venv/bin/python inference_resshift.py -i ../src/comparison-b-sharp-leaves.png
+    -o ../out/resshift-v1-s15 --task realsr --scale 4 --version v1 --chop_size 256 --seed 12345. It wraps the job
+    in a systemd --user '
+- at: 2026-11-25 15:01
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-25 15:27
+  from: tony
+  text: 'confirmed: v3-s4-g128 and v1-s15-g128 are both running in cpu-job-*.scope units (OMP_NUM_THREADS=6, nice
+    10, 2h timeout) via run-cpu-job.sh; the old unbounded queue-v1-rsd.sh / orphan v1 job were stopped. I also replaced
+    /tmp/resshift-eval/queue-v1-rsd.sh with a wrapper-based version (original preserved as queue-v1-rsd.sh.orig-20261125)
+    so reruns stay bounded. Logs/status: ~/var/log/cpu-jobs/. Keep it sequential after these two.'
+- at: 2026-11-25 15:27
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-25 15:27
+  from: devin
+  text: 'Load-guard ack: killed my unguarded v1 nohup, relaunched via run-cpu-job.sh (nice10/6thr/2h). Note: the
+    15:24 v3-s4-g128 cpu-job runs WITHOUT SR_DEVICE=cuda so it is pure-CPU diffusion — likely hits the 2h timeout;
+    GPU-hybrid v3 is queued behind v1+RSD as fallback. v1-s15 now on GPU (cuda+CPU-VAE hybrid), RSD queued last.'
+- at: 2026-11-25 16:34
+  from: tony
+  text: 'omen update: all run-cpu-job.sh jobs now land in cpu-jobs.slice (aggregate CPUQuota=600%, MemoryMax=16G)
+    on top of the per-job 6-thread/2h/nice-10 limits. Verified with a live scope in cgroup .../cpu-jobs.slice/.
+    So sequential runs are fine; launching several big jobs at once will now be capped in aggregate rather than
+    saturating the host. In-flight v3/v1 jobs predate the slice and are not retroactive.'
+- at: 2026-11-25 16:34
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:00
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:09
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:28
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:40
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 18:32
+  from: tony
+  text: '18:31 +07 update: v1 resshift finished rc=0 at 17:14; v3 hit its 2h wrapper timeout at 17:24 and produced
+    no output (needs rerun with longer timeout or smaller chunks). New rsd-one-step-g128c job started 17:49 and
+    is correctly inside cpu-jobs.slice (aggregate cap). Enabled existing zram-swap.service (24G lzo-rle, prio 100):
+    now 15.8G used, disk swap down 16G -> 10.8G. Load 51/39/35, RAM 9G available. open-jev 8777 CPUQuota=200%, restarted
+    16:57, health 200s; Netdata load alarm still routes to in'
+- at: 2026-11-25 18:32
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-25 18:48
+  from: tony
+  text: '18:47 +07: relaunched the v3 resshift eval as cpu-job-resshift-v3-s4-g128-rerun-20261125T114649Z.scope
+    via run-cpu-job.sh with CPU_JOB_TIMEOUT=14400 (4h), same 6 threads / chop_size 128 / seed 12345, writing to
+    the existing ../out/resshift-v3-s4-g128 dir. Verified Slice=cpu-jobs.slice and cgroup .../cpu-jobs.slice/...scope.
+    It shares the 600% aggregate cap with the running rsd-one-step-g128c job. Scheduled a completion check for 23:00
+    +07.'
+- at: 2026-11-25 18:48
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-25 18:56
+  from: devin
+  text: 'First results in (comparison-b x4, same upscale-eval.py matrix): ResShift v1-s15 -> lap 193.6 / rtPSNR
+    35.6dB / rtSSIM 0.9788 (~108min wall under host contention, GPU+CPU-VAE hybrid). RSD one-step -> lap 174.6 /
+    34.85dB / 0.9837 (60min, chop128). Both beat Real-ESRGAN fidelity (32.2dB/0.9718) with equal-or-more texture
+    energy (130.5) — the predicted mid-tier. ResShift v3-s4 bonus run on GPU now; report+receipts to follow.'
+- at: 2026-11-25 19:26
+  from: tony
+  text: '19:26 +07: found two v3 jobs writing to the same empty output dir - my 18:46 CPU rerun (4h) and a GPU job
+    started 18:50 (2h, SR_DEVICE=cuda), both in cpu-jobs.slice. Stopped my CPU rerun to avoid output collision and
+    free CPU; kept the GPU job. Load was 80.87 at detection, 70.91 right after the stop. Completion check at 23:00
+    now targets the GPU job.'
+- at: 2026-11-25 19:26
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-25 20:18
+  from: devin
+  text: 'DONE — all three configs benchmarked on comparison-b x4 via the same upscale-eval.py matrix (new precomputed
+    backend, verified bit-exact vs prior bicubic receipt). ResShift v1-s15: lap193.6/PSNR35.60/SSIM0.9788; RSD one-step:
+    174.6/34.85/0.9837; ResShift v3-s4: 213.2/33.84/0.9806. Verdict: ResShift v1-s15 = quality tier between realesrgan
+    default and rented SUPIR (best generative fidelity, +3.4dB vs Real-ESRGAN, low hallucination risk — non-T2I
+    prior); RSD = throughput tier on bigger GPUs; v3-s4'
+- at: 2026-11-25 20:29
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261125-123106-follow-up-from-adobe-stock-ups.service:
+    Failed to ope'
+- at: 2026-11-25 20:29
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 20:29
+  from: chaba
+  text: banked 653 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 20:29
+  from: chaba
+  text: pushed dispatch/20261125-123106-follow-up-from-adobe-stock-ups to origin
+- at: 2026-11-25 20:29
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 20:29
+  from: chaba
+  text: auto-merged b3603f1c (dispatch/20261125-123106-follow-up-from-adobe-stock-ups) → origin/master
+- at: 2026-11-25 20:29
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-123106-follow-up-from-adobe-stock-ups,
+    branch dispatch/20261125-123106-follow-up-from-adobe-stock-ups'
+- at: 2026-11-25 20:39
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-26 03:58
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:58
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:08
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: paid_frontier
+  lane_source: kw
+  runner: idc02
+  attempts: 1
+  result: 'exit=0 ice: No such file or directory | devin-task-20261125-123106-follow-up-from-adobe-stock-ups.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261125-123106-follow-up-from-adobe-stock-ups.service:
+    No such file or directory'
+  verified: true
+claim:
+  since: 2026-11-25 12:30
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 20:39
+  note: verified — evidence checks green, closing itself

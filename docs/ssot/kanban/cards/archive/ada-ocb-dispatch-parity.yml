@@ -1,0 +1,250 @@
+id: ada-ocb-dispatch-parity
+title: 'Ada-OCB: parity with Devin console job lifecycle (ledger, needs-input, voice answers)'
+column: done
+updated: 2026-11-26 19:41
+brief: 'The ada-ocb pane can queue host-targeted agent/process jobs via the board dispatch lane, but that lane has
+  no Devin-console-style job lifecycle: no MDDB job ledger, no needs-input/awaiting-user detection, no answer/resume
+  path, no attention push, no Report Dispatch layer. Card the parity gap with a scope decision (full incl. Ada voice
+  / board-native / visibility only).'
+priority: high
+tags:
+- ada-ocb,dispatch,kanban,ledger,needs-inp
+spec: 'Origin: Tony asked 2026-11-24 to card the parity gap after the capability review (lesson lesson-b8d8bfd4de93
+  / Education:Ada-Ocb-Remote-Job-Dispatch).
+
+
+  Problem: ada-ocb can queue host-targeted agent/process jobs through the board dispatch lane (ada_envelope_draft
+  -> ada_dispatch_check -> ada_envelope_stage -> runner-agent on action.target_host), but that lane lacks the Devin
+  console''s job lifecycle: no job/<id> ledger in MDDB ada-ha-bank-devin-handoff, no needs-input/awaiting-user detection
+  carrying the question text, no answer/resume path, no iPhone attention, and no Dispatch layer for these jobs in
+  the Report feed (job workflow 2026-09-26-dispatch-console).
+
+
+  Verified evidence (2026-11-24):
+
+  - OpenChamber session.create has no host param; remote execution goes through the board runner, not OC.
+
+  - scripts/board/runner-agent.py has NO needs-input, awaiting-user, or job-doc emitter (grep clean). It pins action.target_host
+  (lines 1711-1715, 1887) and its EXECUTORS set includes opencode/devin/script.
+
+  - Envelope required fields (ada-voice/opencode/ada_mcp.py:2616): type, repo, executor, model, profile, target_host,
+  artifact.
+
+  - Devin-lane primitives to model after: job-run.sh (exit 42 / NEEDS-INPUT: line / needs-input.txt), devin-dispatch-watch.sh,
+  job/<id> + answer/<id> MDDB docs, chaba-events requires_response + push, Ada devin_pending/devin_answer with confirmed
+  gate, render-report-feed.py Dispatch layer.
+
+  - OC analogue of `devin-dispatch followup` is tools.openchamber session.send (new prompt to an existing sessionId)
+  — use for resume if the runner can retain the session id.
+
+
+  Scope decision is raised as a request on this card. Options: (a) full parity incl. Ada voice tools + report layer,
+  (b) board-native parity using card requests only, (c) status visibility only.
+
+
+  Constraints:
+
+  - Board mutations only via board-api; no direct card-file edits from a non-served checkout.
+
+  - Do not add a second ledger or retry counter — reuse the Devin lane''s job/<id> docs, needs-input signals and
+  confirmed gates.
+
+  - Advisory bits (notify, chaba-events, report feed) degrade warn-only; they must never block claim/merge.
+
+  - No secrets in code or card; prod writes (host unit/service/SSOT) need explicit same-session approval.
+
+  - Preserve OC''s two-call confirmation gate on dispatch staging; staged profiles stay admitted-only.
+
+  - No Ada personal-memory (ada-*) writes from a Chaba context.
+
+
+  Done when: for an OC/opencode job queued from the pane, a job/<id> MDDB doc tracks running|awaiting-user|done|failed;
+  a needs-input produces the question plus requires_response attention; an answer resumes the session (or is recorded
+  when non-resumable); and the Report Dispatch layer shows it — all within the scope chosen on the request. Include
+  a live smoke with evidence and a lesson/report update.'
+ref: ADA-0024
+comms:
+- at: 2026-11-24 09:08
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-24 09:08
+  from: devin
+  text: 'Carded per Tony''s request 2026-11-24 after the capability review. Evidence: OC session.create has no host
+    param; ada-ocb can only reach other hosts via the board dispatch lane (ada_envelope_draft/stage -> runner-agent
+    on action.target_host). The runner has no needs-input, awaiting-user or job-doc emitter (grep clean in runner-agent.py),
+    while the Devin lane has job-run.sh, devin-dispatch-watch.sh, MDDB job/<id> + answer/<id>, chaba-events/push,
+    Ada devin_pending/devin_answer and the Report Dispa'
+- at: 2026-11-24 09:09
+  from: devin
+  text: 'raised request scope-for-ada-0024-how-far-should-ada-oc-484b93: Scope for ADA-0024 — how far should ada-ocb
+    job-lifecycle parity go? Research already done: OC session.create is local-o'
+- at: 2026-11-24 09:45
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 09:45
+  from: tony
+  text: 'answered scope-for-ada-0024-how-far-should-ada-oc-484b93: a — Full parity: ledger + needs-input + voice
+    answers + report layer (★ recommended)'
+- at: 2026-11-24 09:45
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-24 09:52
+  from: chaba
+  text: 'answer-sweep: ''a — Full parity: ledger + needs-input + voice answers + repo'' resolves scope-for-ada-0024-how-far-should-ada-oc-484b93
+    — no board action (option ''a'' action=none)'
+- at: 2026-11-24 10:00
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 10:43
+  from: tony
+  text: a
+- at: 2026-11-24 10:48
+  from: chaba
+  text: 'RESUME SPIKE (read-only, 2026-11-24) — VERDICT: runner-agent CAN capture and resume an opencode session
+    id. Evidence: (1) runner already tees ''opencode run --format json'' to events.jsonl; every JSON event carries
+    a top-level sessionID field (e.g. ses_df9276983ffegRkH0YIemdUAzL) — capture = read first line, zero launch-command
+    change. (2) Despite runner''s --standalone flag (v2, needed for LITELLM_KEY), sessions persist in the global
+    DB ~/.local/share/opencode/opencode.db, table session_v2 (23 ses'
+- at: 2026-11-24 11:21
+  from: chaba
+  text: 'ADA-0024 core slice implemented on branch ada-ocb (UNMERGED, NOT DEPLOYED): runner-agent.py now (1) detects
+    needs-input from needs-input.txt / last NEEDS-INPUT: line in events.jsonl / output.log / exit 42; (2) emits
+    job/<id> docs to MDDB ada-ha-bank-devin-handoff in the job-run.sh shape (list-valued meta) for status running
+    -> awaiting-user -> answered; (3) raises a board /request carrying the question + awaiting_action instead of
+    do_finish(ok=False), so a blocked job never burns retries or auto'
+- at: 2026-11-24 11:26
+  from: chaba
+  text: 'ADA-0024 refinement: verified runner claims never stamp action.task_id, so board-api cannot deliver answers
+    to answers.jsonl for these jobs. The answer path now reads the two durable channels the runner actually owns:
+    (a) the answered job-input-<card> board request (requests[].answer, covers Tony clicks / Ada board answers),
+    and (b) the MDDB answer/<card> doc (covers Ada voice devin_answer, GET /get by key). answers.jsonl remains a
+    first-priority fallback and the copied answer is written into th'
+- at: 2026-11-24 11:27
+  from: chaba
+  text: 'ADA-0024 committed locally on worktree branch ada-ocb: commit 180bc1ba43 ''runner: ADA-0024 dispatch job-lifecycle
+    parity''. 3 files changed, 622 insertions. Evidence: 15/15 lifecycle tests, 70 focused runner regression pass,
+    py_compile OK, SHA pin 52cbc072 matches file. Full tests/board suite: 912 passed, 4 failed -- all 4 are pre-existing
+    FileNotFoundError in test_control_pane_projection.py for gitignored/generated board2/ artifacts + a KNB-0229
+    card file absent in this fresh worktree (they do n'
+- at: 2026-11-24 11:32
+  from: chaba
+  text: 'ADA-0024 PROMOTED TO MASTER: rebased cleanly onto origin/master (none of the 33 upstream commits touched
+    the 3 changed files), pushed origin/master @ 0c451dd4c1 (approved same-session). Post-rebase: pin 52cbc072 matches
+    file, 15/15 lifecycle tests pass. CONSUMER CONVERGENCE PENDING (not yet deployed): installed ~/.local/bin/runner-agent
+    on idc02 + idc03 still reports old sha 35d284ec; their canonical checkpoints have not yet pulled 0c451dd4c1
+    (idc02 chaba @ 9910c10a91, idc03 exec @ 7748481c66, s'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:01
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 16:24
+  from: chaba
+  text: moved backlog -> done
+- at: 2026-11-24 16:24
+  from: chaba
+  text: 'CONSUMER CONVERGENCE VERIFIED — closing card. Code promoted to origin/master @ 0c451dd4c1 (same-session
+    approved) with full-parity scope (a): needs-input detection (needs-input.txt / NEEDS-INPUT: line / exit 42),
+    job/<id> MDDB ledger docs for Ada devin_pending + Report Dispatch layer, answer path via both board request
+    answer and MDDB answer/<id> voice doc, and opencode sessionID capture for resume. Fresh gate: tests/board/test_runner_job_lifecycle.py
+    15/15 pass; runner-agent.py SHA 52cbc072f269'
+- at: 2026-11-24 17:02
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:42
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:26
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:38
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:48
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, board over card cap)
+requests:
+- id: scope-for-ada-0024-how-far-should-ada-oc-484b93
+  ask: 'Scope for ADA-0024 — how far should ada-ocb job-lifecycle parity go? Research already done: OC session.create
+    is local-only, the fleet runner has no needs-input/job-doc leg, and the Devin lane already has job-run + watch
+    + MDDB job/<id> + Ada devin_pending/devin_answer + Report Dispatch layer. (★ = recommended; answers with one
+    word.)'
+  status: answered
+  at: 2026-11-24 09:09
+  from: devin
+  options:
+  - id: a
+    label: 'Full parity: ledger + needs-input + voice answers + report layer (★ recommended)'
+    action: none
+  - id: b
+    label: 'Board-native parity: ledger + needs-input, answer via card requests only'
+    action: none
+  - id: c
+    label: 'Visibility only: surface existing runner state in Report feed'
+    action: none
+  answer: 'a — Full parity: ledger + needs-input + voice answers + report layer (★ recommended)'
+  executed: 2026-11-24 none
+action:
+  status: done
+claim: {}

@@ -1,0 +1,198 @@
+id: tony-omen-post-reboot-dead-user-units-pl-9d08a4
+title: 'tony-omen post-reboot dead user units: plug-watch, ha-stall-watchdog, playlive-chrome, yolo-detect still
+  disabled+inactive'
+column: done
+updated: 2026-11-26 19:41
+priority: medium
+tags:
+- tony-omen
+- services
+- post-reboot
+spec: 'Found during system-report-18-missing-nodes triage (2026-11-25). tony-omen rebooted ~2026-11-23 18:00; ha-live.service
+  was dead (fixed this session: started+enabled, edge :8444 now 200). Still down, all disabled+inactive: plug-watch.service,
+  ha-stall-watchdog.service, playlive-chrome.service, yolo-detect.service. The 2026-11-23 yt-live-api-omen-restore
+  job explicitly left these for audit lanes. For each: verify still wanted (check ssot.jobs.yml/health SSOT), then
+  enable+start or document retirement. yolo-detect relates to card vcast-gesture-control-with-yolo-detectio-bd5d28.'
+ref: OPS-1367
+comms:
+- at: 2026-11-25 09:47
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-25 09:48
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 10:08
+  from: chaba
+  text: classified as paid_frontier (kw:compare conf 1.00)
+- at: 2026-11-25 10:08
+  from: chaba
+  text: queued for processing
+- at: 2026-11-25 10:09
+  from: chaba
+  text: '[auto-dispatch] wave 2 (2026-11-25 10:09): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-25 10:09
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.44 > 0.7)'
+- at: 2026-11-25 10:09
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 10:09
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 10:10
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 4.06 > 0.8)'
+- at: 2026-11-25 10:11
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (4/4)'
+- at: 2026-11-25 10:15
+  from: chaba
+  text: 'idc02 defers: runner at cap (2/2)'
+- at: 2026-11-25 10:20
+  from: tony-dell
+  text: claimed
+- at: 2026-11-25 10:22
+  from: chaba
+  text: started devin-task-20261125-102233-found-during-system-report-18- on tony-dell (dispatch)
+- at: 2026-11-25 10:22
+  from: chaba
+  text: 'primer injected 8 lesson(s): [vcast-auto-yt-live-api] fixed live on omen: yt-live-api.service was inactive+di;
+    Migrated user units can be left `disabled` — check is-enabled, not just is-activ; Verify-by-surface: /status
+    200 was true while the cast path was still broken (wr; [camwall-retire-to-wiki] primer injected 8 lesson(s):
+    no chaba-audit.service/cha; [chaba-jobs-dispatcher-dead-fleet-wide-di-765e5b] Rollout state check 2026-11-08;
+    [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f] checkpoint '
+- at: 2026-11-25 10:31
+  from: devin
+  text: '[progress] Verified live on omen: all 4 still disabled+inactive. Context: audit-auto-tony-omen (2026-11-12)
+    shows this whole live-vision stack was already disabled BEFORE the 11-23 reboot — not reboot casualties. ha-live+yt-live-api
+    already restored; SSOT declares all 4 expected on omen. Consumers check out: plug-watch->HA ws, ha-stall-watchdog->HA
+    :8123 (both 200), playlive-chrome:9223<-chaba-playwright-mcp auto-mode, yolo-detect:8780<-HA rest_command/sensor.
+    yolo-xiaomi cannot bind :8780 (jev-'
+- at: 2026-11-25 10:37
+  from: devin
+  text: '[done] All 4 units restored on omen (enable+start, verified by surface): plug-watch subscribed to HA ws,
+    ha-stall-watchdog probing :8123, playlive-chrome CDP live on :9223 (chaba-playwright-mcp consumer), yolo-detect
+    serving 127.0.0.1:8780 for HA rest/sensor. Correction to card framing: archive audit-auto-tony-omen (2026-11-12)
+    shows this stack was ALREADY deliberately disabled before the 11-23 reboot — not reboot casualties. yolo-xiaomi
+    documented retired (undeclared + cannot bind :8780 vs jev-'
+- at: 2026-11-25 10:39
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-102233-found-during-system-report-18- no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-25 10:39
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-102233-found-during-system-report-18- on tony-dell still dirty
+    — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 10:45
+  from: tony-dell
+  text: 'finished (ok): exit=0 83, and omen''s playlive remote-CDP :9222 path confirmed dead. | devin-task-20261125-102233-found-during-system-re'
+- at: 2026-11-25 10:45
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 10:45
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261125-102233-found-during-system-report-18-'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 2 le'
+- at: 2026-11-25 10:45
+  from: chaba
+  text: banked 154 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 10:45
+  from: chaba
+  text: pushed dispatch/20261125-102233-found-during-system-report-18- to origin
+- at: 2026-11-25 10:45
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 10:45
+  from: chaba
+  text: auto-merged fa116471 (dispatch/20261125-102233-found-during-system-report-18-) → origin/master
+- at: 2026-11-25 10:45
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
+- at: 2026-11-25 10:56
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:58
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:53
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:55
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: paid_frontier
+  lane_source: kw
+  runner: tony-dell
+  attempts: 1
+  sweep:
+    stale_running: 2026-11-25 10:39
+    dirty: 2
+  result: 'exit=0 83, and omen''s playlive remote-CDP :9222 path confirmed dead. | devin-task-20261125-102233-found-during-system-report-18-.service:
+    Consumed 2min 16.845s CPU time over 15min 27.922s wall clock time, 1.2G memory peak, 567.5M memory swap peak.'
+  verified: true
+claim:
+  since: 2026-11-25 10:20
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 10:56
+  note: verified — evidence checks green, closing itself

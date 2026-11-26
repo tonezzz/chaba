@@ -1,0 +1,267 @@
+id: kk-mac-held-classes-fix-operator-brief-f-dd32ac
+title: kk-mac held classes — fix operator_brief facts echo + re-bench safe_route, then readmit
+column: done
+updated: 2026-11-26 19:41
+priority: medium
+spec: 'Follow-up to kk-mac-admitted-classes-narrow (narrowed kk_mac_local admission to {summary, structured_extract}).
+  Two held classes need work before readmission, per docs/ssot/jobs/devnest/2026-11-19-kkmac-class-eval.yml findings.
+  (1) operator_brief scored 0.31-0.56 on all 3 models — JSON schema was perfect; EVERY miss was an expect.facts
+  substring miss because corpus facts were written for gold phrasing, not tokens the model literally echoes (lesson:
+  declare facts sparingly, required_keys/enums carry the structural load). Fix scripts/bench/kkmac-classes/build_corpus.py
+  expect.facts into literal-echo tokens, add producer guidance so real inbox specs declare echo-able facts, then
+  re-bench via scripts/bench/kkmac-classes/kkmac_eval.sh on live kk-mac. (2) safe_route scored 0.33-0.60 on all
+  3 models with DIFFERENT failure modes (qwen3:8b over-defers; llama3.2:3b over-acts incl. act on priority:high
+  prod cards; qwen2.5:32b over-observes + still act on the decide card). Re-bench with a safer model before readmitting
+  — respect the lane memory floor (docs/reports/kk-mac-llm-bench-2026-11-20.md: 20B+ footprints breach it); if no
+  pulled model passes, evaluate the job doc''s alternatives (code-side route whitelist constraining act targets,
+  or a class rethink). Readmit a class ONLY after a passing re-eval by re-adding it to every mirror: kk_mac_llm.ALLOWED_TASKS
+  (root), dispatch_repos.KK_MAC_TASK_CLASSES + KK_MAC_ROUTE_KW, runner-agent.KK_MAC_TASK_CLASSES, kk_mac_capacity_producer.TASK_CLASSES,
+  kk_mac_plan_validator.ALLOWED, devnest_capacity_broker.KK_CLASSES, docs/ssot/infrastructure/ssot.devnest-lanes.yml
+  task_classes, ssot.procedures.yml, and the two kb procedure docs — same checklist kk-mac-admitted-classes-narrow
+  used. Evidence: card kk-mac-extract-brief-class-eval comms, scripts/bench/kkmac-classes/ run-*.md/json, docs/ssot/jobs/devnest/2026-11-19-kkmac-class-eval.yml.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  status: done
+  attempts: 2
+  result: 'exit=0 te — then flip the mirror checklist in the job doc for any class that passes ≥0.80. | devin-task-20261123-160417-follow-up-to-kk-mac-admitted-c.service:
+    Consumed 1min 44.800s CPU time over 1h 39min 44.932s wall clock time, 458M memory peak.'
+  last_failure: 'exit=1 -up-to-kk-mac-admitted-c.service: Failed with result ''exit-code''. | devin-task-20261123-222712-follow-up-to-kk-mac-admitted-c.service:
+    Consumed 1min 1.052s CPU time over 7min 37.998s wall clock time, 1G memory peak, 444.3M memory swap peak.'
+  runner: mn01
+  verified: true
+ref: OPS-0048
+comms:
+- at: 2026-11-23 22:22
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-23 22:23
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 20.68 > 1.5)'
+- at: 2026-11-23 22:23
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 22:23
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.55 > 0.85)'
+- at: 2026-11-23 22:23
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-23 22:23
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 22:26
+  from: tony-dell
+  text: claimed
+- at: 2026-11-23 22:27
+  from: chaba
+  text: started devin-task-20261123-222712-follow-up-to-kk-mac-admitted-c on tony-dell (dispatch executor=devin)
+- at: 2026-11-23 22:27
+  from: chaba
+  text: 'primer injected 8 lesson(s): [ada-consultant-tier] primer injected 8 lesson(s): [kk-mac-local-llm-lane]
+    Addit; [kk-mac-extract-brief-class-eval] Restarted on tony-dell. Recovered the lost 202; kk_mac executor DEFAULT_MODEL
+    is now qwen2.5:32b, but on the 36 GB KK-Mac a 32b ; [kk-mac-video-render-lane-ltx-video-mps-p-267f14] Read-only
+    inventory update: KK; runbook docs/kb/devnest-model-cache.md: DevNest model cache — fetch once on a fa; [ai-news-education-morning-brief]
+    Tony''s follow-up: structure'
+- at: 2026-11-23 22:35
+  from: tony-dell
+  text: 'finished (failed): exit=1 -up-to-kk-mac-admitted-c.service: Failed with result ''exit-code''. | devin-task-20261123-222712-follow-up-to-kk-ma
+    — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 22:35
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-222712-follow-up-to-kk-mac-admitted-c (rate limit)
+    — tony-dell holds new claims ~30m
+- at: 2026-11-23 22:35
+  from: chaba
+  text: 'tony-dell retry backoff: fail 1/3 — next claim not before 11-23 23:05'
+- at: 2026-11-23 22:36
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-220607-kk-ha-degraded-mode-explain-ca)
+    — claims held ~27m'
+- at: 2026-11-23 22:36
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-222712-follow-up-to-kk-mac-admitted-c)
+    — claims held ~29m'
+- at: 2026-11-23 22:36
+  from: chaba
+  text: 'mn01 defers: provider rate-limited (rate limit on devin-task-20261123-152827-tony-2026-10-11-think-of-ada-a)
+    — claims held ~25m'
+- at: 2026-11-23 22:36
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-220843-supersedes-manual-card-wiki-ta)
+    — claims held ~29m'
+- at: 2026-11-23 23:03
+  from: mn01
+  text: claimed
+- at: 2026-11-23 23:04
+  from: chaba
+  text: started devin-task-20261123-160417-follow-up-to-kk-mac-admitted-c on mn01 (dispatch executor=devin)
+- at: 2026-11-23 23:04
+  from: chaba
+  text: 'primer injected 8 lesson(s): [ada-consultant-tier] primer injected 8 lesson(s): [kk-mac-local-llm-lane]
+    Addit; kk_mac executor DEFAULT_MODEL is now qwen2.5:32b, but on the 36 GB KK-Mac a 32b ; [kk-mac-extract-brief-class-eval]
+    Restarted on tony-dell. Recovered the lost 202; [kk-mac-held-classes-fix-operator-brief-f-dd32ac] primer injected
+    8 lesson(s): [; [kk-mac-video-render-lane-ltx-video-mps-p-267f14] Read-only inventory update: KK; runbook docs/kb/devnest-model-cache.md:
+    DevNest model cache —'
+- at: 2026-11-23 23:12
+  from: devin
+  text: 'attempt 2 on mn01: attempt-1 failure was provider rate-limit kill (comms 22:35), not a task defect. kk-mac
+    is OFFLINE on tailnet (last heartbeat ~2.3h ago) so the live re-bench is gated; doing the deterministic half
+    now — corpus expect.facts -> literal-echo tokens (per-case miss analysis from run-kkmac-*.json) + producer guidance
+    in jevnest-kk-mac-capacity-procedure.md. Will poll kk-mac and run kkmac_eval.sh the moment it wakes.'
+- at: 2026-11-23 23:53
+  from: devin
+  text: 'progress: corpus fix DONE — 10 operator_brief cases re-factored to literal-echo tokens (echo-intersection
+    across the 3 recorded 11-19 runs), 4 golds tightened, 51/51 mock-oracle pass; producer guidance added to jevnest-kk-mac-capacity-procedure.md.
+    Same-weights sanity on tony-omen ollama qwen3:8b (NOT kk-mac, de-risk only): operator_brief 0.9375 READY (was
+    0.56), safe_route 0.53 unchanged. BLOCKER: kk-mac offline ~3h (heartbeat stale, tailscale last-seen 2h+) — live
+    re-eval + readmission gated o'
+- at: 2026-11-24 00:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:43
+  from: devin
+  text: 'FINAL (attempt 2, mn01): DONE — corpus expect.facts rewritten to literal-echo tokens (10 ob cases, echo-intersection
+    method; 4 golds tightened; discriminating facts kept on ob-stale-heartbeat/ob-ratelimit), producer guidance
+    in jevnest-kk-mac-capacity-procedure.md, convention in build_corpus.py docstring, prior runs archived as run-kkmac-*-20261119.*,
+    job doc docs/ssot/jobs/devnest/2026-11-23-kkmac-held-classes-reeval.yml. Evidence: mock-oracle 51/51; recorded-response
+    rescore predicts ob pass o'
+- at: 2026-11-24 00:44
+  from: mn01
+  text: 'finished (ok): exit=0 te — then flip the mirror checklist in the job doc for any class that passes ≥0.80.
+    | devin-task-20261123-160417-'
+- at: 2026-11-24 00:44
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 00:44
+  from: chaba
+  text: banked 240 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 00:44
+  from: chaba
+  text: pushed dispatch/20261123-160417-follow-up-to-kk-mac-admitted-c to origin
+- at: 2026-11-24 00:44
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-24 00:44
+  from: chaba
+  text: auto-merged 5945c106 (dispatch/20261123-160417-follow-up-to-kk-mac-admitted-c) → origin/master
+- at: 2026-11-24 00:44
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261123-160417-follow-up-to-kk-mac-admitted-c,
+    branch dispatch/20261123-160417-follow-up-to-kk-mac-admitted-c'
+- at: 2026-11-24 00:52
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:23
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:32
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:40
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:06
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:47
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:01
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:02
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+claim:
+  since: 2026-11-23 23:03
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 00:52
+  note: verified — evidence checks green, closing itself

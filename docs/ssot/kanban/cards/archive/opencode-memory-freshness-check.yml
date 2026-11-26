@@ -1,0 +1,360 @@
+id: opencode-memory-freshness-check
+title: Read-only memory/feed freshness status check (Devin + OpenCode)
+column: done
+updated: 2026-11-26 19:41
+priority: low
+tags:
+- chaba-memory
+- session-capture
+- observability
+- dev-0038-followup
+spec: 'Goal: provide a read-only command/script that reports Chaba memory feed freshness per host/runtime.
+
+
+  Context:
+
+  - Timer: chaba-render-memory.timer/service (render-memory --if-stale)
+
+  - Files: ~/.local/share/chaba/context.md, events.md, immediate.yml, recent-events.yml, ~/.local/share/devin/notebook-summaries/session-memory.md
+
+  - Devin hooks: devin-session-end.sh, notebooklm-compaction.sh, notebooklm-recall.sh
+
+  - Helper: ~/.local/bin/chaba-session-capture
+
+
+  Checks (read-only):
+
+  - timer active + last service exit status/time
+
+  - context.md age vs newest input/session-memory age
+
+  - session-memory.md recent SessionEnd/Compaction presence
+
+  - hook scripts present and contain Phase B+ capture markers
+
+  - helper/scripts present
+
+
+  Options:
+
+  A) ★ Script in repo (default) — scripts/chaba/check-memory-freshness.py or .sh, SSH fanout or local mode, JSON/text
+  output; no writes.
+
+  B) OpenCode /memory-status command — calls the script and summarizes; convenient for ada-ocb sessions.
+
+  C) Add to existing audit/health surface — integrate with mcp-health or audit-hosts; higher coupling but central
+  visibility.
+
+
+  Acceptance:
+
+  - One command produces per-host freshness report with clear FRESH/STALE/ERROR classification and evidence.
+
+  - Read-only; no fake events/writes.
+
+  - Can be used as Phase C harvester/guard input later.'
+note: DEV-0038 follow-up. Feed freshness was manually verified; a repeatable read-only check would catch stale pipelines
+  early.
+ref: MEM-0035
+comms:
+- at: 2026-11-23 16:00
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-23 16:22
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:28
+  from: devin
+  text: '[2026-11-23 devin] Implemented A★ default: added scripts/chaba/check-memory-freshness.py (read-only; local/SSH
+    fanout; timer/hooks/helper/context/session-memory checks; FRESH/STALE/ERROR; --json). Verified on tony-dell+tony-omen
+    (FRESH). Commit c4790eaba7 on origin/ada/fleet-mcp-inventory-report (branch/unmerged to master). B/C options
+    remain open if preferred.'
+- at: 2026-11-23 19:13
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:13
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:13
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:24
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:42
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:11
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:04
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:22
+  from: chaba
+  text: classified as free_lane (kw:report conf 1.00)
+- at: 2026-11-24 21:22
+  from: tony
+  text: queued for processing
+- at: 2026-11-24 21:22
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.10 > 0.85)'
+- at: 2026-11-24 21:22
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 21:22
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-24 21:23
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-24 21:24
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-24 21:25
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (3/3)'
+- at: 2026-11-24 21:27
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.52 > 1.5)'
+- at: 2026-11-24 21:27
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-24 21:29
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 21:31
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.24 > 0.85)'
+- at: 2026-11-24 21:31
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-24 21:32
+  from: devin
+  text: '[2026-11-24 devin] Decision recorded (Tony): accepted A★ for MEM-0035 — read-only memory/feed freshness
+    check as repo script (scripts/chaba/check-memory-freshness.py), implemented in PR #207 (CI green, head 66976abfac).
+    Closure pending governed merge of PR #207 + evidence.'
+- at: 2026-11-24 21:41
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-24 21:48
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.36 > 1.5)'
+- at: 2026-11-24 21:49
+  from: devin
+  text: '[2026-11-24 devin] PR #207 merged (squash 800d086aaefd7221d2d8ca0b819bb18d7a35e8d6, CI green). A★ accepted
+    by Tony. Moving to review with merge evidence; close when verified in served/master flow as appropriate.'
+- at: 2026-11-24 21:49
+  from: devin
+  text: moved backlog -> review
+- at: 2026-11-24 22:02
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 22:12
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.84 > 1.5)'
+- at: 2026-11-24 22:19
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 22:35
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.60 > 1.5)'
+- at: 2026-11-24 22:53
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 23:22
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-24 23:22
+  from: chaba
+  text: started devin-task-20261124-232252-goal-provide-a-read-only-comma on tony-macbook (dispatch)
+- at: 2026-11-24 23:22
+  from: chaba
+  text: 'primer injected 8 lesson(s): [video-render-dispatcher] OPS-1042 v1 implemented and verified. Added read-only
+    ; "mutations: net_writes" in the session audit can be an attempted-and-denied call; Drift flags flap transiently:
+    chaba-repo-sync updates the checkout copy, and unt; after the MEM-0545 mddb split, any long-lived script with
+    a hardcoded :11023 def; [devin-session-audit-2026-10-29] AUD-0973 independent re-check (dispatch 201613 ; [publish-promote-knowledge-capture-ssot-w-d34a39]
+    [2026-11-21'
+- at: 2026-11-24 23:28
+  from: devin
+  text: '[2026-11-24 devin] Re-dispatch verify+extend pass on scripts/chaba/check-memory-freshness.py (commit f4b26dc052
+    on dispatch branch): --hosts now defaults to fleet fanout (all=tony-dell,tony-omen,idc03), added SSH reachability
+    probe (ERROR+evidence), parsed render service ActiveState/ExecMainStatus/ExecMainExitTimestamp, feed-input ages
+    (events/immediate/recent-events), session-memory.md tail SessionEnd/Compaction marker scan, simplified FRESH/STALE/ERROR.
+    Live run: dell+omen FRESH, idc03 STALE ('
+- at: 2026-11-24 23:37
+  from: tony-macbook
+  text: 'finished (ok): exit=0 (not pushed); card comms posted; `--json` output is ready for Phase C harvester/guard
+    use. | devin-task-20261124-'
+- at: 2026-11-24 23:37
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 23:37
+  from: chaba
+  text: banked 178 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 23:37
+  from: chaba
+  text: pushed dispatch/20261124-232252-goal-provide-a-read-only-comma to origin
+- at: 2026-11-24 23:37
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-24 23:37
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-24 23:39
+  from: chaba
+  text: 'merge-sweep: merged 85cdc922 (dispatch/20261124-232252-goal-provide-a-read-only-comma from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261124-232252-goal-provide-a-read-only-comma.md)
+    — auto-closed'
+- at: 2026-11-24 23:39
+  from: local
+  text: 'pub milestone: card verified: opencode-memory-freshness-check on idc03 — merged 85cdc922 (dispatch/20261124-232252-goal-provide-a-read-only-comma
+    from tony-macbook) -> origin/master — verified — merged 85cdc922 (dispatch/20261124-232252-goal-provide-a-read-only-comma
+    from tony-macbook) -> origin/master — verified — auto-closed [evt-dd05fc6502a44409]'
+- at: 2026-11-24 23:39
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-232252-goal-provide-a-read-only-comma,
+    branch dispatch/20261124-232252-goal-provide-a-read-only-comma on tony-macbook'
+- at: 2026-11-24 23:39
+  from: chaba
+  text: 'merge-sweep: dispatch/20261124-232252-goal-provide-a-read-only-comma conflicts with origin/master: scripts/devin/runner-tooling.manifest.json
+    — merge aborted, card stays for human resolution'
+- at: 2026-11-24 23:39
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261124-232252-goal-provide-a-read-only-comma:
+    1 commit(s) conflict with origin/master '
+- at: 2026-11-25 07:28
+  from: tony
+  text: 'answered merge-conflict: resolve — let devin resolve the conflict and land it ★'
+- at: 2026-11-25 07:56
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:08
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:28
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:40
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:58
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:07
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: free_lane
+  lane_source: kw
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
+  result: 'exit=0 (not pushed); card comms posted; `--json` output is ready for Phase C harvester/guard use. | devin-task-20261124-232252-goal-provide-a-read-only-comma.service:
+    Consumed 22.231s CPU time over 6min 50.399s wall clock time, 407.2M memory peak.'
+  verified: true
+claim:
+  since: 2026-11-24 23:22
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 23:39
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261124-232252-goal-provide-a-read-only-comma.md
+requests:
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261124-232252-goal-provide-a-read-only-comma: 1 commit(s) conflict with
+    origin/master in chaba — conflicted paths: scripts/devin/runner-tooling.manifest.json. Merge tony-macbook:/home/tony/CascadeProjects/dispatch-wt-20261124-232252-goal-provide-a-read-only-comma
+    by hand, or retry/abandon the card.'
+  status: answered
+  at: 2026-11-24 23:39
+  from: chaba
+  options:
+  - id: resolve
+    action: queue
+    label: let devin resolve the conflict and land it ★
+  - id: drop
+    action: retry
+    label: drop this dispatch — re-dispatch fresh from current main
+  - id: hold
+    action: hold
+    label: hold the card
+  suggested: resolve — let devin resolve the conflict and land it ★
+  answer: resolve — let devin resolve the conflict and land it ★

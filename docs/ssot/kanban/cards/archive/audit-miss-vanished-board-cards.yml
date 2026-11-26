@@ -1,0 +1,297 @@
+id: audit-miss-vanished-board-cards
+title: Board-api card creations acknowledged but cards vanished
+column: done
+updated: 2026-11-26 19:40
+brief: 'Session audit 2026-11-20 (AUD-0973): two cards got ok:true creation responses from board-api but no card
+  exists on the live board and no card file exists on master, any branch, or disk.'
+priority: high
+program: audit
+tags:
+- audit
+- artifact-landing
+- board-api
+spec: dispatch-worktree-debt-audit was created as AUD-0734 (board-api response captured in history_764432035aa041d6.md);
+  session-report-jsondecodeerror-in-daily-d0662a was created as KNB-0733 (response in history_d3c8499f85ca4e6c.md;
+  its underlying concern is now tracked on ADA-0209). Neither id nor ref appears on the live board, in docs/ssot/kanban/cards,
+  in the archive, or in git history. Investigate board-api/card-file persistence (kanban-commit pull clobber? rejected
+  write?) — same failure class as AUD-0021 (done) but different later cards. Recreate the two cards if the work
+  is still relevant.
+ref: AUD-0034
+comms:
+- at: 2026-11-20 18:50
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-21 17:42
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 11:41
+  from: tony
+  text: re-spawned from report page
+- at: 2026-11-23 11:43
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 11:48
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261123-113415-use-the-existing-ada-document-)
+    — claims held ~29m'
+- at: 2026-11-23 12:19
+  from: idc02
+  text: claimed
+- at: 2026-11-23 12:19
+  from: chaba
+  text: started devin-task-audit-miss-vanished-board-cards-1795411168 on idc02 (dispatch executor=opencode profile=ssot-research
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-23 12:21
+  from: idc02
+  text: 'finished (ok): exit=0 Started devin-task-audit-miss-vanished-board-cards-1795411168.service - runner audit-miss-vanished-board-cards
+    st'
+- at: 2026-11-23 12:21
+  from: chaba
+  text: 'staged profile closeout held: profile evidence differs from the frozen envelope'
+- at: 2026-11-23 12:32
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-audit-miss-vanished-board-cards-1795411168 on idc02 still dirty — 2 uncommitted
+    file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-23 13:37
+  from: chaba
+  text: 'Manual closeout rerun on idc02: reconciled ssot-research profile drift (restored litellm/or-free-north-code)
+    and gated host-snapshot check to dispatch_verify==host_snapshot. finish_profile_dispatch now passes: S3 read-only
+    report verified, artifact sha256=c9a4034e6154b148916716f93147e7909858f03f6219299692d9e11070b2a9dc. Worktree
+    dispatch-wt-audit-miss-vanished-board-cards-1795411168 still has untracked artifact/run dir; checkpoint/merge-sweep
+    needed.'
+- at: 2026-11-23 14:04
+  from: chaba
+  text: 'merge-sweep: merged d56de15b (dispatch/audit-miss-vanished-board-cards-1795411168 from idc02) -> origin/master
+    — marked verified (exit_code=0; 9 file(s) changed vs base) — auto-closed'
+- at: 2026-11-23 14:04
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-audit-miss-vanished-board-cards-1795411168,
+    branch dispatch/audit-miss-vanished-board-cards-1795411168 on idc02'
+- at: 2026-11-23 14:08
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:19
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:58
+  from: tony
+  text: queued for processing
+- at: 2026-11-23 14:58
+  from: idc02
+  text: claimed
+- at: 2026-11-23 14:58
+  from: idc02
+  text: 'finished (ok): Human confirmed: artifact reviewed, no recreation of AUD-0734/KNB-0733; close as verified.'
+- at: 2026-11-23 14:58
+  from: tony
+  text: closed by tony
+- at: 2026-11-23 16:14
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:05
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:11
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:13
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:21
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:30
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:39
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:01
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:01
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:42
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:26
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:38
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:48
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:40
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  repo: chaba
+  model: litellm/gemini-3.5-flash-lite
+  executor: opencode
+  agent_profile: ssot-research
+  target_host: idc02
+  artifact: evals/opencode-lane/out/aud-0034-vanished-cards.json
+  task_class: read_only
+  prompt: Read-only investigation of AUD-0034. Determine why board-api returned ok:true for card creations AUD-0734
+    (dispatch-worktree-debt-audit) and KNB-0733 (session-report-jsondecodeerror-in-daily-d0662a) but neither card
+    exists on the live board, in docs/ssot/kanban/cards, in the archive, or in git history. Inspect board-api create/write
+    handling, kanban-commit pull/clobber behavior, card-file persistence, MDDB revisions, and the cited session
+    transcripts (history_764432035aa041d6.md, history_d3c8499f85ca4e6c.md). Compare with the closed card AUD-0021
+    (same failure class). Record exact evidence with paths, refs, and timestamps. Recommend whether to recreate
+    each card, but do not mutate the board, card files, or live services.
+  expect:
+    required_keys:
+    - verdicts.AUD-0734
+    - verdicts.KNB-0733
+    - root_cause
+    - evidence
+    - comparison_to_AUD-0021
+    - recreation_recommendation
+    facts:
+    - board-api returned ok:true for AUD-0734 and KNB-0733
+    - neither card exists on the live board, card files, archive, or git history
+    - AUD-0021 is a closed card with the same failure class
+    enums:
+      verdicts.AUD-0734:
+      - vanished_confirmed
+      - not_found_in_audit
+      - needs_more_evidence
+      verdicts.KNB-0733:
+      - vanished_confirmed
+      - not_found_in_audit
+      - needs_more_evidence
+      recreation_recommendation:
+      - recreate_both
+      - recreate_one
+      - recreate_neither
+  lane: codemod
+  llm_key_alias: chaba
+  lane_envelope:
+    id: s3-audit-miss-vanished-board-cards-ssot-research
+    card: audit-miss-vanished-board-cards
+    task_class: read_only
+    stage: S3
+    target_host: idc02
+    executor: opencode
+    profile: ssot-research
+    model: litellm/gemini-3.5-flash-lite
+    provider: litellm
+    unattended: true
+    mcp_allowlist: []
+    allowed_paths:
+    - evals/opencode-lane/out/
+    artifact:
+      path: evals/opencode-lane/out/aud-0034-vanished-cards.json
+      schema: 'evals/opencode-lane/profiles/ssot-research/fixture/task.yaml #contract.required_fields'
+    verifier:
+      type: held_out_py
+      ref: evals/opencode-lane/profiles/ssot-research/fixture/verify.py
+    escalation:
+      on_fail: manual
+      allowed_on_fail:
+      - manual
+      - devin
+      - retry_then_manual
+      - hold
+      max_retries: 1
+    rollback:
+      kind: none
+    heartbeat:
+      required: true
+      stale_s: 300
+    timeout_s: 420
+  status: done
+  attempts: 2
+  result: 'Human confirmed: artifact reviewed, no recreation of AUD-0734/KNB-0733; close as verified.'
+  sweep:
+    dirty: 2
+  runner: idc02
+  verified: true
+claim:
+  since: 2026-11-23 14:58
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-23 14:04
+  note: verified — exit_code=0; 9 file(s) changed vs base

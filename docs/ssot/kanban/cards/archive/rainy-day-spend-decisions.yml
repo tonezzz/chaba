@@ -1,0 +1,551 @@
+id: rainy-day-spend-decisions
+title: Rainy-day spend decisions — OR credit + Devin default model
+column: done
+updated: 2026-11-26 19:41
+brief: 'Two Tony calls blocking the next spend-reduction steps: (a) $10 OpenRouter credit — unlocks 1000/day :free
+  models (vs 50) + paid pass-through so we can bench DeepSeek V4 Flash (~$0.05-0.11/session) as the cheap code brain.
+  (b) Devin default model is swe-2-high (expensive tier); a free model is available per Tony 2026-11-09 — need the
+  slug to set agent.model in ~/.config/devin/config.json.'
+priority: medium
+program: chaba-ci
+tags:
+- devnest,decision,tony-call,spend
+spec: '(a) If approved: top up OR key, add deepseek-v4-flash to LiteLLM model groups, run config.* code-corpus bench.
+  (b) Set agent.model in config.json once slug known; verify next session uses it.'
+ref: OPS-1256
+comms:
+- at: 2026-11-09 09:25
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-09 09:26
+  from: devin
+  text: 'raised request approve-10-usd-openrouter-credit-unlocks-6e9934: Approve 10 USD OpenRouter credit — unlocks
+    1000/day :free models + DeepSeek V4 Flash code bench (~0.05-0.11 USD/session)'
+- at: 2026-11-09 09:26
+  from: devin
+  text: 'raised request devin-default-model-is-swe-2-high-which-51a93b: Devin default model is swe-2-high — which
+    free model should be the new default? (give the /model slug, or pick it once i'
+- at: 2026-11-09 10:57
+  from: tony
+  text: 'answered approve-10-usd-openrouter-credit-unlocks-6e9934: approve 10 USD'
+- at: 2026-11-09 10:57
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-09 10:57
+  from: tony
+  text: 'answered devin-default-model-is-swe-2-high-which-51a93b: free model slug in comms'
+- at: 2026-11-09 10:57
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-09 12:04
+  from: chaba
+  text: 'answer-sweep: executed ''approve 10 USD'' -> queued for processing'
+- at: 2026-11-09 12:04
+  from: chaba
+  text: 'answer-sweep: 1 answered request(s) still unmapped — stays flagged'
+- at: 2026-11-09 13:53
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-09 13:53
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-09 18:18
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-10 15:45
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails — this host can''t land the
+    branch'
+- at: 2026-11-11 20:11
+  from: chaba
+  text: 'idc03 defers: disk headroom 0MB < 2048MB floor'
+- at: 2026-11-11 20:14
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.02 > 1.0)'
+- at: 2026-11-11 20:50
+  from: devin
+  text: 'OPS-1256 status 2026-11-11: (1) $10 credit approved 11-09 — still needs dashboard purchase at openrouter.ai
+    (agent cannot pay). (2) Model-slug request answered ''slug in comms'' but no slug arrived — still needed, or
+    pick once in /model picker. (3) NEW BLOCKER: stored OR key expired on dell+idc03 (401) — even the free lanes
+    are dead until weekly rotation runs; see or-key-expired. Tony actions: mint new OR key + buy $10 credit + name
+    the slug.'
+- at: 2026-11-12 06:29
+  from: chaba
+  text: 'tony-omen defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-12 08:21
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-12 08:40
+  from: devin
+  text: put on hold
+- at: 2026-11-12 08:40
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.44 > 1.0)'
+- at: 2026-11-12 08:40
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.62 > 0.85)'
+- at: 2026-11-12 08:41
+  from: devin
+  text: 'Processed: held the mis-queued dispatch (it kept deferring - steps are Tony-side; stops 14k-line defer
+    spam). (a) 0 OR credit approved but still needs Tony top-up on openrouter.io; OR key is now EXPIRED fleet-wide
+    (SEC-0505) so rotate first. After a working key: I add deepseek-v4-flash to litellm model groups + run the bench.
+    (b) free-model slug never arrived - Tony: run ''devin models'' or pick in /model picker, then I set agent.model
+    in config.json.'
+- at: 2026-11-12 08:41
+  from: devin
+  text: 'raised request three-tony-side-unblockers-1-top-up-the-06e1ea: Three Tony-side unblockers: (1) top up the
+    approved 0 on openrouter.io, (2) rotate the expired OR key per SEC-0505, (3) '
+- at: 2026-11-12 08:49
+  from: tony
+  text: 'answered three-tony-side-unblockers-1-top-up-the-06e1ea: 2'
+- at: 2026-11-12 08:49
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-12 12:21
+  from: devin
+  text: 'OR key rotation verified 2026-11-12: new key authenticates on both hosts. GAP FOUND + FIXED on tony-dell
+    — ~/.config/secrets/openrouter.env still held the expired key (or-tony-mddb.txt landed 09:38 but openrouter.env
+    wasnt synced); synced + verified via /key. CAVEAT: new key has a $1 spend cap ALREADY exhausted (spend_usd 1.0006,
+    remaining_usd -0.0006) — free-tier endpoints work (embed probe passes), but paid model calls through OR will
+    402 until the limit is raised or the account is credited. T'
+- at: 2026-11-12 12:21
+  from: devin
+  text: 'OR key rotation verified 2026-11-12: new key authenticates on both hosts. GAP FOUND + FIXED on tony-dell
+    — ~/.config/secrets/openrouter.env still held the expired key (or-tony-mddb.txt landed 09:38 but openrouter.env
+    wasnt synced); synced + verified via /key. CAVEAT: new key has a $1 spend cap ALREADY exhausted (spend_usd 1.0006,
+    remaining_usd -0.0006) — free-tier endpoints work (embed probe passes), but paid model calls through OR will
+    402 until the limit is raised or the account is credited. T'
+- at: 2026-11-14 14:12
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:13
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:24
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:41
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:43
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:11
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:23
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:14
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:16
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:21
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:08
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:02
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:05
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:52
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:46
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:05
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:20
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 15:59
+  from: chaba
+  text: classified as paid_frontier (kw:bench  conf 1.00)
+- at: 2026-11-23 15:59
+  from: tony
+  text: queued for processing
+- at: 2026-11-23 16:00
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.66 > 0.85)'
+- at: 2026-11-23 16:01
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.91 > 1.5)'
+- at: 2026-11-23 16:01
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 16:03
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-23 16:12
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.14 > 0.85)'
+- at: 2026-11-23 16:16
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 16:17
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261123-161416-ada-benchmark-coverage-scenari)
+    — claims held ~29m'
+- at: 2026-11-23 16:18
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-160801-investigate-the-live-kk-mac-wo)
+    — claims held ~29m'
+- at: 2026-11-23 16:19
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:21
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-155555-goal-drain-the-review-column-s)
+    — claims held ~29m'
+- at: 2026-11-23 16:23
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-160101-the-kk-mac-local-lane-admits-4)
+    — claims held ~29m'
+- at: 2026-11-23 16:26
+  from: tony-omen
+  text: claimed
+- at: 2026-11-23 16:27
+  from: chaba
+  text: started devin-task-20261123-162716-a-if-approved-top-up-or-key-ad on tony-omen (dispatch)
+- at: 2026-11-23 16:27
+  from: chaba
+  text: 'primer injected 8 lesson(s): [rainy-day-spend-decisions] Processed: held the mis-queued dispatch (it kept
+    def; [devin-session-audit-2026-10-29] AUD-0973 reconciliation 2026-11-20: confirmed t; [devnest-queue-consolidation]
+    Decomposed per Tony decision 2026-11-09 (process w; [openclaw-bench-per-model-scorecard-acros-3df00d] merge-sweep:
+    no session/worktr; GOTCHA: the OpenRouter account key is valid but has ZERO credit balance — paid m; [ada-consultant-bench-harness]
+    merge-sweep: no session/worktr'
+- at: 2026-11-23 16:32
+  from: chaba
+  text: 'merge-sweep: devin-task-20261123-162716-a-if-approved-top-up-or-key-ad no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-11-23 16:32
+  from: tony-omen
+  text: 'finished (failed): exit=1 261123-162716-a-if-approved-top-up-or-key-ad.service: Failed with result ''exit-code''.
+    | devin-task-20261123-16271 — auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-23 16:32
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-162716-a-if-approved-top-up-or-key-ad (rate limit)
+    — tony-omen holds new claims ~30m
+- at: 2026-11-23 16:32
+  from: chaba
+  text: 'tony-omen retry backoff: fail 1/3 — next claim not before 11-23 17:02'
+- at: 2026-11-23 16:32
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=1; auto-retry queued (attempt 2/2)'
+- at: 2026-11-23 16:32
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-162813-the-goal-is-to-stop-the-tony-u)
+    — claims held ~29m'
+- at: 2026-11-23 16:48
+  from: idc02
+  text: claimed
+- at: 2026-11-23 16:49
+  from: chaba
+  text: started devin-task-20261123-164920-a-if-approved-top-up-or-key-ad on idc02 (dispatch)
+- at: 2026-11-23 16:49
+  from: chaba
+  text: 'primer injected 8 lesson(s): [rainy-day-spend-decisions] Processed: held the mis-queued dispatch (it kept
+    def; [devnest-queue-consolidation] Decomposed per Tony decision 2026-11-09 (process w; [opencode-retry-stale-worktree]
+    HOLDING OPS-1039 to stop retry/spend churn. Veri; [opencode-retry-stale-worktree] Separate `bench` LiteLLM key
+    wiring was tested o; GOTCHA: the OpenRouter account key is valid but has ZERO credit balance — paid m; [decision-arena-benchmark-decision-models-72ab92]
+    finished (f'
+- at: 2026-11-23 16:52
+  from: idc02
+  text: 'finished (failed): exit=1 ocess exited, code=exited, status=1/FAILURE | devin-task-20261123-164920-a-if-approved-top-up-or-key-ad.service:  —
+    attempt cap 2 reached; moved doing -> backlog, a manual retry re-arms it'
+- at: 2026-11-23 16:52
+  from: chaba
+  text: provider rate-limit signature on devin-task-20261123-164920-a-if-approved-top-up-or-key-ad (rate limit)
+    — idc02 holds new claims ~30m
+- at: 2026-11-23 16:52
+  from: chaba
+  text: 'idc02 retry backoff: fail 1/3 — next claim not before 11-23 17:22'
+- at: 2026-11-23 18:34
+  from: tony
+  text: retry requested
+- at: 2026-11-23 18:36
+  from: idc02
+  text: claimed
+- at: 2026-11-23 18:37
+  from: chaba
+  text: started devin-task-20261123-183713-a-if-approved-top-up-or-key-ad on idc02 (dispatch)
+- at: 2026-11-23 18:37
+  from: chaba
+  text: 'primer injected 8 lesson(s): [rainy-day-spend-decisions] Processed: held the mis-queued dispatch (it kept
+    def; [rainy-day-spend-decisions] primer injected 8 lesson(s): [rainy-day-spend-decisi; [devnest-queue-consolidation]
+    Decomposed per Tony decision 2026-11-09 (process w; [opencode-retry-stale-worktree] HOLDING OPS-1039 to stop
+    retry/spend churn. Veri; [opencode-retry-stale-worktree] Separate `bench` LiteLLM key wiring was tested o; [rainy-day-spend-decisions]
+    finished (failed): exit=1 261123-'
+- at: 2026-11-23 18:37
+  from: devin
+  text: 'attempt 3 started on idc02 — first checking live state: OR key balance/spend cap, whether top-up happened,
+    free-model slug, then litellm group + bench + config.json if unblocked'
+- at: 2026-11-23 18:43
+  from: devin
+  text: '(a) or-deepseek-v4-flash route DEPLOYED on idc03 litellm + added to chaba key allowlist — live probe OK
+    (OR key: $1/wk cap, $0.98 left; account already at 1000/day free tier = top-up done). INCIDENT+FIX: /key/update
+    clobbered chaba allowlist to 1 model for ~2min, restored full 44 and re-verified tool-call. Next: config.* code-corpus
+    bench on tony-dell.'
+- at: 2026-11-23 18:49
+  from: devin
+  text: '(b) DONE fleet-wide: agent.model swe-2-high -> swe-2-flash-high on all 6 hosts (~/.config/devin/config.json).
+    Note: devin models list shows the whole swe-2 family is Free now (lightning variants are the paid tier); flash-high
+    picked as the cheaper-class free default. VERIFIED live: a devin --print session resolved model_uid=swe-2-flash-high.'
+- at: 2026-11-23 19:10
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:10
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:19
+  from: devin
+  text: 'DONE (a)+(b). (a) OR top-up already happened (1000/day free tier live); key still $1/wk-capped ($0.94 left
+    — Tony: raise at openrouter.ai/keys if bigger OR spend wanted). or-deepseek-v4-flash deployed on idc03 + chaba
+    allowlist + probed. Code-corpus bench (config.ds-v4-code*.yaml, tony-dell): dsv4-flash 2/2 pass @ $0.0196 avg
+    vs flash-lite baseline 2/2 @ $0.675 avg — same score, ~1/34th cost, ~2.2x faster; zen-free twin timed out on
+    m1 again. (b) agent.model=swe-2-flash-high set on all 6 hosts +'
+- at: 2026-11-23 19:24
+  from: idc02
+  text: 'finished (ok): exit=0 t/jobs/devnest/2026-11-23-rainy-day-spend-decisions.yml`, outcome doc, and full comms
+    on the card. | devin-task-2'
+- at: 2026-11-23 19:24
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-23 19:24
+  from: chaba
+  text: banked 198 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-23 19:24
+  from: chaba
+  text: pushed dispatch/20261123-183713-a-if-approved-top-up-or-key-ad to origin
+- at: 2026-11-23 19:24
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 147.8s)
+- at: 2026-11-23 19:24
+  from: chaba
+  text: auto-merged 51ae21db (dispatch/20261123-183713-a-if-approved-top-up-or-key-ad) → origin/master
+- at: 2026-11-23 19:24
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261123-183713-a-if-approved-top-up-or-key-ad,
+    branch dispatch/20261123-183713-a-if-approved-top-up-or-key-ad'
+- at: 2026-11-23 19:33
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:23
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:40
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:07
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:48
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:58
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:03
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+requests:
+- id: approve-10-usd-openrouter-credit-unlocks-6e9934
+  ask: Approve 10 USD OpenRouter credit — unlocks 1000/day :free models + DeepSeek V4 Flash code bench (~0.05-0.11
+    USD/session)?
+  status: answered
+  at: 2026-11-09 09:26
+  from: devin
+  options:
+  - approve 10 USD
+  - approve different amount
+  - deny - free lanes only
+  answer: approve 10 USD
+  executed: 2026-11-09 queue
+- id: devin-default-model-is-swe-2-high-which-51a93b
+  ask: Devin default model is swe-2-high — which free model should be the new default? (give the /model slug, or
+    pick it once in the picker and it saves itself)
+  status: answered
+  at: 2026-11-09 09:26
+  from: devin
+  options:
+  - use adaptive router
+  - use fusion
+  - free model slug in comms
+  answer: free model slug in comms
+- id: three-tony-side-unblockers-1-top-up-the-06e1ea
+  ask: 'Three Tony-side unblockers: (1) top up the approved 0 on openrouter.io, (2) rotate the expired OR key per
+    SEC-0505, (3) reply with the free Devin model slug (run ''devin models'' or pick in /model picker). I do the
+    litellm model-group + bench + config.json write once unblocked.'
+  status: answered
+  at: 2026-11-12 08:41
+  from: devin
+  options:
+  - proceed
+  - hold
+  answer: '2'
+action:
+  type: dispatch
+  status: done
+  lane: paid_frontier
+  lane_source: kw
+  model: litellm/gemini-2.5-flash
+  attempts: 1
+  sweep:
+    stale_running: 2026-11-23 16:32
+    zero_commit: 2026-11-23 16:32
+  last_failure: 'exit=1 ocess exited, code=exited, status=1/FAILURE | devin-task-20261123-164920-a-if-approved-top-up-or-key-ad.service:
+    Failed with result ''exit-code''. | devin-task-20261123-164920-a-if-approved-top-up-or-key-ad.service: Consumed
+    29.654s CPU time.'
+  runner: idc02
+  result: 'exit=0 t/jobs/devnest/2026-11-23-rainy-day-spend-decisions.yml`, outcome doc, and full comms on the card.
+    | devin-task-20261123-183713-a-if-approved-top-up-or-key-ad.service: Consumed 2min 21.807s CPU time, 719.3M
+    memory peak, 0B memory swap peak.'
+  verified: true
+claim:
+  since: 2026-11-23 18:36
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-23 19:33
+  note: verified — evidence checks green, closing itself

@@ -1,0 +1,432 @@
+id: wiki-extension-control-plane
+title: Controlled MediaWiki extension management for Ada/OpenCode
+column: done
+updated: 2026-11-26 19:41
+brief: Expose a safe, confirm-gated extension-management path so OpenCode-Ada can install the approved Wiki bundle
+  without arbitrary Springboard/API or shell access.
+priority: high
+program: devnest
+tags:
+- mediawiki
+- springboard
+- ada
+- opencode
+- security
+- extensions
+spec: Create a controlled wiki_extension capability for the OpenCode-Ada tab. Keep Springboard as the server-side
+  installer but never expose its raw API or arbitrary repository/branch/commit/delete parameters to an agent. Add
+  a board-api /wiki/extension mutation door backed by the service-host Wiki credentials; allow only list|install|enable|disable
+  and the approved names CategoryTree, Mermaid, MsUpload, MultimediaViewer, Cargo, PageForms. Install one extension
+  per request, require explicit confirmation for mutations, validate the Springboard permission/API response, record
+  before/after Special:Version and a receipt, and return an honest failure without claiming installation. Add Ada
+  tools.d wiki_extension with policy=confirmed, tests for allowlist/confirmation/error/receipt, and OpenCode-Ada
+  tab tool-surface/scenario coverage. After the control plane is verified, install CategoryTree and Mermaid first
+  and verify the existing Extensions-Readiness-Test and Mermaid-Flow-Test pages. Do not expose WIKI_PASSWORD to
+  Ada/OpenCode; do not install Graph, Drawio, or arbitrary third-party repos. Done when the OpenCode-Ada tab can
+  list extensions, requests install CategoryTree with confirmation, receives a verified result, and the test pages
+  render without breaking DevNest News.
+ref: ADA-1033
+comms:
+- at: 2026-11-04 20:15
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-14 14:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:06
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:06
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:16
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:37
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:40
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:06
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:19
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:07
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:09
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:18
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:03
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:02
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:04
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:50
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:44
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:05
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:19
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:05
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:11
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:13
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:22
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:32
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:39
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:02
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 18:46
+  from: chaba
+  text: classified as free_lane (kw:install conf 1.00)
+- at: 2026-11-24 18:46
+  from: tony
+  text: queued for processing
+- at: 2026-11-24 18:46
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 18:46
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.29 > 0.85)'
+- at: 2026-11-24 18:46
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 18:47
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 18:47
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (3/3)'
+- at: 2026-11-24 18:47
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-24 18:48
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.84 > 1.0)'
+- at: 2026-11-24 19:04
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-24 19:07
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-24 19:23
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-24 19:25
+  from: chaba
+  text: started devin-task-20261124-192442-create-a-controlled-wiki-exten on tony-macbook (dispatch)
+- at: 2026-11-24 19:25
+  from: chaba
+  text: 'primer injected 8 lesson(s): [mediawiki-infrastructure-host-hierarchy] Blocker update: extension bundle
+    was u; [ops0790-rollout-idc03] DONE (direct ssh, dispatch was stuck queued): worktree@o; [ssh-access-ansible-standard]
+    SLICE 1 DONE — verifier first (per answered scope ; [wiki-page-door-infrastructure-namespace] [verify-fail]
+    Review pass 2026-11-23 (; "Only en/th supported" was never the MDDB store — verify the store layer first; ;
+    [ada-benchmark-coverage-scenarios-for-kan-152a4f] offline cov'
+- at: 2026-11-24 19:42
+  from: devin
+  text: 'control plane hardened in dispatch worktree: /wiki/extension now requires confirm=true on mutations, captures
+    Special:Version+extension table before/after, writes durable receipts (~/.local/state/board-api-wiki-ext/),
+    fails honestly on unverified results. 9 new tests green + selftest ok. LIVE FINDING: deployed Springboard rejects
+    every sbname (Unrecognized value) — $wgSpringboardURL has no MW 1.46 recommended YAML (CanastaWiki ships 1.39/1.43/1.44/1.47
+    only); needs LocalSettings fix (point to 1.'
+- at: 2026-11-24 19:42
+  from: devin
+  text: 'raised request springboard-is-unusable-on-the-wiki-mw-1-2aa6f8: Springboard is unusable on the wiki (MW
+    1.46.2): it validates sbname against $wgSpringboardURL YAML and the default conf'
+- at: 2026-11-24 19:43
+  from: devin
+  text: 'done in dispatch worktree (commit 3d8e721d4f + outcome doc). Deliverables: hardened /wiki/extension (confirm
+    gate, Special:Version before/after, receipts, honest failure), 9 unit tests green, write-door doc + SSOT trail.
+    Live: list verified, CategoryTree+Mermaid already installed, test pages + DevNest News render. Blocker: Springboard
+    rejects all sbname on MW 1.46 — $wgSpringboardURL needs LocalSettings fix (request raised on card). Not pushed/deployed
+    per dispatch rules.'
+- at: 2026-11-24 19:46
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ted on the dispatch branch (3d8e721d4f + outcome doc), not pushed, per dispatch rules.
+    | devin-task-20261124-1924'
+- at: 2026-11-24 19:46
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 19:46
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261124-192442-create-a-controlled-wiki-exten
+    is 28 commits behind origin/master —\n   run 'git pull -"
+- at: 2026-11-24 19:46
+  from: chaba
+  text: pushed dispatch/20261124-192442-create-a-controlled-wiki-exten to origin
+- at: 2026-11-24 19:46
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-24 19:46
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 19:54
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261124-192442-create-a-controlled-wiki-exten on tony-macbook still
+    dirty — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-24 20:01
+  from: tony
+  text: 'answered springboard-is-unusable-on-the-wiki-mw-1-2aa6f8: proceed'
+- at: 2026-11-24 20:01
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-24 20:09
+  from: chaba
+  text: 'answer-sweep: executed ''proceed'' -> queued for processing'
+- at: 2026-11-24 20:09
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 4.29 > 1.5)'
+- at: 2026-11-24 20:09
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-24 20:10
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.06 > 1.0)'
+- at: 2026-11-24 20:10
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.81 > 1.0)'
+- at: 2026-11-24 20:11
+  from: tony-omen
+  text: claimed
+- at: 2026-11-24 20:12
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
+- at: 2026-11-24 20:13
+  from: chaba
+  text: started devin-task-20261124-201305-create-a-controlled-wiki-exten on tony-omen (dispatch)
+- at: 2026-11-24 20:13
+  from: chaba
+  text: 'primer injected 8 lesson(s): [mediawiki-infrastructure-host-hierarchy] Blocker update: extension bundle
+    was u; [wiki-extension-control-plane] primer injected 8 lesson(s): [mediawiki-infrastru; [wiki-extension-control-plane]
+    checkpoint failed: commit: ⚠️ single-writer: /hom; [kk-mac-launchd-runner-followthrough] primer injected 8 lesson(s):
+    [kk-mac-launc; [ops0790-rollout-idc03] DONE (direct ssh, dispatch was stuck queued): worktree@o; [ssh-access-ansible-standard]
+    SLICE 1 DONE — verifier first ('
+- at: 2026-11-24 20:31
+  from: devin
+  text: 'attempt 2 done on tony-omen: cherry-picked attempt-1 work, added idempotent no-op to /wiki/extension (verified
+    end-state via siteinfo, receipt, Springboard skipped — keeps mutations honest while sbname is broken on MW 1.46),
+    added test file to chaba merge gate, 260/260 gate tests pass locally. Live re-verified: list ok, all 7 approved
+    exts installed, test pages + DevNest News 200. Follow-ups: ADA-1324 filed (ada-voice confirm flag); Springboard
+    $wgSpringboardURL still needs the one-line LocalSet'
+- at: 2026-11-24 20:37
+  from: tony-omen
+  text: 'finished (ok): exit=0 spatch-outcome-20261124-201305-create-a-controlled-wiki-exten.md`; card comms posted.
+    | devin-task-20261124-20130'
+- at: 2026-11-24 20:37
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-24 20:37
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261124-201305-create-a-controlled-wiki-exten'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-24 20:37
+  from: chaba
+  text: pushed dispatch/20261124-201305-create-a-controlled-wiki-exten to origin
+- at: 2026-11-24 20:37
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot_validate_refs.py -x -q, 80.2s)
+- at: 2026-11-24 20:37
+  from: chaba
+  text: auto-merged 0a5e0a4e (dispatch/20261124-201305-create-a-controlled-wiki-exten) → origin/master
+- at: 2026-11-24 20:37
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-24 20:38
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:44
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:56
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:58
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: free_lane
+  lane_source: kw
+  model: swe-2-flash-medium
+  attempts: 2
+  result: 'exit=0 spatch-outcome-20261124-201305-create-a-controlled-wiki-exten.md`; card comms posted. | devin-task-20261124-201305-create-a-controlled-wiki-exten.service:
+    Consumed 5min 58.712s CPU time over 19min 8.216s wall clock time, 932.9M memory peak.'
+  sweep:
+    dirty: 1
+  runner: tony-omen
+  verified: true
+claim:
+  since: 2026-11-24 20:11
+requests:
+- id: springboard-is-unusable-on-the-wiki-mw-1-2aa6f8
+  ask: 'Springboard is unusable on the wiki (MW 1.46.2): it validates sbname against $wgSpringboardURL YAML and
+    the default config only has a 1.43 key while RecommendedRevisions ships no 1.46 file — every install/enable/disable
+    returns Unrecognized value. Fix needs LocalSettings.php (Plesk/admin): set $wgSpringboardURL to the plain-string
+    URL https://raw.githubusercontent.com/CanastaWiki/RecommendedRevisions/master/1.44.yaml (contains all 7 approved
+    names incl. Mermaid repo override). Who applies it, or should this go to a new card? Meanwhile all approved
+    extensions are already installed and the hardened door is in the dispatch branch.'
+  status: answered
+  at: 2026-11-24 19:42
+  from: devin
+  options:
+  - proceed
+  - hold
+  answer: proceed
+  executed: 2026-11-24 queue
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 20:38
+  note: verified — evidence checks green, closing itself

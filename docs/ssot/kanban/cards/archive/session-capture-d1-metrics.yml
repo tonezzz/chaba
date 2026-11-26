@@ -1,0 +1,352 @@
+id: session-capture-d1-metrics
+title: 'Session capture D.1: repeat-ask/miss/stale-pointer metrics'
+column: done
+updated: 2026-11-26 19:41
+priority: medium
+tags:
+- dev-0038-followup
+spec: 'Goal: measure repeat-ask/miss rate, stale-pointer incidents, and time-to-find; report surface. Depends: C.2
+  audit. Acceptance: read-only report; SSOT thresholds/tuning card; no fake events.'
+ref: OPS-1357
+comms:
+- at: 2026-11-25 09:12
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-25 09:14
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:21
+  from: chaba
+  text: classified as free_lane (kw:report conf 1.00)
+- at: 2026-11-25 09:21
+  from: tony
+  text: queued for processing
+- at: 2026-11-25 09:22
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.68 > 0.85)'
+- at: 2026-11-25 09:22
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 09:22
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.66 > 1.0)'
+- at: 2026-11-25 09:28
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 09:29
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 09:31
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (3/3)'
+- at: 2026-11-25 09:35
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-25 09:38
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-25 09:41
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.44 > 1.0)'
+- at: 2026-11-25 09:47
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-25 09:48
+  from: chaba
+  text: started devin-task-20261125-094816-goal-measure-repeat-ask-miss-r on tony-macbook (dispatch)
+- at: 2026-11-25 09:48
+  from: chaba
+  text: 'primer injected 8 lesson(s): [audit-miss-ada-voice-job-records] merge-sweep: no session/worktree found
+    for de; [knowledge-capture-harvester-guards-phase-c-d-64d812ef] [2026-11-23 opencode] Ph; [audit-miss-cms-page-devin-session-audit-2026-10-17]
+    primer injected 8 lesson(s); [audit-miss-education-lesson-write-timeout] primer injected 8 lesson(s): [devin-;
+    [audit-miss-remote-eval-results-not-landed] primer injected 8 lesson(s): [devin-; [camwall-retire-to-wiki] primer
+    injected 8 lesson(s): no chab'
+- at: 2026-11-25 09:48
+  from: devin
+  text: 'dispatch picked up: running capture-metrics.py baseline + refreshing Phase D SSOT numbers; report is read-only'
+- at: 2026-11-25 09:52
+  from: devin
+  text: 'done: Phase D refresh measured + landed in worktree. Report reports/capture/metrics-20261125.md; SSOT thresholds
+    updated (ssot.knowledge-capture.yml Phase D Refresh 2026-11-25); follow-ups carded as OPS-1368. Key finding:
+    canonical capture ledger missing on all reachable hosts — regenerated in-worktree, durability gap carded. Read-only
+    posture kept; no fake events (stale-pointer stays proxy, time-to-find n=3 real runs).'
+- at: 2026-11-25 09:55
+  from: tony-macbook
+  text: 'finished (ok): exit=0  No fake events; YAML validated and prose-smell clean; final comms posted to the
+    card. | devin-task-20261125-0948'
+- at: 2026-11-25 09:55
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 09:55
+  from: chaba
+  text: "checkpoint failed: commit: \U0001F50D Validating SSOT files...\n\U0001F4CB Found SSOT files to validate:\ndocs/ssot/jobs/kanban/2026-11-25-session-capture-d1-metrics.yml\ndocs/ssot/ssot.knowledge-capture.yml"
+- at: 2026-11-25 09:55
+  from: chaba
+  text: pushed dispatch/20261125-094816-goal-measure-repeat-ask-miss-r to origin
+- at: 2026-11-25 09:55
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-25 09:55
+  from: chaba
+  text: 'worktree kept: dirty — 4 uncommitted file(s)'
+- at: 2026-11-25 09:56
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-094816-goal-measure-repeat-ask-miss-r no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-25 09:56
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-094816-goal-measure-repeat-ask-miss-r on tony-macbook still
+    dirty — 4 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 11:20
+  from: tony
+  text: '[verify] VERIFY-QUEUE triage 2026-11-25 (Tony): dispatch attempt produced no committed deliverable (session
+    reported ''no commits'' / ''NOT verified''; worktree was dropped or salvaged). No code landed in origin/master
+    from this card. Holding back to backlog for re-dispatch; not closing as done.'
+- at: 2026-11-25 11:20
+  from: tony
+  text: put on hold
+- at: 2026-11-25 12:20
+  from: chaba
+  text: classified as free_lane (kw:report conf 1.00)
+- at: 2026-11-25 12:20
+  from: tony
+  text: queued for processing
+- at: 2026-11-25 12:21
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 12:22
+  from: chaba
+  text: 'kk-mac defers: installed runner-agent drifted from repo /Users/kkkakk/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 12:23
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.10 > 0.7)'
+- at: 2026-11-25 12:23
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 12:23
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 12:26
+  from: mn01
+  text: claimed
+- at: 2026-11-25 12:27
+  from: chaba
+  text: started devin-task-20261125-052707-goal-measure-repeat-ask-miss-r on mn01 (dispatch)
+- at: 2026-11-25 12:27
+  from: chaba
+  text: "primer injected 8 lesson(s): [session-capture-d1-metrics] primer injected 8 lesson(s): [audit-miss-ada-voice-;
+    [session-capture-c3-hooks] capture-event.py emitter + spool design: events.jsonl; [knowledge-capture-harvester-guards-phase-c-d-64d812ef]
+    [2026-11-23 opencode] Ph; [session-capture-d-1-follow-ups-ledger-du-78e13f] dispatch picked up on idc02: r;
+    [session-capture-d1-metrics] checkpoint failed: commit: \U0001F50D Validating SSOT files.; [session-capture-c3-hooks]
+    SessionEnd hook can't know whether"
+- at: 2026-11-25 12:28
+  from: devin
+  text: 'attempt 2 verified: all deliverables already landed on master via OPS-1368 salvage commit 566ed29e07 —
+    reports/capture/metrics-20261125.md, job doc docs/ssot/jobs/kanban/2026-11-25-session-capture-d1-metrics.yml,
+    SSOT Phase D Refresh thresholds in ssot.knowledge-capture.yml. Acceptance met (read-only report, thresholds
+    recorded, no fake events). Committed dispatch-outcome doc on dispatch branch; nothing else needed.'
+- at: 2026-11-25 12:30
+  from: mn01
+  text: 'finished (ok): exit=0 nch (`2081b351da`), and posted the final card comms — no further code changes were
+    needed. | devin-task-20261125-'
+- at: 2026-11-25 12:30
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 12:30
+  from: chaba
+  text: banked 650 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 12:30
+  from: chaba
+  text: pushed dispatch/20261125-052707-goal-measure-repeat-ask-miss-r to origin
+- at: 2026-11-25 12:30
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 12:30
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-25 12:39
+  from: chaba
+  text: 'merge-sweep: merged 65ba591c (dispatch/20261125-052707-goal-measure-repeat-ask-miss-r from mn01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-052707-goal-measure-repeat-ask-miss-r.md)
+    — auto-closed'
+- at: 2026-11-25 12:39
+  from: local
+  text: 'pub milestone: card verified: session-capture-d1-metrics on idc03 — merged 65ba591c (dispatch/20261125-052707-goal-measure-repeat-ask-miss-r
+    from mn01) -> origin/master — verified — auto-c — merged 65ba591c (dispatch/20261125-052707-goal-measure-repeat-ask-miss-r
+    from mn01) -> origin/master — verified — auto-closed [evt-8f83acbb30f54ec6]'
+- at: 2026-11-25 12:39
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-052707-goal-measure-repeat-ask-miss-r,
+    branch dispatch/20261125-052707-goal-measure-repeat-ask-miss-r on mn01'
+- at: 2026-11-25 12:39
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261125-052707-goal-measure-repeat-ask-miss-r on
+    mn01 — if the work was never pushed it may be gone'
+- at: 2026-11-25 14:03
+  from: tony
+  text: '[verify] VERIFY-QUEUE triage 2026-11-25 (Tony): dispatch attempt produced no committed deliverable (session
+    reported ''no commits'' / ''NOT verified''; worktree was dropped or salvaged). No code landed in origin/master
+    from this card. Holding back to backlog for re-dispatch; not closing as done.'
+- at: 2026-11-25 14:03
+  from: tony
+  text: put on hold
+- at: 2026-11-25 14:11
+  from: tony
+  text: queue refused — attempt cap reached (2/2) — /action do=retry re-arms it
+- at: 2026-11-25 14:15
+  from: tony
+  text: retry requested
+- at: 2026-11-25 14:16
+  from: chaba
+  text: 'tony-dell defers: runner at cap (2/2)'
+- at: 2026-11-25 14:16
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.09 > 0.75)'
+- at: 2026-11-25 14:31
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.18 > 0.7)'
+- at: 2026-11-25 14:31
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 14:43
+  from: tony-omen
+  text: claimed
+- at: 2026-11-25 14:45
+  from: chaba
+  text: started devin-task-20261125-144508-goal-measure-repeat-ask-miss-r on tony-omen (dispatch)
+- at: 2026-11-25 14:45
+  from: chaba
+  text: 'primer injected 8 lesson(s): [session-capture-d1-metrics] merge-sweep: no session/worktree found for devin-ta;
+    [session-capture-d1-metrics] primer injected 8 lesson(s): [session-capture-d1-me; [session-capture-d1-metrics]
+    primer injected 8 lesson(s): [audit-miss-ada-voice-; [session-capture-c3-hooks] capture-event.py emitter + spool
+    design: events.jsonl; [knowledge-capture-harvester-guards-phase-c-d-64d812ef] [2026-11-23 opencode] Ph; [publish-promote-knowledge-capture-ssot-w-d34a39]
+    Phase B+ an'
+- at: 2026-11-25 14:47
+  from: devin
+  text: 'attempt 3 (tony-omen): verify-only — all deliverables confirmed on origin/master via salvage commit 566ed29e07:
+    reports/capture/metrics-20261125.md, job doc docs/ssot/jobs/kanban/2026-11-25-session-capture-d1-metrics.yml,
+    Phase D Refresh thresholds in ssot.knowledge-capture.yml. Acceptance met (read-only, thresholds recorded, no
+    fake events). No code changes needed; outcome doc committed on dispatch branch. Note: repeat-asks register still
+    34d stale (>14d threshold) — flagged for next sweep adju'
+- at: 2026-11-25 14:54
+  from: chaba
+  text: 'merge-sweep: merged 81c56c0b (dispatch/20261125-144508-goal-measure-repeat-ask-miss-r from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-144508-goal-measure-repeat-ask-miss-r.md)
+    — auto-closed'
+- at: 2026-11-25 14:54
+  from: local
+  text: 'pub milestone: card verified: session-capture-d1-metrics on idc03 — merged 81c56c0b (dispatch/20261125-144508-goal-measure-repeat-ask-miss-r
+    from tony-omen) -> origin/master — verified — a — merged 81c56c0b (dispatch/20261125-144508-goal-measure-repeat-ask-miss-r
+    from tony-omen) -> origin/master — verified — auto-closed [evt-1b203bf01146e8d5]'
+- at: 2026-11-25 14:55
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-144508-goal-measure-repeat-ask-miss-r,
+    branch dispatch/20261125-144508-goal-measure-repeat-ask-miss-r on tony-omen'
+- at: 2026-11-25 14:55
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261125-144508-goal-measure-repeat-ask-miss-r on
+    tony-omen — if the work was never pushed it may be gone'
+- at: 2026-11-25 14:55
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 14:55
+  from: chaba
+  text: banked 662 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 14:55
+  from: chaba
+  text: pushed dispatch/20261125-144508-goal-measure-repeat-ask-miss-r to origin
+- at: 2026-11-25 14:55
+  from: chaba
+  text: "auto-merge not done: push: To github-chaba:tonezzz/chaba.git\n ! [rejected]              HEAD -> master
+    (fetch first)\nerror: failed to push some refs to 'github-chaba:tonezzz/chaba.git'\nhint: Updates were rejected
+    because the re — close will block until merged"
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:54
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: free_lane
+  lane_source: kw
+  model: swe-2-flash-medium
+  attempts: 1
+  sweep:
+    stale_running: 2026-11-25 09:56
+    dirty: 4
+  last_failure: 'exit=0 nch (`2081b351da`), and posted the final card comms — no further code changes were needed.
+    | devin-task-20261125-052707-goal-measure-repeat-ask-miss-r.service: Consumed 15.280s CPU time over 1min 18.253s
+    wall clock time, 478.1M memory peak.'
+  runner: tony-omen
+  verified: true
+claim:
+  since: 2026-11-25 14:43
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 14:54
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-144508-goal-measure-repeat-ask-miss-r.md

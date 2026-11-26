@@ -1,0 +1,413 @@
+id: ops-retry-storm-detection
+title: Surface sustained retry storms / hot containers on the ops board
+column: done
+updated: 2026-11-26 19:41
+priority: medium
+tags:
+- observability
+- mddb
+- alerts
+spec: 'The mddb-embed OpenRouter retry storm ran ~6h before anyone looked - discovered via load investigation, not
+  surfaced. Cheap version: a periodic check (ops health sweep or host-logs producer) that flags (a) any container
+  >50% CPU sustained >30min, (b) repeated identical WARN/ERROR in recent podman logs (the ''embedding attempt failed''
+  signature), (c) MDDB queue stats via /v1/vector-stats dropped/error counters climbing. Report to a card or the
+  ops board, not Telegram (noise policy).'
+ref: MEM-1192
+comms:
+- at: 2026-11-08 13:13
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-14 14:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:11
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:24
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:41
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:43
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:11
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 17:23
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:14
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:15
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:20
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:07
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 17:02
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:05
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:52
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 17:46
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:05
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:20
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:18
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:07
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:07
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:14
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:23
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:33
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:40
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:07
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:47
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:00
+  from: chaba
+  text: classified as free_lane (kw:try conf 1.00)
+- at: 2026-11-25 09:00
+  from: tony
+  text: queued for processing
+- at: 2026-11-25 09:03
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.84 > 0.85)'
+- at: 2026-11-25 09:03
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 09:03
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 2.25 > 1.0)'
+- at: 2026-11-25 09:04
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 09:04
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-25 09:05
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-25 09:06
+  from: chaba
+  text: started devin-task-20261125-090624-the-mddb-embed-openrouter-retr on tony-macbook (dispatch)
+- at: 2026-11-25 09:06
+  from: chaba
+  text: 'primer injected 8 lesson(s): `~/var/chaba/health/*.json` is unrelated producer snapshots (ssh-canary logs);
+    r; `~/var/chaba/health/*.json` holds unrelated producer snapshots; globbing it as "; [ada-scenario-casting-service-failed-on-i-340465]
+    Found in board sweep 2026-10-1; [board-api-queue-write-verify-lost-race-f85f2f] finished (failed): exit=1 -pipel;
+    [board-api-queue-write-verify-lost-race-f85f2f] finished (failed): exit=1 RE | d; [dispatch-lane-classifier-codemod-keyword-false-positive]
+    fin'
+- at: 2026-11-25 09:15
+  from: devin
+  text: 'progress: retry-storm-watch.py built (scripts/ops/) — (a) podman stats stream -> >50% CPU sustained >=30min
+    via state samples, (b) podman logs 60m -> identical WARN/ERROR sig x30+, (c) MDDB /v1/vector-stats + /metrics
+    embedding dropped/error/retried deltas (idc03 only via MDDB_WATCH_URLS). Findings -> deduped board-api /inbox
+    6h, never Telegram. Live dry-run on idc03 already caught the CURRENT storm: embedding attempt failed x119 (mddb)
+    + x78 (mddb-cms) in 60m. Declared 6 jobs in ssot.jobs.yml ('
+- at: 2026-11-25 09:15
+  from: devin
+  text: 'DONE: retry-storm-watch delivered repo-side. scripts/ops/retry-storm-watch.py + 6 ssot.jobs.yml entries
+    (idc03 full a/b/c; idc02/tony_dell/tony_omen/mn01/con01 a+b) + rendered units + trail doc docs/ssot/jobs/monitoring/2026-11-25-retry-storm-watch.yml
+    + dispatch-outcome md. Verified live on idc03: caught the CURRENT storm (embedding attempt failed x119 mddb
+    / x78 mddb-cms in 60m). Remaining step: render-jobs --install per host after merge+sync — not deployed per dispatch
+    rules.'
+- at: 2026-11-25 09:24
+  from: tony-macbook
+  text: 'finished (ok): exit=0  merge + repo sync, and the first real tick will file one expected consolidated inbox
+    entry. | devin-task-2026112'
+- at: 2026-11-25 09:24
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 09:24
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261125-090624-the-mddb-embed-openrouter-retr
+    is 107 commits behind origin/master —\n   run 'git pull"
+- at: 2026-11-25 09:24
+  from: chaba
+  text: pushed dispatch/20261125-090624-the-mddb-embed-openrouter-retr to origin
+- at: 2026-11-25 09:24
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-25 09:24
+  from: chaba
+  text: 'worktree kept: dirty — 16 uncommitted file(s)'
+- at: 2026-11-25 09:24
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-090624-the-mddb-embed-openrouter-retr no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-25 09:24
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-090624-the-mddb-embed-openrouter-retr on tony-macbook still
+    dirty — 16 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 09:27
+  from: tony
+  text: '[verify] VERIFY-QUEUE triage 2026-11-25 (Tony): dispatch attempt produced no committed deliverable (session
+    reported ''no commits'' / ''NOT verified''; worktree was dropped or salvaged). No code landed in origin/master
+    from this card. Holding back to backlog for re-dispatch; not closing as done.'
+- at: 2026-11-25 09:27
+  from: tony
+  text: put on hold
+- at: 2026-11-25 10:08
+  from: chaba
+  text: classified as free_lane (kw:try conf 1.00)
+- at: 2026-11-25 10:08
+  from: chaba
+  text: queued for processing
+- at: 2026-11-25 10:09
+  from: chaba
+  text: '[auto-dispatch] wave 2 (2026-11-25 10:09): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-25 10:09
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 10:11
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (4/4)'
+- at: 2026-11-25 10:15
+  from: chaba
+  text: 'idc02 defers: runner at cap (2/2)'
+- at: 2026-11-25 10:30
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.42 > 0.7)'
+- at: 2026-11-25 10:36
+  from: chaba
+  text: 'tony-dell defers: runner at cap (2/2)'
+- at: 2026-11-25 10:55
+  from: mn01
+  text: claimed
+- at: 2026-11-25 10:56
+  from: chaba
+  text: started devin-task-20261125-035625-the-mddb-embed-openrouter-retr on mn01 (dispatch)
+- at: 2026-11-25 10:56
+  from: chaba
+  text: 'primer injected 8 lesson(s): [ops-retry-storm-detection] progress: retry-storm-watch.py built (scripts/ops/)
+    ; [ops-retry-storm-detection] primer injected 8 lesson(s): `~/var/chaba/health/*.j; `~/var/chaba/health/*.json`
+    is unrelated producer snapshots (ssh-canary logs); r; [ops-retry-storm-detection] checkpoint failed: commit:
+    ⚠️ single-writer: /home/t; [ops-retry-storm-detection] session produced no commits — the branch head is jus;
+    `~/var/chaba/health/*.json` holds unrelated producer snapshot'
+- at: 2026-11-25 10:58
+  from: devin
+  text: 'attempt 2: prior run built the deliverable but never committed (worktree 107 behind, dirty salvage). Rebuilding
+    scripts/ops/retry-storm-watch.py + ssot.jobs.yml entries + trail doc in this worktree.'
+- at: 2026-11-25 11:03
+  from: devin
+  text: 'DONE (attempt 2, committed 0f3056f87d): scripts/ops/retry-storm-watch.py + 6 ssot.jobs.yml entries (idc03
+    cpu+logs+mddb via MDDB_WATCH_URLS :11023/:11027; idc02/tony_dell/tony_omen/mn01/con01 cpu+logs) + rendered units
+    + trail doc docs/ssot/jobs/monitoring/2026-11-25-retry-storm-watch.yml + dispatch-outcome md. Verified: live
+    --no-alert run (5 containers, ok), MDDB baseline vs live leader over tailnet, render-jobs --check OK 133 jobs.
+    NOT installed per dispatch rules — after merge+repo-sync run '
+- at: 2026-11-25 11:05
+  from: mn01
+  text: 'finished (ok): exit=0 un already proved the log-signature leg catches the real ''embedding attempt failed''
+    storm. | devin-task-20261125-'
+- at: 2026-11-25 11:05
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-25 11:05
+  from: chaba
+  text: banked 8 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 11:05
+  from: chaba
+  text: pushed dispatch/20261125-035625-the-mddb-embed-openrouter-retr to origin
+- at: 2026-11-25 11:05
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-25 11:05
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-25 11:10
+  from: chaba
+  text: 'merge-sweep: merged 7b57df78 (dispatch/20261125-035625-the-mddb-embed-openrouter-retr from mn01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261125-035625-the-mddb-embed-openrouter-retr.md)
+    — auto-closed'
+- at: 2026-11-25 11:10
+  from: local
+  text: 'pub milestone: card verified: ops-retry-storm-detection on idc03 — merged 7b57df78 (dispatch/20261125-035625-the-mddb-embed-openrouter-retr
+    from mn01) -> origin/master — verified — auto-c — merged 7b57df78 (dispatch/20261125-035625-the-mddb-embed-openrouter-retr
+    from mn01) -> origin/master — verified — auto-closed [evt-2905f9d1bfca345a]'
+- at: 2026-11-25 11:10
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-035625-the-mddb-embed-openrouter-retr,
+    branch dispatch/20261125-035625-the-mddb-embed-openrouter-retr on mn01'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:58
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:03
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: free_lane
+  lane_source: kw
+  model: swe-2-flash-medium
+  attempts: 2
+  result: 'exit=0 un already proved the log-signature leg catches the real ''embedding attempt failed'' storm. |
+    devin-task-20261125-035625-the-mddb-embed-openrouter-retr.service: Consumed 31.835s CPU time over 7min 33.594s
+    wall clock time, 518.7M memory peak.'
+  sweep:
+    stale_running: 2026-11-25 09:24
+    dirty: 16
+  runner: mn01
+  verified: true
+claim:
+  since: 2026-11-25 10:55
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 11:09
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261125-035625-the-mddb-embed-openrouter-retr.md

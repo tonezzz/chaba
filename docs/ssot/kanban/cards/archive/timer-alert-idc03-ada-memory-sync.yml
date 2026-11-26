@@ -1,0 +1,825 @@
+id: timer-alert-idc03-ada-memory-sync
+title: Timer ada-memory-sync on idc03 failing
+column: done
+updated: 2026-11-26 19:41
+priority: high
+tags:
+- timer-alert
+- auto
+- by:timer-sentinel
+note: 'Last run (10-16 14:00) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate journal: `journalctl
+  --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+ref: ADA-0719
+comms:
+- at: 2026-10-16 15:09
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-23 19:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-10-24 15:54
+  from: devin
+  text: 'PILOT delegation #1 (OPS-0823): diagnosis so far — unit ada-memory-sync.service is FAILING CURRENTLY (not
+    just 10-16): --export-inbox succeeds, --resolve-voice exits 1. Same --resolve-voice command runs OK manually
+    (exit 0, 9 conflicts preserved). => env/concurrency difference between systemd context and shell. Needs: capture
+    full unit stderr (journal may truncate) + compare env. Verifier: unit exits 0 on next timer run.'
+- at: 2026-10-24 16:11
+  from: devin
+  text: 'DIAGNOSIS COMPLETE — the unit is NOT buggy; the alert is CORRECT. ada-memory-sync exits 1 BY DESIGN when
+    unresolved vault-vs-MDDB conflicts exist (script: return 1 if conflicts). 9 real conflicts have been pending
+    since ~10-16: persona/self, assets/{how-to-send-photos,kk-crv,pool-snap-demo,tony-car}, history/origin (devin),
+    people/{kk,kk-virtual-home,tony-thai-name} (devin/devin-seed/unknown writers). resolve-voice only auto-resolves
+    voice-vs-vault; these are curated-remote-vs-vault — need a dec'
+- at: 2026-10-24 16:46
+  from: devin
+  text: 'RESOLVED — unit GREEN (Result=success, ExecMainStatus=0, 2026-10-24 16:46). Ran --take-remote (backup first:
+    /tmp/ada-memory-backup-*) which resolved all 9 vault-vs-MDDB conflicts by pulling curated remote versions into
+    the vault. 0 conflicts remain on re-run. The daily alert (since 10-16) will stop. FIRST REAL JOB through the
+    delegation procedure (OPS-0823): classify -> per-item decision -> route -> verify (unit exit 0).'
+- at: 2026-10-24 16:46
+  from: tony
+  text: closed by tony
+- at: 2026-11-09 04:10
+  from: devin
+  text: re-spawned from report page
+- at: 2026-11-09 04:20
+  from: devin
+  text: '[still suspicious] Last run (11-09 04:01) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-09 04:30
+  from: devin
+  text: '[still suspicious] Last run (11-09 04:01) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-09 04:40
+  from: devin
+  text: '[still suspicious] Last run (11-09 04:01) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-09 04:50
+  from: devin
+  text: '[still suspicious] Last run (11-09 04:01) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-09 05:00
+  from: devin
+  text: '[still suspicious] Last run (11-09 04:01) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-09 09:08
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-09 09:09
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-09 09:11
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-09 09:17
+  from: idc02
+  text: claimed
+- at: 2026-11-09 09:17
+  from: chaba
+  text: started devin-task-20261109-091719-investigate-the-failure-of-the on idc02 (dispatch)
+- at: 2026-11-09 09:17
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.48 > 1.0)'
+- at: 2026-11-09 09:18
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.57 > 1.0)'
+- at: 2026-11-09 09:18
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.67 > 0.85)'
+- at: 2026-11-09 09:21
+  from: devin
+  text: 'ROOT CAUSE (11-09 re-alert) — transient MDDB infra events, not a script bug. Two recent crashes, both inside
+    sync() -> mddb.add() POST to idc03:11023: (a) 11-08 05:00:12 RemoteDisconnected — weekly mddb-restart.timer
+    (Sun 05:00) restarted mddb.service mid-request; (b) 11-09 04:01:07 ReadTimeout (read=20s) — embedding path degraded
+    03:58-07:01 (embed-pool-shim: all same-space providers down OR circuit-open + Gemini 429 rate-limit), mddb retries
+    embeds inline ~30s/doc so /add exceeded the client 2'
+- at: 2026-11-09 09:23
+  from: idc02
+  text: 'finished (ok): exit=0 ns, and the outcome is written to `dispatch-outcome-20261109-091719-investigate-the-failure-of-the.md`.
+    | devin-t'
+- at: 2026-11-09 09:23
+  from: chaba
+  text: 'session-end checkpoint 52250264: 1 leftover file(s) committed'
+- at: 2026-11-09 09:23
+  from: chaba
+  text: pushed dispatch/20261109-091719-investigate-the-failure-of-the to origin
+- at: 2026-11-09 09:23
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-09 09:23
+  from: chaba
+  text: auto-merged 7285d65f (dispatch/20261109-091719-investigate-the-failure-of-the) → origin/master
+- at: 2026-11-09 09:23
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261109-091719-investigate-the-failure-of-the,
+    branch dispatch/20261109-091719-investigate-the-failure-of-the'
+- at: 2026-11-09 09:36
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-09 09:36
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-10 05:10
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-10 05:10
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-10 05:01) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-10 05:20
+  from: devin
+  text: '[still suspicious] Last run (11-10 05:01) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-10 05:30
+  from: devin
+  text: '[still suspicious] Last run (11-10 05:01) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-10 05:40
+  from: devin
+  text: '[still suspicious] Last run (11-10 05:01) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-10 05:50
+  from: devin
+  text: '[still suspicious] Last run (11-10 05:01) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-10 06:01
+  from: devin
+  text: '[still suspicious] Last run (11-10 05:01) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-10 06:10
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-10 06:01 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-10 06:10
+  from: tony
+  text: closed by tony
+- at: 2026-11-11 20:42
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-11 20:42
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-11 20:01) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-11 20:52
+  from: devin
+  text: '[still suspicious] Last run (11-11 20:01) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-11 23:13
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-11 23:03 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-11 23:13
+  from: tony
+  text: closed by tony
+- at: 2026-11-12 06:14
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-12 06:14
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-12 06:01) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-12 06:23
+  from: devin
+  text: '[still suspicious] Last run (11-12 06:01) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-12 06:43
+  from: devin
+  text: '[still suspicious] Last run (11-12 06:01) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-12 06:53
+  from: devin
+  text: '[still suspicious] Last run (11-12 06:01) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-12 07:24
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-12 07:03 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-12 07:24
+  from: tony
+  text: closed by tony
+- at: 2026-11-12 15:13
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-12 17:13
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-12 17:03 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-12 17:23
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-12 17:03 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-12 17:34
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-12 17:03 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-12 17:42
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-12 17:03 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-12 17:42
+  from: tony
+  text: closed by tony
+- at: 2026-11-13 11:13
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-13 11:13
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-13 11:03) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-13 11:24
+  from: devin
+  text: '[still suspicious] Last run (11-13 11:03) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-13 12:13
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-13 12:04 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-13 12:13
+  from: tony
+  text: closed by tony
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-15 05:15
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-15 05:15
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-15 05:00) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-15 05:26
+  from: devin
+  text: '[still suspicious] Last run (11-15 05:00) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-15 06:15
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-15 06:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-15 06:15
+  from: tony
+  text: closed by tony
+- at: 2026-11-17 18:07
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:16
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:37
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:39
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:06
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 01:16
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-18 01:16
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-18 01:00) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-18 01:26
+  from: devin
+  text: '[still suspicious] Last run (11-18 01:00) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-18 04:16
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-18 04:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-18 04:16
+  from: tony
+  text: closed by tony
+- at: 2026-11-18 09:16
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-18 09:16
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-18 09:00) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-18 09:26
+  from: devin
+  text: '[still suspicious] Last run (11-18 09:00) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-18 10:16
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-18 10:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-18 10:16
+  from: tony
+  text: closed by tony
+- at: 2026-11-18 11:17
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-18 11:17
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-18 11:00) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-18 11:27
+  from: devin
+  text: '[still suspicious] Last run (11-18 11:00) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-18 14:17
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-18 14:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-18 14:17
+  from: tony
+  text: closed by tony
+- at: 2026-11-18 17:29
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:10
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:13
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:18
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:03
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:07
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:10
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-18 22:10
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-18 22:00) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-18 22:20
+  from: devin
+  text: '[still suspicious] Last run (11-18 22:00) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-19 08:20
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-19 08:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-19 08:20
+  from: tony
+  text: closed by tony
+- at: 2026-11-19 17:03
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:53
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:03
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 09:11
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-21 09:11
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-21 09:00) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-21 09:21
+  from: devin
+  text: '[still suspicious] Last run (11-21 09:00) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-21 10:10
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-21 10:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-21 10:10
+  from: tony
+  text: closed by tony
+- at: 2026-11-21 12:11
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-21 12:11
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-21 12:01) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-21 12:21
+  from: devin
+  text: '[still suspicious] Last run (11-21 12:01) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-21 13:11
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-21 13:01 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-21 13:11
+  from: tony
+  text: closed by tony
+- at: 2026-11-21 15:11
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-21 15:11
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-21 15:01) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-21 15:21
+  from: devin
+  text: '[still suspicious] Last run (11-21 15:01) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-21 16:11
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-21 16:01 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-21 16:11
+  from: tony
+  text: closed by tony
+- at: 2026-11-21 17:48
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 21:11
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-21 21:11
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-21 21:01) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-21 21:21
+  from: devin
+  text: '[still suspicious] Last run (11-21 21:01) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-21 22:11
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-21 22:01 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-21 22:11
+  from: tony
+  text: closed by tony
+- at: 2026-11-22 05:11
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-22 05:11
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-22 05:00) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-22 05:21
+  from: devin
+  text: '[still suspicious] Last run (11-22 05:00) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-22 06:11
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-22 06:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-22 06:11
+  from: tony
+  text: closed by tony
+- at: 2026-11-23 04:33
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-23 04:33
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-23 04:01) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-23 04:42
+  from: devin
+  text: '[still suspicious] Last run (11-23 04:01) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-23 05:12
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-23 05:01 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-23 05:12
+  from: tony
+  text: closed by tony
+- at: 2026-11-23 07:12
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-23 07:12
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-23 07:01) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-23 07:22
+  from: devin
+  text: '[still suspicious] Last run (11-23 07:01) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-23 08:12
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-23 08:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-23 08:12
+  from: tony
+  text: closed by tony
+- at: 2026-11-23 14:08
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:19
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 18:13
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-23 18:13
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-23 18:00) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-23 18:22
+  from: devin
+  text: '[still suspicious] Last run (11-23 18:00) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-23 19:06
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:13
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-23 19:01 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-23 19:13
+  from: tony
+  text: closed by tony
+- at: 2026-11-24 00:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 07:54
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-24 07:54
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-24 07:00) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-24 08:03
+  from: devin
+  text: '[still suspicious] Last run (11-24 07:00) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-24 08:11
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:13
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:13
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-24 08:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-24 08:13
+  from: tony
+  text: closed by tony
+- at: 2026-11-24 08:22
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:31
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:39
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 10:13
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-24 10:13
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-24 10:00) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-24 10:23
+  from: devin
+  text: '[still suspicious] Last run (11-24 10:00) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-24 11:23
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-24 11:01 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-24 11:23
+  from: tony
+  text: closed by tony
+- at: 2026-11-24 11:42
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:02
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:02
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 17:14
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-24 17:14
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-24 17:00) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-24 17:23
+  from: devin
+  text: '[still suspicious] Last run (11-24 17:00) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:14
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-24 21:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-24 21:14
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 03:14
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-25 03:14
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-25 03:00) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-25 03:24
+  from: devin
+  text: '[still suspicious] Last run (11-25 03:00) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-25 05:14
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-25 05:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-25 05:14
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 06:14
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-25 06:14
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-25 06:00) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-25 06:24
+  from: devin
+  text: '[still suspicious] Last run (11-25 06:00) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-25 07:14
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-25 07:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-25 07:14
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 07:45
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:14
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-25 16:14
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-25 16:00) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-25 16:24
+  from: devin
+  text: '[still suspicious] Last run (11-25 16:00) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:57
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:03
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-25 17:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-25 17:03
+  from: tony
+  text: closed by tony
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:26
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:38
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 18:14
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-25 18:14
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-25 18:00) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-25 18:24
+  from: devin
+  text: '[still suspicious] Last run (11-25 18:00) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-25 19:13
+  from: tony
+  text: '2026-11-25 19:00 (+07): latest run result=success exit=0. Known residual finding-reporter (exits 1 only
+    on detected push conflicts); no action needed this cycle.'
+- at: 2026-11-25 19:13
+  from: tony
+  text: moved backlog -> done
+- at: 2026-11-26 03:04
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-26 03:04
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-26 03:00) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-26 03:14
+  from: devin
+  text: '[still suspicious] Last run (11-26 03:00) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:57
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:04
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-26 04:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-26 04:04
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 14:05
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-26 14:05
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-26 14:00) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-26 14:14
+  from: devin
+  text: '[still suspicious] Last run (11-26 14:00) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-26 15:04
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-26 15:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-26 15:04
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+spec: Investigate the failure of the `ada-memory-sync.service` timer on host `idc03` which failed with exit-code
+  on 10-16 14:00. The runner must inspect the journal using `journalctl --user -u ada-memory-sync.service` on `idc03`
+  and reference the CMS `timer-timeline-idc03`. The done-condition is verified when the root cause of the exit-code
+  failure is identified and documented in the card context or the service run succeeds.
+action:
+  status: done
+  type: dispatch
+  lane: devin
+  runner: idc02
+  result: 'exit=0 ns, and the outcome is written to `dispatch-outcome-20261109-091719-investigate-the-failure-of-the.md`.
+    | devin-task-20261109-091719-investigate-the-failure-of-the.service: Consumed 16.020s CPU time, 140.9M memory
+    peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-09 09:35
+  note: verified — evidence checks green, closing itself

@@ -1,0 +1,201 @@
+id: ada-lanes-run-on-deleted-ada-pi-venv-res-df9c81
+title: ada lanes run on deleted ada-pi venv — restart each lane at next low-traffic window
+column: done
+updated: 2026-11-26 19:41
+priority: medium
+tags:
+- ada
+- infra
+- venv
+spec: 'Found during michael-lane-context-window dispatch 2026-11-24. ~/CascadeProjects/ada-voice/.venv on idc03
+  AND mn01 was created at ~/CascadeProjects/ada-pi/.venv then moved; every console script in .venv/bin had shebang
+  #!.../ada-pi/.venv/bin/python — repaired 2026-11-24 (idc03 41 scripts, mn01 21). ALL currently-running lane processes
+  started while ada-pi/.venv still existed (idc03 fleet restart 2026-11-23 ~19:51; mn01 ada-ha-michael 08:59 UTC)
+  and still execute on its in-memory site-packages. Any lazy import of a not-yet-loaded module now fails FileNotFoundError
+  — observed live on ada-ai-kraut: every ws session died in ConversationMemory->NotebooklmClient->httpx->ssl.create_default_context
+  (certifi.where() pointed into the deleted tree). tony lane showed 0 tracebacks / 59 ws opens since its restart,
+  but the risk is latent fleet-wide. DONE already: shebangs fixed so the NEXT restart of each lane is clean. TODO:
+  restart each lane once at a low-traffic window (ada-ha-tony, ada-ha-ada, ada-kk, ada-chaba on idc03; ada-ha-tony
+  + others on mn01), verify /proc/<pid>/environ + one ws smoke per lane. Do NOT mass-restart — drop active sessions;
+  sequence them.'
+ref: ADA-0033
+comms:
+- at: 2026-11-24 15:46
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:12
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: classified as devin (fallback conf 0.35)
+- at: 2026-11-24 21:13
+  from: tony
+  text: queued for processing
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.64 > 1.5)'
+- at: 2026-11-24 21:14
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.57 > 0.85)'
+- at: 2026-11-24 21:14
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 21:14
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (3/3)'
+- at: 2026-11-24 21:15
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.70 > 1.0)'
+- at: 2026-11-24 21:18
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-24 21:19
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-24 21:24
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-24 21:26
+  from: idc02
+  text: claimed
+- at: 2026-11-24 21:27
+  from: chaba
+  text: started devin-task-20261124-212710-found-during-michael-lane-cont on idc02 (dispatch)
+- at: 2026-11-24 21:27
+  from: chaba
+  text: 'primer injected 8 lesson(s): A moved Python venv leaves stale shebangs in .venv/bin — check `head -1` of
+    entr; [michael-lane-context-window] primer injected 8 lesson(s): [ansible-verify-host-; mn01 still runs a disabled-but-active
+    ada-ha-michael standby — "the lane moved t; tony-macbook SSH is broken fleet-wide (all keys rejected from mn01/omen/dell;
+    no; [chaba-jobs-dispatcher-dead-fleet-wide-di-765e5b] [verify] OPS-0790 close-out (T; [gev-google-maps-key-suspect-dead-verify-be569a]
+    [done] Attem'
+- at: 2026-11-24 21:31
+  from: devin
+  text: 'dispatch started on idc02. Verified via /proc cmdline: dirty lanes on idc03 = ada-chaba, ada-ha-ada, ada-ha-tony,
+    ada-kk (argv0 still ada-pi/.venv). Already clean: ada-ai-kraut + ada-kk-dev (post-repair restarts), all relays
+    (explicit ada-voice python -m), bankq (open-jev venv). mn01 both lanes already on ada-voice path — likely no
+    restart needed there; confirming no stray ada-pi procs.'
+- at: 2026-11-24 21:43
+  from: devin
+  text: 'DONE. idc03: restarted the 4 dirty lanes sequenced at zero-conn window — ada-chaba:8008, ada-kk:8007, ada-ha-ada:8006,
+    ada-ha-tony:8002 (21:34-21:41 +07). Each verified: /api/health 200, new pid cmdline argv0=ada-voice/.venv, 1-turn
+    scenario-live ws smoke PASS, 0 tracebacks/FileNotFoundError since restart. pgrep ada-pi/.venv on idc03 now =
+    0. mn01: NO restart needed — both lanes (ada-ha-tony 13:21 UTC, ada-ha-michael 08:44 UTC) already post-repair
+    on ada-voice path; card spec was stale there. Al'
+- at: 2026-11-24 21:47
+  from: idc02
+  text: 'finished (ok): exit=0 h outcome doc; work committed on the dispatch branch (not pushed), and final status
+    posted to the card. | devin-t'
+- at: 2026-11-24 21:47
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 21:47
+  from: chaba
+  text: banked 482 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 21:47
+  from: chaba
+  text: pushed dispatch/20261124-212710-found-during-michael-lane-cont to origin
+- at: 2026-11-24 21:47
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/test_ssot
+- at: 2026-11-24 21:47
+  from: chaba
+  text: auto-merged ecbddb0e (dispatch/20261124-212710-found-during-michael-lane-cont) → origin/master
+- at: 2026-11-24 21:47
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-212710-found-during-michael-lane-cont,
+    branch dispatch/20261124-212710-found-during-michael-lane-cont'
+- at: 2026-11-24 21:54
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-25 07:49
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:55
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: devin
+  lane_source: fallback
+  runner: idc02
+  attempts: 1
+  result: 'exit=0 h outcome doc; work committed on the dispatch branch (not pushed), and final status posted to
+    the card. | devin-task-20261124-212710-found-during-michael-lane-cont.service: Consumed 26.493s CPU time, 327.6M
+    memory peak, 0B memory swap peak.'
+  verified: true
+claim:
+  since: 2026-11-24 21:26
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 21:54
+  note: verified — evidence checks green, closing itself

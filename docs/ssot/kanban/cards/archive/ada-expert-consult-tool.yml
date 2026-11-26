@@ -1,0 +1,1431 @@
+id: ada-expert-consult-tool
+title: Ada expert-consultation tool — second opinion from stronger models + Nest history
+column: done
+updated: 2026-11-26 19:40
+priority: medium
+program: ai-workforce
+tags:
+- ada
+- opencode
+- devnest
+- memory
+spec: 'Add a bounded consult capability so Ada (the orchestrator) can borrow capability without becoming the executor.
+  Ada asks; a stronger model or the Nest/memory store answers; Ada narrates. Consult is read-only advice — never
+  execution authority; Ada still cannot approve her own work.
+
+
+  SOURCES (v1 = model consult only; nest/memory precedent lookup is v2):
+
+  1. MODEL consult — send a bounded question+context pack to a stronger model via LiteLLM. Candidates already in
+  the gateway: chat (gemini-3.5-flash), gemini-3.5-flash-lite, or-gemini-3.1-pro-preview, or-claude-fable-5.1. Returns
+  a structured answer with model+key attribution; spend logged.
+
+  2. NEST/MEMORY consult (v2) — read-only queries over nest_job records, pack artifacts, and MDDB banks (incl. shared
+  ada-ha-bank-devin-tony) for past-experience precedent. Reuse the read-only MDDB adapter built for ada_opencode;
+  board-api /job for nest_job.
+
+
+  DECISIONS (recommendation marked; Tony may override):
+
+  - Funding key: NEW LITELLM_KEY_CONSULT, cap ~$5-10/30d, models allowlisted to consult-tier aliases only. ★ dedicated
+  key so consult spend is attributable.
+
+  - Consult model v1: gemini-3.5-flash via a dedicated LiteLLM alias (not raw chat — pin fallbacks so a consult
+  never silently lands on a weak local model). ★ flash-class for latency; pro/claude aliases stay available as consult_model
+  arg for hard cases.
+
+  - Surface: TEXT LANES ONLY at v1 (TG/LINE/PWA/webchat text). Voice gets async semantics later ("let me check and
+  get back to you") — a multi-second consult cannot hold a Live turn. ★
+
+  - Trigger: explicit user request ("ask the expert", "consult") + optional confidence/ambiguity gate later. NEVER
+  per-turn — ADA-1088 bench showed strong-model polish ties score at 3x cost; consult must be on-demand for hard
+  cases only. ★
+
+  - Memory write-back: NONE at v1 — consult results are ephemeral, logged as ops events (question hash, model, tokens,
+  cost, latency). ★
+
+  - Context boundary: strip/refuse secrets, private transcripts, and memory_write_guard-flagged classes before anything
+  leaves the host; consult prompts carry only the bounded question+context pack the caller passes.
+
+
+  IMPLEMENTATION (ada-voice repo, edit point tony-dell ~/CascadeProjects/ada-voice, deploy via scripts/deploy-ada.sh
+  gates):
+
+  - backend/tools.d/ada_consult.py — DECLARATION + async run(runner, **args); policy read (no confirm gate at v1
+  since it cannot mutate; revisit if consult args can carry sensitive context).
+
+  - Transport: gemini_pool.rest_client() pattern (same as decision_check/devteam/input_polish) honoring ADA_GEMINI_REST_BASE_URL
+  + per-lane virtual key; add ADA_CONSULT_MODEL env (default consult alias) and ADA_CONSULT_MAX_USD/MAX_TOKENS/MAX_WALL_S
+  caps.
+
+  - manifest.yml entry + tool-lint clean + unit tests (mock transport).
+
+  - Reasoning-model gotcha (ADA-1088 bench): gemini-3.5-flash burns max_tokens on reasoning — set consult max_tokens
+  >= 2048 or output truncates mid-answer.
+
+  - Ops event per call: consult_requested/consult_completed/consult_failed with model, tokens, est cost — feeds
+  tools-health scorecard.
+
+
+  VERIFICATION:
+
+  - Unit tests + tool-lint + pytest green on tony-dell before deploy-ada.sh.
+
+  - Live smoke on ada-dev lane only: 3 consult calls (easy/ambiguous/hard) verified in transcript + ops events +
+  LiteLLM spend ledger.
+
+  - Prod lanes (ada-ha-tony etc.) stay without the tool until ada-dev soaks — same pattern as input_polish.
+
+  - Bench: reuse micro-bench dispatch_cmd fixtures — measure whether consult-on-hard-cases beats direct on the fixtures
+  that scored none/partial (target: the 4 messy + ambiguous subset, not the whole set).
+
+
+  OPEN (non-blocking for v1): whether consult results should ever feed memory banks; voice-lane async consult UX;
+  JevTeam panel as a consult reviewer for high-stakes drafts.'
+note: 'Motivation: Ada''s dev/wiki drafting rides gemini-3.5-flash(''chat'' alias); analysis in lesson-c81fa66280af
+  (post 4137). Stronger models already benched: gpt-oss:20b, clawbot, hermes3:8b, OR :free nemotron-super-vl/laguna-s.'
+ref: ADA-1084
+comms:
+- at: 2026-11-07 13:22
+  from: devin
+  text: carded from tony-macbook chat 2026-11-07 — idea-pipeline capture
+- at: 2026-11-07 14:47
+  from: devin
+  text: 'Cross-evidence from ADA-1088 bench (2026-11-07): per-turn polish with a STRONG model (gemini-3.5-flash)
+    on dispatch commands tied score with flash-lite direct (8/12 exact) at ~3x tokens/4x latency — supports designing
+    consult as on-demand for hard/ambiguous cases only, never a per-turn tax. Also: reasoning models need max_tokens
+    headroom (~2k) or polish output truncates mid-sentence.'
+- at: 2026-11-08 14:15
+  from: devin
+  text: re-spawned from report page
+- at: 2026-11-08 14:15
+  from: chaba
+  text: 'WARNING: unclaimable by the declared runner fleet — labels [''ada'', ''consult''] satisfied by no declared
+    runner (fleet advertises [''ada'', ''always-home'', ''always-on'', ''cpu'', ''desktop'', ''edge'', ''gpu'',
+    ''local-8c'', ''low-mem'', ''macbook'', ''push:ada-voice'', ''push:chaba'', ''push:gods-eye-view'', ''push:mddb-fork'',
+    ''push:sunsynk-card'', ''small'', ''ssd'']). Fix action.labels/host pins or teach a runner the capability (RUNNER_LABELS
+    + ssot.kanban.yml runner_fleet)'
+- at: 2026-11-08 14:22
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: labels [''ada'', ''consult''] satisfied
+    by no declared runner (fleet advertises [''ada'', ''always-home'', ''always-on'', ''cpu'', ''desktop'', ''edge'',
+    ''gpu'', ''local-8c'', ''low-mem'', ''macbook'', ''push:ada-voice'', ''push:chaba'', ''push:gods-eye-view'',
+    ''push:mddb-fork'', ''push:sunsynk-card'', ''small'', ''ssd'']) — fix action.labels/host pins or teach a runner
+    the capability'
+- at: 2026-11-09 09:56
+  from: chaba
+  text: 'unclaimable by the declared runner fleet: labels [''ada'', ''consult''] satisfied by no declared runner
+    (fleet advertises [''ada'', ''always-home'', ''always-on'', ''cpu'', ''desktop'', ''edge'', ''gpu'', ''local-8c'',
+    ''low-mem'', ''macbook'', ''push:ada-voice'', ''push:chaba'', ''push:gods-eye-view'', ''push:mddb-fork'', ''push:sunsynk-card'',
+    ''small'', ''ssd'']) — fix action.labels/host pins or teach a runner the capability (card dispatch-claim-eligibility-visibility)'
+- at: 2026-11-09 15:44
+  from: chaba
+  text: 'unclaimable by the declared runner fleet: labels [''ada'', ''consult''] satisfied by no declared runner
+    (fleet advertises [''ada'', ''always-home'', ''always-on'', ''cpu'', ''desktop'', ''edge'', ''gpu'', ''local-8c'',
+    ''low-mem'', ''macbook'', ''push:ada-voice'', ''push:chaba'', ''push:gods-eye-view'', ''push:mddb-fork'', ''push:sunsynk-card'',
+    ''small'', ''ssd'']) — fix action.labels/host pins or teach a runner the capability (card dispatch-claim-eligibility-visibility)'
+- at: 2026-11-10 21:39
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: labels [''ada'', ''consult''] satisfied by no declared
+    runner (fleet advertises [''ada'', ''always-home'', ''always-on'', ''cpu'', ''desktop'', ''edge'', ''gpu'',
+    ''local-8c'', ''low-mem'', ''macbook'', ''push:ada-voice'', ''push:chaba'', ''push:gods-eye-view'', ''push:mddb-fork'',
+    ''push:sunsynk-card'', ''small'', ''ssd'']) — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-10 21:41
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: labels [''ada'', ''consult''] satisfied by no declared
+    runner (fleet advertises [''ada'', ''always-home'', ''always-on'', ''cpu'', ''desktop'', ''edge'', ''gpu'',
+    ''local-8c'', ''low-mem'', ''macbook'', ''push:ada-voice'', ''push:chaba'', ''push:gods-eye-view'', ''push:mddb-fork'',
+    ''push:sunsynk-card'', ''small'', ''ssd'']) — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-11 20:14
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: labels [''ada'', ''consult''] satisfied by no declared
+    runner (fleet advertises [''ada'', ''always-home'', ''always-on'', ''cpu'', ''desktop'', ''edge'', ''gpu'',
+    ''local-8c'', ''low-mem'', ''macbook'', ''push:ada-voice'', ''push:chaba'', ''push:gods-eye-view'', ''push:mddb-fork'',
+    ''push:sunsynk-card'', ''small'', ''ssd'']) — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-11 21:34
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: labels [''ada'', ''consult''] satisfied by
+    no declared runner (fleet advertises [''ada'', ''always-home'', ''always-on'', ''cpu'', ''desktop'', ''edge'',
+    ''gpu'', ''local-8c'', ''low-mem'', ''macbook'', ''push:ada-voice'', ''push:chaba'', ''push:gods-eye-view'',
+    ''push:mddb-fork'', ''push:sunsynk-card'', ''small'', ''ssd'']) — fix action.labels/host pins or teach a runner
+    the capability'
+- at: 2026-11-11 21:37
+  from: tony-omen
+  text: claimed
+- at: 2026-11-11 21:59
+  from: tony-omen
+  text: 'finished (failed): no exit record — unit not-found reports collected defaults (unproven, not ok) E=''''
+    CLUTTER_IM_MODULE='''' SDL_IM_MODULE='''''
+- at: 2026-11-11 22:31
+  from: chaba
+  text: restarted zombie claim as devin-task-ada-expert-consult-tool-1794411045 on tony-omen — claim committed but
+    the response was lost (OPS-1071)
+- at: 2026-11-11 23:34
+  from: tony-omen
+  text: 'finished (failed): no exit record — unit not-found reports collected defaults (unproven, not ok) LE=''''
+    CLUTTER_IM_MODULE='''' SDL_IM_MODULE='''
+- at: 2026-11-11 23:36
+  from: chaba
+  text: 'merge-sweep: devin-task-ada-expert-consult-tool-1794411045 failed — its branch isn''t auto-merged (unverified
+    partial work). Retry the card or merge dispatch/ada-expert-consult-tool-1794411045 by hand.'
+- at: 2026-11-12 03:40
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:ada-voice creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-12 09:54
+  from: devin
+  text: retry requested
+- at: 2026-11-12 09:55
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.53 > 1.0)'
+- at: 2026-11-12 09:55
+  from: chaba
+  text: 'idc02 defers: executor=jules declared but this runner can''t serve it (JULES_LANES=0, no jules key) — the
+    card stays queued for a Jules-capable runner; it will never silently fall back to devin'
+- at: 2026-11-12 09:55
+  from: tony-omen
+  text: claimed
+- at: 2026-11-12 09:55
+  from: chaba
+  text: started devin-task-ada-expert-consult-tool-1794452148 on tony-omen (dispatch executor=jules)
+- at: 2026-11-12 09:56
+  from: tony-omen
+  text: 'finished (failed): journal=exit-code   "status": "FAILED_PRECONDITION" |   } | } | devin-task-ada-expert-consult-tool-1794452148.service:
+    M'
+- at: 2026-11-12 10:07
+  from: devin
+  text: put on hold
+- at: 2026-11-12 14:08
+  from: devin
+  text: 'Jules EOL 2026-11-12: Google panel shows read-only until Dec 31 2026 — session creation disabled account-wide
+    (this was the FAILED_PRECONDITION root cause, not quota). Lane is dead for new work. Reroute needed: devin lane
+    for code work, script/kk_mac for routine, or wait for opencode lane re-graduation (OPS-1255, now re-earning
+    at S0). Held idle — no claim churn.'
+- at: 2026-11-12 14:50
+  from: tony
+  text: queued for processing
+- at: 2026-11-12 14:51
+  from: tony-omen
+  text: claimed
+- at: 2026-11-12 14:51
+  from: chaba
+  text: started devin-task-ada-expert-consult-tool-1794469903 on tony-omen (dispatch executor=jules)
+- at: 2026-11-12 14:51
+  from: tony-omen
+  text: 'finished (failed): journal=exit-code   "status": "FAILED_PRECONDITION" |   } | } | devin-task-ada-expert-consult-tool-1794469903.service:
+    M'
+- at: 2026-11-14 14:12
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 09:02
+  from: tony
+  text: retry requested
+- at: 2026-11-17 09:08
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.53 > 0.85)'
+- at: 2026-11-17 09:09
+  from: chaba
+  text: 'tony-dell defers: executor=jules declared but this runner can''t serve it (JULES_LANES=0, no jules key)
+    — the card stays queued for a Jules-capable runner; it will never silently fall back to devin'
+- at: 2026-11-17 09:09
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.09 > 0.85)'
+- at: 2026-11-17 09:09
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-17 09:10
+  from: chaba
+  text: 'tony-macbook defers: executor=jules declared but this runner can''t serve it (JULES_LANES=0, no jules key)
+    — the card stays queued for a Jules-capable runner; it will never silently fall back to devin'
+- at: 2026-11-17 09:11
+  from: tony-omen
+  text: claimed
+- at: 2026-11-17 09:15
+  from: chaba
+  text: restarted zombie claim as devin-task-ada-expert-consult-tool-1794881640 on tony-omen — claim committed but
+    the response was lost (OPS-1071)
+- at: 2026-11-17 09:15
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-17 09:17
+  from: chaba
+  text: 'mn01 defers: executor=jules declared but this runner can''t serve it (JULES_LANES=0, no jules key) — the
+    card stays queued for a Jules-capable runner; it will never silently fall back to devin'
+- at: 2026-11-17 09:24
+  from: chaba
+  text: 'merge-sweep: devin-task-ada-expert-consult-tool-1794411045 no longer active on tony-omen but card still
+    says running — sweeping its branch'
+- at: 2026-11-17 09:25
+  from: chaba
+  text: 'merge-sweep: devin-task-ada-expert-consult-tool-1794411045 no longer active on tony-omen but card still
+    says running — sweeping its branch'
+- at: 2026-11-17 09:25
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-ada-expert-consult-tool-1794411045 on tony-omen —
+    if the work was never pushed it may be gone'
+- at: 2026-11-17 09:31
+  from: tony-omen
+  text: 'finished (failed): journal=exit-code   "status": "FAILED_PRECONDITION" |   } | } | devin-task-ada-expert-consult-tool-1794881640.service:
+    M'
+- at: 2026-11-17 10:26
+  from: devin
+  text: 'Inspection: retry did not start code; tony-omen got HTTP 400 FAILED_PRECONDITION on Jules POST /sessions
+    (OPS-0156). Existing PR #12 is open, CI test passes, but it is not merged/deployed. Review blockers: map raw
+    gemini-3.5-flash to the gateway alias (gemini_pool.generate does this; this tool bypasses it); enforce spend/time/token/context
+    bounds and secret filtering; log a question hash, not raw prefix; record usage/cost. Current tests mock transport;
+    no live/billable smoke run was made.'
+- at: 2026-11-17 13:40
+  from: devin
+  text: 'raised request consult-key-budget-cap: Choose the hard max_budget for the new LITELLM_KEY_CONSULT before
+    provisioning or live smoke. Evidence: current gateway '
+- at: 2026-11-17 13:50
+  from: devin
+  text: 'Hardening pushed to the existing PR #12 head: 776c2ef (branch ada-consult-pr12-edit; fast-forward only).
+    Changes: text-channel-only gate with per-call channel context, required context classification, raw transcript/secret
+    guard, bounded question/context/output tokens/wall time, question-hash and token usage events, safe provider
+    errors, allowlisted consult aliases, and exact LITELLM_KEY_CONSULT transport override. Full Ada suite: 1760
+    passed, 4 skipped; tool-lint clean. No provider call or depl'
+- at: 2026-11-17 13:52
+  from: devin
+  text: 'raised request consult-per-call-cap: Choose the per-call estimated USD ceiling, separate from the 30-day
+    virtual-key budget. The code preflights a conservati'
+- at: 2026-11-17 13:56
+  from: devin
+  text: 'Follow-up pushed to the same PR #12 head at 388c342 (no force push). Per-call guard now preflights a conservative
+    UTF-8-byte input ceiling plus output-token ceiling against ADA_CONSULT_MAX_USD (default/recommended $0.10);
+    model-specific rates are required and missing rates fail closed. Full Ada suite after this change: 1761 passed,
+    4 skipped; tool-lint clean. No live provider call or deploy. Still blocked from enabling: dedicated consult-flash
+    alias and LITELLM_KEY_CONSULT with the selected mont'
+- at: 2026-11-17 15:22
+  from: tony
+  text: 'answered consult-key-budget-cap: cap-5-30d — $5 / 30d — recommended'
+- at: 2026-11-17 15:22
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-17 15:22
+  from: tony
+  text: 'answered consult-per-call-cap: cap-010-call — $0.10 / call — recommended'
+- at: 2026-11-17 15:22
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-17 15:43
+  from: devin
+  text: 'ADA-1084 non-billable progress (2026-11-17): PR #12 updated at d073d8d to restrict ada_consult to the ada-dev
+    instance at manifest-load and runtime; other instances do not load the tool. Full Ada suite: 1763 passed, 4
+    skipped; tool-lint clean. Chaba gateway prep pushed on feat/ada-consult-gateway at 3f42a1d6e33: consult-flash/pro/claude
+    each map to one upstream with no fallback; SSOT and route test included. Not merged/deployed; the dedicated
+    key and per-alias rates are not configured, and no pr'
+- at: 2026-11-17 15:46
+  from: devin
+  text: 'Gateway configuration review PR is open: https://github.com/tonezzz/chaba/pull/180 (feat/ada-consult-gateway,
+    head 3f42a1d6e33). It adds single-upstream consult aliases with no fallback and documents the $5/30d key cap,
+    $0.10/call estimate cap, and ada-dev-only rollout gate. This is not deployed; no key or provider call.'
+- at: 2026-11-17 18:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:24
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:40
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:43
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:09
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 22:11
+  from: devin
+  text: moved doing -> backlog
+- at: 2026-11-18 17:29
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:15
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 18:17
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 21:21
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:07
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-18 22:32
+  from: devin
+  text: '[cross-ref consultant-reroute-verify 2026-11-18] Live verify confirmed the dedicated consult layer is still
+    undeployed: consult-flash/pro/claude aliases 400 (PR #180 unmerged), LITELLM_KEY_CONSULT never minted ($5/30d
+    answer stands), ada_consult.py only on branch ada-consult-1454700384695425195. Also: kk-mac was offline ~3h
+    today — triage leg stalls (raw alias fail-closed) or silently burns paid (job-class fallback); an availability/degrade
+    decision is needed before this can serve as the consult'
+- at: 2026-11-19 17:02
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 19:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-19 20:04
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 18:36
+  from: devin
+  text: 2026-11-20 Jules lane RETIRED — provider EOL, session creation disabled account-wide (OPS-0156; ssot.devnest-lanes.yml
+    jules.status=retired, JULES_LANES drop-ins removed on tony-omen/idc03). lane=jules/executor=jules pins on this
+    card are dead and being stripped so a future re-queue classifies onto a live lane. Work itself is still valid
+    — needs re-lane, not cancellation.
+- at: 2026-11-20 18:46
+  from: chaba
+  text: classified as paid_frontier (kw:bench  conf 1.00)
+- at: 2026-11-20 18:46
+  from: tony
+  text: queued for processing
+- at: 2026-11-20 18:48
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 4.00 > 0.85)'
+- at: 2026-11-20 18:49
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.50 > 0.85)'
+- at: 2026-11-20 18:50
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.25 > 1.0)'
+- at: 2026-11-20 18:51
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-20 18:54
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-20 19:02
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-20 19:08
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261120-184035-symptom-tony-2026-11-17-answer)
+    — claims held ~29m'
+- at: 2026-11-20 19:14
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.03 > 1.5)'
+- at: 2026-11-20 19:15
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261120-185849-repo-work-chaba-scripts-board-)
+    — claims held ~29m'
+- at: 2026-11-20 19:21
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261120-192009-canonicalize-the-opencode-ada-)
+    — claims held ~29m'
+- at: 2026-11-20 19:47
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-20 19:51
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-20 19:53
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.11 > 1.0)'
+- at: 2026-11-20 20:05
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate-limit on devin-task-20261120-195551-finish-artifact-landing-verifi)
+    — claims held ~28m'
+- at: 2026-11-20 20:06
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-20 20:08
+  from: chaba
+  text: 'idc03 defers: disk headroom 2039MB < 2048MB floor'
+- at: 2026-11-20 20:11
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.09 > 0.85)'
+- at: 2026-11-20 20:20
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-20 20:20
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-20 20:23
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261120-201723-two-part-deliverable-repo-work)
+    — claims held ~29m'
+- at: 2026-11-20 20:24
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261120-201948-scripts-embed-embed-lane-py-do)
+    — claims held ~29m'
+- at: 2026-11-20 20:24
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261120-201909-use-the-existing-ada-document-)
+    — claims held ~29m'
+- at: 2026-11-20 20:28
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261120-200526-canonicalize-the-opencode-ada-)
+    — claims held ~29m'
+- at: 2026-11-20 20:29
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261120-194516-repo-work-chaba-scripts-board-)
+    — claims held ~29m'
+- at: 2026-11-20 20:38
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261120-194941-approved-strategy-b-per-the-bo)
+    — claims held ~29m'
+- at: 2026-11-20 20:59
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-20 21:03
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261120-205837-ada-voice-backend-realtime-pro)
+    — claims held ~29m'
+- at: 2026-11-20 21:03
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261120-205952-goal-drain-the-review-column-s)
+    — claims held ~29m'
+- at: 2026-11-20 21:05
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261120-210221-fix-the-cms-publish-page-call-)
+    — claims held ~29m'
+- at: 2026-11-20 21:07
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261120-210254-scripts-embed-embed-lane-py-do)
+    — claims held ~28m'
+- at: 2026-11-20 21:09
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261120-210532-evaluate-opencode-as-a-supervi)
+    — claims held ~29m'
+- at: 2026-11-20 21:15
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261120-211214-fix-the-cms-publish-page-call-)
+    — claims held ~29m'
+- at: 2026-11-20 21:16
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261120-211338-two-lane-comparison-on-kk-mac-)
+    — claims held ~29m'
+- at: 2026-11-20 21:44
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate-limit on devin-task-20261120-213459-evaluate-opencode-as-a-supervi)
+    — claims held ~28m'
+- at: 2026-11-21 00:05
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.50 > 1.5)'
+- at: 2026-11-21 00:50
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.59 > 1.0)'
+- at: 2026-11-21 00:53
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-21 03:48
+  from: chaba
+  text: 'idc03 defers: disk headroom 0MB < 2048MB floor'
+- at: 2026-11-21 04:37
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.91 > 0.85)'
+- at: 2026-11-21 06:14
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate-limit on devin-task-20261121-060957-finish-artifact-landing-verifi)
+    — claims held ~29m'
+- at: 2026-11-21 06:19
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.13 > 1.0)'
+- at: 2026-11-21 06:24
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate-limited on devin-task-20261121-061736-finish-artifact-landing-verifi)
+    — claims held ~29m'
+- at: 2026-11-21 06:26
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-21 06:54
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.29 > 1.0)'
+- at: 2026-11-21 06:55
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-21 07:41
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.52 > 1.5)'
+- at: 2026-11-21 10:37
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.42 > 0.85)'
+- at: 2026-11-21 12:56
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 3.04 > 1.0)'
+- at: 2026-11-21 13:02
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-21 14:36
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.81 > 1.5)'
+- at: 2026-11-21 14:55
+  from: chaba
+  text: 'tony-macbook defers: host overloaded (5m load/core 0.82 > 0.8)'
+- at: 2026-11-21 16:04
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.06 > 0.85)'
+- at: 2026-11-21 16:38
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.31 > 0.85)'
+- at: 2026-11-21 16:52
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.00 > 1.0)'
+- at: 2026-11-21 17:49
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-21 18:57
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.74 > 1.0)'
+- at: 2026-11-21 19:07
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-21 21:33
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.61 > 1.5)'
+- at: 2026-11-21 22:38
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.16 > 0.85)'
+- at: 2026-11-22 01:08
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-22 01:24
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.05 > 1.0)'
+- at: 2026-11-22 02:03
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.15 > 0.85)'
+- at: 2026-11-22 02:31
+  from: chaba
+  text: 'idc03 defers: disk headroom 663MB < 2048MB floor'
+- at: 2026-11-22 03:59
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 4.89 > 0.85)'
+- at: 2026-11-22 07:11
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-22 07:26
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.33 > 1.0)'
+- at: 2026-11-22 09:50
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.53 > 1.5)'
+- at: 2026-11-22 09:59
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.68 > 0.85)'
+- at: 2026-11-22 13:17
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-22 13:28
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 3.35 > 1.0)'
+- at: 2026-11-22 15:04
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 0.86 > 0.85)'
+- at: 2026-11-22 16:01
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.60 > 1.5)'
+- at: 2026-11-22 16:01
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.47 > 0.85)'
+- at: 2026-11-22 19:23
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-22 19:28
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.93 > 1.0)'
+- at: 2026-11-22 22:01
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.26 > 0.85)'
+- at: 2026-11-22 23:00
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.54 > 1.5)'
+- at: 2026-11-23 01:25
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 01:29
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.18 > 1.0)'
+- at: 2026-11-23 04:26
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 4.10 > 0.85)'
+- at: 2026-11-23 06:04
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 2.28 > 1.0)'
+- at: 2026-11-23 06:53
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.62 > 1.5)'
+- at: 2026-11-23 07:03
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.17 > 0.85)'
+- at: 2026-11-23 07:30
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 07:32
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.36 > 1.0)'
+- at: 2026-11-23 10:27
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.66 > 0.85)'
+- at: 2026-11-23 10:59
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-23 11:07
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 11:48
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261123-113415-use-the-existing-ada-document-)
+    — claims held ~29m'
+- at: 2026-11-23 11:53
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-114935-use-the-existing-ada-document-)
+    — claims held ~28m'
+- at: 2026-11-23 12:20
+  from: chaba
+  text: 'kk-mac defers: host overloaded (5m load/core 2.56 > 1.0)'
+- at: 2026-11-23 13:04
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.08 > 0.85)'
+- at: 2026-11-23 13:22
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.70 > 1.5)'
+- at: 2026-11-23 13:32
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 13:34
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.16 > 1.0)'
+- at: 2026-11-23 14:09
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:20
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 14:52
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-23 14:52
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 14:56
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.09 > 1.0)'
+- at: 2026-11-23 15:04
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-23 15:07
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 0.97 > 0.85)'
+- at: 2026-11-23 15:21
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-151207-assessment-2026-11-09-verified)
+    — claims held ~29m'
+- at: 2026-11-23 15:22
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-151040-tony-s-flow-ada-shows-menu-opt)
+    — claims held ~29m'
+- at: 2026-11-23 15:22
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261123-151149-ada-benchmark-coverage-scenari)
+    — claims held ~29m'
+- at: 2026-11-23 15:23
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-145907-implement-memory-inspection-pa)
+    — claims held ~29m'
+- at: 2026-11-23 15:24
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-152131-lane-savings-py-now-attributes)
+    — claims held ~29m'
+- at: 2026-11-23 15:24
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-145629-goal-drain-the-review-column-s)
+    — claims held ~29m'
+- at: 2026-11-23 15:25
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-152219-extend-wiki-page-door-to-allow)
+    — claims held ~29m'
+- at: 2026-11-23 15:52
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.86 > 1.5)'
+- at: 2026-11-23 15:55
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 15:56
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 16:03
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-23 16:12
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 1.14 > 0.85)'
+- at: 2026-11-23 16:17
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261123-161416-ada-benchmark-coverage-scenari)
+    — claims held ~29m'
+- at: 2026-11-23 16:17
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-160801-investigate-the-live-kk-mac-wo)
+    — claims held ~29m'
+- at: 2026-11-23 16:19
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 16:20
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-155555-goal-drain-the-review-column-s)
+    — claims held ~29m'
+- at: 2026-11-23 16:23
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-160101-the-kk-mac-local-lane-admits-4)
+    — claims held ~29m'
+- at: 2026-11-23 16:27
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.84 > 0.85)'
+- at: 2026-11-23 16:32
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-162813-the-goal-is-to-stop-the-tony-u)
+    — claims held ~29m'
+- at: 2026-11-23 16:52
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261123-165021-the-goal-is-to-stop-the-tony-u)
+    — claims held ~29m'
+- at: 2026-11-23 16:54
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 16:54
+  from: chaba
+  text: 'idc02 defers: provider rate-limited (rate limit on devin-task-20261123-165233-investigate-and-resolve-the-fa)
+    — claims held ~29m'
+- at: 2026-11-23 16:56
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-165345-ada-benchmark-coverage-scenari)
+    — claims held ~29m'
+- at: 2026-11-23 17:03
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 0.86 > 0.85)'
+- at: 2026-11-23 17:07
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 17:11
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-170638-extend-wiki-page-door-to-allow)
+    — claims held ~29m'
+- at: 2026-11-23 17:11
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-165641-the-kk-mac-local-lane-admits-4)
+    — claims held ~29m'
+- at: 2026-11-23 17:12
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-170441-investigate-and-resolve-the-fa)
+    — claims held ~29m'
+- at: 2026-11-23 17:56
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.50 > 1.5)'
+- at: 2026-11-23 18:37
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 18:39
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 19:10
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:10
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-23 19:33
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-23 19:51
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-192619-fix-the-executor-model-id-mism)
+    — claims held ~29m'
+- at: 2026-11-23 19:52
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-194248-the-goal-is-to-stop-the-tony-u)
+    — claims held ~27m'
+- at: 2026-11-23 19:52
+  from: chaba
+  text: 'mn01 defers: provider rate-limited (rate limit on devin-task-20261123-123122-supersedes-manual-card-wiki-ta)
+    — claims held ~29m'
+- at: 2026-11-23 19:53
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-191504-investigate-and-resolve-the-fa)
+    — claims held ~29m'
+- at: 2026-11-23 19:55
+  from: chaba
+  text: 'idc03 defers: provider rate-limited (rate limit on devin-task-20261123-195341-deploy-the-updated-runner-agen)
+    — claims held ~29m'
+- at: 2026-11-23 19:56
+  from: chaba
+  text: 'idc03 defers: provider rate-limited (rate limit on devin-task-20261123-195436-ada-tool-consolidation-merge-o)
+    — claims held ~29m'
+- at: 2026-11-23 19:57
+  from: chaba
+  text: 'idc03 defers: provider rate-limited (rate limit on devin-task-20261123-195521-goal-address-the-live-voice-to)
+    — claims held ~29m'
+- at: 2026-11-23 20:22
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-23 20:22
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 20:23
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-23 20:26
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-23 20:26
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 20:27
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.38 > 0.85)'
+- at: 2026-11-23 20:44
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-202451-ada-tool-consolidation-merge-o)
+    — claims held ~29m'
+- at: 2026-11-23 20:44
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-203733-fix-the-phantom-state-issue-in)
+    — claims held ~29m'
+- at: 2026-11-23 20:44
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-202551-fix-the-executor-model-id-mism)
+    — claims held ~29m'
+- at: 2026-11-23 20:46
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-202527-corpus-18-jev-bench-cases-4-pi)
+    — claims held ~29m'
+- at: 2026-11-23 20:46
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-202348-investigate-and-resolve-the-fa)
+    — claims held ~28m'
+- at: 2026-11-23 21:16
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 21:17
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-23 21:19
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 21:34
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-211532-productionize-the-enriched-t1-)
+    — claims held ~29m'
+- at: 2026-11-23 21:34
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-211800-kk-mac-classes-eval-2026-11-19)
+    — claims held ~29m'
+- at: 2026-11-23 21:34
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-211710-corpus-18-jev-bench-cases-4-pi)
+    — claims held ~29m'
+- at: 2026-11-23 21:35
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-211859-kk-mac-launchd-runner-port-shi)
+    — claims held ~29m'
+- at: 2026-11-23 21:35
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-211558-fix-the-phantom-state-issue-in)
+    — claims held ~29m'
+- at: 2026-11-23 21:37
+  from: chaba
+  text: 'mn01 defers: provider rate-limited (rate limit on devin-task-20261123-142345-redeploy-the-drifted-runner-ag)
+    — claims held ~29m'
+- at: 2026-11-23 22:06
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 22:07
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-23 22:08
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-23 22:09
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-23 22:31
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-220531-productionize-the-enriched-t1-)
+    — claims held ~29m'
+- at: 2026-11-23 22:32
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-220709-goal-address-the-live-voice-to)
+    — claims held ~29m'
+- at: 2026-11-23 22:32
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-222811-ada-text-model-promotion-gate-)
+    — claims held ~29m'
+- at: 2026-11-23 22:33
+  from: chaba
+  text: 'mn01 defers: provider rate-limited (rate limit on devin-task-20261123-152827-tony-2026-10-11-think-of-ada-a)
+    — claims held ~29m'
+- at: 2026-11-23 22:33
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-220626-kk-mac-launchd-runner-port-shi)
+    — claims held ~29m'
+- at: 2026-11-23 22:34
+  from: chaba
+  text: 'tony-macbook defers: provider rate-limited (rate limit on devin-task-20261123-220607-kk-ha-degraded-mode-explain-ca)
+    — claims held ~29m'
+- at: 2026-11-23 22:36
+  from: chaba
+  text: 'tony-dell defers: provider rate-limited (rate limit on devin-task-20261123-222712-follow-up-to-kk-mac-admitted-c)
+    — claims held ~29m'
+- at: 2026-11-23 22:36
+  from: chaba
+  text: 'tony-omen defers: provider rate-limited (rate limit on devin-task-20261123-220843-supersedes-manual-card-wiki-ta)
+    — claims held ~29m'
+- at: 2026-11-23 23:05
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-23 23:06
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-23 23:44
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.02 > 1.0)'
+- at: 2026-11-24 00:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 00:45
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.06 > 1.0)'
+- at: 2026-11-24 02:22
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 02:27
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.57 > 0.85)'
+- at: 2026-11-24 03:26
+  from: chaba
+  text: 'idc03 defers: disk headroom 70MB < 2048MB floor'
+- at: 2026-11-24 03:26
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.04 > 0.85)'
+- at: 2026-11-24 04:27
+  from: chaba
+  text: 'idc03 defers: disk headroom 844MB < 2048MB floor'
+- at: 2026-11-24 08:01
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 08:07
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-24 08:08
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-24 08:09
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (2/2)'
+- at: 2026-11-24 08:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:13
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:22
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:32
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:39
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 08:44
+  from: chaba
+  text: 'con01 defers: host overloaded (5m load/core 1.67 > 1.6)'
+- at: 2026-11-24 09:02
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.43 > 0.85)'
+- at: 2026-11-24 09:02
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 09:23
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.54 > 1.5)'
+- at: 2026-11-24 09:24
+  from: chaba
+  text: 'kk-mac defers: host overloaded (5m load/core 2.23 > 1.0)'
+- at: 2026-11-24 11:43
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 11:44
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 0.86 > 0.85)'
+- at: 2026-11-24 12:09
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 12:47
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.85 > 1.0)'
+- at: 2026-11-24 14:09
+  from: tony-macbook
+  text: parked at attempt cap — attempt cap reached (2/2) — /action do=retry re-arms it
+- at: 2026-11-24 14:44
+  from: tony
+  text: 'TRIAGE 2026-11-24: put on hold — blocked on two HUMAN actions, no code work left for a runner. Delivered
+    on open PRs: ada-voice#12 (Ada expert-consultation tool, head d073d8d584, full suite 1763 passed/4 skipped,
+    ada_consult restricted to ada-dev instance) and chaba#180 (isolated consult gateway routes, head 6b9319933b,
+    single-upstream aliases no fallback, ada-dev-only rollout gate). Both PRs are still OPEN/UNMERGED (last updated
+    2026-11-17) — merge decision is Tony''s. Second blocker: LITELLM_KE'
+- at: 2026-11-24 14:44
+  from: tony
+  text: put on hold
+- at: 2026-11-24 14:59
+  from: tony
+  text: 'TRIAGE UPDATE 2026-11-24: both PRs are now MERGED via squash — chaba#180 (merge commit 8efa20072747) and
+    ada-voice#12 (merge commit e6c83ebe93ad, manifest conflict resolved keeping main''s wiki_read/wiki_search/gesture_controls
+    + this PR''s ada_consult; full suite 1958 passed/7 skipped). Code is landed. Remaining blocker: LITELLM_KEY_CONSULT
+    must be minted at the provider with the agreed $5/30d cap ($0.10/call) — a Tony credential action. Still held;
+    once minted, re-queue for deployment verificati'
+- at: 2026-11-24 15:00
+  from: tony
+  text: queue refused — attempt cap reached (2/2) — /action do=retry re-arms it
+- at: 2026-11-24 15:11
+  from: tony
+  text: queue refused — attempt cap reached (2/2) — /action do=retry re-arms it
+- at: 2026-11-24 17:03
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 18:43
+  from: tony
+  text: retry requested
+- at: 2026-11-24 18:44
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-24 18:44
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.67 > 0.85)'
+- at: 2026-11-24 18:44
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (3/3)'
+- at: 2026-11-24 18:44
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-24 18:47
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-24 18:48
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.84 > 1.0)'
+- at: 2026-11-24 18:48
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-24 19:07
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-24 19:08
+  from: idc02
+  text: claimed
+- at: 2026-11-24 19:09
+  from: chaba
+  text: started devin-task-20261124-190937-add-a-bounded-consult-capabili on idc02 (dispatch)
+- at: 2026-11-24 19:09
+  from: chaba
+  text: 'primer injected 8 lesson(s): [ada-expert-consult-tool] Cross-evidence from ADA-1088 bench (2026-11-07):
+    per-t; [ada-expert-consult-tool] [cross-ref consultant-reroute-verify 2026-11-18] Live ; [ada-expert-consult-tool]
+    tony-dell defers: executor=jules declared but this run; [ada-expert-consult-tool] idc02 defers: executor=jules
+    declared but this runner ; [ada-expert-consult-tool] tony-macbook defers: executor=jules declared but this ;
+    "test_merge_sweep fixture relied on global git identity — ton'
+- at: 2026-11-24 19:20
+  from: devin
+  text: 'dispatch verify (idc02 worktree): code already merged — ada-voice#12 squash e6c83eb + chaba#180 aliases.
+    Re-checked merged tree vs spec: dedicated LITELLM_KEY_CONSULT, alias allowlist consult-flash/pro/claude, text-lanes-only
+    + ADA_INSTANCE_ID=ada-dev double gate, cost caps fail-closed, secret/transcript guards, ops events w/ sha256
+    question only. Gates green here: tool-lint clean, pytest 1971 passed/4 skipped. Closed doc gap: .env.example
+    now documents the full consult env contract (key, ADA_CO'
+- at: 2026-11-24 19:23
+  from: chaba
+  text: "merge-sweep: landing devin-task-20261124-190937-add-a-bounded-consult-capabili failed: push: remote: error:
+    refusing to update checked out branch: refs/heads/main        \nremote: error: By default, updating the current
+    branch in a non-bare repository        \nremote: is denied, because it will"
+- at: 2026-11-24 19:26
+  from: idc02
+  text: 'finished (ok): exit=0 d the ada-dev deploy/env on idc03, after which the 3-call live smoke and micro-bench
+    can run. Until then consult '
+- at: 2026-11-24 19:26
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 19:26
+  from: chaba
+  text: 'session-end checkpoint efd770c2: 3 leftover file(s) committed'
+- at: 2026-11-24 19:26
+  from: chaba
+  text: banked 1 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 19:26
+  from: chaba
+  text: pushed dispatch/20261124-190937-add-a-bounded-consult-capabili to origin
+- at: 2026-11-24 19:26
+  from: chaba
+  text: test gate passed (/home/tony/CascadeProjects/ada-voice/.venv/bin/python -m pytest tests -k 'not slow' -x
+    -q, 274.3s)
+- at: 2026-11-24 19:26
+  from: chaba
+  text: auto-merged 0526f8f6 (dispatch/20261124-190937-add-a-bounded-consult-capabili) → origin/main
+- at: 2026-11-24 19:26
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-190937-add-a-bounded-consult-capabili,
+    branch dispatch/20261124-190937-add-a-bounded-consult-capabili'
+- at: 2026-11-24 19:38
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-24 19:41
+  from: chaba
+  text: classified as paid_frontier (kw:bench  conf 1.00)
+- at: 2026-11-24 19:41
+  from: tony
+  text: queued for processing
+- at: 2026-11-24 19:41
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 4.13 > 1.5)'
+- at: 2026-11-24 19:42
+  from: tony-dell
+  text: claimed
+- at: 2026-11-24 19:42
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.03 > 1.0)'
+- at: 2026-11-24 19:43
+  from: chaba
+  text: model litellm/gemini-2.5-flash dropped — provider namespace doesn't match executor=devin; running the executor
+    default
+- at: 2026-11-24 19:43
+  from: chaba
+  text: started devin-task-20261124-194308-add-a-bounded-consult-capabili on tony-dell (dispatch)
+- at: 2026-11-24 19:43
+  from: chaba
+  text: 'primer injected 8 lesson(s): [ada-expert-consult-tool] Cross-evidence from ADA-1088 bench (2026-11-07):
+    per-t; [ada-expert-consult-tool] [cross-ref consultant-reroute-verify 2026-11-18] Live ; [ada-expert-consult-tool]
+    tony-dell defers: executor=jules declared but this run; [ada-expert-consult-tool] tony-macbook defers: executor=jules
+    declared but this ; "test_merge_sweep fixture relied on global git identity — tony-dell has none (re; Check
+    `sha256sum` of BOTH `~/.local/bin/runner-agent` and `<e'
+- at: 2026-11-24 19:50
+  from: devin
+  text: 'attempt 2 (tony-dell worktree): prior attempt already merged+verified (ada-voice#12, gates green). Remaining
+    in-worktree gaps I can close: tool_guide.yml entry for ada_consult (error-path narration during the refuse-until-key
+    soak) + a tier:manual scenario-live smoke encoding the 3-call post-deploy check. Live smoke itself still blocked
+    on LITELLM_KEY_CONSULT mint + ada-dev deploy.'
+- at: 2026-11-24 20:12
+  from: devin
+  text: 'attempt 2 done (tony-dell, commit aa429be on dispatch branch). Re-audited merged ada_consult vs spec —
+    channel gate, cost-rate order, alias passthrough, ada-dev double-gate all verified correct. Closed last repo-side
+    gaps: tool_guide.yml entry (pre-key refusals now carry narration guidance via _usage_hint), tests/scenarios-live/ada_consult_smoke.yaml
+    (tier:manual, 3 easy/ambiguous/hard turns asserting calls_any+ok result — the post-deploy smoke is now one command),
+    coverage_debt entry removed. G'
+- at: 2026-11-24 20:18
+  from: tony-dell
+  text: 'finished (ok): exit=0 h-outcome-20261124-194308-add-a-bounded-consult-capabili.md`. | devin-task-20261124-194308-add-a-bounded-consult-'
+- at: 2026-11-24 20:18
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-24 20:18
+  from: chaba
+  text: 'session-end checkpoint 19ba86d0: 1 leftover file(s) committed'
+- at: 2026-11-24 20:18
+  from: chaba
+  text: banked 79 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-24 20:18
+  from: chaba
+  text: pushed dispatch/20261124-194308-add-a-bounded-consult-capabili to origin
+- at: 2026-11-24 20:18
+  from: chaba
+  text: test gate passed (/home/tony/CascadeProjects/ada-voice/.venv/bin/python -m pytest tests -k 'not slow' -x
+    -q, 209.1s)
+- at: 2026-11-24 20:18
+  from: chaba
+  text: auto-merged c9d0f30f (dispatch/20261124-194308-add-a-bounded-consult-capabili) → origin/main
+- at: 2026-11-24 20:18
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261124-194308-add-a-bounded-consult-capabili,
+    branch dispatch/20261124-194308-add-a-bounded-consult-capabili'
+- at: 2026-11-24 20:23
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-24 21:13
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 07:47
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:55
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:49
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:59
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:40
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  repo: ada-voice
+  status: done
+  sweep:
+    failed_noted: 2026-11-11 23:36
+    stale_running: 2026-11-17 09:25
+    session_gone: 2026-11-17 09:25
+    merge_err: 2026-11-24 19:23
+  last_failure: 'journal=exit-code   "status": "FAILED_PRECONDITION" |   } | } | devin-task-ada-expert-consult-tool-1794881640.service:
+    Main process exited, code=exited, status=1/FAILURE | devin-task-ada-expert-consult-tool-1794881640.service:
+    Failed with result ''exit-code''.'
+  attempts: 2
+  lane: paid_frontier
+  lane_source: kw
+  model: litellm/gemini-2.5-flash
+  result: 'exit=0 h-outcome-20261124-194308-add-a-bounded-consult-capabili.md`. | devin-task-20261124-194308-add-a-bounded-consult-capabili.service:
+    Consumed 2min 30.023s CPU time over 29min 49.542s wall clock time, 1.8G memory peak, 611.7M memory swap peak.'
+  runner: tony-dell
+  verified: true
+requests:
+- id: consult-key-budget-cap
+  ask: 'Choose the hard max_budget for the new LITELLM_KEY_CONSULT before provisioning or live smoke. Evidence:
+    current gateway SSOT lists no consult key or consult alias; reusing chat can fall back to local models, so the
+    planned consult-flash alias will be pinned to Gemini Flash only and allowlisted on this dedicated key. Recommended
+    lower bound is $5 per 30 days; $10 doubles the spend ceiling. No key or provider call will be made until this
+    is decided.'
+  status: answered
+  at: 2026-11-17 13:40
+  from: devin
+  options:
+  - id: cap-5-30d
+    label: $5 / 30d — recommended
+  - id: cap-10-30d
+    label: $10 / 30d
+  - id: other-cap
+    label: Other amount
+  suggested: cap-5-30d
+  answer: cap-5-30d — $5 / 30d — recommended
+- id: consult-per-call-cap
+  ask: Choose the per-call estimated USD ceiling, separate from the 30-day virtual-key budget. The code preflights
+    a conservative UTF-8-byte input ceiling plus max output tokens using per-alias rates, and refuses if the bound
+    exceeds the cap. Recommendation is $0.10/call; $0.25 allows larger consult-pro/consult-claude calls. Missing
+    rate config fails closed.
+  status: answered
+  at: 2026-11-17 13:52
+  from: devin
+  options:
+  - id: cap-010-call
+    label: $0.10 / call — recommended
+  - id: cap-025-call
+    label: $0.25 / call
+  - id: other-call-cap
+    label: Other amount
+  suggested: cap-010-call
+  answer: cap-010-call — $0.10 / call — recommended
+claim:
+  since: 2026-11-24 19:42
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-24 20:23
+  note: verified — evidence checks green, closing itself

@@ -1,0 +1,293 @@
+id: session-capture-c1-spec
+title: 'Session capture C.1: router/harvester contract spec (SSOT)'
+column: done
+updated: 2026-11-26 19:41
+priority: medium
+tags:
+- dev-0038-followup
+spec: 'Goal: define capture-router/harvester contract in SSOT (event envelope, approved sinks, dedupe key, audit
+  metadata, idempotency, dry-run, guards). Grounded in ssot.knowledge-capture.yml Phase C. No runtime behavior change.
+  Acceptance: SSOT section reviewed/merged; examples; validation passes.'
+ref: OPS-1355
+comms:
+- at: 2026-11-25 09:12
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-25 09:12
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:15
+  from: devin
+  text: '[2026-11-24 devin] C.1 spec drafted and PR opened: https://github.com/tonezzz/chaba/pull/218 (adds Capture
+    Router Contract section to docs/ssot/ssot.knowledge-capture.yml; no runtime behavior change). Awaiting governed
+    review/merge.'
+- at: 2026-11-25 09:22
+  from: chaba
+  text: classified as devin (fallback conf 0.26)
+- at: 2026-11-25 09:22
+  from: tony
+  text: queued for processing
+- at: 2026-11-25 09:22
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.68 > 0.85)'
+- at: 2026-11-25 09:22
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 09:22
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.66 > 1.0)'
+- at: 2026-11-25 09:28
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 09:29
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 09:31
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (3/3)'
+- at: 2026-11-25 09:35
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-25 09:38
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-25 09:41
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.44 > 1.0)'
+- at: 2026-11-25 09:45
+  from: idc02
+  text: claimed
+- at: 2026-11-25 09:46
+  from: chaba
+  text: started devin-task-20261125-094612-goal-define-capture-router-har on idc02 (dispatch)
+- at: 2026-11-25 09:46
+  from: chaba
+  text: 'primer injected 8 lesson(s): [knowledge-capture-harvester-guards-phase-c-d-64d812ef] [2026-11-23 opencode]
+    Ph; [knowledge-capture-harvester-guards-phase-c-d-64d812ef] [2026-11-23 opencode] To; [publish-promote-knowledge-capture-ssot-w-d34a39]
+    Phase B+ ansible session-captu; [publish-promote-knowledge-capture-ssot-w-d34a39] [2026-11-21 devin] Phase B+
+    dr; [knowledge-capture-harvester-guards-phase-c-d-64d812ef] [2026-11-23 opencode] Pr; [publish-promote-knowledge-capture-ssot-w-d34a39]
+    [2026-11-20'
+- at: 2026-11-25 09:55
+  from: devin
+  text: 'DONE (dispatch worktree, commit f518fa092a on dispatch/20261125-094612-goal-define-capture-router-har —
+    not pushed). Deliverables: docs/ssot/ssot.knowledge-capture.yml gains Capture Router Contract (Phase C.1) +
+    Examples sections — event envelope (candidate->proposal), approved sinks (7-sink namespace; write-approved =
+    kanban/create via capture-apply only), dedupe_key format, audit metadata, idempotency, dry-run, guards; docs/ssot/CHANGELOG.md
+    2026-11-25 entry; job record docs/ssot/jobs/kanban/2'
+- at: 2026-11-25 10:07
+  from: chaba
+  text: banked 250 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 10:07
+  from: chaba
+  text: pushed dispatch/20261125-094612-goal-define-capture-router-har to origin
+- at: 2026-11-25 10:07
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 10:07
+  from: chaba
+  text: auto-merged 8277cd3e (dispatch/20261125-094612-goal-define-capture-router-har) → origin/master
+- at: 2026-11-25 10:07
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-094612-goal-define-capture-router-har,
+    branch dispatch/20261125-094612-goal-define-capture-router-har'
+- at: 2026-11-25 10:09
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-094612-goal-define-capture-router-har no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-25 10:09
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261125-094612-goal-define-capture-router-har on
+    idc02 — if the work was never pushed it may be gone'
+- at: 2026-11-25 10:14
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261125-094612-goal-define-capture-router-har.service:
+    Failed to ope'
+- at: 2026-11-25 10:14
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 10:14
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261125-094612-goal-define-capture-router-har — close will block
+    until merged'
+- at: 2026-11-25 11:20
+  from: tony
+  text: '[verify] VERIFY-QUEUE triage 2026-11-25 (Tony): dispatch attempt produced no committed deliverable (session
+    reported ''no commits'' / ''NOT verified''; worktree was dropped or salvaged). No code landed in origin/master
+    from this card. Holding back to backlog for re-dispatch; not closing as done.'
+- at: 2026-11-25 11:20
+  from: tony
+  text: put on hold
+- at: 2026-11-25 12:20
+  from: chaba
+  text: classified as devin (fallback conf 0.26)
+- at: 2026-11-25 12:20
+  from: tony
+  text: queued for processing
+- at: 2026-11-25 12:21
+  from: idc02
+  text: claimed
+- at: 2026-11-25 12:21
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
+    an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-25 12:23
+  from: chaba
+  text: started devin-task-20261125-122319-goal-define-capture-router-har on idc02 (dispatch)
+- at: 2026-11-25 12:23
+  from: chaba
+  text: 'primer injected 8 lesson(s): [session-capture-c3-hooks] capture-event.py emitter + spool design: events.jsonl;
+    [session-capture-c1-spec] merge-sweep: no session/worktree found for devin-task-; [knowledge-capture-harvester-guards-phase-c-d-64d812ef]
+    [2026-11-23 opencode] Ph; [knowledge-capture-harvester-guards-phase-c-d-64d812ef] [2026-11-23 opencode] To;
+    [publish-promote-knowledge-capture-ssot-w-d34a39] Phase B+ ansible session-captu; [publish-promote-knowledge-capture-ssot-w-d34a39]
+    [2026-11-21'
+- at: 2026-11-25 12:27
+  from: devin
+  text: 'attempt 2: verified attempt-1 work DID land — merge 8277cd3e is on origin/master with the full Capture
+    Router Contract + Examples sections; the 11:20 verify note was a false negative (worktree was GCd after auto-merge).
+    Re-verified: ssot-validate-all 6479 files 0 errors, prose-smell 0, router self-test 13/13, live router output
+    reproduces documented examples exactly. Also closed superseded PR #218. Committing verify job-record + outcome
+    doc now.'
+- at: 2026-11-25 12:27
+  from: devin
+  text: 'DONE (attempt 2 — verification, no spec changes needed). CORRECTION to the 11:20 verify hold: attempt-1
+    work DID land — merge 8277cd3e is an ancestor of origin/master carrying ssot.knowledge-capture.yml +144 (Capture
+    Router Contract Phase C.1 + Examples), CHANGELOG entry, c1 job record, and outcome doc. The hold was a false
+    negative: merge-sweep GCd the worktree at 10:09 after the 10:07 auto-merge, and session end hit a transient
+    systemd error. Re-verified acceptance independently: ssot-validate'
+- at: 2026-11-25 12:30
+  from: idc02
+  text: 'finished (ok): exit=0 sed superseded PR #218, and posted the correction + evidence to the card — ready
+    for review/close. | devin-task-2'
+- at: 2026-11-25 12:30
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 12:30
+  from: chaba
+  text: banked 648 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 12:30
+  from: chaba
+  text: pushed dispatch/20261125-122319-goal-define-capture-router-har to origin
+- at: 2026-11-25 12:30
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 12:30
+  from: chaba
+  text: auto-merged 77727323 (dispatch/20261125-122319-goal-define-capture-router-har) → origin/master
+- at: 2026-11-25 12:30
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261125-122319-goal-define-capture-router-har,
+    branch dispatch/20261125-122319-goal-define-capture-router-har'
+- at: 2026-11-25 12:39
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-25 14:03
+  from: tony
+  text: '[verify] VERIFY-QUEUE triage 2026-11-25 (Tony): dispatch attempt produced no committed deliverable (session
+    reported ''no commits'' / ''NOT verified''; worktree was dropped or salvaged). No code landed in origin/master
+    from this card. Holding back to backlog for re-dispatch; not closing as done.'
+- at: 2026-11-25 14:03
+  from: tony
+  text: put on hold
+- at: 2026-11-25 14:11
+  from: tony
+  text: queue refused — attempt cap reached (2/2) — /action do=retry re-arms it
+- at: 2026-11-25 14:12
+  from: devin
+  text: '[2026-11-24 devin] C.1 contract landed on origin/master (e.g. f518fa092a / merge 8277cd3e; SSOT has Capture
+    Router Contract + Examples at docs/ssot/ssot.knowledge-capture.yml). PR #218 closed as superseded. Recording
+    evidence and closing.'
+- at: 2026-11-25 14:12
+  from: devin
+  text: moved backlog -> done
+- at: 2026-11-25 16:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:59
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:02
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:13
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:51
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:54
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:03
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+action:
+  type: dispatch
+  status: done
+  lane: devin
+  lane_source: fallback
+  attempts: 2
+  sweep:
+    stale_running: 2026-11-25 10:09
+    session_gone: 2026-11-25 10:09
+  result: 'exit=0 sed superseded PR #218, and posted the correction + evidence to the card — ready for review/close.
+    | devin-task-20261125-122319-goal-define-capture-router-har.service: Consumed 1min 25.814s CPU time, 336.8M
+    memory peak, 0B memory swap peak.'
+  runner: idc02
+  verified: true
+  last_failure: attempt cap reached (2/2) — /action do=retry re-arms it
+claim:
+  since: 2026-11-25 12:21
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 12:39
+  note: verified — evidence checks green, closing itself

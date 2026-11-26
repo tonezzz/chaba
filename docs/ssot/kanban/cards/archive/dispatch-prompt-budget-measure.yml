@@ -1,0 +1,214 @@
+id: dispatch-prompt-budget-measure
+title: 'Dispatch session bloat: measure per-session prompt-token drivers and propose caps'
+column: done
+updated: 2026-11-26 19:41
+brief: DEV-0044 lever 4. Avg dispatch session ~4.4M prompt tokens, top decile 10-17M, 97% cached — burn scales with
+  turns x context size. Nothing measures the drivers yet.
+priority: medium
+program: devnest
+tags:
+- devin
+- usage
+- measurement
+- dispatch
+- report
+spec: 'Parent: card devin-usage-reduction, job doc docs/ssot/jobs/devnest/2026-11-24-devin-usage-reduction.yml.
+  READ-ONLY measurement card — produce a report artifact, do not change dispatch code.
+
+
+  DATA: `python3 scripts/devin/devin-usage.py --fleet --days 30 --json` emits per-session {task, session, model,
+  prompt, cached, completion, steps, result, finished_at, host}. Task dirs under ~/.local/share/devin-dispatch/tasks/<id>/
+  also carry prompt.txt (the dispatched prompt = spec + TASK_RAILS + lesson primer + RETRY/REPORT_RAILS per runner-agent
+  build_task_text), meta.json (attempts, result), and transcript.json steps.
+
+
+  TASK: (1) Pull the 30d fleet dataset via devin-usage.py --fleet --json (ssh to FLEET hosts; note unreachable hosts
+  explicitly). (2) For the top decile by prompt tokens plus a random sample of the median, join each session to
+  its task dir and record: prompt.txt bytes, primer lesson count (KNOWN_PITFALLS/KNOWN_GOOD lines), meta attempts,
+  steps, wall time, outcome (merged/verified/failed/zero-commit). (3) Correlate: which drivers predict prompt tokens
+  — spec size, primer size, retry count, host, lane/model? Report distributions, not just averages. (4) Propose
+  concrete caps with evidence: e.g. primer injection budget (max lessons/bytes per dispatch), spec-length guidance
+  for card authors, retry backoff, or a pre-dispatch size gate that holds oversized shapes for scoping. Each proposal
+  needs the measured number it would have saved. (5) Artifact: reports/dispatch-prompt-budget-2026-11.md (or docs/reports/)
+  + a docs/ssot/jobs/devnest/ job doc; post headline numbers to this card.
+
+
+  DONE WHEN: the report artifact exists with the driver correlations and >=1 evidence-backed cap proposal; no dispatch-path
+  code changed; devin-usage.py --fleet numbers reproducible.'
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  lane: devin
+  lane_source: fallback
+  runner: tony-dell
+  attempts: 1
+  sweep:
+    stale_running: 2026-11-25 10:09
+    dirty: 1
+  result: 'exit=0 enerated by repo tooling mid-session) was left uncommitted. | devin-task-20261125-093438-parent-card-devin-usage-reduct.service:
+    Consumed 4min 22.411s CPU time over 33min 32.162s wall clock time, 995.7M memory peak, 451.9M memory swap peak.'
+  verified: true
+ref: DEV-1334
+comms:
+- at: 2026-11-24 22:59
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-25 07:49
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 09:19
+  from: chaba
+  text: classified as devin (fallback conf 0.06)
+- at: 2026-11-25 09:19
+  from: tony
+  text: queued for processing
+- at: 2026-11-25 09:19
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.57 > 0.85)'
+- at: 2026-11-25 09:19
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 09:20
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 2.19 > 1.0)'
+- at: 2026-11-25 09:28
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 09:29
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-25 09:31
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (3/3)'
+- at: 2026-11-25 09:33
+  from: tony-dell
+  text: claimed
+- at: 2026-11-25 09:35
+  from: chaba
+  text: started devin-task-20261125-093438-parent-card-devin-usage-reduct on tony-dell (dispatch)
+- at: 2026-11-25 09:35
+  from: chaba
+  text: 'primer injected 8 lesson(s): [branch-code-s4-evidence-ladder] primer injected 8 lesson(s): [opencode-lane-reg;
+    devin-dispatch task meta at ~/.local/share/devin-dispatch/tasks/<slug>/meta.json; [ansible-vs-legacy-fleet-benchmark]
+    MANUAL LANDING (devin session, tony-dell con; [idc02-vps-lane-canary-hv] primer injected 8 lesson(s): Prior
+    attempt''s work was; [nest-job-done-evidence-gate] primer injected 8 lesson(s): [job-package-status-s; [disk-guard-ssot-enforce]
+    primer injected 8 lesson(s): [ansib'
+- at: 2026-11-25 09:38
+  from: devin
+  text: 'started: pulling 30d fleet usage + joining task dirs for driver analysis'
+- at: 2026-11-25 10:07
+  from: devin
+  text: 'DONE (read-only). 30d fleet: 494 sessions / 1.89B prompt tokens / 26.3k steps (idc01 unreachable; idc03=0
+    in-window — Nov dispatches rate-limit-died pre-transcript; 62 zero-metric). Driver: steps r=+0.96 — spec/primer/prompt.txt
+    all r<0.15. Fixed per-step context floor 22-32k tok/step = ~36% of burn. Top decile = long sessions (steps p50=112).
+    Non-landing outcomes ~19% of sampled tokens. Proposals: step-budget gate (>100 steps excess 84.7M/30d=4.5%),
+    dispatch-lite context profile (-20KB ~140M/30'
+- at: 2026-11-25 10:09
+  from: chaba
+  text: 'merge-sweep: devin-task-20261125-093438-parent-card-devin-usage-reduct no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-25 10:09
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261125-093438-parent-card-devin-usage-reduct on tony-dell still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-25 10:13
+  from: tony-dell
+  text: 'finished (ok): exit=0 enerated by repo tooling mid-session) was left uncommitted. | devin-task-20261125-093438-parent-card-devin-usage-'
+- at: 2026-11-25 10:14
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 10:14
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261125-093438-parent-card-devin-usage-reduct'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-25 10:14
+  from: chaba
+  text: banked 36 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 10:14
+  from: chaba
+  text: pushed dispatch/20261125-093438-parent-card-devin-usage-reduct to origin
+- at: 2026-11-25 10:14
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-25 10:14
+  from: chaba
+  text: auto-merged 2f0af5d6 (dispatch/20261125-093438-parent-card-devin-usage-reduct) → origin/master
+- at: 2026-11-25 10:14
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-25 10:24
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-25 16:49
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 16:56
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:00
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:05
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:12
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:27
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-25 17:39
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:50
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:01
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+claim:
+  since: 2026-11-25 09:33
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-25 10:24
+  note: verified — evidence checks green, closing itself

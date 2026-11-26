@@ -1,0 +1,274 @@
+id: gpu-timeslot-reservations
+title: GPU time-slot reservations for shared omen GPU
+column: done
+updated: 2026-11-26 19:41
+brief: Add exclusive GPU time-window reservations to the Redis-backed Ansible dispatch queue so a job can hold omen's
+  GTX 1650 without contention. Done when a reservation can be created, enforced by scheduler placement, released
+  on job completion/timeout, and verified with two overlapping GPU jobs.
+priority: medium
+tags:
+- dispatch
+- ops
+- gpu
+spec: 'Context: /home/tony/ansible (queue_manager.py, scheduler.py, README-DISPATCH.md, GPU-JOBS.md). omen has one
+  GTX 1650 (4GB) shared with bge-rerank.service. Today placement checks GPU count/VRAM/load/memory but has no exclusivity:
+  two jobs can both qualify against the same free VRAM and OOM or thrash.
+
+
+  Scope:
+
+  1. Add reservation fields to JobSpec/Redis job hash (reserve_gpu_window_sec, optional reservation_id).
+
+  2. Add a reservation ledger keyed by host+GPU index with ttl; scheduler must refuse placement while held and create
+  the hold atomically on dispatch.
+
+  3. Release on complete/fail/timeout; expose reservation state in queue_manager stats and gpu_status.py.
+
+  4. Document CLI usage in GPU-JOBS.md and add a test that queues two overlapping GPU jobs and verifies only one
+  runs.
+
+
+  Constraints: keep current priority/fair-share semantics; no new external service; work within Ansible + Redis.
+  Verify with real jobs on omen, and restore bge-rerank.service afterwards if stopped for capacity.'
+action:
+  type: dispatch
+  status: done
+  lane: devin
+  lane_source: fallback
+  attempts: 2
+  result: 'exit=0 25-gpu-timeslot-reservations.yml`, final card comms posted. | devin-task-20261126-123357-context-home-tony-ansible-queu.service:
+    Consumed 3min 59.918s CPU time over 17min 26.058s wall clock time, 957.3M memory peak, 427.7M memory swap peak.'
+  sweep:
+    no_repo: 2026-11-25 21:09
+    stale_running: 2026-11-26 12:55
+    dirty: 1
+  runner: tony-dell
+  verified: true
+comms:
+- at: 2026-11-25 20:13
+  from: chaba
+  text: classified as devin (fallback conf 0.14)
+- at: 2026-11-25 20:13
+  from: chaba
+  text: card captured via board-api
+- at: 2026-11-25 20:13
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.69 > 0.7)'
+- at: 2026-11-25 20:13
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-25 20:13
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-25 20:13
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.95 > 1.5)'
+- at: 2026-11-25 20:14
+  from: chaba
+  text: 'tony-dell defers: runner at cap (3/3)'
+- at: 2026-11-25 20:14
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 4.30 > 0.8)'
+- at: 2026-11-25 20:18
+  from: chaba
+  text: 'tony-macbook defers: runner at cap (4/4)'
+- at: 2026-11-25 20:24
+  from: chaba
+  text: 'tony-dell defers: host overloaded (5m load/core 3.96 > 1.0)'
+- at: 2026-11-25 20:35
+  from: tony-dell
+  text: claimed
+- at: 2026-11-25 20:36
+  from: chaba
+  text: started devin-task-20261125-203632-context-home-tony-ansible-queu on tony-dell (dispatch)
+- at: 2026-11-25 20:36
+  from: chaba
+  text: 'primer injected 8 lesson(s): [nest-percussion] primer injected 8 lesson(s): [devnest-queue-consolidation]
+    VER; [devnest-queue-consolidation] VERIFY COMPLETE (attempt 2, tony-omen). Done-condi; [kk-mac-launchd-runner-followthrough]
+    primer injected 8 lesson(s): [kk-mac-launc; [michael-lane-context-window] primer injected 8 lesson(s): [ansible-verify-host-;
+    [ada-scenario-casting-service-failed-on-i-340465] primer injected 8 lesson(s): C; [ansible-vs-legacy-fleet-benchmark]
+    MANUAL LANDING (devin ses'
+- at: 2026-11-25 20:46
+  from: devin
+  text: Implementation done in /home/tony/ansible on idc02 (queue_manager.py hold ledger gpu:hold:{host}:{idx} w/
+    TTL + atomic Lua acquire, scheduler placement excludes held indices + acquires on dispatch, release on complete/fail/timeout/requeue,
+    gpu_status.py HOLD column, playbook pins podman indices). Deploying + testing next.
+- at: 2026-11-25 20:53
+  from: devin
+  text: 'Live verify progressing: found+fixed a pre-existing bug — scheduler passed job_cmd via key=value -e which
+    splits on whitespace, so only the first word reached podman (every multi-word GPU command ran truncated, e.g.
+    podman got just "timeout"). Now passes job_cmd as JSON extra-var in scheduler.py + dispatch_job.py. Redeployed;
+    gpu-rsv2-a now running real nvidia-smi on omen holding gpu:hold:omen:0, gpu-rsv2-b correctly waiting.'
+- at: 2026-11-25 20:58
+  from: devin
+  text: 'DONE + verified. Reservations live on idc02:/home/tony/ansible (gpu:hold:{host}:{idx} ledger, PX TTL, atomic
+    Lua acquire, release on complete/fail/timeout/requeue/DLQ). Two overlapping GPU jobs verified on omen: B waited
+    ~4min while A held gpu:hold:omen:0, then ran Exited(0). Unit test queue/test_gpu_reservations.py 14/14 PASS
+    on isolated db15. Also fixed 3 real bugs found in verification: (1) job_cmd truncated to first word via key=value
+    -e whitespace split — now JSON extra-var in scheduler.py+'
+- at: 2026-11-25 21:02
+  from: tony-dell
+  text: 'finished (ok): exit=0 d GPU-JOBS.md/README-DISPATCH.md, and a final card comment posted. | devin-task-20261125-203632-context-home-tony'
+- at: 2026-11-25 21:02
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-25 21:02
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261125-203632-context-home-tony-ansible-queu'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 3 le'
+- at: 2026-11-25 21:02
+  from: chaba
+  text: banked 717 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-25 21:02
+  from: chaba
+  text: pushed dispatch/20261125-203632-context-home-tony-ansible-queu to origin
+- at: 2026-11-25 21:02
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-25 21:02
+  from: chaba
+  text: 'worktree kept: dirty — 52 uncommitted file(s)'
+- at: 2026-11-25 21:09
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261125-203632-context-home-tony'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:52
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:54
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:55
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 03:56
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:00
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 04:04
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 08:35
+  from: tony
+  text: '[verify] VERIFY-QUEUE triage 2026-11-26 (Tony): dispatch produced NO commits — merge-sweep: no served checkout
+    for repo ''?'' — dispatch branch never landed. No deliverable exists in origin/master. Holding to backlog for
+    re-dispatch, not closing as done. Note: fleet-wide runner-agent drift (installed 8c28da6b vs pin 1514c75c) was
+    active during these runs; converge is being handled separately.'
+- at: 2026-11-26 08:35
+  from: tony
+  text: put on hold
+- at: 2026-11-26 12:31
+  from: chaba
+  text: classified as devin (fallback conf 0.14)
+- at: 2026-11-26 12:31
+  from: chaba
+  text: queued for processing
+- at: 2026-11-26 12:31
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-26 12:31
+  from: chaba
+  text: '[auto-dispatch] wave 11 (2026-11-26 12:31): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-26 12:32
+  from: chaba
+  text: 'con01 defers: runner at cap (1/1)'
+- at: 2026-11-26 12:32
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.73 > 0.7)'
+- at: 2026-11-26 12:32
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 1.65 > 0.8)'
+- at: 2026-11-26 12:32
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.15 > 1.5)'
+- at: 2026-11-26 12:33
+  from: tony-dell
+  text: claimed
+- at: 2026-11-26 12:34
+  from: chaba
+  text: started devin-task-20261126-123357-context-home-tony-ansible-queu on tony-dell (dispatch)
+- at: 2026-11-26 12:34
+  from: chaba
+  text: 'primer injected 8 lesson(s): [nest-percussion] primer injected 8 lesson(s): [devnest-queue-consolidation]
+    VER; [devnest-queue-consolidation] VERIFY COMPLETE (attempt 2, tony-omen). Done-condi; [kk-mac-launchd-runner-followthrough]
+    primer injected 8 lesson(s): [kk-mac-launc; [michael-lane-context-window] primer injected 8 lesson(s): [ansible-verify-host-;
+    [ada-scenario-casting-service-failed-on-i-340465] primer injected 8 lesson(s): C; [ansible-vs-legacy-fleet-benchmark]
+    MANUAL LANDING (devin ses'
+- at: 2026-11-26 12:38
+  from: devin
+  text: 'attempt 2 picked up: prior run implemented+verified reservations live on idc02:/home/tony/ansible but committed
+    nothing (staged mirror only) — that is why merge-sweep failed. This run: refresh the ansible mirror snapshot
+    (live tree now also has webui cancel_job), commit it in the worktree, and re-verify live on omen via the :8795
+    API.'
+- at: 2026-11-26 12:51
+  from: devin
+  text: 'DONE (attempt 2 — the missing piece was the commit). Root cause of prior fail: attempt 1 built+verified
+    everything live on idc02:/home/tony/ansible but left 52 files staged-uncommitted, so merge-sweep saw zero commits.
+    This run: refreshed .dispatch-scratch/ansible-mirror/ to a full snapshot of the CURRENT live tree (now incl.
+    sibling webui cancel_job + homeassistant-plug), committed eeab1b71af0 + b771031f303 on dispatch/20261126-123357.
+    Re-verified: unit test 14/14 PASS off-idc02 vs Redis db15; '
+- at: 2026-11-26 12:54
+  from: chaba
+  text: 'merge-sweep: devin-task-20261126-123357-context-home-tony-ansible-queu no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-26 12:54
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261126-123357-context-home-tony-ansible-queu on tony-dell still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-26 12:56
+  from: tony-dell
+  text: 'finished (ok): exit=0 25-gpu-timeslot-reservations.yml`, final card comms posted. | devin-task-20261126-123357-context-home-tony-ansibl'
+- at: 2026-11-26 12:56
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-26 12:56
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261126-123357-context-home-tony-ansible-queu'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-26 12:56
+  from: chaba
+  text: banked 739 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 12:56
+  from: chaba
+  text: pushed dispatch/20261126-123357-context-home-tony-ansible-queu to origin
+- at: 2026-11-26 12:56
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-26 12:56
+  from: chaba
+  text: auto-merged 55b9289f (dispatch/20261126-123357-context-home-tony-ansible-queu) → origin/master
+- at: 2026-11-26 12:56
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-26 13:10
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-26 19:41
+  from: tony
+  text: archived (0d in done, verified)
+ref: OPS-1407
+claim:
+  since: 2026-11-26 12:33
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 13:10
+  note: verified — evidence checks green, closing itself
