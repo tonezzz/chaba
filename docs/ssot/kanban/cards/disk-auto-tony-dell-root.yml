@@ -1,6 +1,6 @@
 id: disk-auto-tony-dell-root
 title: Disk tony-dell / over limit
-column: review
+column: done
 review_kind: triage
 generated: disk-trend-watch
 area: monitoring
@@ -8,7 +8,7 @@ priority: medium
 note: '87% used >= ssot max_root_disk_percent 85% top grower 24h: /var/log +0.4 GiB'
 help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
   (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
-updated: '2026-11-26'
+updated: 2026-11-26 15:06
 comms:
 - at: 2026-10-07 07:27
   from: tony
@@ -227,6 +227,16 @@ comms:
     used, 28G free, 87% — below the limit. Original card was already closed 2026-11-20; this is a lifecycle bounce.
     Closing with current evidence.'
 - at: 2026-11-26 09:30
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 15:06
+  from: tony
+  text: '[close 15:05 +07] Lifecycle bounce: card already carried "closed by tony" and action status=done. Current
+    evidence: root 220G total / 187G used / 22G free = 90.0% (threshold max 90, absolute floor 15 GiB — still above
+    floor); trend samples 14:11/14:26/14:41/14:56 all 90.0% with no downward bleed. No cleanup run. Gated standard
+    remains available: ansible/playbooks/disk-remediate.yml --check --diff --limit tony-dell (apply only with explicit
+    opt-in). Moving to done with monitor note.'
+- at: 2026-11-26 15:06
   from: tony
   text: closed by tony
 brief: Disk space on tony-dell (/) is running low — check the note for the rate and top growers, then free space
