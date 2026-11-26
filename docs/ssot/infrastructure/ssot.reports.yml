@@ -932,6 +932,50 @@ nodes:
       - chaba-nest
       - fleet-jobs-report
 
+data_stores:
+  description: >
+    External durable stores that hold report/ledger data outside the repo's
+    file-artifact pipeline. Not nodes — they have no meta.yml; registered
+    here so the data's purpose, owner and schema pointer are discoverable.
+  chaba_usage_bigquery:
+    kind: bigquery_dataset
+    project: gen-lang-client-0694401188
+    dataset: chaba_usage
+    location: asia-southeast1
+    owner: tony
+    created: 2026-11-26
+    card: bigquery-usage-ledger-writer
+    purpose: >
+      Durable usage/quota/verdict ledger for chaba/devnest agents —
+      replaces scattered local JSON/MD reports with a queryable store.
+      One row per durable fact; append-only via idempotent MERGE on
+      natural keys; partitioned by date (>=365d expiry so local task-dir
+      pruning cannot lose history).
+    tables:
+      sessions: >
+        One row per agent session (devin_cloud | devin_dispatch | cli) —
+        cost, tokens, PR outcome. Key: session_id.
+      daily_quota: >
+        One row per day per source — Devin allowance meter readings
+        (console captures). Key: quota_date + source.
+      eval_verdicts: >
+        One row per model judgment on a held-out fixture, paired with the
+        deterministic verifier. Key: run_id + fixture_id + model.
+        Empty until ADA-1458 (eval-judge lane) produces verdicts.
+      model_audit: >
+        Which free model each dispatch host was pinned to per check.
+        Key: host + checked_at.
+    writer: scripts/bigquery/ledger_write.py (--dry-run | --backfill | --daily)
+    schema_doc: infra/bigquery-ledger-schema-2026-11-26.md
+    ddl: scripts/bigquery/chaba_usage.ddl.sql
+    auth: >
+      BigQuery REST API via existing ADC (gcloud auth application-default
+      print-access-token) on idc02; no keys in repo/cards/comms.
+      Every query sets maximumBytesBilled.
+    billing_alert: >
+      REQUIRED before any downstream scaling job — set a GCP billing
+      budget alert on project gen-lang-client-0694401188 first.
+
 schedule:
   system_report:
     timer: systemd/chaba-system-report.timer
