@@ -1,33 +1,26 @@
 id: runner-auto-con01
-title: Runner host `con01` fails 2 dispatch bootstrap check(s)
+title: Runner host `con01` fails 1 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on con01 that will strand dispatch cards. Read the note, fix
   on the host, close the card.
-column: done
+column: review
 review_kind: triage
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
-priority: medium
-note: 'Failing: ~/.local/bin/devin-dispatch sha 54db1f44eb1c9865 != pin c5fa39476cb27cad — installed build is stale;
-  ~/.local/bin/devin-dispatch sha 54db1f44eb1c9865 != repo c5fa39476cb27cad — installed copy drifted; redeploy.
-  Info: chaba origin is fetch-only (by design — no push creds); merge-sweep salvage path verified; ada-voice: push
-  probe fails (fatal: could not read Username for ''https://github.com'': No ) — ada-voice dispatches defer to a
-  pushable host; stranded work relays via board-api; ada-pi: push probe fails (fatal: could not read Username for
-  ''https://github.com'': No ) — ada-voice dispatches defer to a pushable host; stranded work relays via board-api;
-  sunsynk-card: push probe fails (fatal: could not read Username for ''https://github.com'': No ) — sunsynk-card
-  dispatches defer to a pushable host; stranded work relays via board-api; no mddb-fork checkout — host can''t take
-  action.repo='
+priority: high
+note: 'Failing: mddb-fork: 601 commits behind origin/feat/vector-algorithms (limit 200, last-fetched basis). Info:
+  chaba origin is fetch-only (by design — no push creds); merge-sweep salvage path verified; ada-voice: push probe
+  fails (fatal: could not read Username for ''https://github.com'': No ) — ada-voice dispatches defer to a pushable
+  host; stranded work relays via board-api; ada-pi: push probe fails (fatal: could not read Username for ''https://github.com'':
+  No ) — ada-voice dispatches defer to a pushable host; stranded work relays via board-api; sunsynk-card: push probe
+  fails (fatal: could not read Username for ''https://github.com'': No ) — sunsynk-card dispatches defer to a pushable
+  host; stranded work relays via board-api; mddb-fork: push probe fails (fatal: could not read Username for ''https://github.com'':
+  No ) — mddb-fork dispatches defer to a pushable host; stranded work relays via board'
 help: 'Per-check fixes:
 
-  - tool-pin: A deployed tool''s sha differs from the pin read from origin/master (scripts/devin/runner-tooling.manifest.json).
-  Refresh the checkout FIRST (git -C ~/CascadeProjects/chaba pull --ff-only), then run scripts/devin/sync-runner-tools.sh.
-  If the checkout matches the pin but the install does not, the sync was skipped — check the sync-runner-tools journal
-  line (dirty source / no pin / never-downgrade). Do not edit the manifest on a host; bump it in the same commit
-  as the tool.
-
-  - devin-dispatch: Usually self-heals within one chaba-repo-sync tick (sync-runner-tools.sh via git-safe-pull).
-  Manual: scp scripts/devin/devin-dispatch.sh <host>:~/.local/bin/devin-dispatch && ssh <host> chmod +x ~/.local/bin/devin-dispatch'
-updated: 2026-11-26 13:30
+  - repo-checkout: A declared dispatch repo checkout is missing/.git-less on the host — reclone it or drop it from
+  that host''s repos.conf.'
+updated: '2026-11-26'
 comms:
 - at: 2026-11-26 13:30
   from: devin
