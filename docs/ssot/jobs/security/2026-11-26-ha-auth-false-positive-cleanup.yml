@@ -35,9 +35,17 @@ rollback: >-
   served checkout, then commit and push the restore. This re-creates the
   false-positive item.
 residual: >-
-  None for this item. The watcher's dedupe state on tony-dell still holds
-  the numeric-epoch key for the 14:33 probe, so that exact log line cannot
-  re-alert even if the HA log is replayed.
+  The watcher's dedupe state on tony-dell still holds the numeric-epoch key
+  for the 14:33 probe, so that exact log line cannot re-alert even if the
+  HA log is replayed. Four older duplicate alert files from the 14:18 timer
+  tick and my 14:27 verification run
+  (2026-11-26-141840-ha-auth-failure-michael-ha-*.yml,
+  2026-11-26-141840-ha-auth-failure-tony-ha-from-localhost.yml,
+  2026-11-26-142742-ha-auth-failure-michael-ha-*.yml,
+  2026-11-26-142743-ha-auth-failure-tony-ha-from-localhost.yml) remain in the served
+  checkout. They were left in place because the user's approval was scoped
+  to the 14:33 item; they should be triaged or removed in a separate,
+  explicitly approved pass.
 lesson: >-
   When a producer posts a false positive into a board-owned file and the
   write door has no delete operation, do not silently bypass it: get
