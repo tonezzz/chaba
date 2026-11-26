@@ -1,7 +1,7 @@
 id: gemini-proxy-paid-last-resort-leg
 title: 'gemini-ollama-proxy: add paid-Gemini leg between free and Ollama (bounded outage spend)'
 column: doing
-updated: 2026-11-26 23:25
+updated: 2026-11-26 23:35
 priority: low
 tags:
 - mddb
@@ -312,6 +312,13 @@ comms:
     after free, before Ollama, caps 150/hr+2000/day in container env. Forced-429 probes (mock upstreams, unmodified
     live file via fetch-intercept): free->paid->ollama ordering proven; cap-hit falls through to Ollama as last
     resort. Found drift: live proxy runs uncommitted free-key-ring+gateway variant not in git — carding separately.'
+- at: 2026-11-26 23:35
+  from: devin
+  text: 'DONE (verify-only — leg already shipped PR #171 + caps). Live idc03: GEMINI_API_KEY_PAID in container env,
+    caps PAID_GEMINI_DAILY_CAP=2000 + HOURLY_CAP=150/hr live in /health. Forced-429 probes on UNMODIFIED deployed
+    file (fetch-rewrite preload, mocks for Gemini/Ollama/gateway): free->paid->ollama ordering proven in free-first
+    AND gateway-down paths; cap-hit falls to Ollama last resort. Vector-space caveat documented in code + docs/kb/mddb-embedding-providers.md.
+    Added tests/embed/test_gemini_pr'
 spec: 'Add a paid-Gemini leg AFTER free-Gemini and BEFORE Ollama in ~/.config/containers/mddb/proxy/gemini-ollama-proxy.mjs
   (fetchBackupBatch), passing GEMINI_API_KEY_PAID through the container env. Intended for outage windows only (OR
   401 + free key 429), never normal operation. Document the vector-space caveat (paid vs free embeddings) and a
