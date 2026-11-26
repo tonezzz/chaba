@@ -1,7 +1,7 @@
 id: rebuild-v-cast-gesture-control-with-yolo-6cfa19
 title: Rebuild V-Cast gesture control with YOLO
-column: backlog
-updated: 2026-11-26 04:07
+column: done
+updated: 2026-11-26 13:30
 priority: low
 note: Evaluate replacing V-Cast browser detector with YOLO (ONNX Web vs server-side frame streaming).
 ref: MED-1389
@@ -75,6 +75,13 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 13:30
+  from: devin
+  text: 'Duplicate/stale of rebuild-gesture-control-using-yolo-83cf4a (doing/done): its comms record that the MediaPipe->YOLO
+    replacement already shipped in chaba. Closing this unclaimed backlog duplicate.'
+- at: 2026-11-26 13:30
+  from: devin
+  text: closed by devin
 requests:
 - id: should-we-benchmark-onnx-runtime-web-cli-3865a3
   ask: Should we benchmark ONNX Runtime Web client-side or stream frames to a backend vision service on idc02?
@@ -90,4 +97,5 @@ requests:
     id: hold
   suggested: onnx_web
   answer: onnx_web — Client-side ONNX Web
-awaiting_action: true
+action:
+  status: done
