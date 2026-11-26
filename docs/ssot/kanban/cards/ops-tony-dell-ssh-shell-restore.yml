@@ -3,7 +3,7 @@ title: tony-dell - restore SSH shell via local Ansible bootstrap
 column: done
 priority: high
 created: '2026-11-26'
-updated: 2026-11-26 12:35
+updated: 2026-11-26 20:37
 brief: sshd has a global ForceCommand internal-sftp; all shell SSH requests answer 'This service allows sftp connections
   only.' Run the idempotent local Ansible bootstrap from branch ops/restore-ssh-shell on tony-dell itself (the runner
   is the only remaining shell path) to back up, remove and validate the line, then reload sshd.
@@ -54,5 +54,9 @@ comms:
 - at: 2026-11-26 12:35
   from: tony
   text: closed by tony
+- at: 2026-11-26 20:37
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 claim:
   since: 2026-11-26 12:20
