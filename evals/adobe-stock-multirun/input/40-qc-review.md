@@ -332,3 +332,71 @@ Laplacian-variance sharpness proxy: C 1218 / D 1670 / H 1531 — Q8 holds
 good, but doesn't feel photorealistic" — H is the same model class;
 expect the same band. Decision: keep / reject / revise — Tony visual
 QC required; photoreal lane stays kk-mac/gemini/CF.
+
+## Illustration pivot — `comparison-c-omen-sdxl` re-check (OPS-1079, 2026-11-26)
+
+Second pass — supersedes the 2026-11-08 section above, which had two
+factual errors in the category check.
+
+### Category requirements (verified vs helpx.adobe.com, 2026-11-26)
+
+- Gen-AI images submit **as Illustration asset type** with the
+  "Created using generative AI tools" checkbox; fictional people/places
+  also get "People and Property are fictional" (none here — generic
+  interior, no people). "generative AI" is NOT needed in
+  title/keywords (dropped as a requirement in 2023).
+- **Illustration = JPEG only (sRGB)** for raster — PNG is NOT accepted
+  as an illustration format; PNG submissions are a separate class for
+  transparent-background assets. Prior "PNG fine" note was wrong:
+  the file must be converted to JPEG before upload.
+- **Minimum resolution 4MP** (max 100MP, ≤45MB). comparison-c is
+  1344x768 = 1.03MP — below minimum; prior "1344x768 fine" note was
+  wrong. Proven path: Real-ESRGAN x4 (tony-dell local-ncnn lane,
+  same as comparison-d-x4) → 5376x3072 = 16.5MP, then JPEG/sRGB.
+- Metadata: title ≤200 chars, ≤49 keywords, first ~10 weighted most;
+  no artist names, real people, fictional characters, brands, or
+  copyrighted works; keywords must be accurate to the image.
+
+### Visual QC (image inspected via preview URL, 2026-11-26)
+
+Reads as a high-contrast flat/poster illustration: near-black
+silhouette desk with two laptops, detailed foliage in two planters,
+window grid with saturated blue panes, warm floor reflections,
+striped rug foreground. Weaknesses: furniture at right edge cropped
+by the frame; office chair from the prompt not discernible (merged
+into the black mass); small ambiguous bump on the desk surface;
+partial dark bar at left edge. Style is consistent enough to read
+as intentional flat design, but composition is rough for stock —
+acceptable as a category/metadata test vehicle, marginal as a
+polished product.
+
+### Draft metadata (illustration category, v2)
+
+- **Title:** Flat design illustration of a modern home office with
+  laptops, plants and large window, remote work concept (109 chars)
+- **Alt title:** Modern home office flat illustration, remote work
+  and freelancing concept
+- **Suggested category:** Business (alt: Lifestyle)
+- **Keywords (ordered, 40):** remote work, home office, flat design,
+  work from home, illustration, laptop, office interior, workspace,
+  houseplant, desk, freelancer, digital nomad, silhouette, modern
+  office, telecommuting, window, indoor plants, productivity, hybrid
+  work, freelance, workplace, computer, technology, cozy, minimal,
+  video call, online meeting, morning light, business, lifestyle,
+  remote job, telework, interior, hardwood floor, contemporary,
+  design, communication, corporate, job, ergonomic
+- Deliberately omitted: "vector" (raster file — misleading), "cartoon"
+  (style mismatch; spec's trending-cartoon note doesn't describe this
+  asset), "generative AI" (not required, wastes keyword space).
+
+### Decision: **keep as second product line — asset is pilot, not product**
+
+Rationale: OPS-1078 already declared the omen sd lane illustration-tier;
+a second line is the consequence of that verdict, not a new cost.
+This specific asset is the metadata/category test vehicle — to be
+submission-ready it still needs x4 upscale + JPEG/sRGB + the two gen-AI
+checkboxes, and it remains marginal on composition. If Tony's visual QC
+judges the silhouette reads as defect rather than style, discard the
+ASSET but keep the product line — produce a purpose-prompted flat-design
+render ("flat vector illustration style" in-prompt) instead of
+salvaging a photo failure.
