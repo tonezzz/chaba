@@ -1,0 +1,44 @@
+id: runner-agent-stale-answer-resume-churn-a-9f9ffe
+title: 'runner-agent stale-answer resume churn: answered job-input-* request auto-resumes every needs-input park
+  forever'
+column: backlog
+updated: 2026-11-27 02:25
+brief: runner-agent._request_answer() returns the answer of card request job-input-<cid> whenever status==answered
+  — forever. The request is answered once (generic option echo) and _raise_input_request dedupes on the same request_id
+  so it is never re-opened. Every _enter_awaiting park therefore instantly sees a stale answer and _job_answer_tick
+  resumes the job into the same blocker — observed as 12 identical BLOCKED dispatch attempts on opencode-lane-regraduation
+  (2026-11-26/27, ~20min cadence).
+priority: medium
+program: chaba-ci
+tags:
+- devnest
+- runner-agent
+- bug
+- dispatch
+spec: 'Bug: scripts/board/runner-agent.py — _request_answer (~L2780) matches requests[] entry id==job-input-<cid>
+  with status==answered and returns its answer unconditionally; _raise_input_request (~L2818) POSTs /request with
+  stable request_id job-input-<cid> which dedupes against the already-answered entry, so a NEW needs-input question
+  never gets an open request and the OLD answer keeps resolving it. _job_answer_tick (~L2857) then resumes via start_task
+  on every finish_pass.
+
+
+  Fix options (pick one): (a) _request_answer should only return answers recorded AFTER the current job_awaiting.at
+  timestamp (compare request answered-at or comms at vs aw.at); (b) _raise_input_request should re-open/reset the
+  request (new request_id suffix per park, e.g. job-input-<cid>-<n>, or clear status when ask text changes); (c)
+  board-api /request should allow re-arming an answered request when the ask text differs.
+
+
+  Evidence: card opencode-lane-regraduation comms 2026-11-26 21:00 → 2026-11-27 02:10 (12 attempts, each ending
+  needs-input then auto-resumed by stale answer); trail doc docs/ssot/jobs/devnest/2026-11-26-opencode-lane-s1-gate-state.yml
+  attempt_13 section; dispatch-outcome-20261127-021133-*.md.
+
+
+  Verify: park a test dispatch job on needs-input twice in a row — second park must NOT auto-resume on the first
+  park''s stale answer.'
+note: 'Found during opencode-lane-regraduation attempt 13. Workaround applied on that card: /action do=hold (status=idle)
+  so finish_pass releases the claim instead of auto-resuming.'
+ref: OPS-1473
+comms:
+- at: 2026-11-27 02:25
+  from: devin
+  text: card captured via board-api
