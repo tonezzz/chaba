@@ -914,7 +914,7 @@ function isVerified(c) {{
                     : 'no verification entry in comms'}};
 }}
 // automation-generated card ids — collapsed under per-column groups
-const AUTO_RE = /^(cms|logs|gev|vcast|disk)-auto-|-auto-health$/;
+const AUTO_RE = /^(cms|logs|gev|vcast|disk|job)-auto-|-auto-health$/;
 let autoOpen = {{}};
 try {{ autoOpen = JSON.parse(localStorage.getItem('board-auto-open') || '{{}}'); }} catch (e) {{}}
 const REVIEW_RE = /(?:->|→|—|–)\\s*review\\b/i;

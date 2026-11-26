@@ -216,7 +216,7 @@ function boot(storeInit = {}) {
 }
 
 const tick = () => new Promise(r => setImmediate(r));
-const AUTO_RE = /^(cms|logs|gev|vcast|disk)-auto-|-auto-health$/;
+const AUTO_RE = /^(cms|logs|gev|vcast|disk|job)-auto-|-auto-health$/;
 
 let pass = 0, fail = 0;
 const DEBUG = process.env.BOARD_TEST_DEBUG === "1";

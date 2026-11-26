@@ -844,6 +844,75 @@ jobs:
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/retry-storm-watch.py --checks cpu,logs
   note: 'card ops-retry-storm-detection — container checks only; MDDB
     queue leg runs on idc03 where the leader lives.'
+- id: job-health-sweep
+  name: Declared-job health sweep (journal consecutive-failures + dead timers -> board card)
+  host: con01
+  dispatch: systemd
+  on_calendar: 'hourly'
+  persistent: true
+  timeout: 10m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/job-health-sweep.py
+  note: 'OPS-1015 / card job-health-sweep-consecutive-failure-alerts —
+    three con01 jobs sat dead up to a month (env drift) with no dashboard
+    coverage; job-level complement to runner-fleet-health (host silence —
+    a dead sweep cannot report itself). Each tick enumerates this host''s
+    ssot.jobs.yml dispatch:systemd jobs, counts consecutive failed
+    activations in the user journal (>=3, or >=1 attempt with zero
+    successes in the window; journal retention <30d degrades to
+    failed-since-boot), flags timers disabled/inactive while declared,
+    and drift-flags rendered job:<id> units not declared here. Alerts via
+    board-api card job-auto-health-<host> — comments on state change only
+    (new failure / daily still-failing summary / recovered), auto-close
+    when green. OPS-0581 contract: exit 0 when checks complete; exit 1
+    only when the sweep itself cannot run. State
+    ~/.local/state/job-health-sweep.json. Trail doc
+    docs/ssot/jobs/monitoring/2026-11-26-job-health-sweep.yml.'
+- id: job-health-sweep
+  name: Declared-job health sweep (journal consecutive-failures + dead timers -> board card)
+  host: idc02
+  dispatch: systemd
+  on_calendar: 'hourly'
+  persistent: true
+  timeout: 10m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/job-health-sweep.py
+  note: 'OPS-1015 / card job-health-sweep-consecutive-failure-alerts —
+    per-host declared-job sweep; see the con01 entry note for full
+    semantics. State ~/.local/state/job-health-sweep.json.'
+- id: job-health-sweep
+  name: Declared-job health sweep (journal consecutive-failures + dead timers -> board card)
+  host: idc03
+  dispatch: systemd
+  on_calendar: 'hourly'
+  persistent: true
+  timeout: 10m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/job-health-sweep.py
+  note: 'OPS-1015 / card job-health-sweep-consecutive-failure-alerts —
+    per-host declared-job sweep; see the con01 entry note for full
+    semantics. Largest manifest (64 jobs) — journal scan is the slow
+    leg, still well inside the 10m timeout. State
+    ~/.local/state/job-health-sweep.json.'
+- id: job-health-sweep
+  name: Declared-job health sweep (journal consecutive-failures + dead timers -> board card)
+  host: mn01
+  dispatch: systemd
+  on_calendar: 'hourly'
+  persistent: true
+  timeout: 10m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/job-health-sweep.py
+  note: 'OPS-1015 / card job-health-sweep-consecutive-failure-alerts —
+    per-host declared-job sweep; see the con01 entry note for full
+    semantics. State ~/.local/state/job-health-sweep.json.'
+- id: job-health-sweep
+  name: Declared-job health sweep (journal consecutive-failures + dead timers -> board card)
+  host: tony_dell
+  dispatch: systemd
+  on_calendar: 'hourly'
+  persistent: true
+  timeout: 10m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/job-health-sweep.py
+  note: 'OPS-1015 / card job-health-sweep-consecutive-failure-alerts —
+    per-host declared-job sweep; see the con01 entry note for full
+    semantics. State ~/.local/state/job-health-sweep.json.'
 - id: timer-timeline-update
   name: Timer timeline sweep (collects all hosts' timer/service states)
   host: tony_omen

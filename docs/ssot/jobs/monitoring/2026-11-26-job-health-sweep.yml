@@ -1,0 +1,134 @@
+title: job-health-sweep — declared-job failure sweep -> per-host board card
+subtitle: card job-health-sweep-consecutive-failure-alerts / OPS-1015 (2026-11-26)
+icon: timer
+
+decision:
+  summary: >
+    Three con01 jobs (chaba-audit, mddb-vector-reindex, devin-bank-distill)
+    sat dead for up to a month — missing node_modules, a disabled timer,
+    a spend-capped API key — and no dashboard watched any of them. The
+    gap is systemic: any declared job on any host can die silently.
+    Shipped scripts/ops/job-health-sweep.py as an hourly systemd user
+    timer on the five jobs hosts; findings land on one auto card per
+    host (job-auto-health-<host>) via board-api, comments on state
+    change only.
+  changes:
+    - id: script
+      detail: >
+        scripts/ops/job-health-sweep.py. Each tick:
+        (1) enumerates this host's jobs from ssot.jobs.yml
+            (host: match, dispatch: systemd, enabled != false — same
+            filter as render-jobs.py),
+        (2) per job probes ~/.config/systemd/user/<id>.{service,timer}:
+            missing unit files, timer not-enabled, timer inactive
+            (the never-fires case — the mddb-vector-reindex shape),
+        (3) counts journal activations via `journalctl --user -u
+            <id>.service --since <window> -o json` (default window
+            '30 days ago'; retention <30d on small hosts simply degrades
+            to failed-since-boot coverage — oldest retained entry is
+            reported),
+        (4) flags consecutive failed activations >=3, or >=1 attempt
+            with zero successes in the window. Consecutive-failure
+            streak walks newest->oldest journal events; the
+            'Failed with result'/'Failed to start' marker pair per
+            activation is deduped (skip flag), 'Finished'/
+            'Deactivated successfully' ends the streak, and last_error
+            is the newest errorish stdout line inside the newest failed
+            activation (boilerplate filtered).
+        (5) drift pass: rendered `job:<id>` Description tags in
+            installed *.service files whose id is NOT declared for this
+            host -> undeclared-job-unit pseudo-verdicts (stale units
+            surviving host moves — the duplicate-unit pitfall).
+        Journal/systemd probe failures don't cry wolf per-job; they
+        surface once as a sweep:probes pseudo-verdict.
+    - id: alerting
+      detail: >
+        board-api only (never file-edits — non-writer hosts). One card
+        job-auto-health-<host> (hyphens), column review /
+        review_kind triage, created on first failure, moved done->
+        review on relapse. Comments: per-job NEW failure (batched into
+        <=500-char chunks when >6 new at once), still-failing summary
+        anchored ~20h into an episode then every 20h, RECOVERED per job,
+        auto-close via /action do=close when fully green. Anti-noise
+        state ~/.local/state/job-health-sweep.json tracks per-key
+        state/episode/first_seen; request_id carries an episode counter
+        so a same-day relapse still comments while retries dedupe.
+        Recovered state flips unconditionally (green is green — a stale
+        'failing' flag would suppress the next real alert); the
+        recovered comment is best-effort.
+    - id: jobs
+      detail: >
+        Five ssot.jobs.yml entries (con01, idc02, idc03, mn01,
+        tony_dell), dispatch: systemd, on_calendar: hourly,
+        persistent: true, timeout: 10m (idc03's 64-job journal scan is
+        the slow leg). OPS-0581 exit contract: exit 0 when checks
+        complete — findings ride the board; exit 1 only when the sweep
+        itself cannot run (manifest unreadable, no user systemd) — that
+        failure is the unit's own journal signal. Meta-gap per card
+        spec: a dead sweep can't report itself; host-level silence
+        stays covered by runner-fleet-health.
+    - id: board-ui
+      detail: >
+        AUTO_RE card-noise regexes gained the `job` prefix in
+        scripts/render-board.py, scripts/render-board2.py and
+        scripts/test-board-dom.mjs so job-auto-health-* cards collapse
+        under the per-column automation group like the other
+        *-auto-* ids.
+  verified:
+    - >-
+      py_compile clean; 24 unit tests in
+      tests/ops/test_job_health_sweep.py pass — journal streak dedupe
+      (FwR/FtS pair counted once), success-breaks-streak, orphan
+      markers, last_error extraction, manifest filtering, timer-state
+      probes, undeclared-unit drift, threshold gates, and the full
+      board lifecycle (create->comment->silent->recover->close,
+      relapse re-alerts).
+    - >-
+      Live run on idc02 (this host): 11 real findings — 4
+      declared-but-uninstalled jobs (chaba-capture-harvest,
+      job-health-sweep itself pre-install, opencode-models-sync,
+      retry-storm-watch) + 7 stale rendered units not declared for
+      idc02 (chaba-repo-mirror, devin-taskdir-prune, jev-bench,
+      mddb-lab-pull, mddb-tier2-pull, session-audit,
+      single-writer-fleet-audit). Card job-auto-health-idc02 created
+      (OPS-1461, review, high) with 2 chunked NEW-failure comments
+      covering all 11; second run posted zero comments (state dedupe
+      verified live).
+    - >-
+      embed-lane-banks journal cross-checked by hand: 2 Finished + 1
+      timeout failure tail -> consec=1, green — matches analyzer output.
+    - >-
+      render-jobs.py re-rendered all five hosts; GeneratedTree test
+      green (also swept 4 stale con01 cline-* units left by the
+      fleet-wide Cline retirement — removed from the generated tree).
+    - >-
+      AUTO_RE verified in node against job-auto-health-<host> ids and
+      non-matching card ids.
+
+deploy:
+  status: >
+    repo-side only — NOT installed (dispatch rules: no deploy). The
+    idc02 state file ~/.local/state/job-health-sweep.json already holds
+    the 11 failing keys, so the first real timer tick resumes silently
+    (daily summaries only, no comment storm).
+  next_step: >
+    After merge + each host's chaba-repo-sync pull, run
+    `python3 scripts/render-jobs.py --host <h> --ids job-health-sweep
+    --install` per host. First ticks will likely file findings on
+    hosts with real drift (idc02 already has its card open); hosts
+    whose declared set is fully installed stay silent — that IS the
+    healthy-path verification.
+
+follow_ups:
+  - id: idc02-drift-triage
+    note: >
+      job-auto-health-idc02 (OPS-1461) lists 11 live findings needing
+      owner triage: install-or-undeclare the 4 missing-unit jobs and
+      remove/relocate the 7 stale rendered units (jev-bench and
+      session-audit are declared for con01/tony_omen — likely host-move
+      leftovers).
+  - id: con01-first-light
+    note: >
+      con01 is where the incident happened — expect its first sweep
+      card to immediately surface any still-dead declared jobs; treat
+      that first card as the real-world acceptance test.
