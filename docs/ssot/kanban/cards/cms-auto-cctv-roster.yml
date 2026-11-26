@@ -1,14 +1,14 @@
 id: cms-auto-cctv-roster
 title: CMS automation `cctv-roster` stale
 brief: A scheduled report-page job ('cctv-roster') is stale. Re-run it or check the generator — details in the note.
-column: done
+column: review
 review_kind: triage
 generated: cms-auto-health
 priority: medium
-note: 'Auto-recovered 2026-11-26: cctv-roster healthy for 2 consecutive ticks (status=ok, state=ok).'
+note: 'Recovering: cctv-roster healthy for 1/2 ticks — auto-closes when the streak holds.'
 help: 'Trigger a manual regen: cms_automation run_now for ''cctv-roster'' (or POST /api/cms/pages/cctv-roster/regenerate).
   If it repeats, check the page''s generator command in the registry doc.'
-updated: '2026-11-26'
+updated: 2026-11-26 16:51
 comms:
 - at: 2026-11-25 09:38
   from: chaba
@@ -169,6 +169,16 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261126-151845-cms-automation-cctv-roster-sta on tony-macbook still
     dirty — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-26 16:51
+  from: chaba
+  text: 'merge-sweep: merged e70e5783 (dispatch/20261126-151845-cms-automation-cctv-roster-sta from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261126-151845-cms-automation-cctv-roster-sta.md)
+    — held in review (review_kind=triage — human-gated)'
+- at: 2026-11-26 16:51
+  from: local
+  text: 'pub milestone: card verified: cms-auto-cctv-roster on idc03 — merged e70e5783 (dispatch/20261126-151845-cms-automation-cctv-roster-sta
+    from tony-macbook) -> origin/master — verified — merged e70e5783 (dispatch/20261126-151845-cms-automation-cctv-roster-sta
+    from tony-macbook) -> origin/master — verified — held in review (review_kind=triage — h [evt-36f8282fefa93b0c]'
 action:
   status: done
   type: dispatch
@@ -179,8 +189,9 @@ action:
   attempts: 1
   result: 'exit=0 same retirement class; the MDDB write-failure cause still open) are in the trail doc. | devin-task-20261126-151845-cms-automation-cctv-roster-sta.service:
     Consumed 1min 14.855s CPU time over 8min 34.262s wall clock time, 805.2M memory peak.'
-  verified: false
+  verified: true
   sweep:
     dirty: 1
 claim:
   since: 2026-11-26 15:17
+ok_streak: 1
