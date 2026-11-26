@@ -98,10 +98,12 @@ services:
     name: Playlived (tony-dell)
     type: http
     host: tony_dell
-    url: http://127.0.0.1:9230/sessions
+    url: http://tony-dell:9230/sessions
     expected_status: 200
     timeout: 5
     category: api
+    disabled: true
+    note: "Loopback-bound on tony-dell (verified unreachable over tailnet 100.68.142.13:9230 and tony-dell.taila0626a.ts.net:9230 from the health host). mcp-health cannot run a remote exec/curl, so this check is disabled in the quick profile; verify manually via ssh tony-dell curl/systemd status. Re-enable only after an explicit tailnet endpoint exists."
     profiles:
       - home
     verification:
