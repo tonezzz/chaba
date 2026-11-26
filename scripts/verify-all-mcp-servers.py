@@ -163,7 +163,11 @@ def main():
 
     config = json.loads(CONFIG.read_text())
     results = {}
+    disabled = []
     for name, spec in config.get("mcpServers", {}).items():
+        if spec.get("disabled"):
+            disabled.append(name)
+            continue
         try:
             if "url" in spec:
                 results[name] = url_verify(name, spec["url"], spec.get("headers"))
@@ -180,9 +184,11 @@ def main():
     all_ok = ok == total
 
     if args.json:
-        print(json.dumps({"ok": all_ok, "skipped": None, "servers": results, "ok_count": ok, "total": total}, sort_keys=True))
+        print(json.dumps({"ok": all_ok, "skipped": None, "servers": results, "ok_count": ok, "total": total, "disabled": disabled}, sort_keys=True))
     else:
         print(f"\nVerified {ok}/{total} MCP servers")
+        if disabled:
+            print(f"Skipped {len(disabled)} disabled server(s): {', '.join(sorted(disabled))}")
         print("-" * 60)
         for name, r in sorted(results.items()):
             if r["ok"]:
