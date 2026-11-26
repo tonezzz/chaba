@@ -1,7 +1,7 @@
 id: cast-loop-breaker-test-failure
 title: Fast pytest gate fails on cast_loop_breaker patch divergence
 column: doing
-updated: 2026-11-26 23:35
+updated: 2026-11-26 23:49
 brief: Current master fast pytest gate (python3 -m pytest tests -x -q) fails on tests/ada/test_cast_loop_breaker.py::test_patches_apply_clean
   — one patch reports diverged.
 priority: medium
@@ -78,6 +78,13 @@ comms:
   from: devin
   text: 'Investigating tests/ada/test_cast_loop_breaker.py: patch state divergence; will refresh/remove the stale
     staged patch and rerun pytest.'
+- at: 2026-11-26 23:49
+  from: devin
+  text: 'DONE: diverged patch was realtime_provider.cast-loop.patch (prompt rules), rotted by ada-voice f8d8c9a
+    prompt slim. Re-staged it against ada-voice origin/main @2c5a9e0 in the new one-line style; cast-loop test now
+    materializes origin/main via new materialize_main(). Verified: test_cast_loop_breaker 1 passed/1 skipped (no
+    ada-voice .venv on con01), merge-gate smoke set 328 passed. Note: pytest tests -x -q cannot run on con01 (no
+    numpy/PIL); tests/ada has unrelated pre-existing dep/rot failures do'
 action:
   type: dispatch
   status: running
