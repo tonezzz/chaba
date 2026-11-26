@@ -1,7 +1,7 @@
 id: timer-alert-idc03-mddb-embed-probe
 title: Timer mddb-embed-probe on idc03 failing
 column: backlog
-updated: 2026-11-26 10:22
+updated: 2026-11-26 11:19
 priority: high
 tags:
 - timer-alert
@@ -1463,6 +1463,13 @@ comms:
     400 because all query-embedding providers are circuit-open (free_keys, or_daily_cap, paid_daily_cap, paid_hourly_cap);
     the same circuits are repeatedly failing/requeueing the ada-ha-bank-devin-handoff lesson/20261126-093600 doc.
     Manual rerun at 10:2x still result=exit-code/1, state=down'
+- at: 2026-11-26 11:19
+  from: devin
+  text: 'RESOLVED 2026-11-26: not a provider/quota outage — embed-pool-shim''s 2026-11-25 drop-in left tony-omen
+    (100.75.102.88:11434) as the ONLY upstream, and that host is off-net, so /api/embed returned 504 ''no upstream
+    answered in time'' -> mddb :11023 vector-search 400 -> probe down. Restored local idc03 bge-m3 as a racing upstream
+    in ~/.config/systemd/user/embed-pool-shim.service.d/zzzz-drop-local-idc03.conf (backup taken; 8s timeout and
+    kk-mac deferral retained), restarted shim. Verified vector-sear'
 action:
   status: done
   type: dispatch
