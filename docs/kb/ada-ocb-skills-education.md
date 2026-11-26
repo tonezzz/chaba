@@ -19,7 +19,7 @@ search_keywords: [ada-ocb, skills, SKILL.md, agents/skills, opencode/skills, ses
 
 **Abstract**: ada-ocb carries two skill surfaces — ten skills under `.agents/skills/` and one under `.opencode/skills/`. This entry records the inventory discovered from session history, the offline contract test that pins it (`tests/test_agents_skills_explored.py`), the wikitext exporter (`scripts/skills-wiki-export.py`), and the wiki-education publish path (card-gated, through board-api).
 
-## Inventory (11 skills)
+## Inventory (current skill set; 11 originally explored)
 
 | Skill | Source | Trigger | Purpose / when to use in ada-ocb |
 | ----- | ------ | ------- | -------------------------------- |
@@ -75,9 +75,19 @@ Recorded alongside the skills in the same session history; the wiki page carries
 
 PR #229 added `ansible/playbooks/deploy-runner-tools.yml`, the check→apply wrapper and the daily timer installer — but only `--check --diff` was run, so fleet drift stayed live. Adding a playbook is not convergence: apply it, install the schedule, then re-audit with an independent check. The first timer install was rejected by all hosts with `BadUnitSetting` because `OnCalendar`/`Persistent`/`Unit` were in `[Unit]` instead of `[Timer]`; validate user units with `systemd-analyze --user verify` before rollout. PR #236 fixed the unit; after apply every host reported in-sync, the timer is active, and the re-audit shows no `DRIFT` (only expected `kk-mac` `MISSING-DEST`). Card `OPS-1447` filed and closed. The full lesson is in MDDB `chaba-lessons/ocb-efficiency-lessons-2026-11-25` and the OpenChamber knowledge note.
 
+### MDDB findability eval (2026-11-26)
+
+Added three eval queries to `chaba-lessons` and ran `mddb.run_eval`: **recall@5 / nDCG / MRR = 1.0** for all three configs. `fts/bm25` was fastest (~5 ms p50) versus hybrid/vector (~1.6 s), so the saved lessons are retrievable and keyword search is the cheap path. Evidence: MDDB collection `chaba-lessons`, eval IDs `ocb-efficiency-1..3`.
+
+## Operational rules
+
+- **Runner audit pin rule (PR #246)**: `ansible/playbooks/audit-runner-tools.yml` compares installed sha256 to the controller's `runner-tooling.manifest.json` pins, not to each host's checkout. An ahead/stale checkout used to produce false `DRIFT`.
+- **Scheduled automation**: a daily runner-tools convergence timer is active on all managed hosts, plus a **read-only SSOT/CI monitor** (`acfd73e3-04e7-43f9-82e5-bdc5635e3358`, daily 09:00 Asia/Bangkok) that checks `ssot-validate-all.mjs`, the tooling-pin contract, `wiki-cargo-check.py`, health and alerts. It never mutates.
+
 ## Related tooling
 
 - **`ansible-first`** (`.agents/skills/ansible-first/SKILL.md`, repo-canonical; `~/.claude/skills/ansible-first` is a symlink on OpenCode hosts): global OpenCode skill, advertised before each model step. 30-second triage — skip for local/repo work, use the board-api write door for kanban/wiki/SSOT mutations, and for remote/fleet/repeatable config check chaba's `ansible/` playbooks (and `~/ansible`) before ad-hoc SSH. Preflight with `--check --diff --limit`, keep secrets in vault files, require approval for disruptive plays, record where filed.
+- **`build-mcp-server`** (`~/.claude/skills/build-mcp-server/`): second plugin skill ported from `anthropics/claude-plugins-official` (Apache-2.0, `LICENSE` retained). MCP server design workflow with 8 bundled reference docs; OpenCode adaptation note covers Context7 fallback, board-api door for chaba mutations, and `{env:...}` secrets in `opencode.json`. Verified loadable.
 
 ## Wiki education record
 

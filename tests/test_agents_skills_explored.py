@@ -98,6 +98,9 @@ def test_wiki_export_shape_with_fixtures():
     assert "== Repositories explored ==" in page
     assert "== Benchmarks ==" in page and "info-find efficiency A/B" in page
     assert "Build is not apply" in page and "OPS-1447" in page
+    assert "== Operations ==" in page and "PR #246" in page
+    for token in ("MDDB findability eval", "build-mcp-server", "acfd73e3-04e7-43f9-82e5-bdc5635e3358"):
+        assert token in page, token
     assert "== Related tooling ==" in page and "ansible-first" in page
     assert page.count("\n|-") == len(fixtures) + len(export.REPOS)
     for repo in export.REPOS:
