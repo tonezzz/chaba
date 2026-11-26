@@ -1,7 +1,7 @@
 id: dispatch-queue-approval-gate
 title: Dispatch queue approval gate (RBAC-lite) — /home/tony/ansible on idc02
-column: review
-updated: 2026-11-26 15:56
+column: done
+updated: 2026-11-26 15:58
 priority: medium
 tags:
 - dispatch
@@ -179,6 +179,9 @@ comms:
 - at: 2026-11-26 15:56
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-26 15:58
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -219,3 +222,7 @@ requests:
   answer: 'Resolved: generated assessment file conflict fixed upstream-wins in commit 5150728; merge-sweep landed
     the merge to origin/master e19ae1e673, verified=True, worktree GC removed.'
 awaiting_action: true
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 15:58
+  note: verified — evidence checks green, closing itself
