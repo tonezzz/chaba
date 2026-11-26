@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-memory
 title: Timer ada-scenario-memory on idc03 failing
 column: backlog
-updated: 2026-11-26 03:59
+updated: 2026-11-26 07:24
 priority: high
 tags:
 - timer-alert
@@ -93,6 +93,9 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 07:24
+  from: chaba
+  text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
 requests:
 - id: the-timer-ada-scenario-memory-fbdac5
   ask: The timer ada-scenario-memory.service on idc03 failed with a resource error because EnvironmentFile ~/.config/secrets/ada-ha-tony.env
@@ -106,3 +109,4 @@ requests:
   status: open
   at: 2026-11-25 19:23
   from: backlog-spec-enrich
+  escalated_at: 2026-11-26 07:24
