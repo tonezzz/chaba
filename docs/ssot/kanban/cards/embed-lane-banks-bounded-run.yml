@@ -1,0 +1,26 @@
+id: embed-lane-banks-bounded-run
+title: 'embed-lane-banks: bound each daily run to its 45min window'
+column: backlog
+updated: 2026-11-26 18:47
+brief: 'Daily embed-lane-banks oneshot on idc02 is SIGTERMd at TimeoutStartSec=2700 after copying only ~3200/74940
+  docs of ada-ha-bank-devin-handoff: the queue throttle (depth>=3000) plus CPU-only bge-m3 embedding yields ~15
+  docs/min. Ollama and mddb-embed are healthy; queue drained to 0, dropped=0, no data loss. Result=timeout every
+  day despite cumulative progress. See card timer-alert-idc02-embed-lane-banks comms (2026-11-26).'
+priority: high
+program: jobs
+tags:
+- mddb
+- embed-lane
+- timer
+spec: 'Make the daily run finish inside its time budget instead of being killed. Preferred: add a --limit (or wall-clock
+  budget) to scripts/embed/embed-lane.py banks and set the rendered job to a per-run cap sized to complete in <45min,
+  so the service exits 0 with incremental progress and the daily timer advances the resume-safe cursor. Alternative:
+  raise TimeoutStartSec for this one rendered job with an explicit upper bound. Update docs/ssot/jobs/mddb/2026-10-27-embedding-backfill-lane.yml
+  (job embed-lane-banks) and re-render; do not hand-edit the generated unit. Verify: one manual oneshot exits 0/SUCCESS
+  with a nonzero copy count and no timeout in journalctl; next daily run starts cleanly. Keep the depth>=3000 throttle
+  and dropped=0 invariant.'
+ref: MEM-1450
+comms:
+- at: 2026-11-26 18:47
+  from: tony
+  text: card captured via board-api
