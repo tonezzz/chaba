@@ -1,7 +1,7 @@
 id: runner-fleet-health-host-regex-gap
 title: runner-fleet-health silently omits con01 and kk-mac from fleet audit
-column: backlog
-updated: 2026-11-26 08:35
+column: done
+updated: 2026-11-26 09:57
 priority: medium
 tags:
 - ops
@@ -33,7 +33,7 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: idle
+  status: done
   runner: tony-macbook
   attempts: 1
   result: 'exit=0 the-host-discovery-.md`; card comms posted, no commits or pushes per dispatch rules. | devin-task-20261125-203735-goal-close-the-host-discovery-.service:
@@ -175,6 +175,16 @@ comms:
 - at: 2026-11-26 08:35
   from: tony
   text: put on hold
+- at: 2026-11-26 09:57
+  from: tony
+  text: '[fix][OPS-1406] Landed e3bb2d5afaf (+ d71b491170e comment fix). runner-fleet-health.fleet() now uses one
+    FLEET_HOST_RE including con\d+ and kk-[\w-]+, so fleet() returns all 8 declared hosts; fallback also lists con01/kk-mac.
+    dispatch_repos._FLEET_HOST_RE gained con\d+, so con01 labels {script,container,push:chaba} and served types
+    {script,container} are now visible to claim gates. devin-cli is capability-gated: con01 (script/container only)
+    and kk-mac (devin Linux-only) no longer get false boot'
+- at: 2026-11-26 09:57
+  from: tony
+  text: closed by tony
 claim:
   since: 2026-11-25 20:36
 review_kind: verify
