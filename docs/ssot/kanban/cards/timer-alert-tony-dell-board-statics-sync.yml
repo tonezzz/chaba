@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-board-statics-sync
 title: Timer board-statics-sync on tony-dell failing
 column: review
-updated: 2026-11-26 17:39
+updated: 2026-11-26 18:00
 priority: high
 tags:
 - timer-alert
@@ -94,5 +94,12 @@ comms:
   from: chaba
   text: 'stalled-claim reaper: moved doing -> review — run reported done with no live claim — the verified gate
     owns the close decision'
+- at: 2026-11-26 18:00
+  from: devin
+  text: '[ops timer batch 18:05 +07] Root cause: ~/.ssh/config Host idc03 uses ProxyJump tony-omen; idc03 sshd AllowTcpForwarding
+    no, so rsync -e ssh opened a stdio-forward channel that was administratively prohibited (255). No sshd changes
+    made. Fix: unit rsync -e now uses direct SSH (ssh -F /dev/null -i ~/.ssh/id_ed25519 tony@100.102.134.91); direct
+    probe returned direct_ok and rsync --dry-run rc=0. Backup /tmp/opencode/board-statics-unit-backup-20261126-175412.service.
+    Verified live run Result=success'
 action:
   status: done
