@@ -1,7 +1,7 @@
 id: video-queue-audit-opencode-repair
 title: 'OpenCode artifact repair: video queue audit'
 column: doing
-updated: 2026-11-26 15:16
+updated: 2026-11-26 15:26
 brief: Retry ADA-1046 with a write-capable artifact contract so the queue audit report lands and verifies.
 priority: high
 program: ai-workforce
@@ -332,6 +332,13 @@ comms:
   from: devin
   text: Running video_queue_status.py read-only against gdrive:ada-nest/kk-mac-video-pilot + gdrive:ada-nest on
     idc02; artifact -> reports/card-runner/video-queue-status-opencode.md
+- at: 2026-11-26 15:26
+  from: devin
+  text: 'DONE (devin dispatch, idc02). Read-only audit of both roots: 93 packs = 71 done / 20 queued / 2 failed;
+    0 active, 0 stale claims; 39 residual claim files on done packs (492-812h). Sacred Father: canonical v4-clean
+    preview verified live on Drive (bytes match manifest); preview-v2 confirmed deliberately held (missing -resume-authorized
+    gate). Zero drift vs 2026-11-24. Artifact: reports/card-runner/video-queue-status-opencode.md + raw JSON, committed
+    on dispatch branch b96264d8d8 (reports/card-runn'
 review_kind: verify
 claim:
   since: 2026-11-26 15:14

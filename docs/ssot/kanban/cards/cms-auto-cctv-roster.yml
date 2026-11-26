@@ -8,7 +8,7 @@ priority: medium
 note: 'last_run 1554m overdue (interval 60m). last_run=2026-11-25T01:00:00+00:00 interval=60m status=ok. Page: https://idc03.taila0626a.ts.net/cms/#/cctv-roster'
 help: 'Trigger a manual regen: cms_automation run_now for ''cctv-roster'' (or POST /api/cms/pages/cctv-roster/regenerate).
   If it repeats, check the page''s generator command in the registry doc.'
-updated: 2026-11-26 15:21
+updated: 2026-11-26 15:26
 comms:
 - at: 2026-11-25 09:38
   from: chaba
@@ -128,6 +128,13 @@ comms:
 - at: 2026-11-26 15:21
   from: devin
   text: dispatch picked up — verifying roster-audit generator state before touching anything
+- at: 2026-11-26 15:26
+  from: devin
+  text: 'Resolved as intentionally-parked, not broken. Verified via MDDB + timer-timeline pages: cam-wall-roster-audit.timer
+    is disabled on tony-omen (only remaining host; tony-dell unit retired) after MDDB write failures — matches Tony''s
+    15:15 hold. Actions: (1) live registry ada-cms-automation/cctv-roster set enabled:false + disabled_reason so
+    cms-auto-health judges ok and the card auto-closes; (2) ssot.audit.hosts.yml census corrected — dell roster-audit
+    -> expected_absent, omen roster-audit + idc03 c'
 action:
   status: running
   type: dispatch
