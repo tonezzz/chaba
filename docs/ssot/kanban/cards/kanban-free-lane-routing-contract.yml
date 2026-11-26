@@ -1,7 +1,7 @@
 id: kanban-free-lane-routing-contract
 title: 'Kanban lane-routing contract: free-first dispatch, envelope, verify, escalate'
 column: doing
-updated: 2026-11-26 22:46
+updated: 2026-11-26 23:05
 brief: 'Codify the lane-routing and closeout contract proven by the ADA-0242 free-lane pilot and the ADA-0042 runner
   fixes: exhaust free/deterministic lanes before paid_frontier and Devin; every opencode dispatch carries a complete
   lane_envelope; verification is held-out and merge-gated; escalation is deliberate and recorded.'
@@ -276,5 +276,12 @@ comms:
     queue path; kanban-dispatch skips staged-envelope cards (devin-pin escape hatch intact); runner-agent LANE_MODELS
     free_lane drift fixed to litellm/agent-local + tooling manifest pins bumped. 23 new regression tests green;
     full board suite re-running.'
+- at: 2026-11-26 23:05
+  from: devin
+  text: DONE — queue-time lane_envelope staging implemented per DECISION 2026-11-26. dispatch_repos.lane_envelope_plan()
+    derives the full S3/idc02 ops-readonly envelope from card+profile.yml; board-api._apply_classify_at_queue stages
+    it on all queue paths (executor=opencode + agent_profile + task_class + artifact + target_host:idc02 + lane_envelope).
+    kanban-dispatch skips staged-envelope cards so devin never steals them; executor=devin pin escape hatch intact.
+    Also fixed runner-agent LANE_MODELS free_la
 claim:
   since: 2026-11-26 21:38
