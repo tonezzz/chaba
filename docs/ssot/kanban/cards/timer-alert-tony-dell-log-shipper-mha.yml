@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-log-shipper-mha
 title: Timer log-shipper-mha on tony-dell failing
 column: done
-updated: 2026-11-26 09:21
+updated: 2026-11-26 20:37
 priority: high
 tags:
 - timer-alert
@@ -57,6 +57,10 @@ comms:
 - at: 2026-11-26 09:21
   from: devin
   text: closed by devin
+- at: 2026-11-26 20:37
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of the `log-shipper-mha.service` timer on the host `tony-dell` by inspecting the user
   journal using `journalctl --user -u log-shipper-mha.service`. The target host is `tony-dell` and the associated
   repository context references `chaba`. The done-condition is verified when the root cause of the exit-code failure
