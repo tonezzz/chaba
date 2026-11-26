@@ -1,7 +1,7 @@
 id: investigate-devin-handoff-job-ledger-ter-408e7a
 title: Investigate devin-handoff job-ledger terminal writes (1176/1555 stuck running)
 column: review
-updated: 2026-11-26 19:58
+updated: 2026-11-26 20:09
 note: 'Found while building devin-dispatch-tg-watch (card implement-and-track-devin-telegram-repor-fc0dc7): the
   shared dispatch ledger in MDDB ada-ha-bank-devin-handoff has 1555 job/answer docs but 1176 still say status=running
   — 268 of the 323 docs touched in the last 7d never got a terminal write (done 186 / failed 119 / superseded 72
@@ -195,6 +195,10 @@ comms:
 - at: 2026-11-26 19:58
   from: chaba
   text: 'worktree kept: dirty — 2 uncommitted file(s)'
+- at: 2026-11-26 20:09
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261126-193351-investigate-why-the-shared-dis on tony-macbook still
+    dirty — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 spec: 'Investigate why the shared dispatch ledger in MDDB ada-ha-bank-devin-handoff has 1176 out of 1555 job/answer
   docs stuck with status=running, specifically examining whether mddb_job writes are failing to land due to runner-agent
   drift across hosts. Inspect the ledger docs and runner behavior to identify the root cause of missing terminal
@@ -211,6 +215,8 @@ action:
   result: 'exit=0 me-20261126-193351-investigate-why-the-shared-dis.md` carries the summary plus lessons. | devin-task-20261126-193351-investigate-why-the-shared-dis.service:
     Consumed 1min 52.670s CPU time over 23min 7.438s wall clock time, 1.1G memory peak.'
   verified: false
+  sweep:
+    dirty: 2
 claim:
   since: 2026-11-26 19:32
 review_kind: verify
