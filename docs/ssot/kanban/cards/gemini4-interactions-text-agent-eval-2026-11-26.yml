@@ -1,0 +1,21 @@
+id: gemini4-interactions-text-agent-eval-2026-11-26
+title: Evaluate Gemini 4 + Interactions API for a stateful text agent
+column: backlog
+updated: 2026-11-26 19:11
+brief: Compare gemini-4-hydrogen/neon via the Interactions API against the current 3.x stateless text path on a
+  small multi-turn tool-and-recall task set; measure task accuracy, token growth and latency.
+priority: medium
+program: devnest
+tags:
+- gemini
+- eval
+- agent
+spec: Read-only eval on idc03 with GEMINI_API_KEY_MICHAEL (paid project capped). Use google-genai >=3.2 Interactions
+  API, stateful previous_interaction_id vs stateless full-history path, and a fixed 8-task set with tool calls and
+  cross-turn recall. No key/billing/gateway/pin or production agent changes. Record in docs/ssot/jobs/devnest job
+  yml, commit/push; no wiki publish without a separate go-ahead.
+ref: ADA-1451
+comms:
+- at: 2026-11-26 19:11
+  from: ada
+  text: card captured via board-api
