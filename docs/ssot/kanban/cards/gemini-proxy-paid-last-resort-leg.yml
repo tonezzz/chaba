@@ -1,7 +1,7 @@
 id: gemini-proxy-paid-last-resort-leg
 title: 'gemini-ollama-proxy: add paid-Gemini leg between free and Ollama (bounded outage spend)'
-column: doing
-updated: 2026-11-26 23:39
+column: review
+updated: 2026-11-26 23:48
 priority: low
 tags:
 - mddb
@@ -327,6 +327,35 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261126-230122-add-a-paid-gemini-leg-after-fr on tony-dell still dirty
     — 4 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-26 23:48
+  from: tony-dell
+  text: 'finished (ok): exit=0 , so the unit should not be restarted until that''s reconciled. | devin-task-20261126-230122-add-a-paid-gemini-leg'
+- at: 2026-11-26 23:48
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-26 23:48
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261126-230122-add-a-paid-gemini-leg-after-fr'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 4 le'
+- at: 2026-11-26 23:48
+  from: chaba
+  text: banked 52 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 23:48
+  from: chaba
+  text: pushed dispatch/20261126-230122-add-a-paid-gemini-leg-after-fr to origin
+- at: 2026-11-26 23:48
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_board_api_liveness.py tests/board/test_kanban_act.py
+    tests/board/test_wiki_extension.py tests/board/test_board_ap
+- at: 2026-11-26 23:48
+  from: chaba
+  text: auto-merged 76fbfcb2 (dispatch/20261126-230122-add-a-paid-gemini-leg-after-fr) → origin/master
+- at: 2026-11-26 23:48
+  from: chaba
+  text: 'worktree kept: dirty — 4 uncommitted file(s)'
 spec: 'Add a paid-Gemini leg AFTER free-Gemini and BEFORE Ollama in ~/.config/containers/mddb/proxy/gemini-ollama-proxy.mjs
   (fetchBackupBatch), passing GEMINI_API_KEY_PAID through the container env. Intended for outage windows only (OR
   401 + free key 429), never normal operation. Document the vector-space caveat (paid vs free embeddings) and a
@@ -335,12 +364,16 @@ spec: 'Add a paid-Gemini leg AFTER free-Gemini and BEFORE Ollama in ~/.config/co
   or print any key.'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   attempts: 1
   runner: tony-dell
   sweep:
     stale_running: 2026-11-26 23:39
     dirty: 4
+  result: 'exit=0 , so the unit should not be restarted until that''s reconciled. | devin-task-20261126-230122-add-a-paid-gemini-leg-after-fr.service:
+    Consumed 6min 58.745s CPU time over 34min 5.847s wall clock time, 1.9G memory peak, 544.4M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-26 23:00
+review_kind: verify
