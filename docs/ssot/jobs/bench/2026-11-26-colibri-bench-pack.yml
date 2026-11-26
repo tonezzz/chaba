@@ -1,0 +1,75 @@
+id: jobs/bench/2026-11-26-colibri-bench-pack
+title: colibri-bench pack rework — local-colibri lane + spec-aligned pack
+card: colibri-bench-qwen3-6-35b-on-omen-vs-gpt-8ea5a0   # BEN-0814
+date: 2026-11-26
+runner: con01 (dispatch worktree; pack not staged — staging is
+        nest-pack-submit from a gdrive-rclone host, then any fitting
+        worker claims)
+status: done
+
+what_changed:
+  bench_script: >-
+    scripts/bench-edu-manage.py gained a `local-colibri` lane: --lanes
+    local-colibri --openai-base <url> --model <served-id>
+    [--openai-key --openai-timeout]. Same OpenClaw-shaped AgentLane as
+    hermes/clawbot, so the run is directly comparable to gpt-oss:20b and
+    hermes3:8b rows. Verified end-to-end against a stub /v1 server.
+  pack: >-
+    scripts/colab/packs/colibri-bench/pack.yml realigned to the card
+    spec: start-here.sh --model qwen36-35b --yes --backend cuda (cpu
+    fallback), coli serve --model-id qwen3.6-35b, bench --lanes
+    local-colibri --openai-base http://127.0.0.1:8000/v1 --model
+    qwen3.6-35b, artifacts out/colibri-bench-*.json/.md, needs gpu_gb 3
+    ram_gb 20 disk_gb 35, venv true, timeout_s 10800.
+  vendored_inputs: >-
+    inputs/chaba/ carries bench-edu-manage.py + bench-edu-corpus.json +
+    ada/{gemini_rest,lesson-miner}.py — the pack is hash-bound to the
+    local-colibri bench version and needs no chaba clone at run time
+    (same pattern as edu-agent-bench).
+
+fixed_vs_previous_pack:
+  - >-
+    catalog id: previous pack passed --model qwen3.6-colibri to setup,
+    which is not a setup_catalog id (qwen3.6-colibri is the qwen36
+    family's DEFAULT SERVED model-id) — coli setup would have failed.
+    Correct catalog id is qwen36-35b.
+  - >-
+    served-id pinning: colibri's /v1 404s any request whose model !=
+    the served model-id. Pack now serves --model-id qwen3.6-35b and the
+    bench asks for exactly that.
+  - >-
+    model moved out of $PACK_DIR: nest-worker pushes the whole workdir
+    back to the store after run — a 23GB model inside it meant a 23GB
+    Drive upload. Model now lives at ~/colibri-models (also keeps it
+    off Drive-FUSE if a Colab T4 claims the pack).
+  - >-
+    dash-safe prep: `cmd | tail || fallback` returns tail's rc (no
+    pipefail in /bin/sh) — the cpu fallback could never fire. Setup now
+    logs to a file and the || chain is POSIX-correct.
+  - >-
+    curl mini-bench fallback: on agent-lane failure the run step writes
+    colibri-bench-*-minibench.json/.md (3 raw /chat/completions probes,
+    latency + tok/s) instead of raising — a tool-loop failure IS the
+    card's capability answer and losing it to a `failed` marker would
+    just burn another download cycle.
+
+lane_steering:
+  gpu_gb: >-
+    spec allowed "0 (CPU) or 3 (CUDA 1650)"; kept 3. needs is a
+    capability floor, not a selector — gpu_gb 0 would let every CPU-only
+    fleet host claim the pack and burn a 3h slot on a ~5 tok/s CPU run
+    (already measured). 3 admits omen's 1650 and a Colab T4 only; the
+    cpu backend fallback still serves omen when its 1650 lacks the CUDA
+    toolkit.
+  known_hold: >-
+    earlier card comms flag /data on omen at ~38G free vs the card's
+    ~83G figure — the pack needs only disk_gb 35 (model 23GB) and
+    measures statvfs('/') anyway; worth re-checking omen free space
+    before staging.
+
+verify:
+  - python3 -c 'yaml.safe_load + compile(run)' — ok
+  - bash -n && dash -n on prep — ok
+  - nest-pack-submit --dry-run — "pack colibri-bench: valid"
+  - vendored bench e2e vs stub /v1 — lane posts, tool calls execute,
+    out json+md written

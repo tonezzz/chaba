@@ -1,7 +1,7 @@
 id: ansible-prep-plan-apply-verify
 title: Ansible prep→plan→apply→verify workflow standard
 column: done
-updated: 2026-11-26 14:25
+updated: 2026-11-26 15:23
 brief: Standardize Ansible for preparation/baselines, check-diff plan artifacts, gated apply, and verified closeout
   to increase fleet efficiency.
 priority: medium
@@ -240,6 +240,21 @@ comms:
   from: chaba
   text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261126-135732-objective-define-and-pilot-an-,
     branch dispatch/20261126-135732-objective-define-and-pilot-an- on con01'
+- at: 2026-11-26 15:22
+  from: devin
+  text: 'ada-ocb-preflight 20261126T082156Z: ok=0 drift=0 fail=2 unreachable=0 probed=2/2. edge=200. artifact=/home/tony/CascadeProjects/chaba/ansible/playbooks/../../reports/ansible-benchmark/ada-ocb-preflight/20261126T082156Z/summary.yml
+    card=OPS-1424'
+- at: 2026-11-26 15:22
+  from: devin
+  text: 'ada-ocb-preflight 20261126T082214Z: ok=0 drift=0 fail=2 unreachable=0 probed=2/2. edge=200. artifact=/home/tony/CascadeProjects/chaba/ansible/playbooks/../../reports/ansible-benchmark/ada-ocb-plan/20261126T082214Z/summary.yml
+    card=OPS-1424'
+- at: 2026-11-26 15:23
+  from: devin
+  text: 'Step 4 dry-run (2026-11-26, tony-dell controller, --limit idc02,localhost, read-only): preflight+plan PASS
+    as runs; evidence shows drift. idc02 (primary) fail: web 2.8.0!=2.7.3 (drift), cli 2.4.2!=2.4.1 (drift), patch_present
+    False (fail); units/bind/local/startup_mode/litellm OK; edge 200 CSP ok. tony-dell fallback probe incomplete
+    in this run (web/cli/local unknown). upgrade --check --diff -e card_ref=OPS-1424 failed at post-gate contract
+    assert as expected (no mutation, ocb_change_approved=fa'
 action:
   type: dispatch
   status: done

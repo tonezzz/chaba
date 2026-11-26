@@ -1,7 +1,7 @@
 id: budget-watch-ada-dev-2
 title: 'budget-watch: ada-dev-2 at cap — ada-dev-2: $10.004/$10 (100%), reset 2026-12-01 00'
-column: review
-updated: 2026-11-26 09:30
+column: done
+updated: 2026-11-26 15:24
 brief: 'LiteLLM virtual key ada-dev-2 hit its budget cap: ada-dev-2: $10.004/$10 (100%), reset 2026-12-01 00:00:00
   — AT/OVER cap, calls are being 422''d'
 priority: high
@@ -77,3 +77,15 @@ comms:
   text: '[triage 2026-11-26] Still active: ada-dev-2 reported $10.004/$10 cap; card note says raise the cap or wait
     for reset 2026-12-01 00:00. No cap change made in this pass. Leaving in review until reset, then close if the
     budget has rolled over.'
+- at: 2026-11-26 15:24
+  from: tony
+  text: '[resolved 15:25 +07] Approved cap raise executed on idc03 via POST /key/update: ada-dev-2 max_budget 10
+    -> 20 USD / 30d. Identified by key_alias only (no key value sent); captured pre-change metadata (9-model allowlist
+    + reset) to /tmp/opencode/ada-dev-2-key-backup.json (0600) and passed the allowlist explicitly to guard against
+    the old clobber bug. Verified after: max_budget=20, budget_duration=30d, budget_reset_at still 2026-12-01T00:00:00Z,
+    spend unchanged 10.0035, models byte-identical. Live'
+- at: 2026-11-26 15:24
+  from: tony
+  text: closed by tony
+action:
+  status: done

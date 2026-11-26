@@ -1,7 +1,7 @@
 id: nest-mgr-v2-actuation
 title: Spec + pilot nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
-column: review
-updated: 2026-11-26 13:35
+column: done
+updated: 2026-11-26 15:24
 brief: Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes
   eligible queued work to idle hosts — without bypassing owner/quota/leash gates. Build on the v1 census and the
   devnest-capacity-aware-dispatch lane machinery.
@@ -535,6 +535,16 @@ comms:
     only persistent failure (kk-mac-model-status on idc02) is an orphaned unit missing its script and cannot be
     fixed by a restart (OPS-1348). Recommend: keep monitor/recommend mode, allowlist only real restart-repairable
     units via NEST_RESTART_OK=1, then re-soak 7d. Hold the Phase-1 as'
+- at: 2026-11-26 15:24
+  from: tony
+  text: '[approved 15:25 +07] Full actuation approved by Tony (override of the 13:35 keep-held recommendation).
+    Phases 1+2 enabled on the three pilot hosts only (idc02/con01/mn01): mode file -> guarded and actuation.on created
+    at ~15:22 with backups in ~/.local/share/nest/backups/approve-full-actuation-20261126-1522*. Verified after
+    one 60s tick (15:24): requested=guarded, effective=guarded, opted_in=true, zero executions on all three. Safety
+    gates intact: no kill switch, no host/unit circuits, restart-a'
+- at: 2026-11-26 15:24
+  from: tony
+  text: closed by tony
 action:
   type: dispatch
   status: done

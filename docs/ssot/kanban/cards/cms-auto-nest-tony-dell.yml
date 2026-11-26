@@ -2,14 +2,14 @@ id: cms-auto-nest-tony-dell
 title: CMS automation `nest-tony-dell` stale
 brief: A scheduled report-page job ('nest-tony-dell') is stale. Re-run it or check the generator — details in the
   note.
-column: backlog
+column: review
 review_kind: triage
 generated: cms-auto-health
 priority: medium
 note: 'last_run 3041m overdue (interval 15m). last_run=2026-11-24T00:58:02+00:00 interval=15m status=ok. Page: https://idc03.taila0626a.ts.net/cms/#/nest-tony-dell'
 help: 'Trigger a manual regen: cms_automation run_now for ''nest-tony-dell'' (or POST /api/cms/pages/nest-tony-dell/regenerate).
   If it repeats, check the page''s generator command in the registry doc.'
-updated: 2026-11-26 15:16
+updated: 2026-11-26 15:23
 comms:
 - at: 2026-11-24 08:57
   from: chaba
@@ -137,9 +137,81 @@ comms:
 - at: 2026-11-26 15:16
   from: chaba
   text: '[auto-dispatch] wave 14 (2026-11-26 15:16): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-26 15:16
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-26 15:16
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-26 15:17
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.94 > 0.7)'
+- at: 2026-11-26 15:17
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-26 15:17
+  from: chaba
+  text: 'kk-mac defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-26 15:18
+  from: chaba
+  text: 'tony-omen defers: host overloaded (5m load/core 0.93 > 0.8)'
+- at: 2026-11-26 15:18
+  from: mn01
+  text: claimed
+- at: 2026-11-26 15:19
+  from: chaba
+  text: started devin-task-20261126-151927-cms-automation-nest-tony-dell- on mn01 (dispatch)
+- at: 2026-11-26 15:19
+  from: chaba
+  text: 'primer injected 8 lesson(s): "notebooklm-rest retired" in ssot.values.yml was wrong — REST migrated to
+    idc02;; Drift flags flap transiently: chaba-repo-sync updates the checkout copy, and unt; VERIFY-QUEUE triage
+    can re-hold an already-merged card on a stale "no committed ; `_self_stale_check`/`_claimable` gate every claim
+    on installed==checkout-ref byt; idc02''s kanban-dispatch.service was a linked unit running a stale scripts/-only
+    ; [ada-nest-drive-store-hardening-stale-cla-558c90] primer inje'
+- at: 2026-11-26 15:20
+  from: devin
+  text: '[dispatch 2026-11-26] Root cause confirmed unchanged: nest-mgr.service on tony-dell still intentionally
+    stopped (Tony hold 15:15 — restart-v1 vs v2-pilot decision pending). Applied the designed hold: set enabled=false
+    (+disabled_reason) on MDDB registry ada-cms-automation/nest-tony-dell — cms-auto-health judge() returns ok/disabled,
+    so no more stale cards; card auto-closes after 2 green ticks on next kanban-sync. Reversible: flip enabled=true
+    when the generator restarts (nest-mgr publish preserv'
+- at: 2026-11-26 15:23
+  from: mn01
+  text: 'finished (ok): exit=0 ell-.md` and the card has a final comms entry; the restart-vs-retire decision remains
+    Tony''s. | devin-task-202611'
+- at: 2026-11-26 15:23
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-26 15:23
+  from: chaba
+  text: 'session-end checkpoint 2b0e7ac8: 1 leftover file(s) committed'
+- at: 2026-11-26 15:23
+  from: chaba
+  text: banked 757 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 15:23
+  from: chaba
+  text: pushed dispatch/20261126-151927-cms-automation-nest-tony-dell- to origin
+- at: 2026-11-26 15:23
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-26 15:23
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
 action:
-  status: queued
+  status: done
   type: dispatch
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: mn01
+  attempts: 1
+  result: 'exit=0 ell-.md` and the card has a final comms entry; the restart-vs-retire decision remains Tony''s.
+    | devin-task-20261126-151927-cms-automation-nest-tony-dell-.service: Consumed 3.169s CPU time over 1min 49.759s
+    wall clock time, 277M memory peak.'
+  verified: false
+claim:
+  since: 2026-11-26 15:18

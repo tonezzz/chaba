@@ -1,14 +1,14 @@
 id: cms-auto-cctv-roster
 title: CMS automation `cctv-roster` stale
 brief: A scheduled report-page job ('cctv-roster') is stale. Re-run it or check the generator — details in the note.
-column: backlog
+column: doing
 review_kind: triage
 generated: cms-auto-health
 priority: medium
 note: 'last_run 1554m overdue (interval 60m). last_run=2026-11-25T01:00:00+00:00 interval=60m status=ok. Page: https://idc03.taila0626a.ts.net/cms/#/cctv-roster'
 help: 'Trigger a manual regen: cms_automation run_now for ''cctv-roster'' (or POST /api/cms/pages/cctv-roster/regenerate).
   If it repeats, check the page''s generator command in the registry doc.'
-updated: 2026-11-26 15:16
+updated: 2026-11-26 15:21
 comms:
 - at: 2026-11-25 09:38
   from: chaba
@@ -97,9 +97,44 @@ comms:
 - at: 2026-11-26 15:16
   from: chaba
   text: '[auto-dispatch] wave 14 (2026-11-26 15:16): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-26 15:16
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-26 15:16
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-26 15:17
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.94 > 0.7)'
+- at: 2026-11-26 15:17
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-26 15:17
+  from: chaba
+  text: 'kk-mac defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-26 15:18
+  from: chaba
+  text: started devin-task-20261126-151845-cms-automation-cctv-roster-sta on tony-macbook (dispatch)
+- at: 2026-11-26 15:18
+  from: chaba
+  text: 'primer injected 8 lesson(s): Drift flags flap transiently: chaba-repo-sync updates the checkout copy, and
+    unt; VERIFY-QUEUE triage can re-hold an already-merged card on a stale "no committed ; `_self_stale_check`/`_claimable`
+    gate every claim on installed==checkout-ref byt; idc02''s kanban-dispatch.service was a linked unit running
+    a stale scripts/-only ; [ada-nest-drive-store-hardening-stale-cla-558c90] primer injected 8 lesson(s): [; [audit-miss-cms-page-devin-session-audit-2026-10-17]
+    primer i'
+- at: 2026-11-26 15:21
+  from: devin
+  text: dispatch picked up — verifying roster-audit generator state before touching anything
 action:
-  status: queued
+  status: running
   type: dispatch
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: tony-macbook
+  attempts: 1
+claim:
+  since: 2026-11-26 15:17
