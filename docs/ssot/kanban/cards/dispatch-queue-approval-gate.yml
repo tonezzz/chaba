@@ -1,7 +1,7 @@
 id: dispatch-queue-approval-gate
 title: Dispatch queue approval gate (RBAC-lite) — /home/tony/ansible on idc02
 column: review
-updated: 2026-11-26 13:06
+updated: 2026-11-26 13:09
 priority: medium
 tags:
 - dispatch
@@ -140,6 +140,10 @@ comms:
 - at: 2026-11-26 13:06
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-26 13:09
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261126-123407-follow-up-from-card-awx-aap-rb on tony-macbook still
+    dirty — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: done
@@ -151,6 +155,8 @@ action:
   result: 'exit=0  to con01/idc02/idc03 currently fail — only omen/dell (podman 5.7) can run containers. | devin-task-20261126-123407-follow-up-from-card-awx-aap-rb.service:
     Consumed 2min 28.665s CPU time over 28min 15.782s wall clock time, 2.4G memory peak.'
   verified: false
+  sweep:
+    dirty: 1
 claim:
   since: 2026-11-26 12:33
 review_kind: verify
