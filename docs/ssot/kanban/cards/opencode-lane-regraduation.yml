@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: doing
-updated: 2026-11-26 21:16
+updated: 2026-11-26 21:17
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -485,6 +485,10 @@ comms:
     to S0: 4 scope_violation safety-critical rows in the post-2026-11-13 S1 ledger (39 rows: 3 genuine canary attempts
     + 36 gate-run test rows, all human_minutes=0). Scope violations look like false positives — _git_status() diff
     caught unrelated churn in shared exec checkout du'
+- at: 2026-11-26 21:17
+  from: devin
+  text: 'raised request s1-s2-path-poisoned-ledger: S1 gate returns ROLLBACK, not promote: lane sits at S1 (since
+    Nov-23) with a polluted ledger — 39 post-qualification S1 '
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
@@ -545,6 +549,23 @@ requests:
   - proceed
   - hold
   answer: A
+- id: s1-s2-path-poisoned-ledger
+  ask: 'S1 gate returns ROLLBACK, not promote: lane sits at S1 (since Nov-23) with a polluted ledger — 39 post-qualification
+    S1 rows = 3 genuine canaries + 36 OPS-1363 agent-local gate-run tests (Nov-25, human_minutes=0, incl. 4 scope_violation
+    likely false positives from shared-checkout churn). jobs_completed S1=15/15. To run your S1->S2 decision the
+    lane needs demote S1->S0 + requalify (operator decision) + fresh S0 (5 fixtures, unattended, ~$0) + promote
+    S1 + watched canary that needs YOU live at a terminal ~10min + promote S2 + 5-job pilot with independent_devin
+    review. Evidence: evals/opencode-lane/reports/2026-11-26-promotion-review.json + docs/ssot/jobs/devnest/2026-11-26-opencode-lane-s1-gate-state.yml.
+    How to proceed?'
+  status: open
+  at: 2026-11-26 21:17
+  from: devin
+  options:
+  - 'A — proceed: demote+requalify+fresh S0 now, pause for your live watch on the S1 canary, then S2 pilot'
+  - B — hold lane at S1; card a mechanism fix first (isolated-worktree scope check or epoch/void for non-canary
+    traffic)
+  - C — adjudicate the Nov-25 rows differently (specify)
+  suggested: 'A — proceed: demote+requalify+fresh S0 now, pause for your live watch on the S1 canary, then S2 pilot'
 action:
   type: dispatch
   status: running
