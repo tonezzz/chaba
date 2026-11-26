@@ -1,0 +1,86 @@
+---
+# deploy-devin-dispatch-watch.yml — force-pinned convergence of the watcher.
+#
+# Why a separate playbook: deploy-runner-tools.yml converges every pinned
+# tool at once and restarts runner-agent via a handler. This play touches
+# ONLY devin-dispatch-watch, so the 2026-11-26 backfill-cap rollout cannot
+# accidentally redeploy or restart unrelated tools on the watch hosts.
+# Content hash beats mtime (same pattern as deploy-devin-dispatch.yml).
+#
+# Usage (from ansible/, controller = tony-dell):
+#   ansible-playbook playbooks/deploy-devin-dispatch-watch.yml --check --diff --limit tony-omen,mn01
+#   ansible-playbook playbooks/deploy-devin-dispatch-watch.yml --limit tony-omen,mn01
+#
+# No handler: devin-dispatch-watch is a oneshot timer service; the next
+# 5-minute tick picks up the new file. An in-flight pass keeps the old
+# script until it exits.
+
+- name: Converge pinned devin-dispatch-watch on selected hosts
+  hosts: all:!macos:!disabled
+  gather_facts: true
+  become: false
+
+  vars:
+    tool_manifest: "{{ playbook_dir }}/../../scripts/devin/runner-tooling.manifest.json"
+    tool_meta: "{{ (lookup('file', tool_manifest) | from_json).tools.devin_dispatch_watch }}"
+    tool_src: "{{ playbook_dir }}/../../{{ tool_meta.source }}"
+    tool_dest: "{{ ansible_user_dir }}/.local/bin/{{ tool_meta.dest }}"
+    tool_pin: "{{ tool_meta.sha256 }}"
+
+  tasks:
+    - name: Stat pinned source on the controller
+      ansible.builtin.stat:
+        path: "{{ tool_src }}"
+        get_checksum: true
+        checksum_algorithm: sha256
+      register: source_stat
+      run_once: true
+      delegate_to: localhost
+
+    - name: Fail if the controller source is not the manifest pin
+      ansible.builtin.assert:
+        that:
+          - source_stat.stat.checksum == tool_pin
+        fail_msg: >-
+          {{ tool_src }} does not match manifest pin {{ tool_pin }} —
+          update the pin in the same commit as the script change
+      run_once: true
+      delegate_to: localhost
+
+    - name: Ensure ~/.local/bin exists
+      ansible.builtin.file:
+        path: "{{ ansible_user_dir }}/.local/bin"
+        state: directory
+        mode: "0755"
+
+    - name: Deploy pinned devin-dispatch-watch (backup installed copy)
+      ansible.builtin.copy:
+        src: "{{ tool_src }}"
+        dest: "{{ tool_dest }}"
+        mode: "0755"
+        backup: true
+      register: deploy
+
+    - name: Verify installed devin-dispatch-watch hash
+      ansible.builtin.stat:
+        path: "{{ tool_dest }}"
+        get_checksum: true
+        checksum_algorithm: sha256
+      register: installed
+      when: not ansible_check_mode
+
+    - name: Fail if installed hash is not the pin
+      ansible.builtin.assert:
+        that:
+          - installed.stat.checksum == tool_pin
+        fail_msg: >-
+          {{ inventory_hostname }}: {{ tool_dest }} hash
+          {{ installed.stat.checksum }} != pin {{ tool_pin }}
+      when: not ansible_check_mode
+
+    - name: Report convergence result
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }}:
+          {{ 'REDEPLOYED' if (deploy.changed | default(false)) else 'in-sync' }}
+          (backup {{ deploy.backup_file | default('none') }})

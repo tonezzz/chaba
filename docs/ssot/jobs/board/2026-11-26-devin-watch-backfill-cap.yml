@@ -1,0 +1,72 @@
+id: devin-watch-backfill-cap
+title: devin-dispatch-watch — bounded reporting per pass (no notification flood)
+card: devin-task-error-rapid-repeat-tg
+date: 2026-11-26
+host: tony-omen (symptom); mn01 (other watch host)
+status: fix-implemented-rollout-verified
+
+summary: >
+  The fixed devin-dispatch-watch build (commit acb050897e, deployed to
+  tony-omen at 21:01 +07) correctly withheld meta.json stamps when MDDB
+  writes failed. On its first pass it therefore treated 146 old, never
+  stamped failed devin-task dirs (Nov 8-19, all exit=1, mostly timer-driven
+  failures from the earlier dispatch storm) as unreported and fired an
+  event + push + job doc for each — one task every ~1.2s from 21:06:46 to
+  21:08:24. Later passes (21:10/21:15/21:20) reported zero tasks: the
+  backlog was drained and stamped, so the flood was a one-time backfill,
+  not an active loop. The watcher had no per-pass bound, so a future
+  backlog could flood again.
+
+root_cause:
+  - id: unstamped-backlog-replay
+    what: >
+      Older installed watcher generations stamped tasks as notified even
+      when the terminal ledger doc was never written (mddb_job() ended in
+      `return 0`). The corrected build gates notified_fu on both MDDB
+      writes and adds per-channel chan_fu idempotency, so a large set of
+      historically unstamped tasks became eligible in a single tick.
+    evidence: >
+      journalctl --user -u devin-dispatch-watch.service on tony-omen:
+      146 distinct "task ... finished: unit=(collected,exit=1)" lines
+      between 21:06:46 and 21:08:24 +07; sample meta.json for
+      20261108-152119-timer-log-shipper-on-idc03-fai shows event_at /
+      notify_at / jobdoc_at all at 21:06:50 and notified_fu=0, chan_fu=0.
+      mn01 (same build) had 5 task reports that day, no burst.
+
+fix:
+  file: scripts/devin/devin-dispatch-watch.sh
+  changes:
+    - Visit task dirs newest-first (ls -1dt) so a fresh completion is never
+      starved behind an old backfill.
+    - WATCH_MAX_REPORTS_PER_PASS (default 20) caps how many eligible tasks
+      may report channels in one tick; the rest stay unstamped and are
+      deferred to the next tick.
+    - 'Log "backfill: N eligible task(s) deferred to next pass ..." when the cap is hit.'
+  pin:
+    manifest: scripts/devin/runner-tooling.manifest.json
+    tool: devin_dispatch_watch
+    old_sha256: 747034f27b06d3bda2a3d11aad7032e3ccb273725a453e60148d38a72b7bd78c
+    new_sha256: 364aaa0319b510c27081dcba0563a571db418aa7aa8b50fa8f87396c212ec04c
+
+verification:
+  - 'bash -n on the patched script: OK'
+  - 'Functional test with 25 fabricated failed task dirs, all channels muted: 20 reported/stamped, 5 deferred, deferred log line present.'
+  - 'ansible --check --diff --limit tony-omen,mn01: see rollout log below.'
+  - 'Post-deploy: installed sha256 == pin; next watch tick reports zero tasks and emits no deferred line; no repeat burst.'
+
+rollout:
+  playbook: ansible/playbooks/deploy-devin-dispatch-watch.yml
+  targets: [tony-omen, mn01]
+  backup: 'ansible copy: backup=true (timestamped sibling on each host)'
+  no_service_restart: oneshot timer picks up the new file on the next tick
+
+rollback: >
+  Restore the timestamped ~/.local/bin/devin-dispatch-watch.<stamp> backup
+  on the affected host and revert the manifest pin. The change is a shell
+  script only — no state files are mutated by the rollback.
+
+note_on_tg: >
+  The watcher emits to the chaba event feed and HA mobile_app_tony_ip push;
+  idc03's Telegram publish outbox had no new events after 19:40 local, so
+  the rapid errors seen in Telegram were most likely the separate
+  @myChabaBot OpenRouter fallback loop, not this notification path.

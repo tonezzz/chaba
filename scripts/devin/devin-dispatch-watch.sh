@@ -19,6 +19,11 @@
 # feed; WATCH_JOB_DOC=0 skips the mddb job doc. All still stamp meta.json,
 # so a one-shot quiet run (WATCH_NOTIFY=0 WATCH_EVENTS=0) backfills job
 # docs for old tasks without spamming — used when the timer was missing.
+# WATCH_MAX_REPORTS_PER_PASS (default 20) bounds how many finished tasks may
+# fire their channels in one tick; the rest are left unstamped for the next
+# pass. Tasks are visited newest-first so a fresh completion is never
+# starved behind an old backfill. 2026-11-26: 146 unstamped old failures
+# were reported in ~100s on tony-omen when the corrected watcher landed.
 #
 # Install: systemd/devin-dispatch-watch.{service,timer} -> user units.
 set -uo pipefail
@@ -281,12 +286,19 @@ EVENT_LOG_LOCAL="$EVENT_LOG"
 HA_URL_LOCAL="$HA_URL"
 
 shopt -s nullglob
-for d in "$DISPATCH_DIR"/tasks/*/; do
+max_reports="${WATCH_MAX_REPORTS_PER_PASS:-20}"
+reported=0
+deferred=0
+while IFS= read -r d; do
     id=$(basename "$d")
     [ -f "$d/meta.json" ] || continue
     fu=$(latest_fu "$d")
     already_done "$d" "$fu" && continue
     any_active "$id" && continue
+    if [ "$reported" -ge "$max_reports" ]; then
+        deferred=$((deferred + 1))
+        continue
+    fi
 
     read -r unit state result <<<"$(latest_unit "$id")"
     if [ -z "${unit:-}" ]; then
@@ -394,7 +406,9 @@ for d in "$DISPATCH_DIR"/tasks/*/; do
     [ "$jobdoc_ok" = "1" ] || mddb_ok=0
     [ -n "$chans" ] || log "WARN: all channels failed for $id — will retry next run"
     meta_stamp "$d" "${result:-unknown}" "$fu" "$chans" "$mddb_ok"
-done
+    reported=$((reported + 1))
+done < <(ls -1dt "$DISPATCH_DIR"/tasks/*/ 2>/dev/null)
+[ "$deferred" -gt 0 ] && log "backfill: $deferred eligible task(s) deferred to next pass (WATCH_MAX_REPORTS_PER_PASS=$max_reports)"
 
 # P4: keep focus-inbox entries in sync with the ada-ha-bank-devin-handoff
 # bank so repo triage picks up pending Ada-written specs. Best-effort —
