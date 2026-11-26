@@ -1,7 +1,7 @@
 id: gemini4-interactions-text-agent-eval-2026-11-26
 title: Evaluate Gemini 4 + Interactions API for a stateful text agent
 column: doing
-updated: 2026-11-26 19:18
+updated: 2026-11-26 19:32
 brief: Compare gemini-4-hydrogen/neon via the Interactions API against the current 3.x stateless text path on a
   small multi-turn tool-and-recall task set; measure task accuracy, token growth and latency.
 priority: medium
@@ -62,6 +62,12 @@ comms:
     VERIFY COMPLETE (attempt 2, tony-omen). Done-condi; [llm-provider-verification-2026-11] 2026-11-23 — step 4
     attempted (read-only key; [ops-retry-storm-detection] DONE: retry-storm-watch delivered repo-side. scripts;
     [stagger-idc03-timer-herd] primer injected 8 lesson(s): [ops-'
+- at: 2026-11-26 19:32
+  from: devin
+  text: 'probe on idc03: google-genai 3.6.1 venv at /tmp/gemini-eval-venv; Interactions API needs api_version=v1beta;
+    function_call/function_result steps verified on gemini-3-flash-preview. gemini-4-neon/argon/carbon = 429 (0
+    free-tier quota on MICHAEL key), gemini-4-hydrogen = 503 high-demand (retrying), gemini-3.5/3.6-flash daily
+    quota exhausted. Building 8-task tool+recall harness now.'
 action:
   type: dispatch
   status: running
