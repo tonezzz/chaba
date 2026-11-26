@@ -1,7 +1,7 @@
 id: timer-alert-idc02-retry-storm-watch
 title: Timer retry-storm-watch on idc02 failing
-column: backlog
-updated: 2026-11-26 23:14
+column: done
+updated: 2026-11-26 23:26
 priority: high
 tags:
 - timer-alert
@@ -18,3 +18,15 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-26 22:56) of `retry-storm-watch.service` on `idc02` result=exit-code —
     investigate journal: `journalctl --user -u retry-storm-watch.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-26 23:26
+  from: tony
+  text: 'FALSE POSITIVE / RESOLVED 2026-11-26: retry-storm-watch exits 1 only when its board-inbox alert cannot
+    be filed — ''alert filed'' and ''alert muted (deduped)'' are the job''s normal result, not a crash. job-health-sweep
+    already credits these via expected_alert_exit (PR #247, merged cf7df02f51); PR #249 changes retry-storm-watch
+    to exit 0 on handled alerts so timer-sentinel stops misclassifying them. Live run on idc02 after the fix: ''alert
+    filed: cpu-hot:mddb'' + ''alert muted (deduped): log-storm:mddb-'
+- at: 2026-11-26 23:26
+  from: tony
+  text: closed by tony
+action:
+  status: done
