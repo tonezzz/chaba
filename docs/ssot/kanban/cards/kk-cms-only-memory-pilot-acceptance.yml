@@ -1,7 +1,7 @@
 id: kk-cms-only-memory-pilot-acceptance
 title: KK acceptance — CMS-only memory pilot for Kaewta
 column: review
-updated: 2026-11-26 09:40
+updated: 2026-11-26 12:26
 brief: Decide whether Kaewta (ada-kk) should answer from her CMS reports only, with bank recall and web_search withheld.
   Bench read-side is proven; prod profile unchanged.
 priority: medium
@@ -48,15 +48,23 @@ comms:
   from: tony
   text: 'raised request kk-do-you-accept-a-reversible-3-7-day-cm-d8c11e: KK: do you accept a reversible 3–7 day
     CMS-only memory pilot? If yes, Tony proceeds via the deploy gate; nothing changes'
+- at: 2026-11-26 12:26
+  from: tony
+  text: 'answered kk-do-you-accept-a-reversible-3-7-day-cm-d8c11e: approve — KK accepts, proceed with pilot'
+- at: 2026-11-26 12:26
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: kk-do-you-accept-a-reversible-3-7-day-cm-d8c11e
   ask: 'KK: do you accept a reversible 3–7 day CMS-only memory pilot? If yes, Tony proceeds via the deploy gate;
     nothing changes on prod until then. If CMS has no report, Kaewta says so honestly — no invented page, no bank
     recall, no web search.'
-  status: open
+  status: answered
   at: 2026-11-26 09:40
   from: tony
   options:
   - approve — KK accepts, proceed with pilot
   - hold — not yet
   - abort — keep current profile
+  answer: approve — KK accepts, proceed with pilot
+awaiting_action: true
