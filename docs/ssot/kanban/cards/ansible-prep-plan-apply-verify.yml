@@ -1,7 +1,7 @@
 id: ansible-prep-plan-apply-verify
 title: Ansible prep→plan→apply→verify workflow standard
 column: review
-updated: 2026-11-26 12:54
+updated: 2026-11-26 13:53
 brief: Standardize Ansible for preparation/baselines, check-diff plan artifacts, gated apply, and verified closeout
   to increase fleet efficiency.
 priority: medium
@@ -160,6 +160,12 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261126-123352-objective-define-and-pilot-an- on mn01 still dirty —
     1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-26 13:53
+  from: tony
+  text: 'answered idc02-primary-ocb-pane-100-123-163-11-re-6d8dd3: proceed'
+- at: 2026-11-26 13:53
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -182,10 +188,12 @@ requests:
   ask: idc02 (primary ocb_pane, 100.123.163.11) refuses SSH — connection refused :22, confirmed via alias+IP. tony-dell
     fallback healthy. Needs a host-level check (sshd/host down); approved OCB apply stays blocked until it is back.
     OK to leave as follow-up card, or is idc02 intentionally down?
-  status: open
+  status: answered
   at: 2026-11-26 12:44
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 review_kind: verify
+awaiting_action: true
