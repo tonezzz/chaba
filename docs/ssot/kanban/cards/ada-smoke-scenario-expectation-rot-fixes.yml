@@ -1,7 +1,7 @@
 id: ada-smoke-scenario-expectation-rot-fixes
 title: 'Smoke scenarios: fix expectation rot (4 yamls) + scenario-live cleanup MDDB plane bug'
 column: doing
-updated: 2026-11-26 22:19
+updated: 2026-11-26 22:23
 priority: medium
 tags:
 - ada
@@ -89,6 +89,13 @@ comms:
   from: devin
   text: 'raised request ok-to-delete-the-stray-public-page-ada-c-11e29f: OK to delete the stray PUBLIC page ada-cms-pages/kk-site-test
     (public=true since 2026-10-11, live at surf-thailand.com/t'
+- at: 2026-11-26 22:23
+  from: devin
+  text: 'done — all 5 items fixed in ada-voice commit 6c0aba5 on branch dispatch/20261126-smoke-expectation-rot
+    (worktree ada-voice-wt-smoke-fixes, NOT pushed). Extras found: calls_not was never a driver key (turn2 silently
+    unasserted -> no_calls); lang= arg-shape miss root-caused to tool_guide omitting the arg — now documented there.
+    Plane routing applied to seed+seed_evict+cleanup (seed had the same bug). Stray-page delete + translate-probe
+    sweep raised as board request pending Tony OK. Trail: docs/sso'
 action:
   type: dispatch
   status: running
