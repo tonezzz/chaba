@@ -1,0 +1,20 @@
+# tool_guide.yml snippet — append at top level (backend/tool_guide.yml)
+
+kk_places: >-
+  Google Places lookup for place asks — 'is X open', 'ร้านนี้ยังอยู่มั้ย',
+  'ร้านแถวนี้', 'ร้านนี้คืออะไร'. Pass query=<place name or address>
+  verbatim; add lat/lon when the member means a spot near a known
+  location. place_id= re-fetches a previous result's place (stale
+  dossier refresh). The result's places[] carries the facts — answer
+  with them AND the check time ('เปิดอยู่ค่ะ — เช็กล่าสุด ...'), never a
+  bare 'it's open'; open_now is only true as of checked_at. places:[]
+  means Google found nothing — say so and offer maps_url; do not
+  invent name/hours/phone, and no place-* page was written. The tool
+  also saves a place-<slug> dossier to this lane's CMS — mention the
+  saved page when relevant, never claim one when dossier.ok is false.
+  ok:false needs_key is an env gap (ADA_PLACES_API_KEY /
+  GOOGLE_MAPS_API_KEY missing or the Places API not enabled on the
+  key's project) — fall back to web_search/place_report and say the
+  lookup is degraded. public='yes' only after the member explicitly
+  asks for a shareable link, with confirmed='yes' — without it the
+  dossier stays private and the result says so.

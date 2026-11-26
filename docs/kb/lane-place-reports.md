@@ -17,10 +17,12 @@ member asks about a place (name, "is X open", a maps.app.goo.gl link)
   │
   ├─ 2. web_search resolves
   │       shortlinks auto-expand to 'name (lat,lng)' (195eb85);
-  │       Places tool (kk-places) upgrades this to structured fields
+  │       Places tool (`kk_places`, ada-voice drop 23) upgrades this
+  │       to structured fields + writes this dossier
   │
   ├─ 3. save-back — write/refresh `place-<slug>` THIS turn
-  │       (the web_search result note already mandates save-back;
+  │       (`kk_places` does this inside the tool call; the web_search
+  │       path still relies on the result note's save-back mandate —
   │       this doc defines the doc shape)
   │
   └─ 4. answer with a timestamp — never bare "it's open"; always
@@ -79,6 +81,6 @@ Body follows `cms-page-standard.md`: **Status** verdict line →
 
 Declared under the lane content map (KNB-0497 /
 `lane-cms-content-model`): `domain: places` → producer `web_search` +
-`kk-places` tool → cadence on-demand → truthfulness contract above.
+`kk_places` tool → cadence on-demand → truthfulness contract above.
 Audit hook: expected `place-*` docs resolve a `checked_at` within
 `fresh_for`; stale entries show as stale, not wrong.

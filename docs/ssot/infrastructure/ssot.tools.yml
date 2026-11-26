@@ -333,6 +333,20 @@ tools:
     ada-voice: place_report
     ada-dev: place_report
   source: ada-voice:backend/tools.d/place_report.py
+- name: places.lookup
+  kind: tool
+  sig: query,place_id,lat,lon,limit,lang,public,confirmed
+  policy: read
+  secondary: true
+  backend: google places api (new) + lane cms place dossier
+  transport: native-decl
+  agents:
+  - ada-voice
+  - ada-dev
+  surfaces:
+    ada-voice: kk_places
+    ada-dev: kk_places
+  source: ada-voice:backend/tools.d/kk_places.py
 - name: cms.wp_post
   kind: tool
   sig: person,title,content,publish,media_url
