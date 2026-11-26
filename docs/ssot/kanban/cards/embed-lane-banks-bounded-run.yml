@@ -1,7 +1,7 @@
 id: embed-lane-banks-bounded-run
 title: 'embed-lane-banks: bound each daily run to its 45min window'
 column: doing
-updated: 2026-11-26 21:44
+updated: 2026-11-26 21:49
 brief: 'Daily embed-lane-banks oneshot on idc02 is SIGTERMd at TimeoutStartSec=2700 after copying only ~3200/74940
   docs of ada-ha-bank-devin-handoff: the queue throttle (depth>=3000) plus CPU-only bge-m3 embedding yields ~15
   docs/min. Ollama and mddb-embed are healthy; queue drained to 0, dropped=0, no data loss. Result=timeout every
@@ -145,6 +145,11 @@ comms:
     was a linked unit running a stale scripts/-only ; [timer-alert-idc02-embed-lane-banks] [batch B 19:30 +07] Alert
     loop explained an; [embed-lane-banks-bounded-run] merge-sweep: no session/worktree found for devin-; [mddb-cms-11027-embed-coverage-gap-250-do-e35321]
     progress: v'
+- at: 2026-11-26 21:49
+  from: devin
+  text: 'attempt 2 (con01): prior branch never merged — redoing. Plan: --budget wall-clock cap on embed-lane.py
+    banks (bounds copy loop AND queue-drain waits), exec -> banks --budget 2400 (40min < 45m TimeoutStartSec), re-render
+    idc02 unit, update jobs doc.'
 action:
   type: dispatch
   status: running
