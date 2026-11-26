@@ -1,7 +1,7 @@
 id: exec-checkout-generated-writes-focus-inb-da698a
 title: Exec-checkout generated writes (focus-inbox, ada-memory) never reach the writer
-column: doing
-updated: 2026-11-26 13:02
+column: review
+updated: 2026-11-26 13:04
 brief: 'Hosts with exec-role chaba checkouts (omen confirmed; audit dell/idc02/mn01) run producers that write generated
   files — docs/ssot/focus-inbox/*.yml alerts, backups/ada-memory/*.json dumps, routes.json, SSOT_OPTIMIZATION_WARNINGS.json
   — directly into the working tree. Exec role cannot commit (pre-commit block), so the content never reaches the
@@ -433,9 +433,13 @@ comms:
     writes. Guarded 18 producers incl gh-runs-watch, ha-auth-watch, mcp-health-to-inbox/snapshot, ssot-optimize-to-inbox,
     mcp-link-monitor, arp-inventory-scan, check-serve-config, board-invariants, session-audit, render-handoff-inbox,
     worktree-sync, promote-reports, mddb-binlog-canary'
+- at: 2026-11-26 13:04
+  from: con01
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261126-122820-goal-generated-writes-from-non.service:
+    Failed to ope'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
@@ -448,6 +452,10 @@ action:
     | devin-task-20261125-125447-goal-generated-writes-from-non.service: Consumed 2min 8.634s CPU time over 59min
     17.276s wall clock time, 497.5M memory peak.'
   runner: con01
+  result: 'exit=0 ice: No such file or directory | devin-task-20261126-122820-goal-generated-writes-from-non.service:
+    Failed to open /run/user/1001/systemd/transient/devin-task-20261126-122820-goal-generated-writes-from-non.service:
+    No such file or directory'
+  verified: false
 claim:
   since: 2026-11-26 12:26
 review_kind: verify
