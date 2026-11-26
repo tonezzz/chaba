@@ -1,7 +1,7 @@
 id: ada-capabilities-verb-wiring
 title: 'ada-voice: wire the what-can-you-do verb — ada_capabilities drop-in reading the generated tools snapshot'
 column: backlog
-updated: 2026-11-26 03:59
+updated: 2026-11-26 19:24
 priority: medium
 tags:
 - ada
@@ -35,12 +35,10 @@ action:
   type: dispatch
   repo: ada-voice
   executor: devin
-  status: idle
-  runner: tony-macbook
+  status: queued
   attempts: 1
   result: 'exit=0  are uncommitted in the worktree for the dispatcher to checkpoint — no push, no deploy. | devin-task-20261124-212337-repo-work-ada-voice-wire-the-a.service:
     Consumed 2min 4.497s CPU time over 26min 41.180s wall clock time, 1.2G memory peak.'
-  verified: false
   sweep:
     merge_err: 2026-11-24 21:54
 ref: ADA-0020
@@ -272,6 +270,9 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:24
+  from: tony
+  text: queued for processing
 claim:
   since: 2026-11-24 21:22
 review_kind: verify
