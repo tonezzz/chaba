@@ -1,7 +1,7 @@
 id: gemini4-interactions-text-agent-eval-2026-11-26
 title: Evaluate Gemini 4 + Interactions API for a stateful text agent
 column: review
-updated: 2026-11-26 20:38
+updated: 2026-11-26 20:44
 brief: Compare gemini-4-hydrogen/neon via the Interactions API against the current 3.x stateless text path on a
   small multi-turn tool-and-recall task set; measure task accuracy, token growth and latency.
 priority: medium
@@ -122,6 +122,13 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:44
+  from: devin
+  text: 'DONE (read-only). Interactions API verified on gemini-3.5/3.1-flash-lite: stateful prev_interaction_id
+    1.000, stateless full-history 1.000/0.975 adjusted on fixed 8-task tool+recall fixture. gemini-4 BLOCKED on
+    quota: hydrogen 20/day free exhausted, neon/argon/carbon zero free quota, PAID key still monthly-capped (re-verified).
+    Deliverables: docs/ssot/jobs/devnest/2026-11-26-gemini4-interactions-text-agent-eval.yml, reports/gemini-interactions-eval-2026-11-26.{md,json,-gen-rerun,-stateful},
+    harn'
 action:
   type: dispatch
   status: running
