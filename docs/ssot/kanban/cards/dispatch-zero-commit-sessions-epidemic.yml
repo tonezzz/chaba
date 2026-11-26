@@ -1,7 +1,7 @@
 id: dispatch-zero-commit-sessions-epidemic
 title: dispatch sessions produce zero commits at high rate — root cause
 column: done
-updated: 2026-11-26 16:48
+updated: 2026-11-26 20:12
 spec: 'OPS-0894 fixed the closeout gate (empty branches no longer auto-close — held in review correctly). The SOURCE
   defect is unfixed and burning dispatches: 10+ sessions Oct 26-27 across hosts (tony-macbook, idc02, mn01) and
   lanes (deepseek-v4-pro, others) produced ZERO commits — pushed branch head = plain master commit, service often
@@ -396,6 +396,9 @@ comms:
     to stale counts (54 branches / 26 ahead / 29 worktrees) — master''s newer 171 / 95 / 145 retained. The code
     fix itself (devin-executor-'
 - at: 2026-11-26 16:48
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 20:12
   from: tony
   text: closed by tony
 claim:
