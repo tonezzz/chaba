@@ -1,7 +1,7 @@
 id: ansible-prep-plan-apply-verify
 title: Ansible prep→plan→apply→verify workflow standard
 column: doing
-updated: 2026-11-26 13:57
+updated: 2026-11-26 14:07
 brief: Standardize Ansible for preparation/baselines, check-diff plan artifacts, gated apply, and verified closeout
   to increase fleet efficiency.
 priority: medium
@@ -189,6 +189,12 @@ comms:
     primer injected 8 lesson(s): [report-graph-prod; [ssh-access-ansible-standard] SLICE 1 DONE — verifier first
     (per answered scope ; editing `ssot.jobs.yml` requires re-running `scripts/render-jobs.py --host <h>` ; idc02''s
     kanban-dispatch.service was a linked unit running a s'
+- at: 2026-11-26 14:07
+  from: devin
+  text: 'Attempt 2 (con01): prior OPS-1424 work confirmed already on master (swept into board-api mega-commit 62c638d).
+    Prior merge-hold cause reproduced: pytest unavailable on mn01. Found+fixing a real gate break on master: dispatch_repos
+    sha256 pin stale vs source (sweep commit changed dispatch_repos.py without pin bump) — bumped pin in runner-tooling.manifest.json;
+    re-running the chaba merge-gate smoke set to confirm green.'
 action:
   type: dispatch
   status: running
