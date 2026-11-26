@@ -1,7 +1,7 @@
 id: timer-alert-idc03-netdata-nodes-watch
 title: Timer netdata-nodes-watch on idc03 failing
-column: review
-updated: 2026-11-26 17:39
+column: done
+updated: 2026-11-26 18:00
 priority: high
 tags:
 - timer-alert
@@ -183,5 +183,15 @@ comms:
   from: chaba
   text: 'stalled-claim reaper: moved doing -> review — run reported done with no live claim — the verified gate
     owns the close decision'
+- at: 2026-11-26 18:00
+  from: devin
+  text: '[ops timer batch 18:05 +07] Root cause: tailnet reachability to tony-omen:19999 is filtered (ICMP works,
+    TCP times out from every peer; localhost on tony-omen returns 200 and /api/v2/nodes lists 8 healthy nodes).
+    Fix upstream in scripts/ops/netdata-nodes-watch.py: SSH fallback to curl 127.0.0.1:19999 on the parent plus
+    OPS-0581 exit contract (alerts ride the board inbox, completed check exits 0); deployed to idc03 exec + served
+    checkout, pushed 6d84d98ef5a. Verified: tick reports "recovered (sil'
+- at: 2026-11-26 18:00
+  from: tony
+  text: closed by tony
 action:
   status: done
