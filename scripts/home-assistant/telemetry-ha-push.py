@@ -29,6 +29,7 @@ Env:
 """
 import json
 import os
+import re
 import sys
 import time
 import urllib.request
@@ -174,9 +175,33 @@ def push_device(dev: str, token: str) -> str:
     _metric("mem_pct", "mem", "memory", "%", "mdi:memory")
     _metric("disk_pct", "disk", "disk", "%", "mdi:harddisk")
     _metric("swap_pct", "swap", "swap", "%", "mdi:swap-horizontal")
-    _metric("temp_c", "temp", "temp", "°C", "mdi:thermometer",
-            {"temps": doc.get("temp_zones") or {}})
     zones = doc.get("temp_zones") or {}
+    _metric("temp_c", "temp", "temp", "°C", "mdi:thermometer",
+            {"temps": zones})
+    # History needs a numeric state per label. The headline sensor above
+    # stays the hottest zone; these are stable per-zone series — entity ids
+    # come from the raw zone key, never from whichever zone is hottest now.
+    used_slugs = set()
+    for raw_zone, raw_val in zones.items():
+        try:
+            value = round(float(raw_val), 1)
+        except (TypeError, ValueError):
+            continue
+        base = re.sub(r"[^a-z0-9]+", "_", str(raw_zone).lower()).strip("_")
+        base = base or "zone"
+        slug, n = base, 1
+        while slug in used_slugs:
+            n += 1
+            slug = f"{base}_{n}"
+        used_slugs.add(slug)
+        _push(token, f"sensor.{eid}_temp_{slug}", value, {
+            "friendly_name": f"{dev} {raw_zone} temp",
+            "unit_of_measurement": "°C",
+            "device_class": "temperature",
+            "state_class": "measurement",
+            "source_zone": raw_zone,
+            **common_attrs(doc, age),
+        })
     if zones:
         def _zname(k: str) -> str:
             if k == "x86_pkg_temp":
