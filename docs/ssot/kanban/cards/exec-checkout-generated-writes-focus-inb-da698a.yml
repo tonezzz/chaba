@@ -1,6 +1,6 @@
 id: exec-checkout-generated-writes-focus-inb-da698a
 title: Exec-checkout generated writes (focus-inbox, ada-memory) never reach the writer
-column: backlog
+column: doing
 updated: 2026-11-26 12:26
 brief: 'Hosts with exec-role chaba checkouts (omen confirmed; audit dell/idc02/mn01) run producers that write generated
   files — docs/ssot/focus-inbox/*.yml alerts, backups/ada-memory/*.json dumps, routes.json, SSOT_OPTIMIZATION_WARNINGS.json
@@ -410,13 +410,16 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-26 12:26
+  from: con01
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  attempts: 0
+  attempts: 1
   sweep:
     no_repo: 2026-11-25 19:09
     stale_running: 2026-11-25 19:54
@@ -424,6 +427,7 @@ action:
   last_failure: 'exit=1 261125-125447-goal-generated-writes-from-non.service: Failed with result ''exit-code''.
     | devin-task-20261125-125447-goal-generated-writes-from-non.service: Consumed 2min 8.634s CPU time over 59min
     17.276s wall clock time, 497.5M memory peak.'
+  runner: con01
 claim:
-  since: 2026-11-25 19:53
+  since: 2026-11-26 12:26
 review_kind: verify
