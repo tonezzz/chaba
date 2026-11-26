@@ -1,7 +1,7 @@
 id: board-api-date-serialization-outage
 title: board-api /cards 502 — YAML bare dates crash json.dumps (fleet-wide Ada status outage 2026-11-09)
 column: review
-updated: 2026-11-26 21:37
+updated: 2026-11-26 21:40
 priority: medium
 tags:
 - devnest
@@ -24,6 +24,8 @@ action:
   result: 'exit=0 patch-outcome-20261126-210344-hygiene-follow-up-to-the-2026-.md`; final comms posted to the card.
     | devin-task-20261126-210344-hygiene-follow-up-to-the-2026-.service: Consumed 16min 31.156s CPU time, 863.6M
     memory peak, 0B memory swap peak.'
+  sweep:
+    dirty: 1
 ref: KNB-1292
 comms:
 - at: 2026-11-09 18:16
@@ -325,6 +327,10 @@ comms:
 - at: 2026-11-26 21:37
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-26 21:40
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261126-210344-hygiene-follow-up-to-the-2026- on idc02 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 claim:
   since: 2026-11-26 21:03
 review_kind: verify
