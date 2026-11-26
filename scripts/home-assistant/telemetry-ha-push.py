@@ -20,6 +20,12 @@ Env:
   HA_TOKEN_FILE      default ~/.config/secrets/home-assistant-token.env
                      (line `HA_LONG_LIVED_TOKEN=` or `HASS_TOKEN=`)
   STALE_SECONDS      default 900 — doc ts older than this => fresh=off
+  TELEMETRY_TEMP_ALERT_C  default 80 — binary_sensor.<dev>_temp_high threshold
+                     (uses the hottest of all reported zones, not just CPU)
+  TELEMETRY_TEMP_SKIP_DEVICES  default kk-mac — hosts with their own stricter
+                     admission gate are not duplicated here.
+  CHABA_THERMAL_CONFIG      Ansible-managed ~/.config/chaba/thermal.env;
+                     its values are used unless the env vars above are set.
 """
 import json
 import os
@@ -36,6 +42,27 @@ HA_URL = os.environ.get(
     "HA_URL", "https://tony-omen.taila0626a.ts.net:8123").rstrip("/")
 STALE_S = int(os.environ.get("STALE_SECONDS", "900"))
 COLLECTION = "device-telemetry"
+
+
+def _thermal_config() -> dict:
+    """Read the Ansible-managed threshold file (KEY=VALUE, # comments)."""
+    path = Path(os.environ.get(
+        "CHABA_THERMAL_CONFIG",
+        str(Path.home() / ".config/chaba/thermal.env")))
+    out = {}
+    try:
+        for line in path.read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            out[key.strip()] = value.strip()
+    except OSError:
+        pass
+    return out
+
+
+TEMP_CFG = _thermal_config()
 
 
 def _token() -> str:
@@ -152,6 +179,30 @@ def push_device(dev: str, token: str) -> str:
             "icon": "mdi:thermometer-lines",
             **common_attrs(doc, age),
         })
+    # Safety view: one boolean per host driven by the hottest zone, not just
+    # the CPU package. Unknown temp (sensorless VM, failed probe) clears the
+    # alert rather than raising a false one; freshness is reported separately.
+    temp_limit = float(TEMP_CFG.get(
+        "TELEMETRY_TEMP_ALERT_C",
+        os.environ.get("TELEMETRY_TEMP_ALERT_C", "80")))
+    skip = {d.strip() for d in TEMP_CFG.get(
+        "TELEMETRY_TEMP_SKIP_DEVICES",
+        os.environ.get("TELEMETRY_TEMP_SKIP_DEVICES", "kk-mac")
+    ).split(",") if d.strip()}
+    excluded = dev in skip
+    temp_c = doc.get("temp_c")
+    hot = (not excluded and temp_c is not None
+           and float(temp_c) > temp_limit)
+    _push(token, f"binary_sensor.{eid}_temp_high",
+          "on" if hot else "off", {
+              "friendly_name": f"{dev} temp above {temp_limit:g}C",
+              "device_class": "problem",
+              "icon": "mdi:thermometer-alert",
+              "max_temp_c": temp_c,
+              "limit_c": temp_limit,
+              "excluded": excluded,
+              **common_attrs(doc, age),
+          })
     tp = doc.get("thermal_pressure")
     if tp:
         _push(token, f"sensor.{eid}_thermal", str(tp), {

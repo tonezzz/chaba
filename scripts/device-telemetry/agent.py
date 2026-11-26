@@ -217,6 +217,41 @@ def _remember_temp(t: float, zones: dict) -> None:
         pass
 
 
+def _smctemp_zones() -> dict:
+    """Read every SMC zone we can (CPU, GPU) with a bounded retry each.
+
+    A missing sensor must not hide a hot one: the caller uses max(zones).
+    osx-cpu-temp is a CPU-only last resort — on kk-mac it reports 0.0C,
+    which is rejected as implausible.
+    """
+    smctemp = os.path.expanduser("~/.local/bin/smctemp")
+    zones = {}
+    for name, flag in (("cpu", "-c"), ("gpu", "-g")):
+        cmds = [[smctemp, flag], ["smctemp", flag]]
+        if name == "cpu":
+            cmds.append(["/opt/homebrew/bin/osx-cpu-temp"])
+        for attempt in range(3):
+            for cmd in cmds:
+                out = _run(cmd).strip()
+                if not out:
+                    continue
+                # smctemp sometimes appends a hint after the number —
+                # only the first line is the reading.
+                first = out.splitlines()[0].strip()
+                try:
+                    t = float(first.split(":")[-1].strip().rstrip("°C").strip())
+                except ValueError:
+                    continue
+                if 0 < t < 150:
+                    zones[name] = round(t, 1)
+                    break
+            if name in zones:
+                break
+            if attempt < 2:
+                time.sleep(0.4 * (attempt + 1))
+    return zones
+
+
 def _temps() -> tuple[float | None, dict, str]:
     zones = {}
     for z in sorted(__import__("glob").glob(
@@ -231,34 +266,17 @@ def _temps() -> tuple[float | None, dict, str]:
     if zones:
         return round(max(zones.values()), 1), zones, "live"
     if platform.system() == "Darwin":
-        # No sysfs on macOS. Prefer the user-built smctemp (unprivileged SMC
-        # read); launchd's minimal PATH misses ~/.local/bin, so try the
-        # absolute path first. osx-cpu-temp (brew) is a last resort — on
-        # kk-mac it reports 0.0°C, which must not become a fake reading.
-        # Retry briefly, then fall back to the short-lived cache so one
-        # bad SMC read cannot make the overview table show 'unknown'.
-        cmds = ([os.path.expanduser("~/.local/bin/smctemp"), "-c"],
-                ["smctemp", "-c"],
-                ["/opt/homebrew/bin/osx-cpu-temp"])
-        for attempt in range(3):
-            for cmd in cmds:
-                out = _run(cmd).strip()
-                if not out:
-                    continue
-                # smctemp sometimes appends a hint after the number —
-                # only the first line is the reading.
-                first = out.splitlines()[0].strip()
-                try:
-                    t = float(first.split(":")[-1].strip().rstrip("°C").strip())
-                except ValueError:
-                    continue
-                if 0 < t < 150:
-                    reading = round(t, 1)
-                    z = {"cpu": reading}
-                    _remember_temp(reading, z)
-                    return reading, z, "live"
-            if attempt < 2:
-                time.sleep(0.4 * (attempt + 1))
+        # No sysfs on macOS. Prefer the user-built smctemp (unprivileged
+        # SMC read); launchd's minimal PATH misses ~/.local/bin, so try
+        # the absolute path first. Retry briefly, then fall back to the
+        # short-lived cache so one bad SMC read cannot make the overview
+        # table show 'unknown'. The headline temp is always the hottest
+        # zone, and all zones are kept for the per-host breakdown.
+        zones = _smctemp_zones()
+        if zones:
+            peak = round(max(zones.values()), 1)
+            _remember_temp(peak, zones)
+            return peak, zones, "live"
         t, z = _cached_temp()
         return t, z, "cache" if t is not None else "none"
     return None, {}, "none"

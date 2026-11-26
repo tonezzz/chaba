@@ -8,57 +8,91 @@
 #   2. Netdata stock load alarms are `to: silent`, so spikes never reached
 #      the board-api inbox. Stock `used_swap` already notifies; do not duplicate.
 #
+# 2026-11-26: the wrapper now gates NEW jobs on the hottest thermal zone
+# (>80C deny, sticky until <=75C). Deployed to all Linux hosts, not just
+# tony-omen, so the thermal gate follows CPU jobs wherever they run. The
+# netdata load/RAM alarms stay tony-omen-only (other hosts use stock alarms).
+#
 # Changes (all idempotent):
-#   * scripts/ada/run-cpu-job.sh -> /home/tony/.local/bin/run-cpu-job.sh (0755)
-#     systemd-run --user --scope in cpu-jobs.slice + OMP cap + timeout + nice.
+#   * scripts/ada/run-cpu-job.sh -> ~/.local/bin/run-cpu-job.sh (0755)
+#     systemd-run --user --scope in cpu-jobs.slice + OMP cap + timeout + nice
+#     + hottest-zone thermal admission (CPU_JOB_TEMP_CHECK=0 to bypass).
 #   * ~/.config/systemd/user/cpu-jobs.slice (0644) — CPUQuota=600% and
 #     MemoryMax=16G bound the SUM of all cpu jobs, not just each one.
-#   * health alarm file -> /home/tony/netdata/etc/health.d/tony-load.conf
+#   * tony-omen only: health alarm file -> ~/netdata/etc/health.d/tony-load.conf
 #     (root-owned 0644), bound into the netdata container by an existing mount.
 #     Netdata picks up health.d changes after `netdatacli reload-health`.
 #
-# Usage (from ansible/):
+# Usage (from ansible/) — ALWAYS pass an explicit --limit or inventory group:
 #   ansible-playbook playbooks/host-load-guard.yml --check --diff --limit tony-omen
 #   ansible-playbook playbooks/host-load-guard.yml --limit tony-omen
+#   ansible-playbook playbooks/host-load-guard.yml --check --diff --limit 'vps'
 #
-# Rollback: delete the three deployed files; remove --slice from the wrapper
-# and let systemd garbage-collect the slice. open-jev drop-ins are separate.
+# Rollback: delete the deployed files; remove --slice from the wrapper and
+# let systemd garbage-collect the slice. open-jev drop-ins are separate.
 
 - name: Deploy host load guard
-  hosts: tony-omen
+  hosts: all:!macos:!disabled
+  # No fact gathering: portable laptops prompt for interactive sudo during
+  # setup, and every path below is derivable from inventory ansible_user.
   gather_facts: false
+  # ansible.cfg sets become=True globally; this play is mostly user-owned
+  # files. Root is requested only for the tony-omen netdata alarms.
+  become: false
 
   vars:
+    remote_home: "/home/{{ ansible_user }}"
     wrapper_src: "{{ playbook_dir }}/../../scripts/ada/run-cpu-job.sh"
-    wrapper_dest: /home/tony/.local/bin/run-cpu-job.sh
-    slice_dest: /home/tony/.config/systemd/user/cpu-jobs.slice
-    netdata_health_dir: /home/tony/netdata/etc/health.d
+    wrapper_dest: "{{ remote_home }}/.local/bin/run-cpu-job.sh"
+    slice_dest: "{{ remote_home }}/.config/systemd/user/cpu-jobs.slice"
+    netdata_health_dir: "/home/tony/netdata/etc/health.d"
     alarm_dest: "{{ netdata_health_dir }}/tony-load.conf"
 
+  vars_files:
+    - vars/thermal.yml
+
   tasks:
+    - name: Ensure chaba config directory exists
+      ansible.builtin.file:
+        path: "{{ remote_home }}/.config/chaba"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0700"
+      tags: [thermal]
+
+    - name: Install thermal policy (single source of truth)
+      ansible.builtin.template:
+        src: templates/thermal.env.j2
+        dest: "{{ remote_home }}/.config/chaba/thermal.env"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0644"
+      tags: [thermal]
+
     - name: Install bounded CPU-job wrapper
       ansible.builtin.copy:
         src: "{{ wrapper_src }}"
         dest: "{{ wrapper_dest }}"
-        owner: tony
-        group: tony
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
         mode: "0755"
       tags: [wrapper]
 
     - name: Ensure user systemd config directory exists
       ansible.builtin.file:
-        path: /home/tony/.config/systemd/user
+        path: "{{ remote_home }}/.config/systemd/user"
         state: directory
-        owner: tony
-        group: tony
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
         mode: "0700"
       tags: [slice]
 
     - name: Install aggregate CPU-job slice
       ansible.builtin.copy:
         dest: "{{ slice_dest }}"
-        owner: tony
-        group: tony
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
         mode: "0644"
         content: |
           # Managed by chaba/ansible (host-load-guard.yml). Do not edit on host.
@@ -73,12 +107,23 @@
       tags: [slice]
 
     - name: Reload user systemd manager for the new slice
-      # A plain SSH session has no user bus; connect via the machine bus as
-      # root instead (the same reason `systemctl --user` fails in check mode).
-      ansible.builtin.command: systemctl --machine=tony@.host --user daemon-reload
-      become: true
+      # Point systemctl at the user's runtime bus so no sudo is needed
+      # (portable laptops require interactive sudo for become).
+      ansible.builtin.shell:
+        cmd: "XDG_RUNTIME_DIR=/run/user/$(id -u) systemctl --user daemon-reload"
+        executable: /bin/bash
       changed_when: false
       tags: [slice]
+
+    - name: Install HA telemetry mirror (tony-omen only)
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../scripts/home-assistant/telemetry-ha-push.py"
+        dest: "/home/tony/CascadeProjects/chaba/scripts/home-assistant/telemetry-ha-push.py"
+        owner: tony
+        group: tony
+        mode: "0644"
+      when: inventory_hostname == 'tony-omen'
+      tags: [ha]
 
     - name: Ensure Netdata health.d exists
       ansible.builtin.file:
@@ -88,6 +133,7 @@
         group: root
         mode: "0755"
       become: true
+      when: inventory_hostname == 'tony-omen'
       tags: [alarms]
 
     - name: Install load and RAM alarms (swap alarm is stock)
@@ -134,4 +180,5 @@
                  info: used / (used + free + cached + buffers) as a percentage
                    to: sysadmin
       become: true
+      when: inventory_hostname == 'tony-omen'
       tags: [alarms]
