@@ -1,7 +1,7 @@
 id: video-queue-audit-opencode-repair
 title: 'OpenCode artifact repair: video queue audit'
 column: backlog
-updated: 2026-11-26 14:33
+updated: 2026-11-26 15:00
 brief: Retry ADA-1046 with a write-capable artifact contract so the queue audit report lands and verifies.
 priority: high
 program: ai-workforce
@@ -29,12 +29,10 @@ action:
     - read-only
     - recommendation
   lane: free_lane
-  status: done
+  status: queued
   agent_profile: artifact-write
-  runner: idc02
   result: 'exit=0 fetnai5s7HVsDT7B","type":"step-finish","tokens":{"total":41160,"input":2332,"output":34,"reasoning":0,"cache":{"write":0,"read":38794}},"cost":0}}
     | devin-task-video-queue-audit-opencode-repair-1793682775.service: Consumed 14.057s CPU time.'
-  verified: false
   sweep:
     dirty: 1
 ref: AUD-1048
@@ -289,5 +287,8 @@ comms:
     the declared spec/artifact path to reports/card-runner/video-queue-status-opencode.md (the exempt dir), editing
     the card YAML directly under the board-api lock so comms and action state are preserved. Status stays done;
     re-queue is a separate decision, pending the two-card pilot outc'
+- at: 2026-11-26 15:00
+  from: devin
+  text: queued for processing
 review_kind: verify
 claim: {}
