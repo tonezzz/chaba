@@ -3,7 +3,7 @@ subtitle: >
   One batched Decisions API call over 10 real kanban briefs. Promising as a
   high-confidence reject gate, not yet as an approve gate.
 icon: education
-version: 1
+version: 2  # v2: labels for both disputed cards confirmed by Tony on 2026-11-26
 
 card: gemini-decision-1-gate-eval-2026-11-26  # ADA-1445
 date: 2026-11-26
@@ -30,7 +30,7 @@ delivered:
     brier: 0.1098
     mean_confidence_correct: 0.915
     mean_confidence_wrong: 0.7069
-    verdict: "strong reject gate, not yet an approve gate"
+    verdict: "strong high-confidence reject gate; approve gate still needs a larger labeled set and threshold calibration"
   rows:
     - {id: ada-ha-dashboard-live-view-drift, label: ready, p_yes: 0.3831, confidence: 0.6169, correct: false}
     - {id: ada-ocb-ansible-audit-verify, label: ready, p_yes: 0.8799, confidence: 0.8799, correct: true}
@@ -46,9 +46,44 @@ delivered:
 findings:
   - "All 5 deferring/blocked briefs were rejected with 0.9268-0.9658 confidence — a very clean reject signal."
   - "3 of 5 actionable briefs were approved with 0.8089-0.8799 confidence; 2 were rejected with 0.6169/0.7970 confidence."
-  - "Both disagreements are label-borderline: 'verify whether drift is intentional before restoring' and 'authorize the card-gated publish' are investigations/approvals rather than immediately dispatchable work. The rubric may be wrong on those two, so 0.80 is a lower bound on real agreement, not a precise accuracy."
+  - "Both disputed cards were reviewed by Tony on 2026-11-26 and the READY labels were confirmed: both had a concrete action and a non-empty spec, and both were actually executed (dashboard card done and archived 19:40; skills wiki lesson verified at 8,092 chars). They are genuine model false rejects, not label noise, so 0.80 is the real accuracy on this set, not a lower bound."
   - "One batched call of 1,981 input characters produced 10 calibrated answers for 1,523 input tokens and 0 output tokens — supports the zero-output-token cost claim."
   - "The first attempt with GEMINI_API_KEY_PAID failed with HTTP 429 'project has exceeded its monthly spending cap'. No billing or cap change was attempted. TONY/KK share that project; MICHAEL's free-tier key worked."
+
+label_review:
+  date: 2026-11-26
+  reviewer: Tony
+  method: >
+    Tony reviewed the two disputed briefs on the decision-1 review page after
+    both cards were checked against the board and the wiki lesson endpoint.
+  outcome:
+    - "ada-ha-dashboard-live-view-drift: READY confirmed. Card done and archived by Tony 2026-11-26 19:40; the verify/investigate step was dispatchable work with a spec."
+    - "ada-ocb-skills-wiki-education-2026-11-24: READY confirmed. The authorization was the card gate itself, the publish steps were concrete, and the lesson exists (8,092 chars)."
+  recomputed:
+    labels_changed: 0
+    agreement: "8/10 (0.80) - unchanged, now a true accuracy figure"
+    confusion_at_p_yes_ge_0.5: {tp: 3, fn: 2, tn: 5, fp: 0}
+    approve_precision: 1.0
+    approve_recall: 0.6
+    reject_precision: 0.714
+    reject_recall: 1.0
+    high_confidence_reject_gate: >
+      At model confidence >= 0.90 all 5 rejects were correct and none of the
+      5 READY cards was auto-rejected; the two wrong rejects were at 0.6169
+      and 0.7970 confidence, so a 0.90 threshold cleanly separates them on
+      this 10-card set.
+    high_confidence_reject_coverage: "5/5 not-ready briefs"
+    approve_gate_caveat: >
+      Auto-approving all 5 READY cards would need a p_yes threshold between
+      0.0732 (highest not-ready) and 0.2030 (lowest ready). That boundary is
+      fitted on the same 10 cards and the two lowest READY scores were exactly
+      the ones Tony had to adjudicate, so it is not evidence of approve-gate
+      readiness. The model's wrong rejects were confident (0.62/0.80), so
+      confidence alone does not rescue them.
+  verdict_after_review: >
+    Use only as a high-confidence reject pre-filter that escalates low/medium
+    confidence rejects to a human. Do not auto-approve dispatch on this
+    evidence; validate a threshold on 30+ unambiguous labeled briefs first.
 
 guardrails:
   - "No key, billing, gateway, or model-pin changes."
@@ -65,7 +100,7 @@ verify:
   - "DONE 2026-11-26: graded locally against the labeled set; 8/10 agreement, Brier 0.1098."
 
 remaining:
-  - "Re-label the two borderline cards with Tony before calling 0.80 a true accuracy figure."
-  - "If pursuing an approve gate, expand to 30+ unambiguous briefs and compare against the current full-model judgment path."
+  - "DONE 2026-11-26: Tony confirmed both disputed labels as READY; 0.80 is a true accuracy figure, confusion {tp:3, fn:2, tn:5, fp:0}."
+  - "If pursuing an approve gate, expand to 30+ unambiguous briefs, calibrate a p_yes threshold on held-out labels, and compare against the current full-model judgment path."
   - "Consider using the model only as a high-confidence reject pre-filter; do not replace human dispatch approval on this evidence."
   - "Do not retry the paid key until the cap situation is explicitly resolved by Tony."
