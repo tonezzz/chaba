@@ -1,7 +1,7 @@
 id: tony-macbook-hibernate-resume-broken-eve-8ac607
 title: tony-macbook hibernate-resume broken — every suspend->hibernate cycle cold-boots
-column: doing
-updated: 2026-11-26 12:46
+column: review
+updated: 2026-11-26 12:51
 priority: high
 tags:
 - macbook
@@ -101,13 +101,45 @@ comms:
     found (code -22); likely cause = fragmented /swap.img (22 extents) vs single resume_offset; prior Oct fix attempts
     failed; s2idle suspend verified working. Staged option-(a) fix scripts/ops/macbook-disable-hibernate.sh (idempotent,
     backs up + HandleLidSwitch=suspend + restarts lo'
+- at: 2026-11-26 12:51
+  from: tony-dell
+  text: 'finished (ok): exit=0 y-macbook-dayt.md` written with verification steps and lessons. | devin-task-20261126-123259-found-during-tony-ma'
+- at: 2026-11-26 12:51
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-26 12:51
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261126-123259-found-during-tony-macbook-dayt'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-26 12:51
+  from: chaba
+  text: banked 740 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 12:51
+  from: chaba
+  text: pushed dispatch/20261126-123259-found-during-tony-macbook-dayt to origin
+- at: 2026-11-26 12:51
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-26 12:51
+  from: chaba
+  text: auto-merged d66736f3 (dispatch/20261126-123259-found-during-tony-macbook-dayt) → origin/master
+- at: 2026-11-26 12:51
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 y-macbook-dayt.md` written with verification steps and lessons. | devin-task-20261126-123259-found-during-tony-macbook-dayt.service:
+    Consumed 2min 21.813s CPU time over 14min 14.824s wall clock time, 1.1G memory peak, 405M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-26 12:32
 requests:
@@ -131,3 +163,4 @@ requests:
   - c — keep suspend-then-hibernate, other approach
   - hold — leave as-is
   suggested: a — disable hibernate, run staged script now (recommended)
+review_kind: verify
