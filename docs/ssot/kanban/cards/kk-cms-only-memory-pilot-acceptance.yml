@@ -1,7 +1,7 @@
 id: kk-cms-only-memory-pilot-acceptance
 title: KK acceptance — CMS-only memory pilot for Kaewta
 column: doing
-updated: 2026-11-26 12:51
+updated: 2026-11-26 13:12
 brief: Decide whether Kaewta (ada-kk) should answer from her CMS reports only, with bank recall and web_search withheld.
   Bench read-side is proven; prod profile unchanged.
 priority: medium
@@ -92,6 +92,13 @@ comms:
     ada-voice@5a5379a=origin/main incl. cceb7f5 ADA_PRIME_SKIP_HISTORY; ada-kk active since 11-25 20:22 (post-knob);
     kk-ha/backend.env has only the tool-profile managed block, knobs unset. Now: declare prod profile in SSOT +
     render-tool-profiles env_knobs support, then gated apply on idc03.'
+- at: 2026-11-26 13:12
+  from: devin
+  text: 'PILOT APPLIED on ada-kk (idc03). persons.kk.tools now withholds ada_memory_search/ada_remember/ada_forget/ada_session_recall/web_search
+    + env_knobs ADA_SESSION_PRIME=1/ADA_PRIME_SKIP_HISTORY=1 via new render-tool-profiles env_knobs support. kk-ha/backend.env
+    re-rendered (snapshot .bak.20261126T060430Z), ada-kk restarted, /api/health ok:true degraded:false. Effective
+    surface=19 tools, zero memory/web leaks. Side note: tony env also re-rendered but only retired a dead hand-written
+    exclude line (no'
 requests:
 - id: kk-do-you-accept-a-reversible-3-7-day-cm-d8c11e
   ask: 'KK: do you accept a reversible 3–7 day CMS-only memory pilot? If yes, Tony proceeds via the deploy gate;
