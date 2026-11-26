@@ -3,10 +3,11 @@
 #
 # Read-only companion to scripts/devin/sync-runner-tools.sh (job
 # 2026-11-18-runner-tooling-selfheal-sync, OPS-1026). For each host it
-# compares sha256 of the installed snapshot against the canonical copy
-# in that host's chaba checkout (~/CascadeProjects/chaba, kept current
-# by chaba-repo-sync). Prints one line per tool:
-#   OK / DRIFT / MISSING-DEST / MISSING-SRC / NO-CHECKOUT
+# compares sha256 of the installed snapshot against the CONTENT PINS in
+# the controller's scripts/devin/runner-tooling.manifest.json — not against
+# that host's checkout, which can be ahead of or behind master and used to
+# create false DRIFT reports. Prints one line per tool:
+#   OK / DRIFT / MISSING-DEST
 #
 # Usage (from ansible/ on the controller):
 #   ansible-playbook playbooks/audit-runner-tools.yml
@@ -20,43 +21,38 @@
   gather_facts: false
   become: false  # read-only audit of the login user's files — no sudo
   vars:
+    tool_pins: "{{ lookup('file', playbook_dir + '/../../scripts/devin/runner-tooling.manifest.json') | from_json }}"
     runner_tools:
-      - src: scripts/board/runner-agent.py
-        dest: runner-agent
-      - src: scripts/devin/devin-dispatch.sh
-        dest: devin-dispatch
-      - src: scripts/devin/claude-dispatch.sh
-        dest: claude-dispatch
-      - src: scripts/devin/devin-dispatch-prune.sh
-        dest: devin-dispatch-prune
-      - src: scripts/devin/dispatch-queue.sh
-        dest: dispatch-queue
-      - src: scripts/board/dispatch_repos.py
-        dest: dispatch_repos.py
+      - dest: runner-agent
+        pin: "{{ tool_pins.tools.runner_agent.sha256 }}"
+      - dest: devin-dispatch
+        pin: "{{ tool_pins.tools.devin_dispatch.sha256 }}"
+      - dest: claude-dispatch
+        pin: "{{ tool_pins.tools.claude_dispatch.sha256 }}"
+      - dest: devin-dispatch-prune
+        pin: "{{ tool_pins.tools.devin_dispatch_prune.sha256 }}"
+      - dest: dispatch-queue
+        pin: "{{ tool_pins.tools.dispatch_queue.sha256 }}"
+      - dest: dispatch_repos.py
+        pin: "{{ tool_pins.tools.dispatch_repos.sha256 }}"
 
   tasks:
-    - name: Compare installed tools against checkout sources
+    - name: Compare installed tools against controller pins
       ansible.builtin.shell: |
         set -u
-        co="$HOME/CascadeProjects/chaba"
-        if [ ! -d "$co/.git" ]; then echo "NO-CHECKOUT $co"; exit 0; fi
-        cd "$co" || exit 0
-        python3 - "$co" <<'PYEOF'
-        import hashlib, os, sys
-        co = sys.argv[1]
+        python3 <<'PYEOF'
+        import hashlib, os
         tools = {{ runner_tools | to_json }}
         for t in tools:
-            src = os.path.join(co, t["src"])
             dst = os.path.expanduser("~/.local/bin/" + t["dest"])
-            if not os.path.isfile(src):
-                print(f"MISSING-SRC {t['dest']} ({t['src']})")
-                continue
             if not os.path.isfile(dst):
                 print(f"MISSING-DEST {t['dest']}")
                 continue
-            h = lambda p: hashlib.sha256(open(p, 'rb').read()).hexdigest()[:12]
-            s, d = h(src), h(dst)
-            print(("OK     " if s == d else "DRIFT  ") + f"{t['dest']} src={s} inst={d}")
+            with open(dst, 'rb') as fh:
+                d = hashlib.sha256(fh.read()).hexdigest()[:12]
+            p = t["pin"][:12]
+            print(("OK     " if p == d else "DRIFT  ") +
+                  f"{t['dest']} pin={p} inst={d}")
         PYEOF
       args:
         executable: /bin/bash
@@ -126,7 +122,7 @@
           {%- set out = [] -%}
           {%- for h in audited_hosts -%}
             {%- set lines = (hostvars[h].audit.stdout_lines | default([])) if (h in hostvars and hostvars[h].audit is defined) else [] -%}
-            {%- set bad = lines | select('match', '^(DRIFT|MISSING-DEST|MISSING-SRC|NO-CHECKOUT)') | list -%}
+            {%- set bad = lines | select('match', '^(DRIFT|MISSING-DEST)') | list -%}
             {%- if bad | length > 0 -%}{%- set _ = out.append({'host': h, 'issues': bad}) -%}{%- endif -%}
           {%- endfor -%}
           {{ out }}
@@ -134,7 +130,7 @@
           {%- set out = [] -%}
           {%- for h in audited_hosts -%}
             {%- set lines = (hostvars[h].audit.stdout_lines | default([])) if (h in hostvars and hostvars[h].audit is defined) else [] -%}
-            {%- set bad = lines | select('match', '^(DRIFT|MISSING-DEST|MISSING-SRC|NO-CHECKOUT)') | list -%}
+            {%- set bad = lines | select('match', '^(DRIFT|MISSING-DEST)') | list -%}
             {%- if bad | length > 0 -%}{%- set _ = out.append(h ~ ':' ~ (bad | length)) -%}{%- endif -%}
           {%- endfor -%}
           {{ out | join('|') }}
