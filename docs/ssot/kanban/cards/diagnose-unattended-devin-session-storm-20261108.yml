@@ -1,7 +1,7 @@
 id: diagnose-unattended-devin-session-storm-20261108
 title: Diagnose repeated unattended Devin sessions before re-enabling runners
-column: backlog
-updated: 2026-11-26 03:58
+column: review
+updated: 2026-11-26 19:55
 brief: Investigate the repeated unattended Devin sessions and keep their runner source paused until the trigger
   is understood.
 priority: high
@@ -264,6 +264,13 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:55
+  from: devin
+  text: 'Diagnosis complete — docs/reports/dev-1209-unattended-session-storm-diagnosis-2026-11-26.md. Root cause:
+    board-api /action claim/move/finish returned 200 without saving (KNB-1196, fixed by 91f327ca/PR #128); the still-queued
+    disk state made dispatch re-claim finished tasks, spawning the repeated unattended devin-task sessions. Persistence
+    suite 7/7 pass (py3.12). Timers stay disabled: re-enable needs (1) runner-agent converge to manifest pin 1514c75c
+    on the host, (2) Tony''s separate resume approval — recommended idc03-only canary first. Moved to review for verification.'
 requests:
 - id: resume-paused-runners-knb1196
   ask: 'KNB-1196 is fixed and deployed. Should any unattended runners be resumed now? Current containment: idc03
@@ -296,4 +303,4 @@ requests:
   answer: Leave both running; I only meant Devin dispatch sessions.
 action:
   status: idle
-awaiting_action: true
+review_kind: verify
