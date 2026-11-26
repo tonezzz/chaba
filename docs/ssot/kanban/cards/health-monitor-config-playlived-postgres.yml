@@ -1,7 +1,7 @@
 id: health-monitor-config-playlived-postgres
 title: Health monitor config — Playlived target and Postgres check threshold
 column: doing
-updated: 2026-11-26 13:13
+updated: 2026-11-26 13:14
 brief: mcp-health quick_health fails 2/8 (Playlived tony-dell, Postgres) after config reload; evidence suggests
   monitor config/stale state, not confirmed outages.
 priority: medium
@@ -60,6 +60,13 @@ comms:
   from: devin
   text: 'raised request approve-repair-of-playlived-dell-service-6df106: Approve repair of playlived-dell.service
     on tony-dell? It is the declared playlived fallback (idc02 :9240 is primary) an'
+- at: 2026-11-26 13:14
+  from: devin
+  text: 'Done in worktree (commit d4b6feafc7). Findings: Playlived FAIL is a REAL outage — playlived-dell.container
+    failed on conmon --log-tag; repair request raised (needs approval). Postgres FAIL was monitor breakage: live
+    config points host:idc03 but tony-dell→idc03 ssh uses ProxyJump tony-omen, now refused by AllowTcpForwarding
+    no. Fix: postgres→idc03 in yml + server.js execOnHealthHost tries direct tailnet ssh first. get_health_status
+    timeout not reproduced; get_troubleshooting_info case bug fixed. '
 action:
   type: dispatch
   status: running
