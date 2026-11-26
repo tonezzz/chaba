@@ -1,0 +1,41 @@
+id: ops-mn01-restore-sshd-shell-20261126
+title: 'mn01: restore standard SSH shell access (SFTP-only lock)'
+column: backlog
+updated: 2026-11-26 12:33
+brief: Remove the accidental global ForceCommand internal-sftp on mn01 so shell, Ansible and the canary rerun work
+  again.
+priority: high
+tags:
+- ops
+- ssh
+- mn01
+- recovery
+spec: 'TASK (host-local on mn01 ONLY — no repo work, no git push):
+
+  Restore standard SSH shell access. /etc/ssh/sshd_config line 80 has `ForceCommand internal-sftp` (added 2026-11-26
+  08:25), which blocks all shell/Ansible access. Run exactly these commands via the host shell with sudo -n:
+
+
+  sudo -n cp -a /etc/ssh/sshd_config /etc/ssh/sshd_config.bak-20261126-sftp-only
+
+  sudo -n sed -i ''s|^ForceCommand internal-sftp$|# SFTP-only restriction removed 2026-11-26 — restore host standard
+  shell access|'' /etc/ssh/sshd_config
+
+  sudo -n sshd -t && echo SSHD_T_OK
+
+  sudo -n systemctl restart ssh && echo SSH_RESTARTED
+
+  grep -n ''ForceCommand|SFTP-only'' /etc/ssh/sshd_config || true
+
+
+  Do not change any other file or service. Post the verbatim output as a comment on this card. Do not edit or push
+  any git repo.'
+action:
+  type: dispatch
+  host: mn01
+  executor: devin
+ref: OPS-1432
+comms:
+- at: 2026-11-26 12:33
+  from: tony
+  text: card captured via board-api
