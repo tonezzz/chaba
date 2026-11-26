@@ -1,7 +1,7 @@
 id: jevnest-kk-mac-capacity-loop
 title: JevNest KK-Mac capacity-aware queue refill
 column: doing
-updated: 2026-11-26 19:40
+updated: 2026-11-26 19:57
 brief: Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner
   load, disk, and fallback gates.
 priority: high
@@ -395,6 +395,13 @@ comms:
     drift (procedure docs still say load_1m<=4.0 absolute + depth 3/new 3, deployed is per-core gate + 5/5 since
     2026-11-13/25) and a real gap — kk_mac_metrics.py exists but nothing publishes its rollup into the L0-L3 report
     graph, so weekly JevTeam review has no feed. Wiring that now.'
+- at: 2026-11-26 19:57
+  from: devin
+  text: 'DONE (dispatch a397a89528). Spec audit vs live: admission gate eligible (heartbeat 185s, ollama ok, load
+    2.32/14 per-core, disk 58G), producer dry-run correctly skipped queue_at_capacity at 6 live packs. Spec deltas
+    are all later owner decisions now documented (per-core load gate 11-25, 5/5 watermark 11-13, operator_brief/safe_route
+    held). Real gap closed: kk_mac_metrics had no publish path — added windowed 7d rollup + publish(), registered
+    nest-lanes/kk-llm L1 node under chaba-nest, declared je'
 action:
   status: running
   type: dispatch
