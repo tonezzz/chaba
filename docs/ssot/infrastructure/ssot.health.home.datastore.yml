@@ -27,22 +27,22 @@ services:
     name: Postgres
     type: container
     container: chaba-postgres-16
-    host: tony_dell
+    host: idc03
     expected_state: running
     timeout: 5
     category: datastore
     profiles:
       - home
       - mobile
-    note: "Postgres runs in a rootless Podman container on tony-dell; health is checked locally."
+    note: "Postgres runs in a rootless Podman container on idc03 (migrated off tony-dell in OPS-0725); health is checked over the tailnet."
     verification:
-      - "Test container on tony_dell: podman ps | grep chaba-postgres-16"
-      - "Test port: nc -zv postgre 5432"
-      - "Check logs: podman logs chaba-postgres-16 --tail 20"
+      - "Test container on idc03: ssh idc03 podman ps | grep chaba-postgres-16"
+      - "Test port: nc -zv 100.102.134.91 5432"
+      - "Check logs: ssh idc03 journalctl --user -u chaba-postgres.service --tail 20"
     recovery_actions:
-      - "Restart container on tony_dell: podman restart chaba-postgres-16"
-      - "Check data volume: /home/tony/.config/containers/postgres/data"
-      - "If tony_dell cannot be recovered, run the failover script: /home/tony/.local/bin/yomi-failover-to-omen.sh"
+      - "Restart container on idc03: ssh idc03 systemctl --user restart chaba-postgres.service"
+      - "Check data volume: /home/tony/.local/share/containers/storage/volumes on idc03"
+      - "If idc03 cannot be recovered, run the failover script: /home/tony/.local/bin/yomi-failover-to-omen.sh"
   - id: weaviate
     name: Weaviate
     type: http
