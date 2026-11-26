@@ -1,7 +1,7 @@
 id: bigquery-usage-ledger-writer
 title: BigQuery usage ledger — dataset, MERGE writer, 10-row backfill, verification
 column: doing
-updated: 2026-11-26 23:10
+updated: 2026-11-26 23:23
 brief: Turn the local usage reports into a durable, queryable ledger now that the BigQuery API is enabled on the
   Chaba project (0 datasets). Implement the schema in infra/bigquery-ledger-schema-2026-11-26.md, a dry-run-first
   MERGE writer, a bounded backfill, and verification queries. Card ADA-1458 (eval-judge lane) stays independent
@@ -113,6 +113,20 @@ comms:
 - at: 2026-11-26 23:00
   from: chaba
   text: answer saved but session delivery skipped (bad task_id)
+- at: 2026-11-26 23:23
+  from: devin
+  text: 'VERIFICATION (project gen-lang-client-0694401188, dataset chaba_usage @ asia-southeast1):
+
+
+    row counts per table: sessions=9, daily_quota=1, eval_verdicts=0, model_audit=5 (per approved all-rows answer
+    on request bq-backfill-counts)
+
+
+    duplicate-key checks (GROUP BY natural key HAVING COUNT(*)>1): sessions.session_id -> 0 rows; daily_quota.(quota_date,source)
+    -> 0; eval_verdicts.(run_id,fixture_id,model) -> 0; model_audit.(host,checked_at) -> 0
+
+
+    cost-per-PR from daily_quota: quota_date=2026-11-26, '
 claim:
   since: 2026-11-26 22:37
 requests:
