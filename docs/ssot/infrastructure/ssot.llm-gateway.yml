@@ -74,6 +74,7 @@ budgets:
       ada-embed-bench, board-api /lesson translation"
     LITELLM_KEY_BENCH: "live $4 / 30d (raised 2026-11-21, Tony approved — was $2/30d at 100% with 422s; spend carried, reset 2026-12-01) — benchmark runs + dev lanes"
     LITELLM_KEY_KK: "live $5 / 30d (matches) — kk lane side-tools"
+    LITELLM_KEY_EVAL_JUDGE: "live $10 / 30d — eval/judge lane only (card gemini-eval-judge-lane, minted 2026-11-26 via mint-key.sh, alias eval-judge, model scope eval-judge); no dependents — first consumer is scripts/litellm/eval-budget.py. App-level ceiling EVAL_JUDGE_DAILY_MAX=10000 req/day client-side."
   live_audit: >-
     2026-10-28 (card model-key-usage-control): LiteLLM_AuditLog is EMPTY
     — proxy audit logging off, cap changes attributable only via journal
@@ -265,6 +266,25 @@ job_classes:
   bench:
     chain: [qwen2.5:32b@ollama-kkmac, gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
     note: benchmark traffic on its own virtual key — spend isolated by design. kk-mac leg-1 since 2026-11-13 via the admission shim (see summary).
+  eval-judge:
+    chain: [gemini-3.5-flash-lite@paid, llama3.2:3b@ollama-kkmac, gemma3:12b@colab]
+    note: >-
+      NEW bulk eval/judge work only (card gemini-eval-judge-lane,
+      deployed idc03 2026-11-26). Paid-first, FAIL CLOSED — dict legs
+      pin disable_fallbacks so a failed leg cannot recursively expand
+      into free-tier chains; NO :free / or-free-* / gemini-*-free legs
+      (the OPS-1255 run-2 429 path). Caller: scripts/litellm/eval-budget.py
+      owns the app-level daily ceiling EVAL_JUDGE_DAILY_MAX=10000
+      (~3% of the 350k/day paid-tier quota) + JSONL ledger at
+      ~/.local/state/eval-judge/<date>.jsonl; on cap it parks with a
+      visible reason, no provider request. Opt-in via LITELLM_URL +
+      LITELLM_KEY_EVAL_JUDGE; deterministic verifiers stay authoritative.
+      Quota caveat: the 2026-11-26 Console capture (350k/day, usage 1)
+      was project gen-lang-client-0694401188 — the ARCHIVED ops project,
+      not the serving one. GEMINI_API_KEY_PAID lives in
+      gen-lang-client-0854236591 (re-verified 2026-11-26), which was
+      monthly-spend-capped at deploy time — every paid leg 429s until
+      the cap lifts, so calls currently land on the local legs.
   vision:
     chain: [google/gemma-4-31b-it:free@openrouter, moondream@ollama]
     note: ada ADA_VISION_* default reroutes here (ADA_VISION_BASE_URL=<base>/v1).
