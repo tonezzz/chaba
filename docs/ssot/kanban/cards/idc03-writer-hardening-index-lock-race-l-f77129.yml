@@ -1,7 +1,7 @@
 id: idc03-writer-hardening-index-lock-race-l-f77129
 title: idc03 writer hardening — index.lock race, .local-conflict debris, report-watch ping-pong
-column: backlog
-updated: 2026-11-26 21:23
+column: doing
+updated: 2026-11-26 22:18
 tags:
 - ops
 - idc03
@@ -15,10 +15,11 @@ spec: 'Scope to residual hardening item 1 only. In scripts/board/kanban-commit.s
   and live-lock no-op behavior.'
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   repo: chaba
-  attempts: 0
+  attempts: 1
+  runner: tony-dell
 ref: OPS-0072
 comms:
 - at: 2026-11-12 16:37
@@ -265,4 +266,8 @@ comms:
 - at: 2026-11-26 21:23
   from: chaba
   text: 'idc02 defers: host overloaded (5m load/core 1.53 > 1.5)'
-claim: {}
+- at: 2026-11-26 22:18
+  from: tony-dell
+  text: claimed
+claim:
+  since: 2026-11-26 22:18
