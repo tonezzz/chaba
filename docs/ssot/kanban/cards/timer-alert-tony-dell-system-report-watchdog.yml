@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-system-report-watchdog
 title: Timer system-report-watchdog on tony-dell failing
-column: done
-updated: 2026-11-26 03:58
+column: backlog
+updated: 2026-11-26 13:05
 priority: high
 tags:
 - timer-alert
@@ -2087,6 +2087,14 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 13:05
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-26 13:05
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-26 13:00) of `system-report-watchdog.service` on `tony-dell`
+    result=exit-code — investigate journal: `journalctl --user -u system-report-watchdog.service` on the host. See
+    CMS `timer-timeline-tony-dell`.'
 spec: Investigate the failing systemd user service `system-report-watchdog.service` on the host `tony-dell`, which
   has repeatedly exited with a non-zero exit code as recorded in recent timer alerts. Access the host and examine
   the journal using `journalctl --user -u system-report-watchdog.service`, consulting the CMS `timer-timeline-tony-dell`
