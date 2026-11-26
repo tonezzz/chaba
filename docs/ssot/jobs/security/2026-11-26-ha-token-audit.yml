@@ -1,0 +1,50 @@
+icon: shield
+date: 2026-11-26
+card: timer-alert-tony-dell-ha-auth-watch
+context: >-
+  User approved proceeding with credential work after the ha-auth-watch
+  crash/dedupe loops were closed. Goal: decide whether any HA long-lived
+  token was stale and needed rotation, and identify the source of the
+  localhost invalid-auth probes. No secret value was printed at any point;
+  every probe returned only an HTTP status code.
+changes: []
+verification:
+  - "tony-dell watcher tokens: michael-ha raw token file and tony-ha
+    scripts-dell LLAT both returned HTTP 200 on their declared endpoints."
+  - "tony-omen: ha-michael-live.env HASS_TOKEN -> michael-ha 200;
+    home-assistant-token.env -> tony-ha 200; nodered-ha.env -> tony-ha 200;
+    chaba-guest.env -> tony-ha 200; telemetry-ha-push.env -> tony-ha 200;
+    ada-ha-token.env -> its own instance on port 8125 = 200 (not 8123)."
+  - "key-watch.py --dry-run --hosts tony-omen,tony-dell: 0 alert / 1 warn
+    (OPENROUTER_API_KEY absent on tony-dell, unrelated) / 1 unknown, no
+    dead HA slots. key-watch.timer last ran 12:10 +07, not during the probes."
+  - "The 401s in tony-ha's log at 14:33:02/16/40 +07 were self-inflicted
+    by an ad-hoc sweep that tested every ~/.config/secrets/*.env variable
+    against 127.0.0.1:8123 regardless of its declared instance (ada-ha is
+    8125, michael-ha and mn-ha-dev are separate hosts). No stored slot is
+    stale. Last bad probe 14:33:40; no new lines at 14:35."
+  - "The 14:33:40 watcher tick correctly caught one of those probes and
+    emitted one false-positive focus-inbox item
+    2026-11-26-143340-ha-auth-failure-tony-ha-from-localhost.yml via
+    board-api into the served checkout on idc03. It also reported
+    '1 deduped', confirming the dedupe fix still holds."
+rollback: >-
+  None needed — no credential, HA config, token file or service was
+  changed. No rotation was performed because every token is valid on its
+  correct endpoint.
+residual: >-
+  The false-positive focus-inbox item remains: board-api /inbox has no
+  delete/update endpoint, and focus-inbox files are a board-owned surface,
+  so it was not removed by direct file edit. It is flagged in the card
+  comment for triage. The original curl/8.18.0 localhost probes from
+  23–26 Nov were one-off ad-hoc diagnostics whose exact caller was not
+  identified (no matching script or shell history); they have not
+  recurred since 09:50:35 +07 before this audit.
+lesson: >-
+  Probe an HA token only against the endpoint declared for that slot.
+  Wrong-endpoint 401s are not harmless: HA records them as invalid-auth
+  warnings from localhost, and ha-auth-watch turns them into real
+  focus-inbox alerts. Use `key-watch.py --dry-run` (which carries each
+  slot's URL) instead of an ad-hoc env-file sweep. Also: a 401 from a
+  token tested against the wrong HA instance is not evidence of a stale
+  credential — check the slot's declared URL before rotating anything.
