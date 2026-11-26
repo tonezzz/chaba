@@ -1,7 +1,7 @@
 id: timer-alert-idc03-yomi-update-all
 title: Timer yomi-update-all on idc03 failing
-column: done
-updated: 2026-11-26 03:56
+column: backlog
+updated: 2026-11-26 13:05
 priority: high
 tags:
 - timer-alert
@@ -270,6 +270,13 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 13:05
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-26 13:05
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-26 12:48) of `yomi-update-all.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u yomi-update-all.service` on the host. See CMS `timer-timeline-idc03`.'
 spec: Investigate the failure of yomi-update-all.service on host idc03, which exited with an error code during its
   last run on 11-11 at 20:00. Inspect the systemd user journal using journalctl --user -u yomi-update-all.service
   on idc03 and cross-reference the CMS timer-timeline-idc03 for additional context. The done-condition is verified
