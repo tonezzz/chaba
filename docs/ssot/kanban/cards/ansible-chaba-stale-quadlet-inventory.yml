@@ -1,0 +1,29 @@
+id: ansible-chaba-stale-quadlet-inventory
+title: ansible-chaba quadlet inventory is stale fleet-wide — mddb/mddb-cms/ollama/tony-ha/obsidian-vault quadlets
+  on idc03 (and dell/idc02/mn01) would break services o
+column: backlog
+updated: 2026-11-27 01:09
+priority: high
+tags:
+- ansible
+- quadlet
+- infra
+- drift
+- mddb
+spec: 'Found during gemini-proxy-quadlet-envfile-drop (2026-11-27). The 2026-11-26T02:17Z fleet regeneration (generator:
+  /home/tony/tony-projects/ansible-chaba on idc02 — NOT a git repo; github.com/tony/chaba-ansible does not resolve)
+  rewrote quadlets from an inventory that is badly stale vs live. Worst case idc03 mddb.container: generated unit
+  uses image docker.io/tradik/mddb:2.15.3 (live runs localhost/mddb:2.18.10-merge), volume /data instead of /app/data
+  (would start EMPTY database), drops EnvironmentFile=%h/.config/secrets/mddb-follower.env (replication secret),
+  and ~30 env vars (MDDB_PATH, MDDB_REPLICATION_*, embed queue tuning, GOMEMLIMIT 8GiB vs 12GiB). mddb.service generated
+  unit ALREADY reflects the bad quadlet — next restart likely takes down the MDDB primary. Same class of drift likely
+  in mddb-cms, ollama, tony-ha, obsidian-vault on idc03 and the regenerated set on tony-dell (11:28), idc02 (12:32),
+  mn01 (08:53). Tasks: (1) audit every ansible-managed quadlet vs the running container config (podman inspect)
+  and vs stacks/ SSOT; (2) reconcile ansible-chaba inventory host_vars to live truth or retire the generator; (3)
+  get ansible-chaba into version control at its declared repo; (4) do NOT restart any affected unit until reconciled.
+  gemini-ollama-proxy itself was fixed under gemini-proxy-quadlet-envfile-drop.'
+ref: SYS-1472
+comms:
+- at: 2026-11-27 01:09
+  from: tony
+  text: card captured via board-api
