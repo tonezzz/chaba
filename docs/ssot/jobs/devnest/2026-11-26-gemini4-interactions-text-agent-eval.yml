@@ -304,8 +304,10 @@ verify:
 
 remaining:
   - "DONE 2026-11-26: token counting, model metadata and Files API upload/get/list/delete verified after generation quota was exhausted."
-  - "BLOCKED 2026-11-26: thought summaries (default/high/streaming), inline-image generation and OpenAI compatibility all hit the 500/day free generation cap; retry g4-interactions-misc.py after the ~17h reset."
-  - "Needs Tony's explicit go-ahead on the paid-project monthly cap or another paid project before Gemini 4 can be tested."
-  - "Re-run the same six tasks on Gemini 4 Neon/Carbon/Hydrogen and on gemini-3.8-flash once access exists; keep the model fixed across arms."
+  - "SCHEDULED 2026-11-27 08:30 UTC (task d282b2f3): after the 500/day reset, retry thought summaries (default/high/streaming), inline-image generation and OpenAI compatibility via g4-interactions-misc.py; were blocked, not failed."
+  - "DONE 2026-11-26: Tony gave go-ahead and set the shared paid cap target at $5/month. Applying the cap itself is a billing-console action on Tony's account; this agent cannot change it."
+  - "SCHEDULED (task 059dec83, daily 09:00 UTC): raw one-call cap check; on success run the six tasks on gemini-4-neon then gemini-4-carbon with gemini-3.8-flash as baseline, hard estimated-cost ceiling $4.00, then self-disable."
+  - "SCHEDULED 2026-11-27 08:30 UTC (task d282b2f3): one-call gemini-4-hydrogen probe on the free tier; if it returns 200, run the same six tasks there. Hydrogen is documented free of charge; a 503 high-demand response was seen on 2026-11-26. Neon/Carbon confirm 0 free input tokens/min."
   - "DONE 2026-11-26: 20-turn free-tier run found only a 2.6% input-token saving; do not claim a token-cost benefit from previous_interaction_id on this evidence."
-  - "Re-run the legacy arm on a paid quota to replace the 2/6 partial baseline."
+  - "SCHEDULED: legacy generateContent arm on a paid quota replaces the 2/6 partial baseline in the 059dec83 harness."
+  - "OPEN, not scheduled: gemini-4-argon (paid-only, outside the approved eval scope); Managed Agents eval; computer-use acknowledgement; TTS/voice design/replication; batch generation; explicit and paid implicit caching; Priority/Flex tier confirmation on paid; large PDF/audio/video Files API paths; Genie 4, Omni video and Transcribe Live catalog surfaces."
