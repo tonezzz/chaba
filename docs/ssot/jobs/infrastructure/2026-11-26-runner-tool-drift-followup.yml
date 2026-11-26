@@ -27,12 +27,13 @@ context:
     symptom: "con01-runner-pilot-smoke-2 completed the work and posted DONE at
       05:12 CET, then the runner marked it failed: journal reported
       status=2/INVALIDARGUMENT and the task dir's exit_code file was empty."
-    root_cause: "con01's installed devin-dispatch was 54db1f44eb1c9865, a
-      2026-11-24-era copy with `rc=${PIPESTATUS[0]}` in the systemd-run ExecStart
-      body. systemd expands ${VAR} in ExecStart itself, so PIPESTATUS[0] was
-      treated as an invalid environment variable name, `$rc` became empty, and
-      `exit "$rc"` returned 2. The repo/manifest pin c5fa39476cb27cad already
-      carried the fix (`set -o pipefail; rc=$?`, commit 237ec9b33a)."
+    root_cause: >-
+      con01's installed devin-dispatch was 54db1f44eb1c9865, a 2026-11-24-era
+      copy with `rc=${PIPESTATUS[0]}` in the systemd-run ExecStart body. systemd
+      expands ${VAR} in ExecStart itself, so PIPESTATUS[0] was treated as an
+      invalid environment variable name, `$rc` became empty, and `exit "$rc"`
+      returned 2. The repo/manifest pin c5fa39476cb27cad already carried the fix
+      (`set -o pipefail; rc=$?`, commit 237ec9b33a).
     why_sync_missed_it: "sync-runner-tools.sh's never-downgrade guard keeps an
       installed copy when it differs and is newer by mtime. The stale copy was
       stamped 02:42 CET, newer than the 2026-11-24 repo file, so every sync tick
