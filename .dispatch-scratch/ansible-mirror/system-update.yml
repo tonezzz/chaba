@@ -1,0 +1,75 @@
+- name: Update MacBook system packages and Devin Desktop
+  hosts: all
+  gather_facts: false
+  become: false
+
+  tasks:
+    - name: Record versions before the update
+      ansible.builtin.shell: |
+        echo "kernel=$(uname -r)"
+        echo "devin-desktop=$(dpkg-query -W -f='${Version}' devin-desktop 2>/dev/null)"
+      register: before
+      changed_when: false
+
+    - name: Refresh apt package lists
+      ansible.builtin.command: sudo /usr/bin/apt-get update
+      register: apt_update
+      changed_when: false
+
+    - name: Show available upgrades
+      ansible.builtin.shell: apt list --upgradable 2>/dev/null | tail -n +2
+      register: upgradable
+      changed_when: false
+
+    - name: Upgrade system packages
+      # Desktops keep the exact command their scoped sudoers rules allow;
+      # IDC hosts add non-interactive conffile handling via group_vars/idc.yml.
+      ansible.builtin.command: sudo /usr/bin/apt-get {{ apt_upgrade_flags | default('-y') }} upgrade
+      environment:
+        DEBIAN_FRONTEND: noninteractive
+      register: apt_upgrade
+      changed_when: "'0 upgraded, 0 newly installed' not in apt_upgrade.stdout"
+
+    - name: Check whether devin-desktop is installed
+      ansible.builtin.shell: |
+        dpkg-query -W -f='${Status}' devin-desktop 2>/dev/null | grep -q 'install ok installed'
+      register: devin_installed
+      changed_when: false
+      failed_when: false
+
+    - name: Upgrade Devin Desktop from its apt repo
+      ansible.builtin.command: sudo /usr/bin/apt-get -y --only-upgrade install devin-desktop
+      environment:
+        DEBIAN_FRONTEND: noninteractive
+      register: devin_upgrade
+      changed_when: false
+      when: devin_installed.rc == 0
+
+    - name: Remove obsolete packages
+      ansible.builtin.command: sudo /usr/bin/apt-get -y autoremove
+      environment:
+        DEBIAN_FRONTEND: noninteractive
+      register: autoremove
+      changed_when: "'0 to remove' not in autoremove.stdout"
+
+    - name: Clean the apt cache
+      ansible.builtin.command: sudo /usr/bin/apt-get autoclean
+      register: autoclean
+      changed_when: false
+
+    - name: Record versions after the update
+      ansible.builtin.shell: |
+        echo "kernel=$(uname -r)"
+        echo "devin-desktop=$(dpkg-query -W -f='${Version}' devin-desktop 2>/dev/null)"
+      register: after
+      changed_when: false
+
+    - name: Show update summary
+      ansible.builtin.debug:
+        msg:
+          - "Before: {{ before.stdout_lines | join(' | ') }}"
+          - "After:  {{ after.stdout_lines | join(' | ') }}"
+          - "Available upgrades found: {{ upgradable.stdout_lines | length }}"
+          - "APT result: {{ apt_upgrade.stdout_lines[-3:] | join(' | ') }}"
+          - "Devin result: {{ (devin_upgrade.stdout_lines | default([]))[-3:] | join(' | ') | default('not installed on this host', true) }}"
+          - "Tidy up: {{ autoremove.stdout_lines[-1:] | join('') }}"

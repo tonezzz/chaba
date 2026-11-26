@@ -1,0 +1,321 @@
+---
+# Ansible Job Dispatch Playbook
+#
+# Usage:
+#   ansible-playbook playbooks/dispatch_job.yml \
+#     -e job_id=train-llama-001 \
+#     -e job_image=ghcr.io/user/llama-train:latest \
+#     -e job_cmd="torchrun --nproc_per_node=4 train.py" \
+#     -e job_gpus=4 \
+#     -e job_min_vram_gb=20 \
+#     -e target_group=gpu_hosts
+#
+# Requires: sidecar collectors running on targets, Redis at sidecar_redis_host
+
+- name: Dispatch containerized job to eligible host
+  hosts: "{{ target_group | default('all') }}"
+  gather_facts: true
+  vars:
+    # Job specification (passed via -e; required ones use mandatory)
+    job_gpus: "{{ lookup('env', 'JOB_GPUS') | default('1', true) | int }}"
+    job_min_vram_gb: "{{ lookup('env', 'JOB_MIN_VRAM_GB') | default('8', true) | int }}"
+    job_max_load_pct: "{{ lookup('env', 'JOB_MAX_LOAD_PCT') | default('70', true) | int }}"
+    job_max_mem_pct: "{{ lookup('env', 'JOB_MAX_MEM_PCT') | default('80', true) | int }}"
+    job_require_tags: "{{ (lookup('env', 'JOB_REQUIRE_TAGS') | default('[]', true) | from_yaml) or [] }}"
+    job_exclude_tags: "{{ (lookup('env', 'JOB_EXCLUDE_TAGS') | default('[]', true) | from_yaml) or [] }}"
+
+    # Sidecar/Redis connection
+    redis_host: "{{ lookup('env', 'SIDECAR_REDIS_HOST') | default('100.123.163.11', true) }}"
+
+    # Runtime
+    job_timeout_sec: "{{ lookup('env', 'JOB_TIMEOUT_SEC') | default('86400', true) | int }}"
+    container_runtime: "{{ lookup('env', 'CONTAINER_RUNTIME') | default('podman', true) }}"
+
+    # GPU reservation (scheduler passes these for reserve_gpu_window_sec jobs;
+    # empty for normal jobs — playbook then picks unheld indices itself)
+    gpu_device_indices: "{{ lookup('env', 'GPU_DEVICE_INDICES') | default('', true) }}"
+    gpu_reservation_id: "{{ lookup('env', 'GPU_RESERVATION_ID') | default('', true) }}"
+
+  serial: 1  # Dispatch to one host at a time; remove for parallel fan-out
+  throttle: 3
+  any_errors_fatal: true
+
+  pre_tasks:
+    - name: Validate required job parameters
+      ansible.builtin.assert:
+        that:
+          - job_id is defined and job_id | length > 0
+          - job_image is defined and job_image | length > 0
+          - job_cmd is defined and job_cmd | length > 0
+        fail_msg: "Required job parameters: job_id, job_image, job_cmd (pass via -e)"
+
+    - name: Normalize tag lists (JSON strings from -e)
+      ansible.builtin.set_fact:
+        require_tags: "{{ job_require_tags | from_json if job_require_tags is string and (job_require_tags | length) > 0 else (job_require_tags | default([])) }}"
+        exclude_tags: "{{ job_exclude_tags | from_json if job_exclude_tags is string and (job_exclude_tags | length) > 0 else (job_exclude_tags | default([])) }}"
+
+    - name: Verify redis-py available (controller side)
+      ansible.builtin.command:
+        argv:
+          - python3
+          - -c
+          - "import redis"
+      delegate_to: localhost
+      run_once: true
+      become: false
+      changed_when: false
+      failed_when: false
+
+    - name: Fetch fresh sidecar metrics from Redis
+      ansible.builtin.set_fact:
+        host_metrics: "{{ query('sidecar_metrics', inventory_hostname, redis_host) | first | default({}) }}"
+      delegate_to: localhost
+      run_once: false
+
+    - name: Debug sidecar metrics
+      ansible.builtin.debug:
+        var: host_metrics
+      when: ansible_verbosity >= 2
+
+  tasks:
+    # ─── Eligibility Checks ──────────────────────────────────────────────
+    - name: Check host has required tags
+      ansible.builtin.assert:
+        that:
+          - "host_metrics.tags is defined"
+          - "require_tags | intersect(host_metrics.tags) | length == require_tags | length"
+        fail_msg: "Host {{ inventory_hostname }} missing required tags: {{ require_tags | difference(host_metrics.tags) }}"
+        quiet: true
+      when: require_tags | length > 0
+
+    - name: Check host has no excluded tags
+      ansible.builtin.assert:
+        that:
+          - "host_metrics.tags is defined"
+          - "exclude_tags | intersect(host_metrics.tags) | length == 0"
+        fail_msg: "Host {{ inventory_hostname }} has excluded tags: {{ exclude_tags | intersect(host_metrics.tags) }}"
+        quiet: true
+      when: exclude_tags | length > 0
+
+    - name: Check GPU count
+      ansible.builtin.assert:
+        that:
+          - "host_metrics.gpu_count is defined"
+          - "host_metrics.gpu_count | int >= job_gpus | int"
+        fail_msg: "Host {{ inventory_hostname }} has {{ host_metrics.gpu_count | default(0) }} GPUs, need {{ job_gpus }}"
+        quiet: true
+      when: job_gpus | int > 0
+
+    - name: Check GPU VRAM (per-GPU minimum)
+      ansible.builtin.assert:
+        that:
+          - "host_metrics.gpus is defined"
+          - "host_metrics.gpus | selectattr('mem_free_mb', '>', job_min_vram_gb | int * 1024) | list | length >= job_gpus | int"
+        fail_msg: "Host {{ inventory_hostname }} has insufficient free VRAM (need {{ job_gpus }}x {{ job_min_vram_gb }}GB)"
+        quiet: true
+      when: job_gpus | int > 0 and job_min_vram_gb | int > 0
+
+    # ─── GPU Reservation Holds ───────────────────────────────────────────
+    - name: Fetch GPU reservation holds on this host (controller side)
+      ansible.builtin.command:
+        argv:
+          - python3
+          - /home/tony/ansible/queue/queue_manager.py
+          - holds
+          - --host
+          - "{{ inventory_hostname }}"
+          - --redis
+          - "{{ redis_host }}"
+      delegate_to: localhost
+      register: gpu_holds_result
+      changed_when: false
+      failed_when: false
+      when: job_gpus | int > 0
+
+    - name: Parse GPU indices held by other reservations
+      ansible.builtin.set_fact:
+        foreign_held_indices: >-
+          {{ (((gpu_holds_result.stdout | default('')) | trim) or '[]') | from_json
+             | rejectattr('reservation_id', 'equalto', gpu_reservation_id | default(''))
+             | map(attribute='gpu_index') | map('int') | list }}
+      when: job_gpus | int > 0
+
+    - name: Check CPU load headroom
+      ansible.builtin.assert:
+        that:
+          - "host_metrics.load1 is defined"
+          - "host_metrics.load1 < (ansible_facts.processor_vcpus | default(host_metrics.cpu_count | default(1)) * job_max_load_pct | int / 100)"
+        fail_msg: "Host {{ inventory_hostname }} load1={{ host_metrics.load1 }} exceeds {{ job_max_load_pct }}% of CPUs"
+        quiet: true
+
+    - name: Check memory headroom
+      ansible.builtin.assert:
+        that:
+          - "host_metrics.mem_pct is defined"
+          - "host_metrics.mem_pct < job_max_mem_pct | int"
+        fail_msg: "Host {{ inventory_hostname }} memory at {{ host_metrics.mem_pct }}%, limit {{ job_max_mem_pct }}%"
+        quiet: true
+
+    - name: Check disk headroom
+      ansible.builtin.assert:
+        that:
+          - "host_metrics.disk_pct is defined"
+          - "host_metrics.disk_pct < 90"
+        fail_msg: "Host {{ inventory_hostname }} disk at {{ host_metrics.disk_pct }}%"
+        quiet: true
+
+    # ─── Job Deployment ──────────────────────────────────────────────────
+    - name: Pull container image (idempotent) - Podman
+      containers.podman.podman_image:
+        name: "{{ job_image }}"
+        state: present
+      when: container_runtime == 'podman'
+
+    - name: Pull container image (docker)
+      community.docker.docker_image:
+        name: "{{ job_image }}"
+        state: present
+      when: container_runtime == 'docker'
+
+    - name: Compute unheld VRAM-eligible GPU indices for Podman CDI
+      ansible.builtin.set_fact:
+        # Podman's --gpus takes device IDs (e.g. "0"), not a count like Docker.
+        # First N GPUs with enough free VRAM that are not held by a reservation.
+        podman_gpu_devices_fallback: "{{ ((host_metrics.gpus | default([])
+                                 | selectattr('mem_free_mb', 'gt', job_min_vram_gb | int * 1024)
+                                 | map(attribute='index') | list)
+                                | difference(foreign_held_indices | default([])))[:job_gpus | int] | join(',') }}"
+
+    - name: Select GPU device indices for Podman CDI
+      ansible.builtin.set_fact:
+        # Reservation jobs get gpu_device_indices from the scheduler (the held
+        # set); everyone else uses the unheld VRAM-eligible fallback.
+        podman_gpu_devices: "{{ gpu_device_indices | default(podman_gpu_devices_fallback, true) }}"
+
+    - name: Assert Podman GPU indices are not all reserved
+      ansible.builtin.assert:
+        that:
+          - podman_gpu_devices | length > 0
+        fail_msg: >-
+          Host {{ inventory_hostname }}: every VRAM-eligible GPU is held by an
+          active reservation — wait for release or raise job_min_vram_gb
+        quiet: true
+      when: job_gpus | int > 0 and container_runtime == 'podman'
+
+    - name: Assert no foreign GPU holds for Docker runtime
+      ansible.builtin.assert:
+        that:
+          - foreign_held_indices | length == 0
+        fail_msg: >-
+          Host {{ inventory_hostname }} has GPU indices {{ foreign_held_indices }}
+          held by other reservations; docker cannot pin GPU indices — use podman
+        quiet: true
+      when: job_gpus | int > 0 and container_runtime == 'docker'
+
+    - name: Launch job container (detached)
+      block:
+        - name: Launch with Podman
+          containers.podman.podman_container:
+            name: "job-{{ job_id }}"
+            image: "{{ job_image }}"
+            command: "{{ job_cmd }}"
+            gpus: "{{ podman_gpu_devices if podman_gpu_devices | length > 0 else omit }}"
+            env:
+              JOB_ID: "{{ job_id }}"
+              JOB_DISPATCH_HOST: "{{ inventory_hostname }}"
+              JOB_DISPATCH_TIME: "{{ ansible_date_time.iso8601 }}"
+            state: started
+            detach: true
+            recreate: true
+          register: podman_result
+          when: container_runtime == 'podman'
+
+        - name: Launch with Docker
+          community.docker.docker_container:
+            name: "job-{{ job_id }}"
+            image: "{{ job_image }}"
+            command: "{{ job_cmd }}"
+            device_requests:
+              - driver: nvidia
+                count: "{{ job_gpus }}"
+                capabilities: [gpu]
+            env:
+              JOB_ID: "{{ job_id }}"
+              JOB_DISPATCH_HOST: "{{ inventory_hostname }}"
+              JOB_DISPATCH_TIME: "{{ ansible_date_time.iso8601 }}"
+            state: started
+            detach: true
+            recreate: true
+          register: docker_result
+          when: container_runtime == 'docker'
+
+    - name: Resolve job launch result
+      ansible.builtin.set_fact:
+        job_launch: "{{ podman_result if container_runtime == 'podman' else docker_result }}"
+
+    - name: Get container ID
+      ansible.builtin.set_fact:
+        container_id: "{{ (job_launch.container.Id | default(job_launch.container_id | default('unknown'))) | truncate(12, true) }}"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Record dispatch mapping (controller side)
+      ansible.builtin.set_fact:
+        dispatch_record:
+          job_id: "{{ job_id }}"
+          host: "{{ inventory_hostname }}"
+          container_id: "{{ container_id }}"
+          started_at: "{{ ansible_date_time.iso8601 }}"
+          image: "{{ job_image }}"
+          gpus: "{{ job_gpus }}"
+      delegate_to: localhost
+      run_once: true
+
+    - name: Save dispatch record to Redis
+      ansible.builtin.command:
+        argv:
+          - redis-cli
+          - -h
+          - "{{ redis_host }}"
+          - HSET
+          - "dispatch:{{ job_id }}"
+          - host
+          - "{{ inventory_hostname }}"
+          - container_id
+          - "{{ container_id }}"
+          - started_at
+          - "{{ ansible_date_time.iso8601 }}"
+          - image
+          - "{{ job_image }}"
+          - gpus
+          - "{{ job_gpus }}"
+          - reservation_id
+          - "{{ gpu_reservation_id }}"
+          - status
+          - running
+      delegate_to: localhost
+      run_once: true
+      become: false
+      changed_when: true
+
+    - name: Report dispatch success
+      ansible.builtin.debug:
+        msg: "Dispatched job {{ job_id }} to {{ inventory_hostname }} (container={{ container_id }})"
+
+  post_tasks:
+    - name: Verify container is running (best effort)
+      ansible.builtin.command:
+        argv:
+          - "{{ container_runtime }}"
+          - ps
+          - "--filter"
+          - "name=job-{{ job_id }}"
+          - "--format"
+          - "{{ '{{.Status}}' }}"
+      register: container_status
+      changed_when: false
+      failed_when: false
+
+    - name: Log container status
+      ansible.builtin.debug:
+        var: container_status.stdout_lines

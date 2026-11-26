@@ -1,0 +1,56 @@
+// Tailnet policy for taila0626a.ts.net
+// 2026-11-24: restrict TCP/4096 (opencode-serve) to the Ansible/OpenChamber
+// controller idc02 (100.123.163.11). Everything else stays unrestricted.
+// Applied with If-Match set to the live policy ETag (the tailnet had the
+// stock allow-all policy, but its hash was not literally "ts-default").
+{
+	"grants": [
+		// Controller may reach every host's opencode-serve API.
+		{
+			"src": ["100.123.163.11"],
+			"dst": ["*"],
+			"ip": ["tcp:4096"],
+		},
+
+		// All other tailnet traffic keeps working, but TCP/4096 is excluded.
+		// Grants are additive and have no deny action, so the broad rule must
+		// enumerate the port ranges either side of 4096.
+		{
+			"src": ["*"],
+			"dst": ["*"],
+			"ip": ["*:1-4095", "*:4097-65535"],
+		},
+	],
+
+	// Preserved from the default policy.
+	"ssh": [
+		{
+			"action": "check",
+			"src": ["autogroup:member"],
+			"dst": ["autogroup:self"],
+			"users": ["autogroup:nonroot", "root"],
+		},
+	],
+	"nodeAttrs": [
+		{
+			"target": ["autogroup:member"],
+			"attr": ["funnel"],
+		},
+	],
+
+	// Policy tests: controller allowed, other hosts denied, SSH unaffected.
+	"tests": [
+		{
+			"src": "100.123.163.11",
+			"accept": ["100.72.146.39:4096"],
+		},
+		{
+			"src": "100.75.102.88",
+			"deny": ["100.72.146.39:4096"],
+		},
+		{
+			"src": "100.75.102.88",
+			"accept": ["100.72.146.39:22"],
+		},
+	],
+}

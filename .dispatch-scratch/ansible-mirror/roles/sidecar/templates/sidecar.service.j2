@@ -1,0 +1,19 @@
+[Unit]
+Description=Sidecar Metrics Collector for Ansible Dispatch
+After=network-online.target redis.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/home/tony/.local/venv-sidecar/bin/python /home/tony/.local/bin/sidecar-collector
+Restart=on-failure
+RestartSec=5
+Environment=SIDECAR_INTERVAL=15
+Environment=SIDECAR_REDIS_URL=redis://{{ sidecar_redis_host }}:6379/0
+Environment=SIDECAR_TAGS={{ sidecar_tags | join(',') }}
+Environment=SIDECAR_HOSTNAME={{ inventory_hostname }}
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,41 @@
+---
+# Deploy Sidecar Metrics Collector to All Hosts
+#
+# Usage:
+#   ansible-playbook playbooks/deploy_sidecar.yml
+#
+# Prerequisites:
+# - Redis running on sidecar_redis_host (default: idc02 at 100.123.163.11)
+# - SSH access to all hosts in inventory
+
+- name: Deploy sidecar collectors
+  hosts: all
+  vars:
+    sidecar_redis_host: "100.123.163.11"  # idc02 Tailscale IP
+  roles:
+    - sidecar
+
+- name: Verify sidecar metrics flowing
+  hosts: localhost
+  become: false
+  vars:
+    sidecar_redis_host: "100.123.163.11"
+  tasks:
+    - name: Wait for Redis
+      ansible.builtin.wait_for:
+        host: "{{ sidecar_redis_host }}"
+        port: 6379
+        timeout: 30
+
+    - name: Check each host reporting
+      ansible.builtin.command:
+        cmd: redis-cli -h {{ sidecar_redis_host }} HGETALL sidecar:{{ item }}
+      loop: "{{ groups.all }}"
+      register: sidecar_check
+      changed_when: false
+      failed_when: false
+
+    - name: Report sidecar status
+      ansible.builtin.debug:
+        msg: "{{ item.item }}: {{ 'OK' if item.stdout else 'NO METRICS' }}"
+      loop: "{{ sidecar_check.results }}"

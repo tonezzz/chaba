@@ -1,0 +1,225 @@
+---
+# Ansible Playbooks for Queue Management
+#
+# These playbooks provide queue control plane operations via queue_manager.py CLI:
+# - Enqueue jobs from YAML specs
+# - Inspect queue status
+# - Requeue failed jobs
+# - Clean up dead letter queue
+# - Fair-share monitoring
+#
+# Usage:
+#   ansible-playbook playbooks/queue_operations.yml -e operation=enqueue -e job_spec_file=jobs/examples/train-llama.yaml
+#   ansible-playbook playbooks/queue_operations.yml -e operation=stats
+#   ansible-playbook playbooks/queue_operations.yml -e operation=list -e queue_status=queued
+#   ansible-playbook playbooks/queue_operations.yml -e operation=requeue -e job_id=job-abc123
+
+- name: Queue Control Plane Operations
+  hosts: localhost
+  become: false
+  gather_facts: false
+  vars:
+    redis_host: "{{ lookup('env', 'QUEUE_REDIS_HOST') or '100.123.163.11' }}"
+    queue_cli: "python3 /home/tony/ansible/queue/queue_manager.py --redis {{ redis_host }}"
+    job_spec_file: "{{ lookup('env', 'JOB_SPEC_FILE') or '' }}"
+    job_id: "{{ lookup('env', 'QUEUE_JOB_ID') or '' }}"
+    queue_status: "{{ lookup('env', 'QUEUE_STATUS') or '' }}"
+    queue_user: "{{ lookup('env', 'QUEUE_USER') or '' }}"
+    queue_limit: "{{ lookup('env', 'QUEUE_LIMIT') or 20 }}"
+    queue_complete_success: "{{ lookup('env', 'QUEUE_COMPLETE_SUCCESS') | default('true', true) | bool }}"
+    cli_operation: "{{ operation }}"
+
+  tasks:
+    # ─── ENQUEUE ──────────────────────────────────────────────────────────
+    - name: Load job spec from YAML file
+      ansible.builtin.set_fact:
+        job_spec: "{{ lookup('file', job_spec_file) | from_yaml }}"
+      when: operation == 'enqueue' and (job_spec_file | length > 0)
+
+    - name: Validate required job spec fields
+      ansible.builtin.assert:
+        that:
+          - job_spec.job_image is defined
+          - job_spec.job_cmd is defined
+        fail_msg: "job_spec must contain job_image and job_cmd"
+      when: operation == 'enqueue'
+
+    - name: Set defaults for optional job spec fields
+      ansible.builtin.set_fact:
+        job_spec: "{{ job_spec | combine({
+          'job_id': job_spec.job_id | default(''),
+          'job_gpus': job_spec.job_gpus | default(1),
+          'job_min_vram_gb': job_spec.job_min_vram_gb | default(8),
+          'job_max_load_pct': job_spec.job_max_load_pct | default(70),
+          'job_max_mem_pct': job_spec.job_max_mem_pct | default(80),
+          'job_require_tags': job_spec.job_require_tags | default([]),
+          'job_exclude_tags': job_spec.job_exclude_tags | default([]),
+          'target_group': job_spec.target_group | default('all'),
+          'container_runtime': job_spec.container_runtime | default('podman'),
+          'job_timeout_sec': job_spec.job_timeout_sec | default(86400),
+          'priority': job_spec.priority | default(5),
+          'user': job_spec.user | default('default'),
+          'project': job_spec.project | default('default'),
+          'max_retries': job_spec.max_retries | default(2),
+          'reserve_gpu_window_sec': job_spec.reserve_gpu_window_sec | default(0),
+          'reservation_id': job_spec.reservation_id | default(''),
+        }) }}"
+      when: operation == 'enqueue'
+
+    - name: Enqueue job via queue_manager CLI
+      ansible.builtin.command:
+        argv:
+          - python3
+          - /home/tony/ansible/queue/queue_manager.py
+          - enqueue
+          - --redis
+          - "{{ redis_host }}"
+          - --image
+          - "{{ job_spec.job_image }}"
+          - --cmd
+          - "{{ job_spec.job_cmd }}"
+          - --gpus
+          - "{{ job_spec.job_gpus }}"
+          - --min-vram
+          - "{{ job_spec.job_min_vram_gb }}"
+          - --priority
+          - "{{ job_spec.priority }}"
+          - --user
+          - "{{ job_spec.user }}"
+          - --project
+          - "{{ job_spec.project }}"
+          - --group
+          - "{{ job_spec.target_group }}"
+          - --runtime
+          - "{{ job_spec.container_runtime }}"
+          - --timeout
+          - "{{ job_spec.job_timeout_sec }}"
+          - --max-retries
+          - "{{ job_spec.max_retries }}"
+          - --reserve-window
+          - "{{ job_spec.reserve_gpu_window_sec }}"
+          - --reservation-id
+          - "{{ job_spec.reservation_id }}"
+      register: enqueue_result
+      changed_when: true
+      when: operation == 'enqueue'
+
+    - name: Report enqueued job ID
+      ansible.builtin.debug:
+        msg: "Enqueue result: {{ enqueue_result.stdout }}"
+      when: operation == 'enqueue'
+
+    # ─── STATS ────────────────────────────────────────────────────────────
+    - name: Get queue statistics
+      ansible.builtin.command:
+        argv:
+          - python3
+          - /home/tony/ansible/queue/queue_manager.py
+          - stats
+          - --redis
+          - "{{ redis_host }}"
+      register: stats_result
+      changed_when: false
+      when: operation == 'stats'
+
+    - name: Display queue statistics
+      ansible.builtin.debug:
+        msg: "{{ stats_result.stdout }}"
+      when: operation == 'stats'
+
+    # ─── LIST JOBS ────────────────────────────────────────────────────────
+    - name: List jobs from queue
+      ansible.builtin.command:
+        argv:
+          - python3
+          - /home/tony/ansible/queue/queue_manager.py
+          - list
+          - --redis
+          - "{{ redis_host }}"
+          - --limit
+          - "{{ queue_limit }}"
+      register: list_result
+      changed_when: false
+      when: operation == 'list'
+
+    - name: Display job list
+      ansible.builtin.debug:
+        msg: "{{ list_result.stdout }}"
+      when: operation == 'list'
+
+    # ─── REQUEUE ──────────────────────────────────────────────────────────
+    - name: Requeue job
+      ansible.builtin.command:
+        argv:
+          - python3
+          - /home/tony/ansible/queue/queue_manager.py
+          - requeue
+          - "{{ job_id }}"
+          - --redis
+          - "{{ redis_host }}"
+      register: requeue_result
+      changed_when: true
+      when: operation == 'requeue' and (job_id | length > 0)
+
+    - name: Report requeue result
+      ansible.builtin.debug:
+        msg: "Requeue {{ job_id }}: {{ requeue_result.stdout }}"
+      when: operation == 'requeue'
+
+    # ─── COMPLETE JOB ─────────────────────────────────────────────────────
+    - name: Mark job complete
+      ansible.builtin.command:
+        argv:
+          - python3
+          - /home/tony/ansible/queue/queue_manager.py
+          - complete
+          - "{{ job_id }}"
+          - --redis
+          - "{{ redis_host }}"
+          - "{{ '--success' if queue_complete_success else '--fail' }}"
+      register: complete_result
+      changed_when: true
+      when: operation == 'complete' and (job_id | length > 0)
+
+    - name: Report completion
+      ansible.builtin.debug:
+        msg: "Job {{ job_id }}: {{ complete_result.stdout }}"
+      when: operation == 'complete'
+
+    # ─── DLQ ──────────────────────────────────────────────────────────────
+    - name: List dead letter queue
+      ansible.builtin.command:
+        argv:
+          - python3
+          - /home/tony/ansible/queue/queue_manager.py
+          - dlq
+          - --redis
+          - "{{ redis_host }}"
+      register: dlq_result
+      changed_when: false
+      when: operation == 'dlq'
+
+    - name: Display DLQ
+      ansible.builtin.debug:
+        msg: "{{ dlq_result.stdout }}"
+      when: operation == 'dlq'
+
+    # ─── DEQUEUE (for worker) ─────────────────────────────────────────────
+    - name: Dequeue next eligible job
+      ansible.builtin.command:
+        argv:
+          - python3
+          - /home/tony/ansible/queue/queue_manager.py
+          - dequeue
+          - --worker
+          - "{{ queue_worker | default('ansible-dispatcher') }}"
+          - --redis
+          - "{{ redis_host }}"
+      register: dequeue_result
+      changed_when: false
+      when: operation == 'dequeue'
+
+    - name: Display dequeued job
+      ansible.builtin.debug:
+        msg: "{{ dequeue_result.stdout }}"
+      when: operation == 'dequeue'

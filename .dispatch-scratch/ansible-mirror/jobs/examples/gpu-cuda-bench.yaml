@@ -1,0 +1,36 @@
+# GPU Compute Benchmark (lightweight, ~1GB VRAM)
+# Good for validating GPU dispatch without heavy dependencies.
+# Dispatch: python3 scripts/dispatch_job.py -f jobs/examples/gpu-cuda-bench.yaml
+#    or: python3 queue/queue_manager.py enqueue ... (see queue CLI)
+
+job_id: "gpu-bench-{{ '%Y%m%d-%H%M' | strftime }}"
+job_image: "docker.io/nvidia/cuda:12.2.0-base-ubuntu22.04"
+job_cmd: >
+  bash -c "apt-get update -qq && apt-get install -y -qq python3-numpy >/dev/null 2>&1 &&
+  python3 -c '
+  import numpy as np, time
+  print(\"CUDA benchmark (CPU numpy fallback, tests GPU dispatch)\")
+  a = np.random.rand(2000, 2000).astype(np.float32)
+  b = np.random.rand(2000, 2000).astype(np.float32)
+  t = time.time()
+  c = a @ b
+  print(f\"Matmul 2000x2000: {time.time()-t:.2f}s, checksum={c.sum():.1f}\")
+  '"
+
+# Resource requirements (fits in ~1GB with room for CUDA context)
+job_gpus: 1
+job_min_vram_gb: 1
+job_max_load_pct: 1000  # omen load1 is raw (18-70 on 12 CPUs); allow CPU oversubscription
+job_max_mem_pct: 90
+job_timeout_sec: 600
+
+# Placement: GPU host only
+job_require_tags: ["gpu"]
+job_exclude_tags: ["laptop"]
+target_group: "all"
+priority: 3
+user: "tony"
+project: "gpu-validation"
+
+container_runtime: "podman"
+sidecar_redis_host: "100.123.163.11"
