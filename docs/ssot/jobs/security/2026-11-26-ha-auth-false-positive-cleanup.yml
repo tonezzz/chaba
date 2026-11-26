@@ -1,0 +1,47 @@
+icon: shield
+date: 2026-11-26
+card: timer-alert-tony-dell-ha-auth-watch
+context: >-
+  The HA token audit (2026-11-26-ha-token-audit.yml) generated 18
+  invalid-auth warnings in tony-ha's log by testing stored tokens against
+  the wrong HA endpoint. ha-auth-watch correctly turned one of them into a
+  focus-inbox alert at 14:33:40 +07,
+  2026-11-26-143340-ha-auth-failure-tony-ha-from-localhost.yml, which was a
+  false positive. board-api's /inbox endpoint has no delete or update
+  operation and focus-inbox files are a board-owned surface, so the user
+  was asked explicitly and approved direct removal from the served
+  checkout as a one-off write-door exception.
+changes:
+  - "Removed the false-positive alert file from idc03's served checkout
+    (chaba-tony-dell, .git/chaba-role=served) with `git rm` and a scoped
+    commit touching only that path: bd2758fd089 'Remove false-positive
+    ha-auth alert from diagnostic sweep'. Pushed to master
+    (940172b4ebd..bd2758fd089)."
+  - "Kept a 742-byte backup at
+    /tmp/opencode/ha-auth-false-positive-20261126-143340.yml.bak on idc03."
+verification:
+  - "Preflight: branch master, role served, target tracked and unmodified,
+    no other focus-inbox changes; the pre-existing
+    .render-state-board2 modification and .stale-board2-nested-20261120/
+    untracked dir were left untouched."
+  - "Post-commit: file absent in working tree and in origin/master
+    (`git cat-file -e origin/master:<path>` -> ABSENT); focused
+    `git status --short docs/ssot/focus-inbox` empty."
+  - "board-api health after removal: `{\"ok\": true}` on idc03 loopback."
+  - "No new invalid-auth lines in tony-ha's log after 14:33:40 +07, so the
+    watcher's next tick has nothing false to alert on."
+rollback: >-
+  Restore from the backup or `git checkout bd2758fd089^ -- <path>` in the
+  served checkout, then commit and push the restore. This re-creates the
+  false-positive item.
+residual: >-
+  None for this item. The watcher's dedupe state on tony-dell still holds
+  the numeric-epoch key for the 14:33 probe, so that exact log line cannot
+  re-alert even if the HA log is replayed.
+lesson: >-
+  When a producer posts a false positive into a board-owned file and the
+  write door has no delete operation, do not silently bypass it: get
+  explicit approval, back up the artifact, scope the removal to one path
+  in the served checkout, verify the API is still healthy, and leave all
+  unrelated pending work alone. The real fix is upstream — probe each HA
+  token only against its declared endpoint so the alert is never created.
