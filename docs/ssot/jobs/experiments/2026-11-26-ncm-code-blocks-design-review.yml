@@ -1,0 +1,59 @@
+title: "NCM code-block composer — design review decision (Variant B)"
+subtitle: >-
+  Keep in review/watch. No adoption and no P2/P3 promotion: the L0
+  block-ID encoding crux has not been validated on a frozen real-pipeline
+  corpus, and no verifier-backed gain over the existing Jev+nest+LLM lane
+  was demonstrated.
+icon: 🔬
+id: 2026-11-26-ncm-code-blocks-design-review
+card: ncm-code-blocks-detail-composer
+ref: OPS-1325
+status: done
+decision: watch
+started: "2026-11-26"
+completed: "2026-11-26"
+
+evidence:
+  p0_offline_replay: >-
+    PASS. 42 rows (7 cases x 3 arms x seeds {42,7}), 0 schema errors,
+    replay from manifest.json, 0 provider calls, 0 authority-guard
+    violations. Gold decode 0.771 mean; ncm_detail_standin 0.737
+    (fidelity 0.80-1.00); skeleton_template 0.616. Both real commit
+    diff cases escalate: no changed path maps to the 152-block catalog
+    (catalog staleness finding).
+  ncm_toy: >-
+    Real CPU Stage 1 v2 (frozen VQ-VAE, 250 updates/batch64/12k boards)
+    recon CE 2.89 -> 0.2829, token accuracy 0.80343 on 200 boards —
+    pre-registered 0.50 gate PASS, 0.90 target NOT reached. Stage 2 on
+    frozen tokenizer: loss 2.966 -> 0.641, code acc 0.047 -> 0.730;
+    Sudoku wellformed 1.000 but valid 0.000 / solved 0.000 on n=100 —
+    gates test learning, not competence. No adoption.
+  jevos_choice_rerun: >-
+    Real JevOS supervision + Choice rerun (jevos-v5 OpenVINO int8 on
+    idc03:8017, user unit converged via ansible/playbooks/jevos-service.yml,
+    idempotency changed=0). Delta +1.000 unchanged — no gain over the
+    existing lane.
+  crux: >-
+    NCM levels span token positions, not code structure. The L0 block-ID
+    encoding is still untested on real code: toy L0 roles were given,
+    not generated from block IDs.
+
+decision:
+  status: watch
+  promote_to_p2_p3: false
+  adopt: false
+  keep_card_in_review: true
+  reason: >-
+    No verifier-backed gain over the existing lane under the card rule;
+    the L0 crux remains unvalidated.
+
+reentry_gate:
+  - "Frozen corpus of real pipelines/diffs, replayable from manifest.json."
+  - "Deterministic L0 block-ID encoding generated (not hand-given) from that corpus."
+  - "Zero provider calls and zero authority violations in replay."
+  - "Pre-registered verifier-backed floor beats Jev+nest+LLM glue in >=3 paired reps."
+
+guardrails:
+  - "Generated code never sets allowed_paths/tools/credentials/human gates."
+  - "Nest owns the queue."
+  - "No paid GPU/API or account-tier change without explicit Tony approval."
