@@ -1,0 +1,59 @@
+title: runner-fleet-health repo-checkout alert names the ref it measured
+subtitle: A divergent checkout produced "601 behind origin/feat/vector-algorithms" while the count was against origin/main
+icon: alert-triangle
+date: 2026-11-26
+status: deployed
+card: runner-auto-con01
+check: tests/board/test_fleet_host_parsing.py
+
+context:
+  symptom: "Fleet health FAIL con01/repo-checkout: 'mddb-fork: 601 commits
+    behind origin/feat/vector-algorithms (limit 200, last-fetched basis)'."
+  actual_state: "con01's mddb-fork checkout was clean on
+    feat/vector-algorithms at ad7d3f72 — exactly that branch's tip. Behind
+    was computed against origin/main (declared in repos.conf), which had
+    diverged: main was 601 ahead and 18 behind feat/vector-algorithms."
+  root_cause: "judge() formatted the violation with the checkout's current
+    branch (e['head_branch']) although e['behind'] was computed from
+    HEAD..origin/<repos.conf branch>. The message named a ref that was
+    never measured, sending the operator to pull a branch already at tip."
+
+changes:
+  - "probe: persist e['base'] = origin/<branch declared in repos.conf> at
+    the point the behind count is computed (scripts/board/runner-fleet-health.py)"
+  - "judge: report '<name>: <n> commits behind <measured base> (limit
+    ..., last-fetched basis)' and append ' — checkout is on <head>, not
+    the declared base' when the two refs differ"
+  - "regression test test_repo_checkout_alert_names_measured_base in
+    tests/board/test_fleet_host_parsing.py asserts the alert contains
+    origin/main, names the divergent checkout, and no longer claims
+    origin/feat/vector-algorithms"
+
+verification:
+  regression_test: "pytest -q
+    tests/board/test_fleet_host_parsing.py::FleetHostParsing::test_repo_checkout_alert_names_measured_base
+    -> 1 passed"
+  syntax: "python3 -m py_compile on the script and test -> OK"
+  baseline: "A clean worktree at origin/master shows 4 pre-existing failures
+    in the same test file (stale tests referencing removed devin_expected(),
+    old kk-mac types, and old fleet list). They are unrelated to this fix
+    and were failing before it."
+  fleet_health: "runner-fleet-health.py -> 0 hosts failing, 7 ok (no new
+    violations; con01's checkout is now on declared main and clean)"
+
+rollback:
+  - "Revert the commit that adds e['base'] and the judge() message change;
+    no host state or SSOT declarations were modified by this fix."
+
+follow_up:
+  - "Refresh the 4 stale tests in tests/board/test_fleet_host_parsing.py
+    against the current runner_fleet / dispatch_repos capabilities; they
+    currently fail on origin/master independently of this change."
+  - "A 'behind' count alone cannot express divergence; consider reporting
+    ahead-count too so an operator sees a split branch before switching."
+
+lessons:
+  - "An alert message must name the exact ref the number was measured
+    against — reusing the checkout's current branch hides branch mismatches."
+  - "Persist the measured ref on the probe object instead of recomputing
+    it in the reporting layer; the two can silently disagree."

@@ -269,6 +269,12 @@ for name, ent in repos_table().items():
         if prc:
             e["push_probe_err"] = (pse or pso or "")[:160]
     base = f"origin/{ent['branch']}"
+    # the behind count is measured against the branch declared in
+    # repos.conf, NOT the checkout's current branch — keep the measured
+    # ref on the probe so the violation message can name it (a divergent
+    # checkout otherwise gets a misleading "behind origin/<current>"
+    # alert, as con01's mddb-fork did in 2026-11-26).
+    e["base"] = base
     if name == FETCH_REPO:
         # real fetch — the count must be against today's origin, not
         # whatever the ref last saw (these checkouts never auto-pull)
@@ -562,10 +568,13 @@ def judge(host: str, d: dict, refsha: dict) -> tuple[list, list]:
                       f"{name}: no origin remote"))
         b = e.get("behind")
         if b is not None and b > MAX_BEHIND:
+            measured = e.get("base") or f"origin/{e.get('head_branch') or '?'}"
+            head = e.get("head_branch")
+            divergent = (f" — checkout is on {head}, not the declared base"
+                         if head and f"origin/{head}" != measured else "")
             v.append(("repo-checkout",
-                      f"{name}: {b} commits behind "
-                      f"origin/{e.get('head_branch') or '?'} "
-                      f"(limit {MAX_BEHIND}, last-fetched basis)"))
+                      f"{name}: {b} commits behind {measured} "
+                      f"(limit {MAX_BEHIND}, last-fetched basis){divergent}"))
         if e.get("remote"):
             if adv and not probe_ok:
                 v.append(("push-label-false",

@@ -69,6 +69,37 @@ class FleetHostParsing(unittest.TestCase):
         violations, _ = fh.judge("con01", probe, {})
         self.assertNotIn("devin-cli", [key for key, _ in violations])
 
+    def test_repo_checkout_alert_names_measured_base(self):
+        # con01 2026-11-26: repos.conf declares mddb-fork=main, the
+        # checkout sat on feat/vector-algorithms at that branch's tip.
+        # The alert wrongly said "601 behind origin/feat/vector-algorithms"
+        # because judge() named the checkout branch instead of the ref it
+        # actually measured. Report both, with the measured ref first.
+        probe = {
+            "git_ok": True,
+            "runner_env": {"RUNNER_LABELS": "push:chaba"},
+            "repos": {"mddb-fork": {
+                "exists": True, "has_git": True,
+                "path": "/home/tony/CascadeProjects/mddb-fork",
+                "behind": 601,
+                "base": "origin/main",
+                "head_branch": "feat/vector-algorithms",
+                "remote": "git@github.com:tonezzz/mddb-fork.git",
+                "push_probe": False, "push_probe_err": "no deploy key",
+            }},
+            "installed": {},
+            "tool_pins": {"ok": True, "tools": {}},
+            "dispatch_repos": {"resolved_dir": "/tmp/x", "import_ok": True,
+                               "missing": []},
+            "devin": {},
+        }
+        violations, _ = fh.judge("con01", probe, {})
+        msgs = [m for key, m in violations if key == "repo-checkout"]
+        self.assertEqual(len(msgs), 1, msgs)
+        self.assertIn("behind origin/main", msgs[0])
+        self.assertIn("checkout is on feat/vector-algorithms", msgs[0])
+        self.assertNotIn("origin/feat/vector-algorithms", msgs[0])
+
 
 if __name__ == "__main__":
     unittest.main()
