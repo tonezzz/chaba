@@ -460,7 +460,12 @@ def _post(key: str, doc: dict) -> bool:
         req = urllib.request.Request(
             f"{MDBB}/add", data=json.dumps(body).encode(),
             headers={"content-type": "application/json"}, method="POST")
-        urllib.request.urlopen(req, timeout=10).read()
+        # mddb-ops (:11026) writes routinely take 13-42s and occasionally
+        # exceed 80s under load; the old 10s client timeout made a healthy
+        # write look like a failure (timer-alert-*-device-telemetry,
+        # 2026-11-26). 45s covers the normal case; a genuinely stuck write
+        # still fails and the timer retries, so no silent success.
+        urllib.request.urlopen(req, timeout=45).read()
         return True
     except Exception:
         return False

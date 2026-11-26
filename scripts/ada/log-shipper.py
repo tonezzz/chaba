@@ -433,12 +433,17 @@ def _post(path: str, payload: dict, timeout: int = 15) -> bool:
         return False
 
 
-BATCH = 10  # docs per /v1/ingest call. mddb-ops closes the connection
-            # at ~30s server-side regardless of our client timeout. 100
-            # docs took ~35s and 20 took ~33s on a loaded host (idc03,
-            # load 8+) -> RemoteDisconnected -> 'mddb add failed —
-            # stopping' with zero progress. 10 docs is ~10-16s with
-            # headroom; still far cheaper than per-doc /add (2-6s).
+BATCH = 5  # docs per /v1/ingest call. mddb-ops closes the connection
+           # at ~30s server-side regardless of our client timeout. 100
+           # docs took ~35s and 20 took ~33s on a loaded host (idc03,
+           # load 8+) -> RemoteDisconnected -> 'mddb add failed —
+           # stopping' with zero progress. 10 docs still hit 32-79s
+           # writes on 2026-11-26 (server logs 'response not delivered:
+           # handler finished after the HTTP write timeout', observed
+           # elapsed 32.7s/37.3s/42.3s/79.1s vs writeTimeout 30s).
+           # 5 docs halves per-call size; mddb-ops' write timeout was
+           # also raised to 120s in the same fix. Far cheaper than
+           # per-doc /add (2-6s).
 
 # Set on SIGTERM/SIGINT — systemd kills oneshot services with TERM at
 # TimeoutStartSec; checking this between batches lets the loop stop
