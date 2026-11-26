@@ -1,7 +1,7 @@
 id: apps-yml-host-url-still-tony-dell-x42
 title: 'apps.yml: 42 entries still host_url tony-dell + canary blind to deployed apps index'
-column: backlog
-updated: 2026-11-26 20:40
+column: doing
+updated: 2026-11-26 20:41
 priority: medium
 tags:
 - ops
@@ -328,20 +328,27 @@ comms:
 - at: 2026-11-26 20:40
   from: tony
   text: queued for processing
+- at: 2026-11-26 20:41
+  from: tony-dell
+  text: claimed
+- at: 2026-11-26 20:41
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.10 > 0.7)'
 spec: Migrate the 42 entries in stacks/web/public/apps/apps.yml that still carry host_url https://tony-dell.taila0626a.ts.net
   to the correct host configuration, and ensure the consumer canary covers the deployed apps index. The repository
   is chaba and the host is tony-dell. The done-condition is verified when zero entries in stacks/web/public/apps/apps.yml
   reference tony-dell.taila0626a.ts.net and the consumer canary successfully greps the deployed apps index.
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-  attempts: 1
+  attempts: 2
   result: 'exit=0 /infrastructure/2026-11-24-apps-yml-host-url-migration.yml` and the dispatch-outcome doc. | devin-task-20261124-215344-migrate-the-42-entries-in-stac.service:
     Consumed 2min 2.740s CPU time over 21min 51.313s wall clock time, 1G memory peak.'
   sweep:
     dirty: 16
+  runner: tony-dell
 claim:
-  since: 2026-11-24 21:53
+  since: 2026-11-26 20:41
 review_kind: verify
