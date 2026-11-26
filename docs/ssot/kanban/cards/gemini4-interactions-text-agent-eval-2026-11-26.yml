@@ -1,7 +1,7 @@
 id: gemini4-interactions-text-agent-eval-2026-11-26
 title: Evaluate Gemini 4 + Interactions API for a stateful text agent
-column: review
-updated: 2026-11-26 20:58
+column: done
+updated: 2026-11-26 21:36
 brief: Compare gemini-4-hydrogen/neon via the Interactions API against the current 3.x stateless text path on a
   small multi-turn tool-and-recall task set; measure task accuracy, token growth and latency.
 priority: medium
@@ -163,6 +163,15 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261126-191819-read-only-eval-on-idc03-with-g on mn01 still dirty —
     1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-26 21:36
+  from: tony
+  text: '[verify 2026-11-26] VERIFIED — canonical evidence landed on origin/master. docs/ssot/jobs/devnest/2026-11-26-gemini4-interactions-text-agent-eval.yml
+    is present with full stateful-vs-stateless results (6/6 tool + 6/6 recall both arms; legacy 2/6, quota-limited),
+    20-turn follow-up (2.6% input-token saving, no cache hits), surfaces/advanced/model-comparison probes, explicit
+    quota blocker for all Gemini 4 models, guardrails and next conditions. All referenced harnesses (scripts/voice-bench/g4-*.py)'
+- at: 2026-11-26 21:36
+  from: tony
+  text: closed by tony
 action:
   type: dispatch
   status: done
