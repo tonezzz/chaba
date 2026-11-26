@@ -2,7 +2,7 @@ id: yomi-update-active-update-all-fail-every-8afee2
 title: yomi-update-active/update-all fail every run — --network=container:yomi-api but no yomi-api container exists
   on idc03
 column: backlog
-updated: 2026-11-26 20:43
+updated: 2026-11-26 20:45
 priority: medium
 tags:
 - bug
@@ -339,6 +339,10 @@ comms:
   from: tony
   text: 'routing edited: executor=devin by tony: unstaged free_lane opencode hold — pin devin so the queued dispatch
     can be claimed instead of starving'
+- at: 2026-11-26 20:45
+  from: chaba
+  text: 'kk-mac defers: executor=devin declared but this runner is launchd — devin-dispatch drives systemd-run internally;
+    the card stays queued for a Linux runner (executor=opencode/script serve here)'
 action:
   type: dispatch
   status: queued
