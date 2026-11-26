@@ -1,7 +1,7 @@
 id: job-health-sweep-consecutive-failure-alerts
 title: Job-health sweep — alert when a declared job fails N consecutive runs
 column: doing
-updated: 2026-11-26 21:38
+updated: 2026-11-26 22:32
 brief: 'Found 2026-10-30 (KNB-1008 deploy catchup): chaba-audit, mddb-vector-reindex, devin-bank-distill all had
   ZERO successful finishes in 30d on con01 — nobody knew until a human read journalctl. Dead jobs must surface themselves.'
 priority: medium
@@ -346,5 +346,12 @@ comms:
     VERIFIED 14:18:39 +07 tick: status=0/SUCCE; [ops-1244d-janitor-merge] [sweep 2026-11-12] board-janitor is declared
     in ssot.j; Duplicate systemd units survive job migrations: ssot.jobs.yml said con01 but ome; [timer-alert-cards-auto-close-on-next-gre-723ebc]
     VERIFIED NO'
+- at: 2026-11-26 22:32
+  from: devin
+  text: 'Built + verified. scripts/ops/job-health-sweep.py (journal consecutive-fail streaks, dead/disabled timer
+    detection, stale job:<id> unit drift) declared hourly on con01/idc02/idc03/mn01/tony_dell in ssot.jobs.yml;
+    units rendered+committed. Alerts via board-api job-auto-health-<host> cards, state-change-only comments, auto-close
+    on green. LIVE VERIFY on idc02: card job-auto-health-idc02 (OPS-1461) opened with 11 real findings — 4 declared-but-uninstalled
+    jobs + 7 stale rendered units; 2nd run post'
 claim:
   since: 2026-11-26 21:37
