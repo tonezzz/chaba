@@ -1,7 +1,7 @@
 id: idc03-writer-hardening-index-lock-race-l-f77129
 title: idc03 writer hardening — index.lock race, .local-conflict debris, report-watch ping-pong
 column: doing
-updated: 2026-11-26 22:19
+updated: 2026-11-26 22:27
 tags:
 - ops
 - idc03
@@ -279,5 +279,10 @@ comms:
     [batch A 19:15 +07] Triage — original outa; [idle-qa-and-backups-idc] DONE. Premise was stale: qc-scoreboard
     already on idc0; [ops-kanban-commit-guard] [root cause + fix 17:28 +07] Not a lifecycle bounce. S; [runner-pin-contract-merge-gate]
     2026-11-25 14:10 (+07): gate'
+- at: 2026-11-26 22:27
+  from: devin
+  text: 'picked up: scoping index.lock stale recovery in kanban-commit.sh. Finding: git 2.53 leaves index.lock empty
+    (no pid) — holder detection will use pid-token-if-present + fuser + mtime age (N=15min default, env-overridable).
+    Tests going into tests/board/ as pytest e2e like test_kanban_commit_guard.py.'
 claim:
   since: 2026-11-26 22:18
