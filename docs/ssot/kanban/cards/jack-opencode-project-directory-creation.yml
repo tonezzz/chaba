@@ -1,7 +1,7 @@
 id: jack-opencode-project-directory-creation
 title: Make project-directory creation clear and safe in Jack OpenCode
 column: doing
-updated: 2026-11-26 22:11
+updated: 2026-11-26 22:13
 brief: Jack OpenCode is healthy and /workspace is writable, but the UI cannot create/open a new project directory
   as Tony expects.
 priority: medium
@@ -27,6 +27,8 @@ action:
   lane: devin
   attempts: 1
   runner: tony-dell
+  sweep:
+    stale_running: 2026-11-26 22:13
 note: 'Live check: jack-opencode.service and jack-enroll.service active; container uid node:node; /workspace, /workspace/repos,
   and /workspace/worktrees are writable. Existing workspace has hello, repos, worktrees, incoming, shared, outputs,
   and tony-workspace. Current likely boundary is UI/project semantics or path scope, not service health.'
@@ -346,6 +348,14 @@ comms:
     has EMPTY workspace + zero enroll state. Live OpenCode on idc02 = host opencode-serve v2.4.1 :4096 (OpenChamber).
     UI semantics verified on v1.19.4+v2.4.1: OpenCode CANNOT create project dirs (no mkdir API) — it only opens
     EXISTING dirs; external_directory=deny (v1) locks repo-sco'
+- at: 2026-11-26 22:13
+  from: chaba
+  text: 'merge-sweep: devin-task-20261126-213020-diagnose-and-improve-the-jack- no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-26 22:13
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261126-213020-diagnose-and-improve-the-jack- on tony-dell still dirty
+    — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 claim:
   since: 2026-11-26 21:29
 requests:
