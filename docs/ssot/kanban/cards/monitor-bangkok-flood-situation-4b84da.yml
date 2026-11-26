@@ -1,7 +1,7 @@
 id: monitor-bangkok-flood-situation-4b84da
 title: Monitor Bangkok Flood Situation
 column: doing
-updated: 2026-11-26 21:55
+updated: 2026-11-26 21:58
 priority: medium
 note: 'Monitor the Bangkok flood situation and link with report slug: flood-report'
 ref: OPS-1448
@@ -66,6 +66,10 @@ comms:
     2026-11-26T12:08:33Z). Bangkok quiet — no main-road flooding per latest BMA note (11-25); watch items: South-Thai
     flash-flood window 27-30 Nov, Chao Phraya high-tide/cold surge through ~Dec 2. Artifact: reports/2026-11-26-bangkok-flood-status.md.
     Read-only; no loop, no alerts.'
+- at: 2026-11-26 21:58
+  from: chaba
+  text: 'merge-sweep: devin-task-20261126-215403-decision-2026-11-26-tony-bound no longer active on tony-dell but
+    card still says running — sweeping its branch'
 spec: 'DECISION 2026-11-26 Tony: bound a one-shot digest. Fetch the current Bangkok flood situation from report
   slug flood-report, write a short status artifact, and post one board comment on this card with the source timestamp.
   Read-only; no ongoing monitoring loop and no new alerts. Done: artifact written and comment recorded.'
@@ -75,5 +79,7 @@ action:
   lane: devin
   attempts: 1
   runner: tony-dell
+  sweep:
+    stale_running: 2026-11-26 21:58
 claim:
   since: 2026-11-26 21:53
