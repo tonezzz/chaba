@@ -1,7 +1,7 @@
 id: bigquery-usage-ledger-writer
 title: BigQuery usage ledger — dataset, MERGE writer, 10-row backfill, verification
-column: review
-updated: 2026-11-26 23:46
+column: done
+updated: 2026-11-26 23:54
 brief: Turn the local usage reports into a durable, queryable ledger now that the BigQuery API is enabled on the
   Chaba project (0 datasets). Implement the schema in infra/bigquery-ledger-schema-2026-11-26.md, a dry-run-first
   MERGE writer, a bounded backfill, and verification queries. Card ADA-1458 (eval-judge lane) stays independent
@@ -177,6 +177,9 @@ comms:
 - at: 2026-11-26 23:46
   from: chaba
   text: 'worktree kept: dirty — 17 uncommitted file(s)'
+- at: 2026-11-26 23:54
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 claim:
   since: 2026-11-26 22:37
 requests:
@@ -201,3 +204,7 @@ requests:
     becomes 9/1/0/5'
 awaiting_action: true
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 23:54
+  note: verified — evidence checks green, closing itself

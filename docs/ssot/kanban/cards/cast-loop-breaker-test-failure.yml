@@ -1,7 +1,7 @@
 id: cast-loop-breaker-test-failure
 title: Fast pytest gate fails on cast_loop_breaker patch divergence
 column: doing
-updated: 2026-11-26 23:49
+updated: 2026-11-26 23:54
 brief: Current master fast pytest gate (python3 -m pytest tests -x -q) fails on tests/ada/test_cast_loop_breaker.py::test_patches_apply_clean
   — one patch reports diverged.
 priority: medium
@@ -85,6 +85,10 @@ comms:
     materializes origin/main via new materialize_main(). Verified: test_cast_loop_breaker 1 passed/1 skipped (no
     ada-voice .venv on con01), merge-gate smoke set 328 passed. Note: pytest tests -x -q cannot run on con01 (no
     numpy/PIL); tests/ada has unrelated pre-existing dep/rot failures do'
+- at: 2026-11-26 23:54
+  from: chaba
+  text: 'merge-sweep: devin-task-20261126-233425-verified-2026-11-26-on-origin- no longer active on con01 but card
+    still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -93,5 +97,7 @@ action:
   executor_source: queue
   runner: con01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-26 23:54
 claim:
   since: 2026-11-26 23:32
