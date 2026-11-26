@@ -1,7 +1,7 @@
 id: dispatch-zero-commit-sessions-epidemic
 title: dispatch sessions produce zero commits at high rate — root cause
 column: doing
-updated: 2026-11-26 14:37
+updated: 2026-11-26 14:39
 spec: 'OPS-0894 fixed the closeout gate (empty branches no longer auto-close — held in review correctly). The SOURCE
   defect is unfixed and burning dispatches: 10+ sessions Oct 26-27 across hosts (tony-macbook, idc02, mn01) and
   lanes (deepseek-v4-pro, others) produced ZERO commits — pushed branch head = plain master commit, service often
@@ -19,6 +19,7 @@ action:
     stale_running: 2026-10-27 16:47
     zero_commit: 2026-10-27 16:47
     session_gone: 2026-10-27 17:02
+    dirty: 1
   last_failure: 'no delivered work — branch head == base tip — nothing committed; unit: exit_code=1'
   result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261027-164816-ops-0894-fixed-the-closeout-ga.service: Main
     process exited, code=exited, status=1/FAILURE | devin-task-20261027-164816-ops-0894-fixed-the-closeout-ga.service:
@@ -361,6 +362,10 @@ comms:
     no transcript, no sessions.db row, branch head==base. Smoking gun: unit journal tail ".6, deepseek-v4-pro" was
     the end of devin Available-models list. Reproduced live on mn01. Only lane-classified cards falling through
     to devin path died = coin flip. '
+- at: 2026-11-26 14:39
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261126-140633-ops-0894-fixed-the-closeout-ga on mn01 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 claim:
   since: 2026-11-26 14:05
 review_kind: verify
