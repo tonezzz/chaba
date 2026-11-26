@@ -1,7 +1,7 @@
 id: kk-cms-only-memory-pilot-acceptance
 title: KK acceptance — CMS-only memory pilot for Kaewta
-column: review
-updated: 2026-11-26 12:26
+column: backlog
+updated: 2026-11-26 12:40
 brief: Decide whether Kaewta (ada-kk) should answer from her CMS reports only, with bank recall and web_search withheld.
   Bench read-side is proven; prod profile unchanged.
 priority: medium
@@ -54,6 +54,13 @@ comms:
 - at: 2026-11-26 12:26
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-26 12:40
+  from: chaba
+  text: 'answer-sweep: executed ''approve — KK accepts, proceed with pilot'' -> queued for processing'
+- at: 2026-11-26 12:40
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 requests:
 - id: kk-do-you-accept-a-reversible-3-7-day-cm-d8c11e
   ask: 'KK: do you accept a reversible 3–7 day CMS-only memory pilot? If yes, Tony proceeds via the deploy gate;
@@ -67,4 +74,7 @@ requests:
   - hold — not yet
   - abort — keep current profile
   answer: approve — KK accepts, proceed with pilot
-awaiting_action: true
+  executed: 2026-11-26 queue
+action:
+  type: dispatch
+  status: queued
