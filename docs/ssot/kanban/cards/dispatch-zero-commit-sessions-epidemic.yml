@@ -1,7 +1,7 @@
 id: dispatch-zero-commit-sessions-epidemic
 title: dispatch sessions produce zero commits at high rate — root cause
 column: review
-updated: 2026-11-26 14:40
+updated: 2026-11-26 16:19
 spec: 'OPS-0894 fixed the closeout gate (empty branches no longer auto-close — held in review correctly). The SOURCE
   defect is unfixed and burning dispatches: 10+ sessions Oct 26-27 across hosts (tony-macbook, idc02, mn01) and
   lanes (deepseek-v4-pro, others) produced ZERO commits — pushed branch head = plain master commit, service often
@@ -388,6 +388,13 @@ comms:
 - at: 2026-11-26 14:40
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-26 16:19
+  from: tony
+  text: 'Landed 2026-11-26. Verified on idc03 with pytest 9.2.0 (tests/board/test_runner_agent_lane.py + tests/devin/test_model_preflight.py):
+    35 passed in 0.85s. Cherry-picked evidence-only commit 0ae683fe68e onto origin/master; merged as 39284279333
+    (push OK). Dropped the dispatch session-checkpoint commit d3645184d0a0 because it regressed ssot.dev-system.assessment.yml
+    to stale counts (54 branches / 26 ahead / 29 worktrees) — master''s newer 171 / 95 / 145 retained. The code
+    fix itself (devin-executor-'
 claim:
   since: 2026-11-26 14:05
 review_kind: verify
