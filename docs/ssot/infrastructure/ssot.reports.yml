@@ -854,6 +854,23 @@ nodes:
       - docs/ssot/infrastructure/ssot.model-tiers.yml
       - docs/kb/model-fleet-benchmark-plan.md
     children: []
+  - id: nest-lanes/kk-llm
+    layer: L1-producer
+    purpose: KK-Mac JevNest lane metrics — pack counts, queue wait,
+      wall time, eval tokens, verifier pass, fallback/failed
+      interventions (lifetime + 7d window); the evidence feed for the
+      weekly JevTeam lane review (card jevnest-kk-mac-capacity-loop)
+    generator: scripts/devnest/kk_mac_metrics.py --tokens --publish
+      --window-days 7 via jevnest-kk-llm-metrics.timer (tony_dell, 15m)
+    cadence: 30m
+    output: reports/kk-llm
+    artifact_pattern: "kk-llm-metrics.json"
+    meta: reports/kk-llm/meta.kk-llm.yml
+    references:
+      - docs/kb/jevnest-kk-mac-capacity-procedure.md
+      - docs/kb/devnest-capacity-aware-dispatch-procedure.md
+      - docs/ssot/infrastructure/ssot.devnest-lanes.yml
+    children: []
   - id: chaba-nest
     layer: L2-domain
     purpose: Nest compound-AI domain — live lane health + decision/escalation
@@ -873,6 +890,7 @@ nodes:
       - nest-lanes/heavy-a
       - nest-lanes/heavy-b
       - nest-lanes/ollama
+      - nest-lanes/kk-llm
       - nest-brains/nest-01-ops-classifier
       - nest-brains/jev-student
       - nest-brains/orch-bench-corpus

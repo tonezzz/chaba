@@ -1924,6 +1924,22 @@ jobs:
     bounded KK-Mac summary specs. Uses source markers for idempotency, excludes
     KK-Mac self-reports to avoid feedback loops, and never creates synthetic
     work. The shared capacity broker routes the resulting specs.'
+- id: jevnest-kk-llm-metrics
+  name: JevNest KK-LLM lane metrics rollup
+  host: tony_dell
+  dispatch: systemd
+  every: 15m
+  timeout: 5m
+  persistent: false
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/kk_mac_metrics.py --tokens --publish --window-days 7 --budget-s 240
+  note: 'OPS-1001 evidence leg — L0 raw pack artifacts already live on
+    gdrive:ada-nest/kk-llm; this rollup is the L1 producer for report
+    node nest-lanes/kk-llm (ssot.reports.yml), feeding chaba-nest L2 ->
+    SYSTEM-REPORT L3 and the weekly JevTeam lane review. The 7d window
+    scopes result.json cats so pack-history depth cannot blow the
+    budget; lifetime pack counts stay listing-only. Read-only — a
+    failed run leaves the last meta in place and report-watch marks the
+    node stale/error.'
 - id: nest-queue-watch
   name: Nest queue watch — TG notify on pack claim/done/fail
   host: idc03

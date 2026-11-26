@@ -26,7 +26,9 @@ Before queueing or claiming work, require:
 ```text
 heartbeat age <= 900s
 ollama_ok = true
-load_1m <= 4.0
+load ceiling: 1.0 per reported cpu_core (absolute load_1m <= 4.0 only
+  when the core count is unknown) — per-core gate deployed 2026-11-25;
+  the absolute 4.0 was 0.29/core on the 14-core Mac and starved the lane
 disk_free_gb >= 20
 owner/busy gate clear
 ```
@@ -105,15 +107,19 @@ service control, destructive work, or publication.
 ## Refill policy
 
 The producer runs when the admission gate is green and the queue depth is
-below three:
+below the watermark. Deployed steady-state is `--max-depth 5 --max-new 5`
+(raised from 3/3 on 2026-11-13 — inbox inflow ~8/hr vs worker throughput
+~20/hr needed headroom for gate flaps; the script defaults and the
+card-spec floor remain 3):
 
 1. Prefer real work from DevNest reports, host assessments, audit deltas,
    queue status, and outstanding operator briefs.
 2. Then use approved benchmark/replay packages.
 3. Never refill production capacity with synthetic soak tasks; soak is a
    benchmark and must be labelled as such.
-4. Refill at most three packages per cycle and keep worker concurrency at
-   one until a two-request load test is approved.
+4. Refill at most five packages per cycle at the deployed watermark and
+   keep worker concurrency at one until a two-request load test is
+   approved.
 5. Stop producing when heartbeat/load/disk admission fails.
 
 This keeps KK-Mac active without competing with the owner or exhausting
