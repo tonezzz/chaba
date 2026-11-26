@@ -7,7 +7,7 @@ generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: high
-note: 'Failing: chaba clone 662 commits behind origin/master (limit 200). Info: chaba origin is fetch-only (by design
+note: 'Failing: chaba clone 656 commits behind origin/master (limit 200). Info: chaba origin is fetch-only (by design
   — no push creds); merge-sweep salvage path verified; ada-voice: push probe ok — declare push:ada-voice in RUNNER_LABELS
   for the fast path (live probe still gates); sunsynk-card: push probe ok — declare push:sunsynk-card in RUNNER_LABELS
   for the fast path (live probe still gates); no mddb-fork checkout — host can''t take action.repo=mddb-fork cards;
@@ -17,7 +17,7 @@ help: 'Per-check fixes:
 
   - clone-stale: ssh <host> ''git -C ~/CascadeProjects/chaba pull --ff-only'' — stale clones crash runner-agent
   on missing dispatch_repos helpers (idc01, 860 behind).'
-updated: '2026-11-26'
+updated: 2026-11-26 17:11
 review_kind: triage
 action:
   status: done
@@ -272,5 +272,10 @@ comms:
 - at: 2026-11-26 09:29
   from: tony
   text: closed by tony
+- at: 2026-11-26 17:11
+  from: tony
+  text: '[triage 16:50 +07] Stale watcher re-file. Overnight runner-agent drift alert was triaged 09:29: installed
+    8c28da6b4922a207 vs pin 1514c75c4679a01b, root-caused to idc02 stale ada-ocb converge timer and closed. No new
+    condition. Closing again.'
 ref: OPS-0302
 claim: {}
