@@ -31,10 +31,11 @@ services:
     expected_state: running
     timeout: 5
     category: datastore
+    disabled: true
     profiles:
       - home
       - mobile
-    note: "Postgres runs in a rootless Podman container on idc03 (migrated off tony-dell in OPS-0725); health is checked over the tailnet."
+    note: "Postgres runs in a rootless Podman container on idc03 (migrated off tony-dell in OPS-0725), exposed over tailnet TCP 100.102.134.91:5432. mcp-health has no remote podman/database check — its database template is local-container only — so its quick check failed at ~1.3s and is disabled. Health is inferred from yomi-api (in the quick profile) and verified manually via ssh idc03 podman ps / nc -zv 100.102.134.91 5432."
     verification:
       - "Test container on idc03: ssh idc03 podman ps | grep chaba-postgres-16"
       - "Test port: nc -zv 100.102.134.91 5432"
