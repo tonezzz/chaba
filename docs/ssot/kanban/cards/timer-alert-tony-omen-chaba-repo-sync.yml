@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-chaba-repo-sync
 title: Timer chaba-repo-sync on tony-omen failing
 column: done
-updated: 2026-11-26 17:05
+updated: 2026-11-26 20:38
 priority: high
 tags:
 - timer-alert
@@ -206,6 +206,10 @@ comms:
 - at: 2026-11-26 17:05
   from: tony
   text: closed by tony
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of the chaba-repo-sync.service timer on host tony-omen by examining the systemd journal
   logs using 'journalctl --user -u chaba-repo-sync.service'. Cross-reference findings with the CMS timer-timeline-tony-omen.
   The done-condition is successfully identifying the root cause of the exit-code failure from the journal logs and
