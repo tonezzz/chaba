@@ -1,0 +1,107 @@
+title: "JevNest KK-Mac capacity loop — spec audit + L0-L3 evidence
+  wiring (nest-lanes/kk-llm report node)"
+date: 2026-11-26
+card: jevnest-kk-mac-capacity-loop
+session: "dispatch-wt-20261126-193158-jevnest-is-a-devnest-sub-nest- (idc02)"
+status: "code complete in worktree — SSOT declarations only; unit install
+  rides the normal render-jobs flow on tony-dell"
+
+context: >
+  Recurring capacity-loop dispatch. The producer/broker/feed/worker
+  pipeline has been live since 2026-11-17; this pass audited it against
+  the card spec, verified live state from idc02, and closed the one
+  real gap: kk_mac_metrics.py existed but nothing published its rollup
+  into the L0-L3 report graph, so the weekly JevTeam review had no
+  machine feed.
+
+spec_audit:
+  heartbeat_age: "<=900s — kk_mac_admission.snapshot max_age_s=900;
+    live check 2026-11-26: age 185s"
+  ollama_ok: "snapshot() + local_snapshot() /api/version probe — live:
+    true"
+  load_gate: "PER-CORE since 2026-11-25 (Tony-deployed fix): ceiling =
+    1.0 x cpu_cores when reported (14.0 on KK-Mac), absolute 4.0 only
+    when core count unknown. Card spec's 'load_1m<=4' is the pre-fix
+    text; procedure docs updated to match deployed reality."
+  disk: ">=20G — live: 58G free"
+  owner_busy_gate: "require_idle — tmux_jobs / load_ok / load1-per-core;
+    live: clear"
+  queue_depth: "spec says <3 / at most three; DEPLOYED is
+    --max-depth 5 --max-new 5 since 2026-11-13 (commit 091d708818,
+    inflow ~8/hr vs throughput ~20/hr). Script defaults remain 3/3.
+    Procedure docs updated; card spec text is the original floor."
+  task_classes: "summary + structured_extract only —
+    operator_brief/safe_route HELD unadmitted per card
+    kk-mac-admitted-classes-narrow (done 2026-11-23, 2026-11-19 eval
+    scored them 0.31-0.60). Spec text predates the hold."
+  soak_isolation: "soak packs live on gdrive:ada-nest/kk-llm-soak-*
+    remotes; the producer only reads kk-llm/inbox — soak can never
+    refill production capacity"
+  concurrency: "worker --max-packs 1 default, hard cap 2 pending the
+    approved two-request load test"
+  package_contract: "expect schema/facts + artifact + verifier + usage
+    + fallback all carried by inputs/task.json -> kk_mac_executor
+    contract -> out/result.json + markers"
+  stale_fallback: "admission deny -> producer skips admission_gate,
+    worker/executor mark fallback; verified live (gate eligible now,
+    queue_at_capacity skip observed)"
+
+live_evidence_2026-11-26:
+  admission: "eligible — heartbeat 185s, ollama_ok, load 2.32/14.0,
+    disk 58G, temp 42C, node not busy"
+  producer_dry_run: "queue_before=6 -> skipped queue_at_capacity
+    (correct: live packs already above watermark)"
+  metrics: "171 packs lifetime: 155 done / 10 failed / 3 fallback /
+    3 live; queue wait p50 353s p95 1694s; 7d window: 8 packs,
+    0 done / 4 failed / 3 fallback / 1 live — the lane's recent week
+    was mostly holds+failures (kk-mac offline/busy stretches +
+    verifier rejects), exactly the signal the weekly review needs"
+
+changes:
+  - "scripts/devnest/kk_mac_metrics.py — collect() gains window_s/now:
+    a `window` block scoping counts/waits/latency plus (with --tokens)
+    wall+token stats to packs active in the last N days; result.json
+    cats are scoped to the window so history depth cannot blow the
+    budget. New publish() writes reports/kk-llm/kk-llm-metrics.json +
+    meta.kk-llm.yml via lib.report.write_meta; status=delta only on
+    window failed>0 (fallback is retryable, failed needs a human).
+    CLI: --window-days, --publish, --out-dir. Back-compat: no window
+    -> identical output shape."
+  - "docs/ssot/infrastructure/ssot.reports.yml — new L1 node
+    nest-lanes/kk-llm (generator = the metrics publish command, meta
+    reports/kk-llm/meta.kk-llm.yml), added to chaba-nest L2 children
+    so it flows to SYSTEM-REPORT L3."
+  - "docs/ssot/infrastructure/ssot.jobs.yml — new job
+    jevnest-kk-llm-metrics on tony_dell every 15m timeout 5m:
+    kk_mac_metrics.py --tokens --publish --window-days 7 --budget-s 240;
+    units rendered to systemd/generated/tony_dell/ (install rides the
+    normal render-jobs --install flow, not this dispatch)."
+  - "docs/kb/jevnest-kk-mac-capacity-procedure.md +
+    docs/kb/devnest-capacity-aware-dispatch-procedure.md — drift fix:
+    per-core load ceiling (2026-11-25), deployed 5/5 watermark
+    (2026-11-13), broker-exists current-state section."
+  - "tests/devnest/test_kk_mac_metrics.py — +4 cases: window scoping
+    (counts, cat paths, live-pack exclusion), no-window back-compat,
+    publish artifact+meta write, delta-on-window-failure."
+
+verify:
+  - "python3 -m pytest tests/devnest/test_kk_mac_metrics.py -x -q
+    (9 passed)"
+  - "python3 scripts/devnest/kk_mac_metrics.py --tokens --publish
+    --window-days 7 --budget-s 180 — live run wrote
+    reports/kk-llm/{kk-llm-metrics.json,meta.kk-llm.yml} (gitignored
+    on producer hosts; pull-report-metas.sh carries meta to con01's
+    daily L3 render)"
+  - "python3 scripts/render-jobs.py --host tony_dell --check — OK"
+  - "python3 scripts/devnest/kk_mac_admission.py — eligible JSON"
+  - "python3 scripts/devnest/kk_mac_capacity_producer.py --dry-run —
+    queue_at_capacity skip"
+
+pending_gates:
+  - "unit install on tony-dell (render-jobs --install) — deploy step,
+    not done in dispatch"
+  - "first scheduled tick proves the timer path; meta then flows via
+    pull-report-metas.sh into the next daily SYSTEM-REPORT"
+  - "weekly JevTeam review consumes nest-lanes/kk-llm meta — the
+    review cadence itself is unchanged (procedure doc), this only
+    guarantees the feed exists"

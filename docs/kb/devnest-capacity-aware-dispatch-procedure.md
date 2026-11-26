@@ -77,7 +77,8 @@ Admission:
 ```text
 fresh heartbeat
 Ollama healthy
-load_1m <= 4.0
+load ceiling: 1.0 per reported cpu_core (absolute load_1m <= 4.0 only
+  when the core count is unknown) — per-core gate deployed 2026-11-25
 disk >= 20 GB
 owner/busy gate clear
 ```
@@ -85,8 +86,9 @@ owner/busy gate clear
 Watermark and concurrency:
 
 ```text
-target queue depth: 3
-refill: at most 3 packages/cycle
+target queue depth: 5 (deployed --max-depth 5 --max-new 5 since
+  2026-11-13; script defaults and the original spec floor remain 3)
+refill: at most 5 packages/cycle at the deployed watermark
 normal concurrency: 1
 concurrency 2: only after a realistic two-request test
 ```
@@ -151,12 +153,25 @@ owner-impact incidents
 The target is not maximum utilization. It is verified output per available
 minute, with zero unsafe work and no quota or owner-impact surprises.
 
-## Current gap and next implementation
+## Current state
 
-KK-Mac now has a capacity producer. Colab has the queue and assessment-first
-procedure, but DevNest does not yet have one shared capacity broker that
-converts ready cards/reports into normalized lane inbox specs. Implement that
-broker next, starting with read-only reports and finite Colab evaluations.
+The shared capacity broker exists (`scripts/devnest/devnest_capacity_broker.py`,
+OPS-1002): `gdrive:ada-nest/devnest/inbox/` specs route to KK-Mac when its
+admission gate is green or stage complete Colab packs (never launched by the
+broker). Upstream producers: `devnest_report_feed.py` (durable reports ->
+bounded summary specs, 15m on tony-dell) and `kk_mac_plan_validator.py`
+(planner artifacts -> max 3 validated candidates, depth-1). The KK producer
+(`kk_mac_capacity_producer.py`, 5m on tony-dell) stages admitted specs into
+`gdrive:ada-nest/kk-llm` packs; `kk_mac_lane_worker.py` consumes them on
+KK-Mac at concurrency 1.
+
+Evidence leg (added 2026-11-26, card `jevnest-kk-mac-capacity-loop`):
+`kk_mac_metrics.py --tokens --publish --window-days 7` runs every 15m on
+tony-dell (`jevnest-kk-llm-metrics.timer`) and writes the L1 pair
+`reports/kk-llm/{kk-llm-metrics.json,meta.kk-llm.yml}` for report node
+`nest-lanes/kk-llm` — lifetime pack counts plus a 7d windowed slice
+(queue wait, wall time, eval tokens, verifier pass, interventions) that
+feeds `chaba-nest` L2 -> SYSTEM-REPORT L3 and the weekly JevTeam review.
 
 ## Bounded package planner (designed 2026-11-24)
 

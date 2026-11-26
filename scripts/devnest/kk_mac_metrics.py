@@ -11,7 +11,11 @@ procedure feeds back into JevTeam review:
   fallback      packs with failed marker, reason from marker text
 
 Read-only. One recursive `rclone lsl` covers statuses/timing; --tokens
-adds one `rclone cat` per finished pack (bounded by --budget-s).
+adds one `rclone cat` per finished pack (bounded by --budget-s, scoped
+to the --window-days slice when a window is set). --publish writes the
+L1 evidence pair (reports/kk-llm/kk-llm-metrics.json + meta.kk-llm.yml)
+for report node nest-lanes/kk-llm — the feed for the weekly JevTeam
+lane review.
 """
 from __future__ import annotations
 
@@ -19,6 +23,7 @@ import argparse
 import json
 import re
 import subprocess
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -120,7 +125,8 @@ def _stats(vals: list[float]) -> dict:
 
 def collect(*, remote: str = REMOTE, with_tokens: bool = False,
             budget_s: float = 120.0,
-            cat=None) -> dict:
+            cat=None, window_s: float | None = None,
+            now: float | None = None) -> dict:
     cat = cat or (lambda p: rclone("cat", p))
     started = time.monotonic()
     packs = parse_lsl(rclone("lsl", f"{remote}/packs"))
@@ -132,40 +138,51 @@ def collect(*, remote: str = REMOTE, with_tokens: bool = False,
              if m["queue_wait_s"] is not None]
     latencies = [m["latency_s"] for m in per_pack.values()
                  if m["latency_s"] is not None]
-    walls = []
-    tokens = {"eval_count_total": 0, "eval_duration_s_total": 0.0,
-              "load_duration_s_total": 0.0, "verified": 0,
-              "unverified": 0, "result_files": 0, "budget_skipped": 0}
-    for name, m in per_pack.items():
-        if m["status"] == "live" or not with_tokens:
-            continue
-        if time.monotonic() - started >= budget_s:
-            tokens["budget_skipped"] += 1
-            continue
-        # result.json carries wall_seconds + token usage + verdict
-        try:
-            res = json.loads(cat(f"{remote}/packs/{name}/out/result.json"))
-        except Exception:
-            continue
-        if not isinstance(res, dict):
-            continue
-        tokens["result_files"] += 1
-        # pack-era results carry verified:true; executor-contract
-        # results carry verdict:pass — both mean the independent
-        # verifier passed
-        if res.get("verified") or res.get("verdict") == "pass":
-            tokens["verified"] += 1
-        else:
-            tokens["unverified"] += 1
-        usage = res.get("usage") if isinstance(res.get("usage"), dict) \
-            else res
-        tokens["eval_count_total"] += int(usage.get("eval_count") or 0)
-        tokens["eval_duration_s_total"] += (
-            usage.get("eval_duration") or 0) / 1e9
-        tokens["load_duration_s_total"] += (
-            usage.get("load_duration") or 0) / 1e9
-        if res.get("wall_seconds") is not None:
-            walls.append(float(res["wall_seconds"]))
+
+    def _fetch(names: list[str]) -> tuple[list[float], dict]:
+        """cat out/result.json per finished pack (budget-capped) ->
+        (wall_seconds, token/verifier stats)."""
+        walls = []
+        tokens = {"eval_count_total": 0, "eval_duration_s_total": 0.0,
+                  "load_duration_s_total": 0.0, "verified": 0,
+                  "unverified": 0, "result_files": 0, "budget_skipped": 0}
+        for name in names:
+            if per_pack[name]["status"] == "live":
+                continue
+            if time.monotonic() - started >= budget_s:
+                tokens["budget_skipped"] += 1
+                continue
+            # result.json carries wall_seconds + token usage + verdict
+            try:
+                res = json.loads(
+                    cat(f"{remote}/packs/{name}/out/result.json"))
+            except Exception:
+                continue
+            if not isinstance(res, dict):
+                continue
+            tokens["result_files"] += 1
+            # pack-era results carry verified:true; executor-contract
+            # results carry verdict:pass — both mean the independent
+            # verifier passed
+            if res.get("verified") or res.get("verdict") == "pass":
+                tokens["verified"] += 1
+            else:
+                tokens["unverified"] += 1
+            usage = res.get("usage") if isinstance(res.get("usage"), dict) \
+                else res
+            tokens["eval_count_total"] += int(usage.get("eval_count") or 0)
+            tokens["eval_duration_s_total"] += (
+                usage.get("eval_duration") or 0) / 1e9
+            tokens["load_duration_s_total"] += (
+                usage.get("load_duration") or 0) / 1e9
+            if res.get("wall_seconds") is not None:
+                walls.append(float(res["wall_seconds"]))
+        tokens["eval_duration_s_total"] = round(
+            tokens["eval_duration_s_total"], 1)
+        tokens["load_duration_s_total"] = round(
+            tokens["load_duration_s_total"], 1)
+        return walls, tokens
+
     out = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "remote": remote,
@@ -178,15 +195,83 @@ def collect(*, remote: str = REMOTE, with_tokens: bool = False,
         # so queue_wait only sees still-claimed packs — latency_s is
         # the durable end-to-end measure
         "staged_to_done_seconds": _stats(latencies),
-        "wall_seconds": _stats(walls),
+        "wall_seconds": _stats([]),
+    }
+    if window_s is None:
+        if with_tokens:
+            walls, tokens = _fetch(
+                [n for n, m in per_pack.items() if m["status"] != "live"])
+            out["wall_seconds"] = _stats(walls)
+            out["tokens"] = tokens
+        return out
+    # Windowed slice — the cadence the weekly JevTeam lane review reads.
+    # result.json cats are scoped to windowed finished packs so the
+    # scheduled rollup stays bounded no matter how deep pack history grows.
+    now_ts = time.time() if now is None else now
+    cutoff = now_ts - window_s
+    names = [n for n, m in per_pack.items()
+             if (m["finished_at"] or m["staged_at"] or 0) >= cutoff]
+    wcounts = {"done": 0, "failed": 0, "fallback": 0, "live": 0}
+    for n in names:
+        wcounts[per_pack[n]["status"]] += 1
+    window = {
+        "seconds": window_s,
+        "since": datetime.fromtimestamp(
+            cutoff, tz=timezone.utc).isoformat(),
+        "packs": {"total": len(names), **wcounts},
+        "interventions": wcounts["failed"] + wcounts["fallback"],
+        "queue_wait_seconds": _stats(
+            [per_pack[n]["queue_wait_s"] for n in names
+             if per_pack[n]["queue_wait_s"] is not None]),
+        "staged_to_done_seconds": _stats(
+            [per_pack[n]["latency_s"] for n in names
+             if per_pack[n]["latency_s"] is not None]),
     }
     if with_tokens:
-        tokens["eval_duration_s_total"] = round(
-            tokens["eval_duration_s_total"], 1)
-        tokens["load_duration_s_total"] = round(
-            tokens["load_duration_s_total"], 1)
-        out["tokens"] = tokens
+        walls, tokens = _fetch(names)
+        window["wall_seconds"] = _stats(walls)
+        window["tokens"] = tokens
+    out["window"] = window
     return out
+
+
+def publish(out: dict, *, out_dir: Path, node: str = "nest-lanes/kk-llm",
+            generated_by: str) -> dict:
+    """Write the L1 evidence pair for the report node: the rollup
+    artifact plus its meta.yml (scripts/lib/report.py contract)."""
+    repo = Path(__file__).resolve().parents[2]
+    sys.path.insert(0, str(repo / "scripts"))
+    from lib.report import write_meta
+    out_dir.mkdir(parents=True, exist_ok=True)
+    artifact = out_dir / "kk-llm-metrics.json"
+    artifact.write_text(json.dumps(out, indent=2) + "\n")
+    packs = out.get("packs") or {}
+    window = out.get("window") or {}
+    wpacks = window.get("packs") or {}
+    # failed = terminal contract violation needing a human; fallback is a
+    # retryable lane-condition hold — only failures mark the node delta.
+    status = "delta" if wpacks.get("failed") else "ok"
+    meta_path = out_dir / "meta.kk-llm.yml"
+    write_meta(
+        meta_path,
+        node=node,
+        layer="L1-producer",
+        purpose="KK-Mac JevNest lane metrics — pack counts, queue wait, "
+                "wall time, eval tokens, verifier pass, fallback/failed "
+                "interventions; feeds the weekly JevTeam lane review",
+        generated_by=generated_by,
+        status=status,
+        summary=(
+            f"{packs.get('done', 0)} done / {packs.get('failed', 0)} "
+            f"failed / {packs.get('fallback', 0)} fallback-held / "
+            f"{packs.get('live', 0)} live"
+            + (f"; window interventions "
+               f"{window.get('interventions', 0)}" if window else "")),
+        sources=[str(artifact)],
+        children=[],
+        extra={"rollup": out},
+    )
+    return {"artifact": str(artifact), "meta": str(meta_path)}
 
 
 def main() -> int:
@@ -194,13 +279,37 @@ def main() -> int:
     p.add_argument("--remote", default=REMOTE)
     p.add_argument("--tokens", action="store_true",
                    help="fetch each finished pack's result.json for "
-                        "token/verifier stats (one rclone cat per pack)")
+                        "token/verifier stats (one rclone cat per pack; "
+                        "scoped to --window-days packs when a window is "
+                        "set)")
+    p.add_argument("--window-days", type=float, default=None,
+                   help="add a windowed rollup slice for packs active "
+                        "in the last N days (the weekly JevTeam review "
+                        "cadence); publish implies 7 when unset")
+    p.add_argument("--publish", action="store_true",
+                   help="write reports/kk-llm/kk-llm-metrics.json + "
+                        "meta.kk-llm.yml for report node "
+                        "nest-lanes/kk-llm")
+    p.add_argument("--out-dir", type=Path, default=None,
+                   help="publish target dir (default "
+                        "reports/kk-llm under the repo root)")
     p.add_argument("--budget-s", type=float, default=120.0)
     args = p.parse_args()
-    print(json.dumps(collect(remote=args.remote,
-                             with_tokens=args.tokens,
-                             budget_s=args.budget_s),
-                     indent=2))
+    window_s = None
+    if args.window_days is not None:
+        window_s = args.window_days * 86400
+    elif args.publish:
+        window_s = 7 * 86400
+    out = collect(remote=args.remote, with_tokens=args.tokens,
+                  budget_s=args.budget_s, window_s=window_s)
+    if args.publish:
+        repo = Path(__file__).resolve().parents[2]
+        out_dir = args.out_dir or repo / "reports" / "kk-llm"
+        out["published"] = publish(
+            out, out_dir=out_dir,
+            generated_by="scripts/devnest/kk_mac_metrics.py "
+                         + " ".join(sys.argv[1:]))
+    print(json.dumps(out, indent=2))
     return 0
 
 
