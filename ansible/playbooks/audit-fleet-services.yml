@@ -136,7 +136,7 @@
         fleet_service_drift_hosts: >-
           {%- set out = [] -%}
           {%- for h in audited_hosts -%}
-            {%- if hostvars[h].probe is not defined -%}{%- continue -%}{%- endif -%}
+            {%- if hostvars[h].probe is defined -%}
             {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
             {%- if rpt -%}
               {%- set y = rpt | from_yaml -%}
@@ -145,12 +145,13 @@
                 {%- set _ = out.append({'host': h, 'count': (deltas | length)}) -%}
               {%- endif -%}
             {%- endif -%}
+            {%- endif -%}
           {%- endfor -%}
           {{ out }}
         fleet_service_fingerprint: >-
           {%- set out = [] -%}
           {%- for h in audited_hosts -%}
-            {%- if hostvars[h].probe is not defined -%}{%- continue -%}{%- endif -%}
+            {%- if hostvars[h].probe is defined -%}
             {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
             {%- if rpt -%}
               {%- set y = rpt | from_yaml -%}
@@ -158,6 +159,7 @@
               {%- if deltas | length > 0 -%}
                 {%- set _ = out.append(h ~ ':' ~ (deltas | length)) -%}
               {%- endif -%}
+            {%- endif -%}
             {%- endif -%}
           {%- endfor -%}
           {{ out | join('|') }}

@@ -196,7 +196,7 @@
         host_sw_alert_hosts: >-
           {%- set out = [] -%}
           {%- for h in audited_hosts -%}
-            {%- if not (hostvars[h].sw_probe is defined or hostvars[h].sw_not_declared is defined) -%}{%- continue -%}{%- endif -%}
+            {%- if hostvars[h].sw_probe is defined or hostvars[h].sw_not_declared is defined -%}
             {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
             {%- if rpt -%}
               {%- set y = rpt | from_yaml -%}
@@ -207,12 +207,13 @@
                 {%- set _ = out.append({'host': h, 'kind': kind, 'failed': fc, 'summary': s}) -%}
               {%- endif -%}
             {%- endif -%}
+            {%- endif -%}
           {%- endfor -%}
           {{ out }}
         host_sw_alert_fingerprint: >-
           {%- set out = [] -%}
           {%- for h in audited_hosts -%}
-            {%- if not (hostvars[h].sw_probe is defined or hostvars[h].sw_not_declared is defined) -%}{%- continue -%}{%- endif -%}
+            {%- if hostvars[h].sw_probe is defined or hostvars[h].sw_not_declared is defined -%}
             {%- set rpt = (lookup('file', benchmark_out + '/' + h + '.yml', errors='ignore') | default('', true)) -%}
             {%- if rpt -%}
               {%- set y = rpt | from_yaml -%}
@@ -222,6 +223,7 @@
                 {%- set kind = 'unreachable' if s.startswith('unreachable') else 'fail' -%}
                 {%- set _ = out.append(h ~ ':' ~ kind ~ ':' ~ fc) -%}
               {%- endif -%}
+            {%- endif -%}
             {%- endif -%}
           {%- endfor -%}
           {{ out | join('|') }}
