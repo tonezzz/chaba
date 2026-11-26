@@ -1,8 +1,8 @@
 id: ops-local-conflict-guard
 title: local-conflict reconcile failed
-column: review
+column: done
 review_kind: triage
-updated: 2026-11-26 22:00
+updated: 2026-11-26 23:19
 note: non-card local-conflict docs/ssot/ssot.dev-system.assessment.yml.local-conflict-20261126-130116 needs manual
   reconcile — file kept
 ref: OPS-0526
@@ -1981,6 +1981,16 @@ comms:
   from: chaba
   text: non-card local-conflict docs/ssot/jobs/devnest/2026-11-26-gemini4-interactions-text-agent-eval.yml.local-conflict-20261126-220001
     needs manual reconcile — file kept
+- at: 2026-11-26 23:19
+  from: tony
+  text: '[verify 2026-11-26] CLEARED — re-ran scripts/board/reconcile-local-conflicts.py --dry-run: all 10 current
+    sidecars are unmergeable. Three are orphaned card sidecars whose canonical cards were deleted upstream (cms-auto-cctv-roster,
+    cms-auto-nest-tony-dell, rebuild-gesture-control-using-yolo-83cf4a); three are non-card render/job state (.render-state-board2
+    x2 plus the gemini job record). Zero board writes to recover. This matches Tonys 20:22 and 21:00 rationale;
+    the reconciler orphan TTL archive'
+- at: 2026-11-26 23:19
+  from: tony
+  text: closed by tony
 action:
   status: done
 claim: {}
