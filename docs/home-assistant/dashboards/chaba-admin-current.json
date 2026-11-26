@@ -196,45 +196,53 @@
                 "sensor.kk_mac_mem",
                 "sensor.kk_mac_disk",
                 "sensor.kk_mac_swap",
+                "sensor.kk_mac_temp",
                 "sensor.kk_mac_temps",
                 "sensor.tony_omen_load",
                 "sensor.tony_omen_mem",
                 "sensor.tony_omen_disk",
                 "sensor.tony_omen_swap",
+                "sensor.tony_omen_temp",
                 "sensor.tony_omen_temps",
                 "sensor.tony_macbook_load",
                 "sensor.tony_macbook_mem",
                 "sensor.tony_macbook_disk",
                 "sensor.tony_macbook_swap",
+                "sensor.tony_macbook_temp",
                 "sensor.tony_macbook_temps",
                 "sensor.tony_dell_load",
                 "sensor.tony_dell_mem",
                 "sensor.tony_dell_disk",
                 "sensor.tony_dell_swap",
+                "sensor.tony_dell_temp",
                 "sensor.tony_dell_temps",
                 "sensor.idc02_load",
                 "sensor.idc02_mem",
                 "sensor.idc02_disk",
                 "sensor.idc02_swap",
+                "sensor.idc02_temp",
                 "sensor.idc02_temps",
                 "sensor.idc03_load",
                 "sensor.idc03_mem",
                 "sensor.idc03_disk",
                 "sensor.idc03_swap",
+                "sensor.idc03_temp",
                 "sensor.idc03_temps",
                 "sensor.mn01_load",
                 "sensor.mn01_mem",
                 "sensor.mn01_disk",
                 "sensor.mn01_swap",
+                "sensor.mn01_temp",
                 "sensor.mn01_temps",
                 "sensor.con01_load",
                 "sensor.con01_mem",
                 "sensor.con01_disk",
                 "sensor.con01_swap",
+                "sensor.con01_temp",
                 "sensor.con01_temps",
                 "sensor.kk_mac_thermal"
               ],
-              "content": "| sync | host | online | load | mem | disk | swap | temps |\n|---|---|---|---|---|---|---|---|\n{% for d in ['kk_mac','tony_omen','tony_macbook','tony_dell','idc02','idc03','mn01','con01'] %}{% set ls = state_attr('sensor.'~d~'_load','last_seen') %}| {{ ls[:10].replace('-','') ~ '-' ~ ls[11:16] if ls else '—' }} | {{ d.replace('_','-') }} | {{ 'on' if is_state('binary_sensor.'~d~'_online','on') else 'off' }} | {{ states('sensor.'~d~'_load') }} | {{ states('sensor.'~d~'_mem') }}% | {{ states('sensor.'~d~'_disk') }}% | {{ states('sensor.'~d~'_swap') }}% | {{ states('sensor.'~d~'_temps') if states('sensor.'~d~'_temps') not in ['unknown','unavailable'] else (states('sensor.'~d~'_thermal') if states('sensor.'~d~'_thermal') not in ['unknown','unavailable','none',''] else '—') }} |\n{% endfor %}"
+              "content": "| sync | host | online | load | mem | disk | swap | temps |\n|---|---|---|---|---|---|---|---|\n{% for d in ['kk_mac','tony_omen','tony_macbook','tony_dell','idc02','idc03','mn01','con01'] %}{% set ls = state_attr('sensor.'~d~'_load','last_seen') %}{% set t = states('sensor.'~d~'_temp') %}{% set z = states('sensor.'~d~'_temps') %}| {{ ls[:10].replace('-','') ~ '-' ~ ls[11:16] if ls else '—' }} | {{ d.replace('_','-') }} | {{ 'on' if is_state('binary_sensor.'~d~'_online','on') else 'off' }} | {{ states('sensor.'~d~'_load') }} | {{ states('sensor.'~d~'_mem') }}% | {{ states('sensor.'~d~'_disk') }}% | {{ states('sensor.'~d~'_swap') }}% | {{ (t ~ '°C ' ~ z) if t not in ['unknown','unavailable'] and z not in ['unknown','unavailable'] else ((t ~ '°C') if t not in ['unknown','unavailable'] else (states('sensor.'~d~'_thermal') if states('sensor.'~d~'_thermal') not in ['unknown','unavailable','none',''] else '—')) }} |\n{% endfor %}"
             },
             {
               "type": "custom:layout-card",
@@ -281,8 +289,12 @@
                       "label": "Temps"
                     },
                     {
+                      "entity": "sensor.kk_mac_temp",
+                      "name": "temp (max)"
+                    },
+                    {
                       "entity": "sensor.kk_mac_temps",
-                      "name": "temps"
+                      "name": "hot zones"
                     },
                     {
                       "entity": "sensor.kk_mac_thermal",
@@ -354,8 +366,12 @@
                       "label": "Temps"
                     },
                     {
+                      "entity": "sensor.tony_omen_temp",
+                      "name": "temp (max)"
+                    },
+                    {
                       "entity": "sensor.tony_omen_temps",
-                      "name": "temps"
+                      "name": "hot zones"
                     },
                     {
                       "type": "section",
@@ -443,8 +459,12 @@
                       "name": "battery temp"
                     },
                     {
+                      "entity": "sensor.tony_macbook_temp",
+                      "name": "temp (max)"
+                    },
+                    {
                       "entity": "sensor.tony_macbook_temps",
-                      "name": "temps"
+                      "name": "hot zones"
                     },
                     {
                       "type": "section",
@@ -544,8 +564,12 @@
                       "label": "Temps"
                     },
                     {
+                      "entity": "sensor.tony_dell_temp",
+                      "name": "temp (max)"
+                    },
+                    {
                       "entity": "sensor.tony_dell_temps",
-                      "name": "temps"
+                      "name": "hot zones"
                     },
                     {
                       "type": "section",
@@ -759,8 +783,12 @@
                       "label": "Temps"
                     },
                     {
+                      "entity": "sensor.mn01_temp",
+                      "name": "temp (max)"
+                    },
+                    {
                       "entity": "sensor.mn01_temps",
-                      "name": "temps"
+                      "name": "hot zones"
                     },
                     {
                       "type": "section",
@@ -869,6 +897,71 @@
                     }
                   ]
                 }
+              ]
+            },
+            {
+              "type": "history-graph",
+              "title": "Highest temp per host",
+              "hours_to_show": 24,
+              "entities": [
+                "sensor.kk_mac_temp",
+                "sensor.tony_omen_temp",
+                "sensor.tony_macbook_temp",
+                "sensor.tony_dell_temp",
+                "sensor.idc02_temp",
+                "sensor.idc03_temp",
+                "sensor.mn01_temp",
+                "sensor.con01_temp"
+              ]
+            },
+            {
+              "type": "history-graph",
+              "title": "kk-mac zones",
+              "hours_to_show": 24,
+              "entities": [
+                "sensor.kk_mac_temp_cpu",
+                "sensor.kk_mac_temp_gpu"
+              ]
+            },
+            {
+              "type": "history-graph",
+              "title": "tony-omen zones",
+              "hours_to_show": 24,
+              "entities": [
+                "sensor.tony_omen_temp_b0d4",
+                "sensor.tony_omen_temp_int3400_thermal",
+                "sensor.tony_omen_temp_acpitz",
+                "sensor.tony_omen_temp_iwlwifi_1",
+                "sensor.tony_omen_temp_pch_cannonlake",
+                "sensor.tony_omen_temp_x86_pkg_temp"
+              ]
+            },
+            {
+              "type": "history-graph",
+              "title": "tony-macbook zones",
+              "hours_to_show": 24,
+              "entities": [
+                "sensor.tony_macbook_temp_bat0",
+                "sensor.tony_macbook_temp_x86_pkg_temp"
+              ]
+            },
+            {
+              "type": "history-graph",
+              "title": "tony-dell zones",
+              "hours_to_show": 24,
+              "entities": [
+                "sensor.tony_dell_temp_acpitz",
+                "sensor.tony_dell_temp_pch_skylake",
+                "sensor.tony_dell_temp_x86_pkg_temp"
+              ]
+            },
+            {
+              "type": "history-graph",
+              "title": "mn01 zones",
+              "hours_to_show": 24,
+              "entities": [
+                "sensor.mn01_temp_pch_skylake",
+                "sensor.mn01_temp_x86_pkg_temp"
               ]
             }
           ]
