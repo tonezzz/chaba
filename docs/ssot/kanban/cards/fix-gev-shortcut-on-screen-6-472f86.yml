@@ -90,8 +90,8 @@ comms:
   text: raised a decision request — spec needs owner input
 - at: 2026-11-25 19:38
   from: tony
-  text: 'answered all-registered-runner-agents-c-eba883: ★ Fix runner-agent drift first by redeploying runner-agent
-    to all hosts, then investigate the GEV shortcut in the gods-eye-view repo'
+  text: 'answered all-registered-runner-agents-c-eba883: ★ Fix runner-agent drift first by redeploying
+    runner-agent to all hosts, then investigate the GEV shortcut in the gods-eye-view repo'
 - at: 2026-11-25 19:38
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
@@ -123,20 +123,27 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:23
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
 requests:
 - id: all-registered-runner-agents-c-eba883
-  ask: All registered runner agents (con01, tony-dell, mn01, tony-omen) are currently deferring tasks because the
-    installed runner-agent script has drifted from the repository version. Additionally, the card notes that the
-    GEV shortcut fails with a 404 on screen 6, but does not specify which repository contains the frontend code
-    or screen definitions for Gods-Eye-View.
+  ask: All registered runner agents (con01, tony-dell, mn01, tony-omen) are currently deferring tasks
+    because the installed runner-agent script has drifted from the repository version. Additionally, the
+    card notes that the GEV shortcut fails with a 404 on screen 6, but does not specify which repository
+    contains the frontend code or screen definitions for Gods-Eye-View.
   options:
-  - ★ Fix runner-agent drift first by redeploying runner-agent to all hosts, then investigate the GEV shortcut in
-    the gods-eye-view repo
+  - ★ Fix runner-agent drift first by redeploying runner-agent to all hosts, then investigate the GEV
+    shortcut in the gods-eye-view repo
   - Postpone this card until the runner-agent infrastructure drift is resolved independently
   - Investigate and fix the GEV shortcut within the mddb-fork repository
   status: answered
   at: 2026-11-25 19:23
   from: backlog-spec-enrich
-  answer: ★ Fix runner-agent drift first by redeploying runner-agent to all hosts, then investigate the GEV shortcut
-    in the gods-eye-view repo
+  answer: ★ Fix runner-agent drift first by redeploying runner-agent to all hosts, then investigate the
+    GEV shortcut in the gods-eye-view repo
 awaiting_action: true
+spec: 'Goal: Fix the God''s Eye View shortcut failing with a 404 error on screen 6. Host: con01. Repo:
+  gods-eye-view. Constraints: Modify only the necessary routing or shortcut configuration for screen 6
+  without affecting other screens. Testable done-condition: A curl request or automated test simulating
+  the screen 6 GEV shortcut returns a 200 OK status instead of a 404.'
