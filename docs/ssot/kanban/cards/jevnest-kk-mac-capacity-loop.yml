@@ -1,7 +1,7 @@
 id: jevnest-kk-mac-capacity-loop
 title: JevNest KK-Mac capacity-aware queue refill
-column: doing
-updated: 2026-11-26 19:57
+column: review
+updated: 2026-11-26 20:02
 brief: Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner
   load, disk, and fallback gates.
 priority: high
@@ -402,12 +402,44 @@ comms:
     are all later owner decisions now documented (per-core load gate 11-25, 5/5 watermark 11-13, operator_brief/safe_route
     held). Real gap closed: kk_mac_metrics had no publish path — added windowed 7d rollup + publish(), registered
     nest-lanes/kk-llm L1 node under chaba-nest, declared je'
+- at: 2026-11-26 20:02
+  from: idc02
+  text: 'finished (ok): exit=0 est-.md`, commits `a397a89528`+`4047b8a635` on the dispatch branch, final comms posted
+    to the card. | devin-task-'
+- at: 2026-11-26 20:02
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-26 20:02
+  from: chaba
+  text: banked 795 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 20:02
+  from: chaba
+  text: pushed dispatch/20261126-193158-jevnest-is-a-devnest-sub-nest- to origin
+- at: 2026-11-26 20:02
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-26 20:02
+  from: chaba
+  text: auto-merged dbbb289d (dispatch/20261126-193158-jevnest-is-a-devnest-sub-nest-) → origin/master
+- at: 2026-11-26 20:02
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261126-193158-jevnest-is-a-devnest-sub-nest-,
+    branch dispatch/20261126-193158-jevnest-is-a-devnest-sub-nest-'
 action:
-  status: running
+  status: done
   type: dispatch
   task_class: summary
   executor: kk_mac_local
   runner: idc02
   attempts: 1
+  result: 'exit=0 est-.md`, commits `a397a89528`+`4047b8a635` on the dispatch branch, final comms posted to the
+    card. | devin-task-20261126-193158-jevnest-is-a-devnest-sub-nest-.service: Consumed 2min 8.582s CPU time, 616.5M
+    memory peak, 0B memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-26 19:30
+review_kind: verify
