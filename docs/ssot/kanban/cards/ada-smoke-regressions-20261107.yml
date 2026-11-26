@@ -1,7 +1,7 @@
 id: ada-smoke-regressions-20261107
 title: Smoke tier regressions — 4 fails surfaced after runner repair
-column: doing
-updated: 2026-11-26 21:13
+column: review
+updated: 2026-11-26 21:18
 priority: medium
 tags:
 - ada
@@ -409,19 +409,49 @@ comms:
     receipt before dispatch; refusal was correct. (2) auto-report-worthy = expectation rot — canonical source is
     now the auto-report CMS page; cms_read is the designed path. (3) cms_public_url_lane = expectation rot (kk asserts
     run on tony lane, /tony-ha/ correct) + HYGIENE: stray pag'
+- at: 2026-11-26 21:18
+  from: tony-dell
+  text: 'finished (ok): exit=0 tainers.image.url=https://github.com/github/github-mcp-server) | devin-task-20261126-204559-first-live-smoke-run-'
+- at: 2026-11-26 21:18
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-26 21:18
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261126-204559-first-live-smoke-run-in-11-day'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-26 21:18
+  from: chaba
+  text: banked 803 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 21:18
+  from: chaba
+  text: pushed dispatch/20261126-204559-first-live-smoke-run-in-11-day to origin
+- at: 2026-11-26 21:18
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-26 21:18
+  from: chaba
+  text: auto-merged 5371aa58 (dispatch/20261126-204559-first-live-smoke-run-in-11-day) → origin/master
+- at: 2026-11-26 21:18
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   attempts: 2
-  result: 'exit=0 e-20261124-214616-first-live-smoke-run-in-11-day.md`; final verdict posted to card comms. | devin-task-20261124-214616-first-live-smoke-run-in-11-day.service:
-    Consumed 55.750s CPU time over 11min 13.124s wall clock time, 968.8M memory peak.'
+  result: 'exit=0 tainers.image.url=https://github.com/github/github-mcp-server) | devin-task-20261126-204559-first-live-smoke-run-in-11-day.service:
+    Consumed 4min 683ms CPU time over 28min 8.571s wall clock time, 939.4M memory peak, 579.1M memory swap peak.'
   sweep:
     dirty: 3
   executor: devin
   runner: tony-dell
+  verified: true
 claim:
   since: 2026-11-26 20:45
 review_kind: verify
