@@ -453,6 +453,9 @@ comms:
   from: chaba
   text: 'HUMAN CALL 2026-11-26: DECISION 2026-11-26 Tony: run S1 then S2, hold S5. S1 - re-run the canary on idc02
     with the ops-readonly profile, quota'
+- at: 2026-11-26 21:00
+  from: tony
+  text: queued for processing
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
@@ -515,7 +518,8 @@ requests:
   answer: A
 action:
   type: dispatch
-  status: idle
+  status: queued
   lane: devin
   attempts: 0
   repo: chaba
+claim: {}
