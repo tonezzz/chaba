@@ -2,7 +2,7 @@ id: cms-auto-nest-tony-dell
 title: CMS automation `nest-tony-dell` stale
 brief: A scheduled report-page job ('nest-tony-dell') is stale. Re-run it or check the generator — details in the
   note.
-column: backlog
+column: doing
 review_kind: triage
 generated: cms-auto-health
 priority: medium
@@ -159,9 +159,16 @@ comms:
 - at: 2026-11-26 15:18
   from: chaba
   text: 'tony-omen defers: host overloaded (5m load/core 0.93 > 0.8)'
+- at: 2026-11-26 15:18
+  from: mn01
+  text: claimed
 action:
-  status: queued
+  status: running
   type: dispatch
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: mn01
+  attempts: 1
+claim:
+  since: 2026-11-26 15:18
