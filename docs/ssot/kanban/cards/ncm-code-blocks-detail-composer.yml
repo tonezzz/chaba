@@ -1,7 +1,7 @@
 id: ncm-code-blocks-detail-composer
 title: NCM code-block composer — detail by layer (Variant B, review)
 column: review
-updated: 2026-11-26 09:30
+updated: 2026-11-26 11:55
 brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
   by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
   for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
@@ -219,3 +219,10 @@ comms:
   text: '[triage 2026-11-26] Active work: Devin logged JevOS supervision + Choice rerun (08:28) and a CPU-trained
     NCM toy attempt (08:52), both Tony-approved. Design doc docs/kb/ncm-code-blocks-design.md. Awaiting your review
     of the L0 block-ID encoding result — not closed.'
+- at: 2026-11-26 11:55
+  from: devin
+  text: 'Real NCM Stage 2 on frozen v2 tokenizer done — gate PASS, verdict watch. Pre-registration written before
+    training (loss must decrease + Sudoku wellformed >= 0.05 on 100 boards). Real level-parallel transformer (3.28M
+    params) on frozen VQ-VAE (recon 0.803): 200 updates / batch64, CPU 9271s; loss 2.966 -> 0.641, code acc 0.047
+    -> 0.730. Eval n=100: wellformed 1.000, valid 0.000, solved 0.000 — gates test learning, not Sudoku competence;
+    no adoption. First orchestrated launch died with signal 4 aft'
