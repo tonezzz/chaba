@@ -1,7 +1,7 @@
 id: sweep-pagination-offset-keyset-for-mddb-5afeca
 title: 'sweep pagination: offset -> keyset for mddb pruning scripts'
 column: doing
-updated: 2026-11-26 12:34
+updated: 2026-11-26 12:35
 brief: 'prune-old-docs.py and device-telemetry prune.py enumerate via /v1/search offset paging (skip += kept). Under
   concurrent bulk writes the offset window shifts: stale docs get skipped, scanned under-counts, sweeps report deleted
   0 while work remains (observed 2026-11-12 on ops host-logs during refill). Fix = iterate by key cursor (seek from
@@ -446,6 +446,16 @@ comms:
 - at: 2026-11-26 12:34
   from: tony-dell
   text: claimed
+- at: 2026-11-26 12:35
+  from: chaba
+  text: started devin-task-20261126-123501-sweep-pagination-offset-keyset on tony-dell (dispatch executor=devin)
+- at: 2026-11-26 12:35
+  from: chaba
+  text: 'primer injected 8 lesson(s): [sweep-pagination-offset-keyset-for-mddb-5afeca] primer injected 8 lesson(s):
+    id; idc02''s kanban-dispatch.service was a linked unit running a stale scripts/-only ; [ada-capability-verb-wiring]
+    primer injected 8 lesson(s): [board-api-wiki-read-s; [embed-lane-banks-search-pagination] Dispatch scope: fix
+    scripts/embed/embed-lan; [logs-auto-con01-add-failed] [triage 2026-11-26] Still active: another ''mddb add;
+    [logs-auto-idc02-add-failed] [triage 2026-11-26] Still active'
 action:
   type: dispatch
   status: running
