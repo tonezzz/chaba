@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: doing
-updated: 2026-11-26 21:02
+updated: 2026-11-26 21:16
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -478,6 +478,13 @@ comms:
     primer injected 8 lesson(s): [; [keywatch-absolute-spend-floor] DONE (aa8399e4ef9) — implemented directly. Corre;
     [opencode-lane-regraduation] REMAINING / keep doing: S3 needs 10-20 genuine read; [runner-load-cap-per-claim-type]
     primer injected 8 lesson(s):'
+- at: 2026-11-26 21:16
+  from: devin
+  text: 'S1/S2 decision dispatch — gate state verified on idc02: lane is at S1 (since 2026-11-23), NOT S0. jobs_completed
+    S1=15/15 (quota exhausted by OPS-1363 agent-local gate-run traffic on 2026-11-25). lane_gate review -> ROLLBACK
+    to S0: 4 scope_violation safety-critical rows in the post-2026-11-13 S1 ledger (39 rows: 3 genuine canary attempts
+    + 36 gate-run test rows, all human_minutes=0). Scope violations look like false positives — _git_status() diff
+    caught unrelated churn in shared exec checkout du'
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
@@ -547,3 +554,4 @@ action:
   runner: idc02
 claim:
   since: 2026-11-26 21:01
+awaiting_action: true
