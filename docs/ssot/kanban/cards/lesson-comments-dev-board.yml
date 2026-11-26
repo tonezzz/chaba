@@ -1,6 +1,6 @@
 id: lesson-comments-dev-board
 title: Comment → work bridge — turn WP post comments into a dev discussion board
-column: backlog
+column: doing
 updated: 2026-11-26 14:05
 brief: 'Tony wants comment sections on boards (lesson/CMS posts) to function as a development discussion board —
   comments become actionable threads, not just a suggestion log. Today the digest bot files comments as reference-only
@@ -292,9 +292,12 @@ comms:
 - at: 2026-11-26 14:05
   from: chaba
   text: 'idc02 defers: host overloaded (5m load/core 1.54 > 1.5)'
+- at: 2026-11-26 14:05
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261028-123905-phase-1-only-1-digest-worker-c.service: Main
     process exited, code=exited, status=1/FAILURE | devin-task-20261028-123905-phase-1-only-1-digest-worker-c.service:
     Failed with result ''exit-code''.'
@@ -302,5 +305,8 @@ action:
     session_gone: 2026-10-28 12:47
   lane: paid_frontier
   lane_source: kw
+  runner: tony-macbook
+  attempts: 1
 review_kind: verify
-claim: {}
+claim:
+  since: 2026-11-26 14:05
