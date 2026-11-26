@@ -1,4 +1,5 @@
 job: exec-checkout-generated-writes-focus-inb-da698a
+title: Exec-checkout focus-inbox writes routed through board-api
 date: 2026-11-26
 domain: board
 summary: >-
@@ -12,7 +13,7 @@ changes:
     because the remote inbox has no open_item view.
   - scripts/lib/checkout_role.py (new) — reads <gitdir>/chaba-role.
   - Guarded producers (file write kept for served/unstamped checkouts,
-    API post otherwise): gh-runs-watch, ha-auth-watch,
+    API post otherwise) - gh-runs-watch, ha-auth-watch,
     mcp-health-to-inbox, mcp-health-snapshot.mjs,
     ssot-optimize-to-inbox.mjs, arp-inventory-scan,
     check-serve-config, board-invariants, ada/session-audit,
