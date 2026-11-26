@@ -29,9 +29,12 @@
         src: "{{ sshd_conf }}"
       register: sshd_before
 
-    - name: Decode current config and decide whether a fix is needed
+    - name: Decode current config
       set_fact:
         sshd_before_text: "{{ sshd_before.content | b64decode }}"
+
+    - name: Decide whether a fix is needed
+      set_fact:
         needs_fix: "{{ true if (sshd_before_text is search(force_re)) else false }}"
 
     - name: Report detected state
