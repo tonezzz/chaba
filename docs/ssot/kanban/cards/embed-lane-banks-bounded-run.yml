@@ -1,7 +1,7 @@
 id: embed-lane-banks-bounded-run
 title: 'embed-lane-banks: bound each daily run to its 45min window'
 column: review
-updated: 2026-11-26 19:19
+updated: 2026-11-26 19:24
 brief: 'Daily embed-lane-banks oneshot on idc02 is SIGTERMd at TimeoutStartSec=2700 after copying only ~3200/74940
   docs of ada-ha-bank-devin-handoff: the queue throttle (depth>=3000) plus CPU-only bge-m3 embedding yields ~15
   docs/min. Ollama and mddb-embed are healthy; queue drained to 0, dropped=0, no data loss. Result=timeout every
@@ -100,6 +100,10 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261126-190355-make-the-daily-run-finish-insi,
     branch dispatch/20261126-190355-make-the-daily-run-finish-insi'
+- at: 2026-11-26 19:24
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261126-190355-make-the-daily-run-finish-insi on
+    con01 — if the work was never pushed it may be gone'
 action:
   type: dispatch
   status: done
@@ -110,6 +114,7 @@ action:
   sweep:
     stale_running: 2026-11-26 19:10
     dirty: 14
+    session_gone: 2026-11-26 19:24
   result: 'exit=0 ''t touch that host. Outcome written to `dispatch-outcome-20261126-190355-make-the-daily-run-finish-insi.md`
     and the card has a DONE comms entry. | devin-task-20261126-190355-make-the-daily-run-finish-insi.service: Consumed
     27.560s CPU time.'
