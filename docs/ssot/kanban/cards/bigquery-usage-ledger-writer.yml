@@ -102,5 +102,27 @@ comms:
   text: 'started: located schema doc + input artifacts on idc02:/home/tony/tony-projects/infra/ (not in repo). ADC+gcloud
     live on idc02 for project gen-lang-client-0694401188. Building scripts/bigquery/ledger_write.py + vendoring
     infra/ artifacts into worktree. One spec discrepancy found — raised request bq-backfill-counts.'
+- at: 2026-11-26 22:59
+  from: devin
+  text: 'raised request bq-backfill-counts: Backfill spec vs verification counts do not reconcile. Card says exactly
+    10 rows: 6 local dispatch + 2 devin_cloud + 1 d'
 claim:
   since: 2026-11-26 22:37
+requests:
+- id: bq-backfill-counts
+  ask: 'Backfill spec vs verification counts do not reconcile. Card says exactly 10 rows: 6 local dispatch + 2 devin_cloud
+    + 1 daily_quota + 1 model_audit, but verification expects sessions=9. The 2026-11-26 daily report actually contains
+    7 local dispatch sessions (not 6) and 5 model_audit host rows (not 1). Which composition should --backfill --limit
+    10 produce?'
+  status: open
+  at: 2026-11-26 22:59
+  from: devin
+  options:
+  - id: all-rows
+    label: 'Load every artifact row: 9 sessions (7 dispatch + 2 cloud), 1 quota, 5 audit = 15 rows; verification
+      becomes 9/1/0/5'
+  - id: audit-one
+    label: 9 sessions + 1 quota + 1 fleet-level audit row = 11 rows
+  - id: literal-10
+    label: Exactly the written 10 (requires arbitrarily dropping 1 dispatch session and 4 audit hosts)
+  suggested: all-rows
