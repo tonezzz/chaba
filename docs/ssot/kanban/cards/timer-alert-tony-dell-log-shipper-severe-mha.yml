@@ -16,8 +16,9 @@ comms:
   text: card captured via board-api
 - at: 2026-11-26 02:04
   from: devin
-  text: '[still suspicious] Last run (11-26 01:39) of `log-shipper-severe-mha.service` on `tony-dell` result=exit-code
-    — investigate journal: `journalctl --user -u log-shipper-severe-mha.service` on the host. See CMS `timer-timeline-tony-dell`.'
+  text: '[still suspicious] Last run (11-26 01:39) of `log-shipper-severe-mha.service` on `tony-dell`
+    result=exit-code — investigate journal: `journalctl --user -u log-shipper-severe-mha.service` on the
+    host. See CMS `timer-timeline-tony-dell`.'
 - at: 2026-11-26 03:49
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -46,3 +47,13 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 07:23
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
+spec: Investigate the failure of `log-shipper-severe-mha.service` on `tony-dell` by inspecting its user
+  journal via `journalctl --user -u log-shipper-severe-mha.service` on the host, referencing CMS `timer-timeline-tony-dell`.
+  Concurrently resolve the runner-agent drift across affected hosts by redeploying the current version
+  from the `chaba` repository (`scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent`).
+  The done-condition is verified when `log-shipper-severe-mha.service` runs successfully on `tony-dell`
+  and the runner-agent on `tony-dell` (plus any deferred hosts) matches the `chaba` repository version
+  without drift.

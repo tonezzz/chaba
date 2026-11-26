@@ -7,8 +7,8 @@ tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-26 01:39) of `log-shipper-mha.service` on `tony-dell` result=exit-code — investigate journal:
-  `journalctl --user -u log-shipper-mha.service` on the host. See CMS `timer-timeline-tony-dell`.'
+note: 'Last run (11-26 01:39) of `log-shipper-mha.service` on `tony-dell` result=exit-code — investigate
+  journal: `journalctl --user -u log-shipper-mha.service` on the host. See CMS `timer-timeline-tony-dell`.'
 ref: OPS-1412
 comms:
 - at: 2026-11-26 01:54
@@ -46,3 +46,10 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 07:23
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
+spec: Investigate the failure of the `log-shipper-mha.service` timer on the host `tony-dell` by inspecting
+  the user journal using `journalctl --user -u log-shipper-mha.service`. The target host is `tony-dell`
+  and the associated repository context references `chaba`. The done-condition is verified when the root
+  cause of the exit-code failure is identified from the journal logs and documented on the card.
