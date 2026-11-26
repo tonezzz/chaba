@@ -1,0 +1,33 @@
+id: ops-tony-dell-ssh-restore-fix
+title: tony-dell - capture Ansible bootstrap failure output
+column: doing
+priority: high
+created: '2026-11-26'
+updated: 2026-11-26 12:26
+brief: 'Diagnostic follow-up: the first bootstrap run exited 2 in ~4s. Re-run verbosely with all output redirected
+  to /home/tony/ssh-restore-fix.txt so it can be read over SFTP while shell access is still blocked. Exit 0 by design.'
+action:
+  type: script
+  status: running
+  host: tony-dell
+  executor: script
+  script:
+    repo: chaba
+    ref: ops/restore-ssh-shell
+    cmd: '{ ANSIBLE_LOCALHOST_WARNING=False ~/.local/bin/ansible-playbook -i localhost, -c local --limit localhost
+      -vvv ansible/playbooks/restore-ssh-shell.yml; echo "PLAYBOOK_EXIT=$?"; } > /home/tony/ssh-restore-fix.txt
+      2>&1; true'
+    timeout: 300
+  runner: tony-dell
+  attempts: 1
+spec: Capture only - do not change the recovery approach. Write stdout and stderr of the -vvv playbook run to /home/tony/ssh-restore-fix.txt
+  then exit 0.
+comms:
+- at: 2026-11-26 12:25
+  from: tony
+  text: diagnostic card filed under /tmp/board-api.lock; POST /card refuses action.type=script
+- at: 2026-11-26 12:26
+  from: tony-dell
+  text: claimed
+claim:
+  since: 2026-11-26 12:26
