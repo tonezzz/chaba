@@ -1,7 +1,7 @@
 id: jack-opencode-project-directory-creation
 title: Make project-directory creation clear and safe in Jack OpenCode
 column: review
-updated: 2026-11-26 22:18
+updated: 2026-11-26 22:25
 brief: Jack OpenCode is healthy and /workspace is writable, but the UI cannot create/open a new project directory
   as Tony expects.
 priority: medium
@@ -30,6 +30,7 @@ action:
   sweep:
     stale_running: 2026-11-26 22:13
     dirty: 2
+    close_held: 2026-11-26 22:25
   result: 'exit=0 tch-outcome-20261126-213020-diagnose-and-improve-the-jack-.md`. | devin-task-20261126-213020-diagnose-and-improve-the-jack-.service:
     Consumed 5min 27.857s CPU time over 42min 19.867s wall clock time, 1.6G memory peak, 1.3G memory swap peak.'
   verified: true
@@ -389,6 +390,9 @@ comms:
 - at: 2026-11-26 22:18
   from: chaba
   text: 'worktree kept: dirty — 2 uncommitted file(s)'
+- at: 2026-11-26 22:25
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''the-jack-ide-container-stack-w''] block close)'
 claim:
   since: 2026-11-26 21:29
 requests:
