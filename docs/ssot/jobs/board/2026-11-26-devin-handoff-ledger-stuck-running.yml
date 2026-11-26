@@ -1,0 +1,149 @@
+id: devin-handoff-ledger-stuck-running
+title: ada-ha-bank-devin-handoff job/* ledger — 1455 docs stuck at status=running
+card: investigate-devin-handoff-job-ledger-ter-408e7a
+date: 2026-11-26
+host: tony-macbook (audit); affected fleet-wide
+status: fix-implemented-rollout-pending
+
+summary: >
+  The shared dispatch ledger's missing terminal writes are NOT runner-agent
+  drift (runner-agent/devin-dispatch binaries are sha-identical fleet-wide).
+  Two independent defects: (1) devin-dispatch-watch was never in
+  sync-runner-tools' manifest, so it drifted into three generations and was
+  never installed on idc02/idc03/con01 — and tony-dell's timer is gone
+  entirely; (2) mddb_job() ended in `return 0`, so a failed /v1/add was
+  indistinguishable from a landed write — meta.json got notified_fu stamped
+  anyway and the terminal job/<id> doc was never retried (~336 confirmed
+  notified-but-still-running docs on watch-equipped hosts).
+
+ledger_snapshot_2026_11_26:
+  collection: ada-ha-bank-devin-handoff
+  job_docs: 2212
+  status_facets: {running: 1455, done: 460, failed: 218, superseded: 72,
+                  answered: 3, awaiting-user: 4}
+  running_by_source: {devin-dispatch: 1435, runner-agent: 13,
+                      claude-dispatch: 7}
+  running_by_host: {idc02: 669, tony-omen: 392, tony-dell: 206, mn01: 110,
+                    idc03: 52, con01: 11, tony-macbook: 8, idc01: 7}
+  oldest_running: 2026-10-04
+  running_docs_are_local_tasks: >
+    Every running doc was cross-checked against the owning host's
+    ~/.local/share/devin-dispatch/tasks/*/meta.json. Categories:
+    notified_but_ledger_running ~336 (watch stamped meta, jobdoc write
+    lost), unnotified_finished ~830 (finished task dirs never swept —
+    hosts with no working watch), no_local_dir ~142 (task dir GC'd,
+    cannot be repaired locally), unnotified_no_terminal_evidence ~18,
+    genuinely active ~1.
+
+root_causes:
+  - id: missing-watch-coverage
+    what: >
+      devin-dispatch-watch.sh + its systemd user timer were installed by
+      hand per host and are NOT in scripts/devin/runner-tooling.manifest.json,
+      so sync-runner-tools.sh never converged them. idc02/idc03/con01 have
+      no binary and no timer (every finished task there writes running at
+      launch and never gets a terminal write — idc02 alone = 669 docs).
+      tony-dell HAS the binary but `systemctl --user list-timers` shows NO
+      devin-dispatch-watch.timer and the journal has no entries — the
+      timer was lost (host hygiene / unit GC?).
+    evidence: >
+      ssh survey 2026-11-26: idc02/idc03/con01 `~/.local/bin/devin-dispatch-watch`
+      MISSING, no timer; tony-dell binary present sha ddb4929abb2e, 0 timers
+      listed, `journalctl --user-unit devin-dispatch-watch.service` =
+      "-- No entries --".
+  - id: swallowed-jobdoc-write
+    what: >
+      mddb_job() in devin-dispatch-watch.sh piped python|curl then
+      `return 0` unconditionally — curl -sf -m 15 failures (MDDB /v1/add
+      embeds inline and can exceed 15s under load; sync scripts use
+      timeout=120 for the same endpoint) were invisible. The caller stamped
+      jobdoc_at + counted the channel, and mddb_ok only tracked the
+      session-outcome doc (mddb_add), so notified_fu was set and the task
+      was never retried.
+    evidence: >
+      omen 205 + mn01 97 + dell 31 + macbook 3 notified-but-running docs;
+      meta.json shows jobdoc_at stamped at notify time while the ledger
+      doc still says running. /v1/add probe from all 7 hosts returns 200
+      today — the failures were transient, which is exactly why retry
+      (not just logging) is the fix.
+  - id: watch-version-skew
+    what: >
+      Installed watch binaries are three different generations
+      (omen/dell ddb4929abb2e, mn01 51171cccdec6, macbook 2e5a1f9e9a13 vs
+      repo 788b5ca…). The omen/dell generation still has
+      `[ -f transcript.json ] || continue` — tasks that died before
+      writing a transcript (exit_code only) are skipped silently forever.
+      Repo HEAD already handles them via the exit_code fallback.
+  - id: no-central-reconciler
+    what: >
+      The ledger is per-host-write, per-host-sweep. Nothing reconciles
+      docs for hosts whose watcher is absent/dead — running is forever.
+
+fix_implemented:
+  - scripts/devin/devin-dispatch-watch.sh: >
+      mddb_job() now propagates curl rc (removed `return 0`), curl is
+      `-m 30 --retry 2 --retry-delay 2`; mddb_add() got the same timeout/
+      retry. Channels are idempotent per follow-up index: new
+      meta_chan_done() gate + chan_fu stamp mean a retry after a failed
+      MDDB write re-sends ONLY the missing channel (no iPhone/event
+      re-fire), and notified_fu is withheld until BOTH the session doc
+      AND job/<id> land.
+  - scripts/devin/devin-dispatch.sh: >
+      running-write mddb_job curl hardened to -m 30 --retry 2 (was -m 15,
+      no retry).
+  - scripts/devin/sync-runner-tools.sh + runner-tooling.manifest.json: >
+      devin-dispatch-watch added as a synced tool (7th pin). Missing-dest
+      install requires the watch systemd user units to exist — hosts
+      without the timer get nothing, so installing the timer remains the
+      explicit rollout step. Contract test
+      tests/board/test_runner_tooling_contract.py passes (15/15).
+  - scripts/devin/devin-dispatch-ledger-repair.py: >
+      NEW — per-host repair for the notified-but-running class. Scans
+      task meta.json, rewrites job/<id> only when the doc still says
+      running and notified_fu covers the latest fu-*.txt. Dry-run by
+      default; --apply writes. Skips terminal/missing/pending docs.
+
+rollout_runbook:
+  - step: 1-merge
+    do: Merge this branch; chaba-repo-sync on each host then converges
+        ~/.local/bin/devin-dispatch-watch + devin-dispatch via
+        sync-runner-tools (watch installs only where units already exist).
+  - step: 2-install-watch-units
+    do: >
+        On idc02, idc03, con01 (and re-arm tony-dell): install
+        systemd/devin-dispatch-watch.{service,timer} as user units,
+        `systemctl --user daemon-reload && systemctl --user enable --now
+        devin-dispatch-watch.timer`. Next sync tick installs the binary.
+  - step: 3-quiet-backfill
+    do: >
+        On each host once: `WATCH_NOTIFY=0 WATCH_EVENTS=0
+        WATCH_JOB_DOC=1 ~/.local/bin/devin-dispatch-watch` — writes the
+        missing terminal job docs for the unnotified_finished backlog
+        without iPhone/event spam (the header-documented quiet mode).
+  - step: 4-repair-notified-class
+    do: >
+        On each watch host: `python3 <checkout>/scripts/devin/
+        devin-dispatch-ledger-repair.py` (dry-run), then --apply — fixes
+        the ~336 notified-but-running docs the old swallow hid.
+  - step: 5-verify
+    do: >
+        Re-run the status=running facet count on ada-ha-bank-devin-handoff;
+        expect running to drop to genuinely-active + no_local_dir +
+        no_terminal_evidence residuals.
+
+not_fixed_here:
+  - >
+    ~142 running docs whose task dirs are already GC'd (no_local_dir) —
+    no local evidence to repair from; candidates for a future central
+    sweeper that marks stale running docs failed/expired by age.
+  - >
+    13 runner-agent + 7 claude-dispatch running docs — different writers
+    (runner-agent job_ledger_write); small enough to inspect separately.
+  - >
+    Deployment itself: per dispatch rules this session does not deploy;
+    rollout is the runbook above after merge.
+
+verify:
+  - bash -n on all touched scripts; unittest tests.board.test_runner_tooling_contract 15/15 OK
+  - repair script dry-run against synthetic task root: correct missing_doc classification
+  - /v1/add + /health probes return 200 from all 7 surveyed hosts
