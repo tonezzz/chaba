@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-ha-auth-watch
 title: Timer ha-auth-watch on tony-dell failing
-column: backlog
-updated: 2026-11-26 14:13
+column: done
+updated: 2026-11-26 14:20
 priority: high
 tags:
 - timer-alert
@@ -25,3 +25,14 @@ comms:
     appends Path; .relative_to() then raised AttributeError. tony-dell is a stamped exec (non-writer) checkout,
     so every tick hit the API path. Split counters (api_emitted vs written Paths), gated git commit on writable,
     hardened git_commit_push for both types. Merged to master (e45adace24) '
+- at: 2026-11-26 14:20
+  from: tony
+  text: 'VERIFIED 14:18:39 +07 tick: status=0/SUCCESS (was exit-code every tick), journal: "alerted 2 failure(s)
+    via board-api; no local commit on non-writer checkout". Service inactive(dead), not failed. Loop closed; underlying
+    HA invalid-auth attempts are unchanged and still arrive deduped via board-api. Evidence: docs/ssot/jobs/security/2026-11-26-ha-auth-watch-loop-fix.yml
+    (master 5d0dc9a7d9).'
+- at: 2026-11-26 14:20
+  from: tony
+  text: closed by tony
+action:
+  status: done
