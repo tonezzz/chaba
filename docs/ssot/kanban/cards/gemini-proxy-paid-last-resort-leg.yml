@@ -252,6 +252,9 @@ comms:
 - at: 2026-11-26 20:47
   from: chaba
   text: 'TRIAGE 2026-11-26: written bounded spec and armed for dispatch (lane=devin).'
+- at: 2026-11-26 20:47
+  from: tony
+  text: queued for processing
 spec: 'Add a paid-Gemini leg AFTER free-Gemini and BEFORE Ollama in ~/.config/containers/mddb/proxy/gemini-ollama-proxy.mjs
   (fetchBackupBatch), passing GEMINI_API_KEY_PAID through the container env. Intended for outage windows only (OR
   401 + free key 429), never normal operation. Document the vector-space caveat (paid vs free embeddings) and a
@@ -260,6 +263,7 @@ spec: 'Add a paid-Gemini leg AFTER free-Gemini and BEFORE Ollama in ~/.config/co
   or print any key.'
 action:
   type: dispatch
-  status: idle
+  status: queued
   lane: devin
   attempts: 0
+claim: {}
