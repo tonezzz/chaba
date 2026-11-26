@@ -2,7 +2,7 @@ id: runner-per-executor-caps
 title: 'runner-agent: per-executor claim caps + remote-lane load-gate exemption — stop jules/nlm idle slots starving
   local work'
 column: backlog
-updated: 2026-11-26 03:59
+updated: 2026-11-26 19:24
 priority: high
 tags:
 - devnest
@@ -35,7 +35,7 @@ spec: 'Problem (observed 2026-11-09): remote-async executors (jules ~1h Google-s
 action:
   type: dispatch
   repo: chaba
-  status: idle
+  status: queued
   sweep:
     failed_noted: 2026-11-09 20:34
     session_gone: 2026-11-24 22:24
@@ -45,7 +45,6 @@ action:
   attempts: 1
   lane: devin
   lane_source: fallback
-  runner: tony-dell
   result: 'exit=0 tch-outcome-20261124-211725-problem-observed-2026-11-09-re.md`. | devin-task-20261124-211725-problem-observed-2026-11-09-re.service:
     Consumed 7min 18.792s CPU time over 59min 25.623s wall clock time, 1.1G memory peak, 511M memory swap peak.'
 ref: OPS-1284
@@ -510,6 +509,12 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 19:24
+  from: chaba
+  text: classified as devin (fallback conf 0.23)
+- at: 2026-11-26 19:24
+  from: tony
+  text: queued for processing
 claim:
   since: 2026-11-24 21:16
 review_kind: verify
