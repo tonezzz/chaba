@@ -146,6 +146,20 @@ Endpoints (after prefix strip):
   POST /inbox    {label?, text, priority?, tags?, missing_info?,
                   session?, owner?} — focus-inbox YAML entry under the
                   card flock with the same immediate-commit discipline.
+  POST /wp-comment {post|post_id, parent?, content|text,
+                    as: devin|ada|chaba} — in-thread WP comment reply
+                    under a REAL agent identity (card
+                    lesson-comments-dev-board loop-close): wp-comment-
+                    sync's digest lane routes a member comment to a
+                    kanban card; the actioning agent replies here as
+                    itself and records the returned comment id in card
+                    comms. devin/ada callers may only post `as`
+                    themselves; chaba/tony may use any configured
+                    identity. Identities live in
+                    ~/.config/secrets/wp-agent-users.env (created by
+                    scripts/wp-boards/ensure-agent-users.py) — agents
+                    never hold WP creds; the comment posts with
+                    status=approve so it skips the hold queue.
   POST /publish  {canonical PublicationEvent} — provider-neutral
                   publication door (card devnest-publication-adapter-layer,
                   scripts/board/publication.py): one event fans out to
@@ -3276,10 +3290,18 @@ MDDB_PAGES = "ada-cms-pages"
 # it, Education knowledge is thin-and-invisible to every agent.
 MDDB_LESSONS = os.environ.get("BOARD_API_MDDB_LESSONS",
                               "chaba-lessons")
+# Agent WP identities for POST /wp-comment (card
+# lesson-comments-dev-board): per-identity app passwords created by
+# scripts/wp-boards/ensure-agent-users.py — the service host holds them,
+# callers never see them.
+WP_AGENT_ENV_FILE = Path(os.environ.get(
+    "BOARD_API_WP_AGENT_ENV",
+    str(Path.home() / ".config/secrets/wp-agent-users.env")))
+WP_AGENT_IDENTITIES = {"devin", "ada", "chaba"}
 REMOTE_WRITE_PATHS = {"/lesson", "/job", "/report", "/publish",
                       "/wiki/extension", "/wiki/news-review",
                       "/wiki/news-diagnose", "/wiki/page",
-                      "/opencode-command"}
+                      "/opencode-command", "/wp-comment"}
 WIKI_EXTENSION_ALLOWLIST = {
     "CategoryTree", "Mermaid", "MsUpload", "MultimediaViewer",
     "Cargo", "PageForms", "Lockdown",
@@ -3799,18 +3821,40 @@ def do_wiki_page(body: dict, frm: str) -> dict:
                        f"{title}"}
 
 
-def wp_api(route: str, data=None, method: str | None = None):
+def wp_api(route: str, data=None, method: str | None = None,
+           agent: str | None = None):
     """WP REST call (index.php?rest_route= style — the Plesk vhost 404s
     /wp-json). Creds live in wp-boards.env on the SERVICE host only;
     callers of /lesson and /job never see them — that is the point of
-    the door. Tests monkeypatch this seam."""
+    the door. Tests monkeypatch this seam.
+
+    `agent` (devin|ada|chaba) posts as that WP agent identity using its
+    per-identity app password from wp-agent-users.env (card
+    lesson-comments-dev-board) instead of the shared app user — the
+    comment->work loop-close reply carries a real author and skips the
+    hold queue."""
     try:
-        env = _load_env_file(WP_ENV_FILE)
-        base = env["WP_SITE_URL"].rstrip("/")
+        if agent:
+            ident = str(agent).strip().lower()
+            if ident not in WP_AGENT_IDENTITIES:
+                raise ValueError(
+                    f"wp agent identity must be one of "
+                    f"{sorted(WP_AGENT_IDENTITIES)}")
+            aenv = _load_env_file(WP_AGENT_ENV_FILE)
+            user = aenv.get(f"WP_AGENT_{ident.upper()}_USER", "")
+            pw = aenv.get(f"WP_AGENT_{ident.upper()}_APP_PASSWORD", "")
+            base = aenv.get("WP_SITE_URL") or _load_env_file(
+                WP_ENV_FILE).get("WP_SITE_URL", "")
+            if not user or not pw:
+                raise KeyError(f"WP_AGENT_{ident.upper()}_*")
+        else:
+            env = _load_env_file(WP_ENV_FILE)
+            base = env["WP_SITE_URL"].rstrip("/")
+            user, pw = env["WP_APP_USER"], env["WP_APP_PASSWORD"]
+        base = base.rstrip("/")
         tok = base64.b64encode(
-            f'{env["WP_APP_USER"]}:{env["WP_APP_PASSWORD"]}'
-            .encode()).decode()
-    except (OSError, KeyError) as e:
+            f"{user}:{pw}".encode()).decode()
+    except (OSError, KeyError, ValueError) as e:
         raise UpstreamError(f"wp creds unavailable: {e}")
     u = (f"{base}/index.php?rest_route="
          f"{urllib.parse.quote(route, safe='/&=')}")
@@ -5418,6 +5462,48 @@ def _pub_sinks(frm: str) -> dict:
     return sinks
 
 
+def do_wp_comment(body: dict, frm: str) -> dict:
+    """POST /wp-comment — the comment->work loop-close door (card
+    lesson-comments-dev-board). An agent that actioned a member comment
+    replies IN-THREAD under its own WP identity; wp-comment-sync skips
+    agent-authored comments so the reply is never re-routed into a new
+    card.
+
+    {post|post_id, parent?, content|text, as: devin|ada|chaba}
+    `parent` threads the reply under the member comment id.
+    devin/ada callers may only post `as` themselves; chaba/tony (and
+    'local' loopback jobs like wp-comment-sync) may use any configured
+    identity. `status:"approve"` is requested explicitly — a WP user
+    without moderate_comments gets a 403 instead of a silent hold, so
+    the caller learns the provisioning is missing."""
+    post_id = body.get("post", body.get("post_id"))
+    try:
+        post_id = int(post_id)
+    except (TypeError, ValueError):
+        raise ValueError("post (int WP post id) required")
+    content = str(body.get("content") or body.get("text") or "").strip()
+    if not content:
+        raise ValueError("content required")
+    agent = str(body.get("as") or body.get("identity") or ""
+                ).strip().lower()
+    if agent not in WP_AGENT_IDENTITIES:
+        raise ValueError(
+            f"as must be one of {sorted(WP_AGENT_IDENTITIES)}")
+    if frm in ("devin", "ada") and agent != frm:
+        raise ValueError(f"from={frm} may only reply as '{frm}'")
+    payload = {"post": post_id, "content": content,
+               "status": "approve"}
+    if body.get("parent"):
+        payload["parent"] = int(body["parent"])
+    r = wp_api("/wp/v2/comments", payload, agent=agent)
+    cid = r.get("id") if isinstance(r, dict) else None
+    return {"message": f"comment {cid} posted on post {post_id} "
+                       f"as {agent}",
+            "comment_id": cid, "post_id": post_id, "as": agent,
+            "status": r.get("status") if isinstance(r, dict) else None,
+            "link": r.get("link") if isinstance(r, dict) else None}
+
+
 def _remote_dispatch(path: str, body: dict, frm: str) -> dict:
     """The REMOTE_WRITE_PATHS do_* selection — invoked under
     pub.run_bounded's per-request deadline so one hung upstream peer
@@ -5441,6 +5527,8 @@ def _remote_dispatch(path: str, body: dict, frm: str) -> dict:
         return do_wiki_page(body, frm)
     if path == "/opencode-command":
         return do_opencode_command(body, frm)
+    if path == "/wp-comment":
+        return do_wp_comment(body, frm)
     return do_report(body, frm)
 
 

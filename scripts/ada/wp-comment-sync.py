@@ -30,17 +30,26 @@ docs/ssot/infrastructure/ssot.jobs.yml):
                         like "keep an eye on this flood" still lands —
                         WCS_CLASSIFY=0 disables. Other news comments ->
                         digest.
-       cam|bench|render_job (and anything else) -> digest only
-                        (digest.jsonl + an events.md line)
+       cam|bench|render_job (and anything else) -> dev-board classify
+                        (card lesson-comments-dev-board): each comment is
+                        read as actionable|discussion|question —
+                        actionable files a kanban card via board-api
+                        POST /card (column backlog, spec carries
+                        post_id + comment_id + permalink), question files
+                        a focus-inbox entry via POST /inbox (+ local
+                        questions/ record) for an in-thread agent reply,
+                        discussion stays digest-only.
   3. ack   reply in-thread via REST (wcs-ack marker so our own replies
-           are never re-routed)
+           are never re-routed; comments authored by the devin/ada/chaba
+           WP agent identities are skipped outright — they ARE the
+           loop-close replies, not new front-door comments)
   4. dedup processed-ids + ack-ids sets in the state file — comment meta
            _processed skipped per card help (would need register_meta
            on the comment object)
 
 Comments are SUGGESTIONS only — this script never writes MDDB, never
 edits the target post, never applies anything. Application is always a
-separate human/agent step through the queue files.
+separate human/agent step through the queue files or the kanban card.
 
 Stdlib + PyYAML only. Env:
   WP_BOARDS_ENV           default ~/.config/secrets/wp-boards.env
@@ -49,6 +58,15 @@ Stdlib + PyYAML only. Env:
   ADA_EVENTS_FILE         default ~/.local/share/ada/events.md
   WCS_CLASSIFY            0 disables the chat-local intent fallback
   WCS_CLASSIFY_MODEL      default chat-local (LiteLLM alias)
+  WCS_BOARD_CLASSIFY      0 disables dev-board comment classification
+                          (every digest-lane comment stays digest-only)
+  WCS_BOARD_CLASSIFY_MODEL  default chat-local (LiteLLM alias)
+  WCS_BOARD_API           board-api base (default http://127.0.0.1:8787
+                          loopback on idc03 -> 'local' write identity)
+  WCS_AGENT_ENV           agent WP identities env (default
+                          ~/.config/secrets/wp-agent-users.env — when a
+                          'chaba' identity is present, in-thread acks post
+                          as that user and skip the WP hold queue)
   LITELLM_URL/LITELLM_KEY else read from ~/.config/secrets/mddb-gemini.env
 """
 from __future__ import annotations
@@ -88,6 +106,7 @@ STATE = STATE_DIR / "state.json"
 LOCK = STATE_DIR / ".lock"
 DIGEST = STATE_DIR / "digest.jsonl"
 CORR_DIR = STATE_DIR / "record-corrections"
+QUESTION_DIR = STATE_DIR / "questions"
 
 FIRST_RUN_LOOKBACK_H = 24     # seed cursor when no state exists yet
 PAGE_SIZE = 50
@@ -98,11 +117,23 @@ UA = "wp-comment-sync/1.0 (chaba; boards member-comment router)"
 TAG_RE = re.compile(r"<[^>]+>")
 ACK_MARK = "<!-- wcs-ack -->"
 
+# Dev-board bridge (card lesson-comments-dev-board): board-api is the
+# card-creation door; loopback on idc03 posts as identity 'local'.
+BOARD_API = os.environ.get(
+    "WCS_BOARD_API", "http://127.0.0.1:8787").rstrip("/")
+AGENT_ENV_PATH = os.environ.get(
+    "WCS_AGENT_ENV",
+    os.path.expanduser("~/.config/secrets/wp-agent-users.env"))
+AGENT_ACK_IDENTITY = "chaba"  # wp-agent-users.env identity for acks
+AGENT_NAMES = {"devin", "ada", "chaba"}
+
 # post rest_base -> lane
 LANE_ADA = "ada_suggestion"       # memory-mirror posts
 LANE_RECORD = "record_correction"  # asset/place/trip posts
 LANE_DIGEST = "digest"             # cam/bench/render_job + fallback
 LANE_SITUATION = "situation"       # news posts + pin/unpin/watch commands
+LANE_BOARD = "board"               # actionable comment -> kanban card
+LANE_QUESTION = "question"         # question -> questions queue
 LANES = {
     "memory-mirror": LANE_ADA,
     "memory_mirror": LANE_ADA,
@@ -199,6 +230,258 @@ def classify_situation_intent(text):
     return CLASSIFY_LABELS.get(label) if label in CLASSIFY_LABELS else None
 
 
+def _load_agent_env(path=None):
+    """wp-agent-users.env KEY=VALUE parse — same shape as wp-boards.env
+    (created by scripts/wp-boards/ensure-agent-users.py)."""
+    env = {}
+    try:
+        for line in open(path or AGENT_ENV_PATH):
+            m = re.match(r"^([A-Z_]+)=(.*)$", line.strip())
+            if m:
+                env[m.group(1)] = m.group(2).strip().strip('"').strip("'")
+    except OSError:
+        pass
+    return env
+
+
+def agent_identity(name):
+    """(user, app_password) for a wp-agent-users.env identity, else None."""
+    env = _load_agent_env()
+    u = env.get(f"WP_AGENT_{name.upper()}_USER", "").strip()
+    p = env.get(f"WP_AGENT_{name.upper()}_APP_PASSWORD", "").strip()
+    return (u, p) if u and p else None
+
+
+def agent_basic_auth(name):
+    """'Basic ...' header value for an agent identity, or None."""
+    ident = agent_identity(name)
+    if not ident:
+        return None
+    return "Basic " + base64.b64encode(
+        f"{ident[0]}:{ident[1]}".encode()).decode()
+
+
+def agent_user_ids():
+    """WP user ids of configured agent identities (WP_AGENT_*_USER_ID) —
+    comments carrying one of these author ids are our own loop-close
+    replies, never re-routed."""
+    ids = set()
+    for k, v in _load_agent_env().items():
+        m = re.fullmatch(r"WP_AGENT_([A-Z]+)_USER_ID", k)
+        if m and v.strip().isdigit():
+            ids.add(int(v.strip()))
+    return ids
+
+
+def is_agent_comment(c):
+    """True when the comment was authored by a devin/ada/chaba WP agent
+    identity — the in-thread loop-close reply, not a new front-door
+    comment. Ids win; the display-name fallback covers env-less hosts."""
+    aid = c.get("author")
+    if aid is not None and aid in agent_user_ids():
+        return True
+    name = (c.get("author_name") or "").strip().lower()
+    name = name.split("(")[0].strip()          # 'Devin (agent)' -> devin
+    return name in AGENT_NAMES
+
+
+# --- dev-board classification (card lesson-comments-dev-board) -------------
+# Digest-lane comments get one chat-local read: actionable|discussion|
+# question. Strict one-word contract; anything else -> discussion (the
+# safe lane — the comment is still digested, never lost, never carded).
+
+BOARD_CLASSIFY_PROMPT = """A member left this comment on a {ptype} post
+titled "{title}". Classify the comment into exactly one word:
+  actionable - asks for a change, fix, update, new work, or a decision
+  discussion - opinion, observation, remark, or brainstorm; no work asked
+  question   - asks for information or clarification
+Reply with one word only.
+
+Comment: {text}"""
+
+
+def board_classify_enabled():
+    return os.environ.get("WCS_BOARD_CLASSIFY", "1").lower() \
+        not in ("0", "no", "off")
+
+
+def classify_board_intent(c, post):
+    """Digest-lane comment -> actionable|discussion|question (default
+    discussion on any classifier failure — digest-only, never lost)."""
+    if not board_classify_enabled():
+        return "discussion"
+    text = comment_text(c)
+    if len(text) < 3:
+        return "discussion"
+    try:
+        out = _litellm_chat().chat(
+            BOARD_CLASSIFY_PROMPT.format(
+                ptype=post.get("type") or "post",
+                title=(post.get("title") or "")[:120],
+                text=text[:500]),
+            model=os.environ.get("WCS_BOARD_CLASSIFY_MODEL", "chat-local"),
+            temperature=0, max_tokens=8, timeout=60,
+            label="wp-comment-board-classify",
+            tags="service=wp-comment-sync,job=wp-comment-sync,"
+                 "route=board_classify")
+    except Exception as e:
+        print(f"  board classify failed: {e}", file=sys.stderr)
+        return "discussion"
+    token = (out or "").strip().lower().strip(".,!:`\"'").split()
+    label = token[0] if token else ""
+    return label if label in ("actionable", "discussion", "question") \
+        else "discussion"
+
+
+def comment_permalink(c, post):
+    link = (post.get("link") or "").strip()
+    return f"{link}#comment-{c['id']}" if link else f"wp-comment:{c['id']}"
+
+
+def board_api_post(path, payload, timeout=20):
+    """POST JSON to board-api — loopback on idc03 authenticates as
+    'local'; WCS_BOARD_API overrides for tests/other hosts."""
+    req = urllib.request.Request(
+        BOARD_API + path, data=json.dumps(payload).encode(),
+        headers={"Content-Type": "application/json"}, method="POST")
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        raw = r.read()
+        return json.loads(raw) if raw else {}
+
+
+def file_board_card(c, post, dry_run):
+    """actionable comment -> kanban card via board-api POST /card.
+
+    Deterministic id wpc-<comment_id> dedupes re-polls — an 'already
+    exists' answer counts as filed. The spec carries post_id +
+    comment_id + permalink plus the loop-close contract: the actioning
+    agent replies in-thread via board-api POST /wp-comment as its own
+    identity and records the WP comment id in card comms."""
+    cid = c["id"]
+    card_id = f"wpc-{cid}"
+    text = comment_text(c)
+    snippet = text[:80]
+    ptype = post.get("type") or "post"
+    spec = (
+        "Comment->work bridge (card lesson-comments-dev-board). A member "
+        "comment was classified ACTIONABLE by wp-comment-sync.\n\n"
+        f"Post: {ptype} #{post.get('id')} — "
+        f"{json.dumps(post.get('title') or '', ensure_ascii=False)}\n"
+        f"Permalink: {comment_permalink(c, post)}\n"
+        f"post_id: {post.get('id')}\n"
+        f"comment_id: {cid}\n"
+        f"Comment by {c.get('author_name') or 'unknown'} "
+        f"({c.get('date') or c.get('date_gmt') or ''}):\n"
+        f"> {text[:2000]}\n\n"
+        "Task: action this comment, then close the loop — reply in-thread "
+        "on the WP post via board-api POST /wp-comment "
+        "{post: <post_id>, parent: <comment_id>, content: <reply>, "
+        "as: <your identity: devin|ada>} and record the returned WP "
+        "comment id in this card's comms (POST /comment).")
+    body = {
+        "id": card_id,
+        "title": (f"WP comment {ptype}:{post.get('id')} — {snippet}")[:160],
+        "column": "backlog",
+        "priority": "medium",
+        "brief": (f"Actionable WP comment on {ptype} "
+                  f"#{post.get('id')}: {snippet}"),
+        "spec": spec,
+        "tags": ["wp-comment", str(ptype)[:40]],
+        "review_kind": "verify",
+        "from": "chaba",
+        "text": f"auto-filed from WP comment {cid} on {ptype}:"
+                f"{post.get('id')}",
+    }
+    if dry_run:
+        return f"card:{card_id}"
+    try:
+        board_api_post("/card", body)
+    except urllib.error.HTTPError as e:
+        detail = ""
+        try:
+            detail = e.read()[:240].decode("utf-8", "replace")
+        except Exception:
+            pass
+        if e.code == 400 and "already exists" in detail:
+            return f"card:{card_id}"      # dedup — already filed
+        print(f"  card FAIL comment={cid}: {e.code} {detail}",
+              file=sys.stderr)
+        return f"card:error:{cid}"
+    except Exception as e:
+        print(f"  card FAIL comment={cid}: {e}", file=sys.stderr)
+        return f"card:error:{cid}"
+    return f"card:{card_id}"
+
+
+def file_question(c, post, dry_run):
+    """question comment -> focus-inbox entry (the visible agent queue)
+    + local q-<cid>.yml record + digest line. Questions are
+    conversation, not work orders — no card; an agent answers
+    in-thread via board-api POST /wp-comment (loop-close convention).
+    The inbox POST is best-effort: the local file is the dedup anchor
+    and survives a board-api outage."""
+    cid = c["id"]
+    permalink = comment_permalink(c, post)
+    text = comment_text(c)
+    entry = {
+        "id": f"q-{cid}",
+        "status": "pending",
+        "post_type": post.get("type"),
+        "post_id": post.get("id"),
+        "post_title": post.get("title"),
+        "post_link": post.get("link"),
+        "comment_id": cid,
+        "author": c.get("author_name") or f"wp-user-{c.get('author')}",
+        "text": text,
+        "filed_at": datetime.now(timezone.utc).isoformat(
+            timespec="seconds"),
+    }
+    inbox_ref = ""
+    if not dry_run:
+        QUESTION_DIR.mkdir(parents=True, exist_ok=True)
+        tmp = QUESTION_DIR / f"q-{cid}.tmp"
+        tmp.write_text(yaml.safe_dump(entry, allow_unicode=True,
+                                      sort_keys=False))
+        tmp.replace(QUESTION_DIR / f"q-{cid}.yml")
+        try:
+            board_api_post("/inbox", {
+                "label": (f"WP question {post.get('type')}:"
+                          f"{post.get('id')} — {text[:60]}"),
+                "text": (f"Member question on {post.get('type')} "
+                         f"#{post.get('id')} ({post.get('title') or ''})\n"
+                         f"Permalink: {permalink}\n"
+                         f"post_id: {post.get('id')}\n"
+                         f"comment_id: {cid}\n"
+                         f"By {entry['author']}:\n> {text[:2000]}\n\n"
+                         "Answer in-thread: board-api POST /wp-comment "
+                         "{post: <post_id>, parent: <comment_id>, "
+                         "content: <answer>, as: <devin|ada>} then record "
+                         "the WP comment id on the source card comms."),
+                "priority": "medium",
+                "tags": ["wp-comment", "wp-question",
+                         str(post.get("type") or "post")[:40]],
+                "owner": "devin",
+                "session": "wp-comment-sync",
+                "from": "chaba",
+            }, timeout=30)
+            inbox_ref = "inbox"
+        except Exception as e:
+            print(f"  inbox FAIL comment={cid}: {e}", file=sys.stderr)
+        digest_line({
+            "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "lane": LANE_QUESTION,
+            "class": "question",
+            "comment_id": cid,
+            "post_id": post.get("id"),
+            "post_type": post.get("type"),
+            "post_title": post.get("title"),
+            "author": c.get("author_name"),
+            "text": text[:400],
+            "inbox": bool(inbox_ref),
+        })
+    return f"question:{cid}"
+
+
 def _news_situation():
     """Sibling scripts/ada/news-situation.py — shared flag transitions."""
     import importlib.util
@@ -274,14 +557,17 @@ def _ensure_env():
             f"{ENV['WP_APP_PASSWORD'].strip()}".encode()).decode()
 
 
-def api(method, route, data=None):
+def api(method, route, data=None, auth=None):
     """WP REST via ?rest_route= permalink workaround (line-chat-timeline.py
-    pattern). `route` may contain & separators already."""
+    pattern). `route` may contain & separators already. `auth` overrides
+    the shared app-password Basic header — agent identities post as
+    themselves (wp-agent-users.env) so comments carry a real author and
+    skip the hold queue."""
     _ensure_env()
     url = f"{BASE}/index.php?rest_route=/wp/v2/{route}"
     body = json.dumps(data).encode() if data is not None else None
     req = urllib.request.Request(url, data=body, method=method)
-    req.add_header("Authorization", AUTH)
+    req.add_header("Authorization", auth or AUTH)
     req.add_header("User-Agent", UA)
     if body:
         req.add_header("Content-Type", "application/json")
@@ -477,10 +763,37 @@ def route(c, post, dry_run):
         return lane, stage_ada_suggestion(c, post, dry_run)
     if lane == LANE_RECORD:
         return lane, stage_record_correction(c, post, dry_run)
+    # Digest-bound comment (lesson/CMS posts, cam/bench/render_job,
+    # unknown types) -> dev-board classify (card
+    # lesson-comments-dev-board). Actionable files a kanban card;
+    # question files the questions queue for an in-thread agent reply;
+    # discussion stays digest-only. Class rides the digest record.
+    cls = classify_board_intent(c, post)
+    if cls == "actionable":
+        qid = file_board_card(c, post, dry_run)
+        if not dry_run:
+            digest_line({
+                "ts": datetime.now(timezone.utc).isoformat(
+                    timespec="seconds"),
+                "lane": LANE_BOARD,
+                "class": cls,
+                "comment_id": c["id"],
+                "post_id": post.get("id"),
+                "post_type": post.get("type"),
+                "post_title": post.get("title"),
+                "author": c.get("author_name"),
+                "text": comment_text(c)[:400],
+                "card": qid,
+            })
+        return LANE_BOARD, qid
+    if cls == "question":
+        qid = file_question(c, post, dry_run)
+        return LANE_QUESTION, qid   # file_question writes the digest line
     if not dry_run:
         digest_line({
             "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "lane": lane,
+            "class": cls,
             "comment_id": c["id"],
             "post_id": post.get("id"),
             "post_type": post.get("type"),
@@ -496,6 +809,8 @@ LANE_BLURB = {
     LANE_RECORD: "record-corrections queue (an agent applies it)",
     LANE_DIGEST: "comment digest (reference only)",
     LANE_SITUATION: "situation flag (applied to this post's meta)",
+    LANE_BOARD: "kanban card on the dev board",
+    LANE_QUESTION: "questions queue (an agent answers in-thread)",
 }
 
 
@@ -514,6 +829,21 @@ def ack(c, lane, qid, dry_run):
                        f"'{state}' on this digest. It shows on the "
                        f"/wp/ situations index; reply \"unpin\" or \"unwatch\" "
                        f"to clear.")
+    elif lane == LANE_BOARD:
+        if qid.startswith("card:error"):
+            content = (f"{ACK_MARK}\nNoted, {author} — I couldn't file "
+                       f"this to the dev board (board-api unreachable); "
+                       f"it's in the comment digest for an agent to "
+                       f"pick up.")
+        else:
+            card_id = qid.split(":", 1)[1] if ":" in qid else qid
+            content = (f"{ACK_MARK}\nFiled, {author} — this is now kanban "
+                       f"card {card_id} on the dev board. An agent will "
+                       f"action it and reply in this thread with the "
+                       f"result.")
+    elif lane == LANE_QUESTION:
+        content = (f"{ACK_MARK}\nGot it, {author} — logged as a question; "
+                   f"an agent will answer in this thread.")
     else:
         content = (f"{ACK_MARK}\nNoted, {author} — filed to "
                    f"{LANE_BLURB.get(lane, lane)} [{qid}]. "
@@ -521,9 +851,10 @@ def ack(c, lane, qid, dry_run):
                    "before anything changes.")
     if dry_run:
         return None
+    auth = agent_basic_auth(AGENT_ACK_IDENTITY)
     s, res = api("POST", "comments",
                  {"post": c.get("post"), "parent": c["id"],
-                  "content": content})
+                  "content": content}, auth=auth)
     if s in (200, 201) and isinstance(res, dict):
         return res.get("id")
     print(f"  ack FAIL comment={c['id']} status={s} "
@@ -586,6 +917,12 @@ def main():
         if cid in processed or cid in acks:
             continue
         if ACK_MARK in ((c.get("content") or {}).get("rendered") or ""):
+            continue
+        if is_agent_comment(c):
+            # Agent loop-close replies (devin/ada/chaba identities) are
+            # never re-routed — mark processed so a re-poll skips them
+            # silently, no ack, no card.
+            processed.add(cid)
             continue
         post = post_ref(c)
         lane, qid = route(c, post, args.dry_run)

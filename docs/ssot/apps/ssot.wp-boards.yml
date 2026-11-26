@@ -177,6 +177,14 @@ post_types:
   # and all meta unchanged (REST + board-api depend on the slug). WP
   # lesson posts are a frozen archive since the 2026-11-07 wiki cutover;
   # the 137 private posts still list under wp-admin Lessons.
+  # v0.11.0 (PENDING DEPLOY — card lesson-comments-dev-board, phase 1):
+  # registers the `chaba_agent` role (read + read_private_posts +
+  # moderate_comments) so devin/ada/chaba WP users can post in-thread
+  # comment replies via board-api POST /wp-comment with status=approve —
+  # real author identity, never the hold queue. Provisioning:
+  # scripts/wp-boards/ensure-agent-users.py on tony-omen writes
+  # ~/.config/secrets/wp-agent-users.env (scp to idc03); runbook
+  # docs/ssot/jobs/wordpress/2026-11-26-comment-dev-board.yml.
   # Verified 2026-10-14 (KNB-0657 audit follow-up): /wp/v2/plugins reports
   # chaba-boards 0.3.3 active; all 10 CPTs in /wp/v2/types; private sample
   # post per core CPT seeded via REST (ids 266-271) proving the fleet-writer
