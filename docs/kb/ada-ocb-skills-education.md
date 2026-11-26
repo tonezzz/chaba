@@ -71,6 +71,10 @@ Recorded alongside the skills in the same session history; the wiki page carries
 
 - **info-find efficiency A/B** (PR #219, `evals/info-find-efficiency/`, card `BEN-1359` closed): 8 offline tasks comparing `info-find` to bounded direct grep. Medians: narrow — info-find ~1703 tokens / 7616 ms vs direct ~92 tokens / 18 ms; cross — info-find ~1699 tokens / 5487 ms vs direct ~826 tokens / 305 ms. Correctness 0/8 vs 8/8 after hydrating top local paths. Decision rule (cross-source adoption only at ≤70% tokens with equal correctness) was not met: **keep `info-find` optional**, revisit with better routing/queries. Directional evidence only (offline, 8 tasks, bytes/4 token proxy).
 
+### Build is not apply (2026-11-26)
+
+PR #229 added `ansible/playbooks/deploy-runner-tools.yml`, the check→apply wrapper and the daily timer installer — but only `--check --diff` was run, so fleet drift stayed live. Adding a playbook is not convergence: apply it, install the schedule, then re-audit with an independent check. The first timer install was rejected by all hosts with `BadUnitSetting` because `OnCalendar`/`Persistent`/`Unit` were in `[Unit]` instead of `[Timer]`; validate user units with `systemd-analyze --user verify` before rollout. PR #236 fixed the unit; after apply every host reported in-sync, the timer is active, and the re-audit shows no `DRIFT` (only expected `kk-mac` `MISSING-DEST`). Card `OPS-1447` filed and closed. The full lesson is in MDDB `chaba-lessons/ocb-efficiency-lessons-2026-11-25` and the OpenChamber knowledge note.
+
 ## Related tooling
 
 - **`ansible-first`** (`.agents/skills/ansible-first/SKILL.md`, repo-canonical; `~/.claude/skills/ansible-first` is a symlink on OpenCode hosts): global OpenCode skill, advertised before each model step. 30-second triage — skip for local/repo work, use the board-api write door for kanban/wiki/SSOT mutations, and for remote/fleet/repeatable config check chaba's `ansible/` playbooks (and `~/ansible`) before ad-hoc SSH. Preflight with `--check --diff --limit`, keep secrets in vault files, require approval for disruptive plays, record where filed.
