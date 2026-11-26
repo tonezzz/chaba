@@ -1,7 +1,7 @@
 id: ada-voice-map-embed-pr22-merge-deploy
 title: 'ada-voice: merge PR #22 (map_embed drop 17), deploy, drop GOOGLE_MAPS_API_KEY'
 column: done
-updated: 2026-11-26 23:00
+updated: 2026-11-26 23:37
 brief: 'PR https://github.com/tonezzz/ada-voice/pull/22 is open and green (tool-lint clean, 1942 tests pass). Needs:
   merge -> deploy-ada.sh idc03 -> render-tool-profiles --apply -> key drop (or accept keyless).'
 priority: medium
@@ -178,6 +178,13 @@ comms:
 - at: 2026-11-26 23:00
   from: tony
   text: closed by tony
+- at: 2026-11-26 23:37
+  from: tony
+  text: '[follow-up 2026-11-26] CAVEAT RESOLVED: quoted the two unquoted values in /home/tony/.config/secrets/tony-ha/backend.env
+    — line 56 ADA_IDENTITY_INSTRUCTIONS (parentheses broke bash -n) and line 57 ADA_PWA_NAME=Chaba AI (space made
+    sourcing run `AI` as a command). Backup kept at backend.env.bak-quote-*. bash -n now passes; full shell source
+    returns rc=0 with no stderr, key length 39 and ADA_PWA_NAME=Chaba AI. Parsed-variable comparison old vs new:
+    61 vars, 0 value diffs, so no service restart was'
 action:
   type: dispatch
   status: done
