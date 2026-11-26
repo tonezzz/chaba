@@ -1,7 +1,7 @@
 id: audit-miss-cms-page-devin-session-audit-2026-10-17
 title: Published CMS page devin-session-audit-2026-10-17 now 404
-column: backlog
-updated: 2026-11-26 03:57
+column: done
+updated: 2026-11-26 18:51
 brief: 'Session audit 2026-11-20 (AUD-0973): ada-cms-pages/devin-session-audit-2026-10-17 was published with a documented
   successful add_document on 2026-10-17 and cited by two later summaries; the key now returns 404 from MDDB.'
 priority: high
@@ -230,9 +230,19 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 18:51
+  from: tony
+  text: '[batch A 19:10 +07] Resolved — false alarm from a lang-less lookup, no restore needed. Queried the CMS
+    plane directly (`http://100.102.134.91:11027/v1/get`, read-only) with collection `ada-cms-pages`, key `devin-session-audit-2026-10-17`,
+    `lang: en`: HTTP 200, id `ada-cms-pages|devin-session-audit-2026-10-17|en`, 1812-char body beginning "# Devin+Ada
+    session audit — 2026-10-17", meta `last_verified: 2026-11-24`, `original_added_at: 2026-10-17T16:01:25+...`.
+    `/v1/search` also lists the key alongs'
+- at: 2026-11-26 18:51
+  from: tony
+  text: closed by tony
 action:
   type: dispatch
-  status: idle
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-macbook
