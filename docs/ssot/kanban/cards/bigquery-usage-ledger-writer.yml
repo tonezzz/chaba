@@ -1,0 +1,75 @@
+id: bigquery-usage-ledger-writer
+title: BigQuery usage ledger — dataset, MERGE writer, 10-row backfill, verification
+column: backlog
+updated: 2026-11-26
+priority: medium
+program: devnest
+tags:
+- bigquery
+- devnest
+- observability
+brief: >-
+  Turn the local usage reports into a durable, queryable ledger now that the
+  BigQuery API is enabled on the Chaba project (0 datasets). Implement the
+  schema in infra/bigquery-ledger-schema-2026-11-26.md, a dry-run-first MERGE
+  writer, a bounded backfill, and verification queries. Card ADA-1458
+  (eval-judge lane) stays independent and unqueued.
+spec: |
+  SCHEMA REFERENCE
+  - infra/bigquery-ledger-schema-2026-11-26.md (this repo's session folder):
+    dataset chaba_usage, tables sessions / daily_quota / eval_verdicts /
+    model_audit, with partitioning, clustering and MERGE natural keys.
+  - Region default asia-southeast1; if co-location with an existing BigQuery
+    analytics project is required, change before creating the dataset and
+    record the choice in the outcome doc.
+
+  IMPLEMENTATION
+  1. Create the dataset and four tables with the DDL from the schema doc via
+     the BigQuery REST API using existing ADC (or a dedicated service account
+     with roles/bigquery.dataEditor on the dataset). Never put a key in the
+     repo, a card or a comm. Set maximumBytesBilled on queries.
+  2. Add scripts/bigquery/ledger_write.py (do not modify
+     scripts/devnest/devin_daily_usage_report.py unless reuse is clearly
+     simpler). Modes:
+       --dry-run            print the typed rows and the target table, write nothing
+       --backfill --limit N load at most N rows from existing artifacts
+       --daily              load the newest daily report + v3 session polls
+     Inputs: infra/devin-daily-usage-*.json, infra/gcp-quota-dump-*.json,
+     infra/devin-cloud-session-baseline-2026-11-26.json, eval result JSONs.
+     Every row must carry source_artifact / dump_path provenance.
+  3. MERGE on natural keys (sessions.session_id,
+     daily_quota.quota_date+source, eval_verdicts.run_id+fixture_id+model,
+     model_audit.host+checked_at). A second run with the same inputs must not
+     increase row counts. No plain INSERT path for these tables.
+
+  BACKFILL (10 rows)
+  4. Load exactly 10 rows: 6 local dispatch sessions from the 2026-11-26 daily
+     report, 2 devin_cloud sessions (ADA-0062 d8e3e0fc… and DEV-1209
+     6c6a00dd…), 1 daily_quota row (4% -> 12% used, 2 PRs, 4 points/PR) from
+     the Console capture, and 1 model_audit row (all hosts swe-2-flash-high,
+     free-now). Do not invent eval_verdicts rows — that table stays empty
+     until ADA-1458 actually runs.
+
+  VERIFICATION
+  5. Queries to run and paste into the card:
+       - row counts per table (expect 9 / 1 / 0 / 1);
+       - duplicate-key check: GROUP BY natural key HAVING COUNT(*) > 1 -> 0 rows;
+       - cost-per-PR from daily_quota = 4.0;
+       - provenance check: every row has a non-null source_artifact or dump_path.
+  6. Re-run --backfill --limit 10 and confirm counts are unchanged (idempotency).
+
+  GUARDRAILS / SSOT
+  7. Billing alert on the project before any scaling; no secrets in code,
+     cards or comms. Keep >=365d partition expiration so local task-dir
+     pruning cannot lose history.
+  8. Add the dataset/table purpose and owner to docs/ssot/infrastructure/
+     ssot.reports.yml (or the nearest report registry), with a pointer to the
+     schema doc. No auto-deploy of downstream jobs.
+
+  DONE WHEN
+  9. Dataset + tables exist, 10 rows loaded, idempotency verified, verification
+     query output posted to this card, outcome doc under docs/ssot/jobs/devnest/
+     with retention/region decisions. Card to review; no auto-close.
+action:
+  type: dispatch
+  repo: chaba
