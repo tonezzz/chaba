@@ -1,7 +1,7 @@
 id: answer-sweep-auto-compose-spec
 title: 'Answer-sweep auto-compose: raise consolidated spec request when all asks answered (KNB-0180 option 2)'
-column: backlog
-updated: 2026-11-26 21:01
+column: doing
+updated: 2026-11-26 21:02
 brief: 'Phase 1 of KNB-0180 option 2: when every open request on a card is answered/executed and the card still
   lacks a dispatchable spec, answer-sweep raises ONE consolidated spec request with the answers inlined — detection
   + raise only, no auto-queue. Spec: docs/ssot/jobs/kanban/2026-11-19-answer-sweep-dead-letters.yml'
@@ -19,10 +19,11 @@ spec: 'Implement Phase 1 only of docs/ssot/jobs/kanban/2026-11-19-answer-sweep-d
   guard.'
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   repo: chaba
-  attempts: 0
+  attempts: 1
+  runner: con01
 ref: KNB-0243
 comms:
 - at: 2026-11-19 18:04
@@ -216,4 +217,8 @@ comms:
 - at: 2026-11-26 21:01
   from: chaba
   text: 'mn01 defers: runner at local cap (1/1) — remote slots unaffected'
-claim: {}
+- at: 2026-11-26 21:02
+  from: con01
+  text: claimed
+claim:
+  since: 2026-11-26 21:02
