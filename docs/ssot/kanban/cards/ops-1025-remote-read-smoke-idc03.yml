@@ -1,7 +1,7 @@
 id: ops-1025-remote-read-smoke-idc03
 title: 'OPS-1025 one-shot remote-read verification: idc02 to idc03'
 column: doing
-updated: 2026-11-26 23:45
+updated: 2026-11-27 00:01
 brief: One supervised, read-only S3 verification of the merged remote-read gates.
 priority: medium
 program: OPS-1025
@@ -845,5 +845,12 @@ comms:
     (no --all) shows only active+failed units; `list-units --; [ops-1025-remote-read-smoke-idc03] finished (failed):
     exit=2 ead-only profile. |; [ops-1025-remote-read-smoke-idc03] finished (failed): exit=2 ead-only profile. |;
     [ops-1025-remote-read-smoke-idc03] finished (failed): exit=2 '
+- at: 2026-11-27 00:01
+  from: devin
+  text: 'devin-executor attempt: BLOCKED at tooling layer, no remote facts collected. (1) devin-cli spawns mcp-debug
+    as python3 -m mcp_debug.server with no PYTHONPATH -> initialize fails (worked around in-session via worktree
+    symlink mcp_debug->scripts/mcp_debug). (2) idc03 is not in ssot.mcp-debug.yml hosts (only tony_omen/tony_dell/macbook/con01)
+    — live mcp_debug call returned unknown host:idc03 before any ssh. Artifact: evals/opencode-lane/out/ops-1025-remote-read-smoke-idc03.json
+    (failure_class=tooli'
 claim:
   since: 2026-11-26 23:44
