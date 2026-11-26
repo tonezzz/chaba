@@ -1,7 +1,7 @@
 id: ada-voice-map-embed-pr22-merge-deploy
 title: 'ada-voice: merge PR #22 (map_embed drop 17), deploy, drop GOOGLE_MAPS_API_KEY'
 column: backlog
-updated: 2026-11-26 22:12
+updated: 2026-11-26 22:19
 brief: 'PR https://github.com/tonezzz/ada-voice/pull/22 is open and green (tool-lint clean, 1942 tests pass). Needs:
   merge -> deploy-ada.sh idc03 -> render-tool-profiles --apply -> key drop (or accept keyless).'
 priority: medium
@@ -151,6 +151,13 @@ comms:
     (service routes.googleapis.com). Maps JavaScript API remains the only working API. Retried after 75s — no change,
     and Google''s ''enabled recently, wait a few minutes'' wording is absent, so not propagation. Likely causes:
     APIs enabled in a different GCP project than the one owning this ke'
+- at: 2026-11-26 22:19
+  from: tony
+  text: 'KEY VERIFIED + DROPPED 2026-11-26: after Tony enabled the APIs, re-probe passed — Maps Embed HTTP 200 (2427
+    B), Static Maps HTTP 200 (11975 B), Geocode OK (1 result), Routes 200 (1 route, 10191s / 198751 m, encoded polyline
+    present); Maps JS still renders a real map. Dropped the private-card key into idc03 ~/.config/secrets/tony-ha/backend.env
+    (backup .bak-maps-20261126-221914) and replaced the dead key in tony-dell gev-google-maps.env + gods-eye-view/.env
+    (backups .bak-maps-20261126-221943); ha'
 action:
   type: dispatch
   status: idle
