@@ -115,3 +115,23 @@ lessons:
   - "tony-macbook suspend-then-hibernate resume is broken — every cycle cold-boots; treat any suspend on this host as a fleet-offline event, which is the real cost the day-awake inhibit mitigates."
   - "Card specs age: fleet prose said cap 3/gate 0.8 but live unit was rewritten to cap 4/1.0 same-day — always sha256/grep the live unit before mirroring or 'installing' fleet changes."
   - "Conditioned inhibit > blanket inhibit for laptops: hold sleep:idle block only while (daytime AND (AC OR lid-open+charge>=floor)) so bag-suspend and low-battery paths stay intact — offline_ok semantics preserved by construction."
+
+attempt_2_2026_11_26:
+  dispatch: devin-task-20261126-084311-macbook-15g-ram-already-has-ru (ran on idc02)
+  summary: >-
+    Attempt 1 (on tony-macbook) delivered the full artifact set and pushed
+    branch dispatch/20261125-190949-... (commit 00b8fe74) but the merge was
+    held: dispatch test gate found no pytest on tony-macbook (OPS-1191)
+    and the worktree checkpoint tripped the >10-commit single-writer
+    warning. This attempt ran on idc02 (pytest-capable), cherry-picked
+    00b8fe74 -> 4c3927ccd7 onto current master with zero conflicts.
+  verified_live_2026_11_26:
+    - "runner-agent.timer firing ~2min cadence; unit env RUNNER_LABELS=macbook,local-8c,always-home RUNNER_CAP=4 RUNNER_MAX_LOAD_PC=1.0 == ssot.kanban.yml runner_fleet"
+    - "~/.local/bin/macbook-day-awake.sh + ~/.config/autostart/macbook-day-awake.desktop still installed (Nov 25)"
+    - "systemd-inhibit --list: NO day-awake inhibitor held — xfce4-session (pid 2896, session-c1 via chrome-remote-desktop) started Nov 25 09:38, ~11h before the .desktop was installed (20:31), so autostart never fired for this session; it arms at next graphical login"
+    - "polkit rule still absent — sudo -n fails (interactive auth required); tony has (ALL:ALL) ALL but no NOPASSWD for file install; /etc/polkit-1/rules.d is root:polkitd 750"
+    - "in-session exec channels exhausted unprivileged: session bus is the shared user bus (dbus-daemon pid 2292 lives in user@1000.service/session.slice, NOT session-c1.scope) so dbus activation lands session-less; xfce4-session D-Bus API (org.xfce.Session.Manager) has no exec method; X display :20 exposes no usable windows; session-c1.scope/cgroup.procs is root-owned"
+    - "current suspend exposure is LOW: the XFCE/CRD session has no idle-suspend mechanism at all (xfce4-power-manager not installed, no GNOME power daemon in-session, no logind IdleAction) — only battery lid-close (suspend-then-hibernate, which the script releases inhibit for by design) and manual suspend remain"
+  residual:
+    - "Inhibitor arms at next graphical login via autostart — this covers GNOME/local sessions where idle-suspend (sleep-inactive-battery-type=suspend) actually exists"
+    - "Session-independent coverage (systemd/macbook-day-awake.service, repo) still needs ONE interactive sudo on tony-macbook: install /etc/polkit-1/rules.d/50-macbook-day-awake.rules (content in prior board request day-awake-inhibit-deployed-via-xfce-auto-544ad5) then systemctl --user enable --now macbook-day-awake.service — re-requested on the card 2026-11-26; assessed optional since autostart covers the sessions that can idle-suspend"

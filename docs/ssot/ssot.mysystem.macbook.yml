@@ -115,8 +115,8 @@ sections:
     layout: list
     items:
       - label: Lid-close suspend
-        text: "Disabled for headless use 2026-10-11 — /etc/systemd/logind.conf.d/headless-crd.conf sets HandleLidSwitch=ignore + HandleLidSwitchExternalPower=ignore (lid close no longer suspends, needed for CRD)"
-        status: done
+        text: "Partial — /etc/systemd/logind.conf.d/headless-crd.conf sets HandleLidSwitch=ignore + HandleLidSwitchExternalPower=ignore, but hibernate.conf (later drop-in) overrides HandleLidSwitch=suspend-then-hibernate: AC lid-close stays ignored (CRD-safe), battery lid-close suspends->hibernates and resume cold-boots (SYS-1410). Day-awake inhibit releases on battery+lid-closed by design (bag safety)."
+        status: active
       - label: Daytime sleep inhibit
         text: "macbook-day-awake (card tony-macbook-daytime-runner, 2026-11-25): holds a logind sleep:idle block inhibitor 07:00-23:00 while on AC or (lid open + battery>=30%) so the host stays up as a dispatch runner; battery+lid-closed and night keep normal suspend. Delivered via XFCE autostart (block inhibitors need a session subject); repo: scripts/ops/macbook-day-awake.{sh,desktop}"
         status: active
