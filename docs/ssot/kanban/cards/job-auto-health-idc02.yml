@@ -1,7 +1,7 @@
 id: job-auto-health-idc02
 title: Job health sweep — declared-job failures on idc02
 column: done
-updated: 2026-11-26 23:07
+updated: 2026-11-26 23:26
 brief: Automated per-host sweep (scripts/ops/job-health-sweep.py, ssot.jobs.yml job-health-sweep) found declared
   jobs that are failing, never firing, or running stale units. Each comment names the job, the journal/systemd evidence,
   and the consecutive-fail count. Fix on the host; the card auto-closes when green.
@@ -115,5 +115,11 @@ comms:
     7 stale undeclared units (chaba-repo-mirror, devin-taskdir-prune, jev-bench, mddb-lab-pull, mddb-tier2-pull,
     session-audit, single-writer-fleet-audit) with timestamped evidence in the sweep output. Root-caused retry-storm-watch''s
     remaining flag: exit 1 is its deliberate alert '
+- at: 2026-11-26 23:26
+  from: tony
+  text: 'FOLLOW-UP 2026-11-26: PR tonezzz/chaba#247 merged as cf7df02f51 (all CI checks green; includes the YAML
+    scalar fix that had broken validate). Local idc02 script now matches master byte-for-byte; live job-health sweep
+    green (9 checked, 0 failing) and card remains done. Source-level companion PR #249 makes retry-storm-watch exit
+    0 on handled alerts so timer-sentinel stops filing false failure cards for the same condition.'
 action:
   status: done
