@@ -1,7 +1,7 @@
 id: dispatch-podman-conmon-49-incompat
 title: Dispatch fails on podman 4.9.3 hosts — conmon rejects --log-tag (con01/idc02/idc03)
-column: review
-updated: 2026-11-26 15:31
+column: done
+updated: 2026-11-26 15:48
 priority: high
 tags:
 - dispatch
@@ -104,6 +104,16 @@ comms:
     5e52a39e75; full ssot validation 7175/7175 clean). It documents the live fix on con01/idc02/idc03 (log_tag removed
     from containers.conf, detached podman runs OK, end-to-end dispatch job OK) plus rollback and residuals. The
     outcome-doc scratch file was deliberately N'
+- at: 2026-11-26 15:48
+  from: chaba
+  text: 'merge-sweep: merged ef36c6f1 (dispatch/20261126-130316-found-during-dispatch-queue-ap from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261126-130316-found-during-dispatch-queue-ap.md)
+    — auto-closed'
+- at: 2026-11-26 15:48
+  from: local
+  text: 'pub milestone: card verified: dispatch-podman-conmon-49-incompat on idc03 — merged ef36c6f1 (dispatch/20261126-130316-found-during-dispatch-queue-ap
+    from tony-macbook) -> origin/master — verified — merged ef36c6f1 (dispatch/20261126-130316-found-during-dispatch-queue-ap
+    from tony-macbook) -> origin/master — verified — auto-closed [evt-b501896d4fea178c]'
 action:
   type: dispatch
   status: done
@@ -116,6 +126,11 @@ action:
     Consumed 2min 36.912s CPU time over 10min 42.219s wall clock time, 1.1G memory peak.'
   sweep:
     dirty: 2
+  verified: true
 claim:
   since: 2026-11-26 13:02
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 15:48
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261126-130316-found-during-dispatch-queue-ap.md
