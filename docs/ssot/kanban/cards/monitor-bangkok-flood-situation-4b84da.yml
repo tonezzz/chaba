@@ -1,7 +1,7 @@
 id: monitor-bangkok-flood-situation-4b84da
 title: Monitor Bangkok Flood Situation
-column: doing
-updated: 2026-11-26 21:58
+column: done
+updated: 2026-11-26 21:59
 priority: medium
 note: 'Monitor the Bangkok flood situation and link with report slug: flood-report'
 ref: OPS-1448
@@ -70,16 +70,31 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261126-215403-decision-2026-11-26-tony-bound no longer active on tony-dell but
     card still says running — sweeping its branch'
+- at: 2026-11-26 21:59
+  from: chaba
+  text: 'merge-sweep: merged 3163ac5d (dispatch/20261126-215403-decision-2026-11-26-tony-bound from tony-dell) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261126-215403-decision-2026-11-26-tony-bound.md)
+    — auto-closed'
+- at: 2026-11-26 21:59
+  from: local
+  text: 'pub milestone: card verified: monitor-bangkok-flood-situation-4b84da on idc03 — merged 3163ac5d (dispatch/20261126-215403-decision-2026-11-26-tony-bound
+    from tony-dell) -> origin/master — verified — a — merged 3163ac5d (dispatch/20261126-215403-decision-2026-11-26-tony-bound
+    from tony-dell) -> origin/master — verified — auto-closed [evt-80f64d625051c32a]'
 spec: 'DECISION 2026-11-26 Tony: bound a one-shot digest. Fetch the current Bangkok flood situation from report
   slug flood-report, write a short status artifact, and post one board comment on this card with the source timestamp.
   Read-only; no ongoing monitoring loop and no new alerts. Done: artifact written and comment recorded.'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   attempts: 1
   runner: tony-dell
   sweep:
     stale_running: 2026-11-26 21:58
+  verified: true
 claim:
   since: 2026-11-26 21:53
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 21:59
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261126-215403-decision-2026-11-26-tony-bound.md
