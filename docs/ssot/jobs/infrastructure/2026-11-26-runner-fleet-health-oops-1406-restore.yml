@@ -64,8 +64,12 @@ follow_up:
     cannot replace scripts/SSOT prose with older content."
   - "4af10b4c5c also reverted the runner-tooling content pins
     (tool_pins/tool-pin HELP) and LANE_MODELS free_lane back to
-    litellm/gemini-3.5-flash-lite. Both were left untouched here and need
-    their own decisions."
+    litellm/gemini-3.5-flash-lite. Neither was touched by this change.
+    d7bae483a8 (14:09, 'restore pin-matched dispatch_repos after stale
+    board write') has since restored LANE_MODELS['free_lane'] to
+    litellm/agent-local and the con01 regex comment — free_lane needs no
+    further action. The tool-pin checks are still absent and need their
+    own decision."
   - "Fix kk-mac's two genuine audit findings: Python 3.9-compatible
     dispatch_repos.py annotations and a push:chaba key/label (or an
     explicit SSOT reason why kk-mac is fetch-only)."
