@@ -1,7 +1,7 @@
 id: ansible-prep-plan-apply-verify
 title: Ansible prep→plan→apply→verify workflow standard
 column: doing
-updated: 2026-11-26 14:07
+updated: 2026-11-26 14:13
 brief: Standardize Ansible for preparation/baselines, check-diff plan artifacts, gated apply, and verified closeout
   to increase fleet efficiency.
 priority: medium
@@ -195,6 +195,13 @@ comms:
     Prior merge-hold cause reproduced: pytest unavailable on mn01. Found+fixing a real gate break on master: dispatch_repos
     sha256 pin stale vs source (sweep commit changed dispatch_repos.py without pin bump) — bumped pin in runner-tooling.manifest.json;
     re-running the chaba merge-gate smoke set to confirm green.'
+- at: 2026-11-26 14:13
+  from: devin
+  text: 'Attempt 2 DONE. Prior OPS-1424 work verified already on master (swept into 62c638d). Root-caused the merge
+    hold chain: mn01 lacked pytest (fail-closed gate), and on con01 the chaba gate smoke set was RED on clean master
+    — dispatch_repos sha256 pin stale after sweep commit changed the source. Fixed: bumped pin in runner-tooling.manifest.json
+    (commit 28924b33705) + job trail docs/ssot/jobs/infrastructure/2026-11-26-dispatch-test-gate-pin-drift.yml.
+    Verified: full chaba merge-gate smoke set 300 pas'
 action:
   type: dispatch
   status: running
