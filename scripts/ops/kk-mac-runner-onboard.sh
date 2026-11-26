@@ -21,6 +21,8 @@
 # Env:
 #   RUNNER_CAP        claimed tasks at once (default 1 — shared family
 #                     machine; raise only with Tony's sign-off)
+#   RUNNER_REMOTE_CAP remote-async executor claims at once (default 6 —
+#                     OPS-1284 per-executor caps; local cap stays RUNNER_CAP)
 #   RUNNER_LABELS     default "desktop,mac,arm64,cpu" — `desktop` arms
 #                     the Nice/LowPriorityIO/ulimit limits profile so
 #                     tasks stay out of KK's way
@@ -33,6 +35,7 @@ set -euo pipefail
 BREW=/opt/homebrew/bin/brew
 EXPECT_MODEL="${EXPECT_MODEL:-Mac16,9}"
 RUNNER_CAP="${RUNNER_CAP:-1}"
+RUNNER_REMOTE_CAP="${RUNNER_REMOTE_CAP:-6}"
 RUNNER_LABELS="${RUNNER_LABELS:-desktop,mac,arm64,cpu}"
 RUNNER_API="${RUNNER_API:-https://idc03.taila0626a.ts.net:10000}"
 LAUNCHD_DOMAIN="${LAUNCHD_DOMAIN:-gui}"
@@ -242,6 +245,7 @@ write_agent_plist() {
         <key>RUNNER_API</key><string>${RUNNER_API}</string>
         <key>RUNNER_HOST</key><string>kk-mac</string>
         <key>RUNNER_CAP</key><string>${RUNNER_CAP}</string>
+        <key>RUNNER_REMOTE_CAP</key><string>${RUNNER_REMOTE_CAP}</string>
         <key>RUNNER_MAX_LOAD_PC</key><string>1.0</string>
         <key>RUNNER_LABELS</key><string>${RUNNER_LABELS}</string>
         <key>RUNNER_TASK_RUNTIME</key><string>launchd</string>

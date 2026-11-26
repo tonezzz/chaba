@@ -439,8 +439,15 @@ execution:
                locally first (above) — verified rides the finish body.
                type=container needs only podman (idc hosts); type=dispatch
                needs devin-dispatch + devin CLI + repos.conf (dell, omen)."
-    runner_hosts: "per-host env on the agent: RUNNER_CAP (default 2),
-               RUNNER_LABELS, RUNNER_API (default tailnet route —
+    runner_hosts: "per-host env on the agent: RUNNER_CAP (default 2 —
+               LOCAL executors only: devin/opencode/claude/script/
+               container), RUNNER_REMOTE_CAP (default 6 — remote-async
+               executors in RUNNER_REMOTE_EXECUTORS, default
+               jules,nlm_batch,kk_mac_local; OPS-1284
+               runner-per-executor-caps: remote claims hold slots while
+               doing ~zero local work, so a jules-saturated host still
+               claims local work and vice versa), RUNNER_LABELS,
+               RUNNER_API (default tailnet route —
                works identically on every host incl. dell). Hosts whose
                RUNNER_LABELS include 'desktop' (tony-omen) also arm the
                interactive-host guards (omen-gpu-display-wedge,
@@ -483,7 +490,13 @@ execution:
     load_gate: "both claim paths refuse new cards when load5/cpu >
                KANBAN_MAX_LOAD_PC / RUNNER_MAX_LOAD_PC (default 1.0, 0=off)
                — loaded hosts yield the queue to idle runners; finishes
-               and requeues still process"
+               and requeues still process. runner-agent's gate is
+               per-class (OPS-1182 + OPS-1284): script claims answer to
+               RUNNER_SCRIPT_MAX_LOAD_PC (default 2.0), remote-executor
+               claims to RUNNER_REMOTE_MAX_LOAD_PC (default 0 =
+               load-independent — they put ~no load on the host, bounded
+               by their own lane quotas), heavyweight local claims to
+               RUNNER_MAX_LOAD_PC"
     claim_order: "priority-aware drain (card dispatch-priority-order,
                2026-10-10): BOTH claim paths — kanban-dispatch's local
                drain and runner-agent's remote claim — order claimable
@@ -535,8 +548,9 @@ execution:
                2026-10-30): launchd task runtime (RUNNER_TASK_
                RUNTIME=launchd) landed in runner-agent.py; provision
                via scripts/ops/kk-mac-runner-onboard.sh as kkkakk —
-               cap 1, labels desktop,mac,arm64,cpu (+push:chaba after
-               the deploy-key probe). devin executor stays Linux-only;
+               cap 1, labels desktop,mac,arm64,cpu (dispatch+script;
+               +push:chaba after the deploy-key probe). devin executor
+               stays Linux-only;
                opencode/script/container lanes serve. Runbook:
                docs/kb/kk-mac-launchd-runner.md.
                Push creds (2026-10-14 audit, runner-push-cred-gap):
