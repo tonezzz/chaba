@@ -1,7 +1,7 @@
 id: ops-mn01-restore-sshd-shell-20261126
 title: 'mn01: restore standard SSH shell access (SFTP-only lock)'
 column: backlog
-updated: 2026-11-26 12:33
+updated: 2026-11-26 12:45
 brief: Remove the accidental global ForceCommand internal-sftp on mn01 so shell, Ansible and the canary rerun work
   again.
 priority: high
@@ -34,8 +34,13 @@ action:
   type: dispatch
   host: mn01
   executor: devin
+  status: queued
 ref: OPS-1432
 comms:
 - at: 2026-11-26 12:33
   from: tony
   text: card captured via board-api
+- at: 2026-11-26 12:45
+  from: chaba
+  text: queued for processing
+claim: {}
