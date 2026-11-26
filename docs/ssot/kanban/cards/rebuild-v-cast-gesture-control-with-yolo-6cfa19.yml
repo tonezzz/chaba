@@ -1,7 +1,7 @@
 id: rebuild-v-cast-gesture-control-with-yolo-6cfa19
 title: Rebuild V-Cast gesture control with YOLO
 column: done
-updated: 2026-11-26 13:30
+updated: 2026-11-26 13:33
 priority: low
 note: Evaluate replacing V-Cast browser detector with YOLO (ONNX Web vs server-side frame streaming).
 ref: MED-1389
@@ -82,6 +82,12 @@ comms:
 - at: 2026-11-26 13:30
   from: devin
   text: closed by devin
+- at: 2026-11-26 13:33
+  from: devin
+  text: 'Correction to triage note: the canonical rebuild-gesture-control-using-yolo-83cf4a finished its dispatch
+    and pushed a branch, but its merge is HELD (test gate failed - pytest unavailable - worktree unmerged). So the
+    YOLO replacement is not yet confirmed merged; this card stays closed purely as a duplicate of that in-flight
+    work, not because the change already shipped.'
 requests:
 - id: should-we-benchmark-onnx-runtime-web-cli-3865a3
   ask: Should we benchmark ONNX Runtime Web client-side or stream frames to a backend vision service on idc02?
