@@ -1,7 +1,7 @@
 id: ops-1025-remote-read-smoke-idc03
 title: 'OPS-1025 one-shot remote-read verification: idc02 to idc03'
 column: backlog
-updated: 2026-11-26 21:00
+updated: 2026-11-26 21:01
 brief: One supervised, read-only S3 verification of the merged remote-read gates.
 priority: medium
 program: OPS-1025
@@ -22,7 +22,7 @@ action:
   type: dispatch
   repo: chaba
   model: litellm/or-free-nemotron-nano
-  executor: opencode
+  executor: devin
   agent_profile: ops-remote-read
   target_host: idc02
   artifact: evals/opencode-lane/out/ops-1025-remote-read-smoke-idc03.json
@@ -806,5 +806,9 @@ comms:
 - at: 2026-11-26 21:00
   from: tony
   text: retry requested
+- at: 2026-11-26 21:01
+  from: tony
+  text: 'routing edited: executor=devin by tony: HUMAN CALL 2026-11-26: retry exception approved, pin devin to avoid
+    free_lane lane_envelope hold'
 claim:
   since: 2026-11-26 19:32
