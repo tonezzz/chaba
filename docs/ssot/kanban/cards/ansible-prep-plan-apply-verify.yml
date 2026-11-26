@@ -1,7 +1,7 @@
 id: ansible-prep-plan-apply-verify
 title: Ansible prep→plan→apply→verify workflow standard
-column: backlog
-updated: 2026-11-26 13:54
+column: doing
+updated: 2026-11-26 13:55
 brief: Standardize Ansible for preparation/baselines, check-diff plan artifacts, gated apply, and verified closeout
   to increase fleet efficiency.
 priority: medium
@@ -169,21 +169,29 @@ comms:
 - at: 2026-11-26 13:54
   from: chaba
   text: 'answer-sweep: executed ''proceed'' -> queued for processing'
+- at: 2026-11-26 13:55
+  from: chaba
+  text: 'kk-mac defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-26 13:55
+  from: con01
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  attempts: 1
+  attempts: 2
   sweep:
     stale_running: 2026-11-26 12:39
     no_repo: 2026-11-26 12:39
     dirty: 1
   result: 'exit=0 ml`; outcome doc at `dispatch-outcome-20261126-123352-objective-define-and-pilot-an-.md`. | devin-task-20261126-123352-objective-define-and-pilot-an-.service:
     Consumed 32.765s CPU time over 11min 11.836s wall clock time, 347.4M memory peak.'
+  runner: con01
 claim:
-  since: 2026-11-26 12:32
+  since: 2026-11-26 13:55
 requests:
 - id: idc02-primary-ocb-pane-100-123-163-11-re-6d8dd3
   ask: idc02 (primary ocb_pane, 100.123.163.11) refuses SSH — connection refused :22, confirmed via alias+IP. tony-dell
