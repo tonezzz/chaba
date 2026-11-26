@@ -1,7 +1,7 @@
 id: idc03-disk-cleanup-20261124
 title: idc03 disk cleanup — unverified MDDB filecopies (127G) + bbolt compact
-column: backlog
-updated: 2026-11-26 03:58
+column: done
+updated: 2026-11-26 17:38
 brief: 'idc03 at 100% (290G disk, 1.3G free). 131G in ~/mddb-backups: 127G is two *.UNVERIFIED filecopy backups
   (70G + 57G) whose open-verify failed 3x; valid native gz dumps (1.1G, gzip -t OK) exist for the same dates.'
 priority: high
@@ -265,9 +265,17 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 17:38
+  from: devin
+  text: '2026-11-26 final verification: nightly 02:30 backup produced valid dumps for all three banks (mddb 1.6G,
+    mddb-ops 2.1G, mddb-cms 4.6G; all gzip -t OK); UNVERIFIED count 0; backup timer active. idc03 / at 147G free
+    (50%), mddb-ops active after compact. All card items verified done — closing.'
+- at: 2026-11-26 17:38
+  from: devin
+  text: closed by devin
 action:
   type: dispatch
-  status: idle
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-dell
