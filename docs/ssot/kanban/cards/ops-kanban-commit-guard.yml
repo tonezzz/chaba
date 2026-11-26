@@ -588,11 +588,21 @@ comms:
 - at: 2026-11-26 20:45
   from: chaba
   text: 'commit refused (failure-streak): kanban-commit failed 3+ consecutive ticks — last: commit failed'
+- at: 2026-11-26 22:28
+  from: tony
+  text: '[verify 2026-11-26] VERIFIED — self-cleared lifecycle bounce, no open defect. The 20:45 failure-streak
+    alert was last seen before the checkout was realigned; kanban-commit sweeps since then have completed rc=0 and
+    pushed cleanly (including the 21:24, 21:36 and 21:43 board updates and the re-landed board-api date fix). Guard
+    implementation is on origin/master: pathspec-limited commit, git ls-files --error-unmatch path check (SIGPIPE/pipefail
+    fix), stale-write guard refusing staged scripts/ and st'
+- at: 2026-11-26 22:28
+  from: tony
+  text: closed by tony
 id: ops-kanban-commit-guard
 title: 'kanban-commit blocked: unsafe staged state'
-column: review
+column: done
 note: 'kanban-commit failed 3+ consecutive ticks — last: commit failed'
-updated: 2026-11-26 20:45
+updated: 2026-11-26 22:28
 action:
   status: done
 ref: KNB-0309
