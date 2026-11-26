@@ -1,7 +1,7 @@
 id: gemini4-interactions-text-agent-eval-2026-11-26
 title: Evaluate Gemini 4 + Interactions API for a stateful text agent
 column: review
-updated: 2026-11-26 20:17
+updated: 2026-11-26 20:36
 brief: Compare gemini-4-hydrogen/neon via the Interactions API against the current 3.x stateless text path on a
   small multi-turn tool-and-recall task set; measure task accuracy, token growth and latency.
 priority: medium
@@ -106,6 +106,16 @@ comms:
     Priority silently downgraded to standard; server-side code execution returned Fibonacci(20)=6765 with 84 tool-use
     tokens; Google Search grounding quota-blocked; impl'
 - at: 2026-11-26 20:17
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-26 20:36
+  from: ada
+  text: 'Compared gemini-3.1-flash-lite with 3.5-flash-lite on free tier: same 4-task stateful agent loop gave both
+    4/4 relaxed tool + 4/4 recall with ~3.9k input / ~0.5k output tokens; all five Interactions surfaces pass on
+    both. 3.1 strict-scored 0/4 only because it enriches topic args with recalled context (attendees/date/time exact
+    on 4/4). 3.1 latency was severe and variable (136s/2.9s/69s single calls vs 3-6s for 3.5) — treat as free-tier
+    throttling, not model speed. Evidence pushed on master 67c12'
+- at: 2026-11-26 20:36
   from: chaba
   text: comment saved but session delivery skipped (bad task_id)
 action:
