@@ -1,7 +1,7 @@
 id: audit-miss-unlanded-oct06-dispatch-artifacts
 title: Audit unlanded Oct 6 dispatch artifacts on Dell mirror
-column: backlog
-updated: 2026-11-26 21:03
+column: doing
+updated: 2026-11-26 21:18
 brief: Three unique outputs from the Oct 6 audit were found only as untracked files in tony-dell's frozen chaba-tony-dell
   mirror; origin/master does not contain them.
 priority: medium
@@ -21,9 +21,10 @@ spec: 'Reconcile these three Oct 6 outputs found only as untracked files on tony
   origin/master. The archived ada-dead-turn-guard card is tracked and is not a miss.'
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
-  attempts: 0
+  attempts: 1
+  runner: tony-dell
 ref: AUD-0020
 comms:
 - at: 2026-11-20 16:38
@@ -233,5 +234,9 @@ comms:
 - at: 2026-11-26 21:03
   from: chaba
   text: 'idc02 defers: runner at local cap (3/3) — remote slots unaffected'
+- at: 2026-11-26 21:18
+  from: tony-dell
+  text: claimed
 review_kind: verify
-claim: {}
+claim:
+  since: 2026-11-26 21:18
