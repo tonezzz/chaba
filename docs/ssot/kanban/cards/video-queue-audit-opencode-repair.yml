@@ -1,7 +1,7 @@
 id: video-queue-audit-opencode-repair
 title: 'OpenCode artifact repair: video queue audit'
-column: backlog
-updated: 2026-11-26 15:13
+column: doing
+updated: 2026-11-26 15:14
 brief: Retry ADA-1046 with a write-capable artifact contract so the queue audit report lands and verifies.
 priority: high
 program: ai-workforce
@@ -29,12 +29,14 @@ action:
     - read-only
     - recommendation
   lane: free_lane
-  status: queued
+  status: running
   agent_profile: artifact-write
   result: 'exit=0 fetnai5s7HVsDT7B","type":"step-finish","tokens":{"total":41160,"input":2332,"output":34,"reasoning":0,"cache":{"write":0,"read":38794}},"cost":0}}
     | devin-task-video-queue-audit-opencode-repair-1793682775.service: Consumed 14.057s CPU time.'
   sweep:
     dirty: 1
+  runner: idc02
+  attempts: 1
 ref: AUD-1048
 comms:
 - at: 2026-11-03 12:11
@@ -308,5 +310,9 @@ comms:
     on idc02 hard-gates stage=S3 while lane_gate.admit requires the envelope stage to equal the live lane stage
     (S1). The DEV-0958 drop guard will replace the declared litellm/* model with the devin default, so this claim
     should run cleanly. Verify a real committed artifact on closeout.'
+- at: 2026-11-26 15:14
+  from: idc02
+  text: claimed
 review_kind: verify
-claim: {}
+claim:
+  since: 2026-11-26 15:14
