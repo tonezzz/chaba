@@ -1,7 +1,7 @@
 id: answer-sweep-auto-compose-spec
 title: 'Answer-sweep auto-compose: raise consolidated spec request when all asks answered (KNB-0180 option 2)'
 column: doing
-updated: 2026-11-26 21:30
+updated: 2026-11-26 21:39
 brief: 'Phase 1 of KNB-0180 option 2: when every open request on a card is answered/executed and the card still
   lacks a dispatchable spec, answer-sweep raises ONE consolidated spec request with the answers inlined — detection
   + raise only, no auto-queue. Spec: docs/ssot/jobs/kanban/2026-11-19-answer-sweep-dead-letters.yml'
@@ -24,6 +24,8 @@ action:
   repo: chaba
   attempts: 1
   runner: con01
+  sweep:
+    stale_running: 2026-11-26 21:39
 ref: KNB-0243
 comms:
 - at: 2026-11-19 18:04
@@ -243,5 +245,9 @@ comms:
     Re-raise guard = spec-compose-* request id on card (any status). Never auto-arms — options spec-written/hold/close
     only. Tests: 36 answer-sweep + 300 chaba-gate green; dry-run clean (0 current matches — pile cards lack action.type=dispatch).
     Committed on dispatch bra'
+- at: 2026-11-26 21:39
+  from: chaba
+  text: 'merge-sweep: devin-task-20261126-210330-implement-phase-1-only-of-docs no longer active on con01 but card
+    still says running — sweeping its branch'
 claim:
   since: 2026-11-26 21:02
