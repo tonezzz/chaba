@@ -92,8 +92,37 @@ GGUF quantised models live at `/data/gguf/` and are managed independently from t
 
 ---
 
+## Ansible standard (2026-11-26)
+
+For root-filesystem pressure, use the gated playbook rather than ad-hoc SSH
+cleanup:
+
+```bash
+# 1. Verify (read-only) — always first
+cd chaba/ansible
+ansible-playbook -i inventory/hosts.yml playbooks/disk-remediate.yml \
+  --check --diff --limit <host>
+
+# 2. Fix only if needs_fix=true — --limit is mandatory
+ansible-playbook -i inventory/hosts.yml playbooks/disk-remediate.yml \
+  --limit <host> -e disk_remediate_apply=true
+```
+
+- Default is **dry run**; nothing is deleted without
+  `-e disk_remediate_apply=true`.
+- Thresholds come from `ssot.audit.hosts.yml` (`max_root_disk_percent`,
+  default 90%) plus a 15 GiB absolute free floor.
+- Cleanup candidates are rebuildable caches only: uv (8 GiB cap), pip (1 GiB
+  cap), journal under `/var/log` (2 GiB cap). Never user documents; never
+  personal caches on macOS member devices.
+- If cleanup does not clear the threshold, escalate to the owner — there is
+  no destructive fallback.
+- Full procedure, safety rules and validation history:
+  `docs/runbooks/disk-pressure-ansible-remediate.md`.
+
 ## Related Documentation
 
+- **Ansible Disk Remediation Runbook**: `docs/runbooks/disk-pressure-ansible-remediate.md` - Assess / verify / fix SOP with dry-run defaults and SSOT thresholds
 - **Home Directory Cleanup**: `home-directory-cleanup.md` - Partition migration cleanup methodology and root partition space recovery
 
 ## Tags
