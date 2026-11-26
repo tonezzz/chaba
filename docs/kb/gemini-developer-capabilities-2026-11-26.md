@@ -81,18 +81,26 @@ code, the same way we load `ansible-first` before host work.
 
 ### Thinking controls
 
-`ThinkingConfig(thinking_level="high"|"medium")` is available on 3.8 Flash;
-`minimal` is rejected on 3.8 Flash. Use `high` for hard maths/coding and
-`medium` as the balanced default. This is distinct from the separate
+On the Interactions API, thinking is configured with
+`generation_config={"thinking_level": ..., "thinking_summaries": "auto"}`.
+3.8 Flash supports `low|medium|high` (`minimal` is rejected); the lite models
+default to `minimal` and also accept `low|medium|high`. Gemini 4 Neon and
+Hydrogen add `xhigh`. Thought steps always carry a signature; the summary can
+be empty, so code must handle that. This is distinct from the separate
 `gemini-3.8-live-extended-thinking` Live model.
 
 ### Other levers already supported but under-used
 
-- **Structured output** via `responseMimeType` + JSON schema, and strict
-  function calling / mode compliance, for deterministic agent handoffs.
-- **Explicit context caching** (`createCachedContent`) and **batch
-  generation** for large, repeated corpora — both present on 3.8 Flash and
-  the Gemini 4 line.
+- **Structured output**: legacy `generateContent` uses `responseMimeType` +
+  JSON schema; the Interactions API uses
+  `response_format={"type":"text","mime_type":"application/json","schema":...}`.
+  Both streaming and non-streaming valid-JSON responses were verified on the
+  free-tier lite model.
+- **Context caching**: implicit caching is on by default for 2.5+ models, but
+  explicit cache objects (`createCachedContent`) are **not** supported in the
+  Interactions API or for Gemini 4 — only in `generateContent` on supported
+  Gemini 3 / 2.5 models. Do not design a Gemini 4 agent around explicit caches.
+  **Batch generation** remains a separate option for large repeated corpora.
 - **TTS / voice design / voice replication** via the 3.8 Flash TTS models —
   a separate path from Live audio, useful for pre-generated narration.
 - **Computer use**, where a `safety_decision` of `require_confirmation`
@@ -102,17 +110,64 @@ code, the same way we load `ansible-first` before host work.
 ## 3. Recommendations for this estate
 
 1. Keep `gemini-3.8-live` pinned for `rview-live` and the default Live runtime.
-2. Run the 20-fixture voice bench against
-   `gemini-3.8-live-extended-thinking` **before** any pin change; it is
-   `bidiGenerateContent`-only, so it needs the same harness shape.
-3. For new text agents, evaluate Gemini 4 Carbon/Neon against current 3.x
-   defaults and add the Interactions API for state.
-4. Trial `gemini-decision-1` as a cheap gate where today we ask a full model
-   for a yes/no judgment.
-5. Load the official `gemini-api-dev` skill for any Gemini API code work.
+2. DONE: the 20-fixture voice bench on `gemini-3.8-live-extended-thinking`
+   returned 20/20 ok but **zero tool calls** across tool-bearing fixtures. Do
+   not promote it as the voice pin; `gemini-3.8-live` remains sole primary.
+3. Gemini 4 Carbon/Neon remains untested — free tier returns 0 output tokens
+   and the paid keys share a project at its monthly cap. Do not change the
+   production agent path without a paid-tier repeat.
+4. `gemini-decision-1` was evaluated: strong reject gate (8/10 agreement, zero
+   output tokens), not yet an approve gate without label review.
+5. The official `gemini-api-dev` skill is installed and trialled (87.5% vs
+   25% pass rate with vs without it); load it for any Gemini API code work.
 6. Guardrails unchanged: no key, billing, or gateway edits without explicit
    go-ahead; keep OpenRouter/Ollama as real failover; no secrets, key names,
    project IDs, or topology on published pages.
+
+## 4. Free-tier verification sweep (2026-11-26, follow-up)
+
+All checks below used synthetic text/media and the existing free-tier key;
+no key, billing, gateway, pin or production-path change was made. Full evidence
+lives in `docs/ssot/jobs/devnest/2026-11-26-gemini4-interactions-text-agent-eval.yml`
+and `scripts/voice-bench/results/g4-*20261126.json`.
+
+### What works on `gemini-3.5-flash-lite`
+
+| Surface | Observed |
+|---|---|
+| Stateful agent loop | 6/6 tool calls + 6/6 cross-turn recall on 6 four-turn tasks |
+| Streaming text and streamed function calls | event sequence `created → steps → completed`; `arguments_delta` must be accumulated; resume via `previous_interaction_id` |
+| Structured output | JSON Schema valid in both streaming and non-streaming modes |
+| Background execution | `in_progress → completed` in ~8s, despite docs listing only Gemini 4/3.8 |
+| Store/get/delete | full steps incl. thought signature retrievable, then deletable |
+| Flex tier | `service_tier="flex"` accepted and echoed |
+| Code execution | correct Fibonacci(20)=6765; 84 tool-use tokens, ~57s |
+| Token counting | `countTokens` works even after generation quota is exhausted |
+| Files API | upload / get / list / delete all work without generation quota; URIs are `/v1/files/<id>` |
+
+### What does not
+
+- **Priority tier** is accepted but silently reported as `standard` on free
+  tier — always check the echoed `service_tier` before assuming Priority.
+- **Implicit caching** produced zero hits even with a ~6,000-token shared
+  prefix; flash-lite is absent from the documented cache-minimum table.
+- **Google Search grounding** returned 429 on the free-tier key (documented as
+  paid-tier only), so it is a quota boundary, not a capability result.
+- **Generation quota**: 500 requests/day per model. The final surfaces
+  (thought summaries, inline-image generation, OpenAI compatibility) all hit
+  this cap with ~17h to reset. They are **unverified**, not failed.
+- **Image token estimate**: docs say images ≤384px count as 258 tokens, but
+  `countTokens` reported **1,089 image tokens** for a 64×64 PNG on flash-lite.
+  Measure with `countTokens`; do not budget from the table.
+
+### `gemini-3.1-flash-lite` vs `gemini-3.5-flash-lite`
+
+Four identical stateful tasks gave both models 4/4 relaxed tool calls and 4/4
+recall with ~3.9k input / ~0.5k output tokens. 3.1 scored 0/4 on strict topic
+matching only because it enriches topic arguments with recalled context;
+attendees, date and time were exact on 4/4. 3.1 single-call latency varied
+136s / 2.9s / 69s versus 3–6s for 3.5 — free-tier throttling, not a model-speed
+result. Keep 3.5 as the comparison baseline.
 
 ## Evidence and references
 
@@ -123,6 +178,10 @@ code, the same way we load `ansible-first` before host work.
 - `google-gemini/gemini-skills` — README and
   `skills/gemini-api-dev/SKILL.md` (current-model list and skill evaluation).
 - Board card ADA-1440 / `gemini-dev-capabilities-research-2026-11-26`.
+- Free-tier follow-up: board card ADA-1451 /
+  `gemini4-interactions-text-agent-eval-2026-11-26`; harnesses
+  `scripts/voice-bench/g4-interactions-{eval,surfaces,advanced,model-compare,misc-nogen}.py`
+  and JSONs under `scripts/voice-bench/results/`.
 - Related prior pages: `Education:LLM Providers/Gemini API`,
   `Education:Ada-Developer-Paid-Model-Candidates`,
   `Education:Ada-Dev-Gap-Model-Vs-Harness`.

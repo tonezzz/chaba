@@ -228,13 +228,64 @@ model_comparison:
     - "3.1 was much slower and wildly variable (136s / 2.9s / 69s on identical calls vs 3-6s for 3.5). Treat this as free-tier queueing/throttling, not an inherent model-speed result; do not use it for model selection without a paid-tier repeat."
     - "All five Interactions surfaces work on both models, so surface availability does not differentiate them."
 
+final_free_tier_batch:
+  reason: "Last four surfaces: thought summaries, token counting, file input, OpenAI compatibility."
+  generation_quota_blocker:
+    http: 429
+    message: >-
+      Rate limit exceeded for model gemini-3.5-flash-lite (limit: 500 requests
+      per day on Free Tier); raw REST retry-after about 17h from 2026-11-26.
+    scope: "All five existing keys returned the same free-tier 429 on generation; paid keys remain capped at the shared GCP project."
+    blocked_surfaces:
+      thought_summary_default: "SDK retry loop hit the per-surface 240s alarm; no summary captured."
+      thought_summary_high: "Same 429; not evaluated."
+      thought_summary_stream: "Same 429; thought_summary delta type not observed."
+      openai_sdk: "429 on chat.completions (openai 3.60.0, base_url /v1beta/openai/)."
+      openai_rest: "429 on POST /v1beta/openai/chat/completions."
+      multimodal_generation: "Inline-image and Files-API interaction calls could not run; upload/count paths did."
+  no_generation_quota_checks:
+    harness: scripts/voice-bench/g4-interactions-misc-nogen.py
+    result_json: scripts/voice-bench/results/g4-interactions-misc-nogen-20261126.json
+    token_count_text:
+      ok: true
+      http: 200
+      prompt_chars: 67
+      total_tokens: 15
+      note: "POST v1beta/models/<model>:countTokens works on free tier and does not consume the generation quota."
+    token_count_image:
+      ok: true
+      http: 200
+      png_bytes: 178
+      document_dimensions: 64x64
+      total_tokens: 1095
+      image_tokens: 1089
+      accepted_field_shapes: [inlineData, inline_data]
+      note: "Docs say images <=384px count as 258 tokens; actual countTokens on flash-lite reported 1089 image tokens for a 64x64 PNG. Do not rely on the documented estimate for budgeting."
+    model_info:
+      ok: true
+      input_token_limit: 1048576
+      output_token_limit: 65536
+    files_api:
+      ok: true
+      operations: [upload, get, list, delete]
+      uploaded_mime: image/png
+      note: "Upload/get/list/delete all succeeded without generation quota; generated file URI uses /v1/files/<id>."
+  findings:
+    - "Free tier is capped at 500 generation requests/day per model; the earlier batches consumed the day's quota, so the last four surfaces cannot be tested until the ~17h reset."
+    - "Token counting, model metadata and Files API management remain available after generation quota is exhausted — useful for preflight budgeting without spending generation calls."
+    - "The documented 258-token estimate for small images does not match flash-lite's countTokens response (1089 tokens for 64x64); measure, don't estimate."
+    - "OpenAI compatibility and thought-summary surfaces are neither confirmed nor refuted on this key; they returned quota 429, not a capability error."
+  retry_condition: "After the 500/day window resets, run scripts/voice-bench/g4-interactions-misc.py once on gemini-3.5-flash-lite; do not switch keys or projects."
+
 verdict: >
   Interactions API is a viable stateful text-agent primitive and is worth a
   paid-tier trial with a Gemini 4 model, but this run cannot validate the
   Gemini 4 half of the track. Server-side state showed only a ~2-3% input-token
   saving on a 20-turn session, no cache hits were observed on free tier, and
   gemini-3.1-flash-lite showed severe free-tier latency variance without any
-  accuracy advantage. Do not change the production agent path on this evidence.
+  accuracy advantage. The final four surfaces are blocked by the 500/day free
+  generation quota (~17h reset), not by a capability failure. Do not change
+  the production agent path on this evidence.
 
 guardrails:
   - "No key, billing, gateway, model-pin or production agent change."
@@ -252,6 +303,8 @@ verify:
   - "DONE 2026-11-26: strict and normalized tool grades both recorded."
 
 remaining:
+  - "DONE 2026-11-26: token counting, model metadata and Files API upload/get/list/delete verified after generation quota was exhausted."
+  - "BLOCKED 2026-11-26: thought summaries (default/high/streaming), inline-image generation and OpenAI compatibility all hit the 500/day free generation cap; retry g4-interactions-misc.py after the ~17h reset."
   - "Needs Tony's explicit go-ahead on the paid-project monthly cap or another paid project before Gemini 4 can be tested."
   - "Re-run the same six tasks on Gemini 4 Neon/Carbon/Hydrogen and on gemini-3.8-flash once access exists; keep the model fixed across arms."
   - "DONE 2026-11-26: 20-turn free-tier run found only a 2.6% input-token saving; do not claim a token-cost benefit from previous_interaction_id on this evidence."

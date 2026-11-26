@@ -1,0 +1,97 @@
+{
+  "schema": "g4-interactions-misc-nogen",
+  "schema_version": 1,
+  "date": "2026-11-26T14:57:52.384856+00:00",
+  "host": "idc03",
+  "model": "gemini-3.5-flash-lite",
+  "key_printed": false,
+  "complete": true,
+  "results": {
+    "token_count_text": {
+      "ok": true,
+      "elapsed_s": 0.17,
+      "http": 200,
+      "prompt_chars": 67,
+      "payload": {
+        "totalTokens": 15,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 15
+          }
+        ]
+      }
+    },
+    "token_count_image": {
+      "ok": true,
+      "elapsed_s": 0.25,
+      "png_bytes": 178,
+      "attempts": {
+        "camel_inlineData": {
+          "http": 200,
+          "payload": {
+            "totalTokens": 1095,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 6
+              },
+              {
+                "modality": "IMAGE",
+                "tokenCount": 1089
+              }
+            ]
+          }
+        },
+        "snake_inline_data": {
+          "http": 200,
+          "payload": {
+            "totalTokens": 1095,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 6
+              },
+              {
+                "modality": "IMAGE",
+                "tokenCount": 1089
+              }
+            ]
+          }
+        }
+      }
+    },
+    "model_info": {
+      "ok": true,
+      "elapsed_s": 0.24,
+      "input_token_limit": 1048576,
+      "output_token_limit": 65536,
+      "name": "models/gemini-3.5-flash-lite"
+    },
+    "files_api": {
+      "ok": true,
+      "elapsed_s": 5.85,
+      "uploaded_name": "files/buld2t7cv8tq",
+      "uploaded_uri": "https://generativelanguage.googleapis.com/v1/files/buld2t7cv8tq",
+      "uploaded_mime": "image/png",
+      "get_name": "files/buld2t7cv8tq",
+      "list_names": [
+        "files/buld2t7cv8tq",
+        "files/2g10ciqouu2f"
+      ],
+      "delete": "ok"
+    },
+    "raw_statuses": {
+      "ok": true,
+      "elapsed_s": 0.29,
+      "interactions": {
+        "http": 429,
+        "message": "Rate limit exceeded for model gemini-3.5-flash-lite (limit: 500 requests per day on Free Tier). Please retry in 17h2m7s or upgrade your tier at https://ai.dev/rate-limit."
+      },
+      "openai_compat": {
+        "http": 429,
+        "message": "[{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceed"
+      }
+    }
+  }
+}
