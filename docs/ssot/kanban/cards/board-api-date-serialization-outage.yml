@@ -1,7 +1,7 @@
 id: board-api-date-serialization-outage
 title: board-api /cards 502 — YAML bare dates crash json.dumps (fleet-wide Ada status outage 2026-11-09)
 column: backlog
-updated: 2026-11-26 04:00
+updated: 2026-11-26 18:52
 priority: medium
 tags:
 - devnest
@@ -233,3 +233,10 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 18:52
+  from: tony
+  text: '[batch A 19:15 +07] Triage — original outage fixed; residual hygiene only. Verified: `json.dumps(..., default=str)`
+    is live in `scripts/board/board-api.py:6092` from commit ca8d850275, and `/cards?limit=1` on idc03 returns HTTP
+    200 today (~5s). Card spec''s three residuals: (a) 16 card YAMLs still carry bare `created:`/`updated:` date
+    scalars — do NOT bulk-rewrite them casually: the 2026-11-21 bulk YAML rewrite re-stamped every card and stalled
+    the KNB-1178 archive timer for days; normalize at wr'
