@@ -79,10 +79,40 @@ findings:
   - "Stateless mode requires replaying thought and function_call steps verbatim; legacy generateContent requires preserving thought_signature on function_call parts or the next request returns HTTP 400."
   - "Strict topic exact-match produced 4/6 on both Interactions arms; all six were correct once minor phrasing differences ('migration' vs 'the migration', 'Rollout (Comet)' vs 'rollout') were normalized. The rubric, not the model, was the initial problem."
 
+long_session_followup:
+  reason: "User chose the free-tier continuation after the Gemini 4 access blocker."
+  harness: scripts/voice-bench/g4-long-session-eval.py
+  result_json: scripts/voice-bench/results/g4-long-session-result-20261126.json
+  design: "20 turns per arm: 8 codename facts, 4 tool calls with function results, 4 filler turns, 1 final recall. Same model and task text in both arms."
+  stateful:
+    calls: 20
+    input_tokens: 9424
+    output_tokens: 479
+    first_input_tokens: 140
+    last_input_tokens: 826
+    recall_codenames: "7/8"
+    recall_dates: "4/4"
+    elapsed_s: 127.18
+  stateless:
+    calls: 20
+    input_tokens: 9679
+    output_tokens: 479
+    first_input_tokens: 148
+    last_input_tokens: 839
+    recall_codenames: "8/8"
+    recall_dates: "4/4"
+    elapsed_s: 116.78
+  finding: >
+    Input tokens still grew from ~140 to ~830 in both arms. Stateful saved only
+    255 input tokens over 20 turns (2.6%) and was slower (127s vs 117s). On
+    short synthetic sessions, previous_interaction_id is a convenience for
+    history management, not a meaningful token-cost win.
+
 verdict: >
   Interactions API is a viable stateful text-agent primitive and is worth a
   paid-tier trial with a Gemini 4 model, but this run cannot validate the
-  Gemini 4 half of the track. Do not change the production agent path on this
+  Gemini 4 half of the track. Server-side state showed only a ~2-3% input-token
+  saving on a 20-turn session. Do not change the production agent path on this
   evidence.
 
 guardrails:
@@ -103,5 +133,5 @@ verify:
 remaining:
   - "Needs Tony's explicit go-ahead on the paid-project monthly cap or another paid project before Gemini 4 can be tested."
   - "Re-run the same six tasks on Gemini 4 Neon/Carbon/Hydrogen and on gemini-3.8-flash once access exists; keep the model fixed across arms."
-  - "Repeat with longer sessions (20+ turns) before claiming a token-cost benefit from previous_interaction_id."
+  - "DONE 2026-11-26: 20-turn free-tier run found only a 2.6% input-token saving; do not claim a token-cost benefit from previous_interaction_id on this evidence."
   - "Re-run the legacy arm on a paid quota to replace the 2/6 partial baseline."
