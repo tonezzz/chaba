@@ -1,7 +1,7 @@
 id: ada-voice-map-embed-pr22-merge-deploy
 title: 'ada-voice: merge PR #22 (map_embed drop 17), deploy, drop GOOGLE_MAPS_API_KEY'
 column: backlog
-updated: 2026-11-26 22:05
+updated: 2026-11-26 22:12
 brief: 'PR https://github.com/tonezzz/ada-voice/pull/22 is open and green (tool-lint clean, 1942 tests pass). Needs:
   merge -> deploy-ada.sh idc03 -> render-tool-profiles --apply -> key drop (or accept keyless).'
 priority: medium
@@ -144,6 +144,13 @@ comms:
     on the key''s GCP project: Maps Embed API -> 403 ''This API is not activated on your API project''; Static Maps
     API -> same 403; Geocode -> REQUEST_DENIED same reason; Routes -> 403 PERMISSION_DENIED. So the persona env
     was NOT changed: map_embed interactive/static and GEV geocoding '
+- at: 2026-11-26 22:12
+  from: tony
+  text: 'RE-PROBE 2026-11-26 after Tony enabled 4 APIs: still failing. Maps Embed 403 ''This API is not activated
+    on your API project''; Static Maps same 403; Geocode REQUEST_DENIED same reason; Routes 403 PERMISSION_DENIED
+    (service routes.googleapis.com). Maps JavaScript API remains the only working API. Retried after 75s — no change,
+    and Google''s ''enabled recently, wait a few minutes'' wording is absent, so not propagation. Likely causes:
+    APIs enabled in a different GCP project than the one owning this ke'
 action:
   type: dispatch
   status: idle
