@@ -1,0 +1,22 @@
+id: ops-mn01-restore-sshd-shell-script-20261126
+title: mn01 - restore SSH shell via script lane
+column: backlog
+priority: high
+created: '2026-11-26'
+updated: '2026-11-26 12:50'
+brief: Global ForceCommand internal-sftp on mn01 blocks shell SSH and Ansible module execution. Restore the standard host behavior locally.
+action:
+  type: script
+  status: queued
+  host: mn01
+  executor: script
+  script:
+    repo: chaba
+    cmd: sudo -n cp -a /etc/ssh/sshd_config /etc/ssh/sshd_config.bak-20261126-sftp-only && sudo -n sed -i 's|^ForceCommand internal-sftp$|# SFTP-only restriction removed 2026-11-26 - restore host standard shell access|' /etc/ssh/sshd_config && sudo -n sshd -t && echo SSHD_T_OK && sudo -n systemctl restart ssh && echo SSH_RESTARTED && grep -n 'ForceCommand|SFTP-only' /etc/ssh/sshd_config || true
+    timeout: 180
+spec: 'Run action.script.cmd locally on mn01 under the script executor. It backs up /etc/ssh/sshd_config, removes only the global ForceCommand internal-sftp line, validates with sshd -t, restarts ssh, and prints the resulting config line. No repo edits, no push, no other services. Post verbatim output as a comment.'
+recoverability: R0
+comms:
+- at: 2026-11-26 12:50
+  from: tony
+  text: 'Queued via direct card file under /tmp/board-api.lock - POST /card refuses action.type=script. Mirrors the approved Dell sshd restore pattern.'

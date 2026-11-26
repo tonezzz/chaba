@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-memory
 title: Timer ada-scenario-memory on idc03 failing
 column: backlog
-updated: 2026-11-26 12:27
+updated: 2026-11-26 12:40
 priority: high
 tags:
 - timer-alert
@@ -141,6 +141,9 @@ comms:
 - at: 2026-11-26 12:27
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-26 12:40
+  from: chaba
+  text: 'answer-sweep: executed ''Postpone investigation until paid-lane credentials are syste'' -> put on hold'
 requests:
 - id: the-timer-ada-scenario-memory-fbdac5
   ask: The timer ada-scenario-memory.service on idc03 failed with a resource error because EnvironmentFile ~/.config/secrets/ada-ha-tony.env
@@ -156,6 +159,6 @@ requests:
   from: backlog-spec-enrich
   escalated_at: 2026-11-26 07:24
   answer: Postpone investigation until paid-lane credentials are systematically re-evaluated
+  executed: 2026-11-26 hold
 action:
-  status: done
-awaiting_action: true
+  status: idle
