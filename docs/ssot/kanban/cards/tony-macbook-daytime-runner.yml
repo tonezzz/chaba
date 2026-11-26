@@ -1,7 +1,7 @@
 id: tony-macbook-daytime-runner
 title: tony-macbook as daytime-elastic dispatch runner
 column: review
-updated: 2026-11-26 04:07
+updated: 2026-11-26 08:00
 spec: 'Macbook (15G RAM) already has runner-agent.timer enabled + devin-dispatch-watch. If it stays awake during
   day at home: inhibit suspend during day hours (systemd-inhibit wrapper on lid-blank-watch or gnome power setting),
   then it serves as a second runner slot for dispatches/bench/media batch + LAN-fast backup target. offline_ok semantics
@@ -311,6 +311,12 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 08:00
+  from: tony
+  text: 'answered day-awake-inhibit-deployed-via-xfce-auto-544ad5: proceed'
+- at: 2026-11-26 08:00
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -334,10 +340,12 @@ requests:
     && subject.user == \"tony\") return polkit.Result.YES;\n});\nEOF\nsudo systemctl restart polkit — then: systemctl
     --user enable --now macbook-day-awake.service. Alternative: do nothing — autostart covers it whenever the XFCE/CRD
     session is up."
-  status: open
+  status: answered
   at: 2026-11-25 20:40
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 review_kind: verify
+awaiting_action: true
