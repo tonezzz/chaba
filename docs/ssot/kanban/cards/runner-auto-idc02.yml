@@ -2,7 +2,7 @@ id: runner-auto-idc02
 title: Runner host `idc02` fails 7 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on idc02 that will strand dispatch cards. Read the note, fix
   on the host, close the card.
-column: review
+column: done
 review_kind: triage
 generated: runner-fleet-health
 program: chaba-ci
@@ -53,7 +53,7 @@ help: 'Per-check fixes:
 
   - devin-dispatch: Usually self-heals within one chaba-repo-sync tick (sync-runner-tools.sh via git-safe-pull).
   Manual: scp scripts/devin/devin-dispatch.sh <host>:~/.local/bin/devin-dispatch && ssh <host> chmod +x ~/.local/bin/devin-dispatch'
-updated: 2026-11-26 22:48
+updated: 2026-11-26 23:19
 comms:
 - at: 2026-11-26 20:59
   from: chaba
@@ -66,3 +66,15 @@ comms:
     remain, both in the host''s chaba CHECKOUT: devin-dispatch c5fa3947 != pin 705bfff9 and devin-dispatch-watch
     788b5ca1 != pin 364aaa03. Checkout HEAD 2d1e83f is 118 commits behind origin/master with 750 dirty entries.
     This is the same residue tracked by card idc02-exec-checkout-'
+- at: 2026-11-26 23:19
+  from: tony
+  text: '[verify 2026-11-26] CLEARED — note is obsolete. idc02 checked directly: chaba checkout at origin/master
+    HEAD 7a87e8efc8, 0 commits behind; installed ~/.local/bin/runner-agent sha 4ed3afdb49f55cb0 matches repo scripts/board/runner-agent.py
+    exactly; dirty entries down from 750 to 47 (generated/render residue, no tool-pin violations). Both related
+    cards chaba-exec-checkout-idc02-dirty-files and ansible-stale-checkouts are already done. The two checkout violations
+    in the original note were repaired '
+- at: 2026-11-26 23:19
+  from: tony
+  text: closed by tony
+action:
+  status: done
