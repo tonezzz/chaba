@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: doing
-updated: 2026-11-27 00:16
+updated: 2026-11-27 00:25
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -610,6 +610,13 @@ comms:
 - at: 2026-11-27 00:16
   from: chaba
   text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-27 00:25
+  from: devin
+  text: 'attempt 5 (001752): still BLOCKED on provider quota — verified live ~00:25 +07. Lane S0 (boundary 15:58Z,
+    S0 jobs=5 banked outage fails, review=HOLD). NEW probe findings: gemini-*-free ALSO daily-capped (AI Studio
+    500/day, ~15:00 +07 reset) — every remote free pool exhausted; agent-local (local qwen2.5:7b) responded 200
+    in 5.8s this probe (intermittent; historically flaky in-lane) but model switch = your call. or-free-* still
+    429 until 07:00 +07. Request free-lane-providers-quota-capped-until-0-'
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
