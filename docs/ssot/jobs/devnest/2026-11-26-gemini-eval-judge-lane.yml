@@ -1,0 +1,115 @@
+title: Gemini eval-judge lane — paid-first LiteLLM group with hard daily cap
+subtitle: >
+  eval-judge route + virtual key + capped ledger client deployed on idc03.
+  Paid primary leg is currently dark (project monthly spend cap); the
+  fail-closed local fallback chain carried a 100-call qualification run.
+icon: education
+version: 1
+
+card: gemini-eval-judge-lane  # ADA-1458
+date: 2026-11-26
+source_session: "devin-dispatch 20261126-220447 (runs 1+2; run 1 died mid-verification, run 2 completed)"
+
+deployed:
+  config: "stacks/idc03/litellm/config.yaml -> ~/.config/litellm/config.yaml on idc03"
+  model_name: eval-judge  # litellm_params.model gemini/gemini-3.5-flash-lite, GEMINI_API_KEY_PAID
+  fallbacks: >-
+    dict legs with disable_fallbacks:true — effective chain is exactly
+    gemini-3.5-flash-lite -> ollama-llama32-3b-kkmac -> colab-gemma3,
+    then the caller fails closed. NO :free / or-free-* / *-free legs
+    (bare-string legs would recursively expand into free-tier chains —
+    litellm 1.105 resolves fallbacks recursively).
+  virtual_key:
+    alias: eval-judge
+    scope: "models: ['eval-judge'] only"
+    budget: "$10 / 30d, reset 2026-12-01 (verified via /key/info)"
+    storage: "LITELLM_KEY_EVAL_JUDGE in ~/.config/secrets/litellm-keys.env on idc03 + tony-dell; value never printed/committed"
+    dependents: "none — first consumer is scripts/litellm/eval-budget.py"
+  caller:
+    script: scripts/litellm/eval-budget.py
+    cap: "EVAL_JUDGE_DAILY_MAX=10000 req/day (app-level, client-side)"
+    ledger: "~/.local/state/eval-judge/<YYYY-MM-DD>.jsonl — {ts,task,model,verdict,tokens,spend_usd,fallback_hops,latency_ms,status}"
+    spend_tags: "x-litellm-tags service=eval,job=<task>,lane=eval-judge -> LiteLLM_SpendLogs.request_tags"
+    on_cap: "status=parked, exit 3, provider_call=false, optional --card board comment; no retry, no free-tier fallback"
+  runner: >-
+    evals/eval-judge/run.py — bounded fixture eval over
+    fixtures/consultant-tasks.jsonl (22 deterministic answer/escalate
+    cases), judge prompt byte-identical to scripts/ada/consultant-bench.py
+  ssot: >-
+    docs/ssot/infrastructure/ssot.llm-gateway.yml — eval-judge in
+    job_classes + LITELLM_KEY_EVAL_JUDGE in budgets.keys
+  tests: >-
+    tests/litellm/test_eval_judge_route.py (5 config asserts incl. OPS-1255
+    canary regression) + tests/litellm/test_eval_budget.py (5 client
+    tests) — 10/10 pass
+
+verification:
+  unit: "pytest tests/litellm/test_eval_{judge_route,budget}.py — 10 passed"
+  deploy: "config live on idc03; proxy log confirms 'Fallbacks are configured for: ... eval-judge'"
+  smoke: >-
+    1 completion via LITELLM_KEY_EVAL_JUDGE -> HTTP 200, ledgered, and a
+    LiteLLM_SpendLogs row carries request_tags service=eval,job=smoke-20261126,
+    lane=eval-judge (served by ollama_chat/llama3.2:3b after 2 paid-leg 429s).
+  cap_test: >-
+    EVAL_JUDGE_DAILY_MAX=2 with used=2 -> status=parked, exit 3,
+    provider_call=false, zero provider request (live, 2026-11-26 22:46 +07).
+  bounded_run:
+    report: evals/eval-judge/reports/2026-11-26-eval-judge-100.{json,md}
+    provider_calls: 100
+    http_429_at_client: 0
+    provider_errors: 0
+    fallback_escalations: 100   # EVERY call — paid leg spend-capped
+    verdict_agreement: 0.60    # llama3.2:3b fallback judge vs deterministic labels
+    latency: "p50 243ms, max 7830ms, ~101s total for 100 calls"
+    tokens: "13,839 total (~135 prompt + ~3 completion per verdict)"
+    measured_spend_per_100_verdicts_usd: 0.00   # all-local path; paid flash-lite est ~$0.002/100 at list price
+    gate: "FAIL on escalations — expected while paid leg is capped; re-run after cap lifts"
+  regression: >-
+    merge-base diff touches only config.yaml +25 lines (eval-judge block);
+    or-free-nemotron-ultra route + evals/opencode-lane + evals/adobe-stock-multirun
+    untouched; OPS-1255 canary job and or-free-* group unchanged (also asserted
+    by test_ops1255_canary_untouched).
+
+blocker:
+  title: "GEMINI_API_KEY_PAID project is monthly-spend-capped — paid leg dark fleet-wide"
+  evidence: >-
+    LiteLLM proxy logs 2026-11-26 22:33-22:44 +07: every gemini/* deployment
+    returns 429 RESOURCE_EXHAUSTED 'Your project has exceeded its monthly
+    spending cap' (ai.studio/spend). Last gemini/* SpendLogs success
+    13:41 UTC; failures continuous since. chat model group 429s to clients
+    (POST /v1beta/models/chat:generateContent -> 429). NOT caused by this card.
+  project_finding: >-
+    The card's quota capture (350k/day paid tier-2, usage 1) was project
+    gen-lang-client-0694401188 — per ssot.llm-gateway.yml gemini_project_isolation
+    (re-verified live 2026-11-26 via scripts/ops/gemini-project-verify.py on
+    idc03) that is the ARCHIVED ops project (key F6Pg_ops_archived, retired
+    2026-11-18). GEMINI_API_KEY_PAID's owning project is
+    gen-lang-client-0854236591 (shared by PAID/TONY/KK keys) — identical
+    value in gemini-keys.env and mddb-gemini.env (sha-verified). The real
+    serving project's daily quota headroom is UNKNOWN from here — needs a
+    Console check on 0854236591.
+  impact: >-
+    eval-judge paid leg 429s -> all calls take 2 fallback hops to
+    ollama-llama32-3b-kkmac (kk-mac admission shim). Prod chat/tool-call/
+    voice-aux/classify chains that lead with paid gemini legs are degraded
+    the same way (their chains do include free/OR/local legs).
+  decision_needed: >-
+    Tony: raise the monthly spend cap on gen-lang-client-0854236591 in AI
+    Studio, or wait for the billing-cycle reset; AND re-check the daily
+    quota on the CORRECT project (0854236591, not 0694401188) before
+    relying on the 350k/day headroom figure.
+
+adoption_boundary:
+  opt_in: "NEW bulk eval/judge work only, via LITELLM_URL + LITELLM_KEY_EVAL_JUDGE (or eval-budget.py)"
+  not_repointed: "no existing prod/chat lane changed; scripts/devnest/kk_mac_executor.py verify() and all held-out verifiers untouched — model verdicts advisory, deterministic verifier authoritative"
+  first_consumer: "evals/eval-judge/run.py (this card's qualification runner)"
+
+re_run_after_cap_lifts:
+  command: "python3 evals/eval-judge/run.py --calls 100"
+  expect: "fallback_escalations=0, agreement >= paid flash-lite baseline (to be established); gate exit 0"
+
+lessons:
+  - "Deploy worktrees inherit live state: run 1 had already deployed config + minted the key before dying — always check SpendLogs/key-info/git log before re-doing infra steps."
+  - "GCP project spend caps are per-project monthly, separate from per-day request quotas — a 350k/day 'usage 1' capture says nothing about the monthly cap; verify WHICH project a key owns (gemini-project-verify.py) before trusting Console quota screenshots."
+  - "litellm router fallbacks recurse: bare model_name legs re-expand their own chains — dict legs with disable_fallbacks:true are required for a hard fail-closed chain."
+  - "ssh host alias 'idc03' fails via ProxyJump tony-omen (tcpip forward refused) — use the tailnet IP 100.102.134.91 directly from tony-dell."

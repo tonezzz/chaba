@@ -215,6 +215,16 @@ model_list:
     litellm_params:
       model: gemini/gemini-3.5-flash-lite
       api_key: os.environ/GEMINI_API_KEY_PAID
+  # eval/judge lane (card gemini-eval-judge-lane, 2026-11-26): paid
+  # gemini-3.5-flash-lite primary for NEW bulk eval/judge work only.
+  # Quota source: GCP Console paid tier-2, 350k req/day/model
+  # (gen-lang-client-0694401188), ~1 used at capture. App-level daily
+  # ceiling EVAL_JUDGE_DAILY_MAX=10000 lives client-side in
+  # scripts/litellm/eval-budget.py; virtual key budget $10/30d.
+  - model_name: eval-judge
+    litellm_params:
+      model: gemini/gemini-3.5-flash-lite
+      api_key: os.environ/GEMINI_API_KEY_PAID
   - model_name: chat
     litellm_params:
       model: gemini/gemini-3.5-flash
@@ -373,6 +383,21 @@ router_settings:
   fallbacks:
     - gemini-2.5-flash: [or-gemini-2.5-flash]
     - tool-call: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, ollama-llama32-3b-kkmac, colab-gemma3, ollama-llama3.2]
+    # eval-judge: paid-first, local last, FAIL CLOSED — deliberately NO
+    # :free / or-free-* / gemini-*-free legs (the OPS-1255 429 path this
+    # lane exists to avoid). Dict legs carry disable_fallbacks:true:
+    # litellm 1.105 resolves fallbacks recursively, so a bare
+    # `gemini-3.5-flash-lite` leg would expand into ITS OWN chain
+    # (gemini-3.5-flash-lite-free first) on failure — a silent free-tier
+    # retry. Pinning each leg disables nested expansion; the effective
+    # chain is exactly these three hops, then the caller errors out.
+    - eval-judge:
+      - model: gemini-3.5-flash-lite
+        disable_fallbacks: true
+      - model: ollama-llama32-3b-kkmac
+        disable_fallbacks: true
+      - model: colab-gemma3
+        disable_fallbacks: true
     - agent-local: [gemini-3.5-flash-lite-free, ollama-qwen7b, ollama-llama3.2, colab-gemma3, gemini-3.5-flash-lite, or-gemini-3.5-flash-lite]  # free-lite first: local legs 265s+ / no S1 tool-call artifact (OPS-1363)
     - chat: [gemini-3.5-flash-free, or-gemini-3.5-flash, gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
     - gemini-3.5-flash-lite: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
