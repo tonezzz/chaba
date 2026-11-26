@@ -2006,3 +2006,261 @@ class ClaudeExecutorContractTest(unittest.TestCase):
         argv, kw = self.calls[0]
         self.assertEqual(argv[0], str(self.mod.DISPATCH))
         self.assertNotIn("DISPATCH_EFFORT", kw["env"])
+
+
+# ------------------------------------------------- claude auto-route
+
+class ClaudeAutoRouteContractTest(unittest.TestCase):
+    """executor_source marks a classifier-owned claude pin
+    (auto-route-bounded-card-classes-to-execu): the card never
+    declared claude, so an unservable host falls back to the normal
+    lanes under the same claim — try-first like kk_mac_local. A
+    declared executor=claude (no executor_source) stays fail-closed.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load("runner-agent.py")
+
+    def setUp(self):
+        m = self.mod
+        self._saved = {k: getattr(m, k) for k in
+                       ("OPENCODE_LANES", "CLAUDE_LANES", "DISPATCH",
+                        "CLAUDE_DISPATCH", "HOST", "LABELS")}
+        self._saved_fn = {k: getattr(m, k) for k in
+                          ("opencode_bin", "push_capable", "shutil_which",
+                           "sh", "dr_module", "enforce_task_limits",
+                           "api", "dt_module", "claude_lane_ready",
+                           "start_opencode_lane", "classify_lane")}
+        m.DISPATCH = str(SCRIPT)
+        m.CLAUDE_DISPATCH = str(REPO / "scripts/board/kanban-dispatch.py")
+        m.push_capable = lambda repo: True
+        m.shutil_which = lambda name: True
+        m.HOST = "testhost"
+        m.LABELS = set()
+        m.dr_module = lambda: None
+        m.enforce_task_limits = lambda *a, **k: None
+        m.dt_module = lambda: None
+        m.claude_lane_ready = lambda: False
+        m.start_opencode_lane = lambda *a: self.fail(
+            "opencode lane must not serve a claude pin")
+        m.classify_lane = lambda card: "devin"
+        self.comments = []
+        m.api = lambda path, body=None: (
+            self.comments.append(body) if path == "/comment" else {})
+        self.calls = []
+        m.sh = lambda argv, **kw: self.calls.append((argv, kw)) or _proc(
+            0, "fake-tid-123\n")
+
+    def tearDown(self):
+        m = self.mod
+        for k, v in {**self._saved, **self._saved_fn}.items():
+            setattr(m, k, v)
+
+    def _auto_card(self, **kw):
+        a = {"type": "dispatch", "status": "queued", "repo": "chaba",
+             "executor": "claude", "executor_source": "queue",
+             "task_class": "verify_only"}
+        a.update(kw)
+        return {"id": "auto-card", "title": "verify", "spec": "check",
+                "column": "backlog", "action": a}
+
+    def test_auto_claimable_on_ready_host(self):
+        self.mod.claude_lane_ready = lambda: True
+        self.mod.CLAUDE_LANES = True
+        self.assertEqual(self.mod.claimable(self._auto_card()), "dispatch")
+
+    def test_auto_falls_back_on_unready_host(self):
+        """CLAUDE_LANES=0 + no ready lane: the auto pin is judged as
+        undeclared — the card takes the normal devin gates."""
+        self.mod.claude_lane_ready = lambda: False
+        self.mod.CLAUDE_LANES = False
+        self.assertEqual(self.mod.claimable(self._auto_card()), "dispatch")
+        # and no misleading 'stays queued' defer note — it IS claimed
+        self.assertEqual(
+            self.mod.executor_defer_reason(self._auto_card()), "")
+
+    def test_auto_invalid_class_falls_back(self):
+        """A stale/hand-edited pin outside CLAUDE_TASK_CLASSES never
+        runs claude — it falls back like any unservable auto route."""
+        self.mod.claude_lane_ready = lambda: True
+        self.mod.CLAUDE_LANES = True
+        c = self._auto_card(task_class="bogus")
+        # judged as undeclared -> the devin gates decide
+        self.assertEqual(self.mod.claimable(c), "dispatch")
+
+    def test_declared_claude_never_falls_back_at_start(self):
+        """executor=claude with NO executor_source is the author
+        contract — start_task routes claude-dispatch even when this
+        host couldn't have claimed it (the claim gate is the guard;
+        a forced start honors the pin, never silently re-routes)."""
+        card = _card(executor="claude")
+        unit, tid, err = self.mod.start_task(card, "dispatch")
+        self.assertEqual(err, "")
+        argv, kw = self.calls[0]
+        self.assertEqual(argv[0],
+                         str(REPO / "scripts/board/kanban-dispatch.py"))
+        self.assertEqual(kw["env"]["DISPATCH_EXECUTOR"], "claude")
+
+    def test_auto_served_runs_claude_dispatch(self):
+        self.mod.claude_lane_ready = lambda: True
+        self.mod.CLAUDE_LANES = True
+        unit, tid, err = self.mod.start_task(self._auto_card(), "dispatch")
+        self.assertEqual(err, "")
+        argv, kw = self.calls[0]
+        self.assertEqual(argv[0],
+                         str(REPO / "scripts/board/kanban-dispatch.py"))
+        self.assertEqual(kw["env"]["DISPATCH_EXECUTOR"], "claude")
+        self.assertEqual(kw["env"]["DISPATCH_PROVIDER"], "claude")
+
+    def test_auto_unserved_runs_devin_path(self):
+        """The fallback run is a real devin dispatch — executor env
+        says devin, the fallback note lands on the board."""
+        self.mod.claude_lane_ready = lambda: False
+        self.mod.CLAUDE_LANES = False
+        unit, tid, err = self.mod.start_task(self._auto_card(), "dispatch")
+        self.assertEqual(err, "")
+        argv, kw = self.calls[0]
+        self.assertEqual(argv[0], str(self.mod.DISPATCH))
+        self.assertEqual(kw["env"]["DISPATCH_EXECUTOR"], "devin")
+        self.assertTrue(any("auto-route not servable" in
+                            (c.get("text") or "")
+                            for c in self.comments))
+
+    def test_claude_pin_not_hijacked_to_opencode(self):
+        """Latent lane-hijack fix: executor=claude + a lane that
+        resolves to opencode must still run claude-dispatch — the
+        lane classify is model context, not a route."""
+        self.mod.OPENCODE_LANES = True
+        self.mod.opencode_bin = lambda: "/x/opencode"
+        card = _card(executor="claude", lane="free_lane",
+                     agent_profile="ops-readonly")
+        unit, tid, err = self.mod.start_task(card, "dispatch")
+        self.assertEqual(err, "")
+        argv, kw = self.calls[0]
+        self.assertEqual(argv[0],
+                         str(REPO / "scripts/board/kanban-dispatch.py"))
+        self.assertEqual(kw["env"]["DISPATCH_EXECUTOR"], "claude")
+
+
+class ClaudeAutoRouteBoardTest(unittest.TestCase):
+    """board-api doors for the claude auto-route: do_create accepts
+    the claude task_class pairings, do_claim persists
+    executor_source atomically — and never lets a claim forge
+    classifier provenance onto a declared pin."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load("board-api.py")
+
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.addCleanup(self.td.cleanup)
+        self.mod.CARD_DIR = Path(self.td.name)
+
+    def rejects(self, fn, frag):
+        try:
+            fn()
+        except ValueError as e:
+            self.assertIn(frag, str(e))
+            return
+        raise AssertionError(f"expected ValueError containing {frag!r}")
+
+    def test_create_claude_task_class_pairing(self):
+        self.mod.do_create(
+            {"id": "c-cl", "title": "t",
+             "action": {"type": "dispatch", "executor": "claude",
+                        "task_class": "verify_only"}}, "devin")
+        saved = self.mod.load(Path(self.td.name) / "c-cl.yml")
+        self.assertEqual(saved["action"]["task_class"], "verify_only")
+
+    def test_create_claude_rejects_foreign_task_class(self):
+        self.rejects(
+            lambda: self.mod.do_create(
+                {"id": "c-bad", "title": "t",
+                 "action": {"type": "dispatch", "executor": "claude",
+                            "task_class": "summary"}}, "devin"),
+            "executor=claude task_class")
+
+    def test_create_bare_claude_class_is_auto_hint(self):
+        # a bare admitted claude class queues as the auto-route hint —
+        # _apply_classify_at_queue pins executor=claude for it
+        self.mod.do_create(
+            {"id": "c-hint", "title": "t",
+             "action": {"type": "dispatch",
+                        "task_class": "report_triage"}}, "devin")
+        saved = self.mod.load(Path(self.td.name) / "c-hint.yml")
+        self.assertEqual(saved["action"]["task_class"], "report_triage")
+        self.assertNotIn("executor", saved["action"])
+
+    def test_create_bare_unknown_class_rejected(self):
+        self.rejects(
+            lambda: self.mod.do_create(
+                {"id": "c-bad", "title": "t",
+                 "action": {"type": "dispatch",
+                            "task_class": "bogus"}}, "devin"),
+            "action.task_class")
+
+    def test_claim_persists_claude_auto_route(self):
+        card = {"id": "c-auto",
+                "action": {"type": "dispatch", "status": "queued"}}
+        self.mod.do_claim(card, {"host": "h1", "executor": "claude",
+                                 "task_class": "repo_fix",
+                                 "executor_source": "claim"})
+        a = card["action"]
+        self.assertEqual(a["executor"], "claude")
+        self.assertEqual(a["task_class"], "repo_fix")
+        self.assertEqual(a["executor_source"], "claim")
+
+    def test_claim_rejects_source_on_declared_pin(self):
+        """executor_source may not be stamped onto a card that already
+        declares executor=claude without one — that would silently
+        weaken the fail-closed contract."""
+        card = {"id": "c-decl",
+                "action": {"type": "dispatch", "status": "queued",
+                           "executor": "claude"}}
+        self.rejects(
+            lambda: self.mod.do_claim(
+                card, {"host": "h1", "executor": "claude",
+                       "executor_source": "claim"}),
+            "invalid action executor_source")
+
+    def test_claim_rejects_source_without_claude(self):
+        card = {"id": "c-dev",
+                "action": {"type": "dispatch", "status": "queued"}}
+        self.rejects(
+            lambda: self.mod.do_claim(
+                card, {"host": "h1", "executor": "devin",
+                       "executor_source": "claim"}),
+            "invalid action executor_source")
+
+    def test_claim_rejects_bad_source_value(self):
+        card = {"id": "c-src",
+                "action": {"type": "dispatch", "status": "queued"}}
+        self.rejects(
+            lambda: self.mod.do_claim(
+                card, {"host": "h1", "executor": "claude",
+                       "executor_source": "author"}),
+            "invalid action executor_source")
+
+    def test_claim_task_class_pairing(self):
+        # claude pairs only with admitted claude classes
+        card = {"id": "c-tc",
+                "action": {"type": "dispatch", "status": "queued"}}
+        self.mod.do_claim(card, {"host": "h1", "executor": "claude",
+                                 "task_class": "verify_only"})
+        self.assertEqual(card["action"]["task_class"], "verify_only")
+        card2 = {"id": "c-tc2",
+                 "action": {"type": "dispatch", "status": "queued"}}
+        self.rejects(
+            lambda: self.mod.do_claim(
+                card2, {"host": "h1", "executor": "claude",
+                        "task_class": "summary"}),
+            "claim task_class")
+        card3 = {"id": "c-tc3",
+                 "action": {"type": "dispatch", "status": "queued"}}
+        self.rejects(
+            lambda: self.mod.do_claim(
+                card3, {"host": "h1", "executor": "devin",
+                        "task_class": "verify_only"}),
+            "claim task_class")

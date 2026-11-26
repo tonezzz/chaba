@@ -625,6 +625,151 @@ def kk_mac_route(card: dict) -> str:
     return tc
 
 
+# --- claude auto-route (card auto-route-bounded-card-classes-to-execu,
+# follow-up to PR #187 claude executor lane, 2026-11-26) -------------
+# Bounded card classes self-route to executor=claude at queue time so
+# cheap verifiable work stops spending Devin tokens. Unlike kk_mac —
+# a bounded read-only LLM call — the claude lane runs the FULL dispatch
+# lifecycle (worktree, branch push, close-out), so "bounded" constrains
+# the CARD CLASS, not the executor: verify-only runs, small repo-local
+# fixes that name a verify command, and report/triage generation.
+#
+# The route is try-first like kk_mac: the pin is stamped with
+# action.executor_source so a host that can't serve the lane falls
+# back to normal lane classification — only an author-declared
+# executor=claude (no executor_source) stays fail-closed. Serving
+# requires CLAUDE_LANES=1 + claude-dispatch + an authed claude install
+# on the claiming runner (runner-agent.claude_lane_ready).
+CLAUDE_TASK_CLASSES = {"verify_only", "repo_fix", "report_triage"}
+
+# deploy/push/prod/cross-repo intent — any hit keeps the card off the
+# auto-route no matter which class matched. Broader than
+# KK_MAC_MUTATING_RE on purpose: the claude lane runs the full
+# lifecycle, so "deploy/push to prod" is a hard exclusion here even
+# though it merely keeps kk_mac cards off its read-only lane. The
+# dispatch close-out push every card does is infrastructure, not a
+# card requirement — these patterns target the TASK being deploy/push.
+CLAUDE_SCOPE_RE = re.compile(
+    r"\b(?:deploy\w*|provision\w*|publish\w*|release[sd]?\b|"
+    r"goes?\s+live|production\w*|\bprod\b|"
+    r"systemctl|service\s+restarts?|restart\w*\s+(?:the\s+)?"
+    r"(?:service|unit|timer|daemon|host)s?|"
+    r"git\s+push|push\s+(?:to|origin)|push\s+(?:the\s+)?"
+    r"(?:branch|pr|pull\s+request|commit)s?\b|"
+    r"merge[sd]?\s+(?:the\s+)?(?:pr|pull\s+request|mr|branch)\b|"
+    r"merge[sd]?\s+(?:to|into|on)\s+(?:master|main|production|prod)\b|"
+    r"cross[-\s]repo|multi[-\s]repo|across\s+\w+\s+repos?)\b", re.I)
+
+# verify-command evidence for repo_fix — a runnable check named in the
+# card text or a declared verify_* contract field. "Small repo-local
+# fix" without one stays on the normal lanes: the verify step is what
+# makes the class bounded.
+_CLAUDE_VERIFY_CMD_RE = re.compile(
+    r"\b(?:py\.?test|pytest|unittest|vitest|jest|go\s+test|"
+    r"cargo\s+test|npm\s+(?:run\s+)?(?:test|check|verify)|"
+    r"pnpm\s+(?:run\s+)?(?:test|check)|yarn\s+test|"
+    r"make\s+(?:test|check|verify)|just\s+(?:test|check)|ctest|"
+    r"rspec|phpunit|tox|nox|verify[_-][a-z0-9_.-]*|"
+    r"scripts/[^\s'\"]*verif[a-z0-9_.-]*)\b", re.I)
+
+# class markers — inference is deliberately narrow like
+# KK_MAC_ROUTE_KW: only unambiguous asks infer a class; the declared
+# action.task_class is the precise route when an author sets one.
+_CLAUDE_VERIFY_ONLY_RE = re.compile(
+    r"\b(?:verify[-\s]?only|do\s+not\s+(?:modify|change|edit|touch)|"
+    r"no\s+code\s+changes?|read[-\s]?only|without\s+(?:modifying|"
+    r"changing|editing)|confirm\s+(?:that|the|whether)|"
+    r"check\s+that|validate\s+(?:that|the|whether))\b", re.I)
+_CLAUDE_FIX_RE = re.compile(
+    r"\b(?:fix(?:es|ed|ing)?|bugs?|broken|failing|failures?|"
+    r"regressions?|typos?|incorrect|flaky|patch(?:es|ed|ing)?|"
+    r"repair\w*|defects?|hotfix(?:es)?)\b", re.I)
+_CLAUDE_REPORT_RE = re.compile(
+    r"\b(?:triage|write[-\s]?ups?|postmortems?|digests?|assessments?|"
+    r"summari[sz]\w*|recaps?|document\s+(?:the|this|a|an)\b|"
+    r"(?:write|draft|produce|generate|create|compile|prepare)\s+"
+    r"(?:a|an|the|up\s+a|up\s+the)\s+[\w-]*\s*"
+    r"(?:report|summary|digest|assessment|write[-\s]?up|"
+    r"postmortem|triage)\b)", re.I)
+
+
+def _claude_has_verify(a: dict, low: str) -> bool:
+    """Verify-command evidence: a verify_* contract field on the
+    action, or a runnable check named in the card text."""
+    if any(a.get(k) for k in
+           ("verify_contains", "verify_sections", "verify_regex",
+            "verify_min_terms")):
+        return True
+    return bool(_CLAUDE_VERIFY_CMD_RE.search(low))
+
+
+def _claude_cross_repo(card: dict, a: dict, low: str) -> bool:
+    """True when the card text names a repo other than its own —
+    cross-repo work stays on the normal lanes. Mentions of the card's
+    own repo (action.repo, default chaba) don't count."""
+    own = canon_repo(str(a.get("repo") or "chaba"))
+    for name in list(BUILTIN_REPOS) + list(REPO_ALIASES):
+        if canon_repo(name) == own:
+            continue
+        if _kw_hit(name, low):
+            return True
+    return False
+
+
+def claude_route(card: dict) -> str:
+    """Bounded-class auto-route to executor=claude: the claude task
+    class this card should pin at queue time, or "" to leave routing
+    alone. A card routes only when ALL hold:
+
+      - dispatch-typed and nothing already routed: no action.executor,
+        no action.lane (any declaration is the author's own routing);
+      - no host pin: action.host/target_host/runner unset;
+      - no capability labels: action.labels non-empty keeps the card —
+        there is no declared claude-capable host set to satisfy them
+        (spec: labels outside the host set never auto-route);
+      - single-repo scope: the text names no repo other than
+        action.repo, and no deploy/push/prod/cross-repo phrasing;
+      - an admitted task class — action.task_class when declared
+        (must be in CLAUDE_TASK_CLASSES), else inferred from
+        verify-only / fix-with-verify / report-triage markers.
+    """
+    a = _act(card)
+    if str(a.get("type") or "dispatch") != "dispatch":
+        return ""
+    if a.get("executor") or a.get("lane"):
+        return ""
+    if a.get("host") or a.get("target_host") or a.get("runner"):
+        return ""
+    if a.get("labels"):
+        return ""
+    text = " ".join(str(x) for x in
+                    (card.get("title"), card.get("brief"),
+                     card.get("spec"), card.get("note"),
+                     a.get("prompt")) if x)
+    low = text.lower()
+    if CLAUDE_SCOPE_RE.search(low):
+        return ""
+    if _claude_cross_repo(card, a, low):
+        return ""
+    tc = str(a.get("task_class") or "").strip()
+    if tc and tc not in CLAUDE_TASK_CLASSES:
+        return ""  # declared but unadmitted — never guess a route
+    if tc == "repo_fix" and not _claude_has_verify(a, low):
+        return ""  # the verify command is what makes the class bounded
+    if not tc:
+        if _CLAUDE_VERIFY_ONLY_RE.search(low):
+            tc = "verify_only"
+        elif _CLAUDE_FIX_RE.search(low) and _claude_has_verify(a, low):
+            tc = "repo_fix"
+        elif _CLAUDE_REPORT_RE.search(low):
+            tc = "report_triage"
+        elif _claude_has_verify(a, low):
+            tc = "verify_only"
+        else:
+            return ""
+    return tc
+
+
 def repos() -> dict:
     """{name: {"path": Path, "default_branch": str}} — repos.conf wins."""
     table = {k: {"path": Path(v[0]).expanduser(), "default_branch": v[1]}

@@ -603,5 +603,130 @@ class ClaimPassScriptOnlyTest(unittest.TestCase):
         self.assertEqual(self.defers, [])
 
 
+class ClaimPassClaudeRouteTest(unittest.TestCase):
+    """claude auto-route backstop
+    (auto-route-bounded-card-classes-to-execu): an executor-unset card
+    that dr.claude_route admits is claimed AS executor=claude with
+    task_class + executor_source=claim — but only on a host where
+    claude_lane_ready(); everywhere else normal lane classification
+    runs and nothing pins claude."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load()
+
+    def setUp(self):
+        m = self.mod
+        self._saved_env = os.environ.get("JEV_LANE")
+        os.environ["JEV_LANE"] = "1"
+        self._saved = {k: getattr(m, k) for k in
+                       ("DISPATCH", "RETRY_FILE", "OPENCODE_LANES")}
+        self._saved_fn = {k: getattr(m, k) for k in
+                          ("api", "start_task", "push_capable",
+                           "gpu_preflight", "classify_lane", "dr_module",
+                           "overloaded", "note_defer", "claude_lane_ready")}
+        m.DISPATCH = str(SCRIPT)
+        self._tmpdir = tempfile.TemporaryDirectory()
+        m.RETRY_FILE = Path(self._tmpdir.name) / "retry-ledger.json"
+        m.OPENCODE_LANES = False
+        m.push_capable = lambda repo: True
+        m.gpu_preflight = lambda card: ""
+        m.overloaded = lambda: False
+        m.note_defer = lambda *a, **k: None
+        m.start_task = lambda card, typ: ("devin-task-t", "t", "")
+        self.claude_ready = False
+        m.claude_lane_ready = lambda: self.claude_ready
+        self.dr_calls = []
+
+        class FakeDR:
+            @staticmethod
+            def kk_mac_route(card):
+                return ""
+
+            @staticmethod
+            def claude_route(card):
+                FakeDR.calls.append(card.get("id"))
+                return "verify_only"
+
+        FakeDR.calls = self.dr_calls
+        m.dr_module = lambda: FakeDR
+        self.classified = []
+        m.classify_lane = lambda card: (
+            self.classified.append(card.get("id")) or "devin")
+        self.posts = []
+        self.cards = []
+
+        def fake_api(path, body=None):
+            if path == "/cards":
+                return {"cards": self.cards}
+            self.posts.append((path, dict(body or {})))
+            return {}
+        m.api = fake_api
+        signal.alarm(10)
+
+    def tearDown(self):
+        m = self.mod
+        signal.alarm(0)
+        if self._saved_env is None:
+            os.environ.pop("JEV_LANE", None)
+        else:
+            os.environ["JEV_LANE"] = self._saved_env
+        for k, v in self._saved.items():
+            setattr(m, k, v)
+        for k, v in self._saved_fn.items():
+            setattr(m, k, v)
+        self._tmpdir.cleanup()
+
+    def _claim_bodies(self):
+        return [b for p, b in self.posts
+                if p == "/action" and b.get("do") == "claim"]
+
+    def _claude_card(self):
+        c = _card()
+        c["id"] = "claude-card"
+        c["title"] = "Verify-only: run the checks"
+        return c
+
+    def test_ready_host_claims_as_claude(self):
+        self.claude_ready = True
+        self.cards = [self._claude_card()]
+        self.assertTrue(self.mod.claim_pass({}))
+        bodies = self._claim_bodies()
+        self.assertEqual(len(bodies), 1)
+        b = bodies[0]
+        self.assertEqual(b["executor"], "claude")
+        self.assertEqual(b["task_class"], "verify_only")
+        self.assertEqual(b["executor_source"], "claim")
+        # the claude route replaces lane classification entirely
+        self.assertEqual(self.classified, [])
+        self.assertNotIn("lane", b)
+
+    def test_unready_host_takes_normal_lane(self):
+        """claude_lane_ready()=False -> the classifier is never even
+        consulted for claude; the card claims on the normal lane."""
+        self.claude_ready = False
+        self.cards = [self._claude_card()]
+        self.assertTrue(self.mod.claim_pass({}))
+        bodies = self._claim_bodies()
+        self.assertEqual(len(bodies), 1)
+        b = bodies[0]
+        self.assertNotIn("executor", b)
+        self.assertNotIn("task_class", b)
+        self.assertNotIn("executor_source", b)
+        self.assertEqual(b["lane"], "devin")
+        self.assertEqual(self.dr_calls, [])
+
+    def test_declared_lane_skips_claude_route(self):
+        """An explicit/persisted lane is the author's routing — the
+        claude backstop only fires when no lane resolves."""
+        self.claude_ready = True
+        self.cards = [_card(lane="free_lane")]
+        self.assertTrue(self.mod.claim_pass({}))
+        bodies = self._claim_bodies()
+        self.assertEqual(len(bodies), 1)
+        self.assertNotIn("executor", bodies[0])
+        self.assertEqual(self.dr_calls, [])
+
+
 if __name__ == "__main__":
     unittest.main()
