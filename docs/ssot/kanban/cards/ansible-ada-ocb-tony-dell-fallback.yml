@@ -1,7 +1,7 @@
 id: ansible-ada-ocb-tony-dell-fallback
 title: ADA-OCB tony-dell fallback probe/contract alignment
-column: review
-updated: 2026-11-26 18:24
+column: done
+updated: 2026-11-26 18:37
 brief: 'Follow-up from OPS-1424: tony-dell ocb_pane fallback probe incomplete in ada-ocb-verify; align pin/patch/service
   state or harden verify for missing fallback probe.'
 priority: medium
@@ -124,6 +124,16 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261126-174901-context-ops-1424-ansible-prep- on
     con01 — if the work was never pushed it may be gone'
+- at: 2026-11-26 18:37
+  from: tony
+  text: '[verify complete 2026-11-26 18:5x +07] Dispatch on con01 finished and diagnosed the card: tony-dell''s
+    ocb_pane fallback is healthy (service + 127.0.0.1:3000 bind + local HTTP 200 + 600 startup.env + litellm dropin
+    all OK; cli 2.4.1 vs pin 2.4.2 and absent patch are non-strict by design, kept intentionally). The noisy all-?
+    recap was caused by the assert/report phase iterating the full ocb_pane group while the probe play was --limit-scoped,
+    so unreachable/excluded hosts had no ocb_probe fact and '
+- at: 2026-11-26 18:37
+  from: tony
+  text: closed by tony
 action:
   type: dispatch
   status: done
