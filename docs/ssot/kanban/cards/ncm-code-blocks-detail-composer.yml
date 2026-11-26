@@ -1,7 +1,7 @@
 id: ncm-code-blocks-detail-composer
 title: NCM code-block composer — detail by layer (Variant B, review)
 column: review
-updated: 2026-11-26 20:39
+updated: 2026-11-26 23:11
 brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
   by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
   for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
@@ -254,3 +254,10 @@ comms:
     0.000; JevOS rerun delta +1.000 unchanged; L0 block-ID encoding still untested on real code. Stays in review,
     no P2/P3 promotion. Re-entry gate: frozen real-pipeline corpus + deterministic generated L0 block IDs + manifest
     replay + '
+- at: 2026-11-26 23:11
+  from: devin
+  text: 'Trained NCM pipeline applied to pack tokens — Stage 1 PASS, Stage 2 gate FAIL, verdict stop (card stays
+    watch/unvalidated). Pre-registered before training. Data: 5400 augmented variants of 71 real packs (81-token
+    vocab), 440 held-out; synthetic augmentation disclosed. Stage 1 VQ-VAE 5.20M params / 250 updates: held-out
+    recon accuracy 0.83758 (CE 0.5867) >= 0.50 floor -> PASS. Stage 2 transformer 3.59M / 100 updates: loss 5.037
+    -> 2.485, train code acc 0.007 -> 0.752, but generation with a GIVEN '
