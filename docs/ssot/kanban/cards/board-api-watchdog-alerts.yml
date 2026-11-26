@@ -1,0 +1,21 @@
+id: board-api-watchdog-alerts
+title: board-api watchdog alerts land here
+column: done
+updated: 2026-11-26 22:30
+tags:
+- ops
+- watchdog
+- board-api
+note: 'Permanent comms sink for the board-api accept-loop liveness watchdog
+  (card board-api-accept-loop-wedge-auto-restart-7dd2f1). When the in-process
+  watchdog decides no door can be served it drops a record in
+  ~/.local/state/board-api-watchdog/alerts.jsonl and exits nonzero; systemd
+  Restart=on-failure brings the service back and the startup drain posts ONE
+  comms entry per wedge here (req-stamped, deduped). Do not dispatch — this
+  card is an alert sink, not work. If it is missing, alerts fall back to
+  focus-inbox entries.'
+comms:
+- at: 2026-11-26 22:30
+  from: devin
+  text: 'sink card created by dispatch 20261126-221314 — target of
+    BOARD_API_ALERT_CARD (default in scripts/board/board-api.py)'

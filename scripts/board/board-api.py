@@ -234,6 +234,17 @@ unauthenticated non-GETs at the edge (stacks/web/Caddyfile).
 BOARD_API_ALLOWED_LOGINS (comma list) optionally restricts which
 tailnet logins may write; unset = any tailnet identity.
 
+Accept-loop resilience (card board-api-accept-loop-wedge-auto-restart):
+handler spawns run on a bounded worker pool off the accept thread, and a
+liveness watchdog probes GET /health end-to-end — LIVENESS_FAILS
+consecutive failures exits nonzero for systemd Restart=on-failure and
+drops one alert record that the next boot posts as a card comms. Knobs:
+BOARD_API_SPAWN_WORKERS (4), BOARD_API_SPAWN_QUEUE_MAX (256),
+BOARD_API_LIVENESS_INTERVAL_S (5), BOARD_API_LIVENESS_TIMEOUT_S (6),
+BOARD_API_LIVENESS_FAILS (3), BOARD_API_LIVENESS_WATCHDOG=0 disables,
+BOARD_API_WATCHDOG_DIR (~/.local/state/board-api-watchdog),
+BOARD_API_ALERT_CARD (board-api-watchdog-alerts).
+
 Smoke test: python3 scripts/board/board-api.py --selftest
 """
 import base64
@@ -243,10 +254,12 @@ import faulthandler
 import gzip
 import hashlib
 import hmac
+import http.client
 import json
 import os
 import queue
 import re
+import socketserver
 import subprocess
 import sys
 import threading
@@ -7773,6 +7786,280 @@ def _selftest() -> None:
     print("selftest ok")
 
 
+# --- accept-loop resilience ---------------------------------------------
+# (card board-api-accept-loop-wedge-auto-restart-7dd2f1)
+#
+# 2026-11-26 08:56-09:17Z on idc03: the main thread parked inside
+# Thread.start() -> _started.wait() (socketserver process_request) and
+# never returned — no handler thread could spawn, the listen backlog
+# filled, and every door (/cards /comment /lesson /health) 503/504'd
+# for ~20min until a manual `systemctl --user restart`. Restart=on-failure
+# could not help: the process stayed alive, just deaf.
+#
+# Two layers:
+#   1. BoardAPIHTTPServer.process_request hands Thread.start() to a
+#      bounded spawner pool, so a wedged start() parks a worker thread —
+#      never serve_forever. Spawn exceptions close just that request; a
+#      saturated spawn queue answers 503 inline (fail fast, not timeout).
+#   2. A liveness watchdog probes GET /health end-to-end; LIVENESS_FAILS
+#      consecutive failures means no door can be served — dead accept
+#      loop OR dead spawn path, the probe can't tell them apart and
+#      doesn't need to. Recovery dumps stacks, drops a pending alert
+#      record, then exits nonzero so systemd Restart=on-failure
+#      (RestartSec=10) brings the service back; the post-restart drain
+#      posts ONE comms entry per wedge to the alert card.
+
+SPAWN_WORKERS = int(os.environ.get("BOARD_API_SPAWN_WORKERS", "4"))
+SPAWN_QUEUE_MAX = int(os.environ.get("BOARD_API_SPAWN_QUEUE_MAX", "256"))
+LIVENESS_INTERVAL_S = float(os.environ.get(
+    "BOARD_API_LIVENESS_INTERVAL_S", "5"))
+LIVENESS_TIMEOUT_S = float(os.environ.get(
+    "BOARD_API_LIVENESS_TIMEOUT_S", "6"))
+LIVENESS_FAILS = int(os.environ.get("BOARD_API_LIVENESS_FAILS", "3"))
+LIVENESS_DISABLED = os.environ.get(
+    "BOARD_API_LIVENESS_WATCHDOG", "1") == "0"
+WATCHDOG_EXIT_CODE = 42        # nonzero -> systemd Restart=on-failure
+WATCHDOG_DIR = Path(os.environ.get(
+    "BOARD_API_WATCHDOG_DIR",
+    str(Path.home() / ".local/state/board-api-watchdog")))
+ALERT_CARD = os.environ.get(
+    "BOARD_API_ALERT_CARD", "board-api-watchdog-alerts")
+
+
+class BoardAPIHTTPServer(ThreadingHTTPServer):
+    """ThreadingHTTPServer with spawn isolation + a liveness watchdog.
+
+    process_request never calls Thread.start() on the accept thread —
+    the stock mixin path runs on a bounded spawner pool instead, so the
+    2026-11-26 _started.wait() stall degrades to parked workers, not a
+    dead accept loop. The watchdog's end-to-end /health probe covers
+    every wedge mode (dead accept, dead spawn, dead handlers) because it
+    measures serviceability, not a single internal heartbeat."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._spawn_q = queue.Queue(maxsize=SPAWN_QUEUE_MAX)
+        self._liveness_fails = 0
+        self._wedge_alerted = False
+        self._liveness_stop = False
+        self._liveness_started = False
+        for i in range(SPAWN_WORKERS):
+            threading.Thread(target=self._spawn_worker, daemon=True,
+                             name=f"req-spawn-{i}").start()
+
+    # -- spawn isolation -------------------------------------------------
+
+    def process_request(self, request, client_address):
+        """Enqueue the spawn — Thread.start() runs on a spawner worker.
+        A start() that wedges parks that worker only; serve_forever
+        keeps accepting."""
+        try:
+            self._spawn_q.put_nowait((request, client_address))
+        except queue.Full:
+            self._spawn_overflow(request)
+
+    def _spawn_worker(self) -> None:
+        while True:
+            request, client_address = self._spawn_q.get()
+            try:
+                # the stock mixin path verbatim — Thread creation,
+                # _threads bookkeeping and t.daemon stay version-correct;
+                # only the blocking start() moves off the accept loop.
+                socketserver.ThreadingMixIn.process_request(
+                    self, request, client_address)
+            except Exception as e:
+                sys.stderr.write(
+                    f"board-api handler spawn failed "
+                    f"({client_address}): {e!r}\n")
+                try:
+                    self.shutdown_request(request)
+                except Exception:
+                    pass
+
+    def _spawn_overflow(self, request) -> None:
+        """Spawn queue saturated — every worker is parked inside
+        Thread.start() (the can't-start-threads wedge). Fail fast with
+        503 instead of letting clients hit the listen backlog; the
+        liveness watchdog owns recovery."""
+        body = json.dumps(
+            {"ok": False,
+             "error": "board-api handler spawn queue saturated"}).encode()
+        try:
+            request.sendall(
+                b"HTTP/1.1 503 Service Unavailable\r\n"
+                b"Content-Type: application/json\r\n"
+                b"Content-Length: " + str(len(body)).encode()
+                + b"\r\nConnection: close\r\n\r\n" + body)
+        except OSError:
+            pass
+        try:
+            self.shutdown_request(request)
+        except Exception:
+            pass
+
+    # -- liveness watchdog -------------------------------------------------
+
+    def serve_forever(self, poll_interval=0.5):
+        if not LIVENESS_DISABLED and not self._liveness_started:
+            self._liveness_started = True
+            self._liveness_stop = False
+            threading.Thread(target=self._liveness_loop, daemon=True,
+                             name="liveness-watchdog").start()
+        return super().serve_forever(poll_interval)
+
+    def shutdown(self):
+        self._liveness_stop = True
+        return super().shutdown()
+
+    def server_close(self):
+        self._liveness_stop = True
+        return super().server_close()
+
+    def _liveness_loop(self) -> None:
+        """Probe /health end-to-end; LIVENESS_FAILS consecutive failures
+        = no door can be served -> recover. A merely-slow accept loop
+        still answers the trivial lock-free probe well inside the
+        timeout, so this can't false-positive on load alone."""
+        while not self._liveness_stop:
+            time.sleep(LIVENESS_INTERVAL_S)
+            if self._liveness_stop:
+                break
+            try:
+                ok = self._liveness_probe()
+            except Exception as e:
+                ok = False
+                sys.stderr.write(f"board-api liveness probe error: {e}\n")
+            if ok:
+                self._liveness_fails = 0
+                self._wedge_alerted = False
+                continue
+            self._liveness_fails += 1
+            sys.stderr.write(
+                f"board-api liveness probe failed "
+                f"({self._liveness_fails}/{LIVENESS_FAILS})\n")
+            if self._liveness_fails >= LIVENESS_FAILS \
+                    and not self._wedge_alerted \
+                    and not self._liveness_stop:
+                self._wedge_alerted = True
+                self._on_liveness_wedge()
+
+    def _liveness_probe(self) -> bool:
+        """One real /health round-trip on our own bound address — a
+        connect that lands in a dead backlog, or a spawn that never
+        produces a handler, both read as down."""
+        host, port = self.server_address[:2]
+        conn = http.client.HTTPConnection(
+            host, port, timeout=LIVENESS_TIMEOUT_S)
+        try:
+            conn.request("GET", "/health",
+                         headers={"Connection": "close"})
+            r = conn.getresponse()
+            r.read(4096)
+            return r.status == 200
+        finally:
+            conn.close()
+
+    def _on_liveness_wedge(self) -> None:
+        """Recovery: stacks to the journal, one pending alert record for
+        the post-restart board comms, then a nonzero exit so systemd
+        Restart=on-failure (RestartSec=10) brings the service back."""
+        sys.stderr.write(
+            "board-api ACCEPT-LOOP-WATCHDOG: liveness probe failed "
+            f"{LIVENESS_FAILS}x — exiting {WATCHDOG_EXIT_CODE} for "
+            "systemd auto-restart\n")
+        try:
+            faulthandler.dump_traceback()
+        except Exception:
+            pass
+        _watchdog_alert_record(
+            f"liveness probe failed {LIVENESS_FAILS} consecutive checks")
+        sys.stderr.flush()
+        os._exit(WATCHDOG_EXIT_CODE)
+
+
+def _watchdog_alert_record(reason: str) -> None:
+    """Append one wedge record — a wedged board-api cannot post to the
+    board itself, so the record waits for the post-restart drain."""
+    try:
+        WATCHDOG_DIR.mkdir(parents=True, exist_ok=True)
+        rec = {"at": now(), "epoch": time.time(),
+               "pid": os.getpid(), "reason": reason[:300]}
+        with open(WATCHDOG_DIR / "alerts.jsonl", "a") as f:
+            f.write(json.dumps(rec) + "\n")
+            f.flush()
+            os.fsync(f.fileno())
+    except Exception as e:
+        sys.stderr.write(f"board-api watchdog alert write failed: {e}\n")
+
+
+def _deliver_watchdog_alert(rec: dict) -> None:
+    """One board write per wedge record. Card comms on ALERT_CARD when
+    it resolves (req-stamped so a crash between post and drain can't
+    double-post), else a focus-inbox entry — the same door
+    served-checkout-watchdog alerts through."""
+    stamp = (f"watchdog-{int(rec.get('epoch') or 0)}"
+             f"-{rec.get('pid') or 0}")
+    text = (f"board-api accept-loop watchdog fired: "
+            f"{rec.get('reason')} — auto-restart at {rec.get('at')}")
+    got = acquire_lock(LOCK, LOCK_WAIT_S)
+    if got is None:
+        raise RuntimeError("card lock saturated")
+    lf, _w = got
+    try:
+        try:
+            p = card_path(ALERT_CARD)
+        except ValueError:
+            p = None
+        if p is not None:
+            card = load(p)
+            if not dup_comment(card, "chaba", text, stamp):
+                comms_add(card, "chaba", text, req=stamp)
+                card["updated"] = now()
+                save(p, card)
+        else:
+            do_inbox({"text": text, "label": "board-api watchdog alert",
+                      "priority": "high",
+                      "tags": ["watchdog", "board-api"]}, "chaba")
+    finally:
+        lf.close()
+    commit_async()
+    render_async()
+
+
+def _drain_watchdog_alerts() -> None:
+    """Post pending watchdog alerts at startup — one comms entry per
+    wedge, written by the PREVIOUS process because a wedged board-api
+    cannot alert itself. Undelivered records stay for the next boot."""
+    f = WATCHDOG_DIR / "alerts.jsonl"
+    try:
+        lines = [l for l in f.read_text().splitlines() if l.strip()]
+    except OSError:
+        return
+    if not lines:
+        return
+    remaining = []
+    for line in lines:
+        try:
+            rec = json.loads(line)
+        except ValueError:
+            rec = {"at": "", "reason": line[:200]}
+        try:
+            _deliver_watchdog_alert(rec)
+        except Exception as e:
+            sys.stderr.write(
+                f"board-api watchdog alert delivery failed: {e}\n")
+            remaining.append(line)
+    try:
+        if remaining:
+            tmp = f.with_suffix(".tmp")
+            tmp.write_text("\n".join(remaining) + "\n")
+            tmp.replace(f)
+        else:
+            f.unlink()
+    except OSError as e:
+        sys.stderr.write(f"board-api watchdog alert drain failed: {e}\n")
+
+
 if __name__ == "__main__":
     if "--selftest" in sys.argv:
         _selftest()
@@ -7787,4 +8074,7 @@ if __name__ == "__main__":
         pass
     threading.Thread(target=_lock_watchdog_loop, daemon=True,
                      name="lock-watchdog").start()
-    ThreadingHTTPServer(("127.0.0.1", PORT), H).serve_forever()
+    # post any accept-loop watchdog alerts the previous (wedged) process
+    # could not deliver itself — one comms entry per wedge
+    _drain_watchdog_alerts()
+    BoardAPIHTTPServer(("127.0.0.1", PORT), H).serve_forever()
