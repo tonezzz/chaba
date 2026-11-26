@@ -1,15 +1,15 @@
 id: ops-tony-dell-ssh-restore-diag
 title: tony-dell - capture Ansible bootstrap failure output
-column: doing
+column: review
 priority: high
 created: '2026-11-26'
-updated: 2026-11-26 12:23
+updated: 2026-11-26 12:24
 brief: 'Diagnostic follow-up: the first bootstrap run exited 2 in ~4s. Re-run verbosely with all output redirected
   to /home/tony/ssh-restore-diag.txt so it can be read over SFTP while shell access is still blocked. Exit 0 by
   design.'
 action:
   type: script
-  status: running
+  status: done
   host: tony-dell
   executor: script
   script:
@@ -21,6 +21,9 @@ action:
     timeout: 300
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 5.1309543-964496-264251857421097/AnsiballZ_slurp.py | pam_unix(sudo:session): session closed for
+    user root | runner-ops-tony-dell-ssh-restore-diag-1795670630.service: Consumed 2.473s CPU time over 2.609s wall
+    clock time, 142.9M memory peak.'
 spec: Capture only - do not change the recovery approach. Write stdout and stderr of the -vvv playbook run to /home/tony/ssh-restore-diag.txt
   then exit 0.
 comms:
@@ -33,5 +36,10 @@ comms:
 - at: 2026-11-26 12:23
   from: chaba
   text: started runner-ops-tony-dell-ssh-restore-diag-1795670630 on tony-dell (script executor=script)
+- at: 2026-11-26 12:24
+  from: tony-dell
+  text: 'finished (ok): exit=0 5.1309543-964496-264251857421097/AnsiballZ_slurp.py | pam_unix(sudo:session): session
+    closed for user root | runn'
 claim:
   since: 2026-11-26 12:23
+review_kind: verify
