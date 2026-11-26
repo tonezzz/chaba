@@ -1,7 +1,7 @@
 id: colibri-bench-qwen3-6-35b-on-omen-vs-gpt-8ea5a0
 title: 'colibri-bench: Qwen3.6-35B on omen vs gpt-oss:20b lanes'
 column: backlog
-updated: 2026-11-26 04:05
+updated: 2026-11-26 13:54
 brief: 'Tony ask 2026-10-24. Colibri (JustVugg/colibri) runs MoE models with experts streamed from disk; Qwen3.6-35B-A3B
   fits omen (30GB RAM, 83GB free disk, CUDA 1650 build ~30 tok/s vs gpt-oss:20b''s 5 tok/s CPU). Test: install colibri
   + qwen36-35b on omen, run the edu-manage corpus through its OpenAI endpoint (:8000/v1), compare p50 latency +
@@ -280,6 +280,12 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 13:54
+  from: devin
+  text: 'Triage 2026-11-26: action.status=done is WRONG. Comms: ''session produced no commits ... NOT verified'',
+    ''[sweep] 2026-11-07 dispatch produced zero commits ... Work not done - returning to backlog for re-dispatch''.
+    Also note the earlier HOLD (only 38G free on /data vs ~83G required). Runner only claims status=queued; left
+    open for your re-queue decision after capacity check.'
 action:
   type: dispatch
   status: done
