@@ -1,7 +1,7 @@
 id: ncm-code-blocks-detail-composer
 title: NCM code-block composer — detail by layer (Variant B, review)
 column: review
-updated: 2026-11-26 23:11
+updated: 2026-11-26 23:28
 brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
   by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
   for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
@@ -261,3 +261,10 @@ comms:
     vocab), 440 held-out; synthetic augmentation disclosed. Stage 1 VQ-VAE 5.20M params / 250 updates: held-out
     recon accuracy 0.83758 (CE 0.5867) >= 0.50 floor -> PASS. Stage 2 transformer 3.59M / 100 updates: loss 5.037
     -> 2.485, train code acc 0.007 -> 0.752, but generation with a GIVEN '
+- at: 2026-11-26 23:28
+  from: devin
+  text: 'Realistic-L0 diagnostic done — new pre-registration, same trained pack-token generator, level-0 conditioning
+    from tokenizer-encoded held-out pack variants instead of zeros. Produce-token rate 1.000 (gate floor 0.05),
+    mean token F1 0.385 vs 0.018 / 0.000 with zeros -> gate PASS, verdict watch. So the Stage 2 pack failure was
+    mostly a conditioning mismatch (zero L0 is out of the tokenizer''s learned code range), not an architecture
+    dead end. IMPORTANT caveat: l0_unique=1 — the VQ-VAE collapsed ever'
