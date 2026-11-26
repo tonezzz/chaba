@@ -1,7 +1,7 @@
 id: answer-sweep-auto-compose-spec
 title: 'Answer-sweep auto-compose: raise consolidated spec request when all asks answered (KNB-0180 option 2)'
-column: doing
-updated: 2026-11-26 21:39
+column: done
+updated: 2026-11-26 21:40
 brief: 'Phase 1 of KNB-0180 option 2: when every open request on a card is answered/executed and the card still
   lacks a dispatchable spec, answer-sweep raises ONE consolidated spec request with the answers inlined — detection
   + raise only, no auto-queue. Spec: docs/ssot/jobs/kanban/2026-11-19-answer-sweep-dead-letters.yml'
@@ -19,13 +19,14 @@ spec: 'Implement Phase 1 only of docs/ssot/jobs/kanban/2026-11-19-answer-sweep-d
   guard.'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   repo: chaba
   attempts: 1
   runner: con01
   sweep:
     stale_running: 2026-11-26 21:39
+  verified: true
 ref: KNB-0243
 comms:
 - at: 2026-11-19 18:04
@@ -249,5 +250,19 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261126-210330-implement-phase-1-only-of-docs no longer active on con01 but card
     still says running — sweeping its branch'
+- at: 2026-11-26 21:40
+  from: chaba
+  text: 'merge-sweep: merged 912a6182 (dispatch/20261126-210330-implement-phase-1-only-of-docs from con01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261126-210330-implement-phase-1-only-of-docs.md)
+    — auto-closed'
+- at: 2026-11-26 21:40
+  from: local
+  text: 'pub milestone: card verified: answer-sweep-auto-compose-spec on idc03 — merged 912a6182 (dispatch/20261126-210330-implement-phase-1-only-of-docs
+    from con01) -> origin/master — verified — auto- — merged 912a6182 (dispatch/20261126-210330-implement-phase-1-only-of-docs
+    from con01) -> origin/master — verified — auto-closed [evt-731eb8482c302d1a]'
 claim:
   since: 2026-11-26 21:02
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 21:40
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261126-210330-implement-phase-1-only-of-docs.md
