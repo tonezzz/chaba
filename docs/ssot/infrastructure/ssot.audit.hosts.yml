@@ -2484,7 +2484,7 @@ hosts:
       - name: ada-ocb-smoke.service
         reason: "hourly bridge smoke exits 1 on FAIL — benchmark signal in ada-ha-scenario-reports; currently failing on find_card ADA-0172 234-card ambiguity + ada_context_pack; tracked by timer-alert-idc02-ada-ocb-smoke"
       - name: ada-ocb-agent-runner-converge.service
-        reason: "nightly ansible convergence exits 216/GROUP — unit has User=tony inside a --user unit (invalid); tracked by timer-alert-idc02-ada-ocb-agent-runner-converge (ADA-1340)"
+        reason: "RETIRED 2026-11-26: this nightly converge deployed a stale, untracked playbook from an ada-ocb feature branch and re-broke fleet runner-agent drift (installed 8c28da6b vs pin 1514c75c). Timer stopped+disabled via ansible/playbooks/disable-legacy-runner-converge.yml; canonical path is tony-dell runner-agent-converge.timer -> deploy-runner-agent.yml. Historical failure: 216/GROUP (User=tony inside a --user unit); tracked by timer-alert-idc02-ada-ocb-agent-runner-converge (ADA-1340)"
       - name: fleet-restic-backup.service
         reason: "daily restic to tony-dell sdb — snapshot SAVES then fails on stale repo lock (PID 645571, created 11-24 14:14); needs restic unlock on repo; tracked by timer-alert-idc02-fleet-restic-backup"
       - name: kk-mac-model-status.service
