@@ -1,7 +1,7 @@
 id: timer-alert-idc03-log-shipper
 title: Timer log-shipper on idc03 failing
 column: backlog
-updated: 2026-11-26 03:59
+updated: 2026-11-26 09:20
 priority: high
 tags:
 - timer-alert
@@ -3838,6 +3838,11 @@ comms:
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 09:20
+  from: devin
+  text: '2026-11-26 fix verified: mddb-ops :11026 HTTP write timeout 30s->120s (observed writes 32-79s); log-shipper
+    BATCH 10->5; unit TimeoutStartSec 10m->45m. Re-run Result=success, 2000 docs shipped, 0 failures. Runner-agent
+    drift cleared (all hosts pinned 1514c75c...). Closing.'
 action:
   status: done
   type: dispatch
