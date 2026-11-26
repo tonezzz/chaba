@@ -1,8 +1,8 @@
 id: board-api-accept-loop-wedge-auto-restart-7dd2f1
 title: 'board-api accept-loop wedge: auto-restart on handler-thread stall (observed 2026-11-26 ~09:00-09:17Z on
   idc03)'
-column: review
-updated: 2026-11-26 23:09
+column: done
+updated: 2026-11-26 23:12
 tags:
 - board-api
 - idc03
@@ -124,6 +124,16 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261126-221314-fix-chaba-board-api-on-i on tony-dell
     — if the work was never pushed it may be gone'
+- at: 2026-11-26 23:12
+  from: tony
+  text: '[verify 2026-11-26] VERIFIED — fix re-landed on origin/master as fcd1103579 (impl) + 3edb579650 (outcome),
+    after two rebases over advancing concurrent sweeps. The dispatch branch 559914f7ce had auto-merge conflicted
+    on scripts/devin/runner-tooling.manifest.json; resolved by recomputing the dispatch_repos pin from the merged
+    file (e259bbbc...) so the tooling-contract gate stays valid. Implementation moves Thread.start() off the accept
+    loop onto a 4-worker spawn pool (saturated queue -> inline 503'
+- at: 2026-11-26 23:12
+  from: tony
+  text: closed by tony
 spec: 'Fix chaba-board-api on idc03 wedging its accept loop (2026-11-26 08:56-09:17Z: main thread deadlocked in
   Thread.start()->_started.wait(); every door 503/504 until a manual systemctl --user restart). In scripts/board/board-api.py,
   make handler-thread spawn failures non-fatal and add a watchdog that detects an unresponsive accept loop and restarts
