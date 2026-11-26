@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-device-telemetry
 title: Timer device-telemetry on tony-omen failing
-column: backlog
-updated: 2026-11-26 05:25
+column: done
+updated: 2026-11-26 09:21
 priority: high
 tags:
 - timer-alert
@@ -354,6 +354,14 @@ comms:
   from: devin
   text: '[still suspicious] Last run (-) of `device-telemetry.service` on `tony-omen` result=success — investigate
     journal: `journalctl --user -u device-telemetry.service` on the host. See CMS `timer-timeline-tony-omen`.'
+- at: 2026-11-26 09:21
+  from: devin
+  text: '2026-11-26 verified fix: device-telemetry agent client timeout 10s->45s against mddb-ops :11026 (writes
+    routinely 13-42s); deployed fleet-wide with backups. Runner-agent drift cleared (all 6 hosts pinned 1514c75c...).
+    Re-run Result=success/0 on tony-omen.'
+- at: 2026-11-26 09:21
+  from: devin
+  text: closed by devin
 spec: Investigate the failure of device-telemetry.service on tony-omen by checking the systemd journal via `journalctl
   --user -u device-telemetry.service`. Identify the root cause of the exit-code failure from the last run on 11-08
   18:00, referencing CMS timer-timeline-tony-omen as needed. The host is tony-omen. The done-condition is a documented
