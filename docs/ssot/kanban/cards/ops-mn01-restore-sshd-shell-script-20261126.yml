@@ -1,6 +1,6 @@
 id: ops-mn01-restore-sshd-shell-script-20261126
 title: mn01 - restore SSH shell via script lane
-column: backlog
+column: done
 priority: high
 created: '2026-11-26'
 updated: 2026-11-26 12:51
@@ -8,7 +8,7 @@ brief: Global ForceCommand internal-sftp on mn01 blocks shell SSH and Ansible mo
   host behavior locally.
 action:
   type: script
-  status: queued
+  status: done
   host: mn01
   executor: script
   script:
@@ -30,3 +30,10 @@ comms:
 - at: 2026-11-26 12:51
   from: chaba
   text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-26 12:51
+  from: devin
+  text: 'Superseded: shell access restored on mn01 via the scoped Match Group sftponly sshd config (global ForceCommand
+    removed). Closing this restore card to avoid a duplicate edit.'
+- at: 2026-11-26 12:51
+  from: devin
+  text: closed by devin
