@@ -1,14 +1,14 @@
 id: cms-auto-cctv-roster
 title: CMS automation `cctv-roster` stale
 brief: A scheduled report-page job ('cctv-roster') is stale. Re-run it or check the generator — details in the note.
-column: review
+column: done
 review_kind: triage
 generated: cms-auto-health
 priority: medium
 note: 'Recovering: cctv-roster healthy for 1/2 ticks — auto-closes when the streak holds.'
 help: 'Trigger a manual regen: cms_automation run_now for ''cctv-roster'' (or POST /api/cms/pages/cctv-roster/regenerate).
   If it repeats, check the page''s generator command in the registry doc.'
-updated: 2026-11-26 16:54
+updated: 2026-11-26 17:11
 comms:
 - at: 2026-11-25 09:38
   from: chaba
@@ -186,6 +186,14 @@ comms:
 - at: 2026-11-26 16:54
   from: chaba
   text: 'merge-sweep: verified — held in review (review_kind=triage — human-gated)'
+- at: 2026-11-26 17:11
+  from: tony
+  text: '[triage 16:50 +07] Verified and landed: session commits 1c9dc82cd43 (park cctv-roster: registry enabled:false
+    + census reflects disabled timers) and 7cd9283e367 (outcome doc) merged to origin/master as e70e5783b4; worktree
+    and branch GC removed; card verified=True. review_kind=triage was the only hold. Closing per Tony decision.'
+- at: 2026-11-26 17:11
+  from: tony
+  text: closed by tony
 action:
   status: done
   type: dispatch
