@@ -1,7 +1,7 @@
 id: idc02-exec-checkout-117-staged-files-of-70de51
 title: 'idc02 exec checkout: 117 staged files of autostash-pop residue break repo-sync exit code'
 column: doing
-updated: 2026-11-26 22:40
+updated: 2026-11-26 23:06
 program: infrastructure
 tags:
 - ops
@@ -71,6 +71,13 @@ comms:
 - at: 2026-11-26 22:40
   from: devin
   text: dispatch started on con01; operating on idc02 ~/CascadeProjects/chaba via ssh. Inventorying staged set now.
+- at: 2026-11-26 23:06
+  from: devin
+  text: 'DONE on idc02: staged residue converged (was 709 staged + 1 unmerged, not 117). git reset --hard HEAD then
+    git-safe-pull.sh exit 0 twice; the 23:00 chaba-repo-sync.service run Finished successfully (was exit 1 every
+    run). Genuine uncommitted job work preserved as patches in ~/.local/share/chaba-stash-archive/idc02-rescue-20261126/
+    on idc02 + still live as unstaged edits. runner tooling verified at current manifest pin 4ed3afdb (card pin
+    4259ca6f is stale — runner-agent.py changed upstream today)'
 action:
   type: dispatch
   status: running
