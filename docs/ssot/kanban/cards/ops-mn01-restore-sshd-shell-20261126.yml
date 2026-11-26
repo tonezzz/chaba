@@ -65,5 +65,29 @@ comms:
   from: devin
   text: '[progress] Confirmed on mn01: /etc/ssh/sshd_config line 80 = `ForceCommand internal-sftp`; no ForceCommand
     in sshd_config.d drop-ins. Running prescribed backup+sed+validate+restart sequence now.'
+- at: 2026-11-26 12:50
+  from: devin
+  text: 'DONE — sshd ForceCommand removed, shell access restored on mn01.
+
+
+    Verbatim output of prescribed commands:
+
+
+    ```
+
+    $ sudo -n cp -a /etc/ssh/sshd_config /etc/ssh/sshd_config.bak-20261126-sftp-only
+
+    $ sudo -n sed -i ''s|^ForceCommand internal-sftp$|# SFTP-only restriction removed 2026-11-26 — restore host
+    standard shell access|'' /etc/ssh/sshd_config
+
+    $ sudo -n sshd -t && echo SSHD_T_OK
+
+    SSHD_T_OK
+
+    $ sudo -n systemctl restart ssh && echo SSH_RESTARTED
+
+    SSH_RESTARTED
+
+    $ grep -n ''ForceCommand|SFTP-only'' /etc/ss'
 claim:
   since: 2026-11-26 12:48
