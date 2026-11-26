@@ -1,5 +1,11 @@
 # jack-ide — isolated OpenCode IDE + one-time enrollment gateway (idc02)
 
+> **Retired 2026-11-24:** the quadlets and public routes were retired with
+> the ada-code stack; backup at `~/backups/retired-opencode-20261124/jack-ide`
+> on idc02. This directory is the restore-ready source — see WORKSPACES.md
+> "Opening a project in the OpenCode UI" for the verified project-flow
+> semantics before redeploying.
+
 VCAST-style enrollment for Jack's disposable OpenCode web IDE. The browser
 never sees LiteLLM/MCP/host/SSH/Ada/Devin credentials — only an opaque
 HttpOnly session ticket.
@@ -52,6 +58,15 @@ init → import (allowlist) → new (worktree + jack/<slug>)
 → Jack edits + LOCAL commits in /workspace/worktrees/<repo>--<slug>
 → verify (secret/scope/clean-tree/test gates, independent verdict)
 → push (scoped token, task branch only) → pr (human merge gate after)
+```
+
+Ad-hoc (non-git) projects: the OpenCode UI can only OPEN existing
+directories — it has no create/mkdir API (verified on opencode 1.19.4 and
+2.4.1). Create the dir host-side first:
+
+```
+jack-task project <slug>   # or: scratch — creates /workspace/projects/<slug>
+# then open /workspace/projects/<slug> in the UI folder picker
 ```
 
 Operator config on idc02:
