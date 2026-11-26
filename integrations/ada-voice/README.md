@@ -1766,3 +1766,95 @@ under `/relay-img/arch/` and the image turn's caption carries
   `ADA_RELAY_PUBLIC_BASE`/`LINE_PUBLIC_IMG_BASE` (public base chain,
   same as ada_render_image), `ADA_PERSONA_ASSET_DIR` (override the
   store dir), `ADA_ASSET_MAX_BYTES` (fetch/read cap, default 15 MiB).
+
+---
+
+## Drop 23 — kk_places tool (Google Places lookup + place dossier)
+
+Card `kk-places-tool` (OPS-0506; Tony 2026-10-26 "use my google api
+key"): member-lane place asks — "ร้านนี้ยังอยู่มั้ย", "is X open",
+"ร้านแถวนี้" — get structured facts (address, coords, phone, hours,
+open-now, rating) instead of a bare web_search snippet, and the
+`place-<slug>` dossier from `docs/kb/lane-place-reports.md` is
+written to the lane's own CMS collection so the next ask reads CMS
+first. `place_report` owns the maps-link -> public page flow; this
+tool owns the Places-API enrichment + private dossier. Chaba-repo-only
+drop — host deployment stays a human/Ansible action (no runner-agent
+scp per the 2026-11-26 split decision).
+
+### Files
+
+- `backend/tools.d/kk_places.py` — the tool (whole-file drop).
+- `backend/tools.d/manifest.kk_places.yml` — merge under `tools:` in
+  ada-voice `backend/tools.d/manifest.yml` (policy read,
+  secondary_allowed, timeout 60s).
+- `backend/tool_guide.kk_places.yml` — append to ada-voice
+  `backend/tool_guide.yml`.
+- `tests/scenarios-live/kk_places.yaml` — smoke scenario (lint bars
+  new tools without a scenario reference).
+- `docs/ssot/ssot.tool-surface.kk-places.patch` — count_cap 113→114
+  (must land in the same ada-voice commit — the ratchet; if the base
+  moved, bump `count_cap` by one instead).
+- Chaba side (this repo): `docs/ssot/apps/ssot.apps.ada-persons.yml`
+  adds `kk_places` to `persons.kk.tools.include` + the `kk-cms-only`
+  and `kk-parity` bench profiles (parity is an exact mirror —
+  tests/ada/test_bench_profile_parity.py); `docs/ssot/infrastructure/
+  ssot.tools.yml` gained the `places.lookup` row.
+- `tests/ada/test_kk_places_drop.py` — 19 no-network tests: faked
+  Places API (searchText POST + places/{id} GET), recording
+  cms_publish_page, keyless/empty/error/public-gate forks, registry
+  fragments.
+
+### Install (ada-voice worktree)
+
+1. `cp <chaba>/integrations/ada-voice/backend/tools.d/kk_places.py
+   <ada-voice>/backend/tools.d/kk_places.py`
+2. Merge `manifest.kk_places.yml`'s `kk_places:` block into
+   `backend/tools.d/manifest.yml` under `tools:`.
+3. Append `tool_guide.kk_places.yml` to `backend/tool_guide.yml`.
+4. `cp <chaba>/integrations/ada-voice/tests/scenarios-live/kk_places.yaml
+   tests/scenarios-live/`
+5. `git apply <chaba>/integrations/ada-voice/docs/ssot/ssot.tool-surface.kk-places.patch`
+   — base count_cap 113; if it no longer applies (another drop landed
+   first), bump `count_cap` by one in the same commit instead.
+6. Tool profiles already updated in this repo — re-run
+   `scripts/ada/render-tool-profiles.py` for `ada-kk.env` /
+   `ada-kk-dev.env` on idc03 **after** the ada-voice deploy (the env
+   allowlist names a tool that must exist first, or tool-lint /
+   persons-lint flags it undeclared).
+7. Env: `ADA_PLACES_API_KEY` (dedicated) or `GOOGLE_MAPS_API_KEY`
+   (fallback — the Maps Platform key minted 2026-10-27 works once its
+   project has the Places API (New) enabled) in the lane's backend
+   env on idc03. Without a key the tool returns `ok:false needs_key`
+   + a maps search link — honest, never invented facts.
+8. Gates: `python3 scripts/tool-lint.py`, `.venv/bin/python -m pytest
+   tests/ -x -q` — deploy-ada.sh runs both; then restart `ada-kk` +
+   `ada-kk-dev`.
+
+### Contract
+
+- `kk_places(query?, place_id?, lat?, lon?, limit?, lang?, public?,
+  confirmed?)` — `query` is the place name/address verbatim;
+  `place_id` re-fetches a previous result (stale dossier refresh);
+  `lat`/`lon` bias "near me" asks (~2 km circle); `limit` 1-10
+  (default 3 — the dossier is written for the top match only).
+- Places API (New): `POST /v1/places:searchText` or
+  `GET /v1/places/{id}` with `X-Goog-Api-Key` + `X-Goog-FieldMask`;
+  PERMISSION_DENIED/401/403 surfaces as an actionable error (enable
+  Places API on the key's project or set ADA_PLACES_API_KEY).
+- Result: `{ok, query, checked_at, places[], count, best, maps_url,
+  dossier, note}` — `places[]` entries carry name/place_id/address/
+  coords/phone/website/rating/ratings_count/price_level/types/
+  google_maps_uri/business_status/open_now/hours/checked_at.
+- Dossier: `place-<name>-<seed>` upserted via
+  `runner.cms_publish_page` (domain `places`, `fresh_for` 7d,
+  private by default). `public='yes'` requires `confirmed='yes'`
+  (same gate as trip_calendar) — without it the page saves private
+  and the result says so. A publish failure does NOT fail the lookup:
+  `dossier.ok:false` + the model is told not to claim the page.
+- Empty Places result: `ok:true`, `places:[]`, `maps_url` fallback —
+  no page is written ("unresolved = no page" per
+  lane-place-reports.md rule 6).
+- Verified in-worktree by `tests/ada/test_kk_places_drop.py` (chaba
+  side, 19 tests) — NOT verified live: no real Google key exercised;
+  first call after deploy + env is the smoke.

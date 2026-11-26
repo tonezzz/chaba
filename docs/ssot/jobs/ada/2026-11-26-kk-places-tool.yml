@@ -1,0 +1,109 @@
+title: kk_places tool — Google Places (New) lookup + place-<slug> dossier for the kk member lane
+id: 2026-11-26-kk-places-tool
+card: kk-places-tool
+ref: OPS-0506
+date: 2026-11-26
+status: implemented-in-worktree (ada-voice side staged as drop 23 under
+  integrations/ada-voice/; merge + deploy-ada.sh + env key are separate
+  Tony/host gates per the 2026-11-26 split decision — no runner-agent
+  scp was performed)
+summary: |
+  Card kk-places-tool (OPS-0506) asked for Google Places lookups for
+  lane members; the original card was blocked on a Maps Platform key
+  (Gemini/AI-Studio keys get 401 on places.googleapis.com). Tony's
+  2026-10-26 answer: "use my google api key for now, verify if it
+  includes maps api" — and a Maps Platform key was minted into
+  tony-ha/backend.env on idc03 on 2026-10-27 (map-embed-tool card;
+  later noted as possibly not landed — env verification is a deploy
+  step). The 2026-11-26 triage split the card: chaba-repo tool
+  implementation is dispatchable, runner-agent.py host deployment
+  stays human/Ansible. This worktree did the repo half only.
+
+  The drop follows the established tools.d contract (place_report /
+  map_embed / trip_calendar): a whole-file module with DECLARATION +
+  run(), a manifest fragment, a tool_guide fragment, a smoke
+  scenario, a count_cap ratchet patch, person-profile include lines,
+  an ssot.tools registry row, and a no-network adapter test suite.
+
+what_landed:
+  ada_voice_drop: integrations/ada-voice/ (drop 23, README section
+    'Drop 23 — kk_places tool')
+  files:
+    - path: integrations/ada-voice/backend/tools.d/kk_places.py
+      what: |
+        New tool. Places API (New): POST /v1/places:searchText for
+        query= (optional lat/lon ~2km locationBias, limit 1-10 default
+        3, languageCode) or GET /v1/places/{place_id} for dossier
+        re-verify. Normalizes to name/place_id/address/coords/phone/
+        website/rating/ratings_count/price_level/types/
+        google_maps_uri/business_status/open_now/hours/checked_at.
+        Key: ADA_PLACES_API_KEY else GOOGLE_MAPS_API_KEY; keyless ->
+        ok:false needs_key + maps search URL (never invented facts).
+        PERMISSION_DENIED/401/403 -> actionable error (enable Places
+        API on the key's project). Empty result -> ok:true places:[]
+        + maps_url, NO page (unresolved = no page, lane-place-reports
+        rule 6). Save-back: best match upserts place-<name>-<seed6>
+        via runner.cms_publish_page (domain places, fresh_for 7d,
+        private default; public='yes' gated on confirmed='yes' —
+        without it saves private + says so). Publish failure does not
+        fail the lookup (dossier.ok:false + honest note).
+    - path: integrations/ada-voice/backend/tools.d/manifest.kk_places.yml
+      what: "manifest snippet — policy read, secondary_allowed true,
+        timeout_s 60."
+    - path: integrations/ada-voice/backend/tool_guide.kk_places.yml
+      what: guide entry — answer with facts AND check time; places:[]
+        means say so; needs_key is an env gap; public confirm-gate.
+    - path: integrations/ada-voice/tests/scenarios-live/kk_places.yaml
+      what: smoke scenario (lint bars new tools without one).
+    - path: integrations/ada-voice/docs/ssot/ssot.tool-surface.kk-places.patch
+      what: count_cap 113->114 (the ratchet; deployer bumps by one if
+        the base moved — drops 19/22 staged no cap patch).
+    - path: docs/ssot/apps/ssot.apps.ada-persons.yml
+      what: kk_places added to persons.kk.tools.include +
+        bench_profiles kk-cms-only and kk-parity includes (parity test
+        requires exact mirror).
+    - path: docs/ssot/infrastructure/ssot.tools.yml
+      what: places.lookup registry row (sig query,place_id,lat,lon,
+        limit,lang,public,confirmed; surfaces ada-voice/ada-dev).
+    - path: tests/ada/test_kk_places_drop.py
+      what: 19 no-network tests — faked Places API + recording
+        cms_publish_page; keyless/empty/error/public-gate forks;
+        manifest/guide/scenario registry.
+    - path: docs/kb/lane-place-reports.md
+      what: tool references updated to the registered name kk_places
+        (drop 23); save-back step notes the in-tool write.
+    - path: integrations/ada-voice/README.md
+      what: Drop 23 section — files, install steps, contract, env.
+
+verify:
+  worktree: |
+    - python3 -m py_compile on kk_places.py + test file: OK
+    - yaml.safe_load on all new/edited YAML: OK
+    - functional smoke (stubbed httpx, mn01 has no pytest/httpx):
+      searchText flow -> ok, dossier published private, fields mapped;
+      place_id GET flow; needs_key; empty results; public gate
+      (yes-without-confirmed -> private + note; yes+confirmed ->
+      public=true); PERMISSION_DENIED -> actionable error. ALL PASS.
+    - bench-profile parity assertions replicated in plain python
+      (test_bench_profile_parity logic): PASS.
+  not_run: |
+    pytest suite — mn01 has no pytest (KNOWN_PITFALLS); the chaba
+    merge gate runs the suite on a pytest-capable host. tool-lint
+    lives in ada-voice (scripts/tool-lint.py) and runs at deploy —
+    the staged surface follows the same contract as drops 17/19/22.
+
+follow_ups:
+  - "DEPLOY (Tony/host gate): land drop 23 on ada-voice — cp the tool,
+    merge manifest + tool_guide, cp scenario, apply the count_cap
+    patch (bump by one if base moved), run tool-lint + pytest, then
+    deploy-ada.sh on idc03 and restart ada-kk/ada-kk-dev."
+  - "ENV: verify the kk lane backend env carries a Maps Platform key
+    with Places API (New) enabled — ADA_PLACES_API_KEY preferred,
+    GOOGLE_MAPS_API_KEY fallback (the 2026-10-27 minted key was noted
+    as possibly not landed in tony-ha/backend.env)."
+  - "PROFILE RENDER: re-run scripts/ada/render-tool-profiles.py for
+    ada-kk.env / ada-kk-dev.env on idc03 AFTER the ada-voice deploy —
+    the include names a tool that must exist first."
+  - "LIVE SMOKE: first real kk_places call after deploy is the smoke —
+    no Google key was exercised in-worktree (unit suite is no-network
+    by design)."

@@ -257,6 +257,15 @@ persons:
         # https://chaba.h3.gizmo-thailand.com/kk-ha/ — hand-set, not
         # rendered (the managed block covers INCLUDED/EXCLUDED only).
         - place_report
+        # kk_places (2026-11-26, card kk-places-tool / OPS-0506): Google
+        # Places (New) lookup — 'is X open', 'ร้านแถวนี้' -> structured
+        # facts (hours, open-now, phone, rating) + the place-<slug>
+        # dossier save-back from docs/kb/lane-place-reports.md into this
+        # lane's CMS (private default; public='yes' confirm-gated).
+        # Needs the ada-voice drop installed + a Maps Platform key with
+        # Places API enabled (ADA_PLACES_API_KEY or GOOGLE_MAPS_API_KEY
+        # in the lane env) — include only once both are live.
+        - kk_places
       exclude:
         # CMS-only memory pilot drops (card
         # kk-cms-only-memory-pilot-acceptance, 2026-11-26): the four
@@ -558,6 +567,7 @@ bench_profiles:
       - trip_calendar
       - doc_read
       - place_report
+      - kk_places
       # --- test-only seed writer (not in prod; see comment above) ---
       - cms_publish_page
     exclude:
@@ -637,6 +647,7 @@ bench_profiles:
       - trip_calendar
       - doc_read
       - place_report
+      - kk_places
     exclude:
       - ada_memory_search
       - ada_remember

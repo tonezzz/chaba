@@ -1,0 +1,13 @@
+name: kk-places
+tier: smoke
+turns:
+  # Places lookup (chaba card kk-places-tool, OPS-0506, 2026-11-26).
+  # The contract under test is that the tool is declared, dispatches,
+  # and returns honest output — ok:true with places[] when the key is
+  # live, ok:false needs_key when it is not; never invented place facts.
+  - user: "Use kk_places to look up a cafe in Bangkok and tell me if it's open now."
+    expect:
+      calls_any: ["kk_places"]
+      response_nonempty: true
+      timeout_s: 60
+      settle_s: 2

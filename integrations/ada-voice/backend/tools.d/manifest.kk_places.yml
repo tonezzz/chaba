@@ -1,0 +1,22 @@
+# manifest.yml snippet — merge under tools: in
+# <ada-voice>/backend/tools.d/manifest.yml.
+#
+# kk_places (2026-11-26, chaba card kk-places-tool / OPS-0506): Google
+# Places (New) lookup for member-lane place asks — 'is X open',
+# 'ร้านนี้ยังอยู่มั้ย', 'ร้านแถวนี้' — returning structured facts
+# (address, coords, phone, hours, open-now, rating) and saving the
+# place-<slug> dossier from docs/kb/lane-place-reports.md into the
+# lane's own CMS collection via runner.cms_publish_page (private by
+# default; public='yes' gated on confirmed='yes'). Needs a Maps
+# Platform key with the Places API enabled: ADA_PLACES_API_KEY, falling
+# back to GOOGLE_MAPS_API_KEY; keyless returns an honest needs_key +
+# maps search link. policy: read — the lookup is read-only and the
+# dossier write is the lane's own CMS collection (same construction as
+# place_report / trip_calendar). 60s — one Places call plus the CMS
+# publish.
+tools:
+  kk_places:
+    module: kk_places
+    policy: read
+    secondary_allowed: true
+    timeout_s: 60
