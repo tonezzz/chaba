@@ -184,6 +184,10 @@ comms:
   from: tony
   text: 'answered tony-dell-chaba-exec-checkout-is-stale-d-545026: stash-u-ff — git stash -u (tracked+untracked)
     then pull/rebase to origin/master; stash left for owner (recommended, reversible)'
+- at: 2026-11-26 15:50
+  from: tony
+  text: 'answered mn01-chaba-exec-checkout-is-stale-dirty-c8d27d: stash-u-ff — git stash -u (tracked+untracked)
+    then pull/rebase to origin/master; stash left for owner (recommended, reversible)'
 requests:
 - id: idc02-chaba-exec-checkout-is-stale-dirty-02eca1
   ask: idc02 chaba exec checkout is stale/dirty (dirty; behind=29, ahead=0, dirty=18). How should it be brought
@@ -246,7 +250,7 @@ requests:
 - id: mn01-chaba-exec-checkout-is-stale-dirty-c8d27d
   ask: mn01 chaba exec checkout is stale/dirty (dirty; behind=24, ahead=0, dirty=146). How should it be brought
     current? No work will be destroyed.
-  status: open
+  status: answered
   at: 2026-11-26 06:30
   from: devin
   options:
@@ -256,6 +260,8 @@ requests:
   - leave — accept stale checkout on this host for now; exclude from stale audit until resolved
   - abandon — discard dirty work and hard-reset to origin/master (destructive, explicit approval required)
   suggested: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+  answer: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
     (recommended, reversible)
 - id: tony-dell-chaba-exec-checkout-is-stale-d-545026
   ask: tony-dell chaba exec checkout is stale/dirty (dirty; behind=11, ahead=0, dirty=10). How should it be brought
