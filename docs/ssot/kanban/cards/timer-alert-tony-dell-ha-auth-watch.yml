@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-ha-auth-watch
 title: Timer ha-auth-watch on tony-dell failing
 column: done
-updated: 2026-11-26 14:20
+updated: 2026-11-26 14:28
 priority: high
 tags:
 - timer-alert
@@ -34,5 +34,12 @@ comms:
 - at: 2026-11-26 14:20
   from: tony
   text: closed by tony
+- at: 2026-11-26 14:28
+  from: tony
+  text: '[dedupe loop closed 14:27 +07] The crash fix alone was not enough: the watcher kept emitting the same two
+    old log lines every tick. Root cause: state file held 500 legacy ISO-format keys and save_state capped with
+    sorted(...)[-500:], so new keys sorted before them and were evicted each run. Fixed by dropping legacy keys
+    on load, capping by insertion order, and counting state hits as "deduped". Deployed master 27f34c4505, synced
+    to tony-dell. Live proof: two consecutive runs went "2 new (0 dedupe'
 action:
   status: done
