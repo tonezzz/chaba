@@ -1,7 +1,7 @@
 id: ansible-prep-plan-apply-verify
 title: Ansible prep→plan→apply→verify workflow standard
-column: doing
-updated: 2026-11-26 14:13
+column: review
+updated: 2026-11-26 14:20
 brief: Standardize Ansible for preparation/baselines, check-diff plan artifacts, gated apply, and verified closeout
   to increase fleet efficiency.
 priority: medium
@@ -202,9 +202,29 @@ comms:
     — dispatch_repos sha256 pin stale after sweep commit changed the source. Fixed: bumped pin in runner-tooling.manifest.json
     (commit 28924b33705) + job trail docs/ssot/jobs/infrastructure/2026-11-26-dispatch-test-gate-pin-drift.yml.
     Verified: full chaba merge-gate smoke set 300 pas'
+- at: 2026-11-26 14:20
+  from: con01
+  text: 'finished (ok): exit=0 nal status posted to the card; noted follow-up that mn01 needs pytest for future
+    chaba dispatches. | devin-task-2'
+- at: 2026-11-26 14:20
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-26 14:20
+  from: chaba
+  text: banked 755 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 14:20
+  from: chaba
+  text: pushed dispatch/20261126-135732-objective-define-and-pilot-an- to origin
+- at: 2026-11-26 14:20
+  from: chaba
+  text: 'auto-merge not done: merge: runner-tooling pin contract gate blocked: (failures=1) — close will block until
+    merged'
+- at: 2026-11-26 14:20
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
@@ -213,8 +233,9 @@ action:
     stale_running: 2026-11-26 12:39
     no_repo: 2026-11-26 12:39
     dirty: 1
-  result: 'exit=0 ml`; outcome doc at `dispatch-outcome-20261126-123352-objective-define-and-pilot-an-.md`. | devin-task-20261126-123352-objective-define-and-pilot-an-.service:
-    Consumed 32.765s CPU time over 11min 11.836s wall clock time, 347.4M memory peak.'
+  result: 'exit=0 nal status posted to the card; noted follow-up that mn01 needs pytest for future chaba dispatches.
+    | devin-task-20261126-135732-objective-define-and-pilot-an-.service: Consumed 8min 36.717s CPU time, 679.7M
+    memory peak, 0B memory swap peak.'
   runner: con01
 claim:
   since: 2026-11-26 13:55

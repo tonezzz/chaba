@@ -1,7 +1,7 @@
 id: health-monitor-config-playlived-postgres
 title: Health monitor config — Playlived target and Postgres check threshold
 column: done
-updated: 2026-11-26 13:54
+updated: 2026-11-26 14:20
 brief: mcp-health quick_health fails 2/8 (Playlived tony-dell, Postgres) after config reload; evidence suggests
   monitor config/stale state, not confirmed outages.
 priority: medium
@@ -102,6 +102,16 @@ comms:
 - at: 2026-11-26 13:54
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-26 14:20
+  from: devin
+  text: 'DONE 2026-11-26: SSOT fixes merged (PR #232 disabled loopback-only Playlived + remote-only Postgres quick
+    checks with manual-verification notes; PR #233 moved playlived-dell from important to optional because quick_health
+    ignores disabled and selects only critical/important). Synced the three health SSOT files + ssot.health.yml
+    to tony-dell (mcp-health config host), reloaded config, quick_health now 7/7 PASS (0 failed). Postgres remains
+    in critical and passes; Yomi API + manual ssh checks remain'
+- at: 2026-11-26 14:20
+  from: devin
+  text: closed by devin
 action:
   type: dispatch
   status: done
