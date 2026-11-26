@@ -1,0 +1,22 @@
+id: dispatch-podman-conmon-49-incompat
+title: Dispatch fails on podman 4.9.3 hosts — conmon rejects --log-tag (con01/idc02/idc03)
+column: backlog
+updated: 2026-11-26 13:00
+priority: high
+tags:
+- dispatch
+- ops
+- infra
+spec: 'Found during dispatch-queue-approval-gate verification (2026-11-26). ALL gpus=0 container dispatches to con01/idc02/idc03
+  fail: reproduced via ansible-playbook from tony-macbook — podman_container errors ''conmon:e] k8s-file doesn''t
+  support --log-tag / conmon failed: exit status 1'' on podman 4.9.3. Only omen+dell (podman 5.7.0) can run dispatched
+  containers; macbook has no podman. scheduler._select_target_host does not check container-runtime capability,
+  so CPU jobs land on podman-4.9.3 hosts and DLQ after max_retries. Evidence: queue:job:approval-gate-test-001/004
+  dead_letter, dispatch: records empty; gpu-rsv4-b on omen completed same window. Fix options: upgrade podman/conmon
+  on con01/idc02/idc03, or configure a compatible log-driver in containers.conf, or add runtime-capability tags
+  to sidecar metrics + scheduler placement. Job record: docs/ssot/jobs/infrastructure/2026-11-26-dispatch-queue-approval-gate.yml'
+ref: OPS-1437
+comms:
+- at: 2026-11-26 13:00
+  from: devin
+  text: card captured via board-api
