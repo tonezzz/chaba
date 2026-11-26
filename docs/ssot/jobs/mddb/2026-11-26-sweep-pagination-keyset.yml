@@ -1,0 +1,82 @@
+title: mddb sweep pagination — offset instability fix (sort=key + meta filter + cap-aware pages + convergence)
+date: '2026-11-26'
+card: sweep-pagination-offset-keyset-for-mddb-5afeca
+host: tony-dell (worktree); targets idc03 :11023/:11026, idc02 :11025
+
+api_support: |
+  /v1/search has NO keyset/cursor/range param in any deployed or current
+  version. Verified in source: fork checkout ~/CascadeProjects/mddb-fork
+  (v2.15.4+patches) and upstream tags v2.18.10 / v2.19.13 — SearchRequest
+  is {collection, filterMeta, filter, sort, asc, limit, offset} only;
+  searchDocuments() materializes the whole live collection, sorts in
+  memory, then slices [offset:offset+limit]. Deployed versions confirmed
+  via /health: idc03 leader+ops = 2.18.10, idc02 ada-ops = 2.15.3.
+  filterMeta/MetaFilter operate on meta keys only — the doc key is not
+  filterable, so a client-side "WHERE key > last" emulation is impossible.
+
+  TWO better primitives exist on 2.18.x and were evaluated:
+  - `filter` (SRCH-017 MetaFilter, gt/gte/lt/lte/prefix/...): pushes the
+    expiry predicate into the meta index — verified live on :11026
+    (host-logs ts<cutoff returned only expired docs). Unknown JSON field
+    on 2.15.x → silently ignored → safe to send unconditionally.
+  - POST /v1/documents:deleteWhere (GO-045, added v2.18.8): TRUE keyset —
+    server-side filter + opaque nextCursor + limit ≤10000 + dryRun.
+    Verified live: dryRun matched=445,583 in 1.3s; real limit=10 deleted
+    10 with nextCursor. REJECTED as the sweep path anyway: applyWhere
+    runs the full per-doc write path (~0.5s+/doc — a limit=1000 call
+    exceeded the 600s client timeout), vs /delete-batch's parallel
+    lookup + single transaction. Keep it for small targeted purges.
+
+root_cause_refined: |
+  Three stacked bugs, only one of which the card named:
+  1. Default sort is updatedAt (sortDocs default branch) — reshuffles on
+     EVERY write, so the offset window was maximally unstable under
+     concurrent bulk writes. sort=key asc pins a write-stable order.
+  2. mddb 2.18.x caps /search limit at 1000 (X-Limit / X-Limit-Capped
+     headers, ResolveTopK). Scripts requested 5000 and terminated on
+     len(page) < 5000 — so every sweep scanned ONLY the first ~1000
+     docs and reported success. This is why device-telemetry dry-run went
+     from "expired 311/1000" to "expired 7582/21684" after the fix, and
+     why host-logs accumulated ~445k expired docs.
+  3. Residual offset shift under foreign writes → bounded re-sweep passes.
+
+fix: |
+  scripts/ada/prune-old-docs.py:
+  - /search now sends sort=key, asc=true and filter={ts_key:{lt:cutoff}}
+    (server-side expiry predicate where supported).
+  - post() captures response headers; page loop terminates on
+    len(page) < min(PAGE_SIZE, X-Limit) instead of < PAGE_SIZE.
+  - sweep wrapped in MAX_PASSES=5: re-enumerates while a pass deleted
+    >0 (skipped docs converge same-run); stops early on dry-run or a
+    zero-delete pass. Report line gains a pass count.
+  - Deletes still go through /delete-batch chunks of 1000.
+  scripts/device-telemetry/prune.py: same sort/cap/passes treatment;
+  NO meta filter — its predicate is on the doc key (<dev>/<epoch>) which
+  meta filters cannot express, and */latest + _watch/* must be excluded.
+
+verify: |
+  py_compile clean. Live dry-runs:
+    device-telemetry: expired 7582, would delete 7582/21684, 1 pass
+      (pre-fix: 311/1000 — proves the cap early-exit)
+    ada-ha-events-dev: 0 expired on :11025 (filter ignored, full scan)
+      and :11023 (filter honored, 0 matched) — both correct
+    host-logs :11026 filter probe: only ts<cutoff docs returned
+  Real deletes verified end-to-end via deleteWhere limit=10 probe
+  (10 expired host-logs docs removed) and the limit=1000 timing probe.
+  No full live sweep run — first real run is the nightly timer.
+
+backlog_warning: |
+  host-logs on :11026 holds ~445k expired docs (3d policy) accumulated
+  while the cap bug limited sweeps to the first 1000 keys. Drain rate is
+  bounded by delete throughput inside the 600s export-transcripts
+  subprocess timeout — expect multi-day convergence via nightly runs.
+  Faster one-off option per docs/kb/mddb-prune-compact.md: compact +
+  filter rebuild drops >3d docs at import. device-telemetry has ~7.5k
+  expired of 21.7k — one nightly run drains it.
+
+deploy_notes: |
+  prune-old-docs.py is invoked from exec-checkouts (export-transcripts
+  chain + lane-retention) — lands on merge + chaba-repo-sync.
+  device-telemetry/prune.py runs an INSTALLED copy on idc03
+  (~/.local/share/device-telemetry/prune.py) — after merge run
+  scripts/device-telemetry/install.sh prune on idc03 to activate.
