@@ -1,7 +1,7 @@
 id: embed-lane-banks-bounded-run
 title: 'embed-lane-banks: bound each daily run to its 45min window'
 column: doing
-updated: 2026-11-26 19:07
+updated: 2026-11-26 19:09
 brief: 'Daily embed-lane-banks oneshot on idc02 is SIGTERMd at TimeoutStartSec=2700 after copying only ~3200/74940
   docs of ada-ha-bank-devin-handoff: the queue throttle (depth>=3000) plus CPU-only bge-m3 embedding yields ~15
   docs/min. Ollama and mddb-embed are healthy; queue drained to 0, dropped=0, no data loss. Result=timeout every
@@ -67,6 +67,10 @@ comms:
     so the run exits 0 with copied progress and the daily timer resumes via key-set diff. queue-hi 3000 / dropped=0
     unchanged. Re-rendered idc02 unit + swept stale generated drift (cline retirement leftovers, wp-comment-sync,
     ansible-runner-tool-guard) so test_render_jobs GeneratedTree is'
+- at: 2026-11-26 19:09
+  from: chaba
+  text: 'merge-sweep: devin-task-20261126-190355-make-the-daily-run-finish-insi no longer active on con01 but card
+    still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -74,5 +78,7 @@ action:
   lane_source: kw
   runner: con01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-26 19:09
 claim:
   since: 2026-11-26 19:02
