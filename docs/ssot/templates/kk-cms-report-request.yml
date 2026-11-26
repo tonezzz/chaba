@@ -1,0 +1,61 @@
+# Kanban card template — request a report into Kaewta's CMS memory.
+# Copy to docs/ssot/kanban/cards/<id>.yml, then POST the card via board-api.
+# This is the "ask Tony to create a report" path: Kaewta has no CMS write
+# tool on her prod lane (cms_publish_page/cms_edit dropped 2026-10-14).
+# Writer: scripts/ada/cms-report-add.py (--dry-run first, then --apply).
+
+id: kk-cms-report-request-template   # rename to the real card id (slug)
+title: Create CMS report for Kaewta — <short topic>
+column: backlog
+priority: medium
+brief: >
+  KK needs a report Ada can recall later. Fill the five fields below, run
+  the writer dry, then apply; verify the page is readable and indexed.
+spec: >
+  REQUESTED REPORT — fill before queueing:
+
+  1. Slug (kebab-case, 1-80 chars): <slug>
+  2. Title: <title>
+  3. Domain (canonical from docs/ssot/infrastructure/ssot.cms.yml): <domain>
+  4. One-line summary for the CMS catalog: <summary>
+  5. Content: write the report body to <content-file> (markdown). Include
+     the facts verbatim; this is what Ada will read in a later session.
+  6. Source / evidence: <source> (required if public=yes)
+  7. Public static site opt-in: no   # yes only after personal-data scan
+
+  DRY RUN (no write) from a chaba checkout:
+    python3 scripts/ada/cms-report-add.py --lane kk --slug <slug> \
+      --title '<title>' --content-file <content-file> --domain <domain> \
+      --summary '<summary>' --card <this-card-id> --source '<source>' \
+      --dry-run
+
+  APPLY (after review):
+    python3 scripts/ada/cms-report-add.py --lane kk --slug <slug> \
+      --title '<title>' --content-file <content-file> --domain <domain> \
+      --summary '<summary>' --card <this-card-id> --source '<source>' \
+      --apply
+
+  VERIFY:
+    - writer prints verified:true, indexed:true, bytes>0
+    - GET /v1/get on ada-cms-pages-kk for the slug returns the content
+    - reports-index in ada-cms-pages-kk lists the new slug
+    - next session: say the topic to Kaewta; she should read the page and
+      answer from it (not "I don't have a report")
+  SAFETY:
+    - existing slug is never overwritten without --overwrite
+    - --public requires --source; no direct MediaWiki or CMS API writes
+    - no prod Kaewta tool-surface change is part of this request
+
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+
+autonomy: t2
+auto_done_when:
+  - verified_true:
+      - writer returned verified:true and indexed:true
+  - page_exists: <slug>
+done_note: >
+  Report landed in ada-cms-pages-kk, read back, indexed, and Kaewta answered
+  the covered question from it in a fresh session.

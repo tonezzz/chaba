@@ -178,3 +178,16 @@ Two consecutive runs after this change scored **1.0** (3/3) at 21:04 and
 publish/confirm behaviour. `no_successful_calls_except` in
 `scenario-live.py` ignores calls the lane gate refused; 5 unit tests in
 `ada-voice/tests/test_scenario_live_harness.py` cover both behaviours.
+
+### Creating a requested report for Kaewta
+
+Prod Kaewta has no arbitrary CMS write tool (`cms_publish_page`/`cms_edit`
+were dropped 2026-10-14; `wp_post`/`cpt_post` go to WordPress). A page she
+must recall later is created out of band with
+`scripts/ada/cms-report-add.py --lane kk ... --dry-run` then `--apply`.
+The writer pins lane→collection, validates slug/domain/summary against SSOT,
+refuses overwrite without `--overwrite`, posts with `contentMd` (the
+camelCase MDDB field — `content_md` silently stores an empty body), reads
+the page back, and regenerates `reports-index`. Card template:
+`docs/ssot/templates/kk-cms-report-request.yml`; 6 unit tests in
+`tests/ada/test_cms_report_add.py`.
