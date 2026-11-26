@@ -1,7 +1,7 @@
 id: timer-alert-mn01-mn01-canary
 title: Timer mn01-canary on mn01 failing
 column: backlog
-updated: 2026-11-26 08:44
+updated: 2026-11-26 12:16
 priority: high
 tags:
 - timer-alert
@@ -105,6 +105,13 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-26 08:25) of `mn01-canary.service` on `mn01` result=exit-code — investigate
     journal: `journalctl --user -u mn01-canary.service` on the host. See CMS `timer-timeline-mn01`.'
+- at: 2026-11-26 12:16
+  from: devin
+  text: 'READ-ONLY RECHECK 2026-11-26 11:2x (+07) via SFTP + Ansible: mn01 itself is healthy; this card is stale.
+    Canary''s 08:25 failure was ''ada-voice behind origin (local 8a31a71 != remote 5a5379a)''. SFTP evidence: ~/.git/refs/heads/main
+    on mn01 now contains 5a5379a3eefb2c897fbfebc88b3dcc0f6806d896 and the loose object .git/objects/5a/5379a3...
+    exists, both mtime 08:25; GitHub origin/main verified as the same SHA from idc03. So the fast-forward was completed
+    at 08:25, the same minute /etc/ssh/sshd_conf'
 action:
   status: done
 claim: {}
