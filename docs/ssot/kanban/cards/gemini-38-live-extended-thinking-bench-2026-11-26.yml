@@ -1,6 +1,6 @@
 id: gemini-38-live-extended-thinking-bench-2026-11-26
 title: Bench gemini-3.8-live-extended-thinking against the 3.8-live pin
-column: backlog
+column: doing
 updated: 2026-11-26 18:16
 brief: Run the 20-fixture voice bench plus barge-in and soak probes on the extended-thinking Live variant; compare
   to the promoted 3.8-live baseline before any pin decision.
@@ -31,9 +31,15 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-26 18:16
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: paid_frontier
   lane_source: kw
-claim: {}
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-26 18:16
