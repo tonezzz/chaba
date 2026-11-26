@@ -1,7 +1,7 @@
 id: oswe-eval-ada-test-tab
 title: Self-deploy OpenSWE (Robin) on tony-dell + Ada Test tab on ada-ha
 column: backlog
-updated: 2026-11-26 20:52
+updated: 2026-11-26 21:13
 brief: Evaluate OpenSWE/Robin; self-deploy on tony-dell dev-mode, expose like ada-ocb, add 'Ada Test' sidebar tab
   (OSWE first) on ada-ha chaba-admin.
 priority: medium
@@ -273,6 +273,20 @@ comms:
   from: chaba
   text: 'TRIAGE 2026-11-26 batch 2: DECISION NEEDED: multi-step self-deploy (toolchain prep, OpenSWE backend, dashboard
     tab sync) - dedicated session, not a bounded runner dispatch.'
+- at: 2026-11-26 21:13
+  from: chaba
+  text: 'OSWE/Ada Test 2026-11-26 (1/3) EVAL: open-swe = Robin, MIT software factory on Deep Agents+LangGraph (clone
+    0dd610f). Plan -> sandbox implement -> validate -> PR; PR review, PR chat, /baby-sit CI watch, GitHub/Slack/Linear
+    entry. Upstream: active dev, breaking changes; self-deploy needs Managed Deep Agents (vendor/ not MIT). Sandboxes
+    have powerful tools+network — prefer local bridged-thread mode. Verdict: good reference for plan->PR/review;
+    not deployable until gates land. No eval tasks run.'
+- at: 2026-11-26 21:13
+  from: chaba
+  text: 'OSWE/Ada Test (2/3) LANDED: tony-dell toolchain verified: uv 0.13.7, rustup 1.29.3, cargo 1.99.1, node
+    v26.13.1, pnpm 12.18.0, py3.14.4, podman+postgres :5433; no install needed. Ada Test tab LIVE on ada-ha: push-dashboard.py
+    --mutate over HA websocket, panel path=ada-test, iframe https://oswe.surf-thailand.com/?v=1 (OSWE first/only),
+    after OpenChamber. Readback 17->18 views; sync-ssot-from-live.sh --instance ada-ha ran, snapshot+SSOT updated.
+    Dev stack stopped; no secrets printed.'
 requests:
 - id: 4-gated-items-needed-to-boot-robin-optio-41e2b0
   ask: '4 gated items needed to boot Robin (options in spec): (1) LangSmith account + API key — agent loop + cloud
