@@ -1,7 +1,7 @@
 id: runner-tool-drift-fleet
 title: Runner tool drift from audit-runner-tools.yml — re-arm convergence
 column: backlog
-updated: 2026-11-26 12:24
+updated: 2026-11-26 12:31
 brief: Runner tool drift from audit-runner-tools.yml — re-arm convergence
 priority: high
 program: chaba-ci
@@ -35,3 +35,15 @@ comms:
     was run without --dry-run. The findings are genuine (idc02 runner-agent DRIFT, con01 devin-dispatch DRIFT, several
     MISSING-DEST). It is now the canonical drift card: run ansible/playbooks/deploy-runner-tools.yml (check then
     apply), then re-audit with runner-drift-rearm.py --verify to close.'
+- at: 2026-11-26 12:31
+  from: chaba
+  text: classified as codemod (kw:drift conf 1.00)
+- at: 2026-11-26 12:31
+  from: chaba
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: codemod
+  lane_source: kw
+claim: {}
