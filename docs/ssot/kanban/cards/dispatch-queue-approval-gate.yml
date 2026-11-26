@@ -1,7 +1,7 @@
 id: dispatch-queue-approval-gate
 title: Dispatch queue approval gate (RBAC-lite) — /home/tony/ansible on idc02
 column: doing
-updated: 2026-11-26 12:39
+updated: 2026-11-26 13:02
 priority: medium
 tags:
 - dispatch
@@ -113,6 +113,13 @@ comms:
   text: 'started on tony-macbook: pulled /home/tony/ansible queue+playbooks via sftp (idc02 ssh is sftp-only, no
     exec). Implementing approval gate locally, will test against live Redis, upload via sftp. git init+remote on
     idc02 not possible without exec — will document.'
+- at: 2026-11-26 13:02
+  from: devin
+  text: 'DONE — approval gate live on /home/tony/ansible@idc02 (sftp-only host; files verified byte-identical).
+    queue_manager: user resolution + --as-user, approve/reject/pending subcommands, queue:pending:{p} holding, approval_policy.yml
+    (gpus>0|prio<=2|gpu tag), scheduler 24h expiry sweep, queue_operations approve/reject/pending ops. Verified
+    live: gated enqueue->awaiting_approval (queue empty), approve->scheduler dispatched->completed on omen, reject->never
+    dispatched (list --status rejected). Job rec'
 action:
   type: dispatch
   status: running
