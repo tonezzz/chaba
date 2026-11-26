@@ -1,7 +1,7 @@
 id: line-lane-lock-retire
 title: Retire LINE_LANE_LOCK once chat_send targeting is verified
 column: doing
-updated: 2026-11-26 23:23
+updated: 2026-11-26 23:26
 priority: low
 action:
   type: dispatch
@@ -301,6 +301,11 @@ comms:
     primer injected 8 lesson(s): no chaba-audit.service/cha; [kanban-dispatch-lane-doesn-t-report-read-1ee640] primer
     injected 8 lesson(s): [; [llm-provider-verification-2026-11] 2026-11-23 — step 4 attempted (read-only key; [publish-promote-knowledge-capture-ssot-w-d34a39]
     Phase B+ an'
+- at: 2026-11-26 23:26
+  from: devin
+  text: 'Phase 1 verify in progress: relay /send chain confirmed in ada-voice origin/main (to->session chat->LINE_LANE_DEFAULT->allowed-user;
+    LINE_LANE_LOCK rewrite then LINE_LANE_ALLOW 403). Now checking live line-bot.env + per-lane ADA_INSTANCE_ID
+    on idc03.'
 spec: 'DECISION 2026-11-26 Tony: verify then retire. Phase 1 only - read-only verification that chat_send lane targeting
   uses LINE_LANE_ALLOW and the last-room fallback as documented; report exact config locations and observed behavior.
   Do NOT remove the line-lane lock or change routing. Done: verification report posted; retirement stays gated on
