@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-memory
 title: Timer ada-scenario-memory on idc03 failing
 column: backlog
-updated: 2026-11-26 10:34
+updated: 2026-11-26 11:20
 priority: high
 tags:
 - timer-alert
@@ -128,6 +128,12 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-26 08:38) of `ada-scenario-memory.service` on `idc03` result=exit-code
     — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-26 11:20
+  from: devin
+  text: 'EXPECTED REOPEN 2026-11-26 10:25: the sweep reopens from the stale failed last-run (lock contention at
+    08:38/06:25), not a new failure. The retry watcher is active and waiting for the shared :8199 lock held by the
+    long-running ada-scenario-smoke suite; no new run is due until that clears. Leave in backlog — it will turn
+    green and auto-close after the queued run.'
 requests:
 - id: the-timer-ada-scenario-memory-fbdac5
   ask: The timer ada-scenario-memory.service on idc03 failed with a resource error because EnvironmentFile ~/.config/secrets/ada-ha-tony.env
