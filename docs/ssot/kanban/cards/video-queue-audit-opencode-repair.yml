@@ -1,7 +1,7 @@
 id: video-queue-audit-opencode-repair
 title: 'OpenCode artifact repair: video queue audit'
-column: doing
-updated: 2026-11-26 15:26
+column: review
+updated: 2026-11-26 15:30
 brief: Retry ADA-1046 with a write-capable artifact contract so the queue audit report lands and verifies.
 priority: high
 program: ai-workforce
@@ -29,14 +29,16 @@ action:
     - read-only
     - recommendation
   lane: free_lane
-  status: running
+  status: done
   agent_profile: artifact-write
-  result: 'exit=0 fetnai5s7HVsDT7B","type":"step-finish","tokens":{"total":41160,"input":2332,"output":34,"reasoning":0,"cache":{"write":0,"read":38794}},"cost":0}}
-    | devin-task-video-queue-audit-opencode-repair-1793682775.service: Consumed 14.057s CPU time.'
+  result: 'exit=0 triage, and a lifecycle-doc root-path fix) — no claims were released and no renders started, per
+    scope. | devin-task-20261126-151547-run-scripts-devnest-video-queu.service: Consumed 21.974s CPU time, 616.8M
+    memory peak, 0B memory swap peak.'
   sweep:
     dirty: 1
   runner: idc02
   attempts: 1
+  verified: true
 ref: AUD-1048
 comms:
 - at: 2026-11-03 12:11
@@ -339,6 +341,32 @@ comms:
     preview verified live on Drive (bytes match manifest); preview-v2 confirmed deliberately held (missing -resume-authorized
     gate). Zero drift vs 2026-11-24. Artifact: reports/card-runner/video-queue-status-opencode.md + raw JSON, committed
     on dispatch branch b96264d8d8 (reports/card-runn'
+- at: 2026-11-26 15:30
+  from: idc02
+  text: 'finished (ok): exit=0 triage, and a lifecycle-doc root-path fix) — no claims were released and no renders
+    started, per scope. | devin-t'
+- at: 2026-11-26 15:30
+  from: chaba
+  text: ran under executor=devin provider=devin profile=artifact-write
+- at: 2026-11-26 15:30
+  from: chaba
+  text: banked 760 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 15:30
+  from: chaba
+  text: pushed dispatch/20261126-151547-run-scripts-devnest-video-queu to origin
+- at: 2026-11-26 15:30
+  from: chaba
+  text: 'test gate skipped: pre-existing baseline test failure'
+- at: 2026-11-26 15:30
+  from: chaba
+  text: 'test gate: failure(s) identical to base (pre-existing) — not blocking: tests/board/test_runner_tooling_contract.py::ToolingPinTest::test_pin_hashes_match_sources'
+- at: 2026-11-26 15:30
+  from: chaba
+  text: auto-merged ea9ed8e5 (dispatch/20261126-151547-run-scripts-devnest-video-queu) → origin/master
+- at: 2026-11-26 15:30
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261126-151547-run-scripts-devnest-video-queu,
+    branch dispatch/20261126-151547-run-scripts-devnest-video-queu'
 review_kind: verify
 claim:
   since: 2026-11-26 15:14
