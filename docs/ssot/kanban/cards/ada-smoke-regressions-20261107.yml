@@ -1,7 +1,7 @@
 id: ada-smoke-regressions-20261107
 title: Smoke tier regressions — 4 fails surfaced after runner repair
 column: backlog
-updated: 2026-11-26 20:32
+updated: 2026-11-26 20:41
 priority: medium
 tags:
 - ada
@@ -360,13 +360,18 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:41
+  from: chaba
+  text: classified as free_lane (kw:report conf 1.00)
+- at: 2026-11-26 20:41
+  from: tony
+  text: queued for processing
 action:
   type: dispatch
-  status: idle
+  status: queued
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  runner: tony-omen
   attempts: 1
   result: 'exit=0 e-20261124-214616-first-live-smoke-run-in-11-day.md`; final verdict posted to card comms. | devin-task-20261124-214616-first-live-smoke-run-in-11-day.service:
     Consumed 55.750s CPU time over 11min 13.124s wall clock time, 968.8M memory peak.'
