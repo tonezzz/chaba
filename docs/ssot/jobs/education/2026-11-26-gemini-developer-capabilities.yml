@@ -1,9 +1,10 @@
 title: Wiki education — Gemini developer capabilities beyond the 3.8 Live pin
 subtitle: >
   Live catalog and Decisions API probe, official Gemini skill and docs
-  research, then one card-gated /publish to the wiki-education sink.
+  research, then a card-gated /publish to the wiki-education sink; re-published
+  on 2026-11-26 with the free-tier verification sweep and corrected claims.
 icon: education
-version: 1
+version: 2
 
 card: gemini-dev-capabilities-research-2026-11-26  # ADA-1440
 date: 2026-11-26
@@ -20,6 +21,12 @@ delivered:
     revid: 792
     event_id: gemini-dev-capabilities-2026-11-26
     idempotency_key: pub-191728ddbca5376b7604b6b0
+    revision_2:
+      revid: 796
+      event_id: gemini-dev-capabilities-free-tier-sweep-2026-11-26
+      idempotency_key: pub-f02494db4d694bd7b142b12da5ec29fc
+      sink: wiki-education
+      reason: "Fold in the free-tier Interactions sweep, close the answered eval questions, correct stale explicit-caching and thinking-config claims."
     topic: gemini-developer-capabilities
     level: working
     next_review: 2026-12-10
@@ -30,6 +37,11 @@ delivered:
     - "gemini-decision-1 probe returned noul confidence 0.9703 with 96 input / 0 output tokens"
     - "unexplored surfaces: Interactions API (previous_interaction_id, v1), Decisions API (v1beta), Managed Agents (v1beta), official gemini-api-dev skill, thinking_level, structured output, caching/batch, TTS, computer-use acknowledgement"
     - "no existing wiki lesson covered these surfaces before this publish (230 lessons listed, filtered)"
+    - "revision 2: gemini-3.8-live-extended-thinking 20/20 ok but zero tool calls; keep gemini-3.8-live as sole voice pin"
+    - "revision 2: gemini-decision-1 8/10 agreement with zero output tokens - strong reject gate, not approve gate"
+    - "revision 2: gemini-api-dev skill trial 87.5% vs 25% with vs without on a paired four-run task family"
+    - "revision 2: lite-model Interactions eval 6/6 tool calls and 6/6 recall; 20-turn state saved only 2.6% input tokens"
+    - "revision 2: 500/day free generation cap left thought summaries, image generation and OpenAI compatibility unverified; scheduled retry after reset"
 
 guardrails:
   - "No billing, key, gateway, or model-pin changes."
@@ -43,14 +55,18 @@ activation_gate:
   - "DONE 2026-11-26: live catalog probe and Decisions API probe completed read-only."
   - "DONE 2026-11-26: user explicitly authorized publication (answer to the scope question)."
   - "DONE 2026-11-26: POST /publish kind=lesson, meta format=wikitext + wiki_title/topic/level/source/learned_at/next_review/status, sinks=['wiki-education'] -> delivered, pageid 368 revid 792."
+  - "DONE 2026-11-26: user authorized re-publish with the free-tier sweep; POST /publish sinks=['wiki-education'] -> delivered, same pageid 368 revid 796."
 
 verify:
   - "DONE 2026-11-26: POST /lesson {op:get, source=wiki, topic=gemini-developer-capabilities} -> ok, slug lesson-34d534c1f525, Education:Gemini-Developer-Capabilities-2026-11-26, full body present."
   - "DONE 2026-11-26: key/billing/gateway/model-pin files untouched; only the KB doc and this job yml added to git."
   - "DONE 2026-11-26: card ADA-1440 closed via board-api /action."
+  - "DONE 2026-11-26: re-publish re-read via POST /lesson -> 11,277 chars, section 4 present, no key names or project IDs in body."
 
 remaining:
-  - "Evaluate gemini-3.8-live-extended-thinking on the same 20-fixture voice bench before any Live pin change."
-  - "Scope an eval of gemini-decision-1 as a cheap triage/rubric gate."
-  - "Trial the official gemini-api-dev skill in a Gemini API coding task."
+  - "DONE 2026-11-26: 20-fixture voice bench on gemini-3.8-live-extended-thinking returned zero tool calls; gemini-3.8-live stays sole voice pin."
+  - "DONE 2026-11-26: gemini-decision-1 evaluated as a reject gate; approve gate still needs label review."
+  - "DONE 2026-11-26: official gemini-api-dev skill installed and trialled."
+  - "After the daily quota reset, complete the three unverified surfaces (thought summaries, inline-image generation, OpenAI compatibility) via the scheduled retry on ADA-1451."
+  - "Gemini 4 text-agent eval still needs paid capacity; separate go-ahead tracks that."
   - "Re-check the catalog before reusing any model ID; this page is a dated snapshot."
