@@ -1,7 +1,7 @@
 id: con01-runner-pilot-smoke-2
 title: con01 runner pilot smoke 2 — runner-agent dispatch path
-column: backlog
-updated: 2026-11-26 10:38
+column: doing
+updated: 2026-11-26 11:09
 brief: Low-risk con01 runner-agent dispatch pilot. Dispatch a tiny verification task on the chaba repo via devin-dispatch
   and confirm claim/start/close on con01.
 priority: low
@@ -23,10 +23,11 @@ action:
   - con01
   - dispatch
   target_host: con01
-  status: queued
+  status: running
   lane: free_lane
   lane_source: jevos
-  attempts: 0
+  attempts: 1
+  runner: con01
 comms:
 - at: 2026-11-26 09:36
   from: chaba
@@ -102,6 +103,9 @@ comms:
 - at: 2026-11-26 10:38
   from: chaba
   text: 'con01 retry backoff: fail 1/3 — next claim not before 11-26 05:08'
+- at: 2026-11-26 11:09
+  from: con01
+  text: claimed
 ref: OPS-1428
 claim:
-  since: 2026-11-26 10:35
+  since: 2026-11-26 11:09
