@@ -1,7 +1,7 @@
 id: line-lane-lock-retire
 title: Retire LINE_LANE_LOCK once chat_send targeting is verified
 column: backlog
-updated: 2026-11-26 21:01
+updated: 2026-11-26 21:03
 priority: low
 action:
   type: dispatch
@@ -268,6 +268,9 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-26 21:03
+  from: chaba
+  text: 'idc02 defers: runner at local cap (3/3) — remote slots unaffected'
 spec: 'DECISION 2026-11-26 Tony: verify then retire. Phase 1 only - read-only verification that chat_send lane targeting
   uses LINE_LANE_ALLOW and the last-room fallback as documented; report exact config locations and observed behavior.
   Do NOT remove the line-lane lock or change routing. Done: verification report posted; retirement stays gated on
