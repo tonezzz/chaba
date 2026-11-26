@@ -24,8 +24,8 @@ def main():
     data = yaml.safe_load(APPS_YML.read_text())
     services = []
     for app in data.get("apps", []):
-        host = app.get("host", "tony-dell").replace("-", "_")
-        host_url = app.get("host_url", "https://tony-dell.taila0626a.ts.net")
+        host = app.get("host", "idc02").replace("-", "_")
+        host_url = app.get("host_url", "https://idc02.taila0626a.ts.net")
         services.append(
             {
                 "id": f"app-{app['id']}",
@@ -54,8 +54,9 @@ def main():
     print(f"Wrote {len(services)} app health checks to {OUT_YML}")
 
     # Known Caddy file_server SSH aliases. Add new app hosts here as they land
-    # in ssot.apps.yml.
-    SYNCABLE_HOSTS = {"tony-dell", "mn01"}
+    # in ssot.apps.yml. idc02 is NOT here — its /apps origin is web.service
+    # ~/web-srv/public fed by web-srv-sync.timer, not ~/.config/caddy/public.
+    SYNCABLE_HOSTS = {"mn01"}
 
     # Deploy public apps to Caddy file_server roots on each distinct tailnet host.
     # Caddy serves /apps/* from this directory, not from the repo path.

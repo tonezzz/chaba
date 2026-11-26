@@ -59,18 +59,23 @@ apps-hosts:
     path: /apps
     apps:
       - cams
-  tony-dell:
-    descriptions: Apps on testing tony-dell
-    host_url: https://tony-dell.taila0626a.ts.net
+  idc02:
+    descriptions: Apps on the idc02 /apps web origin (~/web-srv/public behind web.service; mn01 mirrors via caddy public dir)
+    host_url: https://idc02.taila0626a.ts.net
     path: /apps
+    note: "replaces retired tony-dell group (web origin moved to idc02 2026-10-20, OPS-0731) and the yomi group (its host_url still pointed at tony-dell; yomi apps are static dirs under /apps/yomi* on the same web origin). ada-voice/ada-ha-tony/ada-ha-michael/speaker-enroll live on idc03 — see idc03 group."
     apps:
       - cams
       - tony-live
       - node-red
-      - ada-voice
       - gev
       - gev-direct
       - vcast
+      - yomi
+      - yomi-daily
+      - yomi-daily2
+      - yomi-memory
+      - yomi-search
   mn01:
     descriptions: Apps on mn01 portable home host
     host_url: https://mn01.taila0626a.ts.net
@@ -85,6 +90,8 @@ apps-hosts:
       - obsidian
       - ada-ha-tony
       - ada-ha-michael
+      - ada-voice
+      - speaker-enroll
   chaba-h3-apps:
     descriptions: Apps on chaba-h3
     host_url: https://chaba.h3.gizmo-thailand.com
@@ -103,16 +110,6 @@ apps-hosts:
     path: /demos
     apps:
       - track4
-  yomi:
-    descriptions: Yomi group
-    host_url: https://tony-dell.taila0626a.ts.net
-    path: /apps/yomi
-    apps:
-      - yomi
-      - yomi-daily
-      - yomi-daily2
-      - yomi-memory
-      - yomi-search
 
 interests:
   - legal
