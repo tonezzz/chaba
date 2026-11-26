@@ -1,7 +1,7 @@
 id: apps-yml-host-url-still-tony-dell-x42
 title: 'apps.yml: 42 entries still host_url tony-dell + canary blind to deployed apps index'
 column: backlog
-updated: 2026-11-26 20:33
+updated: 2026-11-26 20:40
 priority: medium
 tags:
 - ops
@@ -322,16 +322,21 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:40
+  from: chaba
+  text: classified as devin (fallback conf 0.27)
+- at: 2026-11-26 20:40
+  from: tony
+  text: queued for processing
 spec: Migrate the 42 entries in stacks/web/public/apps/apps.yml that still carry host_url https://tony-dell.taila0626a.ts.net
   to the correct host configuration, and ensure the consumer canary covers the deployed apps index. The repository
   is chaba and the host is tony-dell. The done-condition is verified when zero entries in stacks/web/public/apps/apps.yml
   reference tony-dell.taila0626a.ts.net and the consumer canary successfully greps the deployed apps index.
 action:
   type: dispatch
-  status: idle
+  status: queued
   lane: devin
   lane_source: fallback
-  runner: tony-macbook
   attempts: 1
   result: 'exit=0 /infrastructure/2026-11-24-apps-yml-host-url-migration.yml` and the dispatch-outcome doc. | devin-task-20261124-215344-migrate-the-42-entries-in-stac.service:
     Consumed 2min 2.740s CPU time over 21min 51.313s wall clock time, 1G memory peak.'
