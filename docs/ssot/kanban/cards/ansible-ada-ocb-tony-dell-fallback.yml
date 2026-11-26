@@ -1,7 +1,7 @@
 id: ansible-ada-ocb-tony-dell-fallback
 title: ADA-OCB tony-dell fallback probe/contract alignment
-column: doing
-updated: 2026-11-26 18:09
+column: review
+updated: 2026-11-26 18:18
 brief: 'Follow-up from OPS-1424: tony-dell ocb_pane fallback probe incomplete in ada-ocb-verify; align pin/patch/service
   state or harden verify for missing fallback probe.'
 priority: medium
@@ -95,9 +95,16 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261126-174901-context-ops-1424-ansible-prep- on con01 still dirty —
     7 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-26 18:18
+  from: con01
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261126-174901-context-ops-1424-ansible-prep-.service:
+    Failed to ope'
+- at: 2026-11-26 18:18
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   runner: con01
@@ -105,5 +112,9 @@ action:
   sweep:
     stale_running: 2026-11-26 18:10
     dirty: 7
+  result: 'exit=0 ice: No such file or directory | devin-task-20261126-174901-context-ops-1424-ansible-prep-.service:
+    Failed to open /run/user/1001/systemd/transient/devin-task-20261126-174901-context-ops-1424-ansible-prep-.service:
+    No such file or directory'
 claim:
   since: 2026-11-26 17:47
+review_kind: verify
