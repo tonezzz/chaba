@@ -1,0 +1,39 @@
+date: 2026-11-26
+title: Drop 10 cast-loop prompt patch refreshed for ada-voice prompt slim
+domain: ada
+job: card cast-loop-breaker-test-failure (ref MED-1462), devin-dispatch
+host: con01 (dispatch worktree)
+repo: chaba
+
+summary: >
+  tests/ada/test_cast_loop_breaker.py::test_patches_apply_clean went red on
+  origin/master because backend/realtime_provider.cast-loop.patch no longer
+  applied to ada-voice. Root cause was upstream drift, not the wiki/doc work:
+  ada-voice f8d8c9a (ada-prompt-slim, 2026-11-23) rewrote
+  DEFAULT_ADA_INSTRUCTIONS from verbose paragraphs into one-line duty rules,
+  so the staged patch's context lines rotted. The other five drop-10 patches
+  still applied.
+
+fix: >
+  Re-staged realtime_provider.cast-loop.patch against ada-voice origin/main
+  @ 2c5a9e0, keeping the same three rules (TARGET FIDELITY, FRUSTRATION
+  BUDGET, FAILED-ACTION LOOP) but rewritten as one-line bullets matching the
+  post-slim instruction style. The cast-loop drop test now materializes
+  ada-voice origin/main (new tests/ada/_checkout.py materialize_main(),
+  HEAD fallback) instead of the possibly-stale local checkout HEAD, so a
+  behind-origin ada-voice checkout cannot rot the guard again. README drop-10
+  install base updated to origin/main @ 2c5a9e0.
+
+verification:
+  - "python3 -m pytest tests/ada/test_cast_loop_breaker.py -q -> 1 passed, 1 skipped (scenario test skips on con01 - no ada-voice .venv)"
+  - "python3 -m pytest tests/ada/test_cast_loop_breaker.py::test_patches_apply_clean -q -> 1 passed"
+  - "merged-tree smoke gate (dispatch_repos.py REPO_TESTS chaba set) -> 328 passed in 155s"
+  - "python3 -m pytest tests -x -q on con01 -> collection ERROR tests/ops/test_gs_tools.py (no numpy/PIL in system python or ~/CascadeProjects/chaba/.venv); not a code regression - the merge gate uses the smoke set above, which is green."
+  - "tests/ada -q on con01 still shows unrelated pre-existing failures (missing httpx/numpy deps + other rotted/deployed drop guards); out of scope for this card."
+
+notes: >
+  Against ada-voice origin/main the refreshed drop-10 set is all-applies.
+  chat_send_page and correction_command patch guards also diverge only
+  because con01's ada-voice checkout is 180 commits behind origin/main; they
+  apply cleanly vs origin/main. write-fidelity.patch is a deployed record
+  copy that has drifted post-merge on both HEAD and origin/main.

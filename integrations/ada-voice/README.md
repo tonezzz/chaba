@@ -828,12 +828,14 @@ Only the 5th/6th attempts hit `tv_action`, which correctly failed
   play X on the TV' lands here; unavailable/cast_verify-fail = one
   clause then stop.
 - `backend/realtime_provider.cast-loop.patch` — `realtime_provider.py`
-  DEFAULT_ADA_INSTRUCTIONS. Three discipline bullets: TARGET FIDELITY
-  (named destination binding; corrections re-issue to the named target;
-  never store a correction inverted), FRUSTRATION BUDGET (short/
-  repeated/corrective turns collapse replies to one clause — no offers,
-  no questions; a bare repeat is the signal), FAILED-ACTION LOOP (two
-  failures end initiative; a `stop_and_ask` result is binding).
+  DEFAULT_ADA_INSTRUCTIONS. Three discipline bullets in the post-slim
+  one-line style (refreshed 2026-11-26 after ada-voice `f8d8c9a` compacted
+  the prompt): TARGET FIDELITY (named destination binding; corrections
+  re-issue to the named target; never store a correction inverted),
+  FRUSTRATION BUDGET (short/repeated/corrective turns collapse replies
+  to one clause — no offers, no questions; a bare repeat is the signal),
+  FAILED-ACTION LOOP (two failures end initiative; a `stop_and_ask`
+  result is binding).
 - `tests/scenarios/cast_wrong_target_loop.yaml` — replay of the
   incident: delivered:0 cast fails honestly, unavailable entity
   refuses, stop_and_ask lands on the second cross-tool failure,
@@ -847,9 +849,9 @@ Only the 5th/6th attempts hit `tv_action`, which correctly failed
    ha.unavailable-precheck tool_runner.goal-loop common.goal-loop \
    tool_guide.target-fidelity realtime_provider.cast-loop; do git apply \
    <chaba>/integrations/ada-voice/backend/$p.patch; done`
-   — base `main` @ `5dc7665` (verified `git apply --check` clean on a
-   fresh clone); if a hunk no longer applies, re-dispatch rather than
-   hand-merging.
+   — base `origin/main` @ `2c5a9e0` (verified `git apply --check` clean
+   on a fresh archive 2026-11-26, after the `f8d8c9a` prompt slim); if a
+   hunk no longer applies, re-dispatch rather than hand-merging.
 2. `cp <chaba>/integrations/ada-voice/tests/scenarios/cast_wrong_target_loop.yaml
    tests/scenarios/`
 3. Gates: `python3 scripts/tool-lint.py`, `.venv/bin/python -m pytest
