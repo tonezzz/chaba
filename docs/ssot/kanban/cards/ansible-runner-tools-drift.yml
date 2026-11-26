@@ -1,7 +1,7 @@
 id: ansible-runner-tools-drift
 title: 'Ansible audit: runner tool drift detected'
 column: backlog
-updated: 2026-11-26 20:38
+updated: 2026-11-27 06:33
 spec: Read-only ansible audit-runner-tools detected drift/missing runner tools. Re-run playbooks/audit-runner-tools.yml;
   inspect reports or stdout; converge via approved sync flow.
 action:
@@ -78,3 +78,10 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-27 06:33
+  from: devin
+  text: 'ansible audit-runner-tools: 6 host(s) with drift/missing tools. fp=con01:1|idc02:1|idc03:1|mn01:1|tony-dell:1|tony-omen:1.
+    [{"host": "con01", "issues": ["DRIFT  runner-agent pin=4ed3afdb49f5 inst=38d84bc073da"]}, {"host": "idc02",
+    "issues": ["DRIFT  runner-agent pin=4ed3afdb49f5 inst=38d84bc073da"]}, {"host": "idc03", "issues": ["DRIFT  runner-agent
+    pin=4ed3afdb49f5 inst=38d84bc073da"]}, {"host": "mn01", "issues": ["DRIFT  runner-agent pin=4ed3afdb49f5 inst=38d84bc073da"]},
+    {"host": "tony-dell",'
