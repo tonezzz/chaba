@@ -1566,6 +1566,23 @@ def _apply_classify_at_queue(card: dict, a: dict) -> str | None:
                       f"auto-routed to executor=kk_mac_local "
                       f"(task_class={tc})")
             return None
+        # bounded classes also self-route to the claude lane
+        # (auto-route-bounded-card-classes-to-execu, PR #187
+        # follow-up) — same try-first contract: executor_source marks
+        # the pin classifier-owned, so a host that can't serve
+        # CLAUDE_LANES falls back to normal classification instead of
+        # starving the card. kk_mac wins first — it is the cheaper
+        # bounded lane for the classes both admit.
+        claude_fn = getattr(dr, "claude_route", None)
+        ct = claude_fn(card) if claude_fn else ""
+        if ct:
+            a["task_class"] = ct
+            a["executor"] = "claude"
+            a["executor_source"] = "queue"
+            comms_add(card, "chaba",
+                      f"auto-routed to executor=claude "
+                      f"(task_class={ct})")
+            return None
         lane, source, conf = dr.classify_lane(card, with_detail=True)
         a["lane"] = lane
         a["lane_source"] = source.split(":", 1)[0]
@@ -1851,6 +1868,7 @@ def do_claim(card: dict, body: dict) -> str:
     # action.executor is the contract — a claim that disagrees with it
     # is refused, not silently rewritten.
     ex = str(body.get("executor") or "").strip()
+    had_executor = bool(a.get("executor"))
     if ex:
         if ex not in dr.EXECUTORS:
             raise ValueError(
@@ -1862,15 +1880,33 @@ def do_claim(card: dict, body: dict) -> str:
         a["executor"] = ex
     tc = str(body.get("task_class") or "").strip()
     if tc:
-        # the kk_mac claim-time auto-route persists its resolved class
-        # atomically with the executor it just set — refuse anything
-        # that doesn't pair with kk_mac_local
-        if (ex or str(a.get("executor") or "")) != "kk_mac_local" \
-                or tc not in dr.KK_MAC_TASK_CLASSES:
+        # the kk_mac/claude claim-time auto-routes persist their
+        # resolved class atomically with the executor they just set —
+        # refuse anything that doesn't pair with an admitted class
+        pair_ex = ex or str(a.get("executor") or "")
+        pair_ok = (
+            (pair_ex == "kk_mac_local"
+             and tc in dr.KK_MAC_TASK_CLASSES)
+            or (pair_ex == "claude"
+                and tc in dr.CLAUDE_TASK_CLASSES))
+        if not pair_ok:
             raise ValueError(
-                "claim task_class needs executor=kk_mac_local and an "
-                f"admitted class {sorted(dr.KK_MAC_TASK_CLASSES)}")
+                "claim task_class needs executor=kk_mac_local/claude "
+                "and an admitted class "
+                f"{sorted(dr.KK_MAC_TASK_CLASSES | dr.CLAUDE_TASK_CLASSES)}")
         a["task_class"] = tc
+    esrc = str(body.get("executor_source") or "").strip()
+    if esrc:
+        # classifier-route provenance (claude auto-route): "queue" /
+        # "claim" marks the executor pin classifier-owned so a host
+        # that can't serve it falls back to normal lanes. Only the
+        # claude lane uses it, and it may not be stamped onto a card
+        # that already declares executor=claude without a source —
+        # that would silently weaken a declared fail-closed pin.
+        if ex != "claude" or esrc not in ("queue", "claim") \
+                or (had_executor and not a.get("executor_source")):
+            raise ValueError("invalid action executor_source")
+        a["executor_source"] = esrc
     prof = str(body.get("agent_profile") or body.get("profile")
                or "").strip()
     if prof:
@@ -2686,16 +2722,24 @@ def do_create(body: dict, frm: str) -> dict:
                     "diagnosis envelope")
         elif tc and ex != "kk_mac_local":
             # A bare task_class (no executor pin) is the auto-route
-            # hint (kk-mac-auto-lane-classifier): queue-time
-            # classification pins executor=kk_mac_local for admitted
-            # classes. A pin to another executor, or a class outside
-            # the admitted set, still fails closed.
-            if ex or tc not in dr.KK_MAC_TASK_CLASSES:
+            # hint (kk-mac-auto-lane-classifier + the claude
+            # auto-route): queue-time classification pins
+            # executor=kk_mac_local for admitted kk classes or
+            # executor=claude for admitted claude classes. A declared
+            # executor=claude may carry an admitted claude class as
+            # provenance; any other pairing fails closed.
+            if ex == "claude":
+                if tc not in dr.CLAUDE_TASK_CLASSES:
+                    raise ValueError(
+                        "executor=claude task_class must be in "
+                        f"{sorted(dr.CLAUDE_TASK_CLASSES)}")
+            elif ex or tc not in (dr.KK_MAC_TASK_CLASSES
+                                  | dr.CLAUDE_TASK_CLASSES):
                 raise ValueError(
                     "action.task_class is only valid with "
-                    "executor=kk_mac_local or, without an executor, "
-                    "an admitted class in "
-                    f"{sorted(dr.KK_MAC_TASK_CLASSES)}")
+                    "executor=kk_mac_local/claude or, without an "
+                    "executor, an admitted class in "
+                    f"{sorted(dr.KK_MAC_TASK_CLASSES | dr.CLAUDE_TASK_CLASSES)}")
         if ex == "kk_mac_local" and tc not in dr.KK_MAC_TASK_CLASSES:
             raise ValueError(
                 "executor=kk_mac_local requires action.task_class in "
@@ -2827,6 +2871,11 @@ def do_create(body: dict, frm: str) -> dict:
                 # classifier provenance or the next queue re-classifies
                 # over it (lane_source semantics: _apply_classify_at_queue)
                 a.pop("lane_source", None)
+            if "executor" in act:
+                # same for executor_source: a caller-declared executor
+                # is the contract — classifier auto-route provenance
+                # must not survive onto a fresh pin
+                a.pop("executor_source", None)
         a.setdefault("type", "dispatch")
         human = (queue_wait_reason(card) if st == "queued"
                  else human_wait_reason(card))
@@ -3139,6 +3188,10 @@ def do_card_set(card: dict, body: dict, frm: str) -> str:
         else:
             a.pop("executor", None)
             changed.append("executor cleared")
+        # an author executor edit is a declared pin — drop any
+        # classifier auto-route provenance (executor_source semantics
+        # mirror lane_source above)
+        a.pop("executor_source", None)
     if "tags" in s:
         card["tags"] = new_tags
         changed.append("tags")

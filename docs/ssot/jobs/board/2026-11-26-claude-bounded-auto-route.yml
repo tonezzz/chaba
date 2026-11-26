@@ -1,0 +1,108 @@
+id: claude-bounded-auto-route
+title: Bounded card classes auto-route to executor=claude (PR #187 follow-up)
+date: 2026-11-26
+card: auto-route-bounded-card-classes-to-execu-257c7a
+host: fleet (dispatch_repos.py classifier + board-api.py queue/claim doors + runner-agent.py claim gates)
+status: implemented
+
+goal: >
+  Card auto-route-bounded-card-classes-to-execu-257c7a: today
+  executor=claude requires an explicit action.executor pin (PR #187,
+  merged 2026-11-18). Add classifier policy so bounded card classes
+  self-route to claude on CLAUDE_LANES=1 hosts, saving Devin tokens.
+  Eval data (2026-11-18, tony-claude-code-00): sonnet best
+  tokens-per-verified-fix; haiku churned 2x tokens via more turns;
+  effort=low skipped tests on a code card. Both pilots < $0.20 list.
+
+design_choice: >
+  Mirrored the kk_mac_local try-first pattern, NOT the opencode
+  LANE_PROFILES pattern. kk_mac fits because the auto-route is a
+  card-class decision stamped at queue/claim time with provenance
+  (action.executor_source), while opencode LANE_PROFILES is a
+  lane->agent-profile map resolved inside start_opencode_lane — a
+  different seam (model/profile selection, not executor routing).
+  The try-first contract is what lets an auto-pinned card fall back
+  to normal lanes on hosts that can't serve claude, while a
+  declared executor=claude stays fail-closed.
+
+classifier: >
+  dispatch_repos.py CLAUDE_TASK_CLASSES = {verify_only, repo_fix,
+  report_triage} + claude_route(card). Admits only dispatch-typed
+  cards with NOTHING already routed (no executor/lane/host/
+  target_host/runner/labels), no deploy/push/prod/cross-repo
+  phrasing (CLAUDE_SCOPE_RE), single-repo scope (text may name only
+  the card's own repo — action.repo default chaba exempt via
+  canon_repo), and an admitted class: declared action.task_class
+  must be in CLAUDE_TASK_CLASSES, else inferred — verify-only
+  markers, fix markers + verify-command evidence
+  (_CLAUDE_VERIFY_CMD_RE or verify_* contract fields) for repo_fix,
+  report/triage markers for report_triage. Declared-but-unadmitted
+  task_class returns "" — never guesses a route.
+
+provenance_contract: >
+  action.executor_source ("queue"|"claim") marks the executor pin
+  classifier-owned. Deliberately NOT in board-api ACTION_KEYS so
+  authors cannot forge it at create/respan; it is stamped only by
+  _apply_classify_at_queue and the claim pass, and any author
+  executor edit or routing edit drops it (mirrors lane_source
+  semantics). runner-agent.executor_auto() reads it; a claude pin
+  without executor_source is author-declared = fail-closed.
+
+board_api: >
+  _apply_classify_at_queue tries dr.claude_route after kk_mac_route
+  (kk_mac wins — cheaper bounded lane for shared classes) and stamps
+  task_class + executor=claude + executor_source="queue" + comms.
+  do_claim accepts task_class paired with executor=claude +
+  admitted class (CLAUDE_TASK_CLASSES) for claim-time routes, and
+  validates executor_source values. do_create: bare claude
+  task_class = auto-route hint; executor=claude may carry an
+  admitted claude class.
+
+runner_agent: >
+  claude_lane_ready() = CLAUDE_LANES=1 + claude-dispatch exists +
+  `claude auth status` probe (cached 60s, no tokens burned —
+  stricter than the declared-executor gate which is env+wrapper
+  only). _claimable/executor_defer_reason/claim_executor/start_task:
+  an auto-routed (executor_source) claude card this host can't
+  serve is judged as undeclared — falls back to the normal lane
+  cascade (try-first); a declared claude pin stays fail-closed with
+  the "never silently fall back" defer note. claim_pass JEV_LANE
+  block tries dr.claude_route (gated by claude_lane_ready) when no
+  lane/executor, stamping executor_source="claim" in the claim
+  body. Latent fix: the opencode lane hijack in start_task now
+  requires ex unset — a claude pin can no longer be lane-hijacked
+  onto opencode.
+
+model_policy: >
+  Unchanged from PR #187: claude-dispatch defaults to sonnet;
+  action.model still wins when explicitly set (DISPATCH_MODEL
+  allowlist sonnet|opus|haiku|claude-* else falls back to
+  $CLAUDE_MODEL default sonnet; DISPATCH_EFFORT -> --effort;
+  DISPATCH_PROVIDER=claude when DISPATCH_EXECUTOR=claude).
+
+verified: >
+  Card verify command: python3 -m pytest
+  tests/board/test_executor_contract.py
+  tests/board/test_runner_agent_lane.py -q -> 163 passed, 17
+  subtests passed (pytest 9.2.0 via venv --system-site-packages;
+  host python3.14 is PEP-668 managed, tests are unittest-style).
+  tests/board/test_queue_time_classify.py + tooling contract also
+  pass; tests/board full directory run in progress at write time.
+
+files:
+  - scripts/board/dispatch_repos.py        # CLAUDE_TASK_CLASSES + claude_route + scope/verify/report regexes
+  - scripts/board/board-api.py             # queue-time auto-route pin; do_claim/do_create validation
+  - scripts/board/runner-agent.py          # claude_lane_ready gate; try-first fallback; claim-time route; opencode hijack fix
+  - scripts/devin/runner-tooling.manifest.json  # runner_agent + dispatch_repos sha256 pins bumped (same-commit rule)
+  - tests/board/test_executor_contract.py  # ClaudeAutoRouteContractTest + ClaudeAutoRouteBoardTest
+  - tests/board/test_queue_time_classify.py# ClaudeRouteUnitTest + ClaudeAutoRouteQueueTest
+  - tests/board/test_runner_agent_lane.py  # ClaimPassClaudeRouteTest
+
+notes: >
+  Deploy note: hosts receive runner-agent/dispatch_repos via
+  chaba-repo-sync -> sync-runner-tools.sh after merge; the manifest
+  pin bump gates the install (fleet-wide until merged). Auto-routed
+  cards that miss queue-time classification get the claim_pass
+  backstop ONLY on claude-ready hosts — elsewhere they take normal
+  lanes and never pin claude, so a card can't starve waiting for a
+  claude host it was never eligible for.

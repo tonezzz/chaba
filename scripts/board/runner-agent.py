@@ -381,6 +381,14 @@ KK_MAC_LANES = os.environ.get("KK_MAC_LANES", "0") == "1"
 KK_MAC_TASK_CLASSES = {
     "summary", "structured_extract"}
 KK_MAC_FALLBACK = "__kk_mac_fallback__"
+# claude auto-route contract (auto-route-bounded-card-classes-to-execu,
+# PR #187 follow-up): bounded card classes self-route to
+# executor=claude at queue/claim time. Mirrors
+# dispatch_repos.CLAUDE_TASK_CLASSES — admission lives in the
+# classifier (dr.claude_route); the set is the contract check for a
+# pin this host is asked to serve.
+CLAUDE_TASK_CLASSES = {
+    "verify_only", "repo_fix", "report_triage"}
 # nlm_batch executor (OPS-1048 finding #3): NotebookLM batch lane on
 # Google AI Pro quota (500 notebooks / 500 chats-day / 20 audio-day).
 # NLM_LANES=1 on hosts with `nlm` installed + authed profile
@@ -1969,6 +1977,14 @@ def _claimable(card: dict) -> tuple:
         return "", "manual executor (Tony's hands)"
     if ex and ex not in EXECUTORS:
         return "", f"unknown executor {ex!r}"
+    if ex == "claude" and executor_auto(a) \
+            and not claude_auto_served(a):
+        # Classifier-routed (executor_source) claude card this host
+        # can't serve — the card never declared claude, so it falls
+        # back to the normal lane gates below (try-first, like
+        # kk_mac_local). A declared executor=claude (no
+        # executor_source) stays fail-closed in the branch below.
+        ex = ""
     typ = a.get("type") or "dispatch"
     if ex and typ != "dispatch" and not (ex == "script" and typ == "script"):
         # executor contract routes dispatch-typed cards; on a
@@ -2144,6 +2160,12 @@ def executor_defer_reason(card: dict) -> str:
             or (a.get("target_host") and _canon_host(a["target_host"]) != _host_key()) \
             or not set(a.get("labels") or []) <= LABELS:
         return ""
+    if ex == "claude" and executor_auto(a) \
+            and not claude_auto_served(a):
+        # auto-routed claude this host can't serve — judged as an
+        # undeclared card below (it takes the normal lanes, so there
+        # is no claude defer note to leave)
+        ex = ""
     if ex == "opencode":
         missing = []
         if not OPENCODE_LANES:
@@ -2296,6 +2318,84 @@ def opencode_needs_standalone(oc_bin: str) -> bool:
 def nlm_available() -> bool:
     """nlm CLI installed and an auth profile exists."""
     return NLM_BIN.is_file() and NLM_PROFILE.is_dir()
+
+
+def claude_bin() -> str:
+    """Resolve the claude binary the way claude-dispatch does —
+    $CLAUDE_BIN, PATH, ~/.local/bin/claude, then the node_modules
+    install under ~/CascadeProjects. "" when absent."""
+    env = os.environ.get("CLAUDE_BIN") or ""
+    if env and Path(env).is_file():
+        return env
+    for p in os.environ.get("PATH", "").split(":"):
+        c = Path(p) / "claude"
+        if c.is_file() and os.access(c, os.X_OK):
+            return str(c)
+    home = Path.home()
+    for c in (home / ".local/bin/claude",
+              home / "CascadeProjects/tony-projects/"
+                   "tony-claude-code-00/node_modules/.bin/claude"):
+        if c.is_file() and os.access(c, os.X_OK):
+            return str(c)
+    return ""
+
+
+_CLAUDE_AUTH = [0.0, None]
+
+
+def claude_auth_ok() -> bool:
+    """Cheap auth probe for the claude lane — `claude auth status`
+    exits 0 when the install is authed (a local check; no tokens
+    burned). Cached ~60s like kk_mac_probe: _claimable runs per
+    queued card per pass and must not fork a probe each time. Any
+    failure reads as unauthed — the auto-route stays off and cards
+    keep their normal lanes."""
+    now = time.time()
+    if now - _CLAUDE_AUTH[0] < 60 and _CLAUDE_AUTH[1] is not None:
+        return _CLAUDE_AUTH[1]
+    ok = False
+    b = claude_bin()
+    if b:
+        try:
+            ok = subprocess.run(
+                [b, "auth", "status"], capture_output=True,
+                timeout=20).returncode == 0
+        except Exception:
+            ok = False
+    _CLAUDE_AUTH[0], _CLAUDE_AUTH[1] = now, ok
+    return ok
+
+
+def claude_lane_ready() -> bool:
+    """May this host serve executor=claude RIGHT NOW — the full gate
+    the auto-route needs: CLAUDE_LANES=1 + the claude-dispatch
+    wrapper + a resolvable authed claude install. Stricter than the
+    declared-executor claim gate (env+wrapper only): an auto-routed
+    card declared nothing, so it must not burn a claim on a host
+    whose claude can't authenticate — it takes the normal lanes."""
+    return bool(CLAUDE_LANES) and Path(CLAUDE_DISPATCH).exists() \
+        and claude_auth_ok()
+
+
+def executor_auto(a: dict) -> bool:
+    """Is this executor pin classifier-owned (auto-route) rather than
+    author-declared? action.executor_source is stamped by
+    board-api/the claim pass when the classifier pins
+    executor=claude — absent = declared, fail-closed. Mirrors
+    lane_source semantics."""
+    return str(a.get("executor_source") or "").strip() in \
+        ("queue", "claim")
+
+
+def claude_auto_served(a: dict) -> bool:
+    """May THIS host serve an auto-routed claude card — lane ready
+    AND the pinned task_class still admitted (defense against a
+    stale or hand-edited pin: an invalid class falls back to the
+    normal lanes, never runs claude)."""
+    return executor_auto(a) \
+        and str(a.get("task_class") or "").strip() \
+        in CLAUDE_TASK_CLASSES \
+        and claude_lane_ready()
 
 
 # --- task unit resource limits ---------------------------------------
@@ -4120,6 +4220,17 @@ def start_task(card: dict, typ: str) -> tuple:
         # classification, and never silently re-routes to a different
         # executor.
         ex = str(a.get("executor") or "").strip()
+        if ex == "claude" and executor_auto(a) \
+                and not claude_auto_served(a):
+            # Classifier-routed claude this host can't serve — the
+            # claim gate already fell back to the normal lanes; run
+            # them under this same claim. The card never declared
+            # claude, so no contract breaks.
+            api("/comment", {"id": cid, "from": "chaba",
+                             "text": "claude auto-route not servable "
+                                     "on this host — running the next "
+                                     "lane"})
+            ex = ""
         if ex == "kk_mac_local":
             # Try-first contract (kk-mac-jev-adapter-integration): the
             # bounded lane gets one shot; every decline falls back to
@@ -4187,8 +4298,11 @@ def start_task(card: dict, typ: str) -> tuple:
             # devin-bound claim (devin-executor-model-routing).
         if lane == "manual":
             return "", "", "manual lane — not dispatched (Tony's hands)"
-        if lane in LANE_MODELS and OPENCODE_LANES and \
+        if not ex and lane in LANE_MODELS and OPENCODE_LANES and \
                 (card_profile(card) or LANE_PROFILES.get(lane)):
+            # executor-unset cards only — a declared/auto claude pin
+            # must never be hijacked onto the opencode lane (the
+            # lane classify above is model context, not a route)
             return start_opencode_lane(card, lane, unit)
         # no resolvable task profile -> generic build agent stays out
         # of unattended routing; the card takes the devin path.
@@ -4837,6 +4951,11 @@ def claim_executor(card: dict) -> str:
         # try-first consumed, or this host can't serve the lane — the
         # claim falls back to the normal (local) lane cascade
         ex = ""
+    if ex == "claude" and executor_auto(a) \
+            and not claude_auto_served(a):
+        # same try-first fallback for classifier-routed claude pins —
+        # the claim runs the normal (local) lanes on this host
+        ex = ""
     if ex == "nlm_batch" or \
             (not ex and str(a.get("lane") or "") == "nlm_batch"):
         return "nlm_batch"
@@ -5132,6 +5251,7 @@ def claim_pass(st: dict) -> bool:
             # codemod/paid_frontier lanes (OPS-0885 miss class).
             lane = str(a.get("lane") or "")
             kk_tc = ""
+            claude_tc = ""
             lane_src = ""
             if not lane:
                 # Bounded read-only classes self-route to the kk_mac
@@ -5142,6 +5262,19 @@ def claim_pass(st: dict) -> bool:
                 if dr and getattr(dr, "kk_mac_route", None):
                     kk_tc = dr.kk_mac_route(card)
                 if not kk_tc:
+                    # claude auto-route backstop
+                    # (auto-route-bounded-card-classes-to-execu): same
+                    # queue-time rule for cards that missed it — but
+                    # only on a host that can actually serve the lane;
+                    # elsewhere the card takes normal classification
+                    # and never pins claude.
+                    if claude_lane_ready() and dr and \
+                            getattr(dr, "claude_route", None):
+                        try:
+                            claude_tc = dr.claude_route(card)
+                        except Exception:
+                            claude_tc = ""
+                if not kk_tc and not claude_tc:
                     lane = classify_lane(card)
                     # classifier output, not an author pin — flag it so
                     # board-api stamps lane_source and the next queue
@@ -5155,6 +5288,14 @@ def claim_pass(st: dict) -> bool:
                 ex_decl = "kk_mac_local"   # started-comms reports it
                 claim_body["executor"] = "kk_mac_local"
                 claim_body["task_class"] = kk_tc
+            elif claude_tc:
+                a["executor"] = "claude"
+                a["task_class"] = claude_tc
+                a["executor_source"] = "claim"
+                ex_decl = "claude"   # started-comms reports it
+                claim_body["executor"] = "claude"
+                claim_body["task_class"] = claude_tc
+                claim_body["executor_source"] = "claim"
             else:
                 a["lane"] = lane
                 # Executor-aware lane pick

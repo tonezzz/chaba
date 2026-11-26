@@ -477,12 +477,266 @@ class KkMacAutoRouteQueueTest(unittest.TestCase):
         self.assertNotIn("executor", a)
         self.assertEqual(a["lane"], "devin")
 
-    def test_oversized_prompt_not_rerouted(self):
+    def test_oversized_prompt_not_routed(self):
         card = self._card(title="Summarize the report",
                           action={"task_class": "summary",
                                   "prompt": "x" * 7000})
         self.api.do_action(card, "queue", "devin")
         self.assertNotIn("executor", card["action"])
+
+
+class ClaudeRouteUnitTest(unittest.TestCase):
+    """dr.claude_route — the bounded-class auto-route to executor=claude
+    (auto-route-bounded-card-classes-to-execu, PR #187 follow-up).
+    Admitted: verify_only, repo_fix (needs verify-command evidence),
+    report_triage. Excluded: any routing/host/label pin, deploy/push/
+    prod intent, cross-repo mentions, unbounded classes."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.dr = _load("dispatch_repos")
+
+    def _card(self, **kw):
+        a = {"type": "dispatch"}
+        a.update(kw.pop("action", {}))
+        card = {"id": "cl1", "title": kw.pop("title", "t"),
+                "action": a}
+        card.update(kw)
+        return card
+
+    def test_verify_only_inferred(self):
+        c = self._card(
+            title="Verify-only: run pytest tests/board -q and confirm "
+                  "green. Do not modify anything.")
+        self.assertEqual(self.dr.claude_route(c), "verify_only")
+
+    def test_verify_command_alone_is_verify_only(self):
+        c = self._card(title="Run pytest tests/board -q and report "
+                              "whether it passes")
+        self.assertEqual(self.dr.claude_route(c), "verify_only")
+
+    def test_repo_fix_needs_verify_command(self):
+        c = self._card(title="Fix the off-by-one in parse_date; verify "
+                              "with pytest tests/board/test_x.py")
+        self.assertEqual(self.dr.claude_route(c), "repo_fix")
+        # the verify step is what makes the class bounded — a fix
+        # ask with no runnable check stays on the normal lanes
+        c = self._card(title="Fix the typo in README")
+        self.assertEqual(self.dr.claude_route(c), "")
+        # a declared verify_* contract field counts as the evidence
+        c = self._card(title="Fix the flaky retry",
+                       action={"task_class": "repo_fix",
+                               "verify_contains": "all tests pass"})
+        self.assertEqual(self.dr.claude_route(c), "repo_fix")
+
+    def test_report_triage_inferred(self):
+        for title in ("Triage the overnight failures and write a report",
+                      "Write a postmortem for the idc03 outage",
+                      "Summarize yesterday's runner defers"):
+            c = self._card(title=title)
+            self.assertEqual(self.dr.claude_route(c),
+                             "report_triage", title)
+
+    def test_declared_task_class_routes(self):
+        c = self._card(title="Check the timer",
+                       action={"task_class": "verify_only"})
+        self.assertEqual(self.dr.claude_route(c), "verify_only")
+
+    def test_unadmitted_task_class_not_routed(self):
+        c = self._card(title="Check the timer",
+                       action={"task_class": "code_mutation"})
+        self.assertEqual(self.dr.claude_route(c), "")
+        # kk_mac classes are not claude classes either
+        c = self._card(title="Summarize the report",
+                       action={"task_class": "summary"})
+        self.assertEqual(self.dr.claude_route(c), "")
+
+    def test_routing_pins_win(self):
+        for pin in ({"executor": "devin"}, {"executor": "claude"},
+                    {"lane": "free_lane"}):
+            c = self._card(title="Verify-only: check the timer",
+                           action=pin)
+            self.assertEqual(self.dr.claude_route(c), "", pin)
+
+    def test_host_pins_not_routed(self):
+        for pin in ("host", "target_host", "runner"):
+            c = self._card(title="Verify-only: check the timer",
+                           action={pin: "idc03"})
+            self.assertEqual(self.dr.claude_route(c), "", pin)
+
+    def test_labels_not_routed(self):
+        # capability labels need a declared host set — the classifier
+        # can't prove a claude-capable runner satisfies them
+        c = self._card(title="Verify-only: check the timer",
+                       action={"labels": ["gpu"]})
+        self.assertEqual(self.dr.claude_route(c), "")
+
+    def test_deploy_push_prod_not_routed(self):
+        for title in ("Deploy the caddy config and verify it",
+                      "Push the fix branch to origin",
+                      "Restart the mddb service and verify health",
+                      "Merge the PR into master"):
+            c = self._card(title=title)
+            self.assertEqual(self.dr.claude_route(c), "", title)
+
+    def test_cross_repo_not_routed(self):
+        # own repo is chaba (default) — naming another repo keeps the
+        # card on the normal lanes
+        c = self._card(title="Fix the ada-voice retry bug; verify with "
+                              "pytest")
+        self.assertEqual(self.dr.claude_route(c), "")
+        # ...but naming only the card's own repo is fine
+        c = self._card(title="Fix the chaba retry bug; verify with "
+                              "pytest",
+                       action={"repo": "chaba"})
+        self.assertEqual(self.dr.claude_route(c), "repo_fix")
+
+    def test_unbounded_ask_not_routed(self):
+        c = self._card(title="Redesign the dispatch claim loop")
+        self.assertEqual(self.dr.claude_route(c), "")
+
+    def test_script_type_not_routed(self):
+        c = self._card(title="Verify-only: check the timer",
+                       action={"type": "script"})
+        self.assertEqual(self.dr.claude_route(c), "")
+
+
+class ClaudeAutoRouteQueueTest(unittest.TestCase):
+    """Queue-time auto-route: /action do=queue stamps
+    executor=claude + task_class + executor_source=queue for admitted
+    bounded classes; a CLAUDE_LANES-ready runner serves it, every other
+    host falls back to the normal lanes (try-first, never starves)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.dr = _load("dispatch_repos")
+        cls.api = _load("board-api")
+        cls.api.dr = cls.dr
+        cls.runner = _load("runner-agent")
+
+    def setUp(self):
+        self.api.CARD_DIR = Path("/tmp/nonexistent")
+        self.api.now = lambda: "2026-10-31T00:00:00Z"
+        self.api.comms_add = lambda card, frm, text: card.setdefault("comms", []).append({"from": frm, "text": text})
+        self.api.save = lambda p, c: None
+        self.api.queue_starve_warn = lambda c: ""
+        self.api.queue_unclaimable_warn = lambda c: ""
+        self.api.HOST = "localhost"
+        r = self.runner
+        self._saved = {k: getattr(r, k) for k in
+                       ("KK_MAC_LANES", "CLAUDE_LANES", "CLAUDE_DISPATCH",
+                        "DISPATCH", "LABELS", "HOST")}
+        self._saved_fn = {k: getattr(r, k) for k in
+                          ("push_capable", "shutil_which",
+                           "claude_lane_ready")}
+        r.HOST = "clhost"
+        r.LABELS = set()
+        r.push_capable = lambda repo: True
+        r.shutil_which = lambda name: True
+        r.DISPATCH = str(REPO / "scripts/board/runner-agent.py")
+        r.CLAUDE_DISPATCH = str(REPO / "scripts/board/runner-agent.py")
+        r.claude_lane_ready = lambda: False
+
+    def tearDown(self):
+        for k, v in {**self._saved, **self._saved_fn}.items():
+            setattr(self.runner, k, v)
+
+    def _card(self, **kw):
+        a = {"type": "dispatch"}
+        a.update(kw.pop("action", {}))
+        card = {"id": "clq1", "title": kw.pop("title", "t"),
+                "column": "backlog", "action": a}
+        card.update(kw)
+        return card
+
+    def test_verify_card_auto_routes_with_source(self):
+        card = self._card(
+            title="Verify-only: run pytest tests/board -q; do not "
+                  "modify")
+        res = self.api.do_action(card, "queue", "devin")
+        a = card["action"]
+        self.assertEqual(a["status"], "queued")
+        self.assertEqual(a["executor"], "claude")
+        self.assertEqual(a["executor_source"], "queue")
+        self.assertEqual(a["task_class"], "verify_only")
+        self.assertIn("auto-routed to executor=claude",
+                      card["comms"][0]["text"])
+        self.assertTrue(res.startswith("queued"))
+
+    def test_repo_fix_card_auto_routes(self):
+        card = self._card(title="Fix the flaky timer check; verify with "
+                                "pytest tests/board -q")
+        self.api.do_action(card, "queue", "devin")
+        a = card["action"]
+        self.assertEqual(a["executor"], "claude")
+        self.assertEqual(a["task_class"], "repo_fix")
+
+    def test_kk_mac_class_still_wins_first(self):
+        # kk_mac is the cheaper bounded lane — a summarize card pins
+        # kk_mac_local, never claude
+        card = self._card(title="Summarize the overnight host report",
+                          action={"task_class": "summary",
+                                  "prompt": "Summarize it"})
+        self.api.do_action(card, "queue", "devin")
+        a = card["action"]
+        self.assertEqual(a["executor"], "kk_mac_local")
+        self.assertNotIn("executor_source", a)
+
+    def test_exclusion_cards_not_rerouted(self):
+        for title, action in (
+                ("Deploy the fix and verify", {}),
+                ("Verify-only: check the timer",
+                 {"labels": ["gpu"]}),
+                ("Verify-only: check the timer",
+                 {"target_host": "idc02"}),
+                ("Verify-only: check the timer",
+                 {"executor": "devin"})):
+            card = self._card(title=title, action=action)
+            self.api.do_action(card, "queue", "devin")
+            a = card["action"]
+            self.assertNotEqual(a.get("executor"), "claude",
+                                (title, action))
+            self.assertNotIn("executor_source", a)
+
+    def test_auto_pin_claimable_on_ready_host(self):
+        card = self._card(
+            title="Verify-only: run pytest tests/board -q; do not "
+                  "modify")
+        self.api.do_action(card, "queue", "devin")
+        r = self.runner
+        r.CLAUDE_LANES = True
+        r.claude_lane_ready = lambda: True
+        self.assertEqual(r.claimable(card), "dispatch")
+        # a declared executor=claude card is NOT auto — same surface,
+        # different contract (covered by ClaudeExecutorContractTest)
+
+    def test_auto_pin_falls_back_on_unready_host(self):
+        """The try-first guarantee: a queue-pinned auto card on a host
+        that can't serve the lane is judged as undeclared — it takes
+        the normal (devin) gates instead of starving or deferring."""
+        card = self._card(
+            title="Verify-only: run pytest tests/board -q; do not "
+                  "modify")
+        self.api.do_action(card, "queue", "devin")
+        r = self.runner
+        r.CLAUDE_LANES = False
+        r.claude_lane_ready = lambda: False
+        self.assertEqual(r.claimable(card), "dispatch")
+        self.assertEqual(r.executor_defer_reason(card), "")
+
+    def test_declared_claude_still_fails_closed(self):
+        """No executor_source = author pin = the strict contract: an
+        unservable declared claude card stays queued with the defer
+        note — it never falls back."""
+        card = self._card(title="do a thing",
+                          action={"executor": "claude",
+                                  "status": "queued"})
+        r = self.runner
+        r.CLAUDE_LANES = False
+        r.claude_lane_ready = lambda: False
+        self.assertEqual(r.claimable(card), "")
+        self.assertIn("never silently fall back",
+                      r.executor_defer_reason(card))
 
 
 if __name__ == "__main__":
