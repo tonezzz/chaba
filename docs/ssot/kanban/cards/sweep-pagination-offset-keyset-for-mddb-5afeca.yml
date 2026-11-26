@@ -1,7 +1,7 @@
 id: sweep-pagination-offset-keyset-for-mddb-5afeca
 title: 'sweep pagination: offset -> keyset for mddb pruning scripts'
-column: review
-updated: 2026-11-26 04:08
+column: backlog
+updated: 2026-11-26 08:35
 brief: 'prune-old-docs.py and device-telemetry prune.py enumerate via /v1/search offset paging (skip += kept). Under
   concurrent bulk writes the offset window shifts: stale docs get skipped, scanned under-counts, sweeps report deleted
   0 while work remains (observed 2026-11-12 on ops host-logs during refill). Fix = iterate by key cursor (seek from
@@ -412,9 +412,18 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 08:35
+  from: tony
+  text: '[verify] VERIFY-QUEUE triage 2026-11-26 (Tony): dispatch produced NO commits — worktree kept dirty — 4
+    uncommitted files, no commit landed. No deliverable exists in origin/master. Holding to backlog for re-dispatch,
+    not closing as done. Note: fleet-wide runner-agent drift (installed 8c28da6b vs pin 1514c75c) was active during
+    these runs; converge is being handled separately.'
+- at: 2026-11-26 08:35
+  from: tony
+  text: put on hold
 action:
   type: dispatch
-  status: done
+  status: idle
   lane: free_lane
   lane_source: kw
   executor: devin
