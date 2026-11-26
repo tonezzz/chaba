@@ -125,6 +125,10 @@ def scan_refs(obj, source_rel, all_files, found=None):
         found = []
     if isinstance(obj, dict):
         for key, value in obj.items():
+            # Executor script refs (action.script.ref, e.g. 'ops/restore-ssh-shell')
+            # name a job-registry entry, not a docs/ssot path — skip them.
+            if key == "ref" and ("cmd" in obj or "repo" in obj):
+                continue
             if is_ref_key(key):
                 refs = value if isinstance(value, list) else [value]
                 for r in refs:
