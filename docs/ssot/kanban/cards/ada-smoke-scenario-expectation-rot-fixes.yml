@@ -1,7 +1,7 @@
 id: ada-smoke-scenario-expectation-rot-fixes
 title: 'Smoke scenarios: fix expectation rot (4 yamls) + scenario-live cleanup MDDB plane bug'
 column: doing
-updated: 2026-11-26 22:09
+updated: 2026-11-26 22:16
 priority: medium
 tags:
 - ada
@@ -80,6 +80,11 @@ comms:
     a 1-turn `response_nonempty` yaml is a cheap real-LLM ws sm; dispatch-outcome docs live at worktree/repo ROOT,
     not docs/ssot/jobs — SESSION_S; editing `ssot.jobs.yml` requires re-running `scripts/render-jobs.py --host <h>`
     ; [tony-ha-cold-standby-config-sync-promote-d12293] primer inje'
+- at: 2026-11-26 22:16
+  from: devin
+  text: 'picked up — worktree ada-voice-wt-smoke-fixes on dispatch/20261126-smoke-expectation-rot. Found extra rot:
+    scenario-live.py has no calls_not key (turn2 silently ignored; real key is no_calls) and cms_get_page-style
+    names still pass via LEGACY_TOOL_ALIASES. Fixing all 5 items.'
 action:
   type: dispatch
   status: running
