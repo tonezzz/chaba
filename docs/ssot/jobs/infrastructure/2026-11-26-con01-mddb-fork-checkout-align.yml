@@ -1,0 +1,70 @@
+title: con01 mddb-fork checkout aligned to declared main base
+subtitle: 'The "601-commit behind" alert was a branch mismatch, not a stale fetch'
+icon: git-branch
+date: 2026-11-26
+status: deployed
+card: runner-auto-con01
+check: scripts/board/runner-fleet-health.py (repo-checkout)
+
+context:
+  symptom: "Fleet health FAIL con01/repo-checkout: 'mddb-fork: 601 commits
+    behind origin/feat/vector-algorithms (limit 200, last-fetched basis)'."
+  actual_state: "con01's checkout was clean (dirty=0) on feat/vector-algorithms
+    at ad7d3f72 — exactly that branch's tip. The health tool computes behind
+    against the branch declared in repos.conf (main) but prints the checkout's
+    current branch name in the message, so the alert was mislabeled."
+  branch_math: "origin/main c87c340b is 601 ahead of feat/vector-algorithms and
+    18 behind it — the lines have diverged; a fast-forward was impossible."
+  why_only_con01: "tony-dell holds the same feat checkout at ad7d3f72 but its
+    origin/main ref was last fetched 2026-11-25 and still points at an ancestor,
+    so it reported behind=0. con01 fetched at 16:11 and saw the real divergence."
+  consumer_check: "No systemd user unit, quadlet, worktree or journal entry on
+    con01 references ~/CascadeProjects/mddb-fork. con01 has no push:mddb-fork
+    label, so mddb-fork dispatch defers to a pushable host (tony-dell)."
+
+decision:
+  scope: con01 checkout only; no other host touched
+  action: "switch the checkout to a new local main branch at origin/main,
+    preserving the feat branch and an explicit backup ref"
+  approval: "Tony selected 'Fix con01's 601-commit stale mddb-fork checkout'
+    as the batch; no service restart, edge, DNS, firewall or package change."
+
+preflight:
+  automation: "grep found no Ansible playbook owning repo checkouts — only
+    audit-runner-tools.yml / audit-worktrees.yml (read-only). One-off scoped
+    git command with an explicit backup, per ansible-first step 4."
+  declared_base: "con01 ~/.local/share/devin-dispatch/repos.conf and canonical
+    scripts/devin/dispatch-repos.conf both declare mddb-fork default = main."
+  dirty_files_before: 0
+
+changes:
+  - "created backup/con01-mddb-20261126-1655 -> ad7d3f72"
+  - "created local branch main from origin/main (c87c340b) and checked it out"
+  - "feat/vector-algorithms left intact at ad7d3f72"
+
+verification:
+  checkout: "branch=main head=c87c340b behind_main=0 ahead_main=0 dirty=0"
+  refs: "backup=ad7d3f72 feat=ad7d3f72 (both preserved)"
+  health_after: "runner-fleet-health.py -> con01/repo-checkout FAIL gone;
+    1 host failing (tony-omen chaba clone, unrelated), 6 ok, 1 card auto-closed"
+  consumer: "no running consumer was interrupted — none referenced the checkout"
+
+rollback:
+  - "cd ~/CascadeProjects/mddb-fork && git checkout feat/vector-algorithms"
+  - "backup ref backup/con01-mddb-20261126-1655 holds ad7d3f72 if the feat
+    branch is ever moved; no files were modified."
+
+follow_up:
+  - "runner-fleet-health.py's repo-checkout message should name the ref it
+    actually measured (origin/<repos.conf branch>) rather than the checkout's
+    current branch — otherwise divergent branches produce misleading alerts."
+  - "tony-omen's chaba clone remains 663 commits behind origin/master; separate
+    issue, not part of this batch."
+
+lessons:
+  - "'X commits behind' means behind the declared default branch, not behind
+    the branch the checkout is actually on — inspect both before pulling."
+  - "Stale remote refs can hide real drift: a host with an old FETCH_HEAD can
+    look healthy while a freshly-fetched peer fails the same check."
+  - "Before changing a checkout, prove no service/worktree/journal references
+    it and preserve the old branch with a named backup ref."
