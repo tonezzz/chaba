@@ -1,6 +1,6 @@
 id: exec-checkout-generated-writes-focus-inb-da698a
 title: Exec-checkout generated writes (focus-inbox, ada-memory) never reach the writer
-column: doing
+column: done
 updated: 2026-11-26 13:10
 brief: 'Hosts with exec-role chaba checkouts (omen confirmed; audit dell/idc02/mn01) run producers that write generated
   files — docs/ssot/focus-inbox/*.yml alerts, backups/ada-memory/*.json dumps, routes.json, SSOT_OPTIMIZATION_WARNINGS.json
@@ -462,9 +462,20 @@ comms:
 - at: 2026-11-26 13:10
   from: con01
   text: claimed
+- at: 2026-11-26 13:10
+  from: chaba
+  text: 'merge-sweep: merged 5ee15a74 (dispatch/20261126-122820-goal-generated-writes-from-non from con01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261126-122820-goal-generated-writes-from-non.md)
+    — auto-closed'
+- at: 2026-11-26 13:10
+  from: local
+  text: 'pub milestone: card verified: exec-checkout-generated-writes-focus-inb-da698a on idc03 — merged 5ee15a74
+    (dispatch/20261126-122820-goal-generated-writes-from-non from con01) -> origin/master — verified — auto- — merged
+    5ee15a74 (dispatch/20261126-122820-goal-generated-writes-from-non from con01) -> origin/master — verified —
+    auto-closed [evt-b0b29115a0dfe872]'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
@@ -478,8 +489,12 @@ action:
   result: 'exit=0 ice: No such file or directory | devin-task-20261126-122820-goal-generated-writes-from-non.service:
     Failed to open /run/user/1001/systemd/transient/devin-task-20261126-122820-goal-generated-writes-from-non.service:
     No such file or directory'
-  verified: false
+  verified: true
   runner: con01
 claim:
   since: 2026-11-26 13:10
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 13:10
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261126-122820-goal-generated-writes-from-non.md
