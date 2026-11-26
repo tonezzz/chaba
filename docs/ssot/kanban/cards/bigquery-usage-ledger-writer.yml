@@ -1,7 +1,7 @@
 id: bigquery-usage-ledger-writer
 title: BigQuery usage ledger — dataset, MERGE writer, 10-row backfill, verification
 column: doing
-updated: 2026-11-26 23:23
+updated: 2026-11-26 23:29
 brief: Turn the local usage reports into a durable, queryable ledger now that the BigQuery API is enabled on the
   Chaba project (0 datasets). Implement the schema in infra/bigquery-ledger-schema-2026-11-26.md, a dry-run-first
   MERGE writer, a bounded backfill, and verification queries. Card ADA-1458 (eval-judge lane) stays independent
@@ -127,6 +127,13 @@ comms:
 
 
     cost-per-PR from daily_quota: quota_date=2026-11-26, '
+- at: 2026-11-26 23:29
+  from: devin
+  text: 'DONE — card → review. Deliverables: scripts/bigquery/{ledger_write.py,chaba_usage.ddl.sql} committed on
+    dispatch branch (82a4f7a44c4); dataset chaba_usage live on gen-lang-client-0694401188@asia-southeast1 (9/1/0/5
+    rows, idempotent MERGE); ssot.reports.yml data_stores registry + jobs/devnest/2026-11-26-bigquery-usage-ledger.yml
+    doc; infra/ artifacts vendored; live copies at idc02 ~/tony-projects/scripts/bigquery/. Follow-ups: billing
+    budget alert needed before any scaling job; eval_verdicts load'
 claim:
   since: 2026-11-26 22:37
 requests:
