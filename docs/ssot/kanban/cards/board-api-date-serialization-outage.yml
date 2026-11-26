@@ -1,7 +1,7 @@
 id: board-api-date-serialization-outage
 title: board-api /cards 502 — YAML bare dates crash json.dumps (fleet-wide Ada status outage 2026-11-09)
-column: backlog
-updated: 2026-11-26 21:01
+column: doing
+updated: 2026-11-26 21:03
 priority: medium
 tags:
 - devnest
@@ -16,10 +16,11 @@ spec: 'Hygiene follow-up to the 2026-11-09 board-api 502 outage (fixed at 7ea2e3
   it. Done: normalization plus test land on chaba master, chaba gate green, outcome names the fields normalized.'
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   repo: chaba
-  attempts: 0
+  attempts: 1
+  runner: idc02
 ref: KNB-1292
 comms:
 - at: 2026-11-09 18:16
@@ -272,4 +273,8 @@ comms:
 - at: 2026-11-26 21:01
   from: chaba
   text: 'mn01 defers: runner at local cap (1/1) — remote slots unaffected'
-claim: {}
+- at: 2026-11-26 21:03
+  from: idc02
+  text: claimed
+claim:
+  since: 2026-11-26 21:03
