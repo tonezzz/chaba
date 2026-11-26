@@ -72,6 +72,16 @@
           the next monthly unit run. The update unit itself is patch-first
           and fails loudly, so a bad patch is never silently served.
 
+    - name: Gated apply requires card traceability (OPS-1424 3A)
+      ansible.builtin.assert:
+        that:
+          - (card_ref | default('') | string | length > 0) or (card_id | default('') | string | length > 0)
+        success_msg: "Traceability OK: card_ref={{ card_ref | default('') }} card_id={{ card_id | default('') }}"
+        fail_msg: >-
+          OPS-1424 3A: gated apply requires -e card_ref=<id> (or card_id).
+          Refusing approved apply without kanban traceability.
+      when: ocb_change_approved | bool
+
     - name: Approval verdict
       ansible.builtin.debug:
         msg: >-

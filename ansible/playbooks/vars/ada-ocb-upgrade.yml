@@ -4,3 +4,12 @@
 #   ansible-playbook playbooks/ada-ocb-upgrade.yml -e ocb_change_approved=true
 # --check --diff is always a genuine simulation regardless of this value.
 ocb_change_approved: false
+
+# OPS-1424 3A: gated apply requires traceability.
+card_ref: ""
+card_id: ""
+
+# Optional board-api evidence (2A). Default off.
+board_notify: false
+board_api_base: "https://idc03.taila0626a.ts.net:10000"
+board_from: "devin"
