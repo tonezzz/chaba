@@ -1,7 +1,7 @@
 id: ansible-prep-plan-apply-verify
 title: Ansible prep→plan→apply→verify workflow standard
-column: doing
-updated: 2026-11-26 12:44
+column: review
+updated: 2026-11-26 12:47
 brief: Standardize Ansible for preparation/baselines, check-diff plan artifacts, gated apply, and verified closeout
   to increase fleet efficiency.
 priority: medium
@@ -130,9 +130,31 @@ comms:
     4 report/gate bugs (commit a1c8e5530f on dispatch branch): ts lookup re-eval broke report dirs; unreachable
     hosts reported as all-fail instead of unreachable/rc=4; shared assert crashed on missing ocb_probe; added ocb_report_hosts
     for --limit previews. Evidence: tony-dell ~/CascadeProjects/chaba/reports/ansible-benchmark/{ada-ocb-preflight/20261126T054143Z,ada-ocb-plan/20261126T054202'
+- at: 2026-11-26 12:47
+  from: mn01
+  text: 'finished (ok): exit=0 ml`; outcome doc at `dispatch-outcome-20261126-123352-objective-define-and-pilot-an-.md`.
+    | devin-task-20261126-1'
+- at: 2026-11-26 12:47
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-26 12:47
+  from: chaba
+  text: 'session-end checkpoint bfe1ecf9: 2 leftover file(s) committed'
+- at: 2026-11-26 12:47
+  from: chaba
+  text: banked 739 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 12:47
+  from: chaba
+  text: pushed dispatch/20261126-123352-objective-define-and-pilot-an- to origin
+- at: 2026-11-26 12:47
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-26 12:47
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
@@ -141,6 +163,9 @@ action:
   sweep:
     stale_running: 2026-11-26 12:39
     no_repo: 2026-11-26 12:39
+  result: 'exit=0 ml`; outcome doc at `dispatch-outcome-20261126-123352-objective-define-and-pilot-an-.md`. | devin-task-20261126-123352-objective-define-and-pilot-an-.service:
+    Consumed 32.765s CPU time over 11min 11.836s wall clock time, 347.4M memory peak.'
+  verified: false
 claim:
   since: 2026-11-26 12:32
 requests:
@@ -154,3 +179,4 @@ requests:
   options:
   - proceed
   - hold
+review_kind: verify
