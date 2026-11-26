@@ -3,7 +3,7 @@ title: tony-dell - restore SSH shell via local Ansible bootstrap
 column: doing
 priority: high
 created: '2026-11-26'
-updated: 2026-11-26 12:20
+updated: 2026-11-26 12:21
 brief: sshd has a global ForceCommand internal-sftp; all shell SSH requests answer 'This service allows sftp connections
   only.' Run the idempotent local Ansible bootstrap from branch ops/restore-ssh-shell on tony-dell itself (the runner
   is the only remaining shell path) to back up, remove and validate the line, then reload sshd.
@@ -33,5 +33,8 @@ comms:
 - at: 2026-11-26 12:20
   from: tony-dell
   text: claimed
+- at: 2026-11-26 12:21
+  from: chaba
+  text: started runner-ops-tony-dell-ssh-shell-restore-1795670449 on tony-dell (script executor=script)
 claim:
   since: 2026-11-26 12:20
