@@ -1,7 +1,7 @@
 id: ops-mn01-restore-sshd-shell-20261126
 title: 'mn01: restore standard SSH shell access (SFTP-only lock)'
-column: doing
-updated: 2026-11-26 12:50
+column: done
+updated: 2026-11-26 12:51
 brief: Remove the accidental global ForceCommand internal-sftp on mn01 so shell, Ansible and the canary rerun work
   again.
 priority: high
@@ -34,7 +34,7 @@ action:
   type: dispatch
   host: mn01
   executor: devin
-  status: running
+  status: done
   runner: mn01
   attempts: 1
 ref: OPS-1432
@@ -89,5 +89,12 @@ comms:
     SSH_RESTARTED
 
     $ grep -n ''ForceCommand|SFTP-only'' /etc/ss'
+- at: 2026-11-26 12:51
+  from: devin
+  text: 'Superseded: shell access restored on mn01 via the scoped Match Group sftponly sshd config (global ForceCommand
+    removed). Closing this restore card to avoid a duplicate edit.'
+- at: 2026-11-26 12:51
+  from: devin
+  text: closed by devin
 claim:
   since: 2026-11-26 12:48
