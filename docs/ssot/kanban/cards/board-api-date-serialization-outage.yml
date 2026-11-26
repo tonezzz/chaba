@@ -1,7 +1,7 @@
 id: board-api-date-serialization-outage
 title: board-api /cards 502 — YAML bare dates crash json.dumps (fleet-wide Ada status outage 2026-11-09)
-column: doing
-updated: 2026-11-26 21:31
+column: review
+updated: 2026-11-26 21:37
 priority: medium
 tags:
 - devnest
@@ -16,11 +16,14 @@ spec: 'Hygiene follow-up to the 2026-11-09 board-api 502 outage (fixed at 7ea2e3
   it. Done: normalization plus test land on chaba master, chaba gate green, outcome names the fields normalized.'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   repo: chaba
   attempts: 1
   runner: idc02
+  result: 'exit=0 patch-outcome-20261126-210344-hygiene-follow-up-to-the-2026-.md`; final comms posted to the card.
+    | devin-task-20261126-210344-hygiene-follow-up-to-the-2026-.service: Consumed 16min 31.156s CPU time, 863.6M
+    memory peak, 0B memory swap peak.'
 ref: KNB-1292
 comms:
 - at: 2026-11-09 18:16
@@ -300,5 +303,28 @@ comms:
     card writers funnel through. Fields normalized: created (bare date-only scalars), any nested at:/updated:-shaped
     date scalars; plain strings untouched, updated: YYYY-MM-DD HH:MM dumps unchanged (no diff churn). New tests/board/test_card_date_serialization.py
     asserts persis'
+- at: 2026-11-26 21:37
+  from: idc02
+  text: 'finished (ok): exit=0 patch-outcome-20261126-210344-hygiene-follow-up-to-the-2026-.md`; final comms posted
+    to the card. | devin-task-20'
+- at: 2026-11-26 21:37
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-26 21:37
+  from: chaba
+  text: 'session-end checkpoint 302ee073: 1 leftover file(s) committed'
+- at: 2026-11-26 21:37
+  from: chaba
+  text: banked 800 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 21:37
+  from: chaba
+  text: pushed dispatch/20261126-210344-hygiene-follow-up-to-the-2026- to origin
+- at: 2026-11-26 21:37
+  from: chaba
+  text: 'auto-merge not done: merge: commit after conflict resolution failed — close will block until merged'
+- at: 2026-11-26 21:37
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 claim:
   since: 2026-11-26 21:03
+review_kind: verify
