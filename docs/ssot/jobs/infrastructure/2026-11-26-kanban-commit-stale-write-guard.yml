@@ -1,0 +1,24 @@
+id: 2026-11-26-kanban-commit-stale-write-guard
+title: "Guard board commits against stale code / prose"
+date: 2026-11-26
+type: incident-fix
+status: done
+related_cards: []
+summary: >-
+  `kanban-commit.sh` staged only generated dirs but committed with no
+  pathspec, so unrelated staged files from a stale writer checkout rode
+  into "board: live card updates": scripts/board/*.py reverted in
+  4af10b4c5c and the hand-maintained ssot.kanban.yml prose reverted the
+  OPS-1406 runner_fleet restoration in 56aac6476c.
+fix:
+  - "Pathspec-limit the commit to generated dirs with ssot.kanban.yml excluded."
+  - "Exclude the protected prose at `git add` time."
+  - "Refuse + alert-card when any out-of-scope path or the protected prose is staged."
+  - "Filter COMMIT_PATHS after cd $REPO so nonexistent pathspecs don't error."
+tests:
+  file: tests/test-kanban-commit.sh
+  added: ["N: staged code refused", "O: staged prose refused"]
+  result: "88 passed / 6 pre-existing failures (baseline 81/7; N+O all green)"
+evidence:
+  baseline_log: /tmp/opencode/kanban-commit-baseline.log
+  final_log: /tmp/opencode/kanban-commit-tests-final.log

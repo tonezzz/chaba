@@ -103,7 +103,10 @@ check "A: served replayed onto upstream" \
 # untracked — that is the class autostash cannot cover (the reported stall).
 mkdir -p "$TMP/served/docs/ssot/jobs/kanban" "$TMP/other/docs/ssot/jobs/kanban"
 echo "LOCAL version" > "$TMP/served/docs/ssot/jobs/kanban/2026-01-01-collision.yml"
-echo "# board tick"    >> "$TMP/served/docs/ssot/kanban/ssot.kanban.yml"
+# Sweep-owned generated write. ssot.kanban.yml is deliberately NOT used as
+# a tick file any more: the stale-write guard disowns that prose, so it
+# would never stage and the pull (the thing under test) would never run.
+echo "title: tick-b" > "$TMP/served/docs/ssot/kanban/cards/tick-b.yml"
 (
   cd "$TMP/other" || exit 1
   bash "$SAFE_PULL" . >/dev/null 2>&1
@@ -126,7 +129,7 @@ check "B: no rebase left in progress" \
 
 # --- C: untracked collision, identical content ------------------------------
 echo "identical" > "$TMP/served/docs/ssot/jobs/kanban/2026-01-02-identical.yml"
-echo "# tick" >> "$TMP/served/docs/ssot/kanban/ssot.kanban.yml"
+echo "title: tick-c" > "$TMP/served/docs/ssot/kanban/cards/tick-c.yml"
 (
   cd "$TMP/other" || exit 1
   bash "$SAFE_PULL" . >/dev/null 2>&1
@@ -714,6 +717,38 @@ check "M: no unmerged entries left behind" \
 # later section (or a re-run) starts clean
 git -C "$TMP/served" stash drop -q 'stash@{0}' 2>/dev/null || true
 rm -f "$TMP/served/tool.py.local-conflict-"* 2>/dev/null || true
+
+# --- N: stale staged code file must NOT ride into board commit --------------
+# Incident 4af10b4c5c: a writer checkout had scripts/board/*.py staged; the
+# unscoped `git commit -qm "board: live card updates"` swept them in and
+# reverted newer origin/master content.
+echo "title: tick-n" > "$TMP/served/docs/ssot/kanban/cards/tick-n.yml"
+mkdir -p "$TMP/served/scripts/board"
+echo "STALE CODE" > "$TMP/served/scripts/board/stale.py"
+git -C "$TMP/served" add scripts/board/stale.py
+bash "$KANBAN_COMMIT" >/dev/null 2>"$TMP/n.err"; rc_n=$?
+check "N: sweep refuses a staged code file" "[ $rc_n -ne 0 ]"
+check "N: stale code not committed" \
+  "! git -C '$TMP/served' log -1 --format=%H | xargs -I{} git -C '$TMP/served' show --name-only --format= {} | grep -q 'scripts/board/stale.py'"
+check "N: refusal explained on stderr" \
+  "grep -qi 'out-of-scope staged' '$TMP/n.err'"
+# leave the tree clean for O
+git -C "$TMP/served" reset -q HEAD scripts/board/stale.py
+rm -f "$TMP/served/scripts/board/stale.py" "$TMP/served/docs/ssot/kanban/cards/tick-n.yml"
+
+# --- O: stale staged ssot.kanban.yml prose must NOT be committed -------------
+# Incident 56aac6476c: the stale writer checkout had the hand-maintained
+# prose staged; it reverted the runner_fleet restoration from 6b65150117.
+echo "title: tick-o" > "$TMP/served/docs/ssot/kanban/cards/tick-o.yml"
+printf '\n# stale prose from old checkout\n' >> \
+  "$TMP/served/docs/ssot/kanban/ssot.kanban.yml"
+git -C "$TMP/served" add docs/ssot/kanban/ssot.kanban.yml
+bash "$KANBAN_COMMIT" >/dev/null 2>"$TMP/o.err"; rc_o=$?
+check "O: sweep refuses staged ssot.kanban.yml" "[ $rc_o -ne 0 ]"
+check "O: stale prose not committed" \
+  "! git -C '$TMP/served' log -1 --format=%H | xargs -I{} git -C '$TMP/served' show --name-only --format= {} | grep -q 'ssot.kanban.yml'"
+check "O: refusal explained on stderr" \
+  "grep -qi 'stale prose staged' '$TMP/o.err'"
 
 echo
 echo "passed: $PASS  failed: $FAIL"
