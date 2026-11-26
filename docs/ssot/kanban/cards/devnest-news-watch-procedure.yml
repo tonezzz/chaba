@@ -1,7 +1,7 @@
 id: devnest-news-watch-procedure
 title: 'DevNest news watch: detect milestones and update news reports'
-column: doing
-updated: 2026-11-26 15:52
+column: done
+updated: 2026-11-26 15:53
 brief: Keep DevNest news reports current as the system advances, without turning every routine run into a news item.
 priority: medium
 program: ai-workforce
@@ -345,9 +345,19 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261126-153710-daily-weekly-scan-sources-boar no longer active on con01 but card
     still says running — sweeping its branch'
+- at: 2026-11-26 15:53
+  from: chaba
+  text: 'merge-sweep: merged 03a3b6d3 (dispatch/20261126-153710-daily-weekly-scan-sources-boar from con01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261126-153710-daily-weekly-scan-sources-boar.md)
+    — auto-closed'
+- at: 2026-11-26 15:53
+  from: local
+  text: 'pub milestone: card verified: devnest-news-watch-procedure on idc03 — merged 03a3b6d3 (dispatch/20261126-153710-daily-weekly-scan-sources-boar
+    from con01) -> origin/master — verified — auto- — merged 03a3b6d3 (dispatch/20261126-153710-daily-weekly-scan-sources-boar
+    from con01) -> origin/master — verified — auto-closed [evt-f4015db13e8b8c27]'
 action:
   type: dispatch
-  status: running
+  status: done
   result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261026-223603-daily-weekly-scan-sources-boar.service: Main
     process exited, code=exited, status=1/FAILURE | devin-task-20261026-223603-daily-weekly-scan-sources-boar.service:
     Failed with result ''exit-code''.'
@@ -358,6 +368,11 @@ action:
   lane_source: kw
   runner: con01
   attempts: 1
+  verified: true
 review_kind: verify
 claim:
   since: 2026-11-26 15:35
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 15:53
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261126-153710-daily-weekly-scan-sources-boar.md
