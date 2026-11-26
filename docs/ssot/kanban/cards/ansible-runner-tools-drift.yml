@@ -1,7 +1,7 @@
 id: ansible-runner-tools-drift
 title: 'Ansible audit: runner tool drift detected'
 column: backlog
-updated: 2026-11-26 18:52
+updated: 2026-11-26 19:43
 spec: Read-only ansible audit-runner-tools detected drift/missing runner tools. Re-run playbooks/audit-runner-tools.yml;
   inspect reports or stdout; converge via approved sync flow.
 action:
@@ -60,3 +60,10 @@ comms:
     services: 7→6→7 hosts, idc03 31→33→31; runner tools: 7→6 hosts). Runner-tool details show genuine drift (runner-agent
     src=1514c75c4679 vs installed 8c28da6b4922 on con01/idc02) plus MISSING-DEST entries for claude-dispatch/devin-dispatch-prune/dispatch-queue/dispatch_repos.py
     on severa'
+- at: 2026-11-26 19:43
+  from: tony
+  text: '[archive side effect 19:50 +07] While running the KNB-1178 retention pass, the default `archive-done.py
+    --apply` found 0 candidates on a board of 864 cards (cap 600): all 804 done cards had `updated: 2026-11-26`.
+    Git shows the bulk "installed runner-agent drifted from repo … redeploy it" comment sweep (e.g. fd66f80684,
+    293 files) rewrote `updated` on hundreds of **done** cards at 03:56-03:57 today, so the >7d age gate never fires.
+    Also `kanban-archive.timer` / `kanban-archive.service` are not in'
