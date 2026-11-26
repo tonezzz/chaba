@@ -1,7 +1,7 @@
 id: jevnest-kk-mac-capacity-loop
 title: JevNest KK-Mac capacity-aware queue refill
-column: backlog
-updated: 2026-11-26 19:28
+column: doing
+updated: 2026-11-26 19:30
 brief: Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner
   load, disk, and fallback gates.
 priority: high
@@ -373,9 +373,18 @@ comms:
 - at: 2026-11-26 19:28
   from: chaba
   text: 'con01 defers: runner at cap (1/1)'
+- at: 2026-11-26 19:30
+  from: idc02
+  text: claimed
+- at: 2026-11-26 19:30
+  from: chaba
+  text: kk_mac_local not servable on this host — running the next lane
 action:
-  status: queued
+  status: running
   type: dispatch
   task_class: summary
   executor: kk_mac_local
-claim: {}
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-26 19:30
