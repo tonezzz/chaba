@@ -1,6 +1,6 @@
 id: timer-alert-tony-dell-log-shipper-severe
 title: Timer log-shipper-severe on tony-dell failing
-column: backlog
+column: done
 updated: 2026-11-26 09:21
 priority: high
 tags:
@@ -391,6 +391,9 @@ comms:
   text: '2026-11-26 verified fix: mddb-ops :11026 HTTP write timeout raised 30s->120s (writes observed 32-79s);
     log-shipper BATCH 10->5; unit TimeoutStartSec->45m fleet-wide. Runner-agent drift cleared (all 6 hosts pinned
     1514c75c...). Re-run Result=success/0.'
+- at: 2026-11-26 09:21
+  from: devin
+  text: closed by devin
 spec: Investigate the timeout failure of `log-shipper-severe.service` on host `tony-dell` by checking the systemd
   user journal via `journalctl --user -u log-shipper-severe.service` and reviewing the CMS entry `timer-timeline-tony-dell`.
   The target host is `tony-dell`. Constraints include using only factual data from the card and journal without
