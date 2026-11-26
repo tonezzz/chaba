@@ -1,7 +1,7 @@
 id: gpu-timeslot-reservations
 title: GPU time-slot reservations for shared omen GPU
 column: doing
-updated: 2026-11-26 12:38
+updated: 2026-11-26 12:51
 brief: Add exclusive GPU time-window reservations to the Redis-backed Ansible dispatch queue so a job can hold omen's
   GTX 1650 without contention. Done when a reservation can be created, enforced by scheduler placement, released
   on job completion/timeout, and verified with two overlapping GPU jobs.
@@ -211,6 +211,13 @@ comms:
     nothing (staged mirror only) — that is why merge-sweep failed. This run: refresh the ansible mirror snapshot
     (live tree now also has webui cancel_job), commit it in the worktree, and re-verify live on omen via the :8795
     API.'
+- at: 2026-11-26 12:51
+  from: devin
+  text: 'DONE (attempt 2 — the missing piece was the commit). Root cause of prior fail: attempt 1 built+verified
+    everything live on idc02:/home/tony/ansible but left 52 files staged-uncommitted, so merge-sweep saw zero commits.
+    This run: refreshed .dispatch-scratch/ansible-mirror/ to a full snapshot of the CURRENT live tree (now incl.
+    sibling webui cancel_job + homeassistant-plug), committed eeab1b71af0 + b771031f303 on dispatch/20261126-123357.
+    Re-verified: unit test 14/14 PASS off-idc02 vs Redis db15; '
 ref: OPS-1407
 claim:
   since: 2026-11-26 12:33
