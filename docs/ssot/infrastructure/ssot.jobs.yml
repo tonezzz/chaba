@@ -2006,41 +2006,6 @@ jobs:
     DEVIN_TG_WATCH_CATCHUP_MIN=<n> re-admits recent docs on that tick.
     OFF SWITCH: `touch ~/.config/devin-dispatch-tg-watch.off` (each tick
     exits silently), rm to resume — or pull this job entry.'
-- id: cline-intake
-  name: Cline lane intake — backlog cards tagged cline -> kanban-nest-bridge
-  host: con01
-  dispatch: systemd
-  every: 15m
-  persistent: true
-  timeout: 20m
-  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/colab/packs/cline-kanban-nest-bridge/intake.py --execute --limit 1
-  note: 'Tony ask 2026-10-29 — card->task intake for the Cline lane. Scans
-    backlog cards for tag `cline` + a `cline:` config block (or
-    `cline-deliverable:`/`cline-sentinel:`/`cline-model:` spec lines),
-    synthesizes a validated bridge envelope, runs ONE card per tick
-    through bridge.py on con01 (disposable /workspace, no repo access,
-    auto-review off), posts the patch summary via board-api /comment and
-    moves the card to review on success; failure leaves the card in
-    backlog with an error comment. Patches land under
-    scripts/colab/packs/cline-kanban-nest-bridge/out/intake/<job_key>/.
-    Provider default ollama/qwen2.5:7b; openrouter/or-free-* also
-    whitelisted. Serial by design — one card per tick.'
-- id: cline-board-mirror
-  name: Cline board mirror — Chaba queue/lifecycle -> con01 kanban projection
-  host: con01
-  dispatch: systemd
-  every: 2min
-  timeout: 3m
-  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/cline-board-mirror.py
-  note: 'KNB-1008 — READ-ONLY projection of the Chaba pipeline onto the
-    cline-kanban board (cline.surf-thailand.com). Reads GET /queue +
-    /cards from board-api, applies moves/creates/deletes to
-    board.json under the app''s own atomic write convention (spike
-    2026-10-30: direct locked edit is live to task list + UI; no agent
-    session is spawned). Only tasks carrying [CARD:<id>] markers are
-    touched — pilot + cline-intake execution tasks are never modified.
-    Chaba stays the source of truth; Cline state is rebuildable
-    display data. Requires runner verdicts flowing (KNB-1007 /ready).'
 - id: adobe-stock-reindex-sync
   name: Adobe Stock index rebuild + idc02 workspace sync
   host: tony_dell
@@ -2214,7 +2179,6 @@ jobs:
 
 related_files:
 - scripts/render-jobs.py
-- scripts/ops/cline-board-mirror.py
 - scripts/job-dispatcher.py
 - systemd/generated/
 - docs/ssot/infrastructure/ssot.night-jobs.tony-dell.yml
