@@ -1,7 +1,7 @@
 id: sweep-pagination-offset-keyset-for-mddb-5afeca
 title: 'sweep pagination: offset -> keyset for mddb pruning scripts'
-column: backlog
-updated: 2026-11-26 12:32
+column: doing
+updated: 2026-11-26 12:34
 brief: 'prune-old-docs.py and device-telemetry prune.py enumerate via /v1/search offset paging (skip += kept). Under
   concurrent bulk writes the offset window shifts: stale docs get skipped, scanned under-counts, sweeps report deleted
   0 while work remains (observed 2026-11-12 on ops host-logs during refill). Fix = iterate by key cursor (seek from
@@ -443,18 +443,22 @@ comms:
 - at: 2026-11-26 12:32
   from: chaba
   text: 'idc02 defers: host overloaded (5m load/core 2.15 > 1.5)'
+- at: 2026-11-26 12:34
+  from: tony-dell
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
   executor: devin
-  attempts: 1
+  attempts: 2
   sweep:
     stale_running: 2026-11-25 21:09
     no_repo: 2026-11-25 21:09
   result: 'exit=0 acklog warning and the idc03 install step needed post-merge. | devin-task-20261125-210908-sweep-pagination-offset-keyset.service:
     Consumed 2min 7.369s CPU time over 17min 16.876s wall clock time, 962.1M memory peak, 571.8M memory swap peak.'
+  runner: tony-dell
 claim:
-  since: 2026-11-25 21:08
+  since: 2026-11-26 12:34
 review_kind: verify
