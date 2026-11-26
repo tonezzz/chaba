@@ -57,6 +57,10 @@ class KanbanCommitGuardTest(unittest.TestCase):
             _git(self.served, "config", k, v)
         (self.served / "scripts/board").mkdir(parents=True, exist_ok=True)
         shutil.copy2(CARD_IO, self.served / "scripts/board/card_io.py")
+        # idc03 has this generated dir on disk but with no tracked files.
+        # A positive pathspec for it must not kill the sweep (20:30 incident).
+        (self.served / "stacks/web/public/apps/board").mkdir(
+            parents=True, exist_ok=True)
 
         self.env = os.environ.copy()
         self.env.update({
@@ -105,12 +109,14 @@ class KanbanCommitGuardTest(unittest.TestCase):
                          "--format=", "HEAD").stdout
         self.assertNotIn(PROSE, committed, committed)
 
-    def test_generated_card_still_commits(self):
+    def test_generated_card_still_commits_with_empty_generated_dirs(self):
         card = self.served / "docs/ssot/kanban/cards/regular.yml"
         card.write_text("title: regular\n", encoding="utf-8")
 
         proc = self._run()
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertNotIn("did not match any file(s) known to git",
+                         proc.stderr, proc.stderr)
         committed = _git(self.served, "show", "--name-only",
                          "--format=", "HEAD").stdout
         self.assertIn("docs/ssot/kanban/cards/regular.yml", committed, committed)

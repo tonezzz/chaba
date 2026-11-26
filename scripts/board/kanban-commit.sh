@@ -59,22 +59,6 @@ PUSH_RETRIES="${KANBAN_PUSH_RETRIES:-3}"
 SAFE_PULL="$(cd "$(dirname "$0")" && pwd)/../git-safe-pull.sh"
 cd "$REPO" || exit 1
 
-# git errors on a pathspec that matches nothing — several of these dirs
-# only exist in the full checkout (and in the self-test fixture only some
-# are seeded), so keep only paths git actually knows about. Must run AFTER
-# cd "$REPO": testing these relative paths from the caller's cwd would
-# pick up the caller's checkout, not the served one.
-COMMIT_PATHS=()
-for _p in "${GENERATED_PATHS[@]}"; do
-    if [ -e "$_p" ] || git ls-files --error-unmatch "$_p" >/dev/null 2>&1; then
-        COMMIT_PATHS+=("$_p")
-    fi
-done
-if [ -e "$PROTECTED_PATH" ] \
-   || git ls-files --error-unmatch "$PROTECTED_PATH" >/dev/null 2>&1; then
-    COMMIT_PATHS+=(":(exclude)${PROTECTED_PATH}")
-fi
-
 ALERT_CARD_ID="ops-kanban-commit-guard"
 
 alert_card() {
@@ -266,6 +250,20 @@ git_lock_retry() {
 for d in docs/ssot/kanban/ docs/ssot/focus-inbox/ stacks/web/public/apps/board/ docs/reports/education-maintenance/ docs/reports/lesson-audit/; do
     [ -d "$d" ] && git_lock_retry git add "$d" ":(exclude)${PROTECTED_PATH}" >/dev/null 2>&1 || true
 done
+
+# git errors on a positive pathspec that matches nothing (idc03 20:30:
+# "error: pathspec 'stacks/web/public/apps/board/' did not match any file(s)
+# known to git" killed the sweep after the guard landed). An empty generated
+# dir is normal in a writer checkout, so keep only paths git knows about —
+# computed AFTER the `git add` loop so freshly staged files count too.
+COMMIT_PATHS=()
+for _p in "${GENERATED_PATHS[@]}"; do
+    if git ls-files -- "$_p" | grep -q .; then
+        COMMIT_PATHS+=("$_p")
+    fi
+done
+# A magical exclude pathspec is safe even when the path is absent.
+COMMIT_PATHS+=(":(exclude)${PROTECTED_PATH}")
 
 # Stale-write guard (4af10b4c5c, 56aac6476c): the sweep must not commit
 # files it does not own, even if another producer or a stale autostash put
