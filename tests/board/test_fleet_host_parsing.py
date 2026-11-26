@@ -102,6 +102,13 @@ class FleetHostParsing(unittest.TestCase):
         self.assertIn("checkout is on feat/vector-algorithms", msgs[0])
         self.assertNotIn("origin/feat/vector-algorithms", msgs[0])
 
+    def test_probe_uses_kk_mac_runner_interpreter(self):
+        # kk-mac's launchd runner uses /opt/homebrew/bin/python3; the SSH
+        # default python3 is 3.9 and cannot import dispatch_repos.py.
+        self.assertEqual(fh.probe_python("kk-mac"),
+                         "/opt/homebrew/bin/python3")
+        self.assertEqual(fh.probe_python("tony-dell"), "python3")
+
     def test_judge_flags_installed_tool_pin_drift(self):
         # 4af10b4c5c dropped the tool-pin audit entirely; a stale install
         # then looked healthy as long as the host's own checkout agreed.

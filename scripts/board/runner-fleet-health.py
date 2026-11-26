@@ -92,6 +92,11 @@ FLEET_HOST_RE = re.compile(
     r"\b(tony-[\w-]+|idc\d+|mn\d+|con\d+|kk-[\w-]+)\s*:")
 NO_DEVIN_RE = re.compile(
     r"no devin CLI|devin executor stays Linux-only", re.I)
+# kk-mac's runner-agent runs under /opt/homebrew/bin/python3 (launchd
+# ProgramArguments); the SSH default `python3` is macOS 3.9 and cannot
+# import dispatch_repos.py's PEP 604 annotations. Probe with the same
+# interpreter the runner uses, not the shell's default.
+PROBE_PYTHON = {"kk-mac": "/opt/homebrew/bin/python3"}
 
 # repo-side reference copies; installed drift is checked against these
 REFS = {
@@ -509,12 +514,17 @@ def devin_expected(host: str) -> bool:
     return True
 
 
+def probe_python(host: str) -> str:
+    """Interpreter the remote probe must use on this host."""
+    return PROBE_PYTHON.get(host, "python3")
+
+
 def probe(host: str) -> dict | None:
     """One JSON doc from the host; None on unreachable/undecodable."""
     local = host == HOST or os.environ.get("RUNNER_FLEET_SKIP_SSH")
     cmd = ([sys.executable, "-"] if local else
            ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8",
-            host, "python3", "-"])
+            host, probe_python(host), "-"])
     r = sh(cmd, timeout=SSH_TIMEOUT, stdin=REMOTE_PROBE)
     if r.returncode != 0:
         return {"_error": ((r.stderr or r.stdout).strip()[:200]
