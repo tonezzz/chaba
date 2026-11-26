@@ -1,0 +1,73 @@
+icon: shield
+title: Approve nest-mgr v2 full actuation on pilot hosts
+date: 2026-11-26
+card: nest-mgr-v2-actuation
+context: >-
+  Phase 0 shipped 2026-11-19 (c4a7ab375bb) and soaked ~6 days in
+  recommend mode on pilots idc02/con01/mn01 with zero executions and a
+  correct audit trail. The 13:35 design review recommended keeping
+  recommend mode because no unit was restart-allowlisted fleet-wide.
+  During the 2026-11-26 review triage Tony explicitly approved "full
+  actuation", overriding that recommendation.
+decision:
+  summary: >-
+    Enable the Phase 1 guarded plane on the three pilot hosts only
+    (idc02/con01/mn01). Phase 3 expansion to omen/idc03/dell is not
+    touched. The guardrails in the approved spec remain in force: kill
+    switch, host/unit circuit breakers, per-host opt-in, never-list,
+    cooldowns and owner locks.
+  scope_note: >-
+    The deployed nest-mgr.py (hash 1c1328cc3103ffc1) implements modes
+    monitor/recommend/guarded; Phase 2 work-stealing is described in the
+    spec but is not implemented in this binary. "Full actuation" therefore
+    means the highest implemented mode (guarded) armed on the pilots. No
+    later phase can be switched on by a flag alone.
+  approval: >-
+    Explicit Tony approval on 2026-11-26 via the review-triage choice.
+    This is a disruptive-mode change on three user-level services; the
+    mode flip is recorded here with rollback and verification.
+changes:
+  - "ansible-first triage: no existing nest-mgr playbook or template was
+    found in ansible/playbooks, ansible/inventory or ansible/templates;
+    treated as a one-off governed flag change with explicit --host
+    limits, backups and recorded rollback rather than inventing ssh|sed."
+  - "Per host: timestamped backup of mode, manager-state.json and any
+    flag files into
+    ~/.local/share/nest/backups/approve-full-actuation-<ts> (idc02
+    20261126-152258, con01 20261126-152301, mn01 20261126-152303)."
+  - "Wrote 'guarded' to ~/.local/share/nest/mode and created the
+    ~/.local/share/nest/actuation.on per-host opt-in flag on each pilot."
+  - "restart-allowlist deliberately left empty. No unit on any pilot
+    carries NEST_RESTART_OK=1, so guarded is armed but cannot execute a
+    restart until a real restart-repairable unit is explicitly allowlisted
+    in a separate decision."
+verification:
+  - "Pre-change on all three: installed nest-mgr.py hash 1c1328cc3103ffc1
+    == repo; service active; mode file 'recommend'; no actuation.on/off,
+    no host-circuit.open; empty allowlist."
+  - "Post-change after one 60s tick (15:24 +07) on all three:
+    requested_mode=guarded, mode(effective)=guarded, opted_in=true,
+    notes=null; zero actions since the flip and zero executions."
+  - "No kill switch and no host/unit circuit flags were introduced."
+  - "The two units previously held as failed are not restart-repairable:
+    jev-bench.service is an hourly oneshot that exited 0 at 15:00 on both
+    idc02 and con01; kk-mac-model-status.service's script is present again
+    on idc02/con01 (OPS-1348 healed). Neither was allowlisted or touched."
+  - "Board card nest-mgr-v2-actuation closed with the approval evidence."
+rollback: >-
+  Remove ~/.local/share/nest/actuation.on and restore the backed-up mode
+  file ('recommend') from ~/.local/share/nest/backups/approve-full-actuation-<ts>
+  on each pilot. The service reads flags each tick, so no restart is
+  required; the global kill switch is actuation.off if an immediate
+  degrade-to-monitor is needed.
+residual: >-
+  Phase 2 work-stealing is not implemented in the deployed binary and
+  remains a code task. No unit is allowlisted, so the new guarded mode is
+  observationally identical to recommend until that decision is made.
+  Fleet expansion beyond the three pilots is explicitly out of scope.
+lesson: >-
+  A mode flip can be safely armed with an empty allowlist: the highest
+  mode then becomes a no-op while the audit/opt-in path is exercised in
+  production conditions. Do not allowlist a failed unit merely because it
+  is failed — confirm it is restart-repairable first (oneshot timers and
+  orphaned units are not).
