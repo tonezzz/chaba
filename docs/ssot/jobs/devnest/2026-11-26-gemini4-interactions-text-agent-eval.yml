@@ -1,0 +1,77 @@
+title: Gemini Interactions API eval — stateful vs stateless text-agent paths
+subtitle: >
+  Interactions API verified on gemini-3.5/3.1-flash-lite (perfect adjusted
+  scores, both chaining modes); gemini-4 blocked by free-tier quota —
+  hydrogen 20/day exhausted, neon/argon/carbon zero-quota, paid project
+  still spend-capped.
+icon: education
+version: 1
+
+card: gemini4-interactions-text-agent-eval-2026-11-26  # ADA-1451
+date: 2026-11-26
+source_session: "2026-11-26 dispatch 20261126-191819-read-only-eval-on-idc03-with-g"
+
+delivered:
+  method:
+    host: idc03
+    key_used: GEMINI_API_KEY_MICHAEL  # free tier; value never displayed or copied
+    sdk: "google-genai 3.6.1 in /tmp/gemini-eval-venv (pip install 'google-genai>=3.2')"
+    api: "v1beta /interactions via client.interactions.create(api_version='v1beta')"
+    harness: scripts/bench/gemini-interactions-eval.py
+    fixture: "fixed 8-task set, 2-3 user turns each, 6 deterministic fake tools; checks = expected function calls (name+args) + cross-turn recall answer tokens (incl. one Thai turn)"
+    lanes:
+      - "g35l_stateful / g31l_stateful: Interactions API previous_interaction_id chaining"
+      - "g35l_int / g31l_int: Interactions API full step-history resend (stateless)"
+      - "g35l_gen: models.generate_content — current 3.x stateless text path"
+      - "g4h_stateful/g4h_stateless/g4n_stateful: wired but quota-blocked"
+    artifacts:
+      - reports/gemini-interactions-eval-2026-11-26.md
+      - reports/gemini-interactions-eval-2026-11-26.json
+      - reports/gemini-interactions-eval-2026-11-26-gen-rerun.json
+      - reports/gemini-interactions-eval-2026-11-26-stateful.json
+      - idc03:/tmp/gemini-eval/{harness.py,results*.json,run*.log}
+  results:
+    adjusted_scores:
+      g35l_stateful: 1.000   # 8/8 tasks
+      g35l_int: 1.000        # 8/8 tasks
+      g31l_stateful: 0.975   # one paraphrase miss ("flock" not echoed literally)
+      g31l_int: 1.000        # one format-only diff (2:32 PM vs 14:32)
+      g35l_gen: "1.000 on 4 completed tasks; 429-quota blocked for the rest (two runs)"
+    latency_p50_s: {stateful_35l: 6.4, stateless_35l: 4.7, generateContent_35l: 3.3}
+    input_tokens: "usage.total_input_tokens grows with context in BOTH modes (med ~405, max ~660) — stateful saves request payload (1-2 steps vs up to 16), not billed context"
+    request_payload: "stateful input_steps 1-2/call; stateless up to 16 steps/call by late turns"
+  gemini4_blocker:
+    gemini-4-hydrogen: "free tier 20 req/day — 503 high-demand during probes, then 429 daily cap (retry ~18h47m)"
+    gemini-4-neon/argon/carbon: "429 limit: 0 tokens/min AND 0 req/day on Free Tier — effectively paid-only"
+    gemini-4-paid-key: "GEMINI_API_KEY_PAID still 429 monthly spending cap (verified this session)"
+
+findings:
+  - "Interactions API works end-to-end on 3.x: function_call/function_result tool loop, requires_action status, previous_interaction_id chaining, and full-history stateless replay all verified."
+  - "Stateful chaining is strictly cleaner for agents: send only the new user_input/function_result steps; server holds history. No accuracy cost observed (both modes ~1.0 adjusted)."
+  - "Stateless full-history replay MUST preserve thought-step signatures verbatim — stripped function_call history returns 400 'Function call is missing a thought_signature in functionCall parts' (Gemini 3 rule). Dump response steps with model_dump(by_alias=True, exclude_none=True)."
+  - "SDK gotcha: client.interactions.create defaults to api_version v1 — preview models 404 unless api_version='v1beta' is passed."
+  - "usage.total_input_tokens is context-size, not request-size: it grows identically in stateful and stateless modes, so it cannot be used alone to prove stateful token savings — compare request step counts instead."
+  - "gemini-3.5-flash-lite generateContent free quota is small: ~15-20 calls then 429 RESOURCE_EXHAUSTED (interactions API on the same model has a separate, larger bucket)."
+  - "Adjusted vs literal grading differed only on format variants (thousands separators, 12h vs 24h time) plus one genuine paraphrase miss — literal-token grading undercounts by ~2-7%."
+
+guardrails:
+  - "No key, billing, gateway, model-pin, or production agent changes."
+  - "Read-only: fake deterministic tools only; no real KB/stock/weather calls."
+  - "Key value never printed, logged, or copied; sourced from ~/.config/secrets/gemini-keys.env on idc03."
+  - "No wiki publish — separate go-ahead required."
+
+activation_gate:
+  - "DONE 2026-11-26: card created via board-api; dispatched read-only."
+  - "DONE 2026-11-26: google-genai>=3.2 installed in throwaway /tmp venv on idc03."
+  - "DONE 2026-11-26: fixed 8-task tool+recall fixture run across 5 lanes; raw JSON + report committed."
+  - "BLOCKED: gemini-4-hydrogen/neon lanes — free-tier quota exhausted/zero and paid project still spend-capped; rerun harness when a funded key exists."
+
+verify:
+  - "DONE: stateful lane g35l_stateful scored 1.000 on all 8 tasks, 0 fatal calls."
+  - "DONE: stateless lane g35l_int scored 1.000 on all 8 tasks, 0 fatal calls."
+  - "DONE: gemini-4 probes returned 429 quota errors on MICHAEL and PAID keys (evidence in session + /tmp/gemini-eval/)."
+
+remaining:
+  - "Re-run scripts/bench/gemini-interactions-eval.py lanes g4h_stateful/g4h_stateless/g4n_stateful once GEMINI_API_KEY_PAID's monthly cap is lifted or a gemini-4-entitled key exists — Tony decision, not changed here."
+  - "If adopting Interactions API for a text agent: prefer previous_interaction_id chaining; replay full history only for stateless/debug paths, and always round-trip thought signatures."
+  - "generateContent lane coverage is partial (quota) — rerun g35l_gen alone for a clean 8/8 baseline when quota resets."

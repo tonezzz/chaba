@@ -1,0 +1,1057 @@
+{
+ "started": "2026-11-26T20:13:18+0700",
+ "key_var": "GEMINI_API_KEY_MICHAEL",
+ "api_version": "v1beta",
+ "sdk": "google-genai",
+ "lanes": {
+  "g35l_gen": {
+   "model": "gemini-3.5-flash-lite",
+   "mode": "generateContent",
+   "tasks": {
+    "t1_weather_reminder": {
+     "answers": {
+      "0": "The weather in Paris is sunny and 18\u00b0C. I've also set a reminder to call mom at 17:00.",
+      "1": "The weather in Paris is sunny and 18\u00b0C, and your reminder to call mom is set for 17:00."
+     },
+     "fatal": false,
+     "wall_s": 6.9,
+     "score": 1.0,
+     "n_checks": 6,
+     "checks": [
+      {
+       "turn": 0,
+       "check": "call:get_weather:{\"city\": \"paris\"}",
+       "pass": true
+      },
+      {
+       "turn": 0,
+       "check": "call:create_reminder:{\"time\": \"17:00\"}",
+       "pass": true
+      },
+      {
+       "turn": 0,
+       "check": "answer_has:18",
+       "pass": true
+      },
+      {
+       "turn": 0,
+       "check": "answer_has:sunny",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:18",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:17:00",
+       "pass": true
+      }
+     ],
+     "calls": [
+      {
+       "lane": "g35l_gen",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "generateContent",
+       "latency_s": 4.09,
+       "usage": {
+        "input": 337,
+        "output": 43,
+        "thought": 0,
+        "total": 380
+       },
+       "tool_calls": [
+        {
+         "name": "get_weather",
+         "arguments": {
+          "city": "Paris"
+         },
+         "result": {
+          "city": "Paris",
+          "temp_c": 18,
+          "condition": "sunny",
+          "units": "celsius"
+         }
+        },
+        {
+         "name": "create_reminder",
+         "arguments": {
+          "time": "17:00",
+          "text": "Call mom"
+         },
+         "result": {
+          "status": "created",
+          "text": "Call mom",
+          "time": "17:00"
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_gen",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "generateContent",
+       "latency_s": 0.97,
+       "usage": {
+        "input": 443,
+        "output": 31,
+        "thought": 0,
+        "total": 474
+       },
+       "tool_calls": null
+      },
+      {
+       "lane": "g35l_gen",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "generateContent",
+       "latency_s": 1.84,
+       "usage": {
+        "input": 491,
+        "output": 29,
+        "thought": 0,
+        "total": 520
+       },
+       "tool_calls": null
+      }
+     ]
+    },
+    "t2_kb_calc_recall": {
+     "answers": {
+      "0": "The deploy lock rule is: `deploy-card.sh` uses `flock /tmp/pfg-deploy.lock`, and you must never bypass it.",
+      "1": "There are 150 minutes in 2.5 hours. The documentation states that `deploy-card.sh` uses `flock /tmp/pfg-deploy.lock`, and you must never bypass it."
+     },
+     "fatal": false,
+     "wall_s": 10.6,
+     "score": 1.0,
+     "n_checks": 5,
+     "checks": [
+      {
+       "turn": 0,
+       "check": "call:search_kb:{\"query_contains\": \"deploy lock\"}",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "call:calculator:{}",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:150",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:flock",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:deploy",
+       "pass": true
+      }
+     ],
+     "calls": [
+      {
+       "lane": "g35l_gen",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "generateContent",
+       "latency_s": 0.54,
+       "usage": {
+        "input": 322,
+        "output": 18,
+        "thought": 0,
+        "total": 340
+       },
+       "tool_calls": [
+        {
+         "name": "search_kb",
+         "arguments": {
+          "query": "deploy lock rule"
+         },
+         "result": {
+          "query": "deploy lock rule",
+          "results": [
+           {
+            "title": "deploy lock",
+            "snippet": "deploy-card.sh uses flock /tmp/pfg-deploy.lock; never bypass it"
+           }
+          ]
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_gen",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "generateContent",
+       "latency_s": 4.76,
+       "usage": {
+        "input": 391,
+        "output": 34,
+        "thought": 0,
+        "total": 425
+       },
+       "tool_calls": null
+      },
+      {
+       "lane": "g35l_gen",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "generateContent",
+       "latency_s": 1.76,
+       "usage": {
+        "input": 454,
+        "output": 20,
+        "thought": 0,
+        "total": 474
+       },
+       "tool_calls": [
+        {
+         "name": "calculator",
+         "arguments": {
+          "expression": "2.5 * 60"
+         },
+         "result": {
+          "expression": "2.5 * 60",
+          "value": 150.0
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_gen",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "generateContent",
+       "latency_s": 3.5,
+       "usage": {
+        "input": 498,
+        "output": 46,
+        "thought": 0,
+        "total": 544
+       },
+       "tool_calls": null
+      }
+     ]
+    },
+    "t3_stock_compare": {
+     "answers": {
+      "0": "AAPL is currently at $232.50 (up 1.2%).",
+      "1": "MSFT is currently at $428.10 (up 1.2%).",
+      "2": "MSFT is more expensive by $195.60 per share ($428.10 vs $232.50)."
+     },
+     "fatal": false,
+     "wall_s": 16.4,
+     "score": 1.0,
+     "n_checks": 4,
+     "checks": [
+      {
+       "turn": 0,
+       "check": "call:get_stock:{\"symbol\": \"aapl\"}",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "call:get_stock:{\"symbol\": \"msft\"}",
+       "pass": true
+      },
+      {
+       "turn": 2,
+       "check": "answer_has:msft",
+       "pass": true
+      },
+      {
+       "turn": 2,
+       "check": "answer_has:195",
+       "pass": true
+      }
+     ],
+     "calls": [
+      {
+       "lane": "g35l_gen",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "generateContent",
+       "latency_s": 4.93,
+       "usage": {
+        "input": 320,
+        "output": 16,
+        "thought": 0,
+        "total": 336
+       },
+       "tool_calls": [
+        {
+         "name": "get_stock",
+         "arguments": {
+          "symbol": "AAPL"
+         },
+         "result": {
+          "symbol": "AAPL",
+          "price_usd": 232.5,
+          "change_pct": 1.2
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_gen",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "generateContent",
+       "latency_s": 0.9,
+       "usage": {
+        "input": 368,
+        "output": 18,
+        "thought": 0,
+        "total": 386
+       },
+       "tool_calls": null
+      },
+      {
+       "lane": "g35l_gen",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "generateContent",
+       "latency_s": 1.22,
+       "usage": {
+        "input": 394,
+        "output": 17,
+        "thought": 0,
+        "total": 411
+       },
+       "tool_calls": [
+        {
+         "name": "get_stock",
+         "arguments": {
+          "symbol": "MSFT"
+         },
+         "result": {
+          "symbol": "MSFT",
+          "price_usd": 428.1,
+          "change_pct": 1.2
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_gen",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "generateContent",
+       "latency_s": 0.65,
+       "usage": {
+        "input": 444,
+        "output": 19,
+        "thought": 0,
+        "total": 463
+       },
+       "tool_calls": null
+      },
+      {
+       "lane": "g35l_gen",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "generateContent",
+       "latency_s": 4.95,
+       "usage": {
+        "input": 477,
+        "output": 25,
+        "thought": 0,
+        "total": 502
+       },
+       "tool_calls": [
+        {
+         "name": "calculator",
+         "arguments": {
+          "expression": "428.1 - 232.5"
+         },
+         "result": {
+          "expression": "428.1 - 232.5",
+          "value": 195.60000000000002
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_gen",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "generateContent",
+       "latency_s": 3.73,
+       "usage": {
+        "input": 533,
+        "output": 31,
+        "thought": 0,
+        "total": 564
+       },
+       "tool_calls": null
+      }
+     ]
+    },
+    "t4_time_calc_chain": {
+     "answers": {
+      "0": "It is 14:32 in Tokyo right now.",
+      "1": "The original Tokyo time was 14:32, and the meeting starts at 16:02."
+     },
+     "fatal": false,
+     "wall_s": 19.3,
+     "score": 1.0,
+     "n_checks": 5,
+     "checks": [
+      {
+       "turn": 0,
+       "check": "call:get_time:{\"timezone_contains\": \"tokyo\"}",
+       "pass": true
+      },
+      {
+       "turn": 0,
+       "check": "answer_has:14:32",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "call:calculator:{}",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:16:02",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:14:32",
+       "pass": true
+      }
+     ],
+     "calls": [
+      {
+       "lane": "g35l_gen",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "generateContent",
+       "latency_s": 3.41,
+       "usage": {
+        "input": 321,
+        "output": 18,
+        "thought": 0,
+        "total": 339
+       },
+       "tool_calls": [
+        {
+         "name": "get_time",
+         "arguments": {
+          "timezone": "Asia/Tokyo"
+         },
+         "result": {
+          "timezone": "Asia/Tokyo",
+          "local_time": "14:32",
+          "date": "2026-11-26"
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_gen",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "generateContent",
+       "latency_s": 5.3,
+       "usage": {
+        "input": 382,
+        "output": 13,
+        "thought": 0,
+        "total": 395
+       },
+       "tool_calls": null
+      },
+      {
+       "lane": "g35l_gen",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "generateContent",
+       "latency_s": 4.62,
+       "usage": {
+        "input": 424,
+        "output": 27,
+        "thought": 0,
+        "total": 451
+       },
+       "tool_calls": [
+        {
+         "name": "calculator",
+         "arguments": {
+          "expression": "14 * 60 + 32 + 90"
+         },
+         "result": {
+          "expression": "14 * 60 + 32 + 90",
+          "value": 962
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_gen",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "generateContent",
+       "latency_s": 1.97,
+       "usage": {
+        "input": 482,
+        "output": 20,
+        "thought": 0,
+        "total": 502
+       },
+       "tool_calls": [
+        {
+         "name": "calculator",
+         "arguments": {
+          "expression": "962 / 60"
+         },
+         "result": {
+          "expression": "962 / 60",
+          "value": 16.033333333333335
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_gen",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "generateContent",
+       "latency_s": 0.77,
+       "usage": {
+        "input": 539,
+        "output": 20,
+        "thought": 0,
+        "total": 559
+       },
+       "tool_calls": [
+        {
+         "name": "calculator",
+         "arguments": {
+          "expression": "962 % 60"
+         },
+         "result": {
+          "expression": "962 % 60",
+          "value": 2
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_gen",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "generateContent",
+       "latency_s": 3.2,
+       "usage": {
+        "input": 581,
+        "output": 24,
+        "thought": 0,
+        "total": 605
+       },
+       "tool_calls": null
+      }
+     ]
+    },
+    "t5_two_weather": {
+     "answers": {
+      "0": ""
+     },
+     "fatal": true,
+     "wall_s": 0.1,
+     "score": 0.0,
+     "n_checks": 4,
+     "checks": [
+      {
+       "turn": 0,
+       "check": "call:get_weather",
+       "pass": false
+      },
+      {
+       "turn": 0,
+       "check": "call:get_weather",
+       "pass": false
+      },
+      {
+       "turn": 0,
+       "check": "answer_has:sunny",
+       "pass": false
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:berlin",
+       "pass": false
+      }
+     ],
+     "calls": [
+      {
+       "lane": "g35l_gen",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "generateContent",
+       "latency_s": 0.09,
+       "error": "ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Q"
+      }
+     ]
+    },
+    "t6_fact_recall": {
+     "answers": {
+      "0": "I've remembered those facts for you:\n- **Codename:** Nighthawk\n- **Budget:** 4,200 USD\n- **Deadline:** Friday",
+      "1": ""
+     },
+     "fatal": true,
+     "wall_s": 3.5,
+     "score": 0.0,
+     "n_checks": 3,
+     "checks": [
+      {
+       "turn": 1,
+       "check": "answer_has:nighthawk",
+       "pass": false
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:4200",
+       "pass": false
+      },
+      {
+       "turn": 2,
+       "check": "answer_has:friday",
+       "pass": false
+      }
+     ],
+     "calls": [
+      {
+       "lane": "g35l_gen",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "generateContent",
+       "latency_s": 3.45,
+       "usage": {
+        "input": 337,
+        "output": 36,
+        "thought": 0,
+        "total": 373
+       },
+       "tool_calls": null
+      },
+      {
+       "lane": "g35l_gen",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "generateContent",
+       "latency_s": 0.09,
+       "error": "ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Q"
+      }
+     ]
+    },
+    "t7_calc_then_recall": {
+     "skipped": "lane blocked"
+    },
+    "t8_thai_recall": {
+     "skipped": "lane blocked"
+    }
+   },
+   "call_log": [
+    {
+     "lane": "g35l_gen",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "generateContent",
+     "latency_s": 4.09,
+     "usage": {
+      "input": 337,
+      "output": 43,
+      "thought": 0,
+      "total": 380
+     },
+     "tool_calls": [
+      {
+       "name": "get_weather",
+       "arguments": {
+        "city": "Paris"
+       },
+       "result": {
+        "city": "Paris",
+        "temp_c": 18,
+        "condition": "sunny",
+        "units": "celsius"
+       }
+      },
+      {
+       "name": "create_reminder",
+       "arguments": {
+        "time": "17:00",
+        "text": "Call mom"
+       },
+       "result": {
+        "status": "created",
+        "text": "Call mom",
+        "time": "17:00"
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_gen",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "generateContent",
+     "latency_s": 0.97,
+     "usage": {
+      "input": 443,
+      "output": 31,
+      "thought": 0,
+      "total": 474
+     },
+     "tool_calls": null
+    },
+    {
+     "lane": "g35l_gen",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "generateContent",
+     "latency_s": 1.84,
+     "usage": {
+      "input": 491,
+      "output": 29,
+      "thought": 0,
+      "total": 520
+     },
+     "tool_calls": null
+    },
+    {
+     "lane": "g35l_gen",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "generateContent",
+     "latency_s": 0.54,
+     "usage": {
+      "input": 322,
+      "output": 18,
+      "thought": 0,
+      "total": 340
+     },
+     "tool_calls": [
+      {
+       "name": "search_kb",
+       "arguments": {
+        "query": "deploy lock rule"
+       },
+       "result": {
+        "query": "deploy lock rule",
+        "results": [
+         {
+          "title": "deploy lock",
+          "snippet": "deploy-card.sh uses flock /tmp/pfg-deploy.lock; never bypass it"
+         }
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_gen",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "generateContent",
+     "latency_s": 4.76,
+     "usage": {
+      "input": 391,
+      "output": 34,
+      "thought": 0,
+      "total": 425
+     },
+     "tool_calls": null
+    },
+    {
+     "lane": "g35l_gen",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "generateContent",
+     "latency_s": 1.76,
+     "usage": {
+      "input": 454,
+      "output": 20,
+      "thought": 0,
+      "total": 474
+     },
+     "tool_calls": [
+      {
+       "name": "calculator",
+       "arguments": {
+        "expression": "2.5 * 60"
+       },
+       "result": {
+        "expression": "2.5 * 60",
+        "value": 150.0
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_gen",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "generateContent",
+     "latency_s": 3.5,
+     "usage": {
+      "input": 498,
+      "output": 46,
+      "thought": 0,
+      "total": 544
+     },
+     "tool_calls": null
+    },
+    {
+     "lane": "g35l_gen",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "generateContent",
+     "latency_s": 4.93,
+     "usage": {
+      "input": 320,
+      "output": 16,
+      "thought": 0,
+      "total": 336
+     },
+     "tool_calls": [
+      {
+       "name": "get_stock",
+       "arguments": {
+        "symbol": "AAPL"
+       },
+       "result": {
+        "symbol": "AAPL",
+        "price_usd": 232.5,
+        "change_pct": 1.2
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_gen",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "generateContent",
+     "latency_s": 0.9,
+     "usage": {
+      "input": 368,
+      "output": 18,
+      "thought": 0,
+      "total": 386
+     },
+     "tool_calls": null
+    },
+    {
+     "lane": "g35l_gen",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "generateContent",
+     "latency_s": 1.22,
+     "usage": {
+      "input": 394,
+      "output": 17,
+      "thought": 0,
+      "total": 411
+     },
+     "tool_calls": [
+      {
+       "name": "get_stock",
+       "arguments": {
+        "symbol": "MSFT"
+       },
+       "result": {
+        "symbol": "MSFT",
+        "price_usd": 428.1,
+        "change_pct": 1.2
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_gen",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "generateContent",
+     "latency_s": 0.65,
+     "usage": {
+      "input": 444,
+      "output": 19,
+      "thought": 0,
+      "total": 463
+     },
+     "tool_calls": null
+    },
+    {
+     "lane": "g35l_gen",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "generateContent",
+     "latency_s": 4.95,
+     "usage": {
+      "input": 477,
+      "output": 25,
+      "thought": 0,
+      "total": 502
+     },
+     "tool_calls": [
+      {
+       "name": "calculator",
+       "arguments": {
+        "expression": "428.1 - 232.5"
+       },
+       "result": {
+        "expression": "428.1 - 232.5",
+        "value": 195.60000000000002
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_gen",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "generateContent",
+     "latency_s": 3.73,
+     "usage": {
+      "input": 533,
+      "output": 31,
+      "thought": 0,
+      "total": 564
+     },
+     "tool_calls": null
+    },
+    {
+     "lane": "g35l_gen",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "generateContent",
+     "latency_s": 3.41,
+     "usage": {
+      "input": 321,
+      "output": 18,
+      "thought": 0,
+      "total": 339
+     },
+     "tool_calls": [
+      {
+       "name": "get_time",
+       "arguments": {
+        "timezone": "Asia/Tokyo"
+       },
+       "result": {
+        "timezone": "Asia/Tokyo",
+        "local_time": "14:32",
+        "date": "2026-11-26"
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_gen",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "generateContent",
+     "latency_s": 5.3,
+     "usage": {
+      "input": 382,
+      "output": 13,
+      "thought": 0,
+      "total": 395
+     },
+     "tool_calls": null
+    },
+    {
+     "lane": "g35l_gen",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "generateContent",
+     "latency_s": 4.62,
+     "usage": {
+      "input": 424,
+      "output": 27,
+      "thought": 0,
+      "total": 451
+     },
+     "tool_calls": [
+      {
+       "name": "calculator",
+       "arguments": {
+        "expression": "14 * 60 + 32 + 90"
+       },
+       "result": {
+        "expression": "14 * 60 + 32 + 90",
+        "value": 962
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_gen",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "generateContent",
+     "latency_s": 1.97,
+     "usage": {
+      "input": 482,
+      "output": 20,
+      "thought": 0,
+      "total": 502
+     },
+     "tool_calls": [
+      {
+       "name": "calculator",
+       "arguments": {
+        "expression": "962 / 60"
+       },
+       "result": {
+        "expression": "962 / 60",
+        "value": 16.033333333333335
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_gen",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "generateContent",
+     "latency_s": 0.77,
+     "usage": {
+      "input": 539,
+      "output": 20,
+      "thought": 0,
+      "total": 559
+     },
+     "tool_calls": [
+      {
+       "name": "calculator",
+       "arguments": {
+        "expression": "962 % 60"
+       },
+       "result": {
+        "expression": "962 % 60",
+        "value": 2
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_gen",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "generateContent",
+     "latency_s": 3.2,
+     "usage": {
+      "input": 581,
+      "output": 24,
+      "thought": 0,
+      "total": 605
+     },
+     "tool_calls": null
+    },
+    {
+     "lane": "g35l_gen",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "generateContent",
+     "latency_s": 0.09,
+     "error": "ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Q"
+    },
+    {
+     "lane": "g35l_gen",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "generateContent",
+     "latency_s": 3.45,
+     "usage": {
+      "input": 337,
+      "output": 36,
+      "thought": 0,
+      "total": 373
+     },
+     "tool_calls": null
+    },
+    {
+     "lane": "g35l_gen",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "generateContent",
+     "latency_s": 0.09,
+     "error": "ClientError: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Q"
+    }
+   ],
+   "consecutive_fatal": 2,
+   "blocked": true
+  }
+ },
+ "calls": [],
+ "finished": "2026-11-26T20:14:15+0700"
+}

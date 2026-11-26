@@ -1,0 +1,3406 @@
+{
+ "started": "2026-11-26T20:17:08+0700",
+ "key_var": "GEMINI_API_KEY_MICHAEL",
+ "api_version": "v1beta",
+ "sdk": "google-genai",
+ "lanes": {
+  "g35l_stateful": {
+   "model": "gemini-3.5-flash-lite",
+   "mode": "stateful",
+   "tasks": {
+    "t1_weather_reminder": {
+     "answers": {
+      "0": "The weather in Paris right now is 18\u00b0C and sunny. I've also set a reminder to call mom at 17:00.",
+      "1": "The weather in Paris is 18\u00b0C and sunny, and your reminder to call mom is set for 17:00."
+     },
+     "fatal": false,
+     "wall_s": 14.6,
+     "score": 1.0,
+     "n_checks": 6,
+     "checks": [
+      {
+       "turn": 0,
+       "check": "call:get_weather:{\"city\": \"paris\"}",
+       "pass": true
+      },
+      {
+       "turn": 0,
+       "check": "call:create_reminder:{\"time\": \"17:00\"}",
+       "pass": true
+      },
+      {
+       "turn": 0,
+       "check": "answer_has:18",
+       "pass": true
+      },
+      {
+       "turn": 0,
+       "check": "answer_has:sunny",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:18",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:17:00",
+       "pass": true
+      }
+     ],
+     "calls": [
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 6.62,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 337,
+        "output": 43,
+        "thought": 0,
+        "total": 380
+       },
+       "interaction_id": "v1_ChdWVEVJYTlMS01lVDY2OTRQaEliVndRaxIXVlRFSWE5TEtNZVQ2Njk0UGhJYlZ3UWs",
+       "tool_calls": [
+        {
+         "name": "get_weather",
+         "arguments": {
+          "city": "Paris"
+         },
+         "result": {
+          "city": "Paris",
+          "temp_c": 18,
+          "condition": "sunny",
+          "units": "celsius"
+         }
+        },
+        {
+         "name": "create_reminder",
+         "arguments": {
+          "text": "Call mom",
+          "time": "17:00"
+         },
+         "result": {
+          "status": "created",
+          "text": "Call mom",
+          "time": "17:00"
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 3.91,
+       "input_steps": 2,
+       "status": "completed",
+       "usage": {
+        "input": 457,
+        "output": 33,
+        "thought": 0,
+        "total": 490
+       },
+       "interaction_id": "v1_ChdWVEVJYTlMS01lVDY2OTRQaEliVndRaxIXWERFSWE2Q0hCb21LNjk0UHo4cm9pQW8"
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 4.03,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 507,
+        "output": 29,
+        "thought": 0,
+        "total": 536
+       },
+       "interaction_id": "v1_ChdWVEVJYTlMS01lVDY2OTRQaEliVndRaxIWWURFSWFfeVJDNFNLM0xVUHZhZXZHUQ"
+      }
+     ]
+    },
+    "t2_kb_calc_recall": {
+     "answers": {
+      "0": "`deploy-card.sh` uses `flock /tmp/pfg-deploy.lock`; never bypass it.",
+      "1": "There are 150 minutes in 2.5 hours. The documentation states that `deploy-card.sh` uses `flock /tmp/pfg-deploy.lock` and that you must never bypass it."
+     },
+     "fatal": false,
+     "wall_s": 22.7,
+     "score": 1.0,
+     "n_checks": 5,
+     "checks": [
+      {
+       "turn": 0,
+       "check": "call:search_kb:{\"query_contains\": \"deploy lock\"}",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "call:calculator:{}",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:150",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:flock",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:deploy",
+       "pass": true
+      }
+     ],
+     "calls": [
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 4.19,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 322,
+        "output": 18,
+        "thought": 0,
+        "total": 340
+       },
+       "interaction_id": "v1_ChdZekVJYTdmWklQYWF6N3NQbkl6MThRSRIXWXpFSWE3ZlpJUGFhejdzUG5JejE4UUk",
+       "tool_calls": [
+        {
+         "name": "search_kb",
+         "arguments": {
+          "query": "deploy lock rule"
+         },
+         "result": {
+          "query": "deploy lock rule",
+          "results": [
+           {
+            "title": "deploy lock",
+            "snippet": "deploy-card.sh uses flock /tmp/pfg-deploy.lock; never bypass it"
+           }
+          ]
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 4.1,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 397,
+        "output": 25,
+        "thought": 0,
+        "total": 422
+       },
+       "interaction_id": "v1_ChdZekVJYTdmWklQYWF6N3NQbkl6MThRSRIXYURFSWE0SDFEc1htNHQ0UDZLZXRnQWM"
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 6.98,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 451,
+        "output": 20,
+        "thought": 0,
+        "total": 471
+       },
+       "interaction_id": "v1_ChdZekVJYTdmWklQYWF6N3NQbkl6MThRSRIXYkRFSWFfQ2pHdm1MNjk0UGktX3ZzQTA",
+       "tool_calls": [
+        {
+         "name": "calculator",
+         "arguments": {
+          "expression": "2.5 * 60"
+         },
+         "result": {
+          "expression": "2.5 * 60",
+          "value": 150.0
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 7.44,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 504,
+        "output": 47,
+        "thought": 0,
+        "total": 551
+       },
+       "interaction_id": "v1_ChdZekVJYTdmWklQYWF6N3NQbkl6MThRSRIXY3pFSWE5cUZJSlhDM0xVUHlQTDJnUTg"
+      }
+     ]
+    },
+    "t3_stock_compare": {
+     "answers": {
+      "0": "AAPL is currently trading at $232.50, up 1.2%.",
+      "1": "MSFT is currently trading at $428.10, up 1.2%.",
+      "2": "MSFT is more expensive than AAPL by $195.60 per share."
+     },
+     "fatal": false,
+     "wall_s": 43.6,
+     "score": 1.0,
+     "n_checks": 4,
+     "checks": [
+      {
+       "turn": 0,
+       "check": "call:get_stock:{\"symbol\": \"aapl\"}",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "call:get_stock:{\"symbol\": \"msft\"}",
+       "pass": true
+      },
+      {
+       "turn": 2,
+       "check": "answer_has:msft",
+       "pass": true
+      },
+      {
+       "turn": 2,
+       "check": "answer_has:195",
+       "pass": true
+      }
+     ],
+     "calls": [
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 6.55,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 320,
+        "output": 16,
+        "thought": 0,
+        "total": 336
+       },
+       "interaction_id": "v1_ChdlakVJYV8zOER1TGU2OTRQcDZfcC1RRRIXZWpFSWFfMzhEdUxlNjk0UHA2X3AtUUU",
+       "tool_calls": [
+        {
+         "name": "get_stock",
+         "arguments": {
+          "symbol": "AAPL"
+         },
+         "result": {
+          "symbol": "AAPL",
+          "price_usd": 232.5,
+          "change_pct": 1.2
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 6.8,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 377,
+        "output": 19,
+        "thought": 0,
+        "total": 396
+       },
+       "interaction_id": "v1_ChdlakVJYV8zOER1TGU2OTRQcDZfcC1RRRIXZ1RFSWE1UENGY3ZKejdzUGwtakUyUTA"
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 6.32,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 404,
+        "output": 17,
+        "thought": 0,
+        "total": 421
+       },
+       "interaction_id": "v1_ChdlakVJYV8zOER1TGU2OTRQcDZfcC1RRRIXaURFSWE1eVhDSVhqM0xVUC1vLS15UWs",
+       "tool_calls": [
+        {
+         "name": "get_stock",
+         "arguments": {
+          "symbol": "MSFT"
+         },
+         "result": {
+          "symbol": "MSFT",
+          "price_usd": 428.1,
+          "change_pct": 1.2
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 6.84,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 463,
+        "output": 20,
+        "thought": 0,
+        "total": 483
+       },
+       "interaction_id": "v1_ChdlakVJYV8zOER1TGU2OTRQcDZfcC1RRRIXampFSWE0VzdIcTdFZzhVUHJ0UzcwQXM"
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 8.2,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 497,
+        "output": 26,
+        "thought": 0,
+        "total": 523
+       },
+       "interaction_id": "v1_ChdlakVJYV8zOER1TGU2OTRQcDZfcC1RRRIXbFRFSWE2RHZHc3lDNjk0UHZKQ2w2QXM",
+       "tool_calls": [
+        {
+         "name": "calculator",
+         "arguments": {
+          "expression": "428.1 - 232.5"
+         },
+         "result": {
+          "expression": "428.1 - 232.5",
+          "value": 195.60000000000002
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 8.92,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 573,
+        "output": 19,
+        "thought": 0,
+        "total": 592
+       },
+       "interaction_id": "v1_ChdlakVJYV8zOER1TGU2OTRQcDZfcC1RRRIXblRFSWE1ZjZMcDJRejdzUG5faWcwUU0"
+      }
+     ]
+    },
+    "t4_time_calc_chain": {
+     "answers": {
+      "0": "It is currently 14:32 in Tokyo (November 26, 2026).",
+      "1": "The original time in Tokyo was **14:32**, and the meeting starts at **16:02**."
+     },
+     "fatal": false,
+     "wall_s": 31.8,
+     "score": 1.0,
+     "n_checks": 5,
+     "checks": [
+      {
+       "turn": 0,
+       "check": "call:get_time:{\"timezone_contains\": \"tokyo\"}",
+       "pass": true
+      },
+      {
+       "turn": 0,
+       "check": "answer_has:14:32",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "call:calculator:{}",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:16:02",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:14:32",
+       "pass": true
+      }
+     ],
+     "calls": [
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 2.99,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 321,
+        "output": 18,
+        "thought": 0,
+        "total": 339
+       },
+       "interaction_id": "v1_ChdwVEVJYTlhcE50M2U2OTRQNzY2dzBBbxIXcFRFSWE5YXBOdDNlNjk0UDc2NncwQW8",
+       "tool_calls": [
+        {
+         "name": "get_time",
+         "arguments": {
+          "timezone": "Asia/Tokyo"
+         },
+         "result": {
+          "timezone": "Asia/Tokyo",
+          "local_time": "14:32",
+          "date": "2026-11-26"
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 5.09,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 387,
+        "output": 23,
+        "thought": 0,
+        "total": 410
+       },
+       "interaction_id": "v1_ChdwVEVJYTlhcE50M2U2OTRQNzY2dzBBbxIXcVRFSWFfbVZGc3pvanVNUHU5bm1pUVU"
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 4.12,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 439,
+        "output": 27,
+        "thought": 0,
+        "total": 466
+       },
+       "interaction_id": "v1_ChdwVEVJYTlhcE50M2U2OTRQNzY2dzBBbxIXcmpFSWEtR2tIdi1qcWZrUHJQMk5nQVk",
+       "tool_calls": [
+        {
+         "name": "calculator",
+         "arguments": {
+          "expression": "14 * 60 + 32 + 90"
+         },
+         "result": {
+          "expression": "14 * 60 + 32 + 90",
+          "value": 962
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 7.06,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 504,
+        "output": 20,
+        "thought": 0,
+        "total": 524
+       },
+       "interaction_id": "v1_ChdwVEVJYTlhcE50M2U2OTRQNzY2dzBBbxIXc2pFSWFfVGlLcHFuNjk0UHQ0cnRvUWc",
+       "tool_calls": [
+        {
+         "name": "calculator",
+         "arguments": {
+          "expression": "962 / 60"
+         },
+         "result": {
+          "expression": "962 / 60",
+          "value": 16.033333333333335
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 4.3,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 570,
+        "output": 20,
+        "thought": 0,
+        "total": 590
+       },
+       "interaction_id": "v1_ChdwVEVJYTlhcE50M2U2OTRQNzY2dzBBbxIXdVRFSWE1YURMYzdZak5BUHdfZUg4QWs",
+       "tool_calls": [
+        {
+         "name": "calculator",
+         "arguments": {
+          "expression": "962 % 60"
+         },
+         "result": {
+          "expression": "962 % 60",
+          "value": 2
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 8.25,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 619,
+        "output": 25,
+        "thought": 0,
+        "total": 644
+       },
+       "interaction_id": "v1_ChdwVEVJYTlhcE50M2U2OTRQNzY2dzBBbxIXdmpFSWE3S1lDSjJ6ZzhVUDhmcTlvUVk"
+      }
+     ]
+    },
+    "t5_two_weather": {
+     "answers": {
+      "0": "Both Berlin and Tokyo are 18\u00b0C and sunny.",
+      "1": "Berlin."
+     },
+     "fatal": false,
+     "wall_s": 16.4,
+     "score": 1.0,
+     "n_checks": 4,
+     "checks": [
+      {
+       "turn": 0,
+       "check": "call:get_weather:{\"city_contains\": \"berlin\"}",
+       "pass": true
+      },
+      {
+       "turn": 0,
+       "check": "call:get_weather:{\"city_contains\": \"tokyo\"}",
+       "pass": true
+      },
+      {
+       "turn": 0,
+       "check": "answer_has:sunny",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:berlin",
+       "pass": true
+      }
+     ],
+     "calls": [
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 2.61,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 323,
+        "output": 32,
+        "thought": 0,
+        "total": 355
+       },
+       "interaction_id": "v1_Chd4VEVJYTlEd0w4SGNnOFVQZ01hSDBRWRIXeFRFSWE5RHdMOEhjZzhVUGdNYUgwUVk",
+       "tool_calls": [
+        {
+         "name": "get_weather",
+         "arguments": {
+          "city": "Berlin"
+         },
+         "result": {
+          "city": "Berlin",
+          "temp_c": 18,
+          "condition": "sunny",
+          "units": "celsius"
+         }
+        },
+        {
+         "name": "get_weather",
+         "arguments": {
+          "city": "Tokyo"
+         },
+         "result": {
+          "city": "Tokyo",
+          "temp_c": 18,
+          "condition": "sunny",
+          "units": "celsius"
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 6.89,
+       "input_steps": 2,
+       "status": "completed",
+       "usage": {
+        "input": 437,
+        "output": 13,
+        "thought": 0,
+        "total": 450
+       },
+       "interaction_id": "v1_Chd4VEVJYTlEd0w4SGNnOFVQZ01hSDBRWRIXeURFSWE0ZVpNYmE2bU5NUDRNRFotQVk"
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 6.89,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 460,
+        "output": 2,
+        "thought": 0,
+        "total": 462
+       },
+       "interaction_id": "v1_Chd4VEVJYTlEd0w4SGNnOFVQZ01hSDBRWRIXenpFSWE4dkNLdXpjZzhVUDE4N0xpUVU"
+      }
+     ]
+    },
+    "t6_fact_recall": {
+     "answers": {
+      "0": "I've noted that the project codename is Nighthawk, the budget is 4200 USD, and the deadline is Friday.",
+      "1": "Your project codename is Nighthawk and your budget is 4200 USD.",
+      "2": "The deadline is Friday."
+     },
+     "fatal": false,
+     "wall_s": 19.0,
+     "score": 1.0,
+     "n_checks": 3,
+     "checks": [
+      {
+       "turn": 1,
+       "check": "answer_has:nighthawk",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:4200",
+       "pass": true
+      },
+      {
+       "turn": 2,
+       "check": "answer_has:friday",
+       "pass": true
+      }
+     ],
+     "calls": [
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 8.0,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 337,
+        "output": 30,
+        "thought": 0,
+        "total": 367
+       },
+       "interaction_id": "v1_ChcxakVJYTliWEQ1M2g0dDRQZzZtNDRRSRIXMWpFSWE5YlhENTNoNHQ0UGc2bTQ0UUk"
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 7.45,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 378,
+        "output": 19,
+        "thought": 0,
+        "total": 397
+       },
+       "interaction_id": "v1_ChcxakVJYTliWEQ1M2g0dDRQZzZtNDRRSRIXM2pFSWE0ZU5KdXZlNjk0UHBaVGRvUVk"
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 3.55,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 403,
+        "output": 5,
+        "thought": 0,
+        "total": 408
+       },
+       "interaction_id": "v1_ChcxakVJYTliWEQ1M2g0dDRQZzZtNDRRSRIXNWpFSWEtaXBCOGVJNjk0UG4teXNzUXM"
+      }
+     ]
+    },
+    "t7_calc_then_recall": {
+     "answers": {
+      "0": "57.8",
+      "1": "115.6"
+     },
+     "fatal": false,
+     "wall_s": 16.5,
+     "score": 1.0,
+     "n_checks": 4,
+     "checks": [
+      {
+       "turn": 0,
+       "check": "call:calculator:{}",
+       "pass": true
+      },
+      {
+       "turn": 0,
+       "check": "answer_has:57.8",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "call:calculator:{}",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:115.6",
+       "pass": true
+      }
+     ],
+     "calls": [
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 6.16,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 324,
+        "output": 22,
+        "thought": 0,
+        "total": 346
+       },
+       "interaction_id": "v1_Chc2VEVJYTlmSERNZXJtTk1QMmNiYnlBWRIXNlRFSWE5ZkhETWVybU5NUDJjYmJ5QVk",
+       "tool_calls": [
+        {
+         "name": "calculator",
+         "arguments": {
+          "expression": "0.17 * 340"
+         },
+         "result": {
+          "expression": "0.17 * 340",
+          "value": 57.800000000000004
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 3.74,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 394,
+        "output": 4,
+        "thought": 0,
+        "total": 398
+       },
+       "interaction_id": "v1_Chc2VEVJYTlmSERNZXJtTk1QMmNiYnlBWRIXN3pFSWE5ZkpMcEdsNjk0UG9xdmMtUU0"
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 3.07,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 404,
+        "output": 20,
+        "thought": 0,
+        "total": 424
+       },
+       "interaction_id": "v1_Chc2VEVJYTlmSERNZXJtTk1QMmNiYnlBWRIXOHpFSWE5YktJS1RuNHQ0UG5wS1FtQXc",
+       "tool_calls": [
+        {
+         "name": "calculator",
+         "arguments": {
+          "expression": "57.8 * 2"
+         },
+         "result": {
+          "expression": "57.8 * 2",
+          "value": 115.6
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 3.5,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 457,
+        "output": 5,
+        "thought": 0,
+        "total": 462
+       },
+       "interaction_id": "v1_Chc2VEVJYTlmSERNZXJtTk1QMmNiYnlBWRIXOWpFSWE5dXRKYnV6ZzhVUC1wNkM4QVk"
+      }
+     ]
+    },
+    "t8_thai_recall": {
+     "answers": {
+      "0": "Card mutations from non-writer hosts go through board-api on idc03.",
+      "1": "Your wifi password hint is 'two cats and a blue door'."
+     },
+     "fatal": false,
+     "wall_s": 20.7,
+     "score": 1.0,
+     "n_checks": 3,
+     "checks": [
+      {
+       "turn": 0,
+       "check": "call:search_kb:{\"query_contains\": \"board api\"}",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:two cats",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:blue door",
+       "pass": true
+      }
+     ],
+     "calls": [
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 7.34,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 335,
+        "output": 18,
+        "thought": 0,
+        "total": 353
+       },
+       "interaction_id": "v1_ChctVEVJYTQtMUpJemU0dDRQdnZXTjRBWRIXLVRFSWE0LTFKSXplNHQ0UHZ2V040QVk",
+       "tool_calls": [
+        {
+         "name": "search_kb",
+         "arguments": {
+          "query": "board api"
+         },
+         "result": {
+          "query": "board api",
+          "results": [
+           {
+            "title": "board api",
+            "snippet": "card mutations from non-writer hosts go through board-api on idc03"
+           }
+          ]
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 7.29,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 405,
+        "output": 18,
+        "thought": 0,
+        "total": 423
+       },
+       "interaction_id": "v1_ChctVEVJYTQtMUpJemU0dDRQdnZXTjRBWRIXQVRJSWEtV0pHNy0xZzhVUHk3elEtQWs"
+      },
+      {
+       "lane": "g35l_stateful",
+       "model": "gemini-3.5-flash-lite",
+       "mode": "stateful",
+       "latency_s": 6.03,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 435,
+        "output": 13,
+        "thought": 0,
+        "total": 448
+       },
+       "interaction_id": "v1_ChctVEVJYTQtMUpJemU0dDRQdnZXTjRBWRIXQ0RJSWE2Yk5MNmpUejdzUGllNmtzQWc"
+      }
+     ]
+    }
+   },
+   "call_log": [
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 6.62,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 337,
+      "output": 43,
+      "thought": 0,
+      "total": 380
+     },
+     "interaction_id": "v1_ChdWVEVJYTlMS01lVDY2OTRQaEliVndRaxIXVlRFSWE5TEtNZVQ2Njk0UGhJYlZ3UWs",
+     "tool_calls": [
+      {
+       "name": "get_weather",
+       "arguments": {
+        "city": "Paris"
+       },
+       "result": {
+        "city": "Paris",
+        "temp_c": 18,
+        "condition": "sunny",
+        "units": "celsius"
+       }
+      },
+      {
+       "name": "create_reminder",
+       "arguments": {
+        "text": "Call mom",
+        "time": "17:00"
+       },
+       "result": {
+        "status": "created",
+        "text": "Call mom",
+        "time": "17:00"
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 3.91,
+     "input_steps": 2,
+     "status": "completed",
+     "usage": {
+      "input": 457,
+      "output": 33,
+      "thought": 0,
+      "total": 490
+     },
+     "interaction_id": "v1_ChdWVEVJYTlMS01lVDY2OTRQaEliVndRaxIXWERFSWE2Q0hCb21LNjk0UHo4cm9pQW8"
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 4.03,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 507,
+      "output": 29,
+      "thought": 0,
+      "total": 536
+     },
+     "interaction_id": "v1_ChdWVEVJYTlMS01lVDY2OTRQaEliVndRaxIWWURFSWFfeVJDNFNLM0xVUHZhZXZHUQ"
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 4.19,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 322,
+      "output": 18,
+      "thought": 0,
+      "total": 340
+     },
+     "interaction_id": "v1_ChdZekVJYTdmWklQYWF6N3NQbkl6MThRSRIXWXpFSWE3ZlpJUGFhejdzUG5JejE4UUk",
+     "tool_calls": [
+      {
+       "name": "search_kb",
+       "arguments": {
+        "query": "deploy lock rule"
+       },
+       "result": {
+        "query": "deploy lock rule",
+        "results": [
+         {
+          "title": "deploy lock",
+          "snippet": "deploy-card.sh uses flock /tmp/pfg-deploy.lock; never bypass it"
+         }
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 4.1,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 397,
+      "output": 25,
+      "thought": 0,
+      "total": 422
+     },
+     "interaction_id": "v1_ChdZekVJYTdmWklQYWF6N3NQbkl6MThRSRIXYURFSWE0SDFEc1htNHQ0UDZLZXRnQWM"
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 6.98,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 451,
+      "output": 20,
+      "thought": 0,
+      "total": 471
+     },
+     "interaction_id": "v1_ChdZekVJYTdmWklQYWF6N3NQbkl6MThRSRIXYkRFSWFfQ2pHdm1MNjk0UGktX3ZzQTA",
+     "tool_calls": [
+      {
+       "name": "calculator",
+       "arguments": {
+        "expression": "2.5 * 60"
+       },
+       "result": {
+        "expression": "2.5 * 60",
+        "value": 150.0
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 7.44,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 504,
+      "output": 47,
+      "thought": 0,
+      "total": 551
+     },
+     "interaction_id": "v1_ChdZekVJYTdmWklQYWF6N3NQbkl6MThRSRIXY3pFSWE5cUZJSlhDM0xVUHlQTDJnUTg"
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 6.55,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 320,
+      "output": 16,
+      "thought": 0,
+      "total": 336
+     },
+     "interaction_id": "v1_ChdlakVJYV8zOER1TGU2OTRQcDZfcC1RRRIXZWpFSWFfMzhEdUxlNjk0UHA2X3AtUUU",
+     "tool_calls": [
+      {
+       "name": "get_stock",
+       "arguments": {
+        "symbol": "AAPL"
+       },
+       "result": {
+        "symbol": "AAPL",
+        "price_usd": 232.5,
+        "change_pct": 1.2
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 6.8,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 377,
+      "output": 19,
+      "thought": 0,
+      "total": 396
+     },
+     "interaction_id": "v1_ChdlakVJYV8zOER1TGU2OTRQcDZfcC1RRRIXZ1RFSWE1UENGY3ZKejdzUGwtakUyUTA"
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 6.32,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 404,
+      "output": 17,
+      "thought": 0,
+      "total": 421
+     },
+     "interaction_id": "v1_ChdlakVJYV8zOER1TGU2OTRQcDZfcC1RRRIXaURFSWE1eVhDSVhqM0xVUC1vLS15UWs",
+     "tool_calls": [
+      {
+       "name": "get_stock",
+       "arguments": {
+        "symbol": "MSFT"
+       },
+       "result": {
+        "symbol": "MSFT",
+        "price_usd": 428.1,
+        "change_pct": 1.2
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 6.84,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 463,
+      "output": 20,
+      "thought": 0,
+      "total": 483
+     },
+     "interaction_id": "v1_ChdlakVJYV8zOER1TGU2OTRQcDZfcC1RRRIXampFSWE0VzdIcTdFZzhVUHJ0UzcwQXM"
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 8.2,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 497,
+      "output": 26,
+      "thought": 0,
+      "total": 523
+     },
+     "interaction_id": "v1_ChdlakVJYV8zOER1TGU2OTRQcDZfcC1RRRIXbFRFSWE2RHZHc3lDNjk0UHZKQ2w2QXM",
+     "tool_calls": [
+      {
+       "name": "calculator",
+       "arguments": {
+        "expression": "428.1 - 232.5"
+       },
+       "result": {
+        "expression": "428.1 - 232.5",
+        "value": 195.60000000000002
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 8.92,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 573,
+      "output": 19,
+      "thought": 0,
+      "total": 592
+     },
+     "interaction_id": "v1_ChdlakVJYV8zOER1TGU2OTRQcDZfcC1RRRIXblRFSWE1ZjZMcDJRejdzUG5faWcwUU0"
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 2.99,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 321,
+      "output": 18,
+      "thought": 0,
+      "total": 339
+     },
+     "interaction_id": "v1_ChdwVEVJYTlhcE50M2U2OTRQNzY2dzBBbxIXcFRFSWE5YXBOdDNlNjk0UDc2NncwQW8",
+     "tool_calls": [
+      {
+       "name": "get_time",
+       "arguments": {
+        "timezone": "Asia/Tokyo"
+       },
+       "result": {
+        "timezone": "Asia/Tokyo",
+        "local_time": "14:32",
+        "date": "2026-11-26"
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 5.09,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 387,
+      "output": 23,
+      "thought": 0,
+      "total": 410
+     },
+     "interaction_id": "v1_ChdwVEVJYTlhcE50M2U2OTRQNzY2dzBBbxIXcVRFSWFfbVZGc3pvanVNUHU5bm1pUVU"
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 4.12,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 439,
+      "output": 27,
+      "thought": 0,
+      "total": 466
+     },
+     "interaction_id": "v1_ChdwVEVJYTlhcE50M2U2OTRQNzY2dzBBbxIXcmpFSWEtR2tIdi1qcWZrUHJQMk5nQVk",
+     "tool_calls": [
+      {
+       "name": "calculator",
+       "arguments": {
+        "expression": "14 * 60 + 32 + 90"
+       },
+       "result": {
+        "expression": "14 * 60 + 32 + 90",
+        "value": 962
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 7.06,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 504,
+      "output": 20,
+      "thought": 0,
+      "total": 524
+     },
+     "interaction_id": "v1_ChdwVEVJYTlhcE50M2U2OTRQNzY2dzBBbxIXc2pFSWFfVGlLcHFuNjk0UHQ0cnRvUWc",
+     "tool_calls": [
+      {
+       "name": "calculator",
+       "arguments": {
+        "expression": "962 / 60"
+       },
+       "result": {
+        "expression": "962 / 60",
+        "value": 16.033333333333335
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 4.3,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 570,
+      "output": 20,
+      "thought": 0,
+      "total": 590
+     },
+     "interaction_id": "v1_ChdwVEVJYTlhcE50M2U2OTRQNzY2dzBBbxIXdVRFSWE1YURMYzdZak5BUHdfZUg4QWs",
+     "tool_calls": [
+      {
+       "name": "calculator",
+       "arguments": {
+        "expression": "962 % 60"
+       },
+       "result": {
+        "expression": "962 % 60",
+        "value": 2
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 8.25,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 619,
+      "output": 25,
+      "thought": 0,
+      "total": 644
+     },
+     "interaction_id": "v1_ChdwVEVJYTlhcE50M2U2OTRQNzY2dzBBbxIXdmpFSWE3S1lDSjJ6ZzhVUDhmcTlvUVk"
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 2.61,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 323,
+      "output": 32,
+      "thought": 0,
+      "total": 355
+     },
+     "interaction_id": "v1_Chd4VEVJYTlEd0w4SGNnOFVQZ01hSDBRWRIXeFRFSWE5RHdMOEhjZzhVUGdNYUgwUVk",
+     "tool_calls": [
+      {
+       "name": "get_weather",
+       "arguments": {
+        "city": "Berlin"
+       },
+       "result": {
+        "city": "Berlin",
+        "temp_c": 18,
+        "condition": "sunny",
+        "units": "celsius"
+       }
+      },
+      {
+       "name": "get_weather",
+       "arguments": {
+        "city": "Tokyo"
+       },
+       "result": {
+        "city": "Tokyo",
+        "temp_c": 18,
+        "condition": "sunny",
+        "units": "celsius"
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 6.89,
+     "input_steps": 2,
+     "status": "completed",
+     "usage": {
+      "input": 437,
+      "output": 13,
+      "thought": 0,
+      "total": 450
+     },
+     "interaction_id": "v1_Chd4VEVJYTlEd0w4SGNnOFVQZ01hSDBRWRIXeURFSWE0ZVpNYmE2bU5NUDRNRFotQVk"
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 6.89,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 460,
+      "output": 2,
+      "thought": 0,
+      "total": 462
+     },
+     "interaction_id": "v1_Chd4VEVJYTlEd0w4SGNnOFVQZ01hSDBRWRIXenpFSWE4dkNLdXpjZzhVUDE4N0xpUVU"
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 8.0,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 337,
+      "output": 30,
+      "thought": 0,
+      "total": 367
+     },
+     "interaction_id": "v1_ChcxakVJYTliWEQ1M2g0dDRQZzZtNDRRSRIXMWpFSWE5YlhENTNoNHQ0UGc2bTQ0UUk"
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 7.45,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 378,
+      "output": 19,
+      "thought": 0,
+      "total": 397
+     },
+     "interaction_id": "v1_ChcxakVJYTliWEQ1M2g0dDRQZzZtNDRRSRIXM2pFSWE0ZU5KdXZlNjk0UHBaVGRvUVk"
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 3.55,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 403,
+      "output": 5,
+      "thought": 0,
+      "total": 408
+     },
+     "interaction_id": "v1_ChcxakVJYTliWEQ1M2g0dDRQZzZtNDRRSRIXNWpFSWEtaXBCOGVJNjk0UG4teXNzUXM"
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 6.16,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 324,
+      "output": 22,
+      "thought": 0,
+      "total": 346
+     },
+     "interaction_id": "v1_Chc2VEVJYTlmSERNZXJtTk1QMmNiYnlBWRIXNlRFSWE5ZkhETWVybU5NUDJjYmJ5QVk",
+     "tool_calls": [
+      {
+       "name": "calculator",
+       "arguments": {
+        "expression": "0.17 * 340"
+       },
+       "result": {
+        "expression": "0.17 * 340",
+        "value": 57.800000000000004
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 3.74,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 394,
+      "output": 4,
+      "thought": 0,
+      "total": 398
+     },
+     "interaction_id": "v1_Chc2VEVJYTlmSERNZXJtTk1QMmNiYnlBWRIXN3pFSWE5ZkpMcEdsNjk0UG9xdmMtUU0"
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 3.07,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 404,
+      "output": 20,
+      "thought": 0,
+      "total": 424
+     },
+     "interaction_id": "v1_Chc2VEVJYTlmSERNZXJtTk1QMmNiYnlBWRIXOHpFSWE5YktJS1RuNHQ0UG5wS1FtQXc",
+     "tool_calls": [
+      {
+       "name": "calculator",
+       "arguments": {
+        "expression": "57.8 * 2"
+       },
+       "result": {
+        "expression": "57.8 * 2",
+        "value": 115.6
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 3.5,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 457,
+      "output": 5,
+      "thought": 0,
+      "total": 462
+     },
+     "interaction_id": "v1_Chc2VEVJYTlmSERNZXJtTk1QMmNiYnlBWRIXOWpFSWE5dXRKYnV6ZzhVUC1wNkM4QVk"
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 7.34,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 335,
+      "output": 18,
+      "thought": 0,
+      "total": 353
+     },
+     "interaction_id": "v1_ChctVEVJYTQtMUpJemU0dDRQdnZXTjRBWRIXLVRFSWE0LTFKSXplNHQ0UHZ2V040QVk",
+     "tool_calls": [
+      {
+       "name": "search_kb",
+       "arguments": {
+        "query": "board api"
+       },
+       "result": {
+        "query": "board api",
+        "results": [
+         {
+          "title": "board api",
+          "snippet": "card mutations from non-writer hosts go through board-api on idc03"
+         }
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 7.29,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 405,
+      "output": 18,
+      "thought": 0,
+      "total": 423
+     },
+     "interaction_id": "v1_ChctVEVJYTQtMUpJemU0dDRQdnZXTjRBWRIXQVRJSWEtV0pHNy0xZzhVUHk3elEtQWs"
+    },
+    {
+     "lane": "g35l_stateful",
+     "model": "gemini-3.5-flash-lite",
+     "mode": "stateful",
+     "latency_s": 6.03,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 435,
+      "output": 13,
+      "thought": 0,
+      "total": 448
+     },
+     "interaction_id": "v1_ChctVEVJYTQtMUpJemU0dDRQdnZXTjRBWRIXQ0RJSWE2Yk5MNmpUejdzUGllNmtzQWc"
+    }
+   ],
+   "consecutive_fatal": 0,
+   "blocked": false
+  },
+  "g31l_stateful": {
+   "model": "gemini-3.1-flash-lite",
+   "mode": "stateful",
+   "tasks": {
+    "t1_weather_reminder": {
+     "answers": {
+      "0": "The weather in Paris is currently 18\u00b0C and sunny. I've set a reminder for you to call mom at 17:00.",
+      "1": "I said the weather in Paris is 18\u00b0C and sunny, and your reminder to call mom is set for 17:00."
+     },
+     "fatal": false,
+     "wall_s": 23.0,
+     "score": 1.0,
+     "n_checks": 6,
+     "checks": [
+      {
+       "turn": 0,
+       "check": "call:get_weather:{\"city\": \"paris\"}",
+       "pass": true
+      },
+      {
+       "turn": 0,
+       "check": "call:create_reminder:{\"time\": \"17:00\"}",
+       "pass": true
+      },
+      {
+       "turn": 0,
+       "check": "answer_has:18",
+       "pass": true
+      },
+      {
+       "turn": 0,
+       "check": "answer_has:sunny",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:18",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:17:00",
+       "pass": true
+      }
+     ],
+     "calls": [
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 12.25,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 337,
+        "output": 43,
+        "thought": 0,
+        "total": 380
+       },
+       "interaction_id": "v1_ChdEaklJYTZISkQ4R2xnOFVQbE9LODBBRRIXRGpJSWE2SEpEOEdsZzhVUGxPSzgwQUU",
+       "tool_calls": [
+        {
+         "name": "get_weather",
+         "arguments": {
+          "city": "Paris"
+         },
+         "result": {
+          "city": "Paris",
+          "temp_c": 18,
+          "condition": "sunny",
+          "units": "celsius"
+         }
+        },
+        {
+         "name": "create_reminder",
+         "arguments": {
+          "text": "call mom",
+          "time": "17:00"
+         },
+         "result": {
+          "status": "created",
+          "text": "call mom",
+          "time": "17:00"
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 5.69,
+       "input_steps": 2,
+       "status": "completed",
+       "usage": {
+        "input": 457,
+        "output": 33,
+        "thought": 0,
+        "total": 490
+       },
+       "interaction_id": "v1_ChdEaklJYTZISkQ4R2xnOFVQbE9LODBBRRIWR3pJSWE0SThtYXJQdXdfcDZNeTREdw"
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 5.06,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 507,
+        "output": 31,
+        "thought": 0,
+        "total": 538
+       },
+       "interaction_id": "v1_ChdEaklJYTZISkQ4R2xnOFVQbE9LODBBRRIXSURJSWE2YTFPcDJRejdzUGs5U2cwUU0"
+      }
+     ]
+    },
+    "t2_kb_calc_recall": {
+     "answers": {
+      "0": "The deploy lock rule is that the `deploy-card.sh` script uses `flock /tmp/pfg-deploy.lock`, and you should never bypass it.",
+      "1": "There are 150 minutes in 2.5 hours, and the documentation states that the `deploy-card.sh` script uses a lock file at `/tmp/pfg-deploy.lock` and forbids bypassing it."
+     },
+     "fatal": false,
+     "wall_s": 154.0,
+     "score": 0.8,
+     "n_checks": 5,
+     "checks": [
+      {
+       "turn": 0,
+       "check": "call:search_kb:{\"query_contains\": \"deploy lock\"}",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "call:calculator:{}",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:150",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:flock",
+       "pass": false
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:deploy",
+       "pass": true
+      }
+     ],
+     "calls": [
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 3.43,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 322,
+        "output": 18,
+        "thought": 0,
+        "total": 340
+       },
+       "interaction_id": "v1_ChdKVElJYTlMUkY0LUo2OTRQdzRuWW1BYxIXSlRJSWE5TFJGNC1KNjk0UHc0blltQWM",
+       "tool_calls": [
+        {
+         "name": "search_kb",
+         "arguments": {
+          "query": "deploy lock rule"
+         },
+         "result": {
+          "query": "deploy lock rule",
+          "results": [
+           {
+            "title": "deploy lock",
+            "snippet": "deploy-card.sh uses flock /tmp/pfg-deploy.lock; never bypass it"
+           }
+          ]
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 69.79,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 397,
+        "output": 36,
+        "thought": 0,
+        "total": 433
+       },
+       "interaction_id": "v1_ChdKVElJYTlMUkY0LUo2OTRQdzRuWW1BYxIXYXpJSWEtZktINXZsNHQ0UHphS1d3QXc"
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 44.42,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 462,
+        "output": 20,
+        "thought": 0,
+        "total": 482
+       },
+       "interaction_id": "v1_ChdKVElJYTlMUkY0LUo2OTRQdzRuWW1BYxIXbHpJSWFfN3VKdlBoNjk0UG5Oclh3QVU",
+       "tool_calls": [
+        {
+         "name": "calculator",
+         "arguments": {
+          "expression": "2.5 * 60"
+         },
+         "result": {
+          "expression": "2.5 * 60",
+          "value": 150.0
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 36.38,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 515,
+        "output": 48,
+        "thought": 0,
+        "total": 563
+       },
+       "interaction_id": "v1_ChdKVElJYTlMUkY0LUo2OTRQdzRuWW1BYxIXdkRJSWE0MmxKTUx1Njk0UDdjcTJzQW8"
+      }
+     ]
+    },
+    "t3_stock_compare": {
+     "answers": {
+      "0": "The current stock price of AAPL is $232.50.",
+      "1": "The current stock price of MSFT is $428.10.",
+      "2": "MSFT is more expensive by $195.60 per share."
+     },
+     "fatal": false,
+     "wall_s": 195.9,
+     "score": 1.0,
+     "n_checks": 4,
+     "checks": [
+      {
+       "turn": 0,
+       "check": "call:get_stock:{\"symbol\": \"aapl\"}",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "call:get_stock:{\"symbol\": \"msft\"}",
+       "pass": true
+      },
+      {
+       "turn": 2,
+       "check": "answer_has:msft",
+       "pass": true
+      },
+      {
+       "turn": 2,
+       "check": "answer_has:195",
+       "pass": true
+      }
+     ],
+     "calls": [
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 3.38,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 320,
+        "output": 16,
+        "thought": 0,
+        "total": 336
+       },
+       "interaction_id": "v1_Chd2eklJYV9iUUU2S0Q2OTRQc05IbHFBWRIXdnpJSWFfYlFFNktENjk0UHNOSGxxQVk",
+       "tool_calls": [
+        {
+         "name": "get_stock",
+         "arguments": {
+          "symbol": "AAPL"
+         },
+         "result": {
+          "symbol": "AAPL",
+          "price_usd": 232.5,
+          "change_pct": 1.2
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 3.76,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 377,
+        "output": 16,
+        "thought": 0,
+        "total": 393
+       },
+       "interaction_id": "v1_Chd2eklJYV9iUUU2S0Q2OTRQc05IbHFBWRIXd3pJSWE4X09JTHJLejdzUG1xVy1nQTA"
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 139.14,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 401,
+        "output": 17,
+        "thought": 0,
+        "total": 418
+       },
+       "interaction_id": "v1_Chd2eklJYV9iUUU2S0Q2OTRQc05IbHFBWRIXVGpNSWFfcXRFNldqcWZrUHI5N3F1UWc",
+       "tool_calls": [
+        {
+         "name": "get_stock",
+         "arguments": {
+          "symbol": "MSFT"
+         },
+         "result": {
+          "symbol": "MSFT",
+          "price_usd": 428.1,
+          "change_pct": 1.2
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 3.0,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 460,
+        "output": 16,
+        "thought": 0,
+        "total": 476
+       },
+       "interaction_id": "v1_Chd2eklJYV9iUUU2S0Q2OTRQc05IbHFBWRIXVWpNSWFfMzNCWm5NcWZrUHJQM3U4QVE"
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 42.54,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 490,
+        "output": 25,
+        "thought": 0,
+        "total": 515
+       },
+       "interaction_id": "v1_Chd2eklJYV9iUUU2S0Q2OTRQc05IbHFBWRIXZXpNSWFfU0FLSUc5bU5NUGdJamttUWs",
+       "tool_calls": [
+        {
+         "name": "calculator",
+         "arguments": {
+          "expression": "428.1 - 232.5"
+         },
+         "result": {
+          "expression": "428.1 - 232.5",
+          "value": 195.60000000000002
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 4.06,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 566,
+        "output": 16,
+        "thought": 0,
+        "total": 582
+       },
+       "interaction_id": "v1_Chd2eklJYV9iUUU2S0Q2OTRQc05IbHFBWRIXZnpNSWE0UFdLcUwwZzhVUHBkS28yUU0"
+      }
+     ]
+    },
+    "t4_time_calc_chain": {
+     "answers": {
+      "0": "It is 2:32 PM in Tokyo.",
+      "1": "The original time was 2:32 PM (14:32). The meeting starts at 4:02 PM (16:02)."
+     },
+     "fatal": false,
+     "wall_s": 401.6,
+     "score": 0.8,
+     "n_checks": 5,
+     "checks": [
+      {
+       "turn": 0,
+       "check": "call:get_time:{\"timezone_contains\": \"tokyo\"}",
+       "pass": true
+      },
+      {
+       "turn": 0,
+       "check": "answer_has:14:32",
+       "pass": false
+      },
+      {
+       "turn": 1,
+       "check": "call:calculator:{}",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:16:02",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:14:32",
+       "pass": true
+      }
+     ],
+     "calls": [
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 4.67,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 321,
+        "output": 18,
+        "thought": 0,
+        "total": 339
+       },
+       "interaction_id": "v1_Chdnek1JYTluTkNjR2Y0dDRQb3B1V2lBbxIXZ3pNSWE5bk5DY0dmNHQ0UG9wdVdpQW8",
+       "tool_calls": [
+        {
+         "name": "get_time",
+         "arguments": {
+          "timezone": "Asia/Tokyo"
+         },
+         "result": {
+          "timezone": "Asia/Tokyo",
+          "local_time": "14:32",
+          "date": "2026-11-26"
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 3.63,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 387,
+        "output": 11,
+        "thought": 0,
+        "total": 398
+       },
+       "interaction_id": "v1_Chdnek1JYTluTkNjR2Y0dDRQb3B1V2lBbxIXaURNSWE5aThKY0x1Njk0UDdjcTJzQW8"
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 4.71,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 427,
+        "output": 23,
+        "thought": 0,
+        "total": 450
+       },
+       "interaction_id": "v1_Chdnek1JYTluTkNjR2Y0dDRQb3B1V2lBbxIXakRNSWE5R1dDX0twZzhVUDg3cTBnUVU",
+       "tool_calls": [
+        {
+         "name": "calculator",
+         "arguments": {
+          "expression": "14:32 + 90 minutes"
+         },
+         "result": {
+          "error": "invalid expression"
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 231.02,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 468,
+        "output": 29,
+        "thought": 0,
+        "total": 497
+       },
+       "interaction_id": "v1_Chdnek1JYTluTkNjR2Y0dDRQb3B1V2lBbxIXR0RRSWFfcjJDLVdqcWZrUDRkLTh3QVk",
+       "tool_calls": [
+        {
+         "name": "calculator",
+         "arguments": {
+          "expression": "(14 * 60 + 32) + 90"
+         },
+         "result": {
+          "expression": "(14 * 60 + 32) + 90",
+          "value": 962
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 39.82,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 536,
+        "output": 20,
+        "thought": 0,
+        "total": 556
+       },
+       "interaction_id": "v1_Chdnek1JYTluTkNjR2Y0dDRQb3B1V2lBbxIXbkRRSWFfVEtGS19sNjk0UG05RDRpQVk",
+       "tool_calls": [
+        {
+         "name": "calculator",
+         "arguments": {
+          "expression": "962 / 60"
+         },
+         "result": {
+          "expression": "962 / 60",
+          "value": 16.033333333333335
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 74.88,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 602,
+        "output": 25,
+        "thought": 0,
+        "total": 627
+       },
+       "interaction_id": "v1_Chdnek1JYTluTkNjR2Y0dDRQb3B1V2lBbxIXM3pRSWFfZW9GYnVpNjk0UHFjakJnUTA",
+       "tool_calls": [
+        {
+         "name": "calculator",
+         "arguments": {
+          "expression": "962 - (16 * 60)"
+         },
+         "result": {
+          "expression": "962 - (16 * 60)",
+          "value": 2
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 42.89,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 660,
+        "output": 34,
+        "thought": 0,
+        "total": 694
+       },
+       "interaction_id": "v1_Chdnek1JYTluTkNjR2Y0dDRQb3B1V2lBbxIXNnpRSWE3TGRIUC1qcWZrUHJQMk5nQVk"
+      }
+     ]
+    },
+    "t5_two_weather": {
+     "answers": {
+      "0": "The weather in both Berlin and Tokyo is currently 18\u00b0C and sunny.",
+      "1": "You asked about Berlin first."
+     },
+     "fatal": false,
+     "wall_s": 74.5,
+     "score": 1.0,
+     "n_checks": 4,
+     "checks": [
+      {
+       "turn": 0,
+       "check": "call:get_weather:{\"city_contains\": \"berlin\"}",
+       "pass": true
+      },
+      {
+       "turn": 0,
+       "check": "call:get_weather:{\"city_contains\": \"tokyo\"}",
+       "pass": true
+      },
+      {
+       "turn": 0,
+       "check": "answer_has:sunny",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:berlin",
+       "pass": true
+      }
+     ],
+     "calls": [
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 47.11,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 323,
+        "output": 32,
+        "thought": 0,
+        "total": 355
+       },
+       "interaction_id": "v1_ChdGRFVJYTRIbExxVG40dDRQbnBLUW1BdxIXRkRVSWE0SGxMcVRuNHQ0UG5wS1FtQXc",
+       "tool_calls": [
+        {
+         "name": "get_weather",
+         "arguments": {
+          "city": "Berlin"
+         },
+         "result": {
+          "city": "Berlin",
+          "temp_c": 18,
+          "condition": "sunny",
+          "units": "celsius"
+         }
+        },
+        {
+         "name": "get_weather",
+         "arguments": {
+          "city": "Tokyo"
+         },
+         "result": {
+          "city": "Tokyo",
+          "temp_c": 18,
+          "condition": "sunny",
+          "units": "celsius"
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 4.28,
+       "input_steps": 2,
+       "status": "completed",
+       "usage": {
+        "input": 437,
+        "output": 17,
+        "thought": 0,
+        "total": 454
+       },
+       "interaction_id": "v1_ChdGRFVJYTRIbExxVG40dDRQbnBLUW1BdxIXUkRVSWE1aUZJWkxSZzhVUHNOXzg2QUU"
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 23.09,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 464,
+        "output": 6,
+        "thought": 0,
+        "total": 470
+       },
+       "interaction_id": "v1_ChdGRFVJYTRIbExxVG40dDRQbnBLUW1BdxIXU0RVSWE1RHpLZFd0bU5NUHBMdmxvQVk"
+      }
+     ]
+    },
+    "t6_fact_recall": {
+     "answers": {
+      "0": "I have remembered those details for project Nighthawk: budget is 4200 USD and the deadline is Friday.",
+      "1": "Your project codename is Nighthawk and the budget is 4200 USD.",
+      "2": "The deadline is Friday."
+     },
+     "fatal": false,
+     "wall_s": 60.2,
+     "score": 1.0,
+     "n_checks": 3,
+     "checks": [
+      {
+       "turn": 1,
+       "check": "answer_has:nighthawk",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:4200",
+       "pass": true
+      },
+      {
+       "turn": 2,
+       "check": "answer_has:friday",
+       "pass": true
+      }
+     ],
+     "calls": [
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 3.68,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 337,
+        "output": 25,
+        "thought": 0,
+        "total": 362
+       },
+       "interaction_id": "v1_ChdYelVJYS1YNUZwZjZqTkFQN1l2RG1BbxIXWHpVSWEtWDVGcGY2ak5BUDdZdkRtQW8"
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 4.0,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 373,
+        "output": 19,
+        "thought": 0,
+        "total": 392
+       },
+       "interaction_id": "v1_ChdYelVJYS1YNUZwZjZqTkFQN1l2RG1BbxIXWXpVSWE1ZWhHOENQejdzUDVZYVM0QXc"
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 52.51,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 398,
+        "output": 5,
+        "thought": 0,
+        "total": 403
+       },
+       "interaction_id": "v1_ChdYelVJYS1YNUZwZjZqTkFQN1l2RG1BbxIXWnpVSWE5UFpHNWVENjk0UG1yN1ZrQXM"
+      }
+     ]
+    },
+    "t7_calc_then_recall": {
+     "answers": {
+      "0": "17% of 340 is 57.8.",
+      "1": "The result is 115.6."
+     },
+     "fatal": false,
+     "wall_s": 56.8,
+     "score": 1.0,
+     "n_checks": 4,
+     "checks": [
+      {
+       "turn": 0,
+       "check": "call:calculator:{}",
+       "pass": true
+      },
+      {
+       "turn": 0,
+       "check": "answer_has:57.8",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "call:calculator:{}",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:115.6",
+       "pass": true
+      }
+     ],
+     "calls": [
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 14.66,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 324,
+        "output": 22,
+        "thought": 0,
+        "total": 346
+       },
+       "interaction_id": "v1_ChdtelVJYTVyT0c2YUl6N3NQcHJ6RTJRTRIXbXpVSWE1ck9HNmFJejdzUHByekUyUU0",
+       "tool_calls": [
+        {
+         "name": "calculator",
+         "arguments": {
+          "expression": "0.17 * 340"
+         },
+         "result": {
+          "expression": "0.17 * 340",
+          "value": 57.800000000000004
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 17.53,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 394,
+        "output": 15,
+        "thought": 0,
+        "total": 409
+       },
+       "interaction_id": "v1_ChdtelVJYTVyT0c2YUl6N3NQcHJ6RTJRTRIXcWpVSWE2M2ZLT0hSZzhVUGlfMlhzUXc"
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 13.41,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 415,
+        "output": 20,
+        "thought": 0,
+        "total": 435
+       },
+       "interaction_id": "v1_ChdtelVJYTVyT0c2YUl6N3NQcHJ6RTJRTRIXdkRVSWE0MmVEcTdFZzhVUHJ0UzcwQXM",
+       "tool_calls": [
+        {
+         "name": "calculator",
+         "arguments": {
+          "expression": "57.8 * 2"
+         },
+         "result": {
+          "expression": "57.8 * 2",
+          "value": 115.6
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 11.17,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 468,
+        "output": 10,
+        "thought": 0,
+        "total": 478
+       },
+       "interaction_id": "v1_ChdtelVJYTVyT0c2YUl6N3NQcHJ6RTJRTRIXeVRVSWEtR0JKZXJFZzhVUHdabWZpQWM"
+      }
+     ]
+    },
+    "t8_thai_recall": {
+     "answers": {
+      "0": "The search results for \"board api\" indicate that card mutations from non-writer hosts go through `board-api` on `idc03`.",
+      "1": "Your wifi password hint is 'two cats and a blue door'."
+     },
+     "fatal": false,
+     "wall_s": 20.2,
+     "score": 1.0,
+     "n_checks": 3,
+     "checks": [
+      {
+       "turn": 0,
+       "check": "call:search_kb:{\"query_contains\": \"board api\"}",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:two cats",
+       "pass": true
+      },
+      {
+       "turn": 1,
+       "check": "answer_has:blue door",
+       "pass": true
+      }
+     ],
+     "calls": [
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 2.83,
+       "input_steps": 1,
+       "status": "requires_action",
+       "usage": {
+        "input": 335,
+        "output": 17,
+        "thought": 0,
+        "total": 352
+       },
+       "interaction_id": "v1_ChcxRFVJYTZhWEZyeU02OTRQbDZ1ZDZBbxIXMURVSWE2YVhGcnlNNjk0UGw2dWQ2QW8",
+       "tool_calls": [
+        {
+         "name": "search_kb",
+         "arguments": {
+          "query": "board api"
+         },
+         "result": {
+          "query": "board api",
+          "results": [
+           {
+            "title": "board api",
+            "snippet": "card mutations from non-writer hosts go through board-api on idc03"
+           }
+          ]
+         }
+        }
+       ]
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 9.24,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 405,
+        "output": 30,
+        "thought": 0,
+        "total": 435
+       },
+       "interaction_id": "v1_ChcxRFVJYTZhWEZyeU02OTRQbDZ1ZDZBbxIXMXpVSWE5bW9LY0hBM0xVUDVZYndtUXc"
+      },
+      {
+       "lane": "g31l_stateful",
+       "model": "gemini-3.1-flash-lite",
+       "mode": "stateful",
+       "latency_s": 8.17,
+       "input_steps": 1,
+       "status": "completed",
+       "usage": {
+        "input": 447,
+        "output": 13,
+        "thought": 0,
+        "total": 460
+       },
+       "interaction_id": "v1_ChcxRFVJYTZhWEZyeU02OTRQbDZ1ZDZBbxIXNERVSWFfbnpON2F6ZzhVUHpLaUlnQVU"
+      }
+     ]
+    }
+   },
+   "call_log": [
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 12.25,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 337,
+      "output": 43,
+      "thought": 0,
+      "total": 380
+     },
+     "interaction_id": "v1_ChdEaklJYTZISkQ4R2xnOFVQbE9LODBBRRIXRGpJSWE2SEpEOEdsZzhVUGxPSzgwQUU",
+     "tool_calls": [
+      {
+       "name": "get_weather",
+       "arguments": {
+        "city": "Paris"
+       },
+       "result": {
+        "city": "Paris",
+        "temp_c": 18,
+        "condition": "sunny",
+        "units": "celsius"
+       }
+      },
+      {
+       "name": "create_reminder",
+       "arguments": {
+        "text": "call mom",
+        "time": "17:00"
+       },
+       "result": {
+        "status": "created",
+        "text": "call mom",
+        "time": "17:00"
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 5.69,
+     "input_steps": 2,
+     "status": "completed",
+     "usage": {
+      "input": 457,
+      "output": 33,
+      "thought": 0,
+      "total": 490
+     },
+     "interaction_id": "v1_ChdEaklJYTZISkQ4R2xnOFVQbE9LODBBRRIWR3pJSWE0SThtYXJQdXdfcDZNeTREdw"
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 5.06,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 507,
+      "output": 31,
+      "thought": 0,
+      "total": 538
+     },
+     "interaction_id": "v1_ChdEaklJYTZISkQ4R2xnOFVQbE9LODBBRRIXSURJSWE2YTFPcDJRejdzUGs5U2cwUU0"
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 3.43,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 322,
+      "output": 18,
+      "thought": 0,
+      "total": 340
+     },
+     "interaction_id": "v1_ChdKVElJYTlMUkY0LUo2OTRQdzRuWW1BYxIXSlRJSWE5TFJGNC1KNjk0UHc0blltQWM",
+     "tool_calls": [
+      {
+       "name": "search_kb",
+       "arguments": {
+        "query": "deploy lock rule"
+       },
+       "result": {
+        "query": "deploy lock rule",
+        "results": [
+         {
+          "title": "deploy lock",
+          "snippet": "deploy-card.sh uses flock /tmp/pfg-deploy.lock; never bypass it"
+         }
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 69.79,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 397,
+      "output": 36,
+      "thought": 0,
+      "total": 433
+     },
+     "interaction_id": "v1_ChdKVElJYTlMUkY0LUo2OTRQdzRuWW1BYxIXYXpJSWEtZktINXZsNHQ0UHphS1d3QXc"
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 44.42,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 462,
+      "output": 20,
+      "thought": 0,
+      "total": 482
+     },
+     "interaction_id": "v1_ChdKVElJYTlMUkY0LUo2OTRQdzRuWW1BYxIXbHpJSWFfN3VKdlBoNjk0UG5Oclh3QVU",
+     "tool_calls": [
+      {
+       "name": "calculator",
+       "arguments": {
+        "expression": "2.5 * 60"
+       },
+       "result": {
+        "expression": "2.5 * 60",
+        "value": 150.0
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 36.38,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 515,
+      "output": 48,
+      "thought": 0,
+      "total": 563
+     },
+     "interaction_id": "v1_ChdKVElJYTlMUkY0LUo2OTRQdzRuWW1BYxIXdkRJSWE0MmxKTUx1Njk0UDdjcTJzQW8"
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 3.38,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 320,
+      "output": 16,
+      "thought": 0,
+      "total": 336
+     },
+     "interaction_id": "v1_Chd2eklJYV9iUUU2S0Q2OTRQc05IbHFBWRIXdnpJSWFfYlFFNktENjk0UHNOSGxxQVk",
+     "tool_calls": [
+      {
+       "name": "get_stock",
+       "arguments": {
+        "symbol": "AAPL"
+       },
+       "result": {
+        "symbol": "AAPL",
+        "price_usd": 232.5,
+        "change_pct": 1.2
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 3.76,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 377,
+      "output": 16,
+      "thought": 0,
+      "total": 393
+     },
+     "interaction_id": "v1_Chd2eklJYV9iUUU2S0Q2OTRQc05IbHFBWRIXd3pJSWE4X09JTHJLejdzUG1xVy1nQTA"
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 139.14,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 401,
+      "output": 17,
+      "thought": 0,
+      "total": 418
+     },
+     "interaction_id": "v1_Chd2eklJYV9iUUU2S0Q2OTRQc05IbHFBWRIXVGpNSWFfcXRFNldqcWZrUHI5N3F1UWc",
+     "tool_calls": [
+      {
+       "name": "get_stock",
+       "arguments": {
+        "symbol": "MSFT"
+       },
+       "result": {
+        "symbol": "MSFT",
+        "price_usd": 428.1,
+        "change_pct": 1.2
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 3.0,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 460,
+      "output": 16,
+      "thought": 0,
+      "total": 476
+     },
+     "interaction_id": "v1_Chd2eklJYV9iUUU2S0Q2OTRQc05IbHFBWRIXVWpNSWFfMzNCWm5NcWZrUHJQM3U4QVE"
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 42.54,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 490,
+      "output": 25,
+      "thought": 0,
+      "total": 515
+     },
+     "interaction_id": "v1_Chd2eklJYV9iUUU2S0Q2OTRQc05IbHFBWRIXZXpNSWFfU0FLSUc5bU5NUGdJamttUWs",
+     "tool_calls": [
+      {
+       "name": "calculator",
+       "arguments": {
+        "expression": "428.1 - 232.5"
+       },
+       "result": {
+        "expression": "428.1 - 232.5",
+        "value": 195.60000000000002
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 4.06,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 566,
+      "output": 16,
+      "thought": 0,
+      "total": 582
+     },
+     "interaction_id": "v1_Chd2eklJYV9iUUU2S0Q2OTRQc05IbHFBWRIXZnpNSWE0UFdLcUwwZzhVUHBkS28yUU0"
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 4.67,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 321,
+      "output": 18,
+      "thought": 0,
+      "total": 339
+     },
+     "interaction_id": "v1_Chdnek1JYTluTkNjR2Y0dDRQb3B1V2lBbxIXZ3pNSWE5bk5DY0dmNHQ0UG9wdVdpQW8",
+     "tool_calls": [
+      {
+       "name": "get_time",
+       "arguments": {
+        "timezone": "Asia/Tokyo"
+       },
+       "result": {
+        "timezone": "Asia/Tokyo",
+        "local_time": "14:32",
+        "date": "2026-11-26"
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 3.63,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 387,
+      "output": 11,
+      "thought": 0,
+      "total": 398
+     },
+     "interaction_id": "v1_Chdnek1JYTluTkNjR2Y0dDRQb3B1V2lBbxIXaURNSWE5aThKY0x1Njk0UDdjcTJzQW8"
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 4.71,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 427,
+      "output": 23,
+      "thought": 0,
+      "total": 450
+     },
+     "interaction_id": "v1_Chdnek1JYTluTkNjR2Y0dDRQb3B1V2lBbxIXakRNSWE5R1dDX0twZzhVUDg3cTBnUVU",
+     "tool_calls": [
+      {
+       "name": "calculator",
+       "arguments": {
+        "expression": "14:32 + 90 minutes"
+       },
+       "result": {
+        "error": "invalid expression"
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 231.02,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 468,
+      "output": 29,
+      "thought": 0,
+      "total": 497
+     },
+     "interaction_id": "v1_Chdnek1JYTluTkNjR2Y0dDRQb3B1V2lBbxIXR0RRSWFfcjJDLVdqcWZrUDRkLTh3QVk",
+     "tool_calls": [
+      {
+       "name": "calculator",
+       "arguments": {
+        "expression": "(14 * 60 + 32) + 90"
+       },
+       "result": {
+        "expression": "(14 * 60 + 32) + 90",
+        "value": 962
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 39.82,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 536,
+      "output": 20,
+      "thought": 0,
+      "total": 556
+     },
+     "interaction_id": "v1_Chdnek1JYTluTkNjR2Y0dDRQb3B1V2lBbxIXbkRRSWFfVEtGS19sNjk0UG05RDRpQVk",
+     "tool_calls": [
+      {
+       "name": "calculator",
+       "arguments": {
+        "expression": "962 / 60"
+       },
+       "result": {
+        "expression": "962 / 60",
+        "value": 16.033333333333335
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 74.88,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 602,
+      "output": 25,
+      "thought": 0,
+      "total": 627
+     },
+     "interaction_id": "v1_Chdnek1JYTluTkNjR2Y0dDRQb3B1V2lBbxIXM3pRSWFfZW9GYnVpNjk0UHFjakJnUTA",
+     "tool_calls": [
+      {
+       "name": "calculator",
+       "arguments": {
+        "expression": "962 - (16 * 60)"
+       },
+       "result": {
+        "expression": "962 - (16 * 60)",
+        "value": 2
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 42.89,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 660,
+      "output": 34,
+      "thought": 0,
+      "total": 694
+     },
+     "interaction_id": "v1_Chdnek1JYTluTkNjR2Y0dDRQb3B1V2lBbxIXNnpRSWE3TGRIUC1qcWZrUHJQMk5nQVk"
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 47.11,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 323,
+      "output": 32,
+      "thought": 0,
+      "total": 355
+     },
+     "interaction_id": "v1_ChdGRFVJYTRIbExxVG40dDRQbnBLUW1BdxIXRkRVSWE0SGxMcVRuNHQ0UG5wS1FtQXc",
+     "tool_calls": [
+      {
+       "name": "get_weather",
+       "arguments": {
+        "city": "Berlin"
+       },
+       "result": {
+        "city": "Berlin",
+        "temp_c": 18,
+        "condition": "sunny",
+        "units": "celsius"
+       }
+      },
+      {
+       "name": "get_weather",
+       "arguments": {
+        "city": "Tokyo"
+       },
+       "result": {
+        "city": "Tokyo",
+        "temp_c": 18,
+        "condition": "sunny",
+        "units": "celsius"
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 4.28,
+     "input_steps": 2,
+     "status": "completed",
+     "usage": {
+      "input": 437,
+      "output": 17,
+      "thought": 0,
+      "total": 454
+     },
+     "interaction_id": "v1_ChdGRFVJYTRIbExxVG40dDRQbnBLUW1BdxIXUkRVSWE1aUZJWkxSZzhVUHNOXzg2QUU"
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 23.09,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 464,
+      "output": 6,
+      "thought": 0,
+      "total": 470
+     },
+     "interaction_id": "v1_ChdGRFVJYTRIbExxVG40dDRQbnBLUW1BdxIXU0RVSWE1RHpLZFd0bU5NUHBMdmxvQVk"
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 3.68,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 337,
+      "output": 25,
+      "thought": 0,
+      "total": 362
+     },
+     "interaction_id": "v1_ChdYelVJYS1YNUZwZjZqTkFQN1l2RG1BbxIXWHpVSWEtWDVGcGY2ak5BUDdZdkRtQW8"
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 4.0,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 373,
+      "output": 19,
+      "thought": 0,
+      "total": 392
+     },
+     "interaction_id": "v1_ChdYelVJYS1YNUZwZjZqTkFQN1l2RG1BbxIXWXpVSWE1ZWhHOENQejdzUDVZYVM0QXc"
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 52.51,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 398,
+      "output": 5,
+      "thought": 0,
+      "total": 403
+     },
+     "interaction_id": "v1_ChdYelVJYS1YNUZwZjZqTkFQN1l2RG1BbxIXWnpVSWE5UFpHNWVENjk0UG1yN1ZrQXM"
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 14.66,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 324,
+      "output": 22,
+      "thought": 0,
+      "total": 346
+     },
+     "interaction_id": "v1_ChdtelVJYTVyT0c2YUl6N3NQcHJ6RTJRTRIXbXpVSWE1ck9HNmFJejdzUHByekUyUU0",
+     "tool_calls": [
+      {
+       "name": "calculator",
+       "arguments": {
+        "expression": "0.17 * 340"
+       },
+       "result": {
+        "expression": "0.17 * 340",
+        "value": 57.800000000000004
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 17.53,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 394,
+      "output": 15,
+      "thought": 0,
+      "total": 409
+     },
+     "interaction_id": "v1_ChdtelVJYTVyT0c2YUl6N3NQcHJ6RTJRTRIXcWpVSWE2M2ZLT0hSZzhVUGlfMlhzUXc"
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 13.41,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 415,
+      "output": 20,
+      "thought": 0,
+      "total": 435
+     },
+     "interaction_id": "v1_ChdtelVJYTVyT0c2YUl6N3NQcHJ6RTJRTRIXdkRVSWE0MmVEcTdFZzhVUHJ0UzcwQXM",
+     "tool_calls": [
+      {
+       "name": "calculator",
+       "arguments": {
+        "expression": "57.8 * 2"
+       },
+       "result": {
+        "expression": "57.8 * 2",
+        "value": 115.6
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 11.17,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 468,
+      "output": 10,
+      "thought": 0,
+      "total": 478
+     },
+     "interaction_id": "v1_ChdtelVJYTVyT0c2YUl6N3NQcHJ6RTJRTRIXeVRVSWEtR0JKZXJFZzhVUHdabWZpQWM"
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 2.83,
+     "input_steps": 1,
+     "status": "requires_action",
+     "usage": {
+      "input": 335,
+      "output": 17,
+      "thought": 0,
+      "total": 352
+     },
+     "interaction_id": "v1_ChcxRFVJYTZhWEZyeU02OTRQbDZ1ZDZBbxIXMURVSWE2YVhGcnlNNjk0UGw2dWQ2QW8",
+     "tool_calls": [
+      {
+       "name": "search_kb",
+       "arguments": {
+        "query": "board api"
+       },
+       "result": {
+        "query": "board api",
+        "results": [
+         {
+          "title": "board api",
+          "snippet": "card mutations from non-writer hosts go through board-api on idc03"
+         }
+        ]
+       }
+      }
+     ]
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 9.24,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 405,
+      "output": 30,
+      "thought": 0,
+      "total": 435
+     },
+     "interaction_id": "v1_ChcxRFVJYTZhWEZyeU02OTRQbDZ1ZDZBbxIXMXpVSWE5bW9LY0hBM0xVUDVZYndtUXc"
+    },
+    {
+     "lane": "g31l_stateful",
+     "model": "gemini-3.1-flash-lite",
+     "mode": "stateful",
+     "latency_s": 8.17,
+     "input_steps": 1,
+     "status": "completed",
+     "usage": {
+      "input": 447,
+      "output": 13,
+      "thought": 0,
+      "total": 460
+     },
+     "interaction_id": "v1_ChcxRFVJYTZhWEZyeU02OTRQbDZ1ZDZBbxIXNERVSWFfbnpON2F6ZzhVUHpLaUlnQVU"
+    }
+   ],
+   "consecutive_fatal": 0,
+   "blocked": false
+  }
+ },
+ "calls": [],
+ "finished": "2026-11-26T20:36:40+0700"
+}
