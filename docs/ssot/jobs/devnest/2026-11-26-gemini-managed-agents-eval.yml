@@ -65,7 +65,7 @@ findings:
 
 guardrails:
   - "No key, billing, gateway, model-pin or production-path changes."
-  - "No wiki publish in this track; the Education page is unchanged."
+  - "No wiki publish during the eval itself; Tony separately authorized revision 3 on 2026-11-26, which folded these findings into Education:Gemini-Developer-Capabilities-2026-11-26 via board-api /publish sink wiki-education (revid 798)."
   - "Synthetic file contents and a public GitHub repo only; no estate repo or host data mounted."
 
 activation_gate:
@@ -75,6 +75,7 @@ activation_gate:
 verify:
   - "DONE 2026-11-26: both file-task grades re-checked via stored GET /interactions/{id}; code_execution_result and model_output both contained the expected strings."
   - "DONE 2026-11-26: YAML receipts and result JSON parsed; JSONs force-added through a clean detached worktree push."
+  - "DONE 2026-11-26: revision 3 of the Education page published via board-api /publish sink wiki-education, pageid 368 revid 798, re-read 14,109 chars with Managed Agents and batch-precondition markers present."
 
 remaining:
   - "Compare a real end-to-end task against our hand-built agent loop on token cost and wall time; this run only establishes capability, not an efficiency win."

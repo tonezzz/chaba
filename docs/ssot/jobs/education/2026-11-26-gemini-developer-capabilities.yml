@@ -4,7 +4,7 @@ subtitle: >
   research, then a card-gated /publish to the wiki-education sink; re-published
   on 2026-11-26 with the free-tier verification sweep and corrected claims.
 icon: education
-version: 2
+version: 3  # revision 3: Managed Agents verification, decision-1 label review, batch precondition
 
 card: gemini-dev-capabilities-research-2026-11-26  # ADA-1440
 date: 2026-11-26
@@ -27,6 +27,13 @@ delivered:
       idempotency_key: pub-f02494db4d694bd7b142b12da5ec29fc
       sink: wiki-education
       reason: "Fold in the free-tier Interactions sweep, close the answered eval questions, correct stale explicit-caching and thinking-config claims."
+    revision_3:
+      revid: 798
+      event_id: gemini-dev-capabilities-managed-agents-2026-11-26
+      idempotency_key: pub-4029d540e2d34fa4927f0a96dce2f01e
+      sink: wiki-education
+      reason: "After Tony's explicit go-ahead, fold in the verified Managed Agents surfaces, the completed decision-1 label review, and the free-tier Batch API precondition."
+      body_chars: 14109
     topic: gemini-developer-capabilities
     level: working
     next_review: 2026-12-10
@@ -42,6 +49,9 @@ delivered:
     - "revision 2: gemini-api-dev skill trial 87.5% vs 25% with vs without on a paired four-run task family"
     - "revision 2: lite-model Interactions eval 6/6 tool calls and 6/6 recall; 20-turn state saved only 2.6% input tokens"
     - "revision 2: 500/day free generation cap left thought summaries, image generation and OpenAI compatibility unverified; scheduled retry after reset"
+    - "revision 3: Managed Agents verified on the free key - fresh sandbox + code execution 31s, sandbox reuse with file persistence 25s, GitHub repo mount 288s in background mode"
+    - "revision 3: decision-1 disputed labels confirmed READY by Tony; 8/10 is a true accuracy figure (tp 3 / fn 2 / tn 5 / fp 0); high-confidence reject pre-filter only"
+    - "revision 3: batchGenerateContent returned HTTP 400 FAILED_PRECONDITION on the free key for two models; paid check still open"
 
 guardrails:
   - "No billing, key, gateway, or model-pin changes."
@@ -62,11 +72,13 @@ verify:
   - "DONE 2026-11-26: key/billing/gateway/model-pin files untouched; only the KB doc and this job yml added to git."
   - "DONE 2026-11-26: card ADA-1440 closed via board-api /action."
   - "DONE 2026-11-26: re-publish re-read via POST /lesson -> 11,277 chars, section 4 present, no key names or project IDs in body."
+  - "DONE 2026-11-26: revision 3 published via board-api /publish sinks=[wiki-education] -> pageid 368 revid 798; re-read via POST /lesson -> 14,109 chars, revision-3 and Managed Agents markers present, no key names or project IDs in body."
 
 remaining:
   - "DONE 2026-11-26: 20-fixture voice bench on gemini-3.8-live-extended-thinking returned zero tool calls; gemini-3.8-live stays sole voice pin."
   - "DONE 2026-11-26: gemini-decision-1 evaluated as a reject gate; Tony confirmed both disputed READY labels on the ADA-1445 receipt, so 8/10 is a true accuracy figure. Approve gate still needs 30+ labeled briefs and a calibrated threshold."
   - "DONE 2026-11-26: official gemini-api-dev skill installed and trialled."
   - "After the daily quota reset, complete the three unverified surfaces (thought summaries, inline-image generation, OpenAI compatibility) via the scheduled retry on ADA-1451."
+  - "DONE 2026-11-26: revision 3 published with the Managed Agents, decision-1 label-review and batch-precondition findings; pageid 368 revid 798."
   - "Gemini 4 text-agent eval still needs paid capacity; separate go-ahead tracks that."
   - "Re-check the catalog before reusing any model ID; this page is a dated snapshot."
