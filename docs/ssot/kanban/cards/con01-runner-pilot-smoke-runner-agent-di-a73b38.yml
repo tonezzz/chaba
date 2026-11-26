@@ -1,7 +1,7 @@
 id: con01-runner-pilot-smoke-runner-agent-di-a73b38
 title: con01 runner pilot smoke — runner-agent dispatch path
-column: review
-updated: 2026-11-26 09:37
+column: done
+updated: 2026-11-26 09:39
 brief: Low-risk con01 runner-agent dispatch pilot. Dispatch a tiny verification task on the chaba repo via devin-dispatch
   and confirm claim/start/close.
 priority: low
@@ -27,7 +27,7 @@ action:
   result: 'exit=0 anch, and a final comms entry was posted to card `con01-runner-pilot-smoke-runner-agent-di-a73b38`.
     | devin-task-20261126-093600-low-risk-dispatch-pilot-for-th.service: Consumed 17.534s CPU time over 24.204s
     wall clock time, 1G memory peak.'
-  verified: false
+  verified: true
 comms:
 - at: 2026-11-26 09:34
   from: chaba
@@ -88,7 +88,22 @@ comms:
 - at: 2026-11-26 09:37
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-26 09:39
+  from: chaba
+  text: 'merge-sweep: merged 0cb21e7f (dispatch/20261126-093600-low-risk-dispatch-pilot-for-th from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261126-093600-low-risk-dispatch-pilot-for-th.md)
+    — auto-closed'
+- at: 2026-11-26 09:39
+  from: local
+  text: 'pub milestone: card verified: con01-runner-pilot-smoke-runner-agent-di-a73b38 on idc03 — merged 0cb21e7f
+    (dispatch/20261126-093600-low-risk-dispatch-pilot-for-th from tony-macbook) -> origin/master — verified — merged
+    0cb21e7f (dispatch/20261126-093600-low-risk-dispatch-pilot-for-th from tony-macbook) -> origin/master — verified
+    — auto-closed [evt-c6978a1c353aff6a]'
 ref: OPS-1426
 claim:
   since: 2026-11-26 09:35
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 09:39
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261126-093600-low-risk-dispatch-pilot-for-th.md
