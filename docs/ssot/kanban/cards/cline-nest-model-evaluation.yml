@@ -1,7 +1,7 @@
 id: cline-nest-model-evaluation
 title: Evaluate Cline models through the Nest worker adapter
 column: doing
-updated: 2026-11-26 15:58
+updated: 2026-11-26 16:08
 priority: medium
 tags:
 - cline-kanban
@@ -313,6 +313,22 @@ comms:
   from: devin
   text: 'raised request openrouter-free-arm-is-hard-blocked-the-7ac805: OpenRouter :free arm is hard-blocked: the
     fleet OR account hit its 1000/day free-model quota (all or-free-* 429 until 20'
+- at: 2026-11-26 16:08
+  from: tony
+  text: 'answered openrouter-free-arm-is-hard-blocked-the-7ac805: Cline fully retired 2026-11-26 (Tony approval):
+    no further model evaluation, including the OpenRouter :free arm. All Cline jobs, containers, edge route and
+    HA tab are being removed. No paid arm approv'
+- at: 2026-11-26 16:08
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
+- at: 2026-11-26 16:08
+  from: tony
+  text: Cline fully retired 2026-11-26 (Tony approval). Dispatch 20261126-153552 stopped on idc02 before closeout;
+    evaluation is moot. Bench packs left uncommitted in the dispatch worktree for reference only — not merged. Services,
+    timers, edge route and HA tab being removed in this retirement.
+- at: 2026-11-26 16:08
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
 action:
   type: dispatch
   status: running
@@ -335,9 +351,12 @@ requests:
     the OR arm proceed? Options: (a) wait for quota reset and re-dispatch tomorrow — recommended, $0 and spec-compliant;
     (b) approve paid reference arm now (or-deepseek-v4-flash ~$0.30 for 3 reps) as an extra arm; (c) approve a different
     free route (not OpenRouter — would deviate from spec).'
-  status: open
+  status: answered
   at: 2026-11-26 15:58
   from: devin
   options:
   - proceed
   - hold
+  answer: 'Cline fully retired 2026-11-26 (Tony approval): no further model evaluation, including the OpenRouter
+    :free arm. All Cline jobs, containers, edge route and HA tab are being removed. No paid arm approved. Close
+    this request and the card.'
