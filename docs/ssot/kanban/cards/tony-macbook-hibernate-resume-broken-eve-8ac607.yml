@@ -1,7 +1,7 @@
 id: tony-macbook-hibernate-resume-broken-eve-8ac607
 title: tony-macbook hibernate-resume broken — every suspend->hibernate cycle cold-boots
-column: review
-updated: 2026-11-26 12:54
+column: done
+updated: 2026-11-26 13:54
 priority: high
 tags:
 - macbook
@@ -133,6 +133,15 @@ comms:
 - at: 2026-11-26 12:54
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''hibernate-fix-option''] block close)'
+- at: 2026-11-26 13:53
+  from: tony
+  text: 'answered hibernate-fix-option: a — disable hibernate, run staged script now (recommended)'
+- at: 2026-11-26 13:53
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-26 13:54
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -159,7 +168,7 @@ requests:
     (b) debug resume properly: recreate /swap.img contiguously (dd), recompute resume_offset, update-grub + initramfs,
     reboot, test-hibernate — multi-step sudo on the runner, may still hit Polaris11 amdgpu resume issues. (c) keep
     suspend-then-hibernate and find another resume fix.'
-  status: open
+  status: answered
   at: 2026-11-26 12:43
   from: devin
   options:
@@ -168,4 +177,9 @@ requests:
   - c — keep suspend-then-hibernate, other approach
   - hold — leave as-is
   suggested: a — disable hibernate, run staged script now (recommended)
+  answer: a — disable hibernate, run staged script now (recommended)
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 13:54
+  note: verified — evidence checks green, closing itself

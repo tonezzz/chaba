@@ -2,7 +2,7 @@ id: runner-auto-con01
 title: Runner host `con01` fails 2 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on con01 that will strand dispatch cards. Read the note, fix
   on the host, close the card.
-column: review
+column: done
 review_kind: triage
 generated: runner-fleet-health
 program: chaba-ci
@@ -27,4 +27,14 @@ help: 'Per-check fixes:
 
   - devin-dispatch: Usually self-heals within one chaba-repo-sync tick (sync-runner-tools.sh via git-safe-pull).
   Manual: scp scripts/devin/devin-dispatch.sh <host>:~/.local/bin/devin-dispatch && ssh <host> chmod +x ~/.local/bin/devin-dispatch'
-updated: '2026-11-26'
+updated: 2026-11-26 13:30
+comms:
+- at: 2026-11-26 13:30
+  from: devin
+  text: 'Stale alert: con01 devin-dispatch sha256 now c5fa39476cb27cad, matching the pin in the card note; bootstrap
+    check resolved. Closing.'
+- at: 2026-11-26 13:30
+  from: devin
+  text: closed by devin
+action:
+  status: done

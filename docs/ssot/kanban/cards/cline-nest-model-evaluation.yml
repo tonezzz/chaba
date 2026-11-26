@@ -1,7 +1,7 @@
 id: cline-nest-model-evaluation
 title: Evaluate Cline models through the Nest worker adapter
 column: backlog
-updated: 2026-11-26 04:01
+updated: 2026-11-26 13:54
 priority: medium
 tags:
 - cline-kanban
@@ -273,6 +273,11 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 13:54
+  from: devin
+  text: 'Triage 2026-11-26: action.status=done is WRONG. Comms: dispatch produced zero commits, ''if the work was
+    never pushed it may be gone'', and the 2026-10-29 canary notes the local qwen3:4b smoke exited 0 without the
+    expected patch/artifact. Runner only claims status=queued; left open for a status reset + re-dispatch decision.'
 action:
   type: dispatch
   status: done

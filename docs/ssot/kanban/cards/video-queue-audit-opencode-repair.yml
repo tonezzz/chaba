@@ -1,7 +1,7 @@
 id: video-queue-audit-opencode-repair
 title: 'OpenCode artifact repair: video queue audit'
 column: backlog
-updated: 2026-11-26 03:59
+updated: 2026-11-26 13:54
 brief: Retry ADA-1046 with a write-capable artifact contract so the queue audit report lands and verifies.
 priority: high
 program: ai-workforce
@@ -276,5 +276,11 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 13:54
+  from: devin
+  text: 'Triage 2026-11-26: action.status=done is WRONG. Comms record artifact landed but verifier fail and ''merge
+    held ... reports/video-queue-status-opencode.md is gitignored'', plus 2026-11-07 ''[KNB-1098] provably failed
+    ... no artifact. Back to backlog''. Runner only claims status=queued. Left open; needs status reset + a versioned
+    artifact path.'
 review_kind: verify
 claim: {}

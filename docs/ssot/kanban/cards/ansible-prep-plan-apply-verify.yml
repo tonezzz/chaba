@@ -1,7 +1,7 @@
 id: ansible-prep-plan-apply-verify
 title: Ansible prep→plan→apply→verify workflow standard
-column: review
-updated: 2026-11-26 12:54
+column: backlog
+updated: 2026-11-26 13:54
 brief: Standardize Ansible for preparation/baselines, check-diff plan artifacts, gated apply, and verified closeout
   to increase fleet efficiency.
 priority: medium
@@ -160,13 +160,21 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261126-123352-objective-define-and-pilot-an- on mn01 still dirty —
     1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-26 13:53
+  from: tony
+  text: 'answered idc02-primary-ocb-pane-100-123-163-11-re-6d8dd3: proceed'
+- at: 2026-11-26 13:53
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-26 13:54
+  from: chaba
+  text: 'answer-sweep: executed ''proceed'' -> queued for processing'
 action:
   type: dispatch
-  status: done
+  status: queued
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  runner: mn01
   attempts: 1
   sweep:
     stale_running: 2026-11-26 12:39
@@ -174,7 +182,6 @@ action:
     dirty: 1
   result: 'exit=0 ml`; outcome doc at `dispatch-outcome-20261126-123352-objective-define-and-pilot-an-.md`. | devin-task-20261126-123352-objective-define-and-pilot-an-.service:
     Consumed 32.765s CPU time over 11min 11.836s wall clock time, 347.4M memory peak.'
-  verified: false
 claim:
   since: 2026-11-26 12:32
 requests:
@@ -182,10 +189,12 @@ requests:
   ask: idc02 (primary ocb_pane, 100.123.163.11) refuses SSH — connection refused :22, confirmed via alias+IP. tony-dell
     fallback healthy. Needs a host-level check (sshd/host down); approved OCB apply stays blocked until it is back.
     OK to leave as follow-up card, or is idc02 intentionally down?
-  status: open
+  status: answered
   at: 2026-11-26 12:44
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
+  executed: 2026-11-26 queue
 review_kind: verify

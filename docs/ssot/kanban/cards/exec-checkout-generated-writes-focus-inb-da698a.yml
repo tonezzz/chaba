@@ -1,7 +1,7 @@
 id: exec-checkout-generated-writes-focus-inb-da698a
 title: Exec-checkout generated writes (focus-inbox, ada-memory) never reach the writer
 column: done
-updated: 2026-11-26 13:12
+updated: 2026-11-26 13:51
 brief: 'Hosts with exec-role chaba checkouts (omen confirmed; audit dell/idc02/mn01) run producers that write generated
   files — docs/ssot/focus-inbox/*.yml alerts, backups/ada-memory/*.json dumps, routes.json, SSOT_OPTIMIZATION_WARNINGS.json
   — directly into the working tree. Exec role cannot commit (pre-commit block), so the content never reaches the
@@ -487,6 +487,34 @@ comms:
     checkpoint failed: commit: ⚠️ ; [exec-checkout-generated-writes-focus-inb-da698a] primer injected 8 lesson(s):
     [; [ssot-registry-split-review] checkpoint failed: commit: ⚠️ single-writer: docs/s; Board-api POST /inbox is
     the current focus-inbox door for hos'
+- at: 2026-11-26 13:36
+  from: devin
+  text: 'attempt2 DONE: prior work was real but never merged (merge-sweep false-positive, 5ee15a74 unreachable).
+    Re-merged dispatch/20261126-122820 branch here. Fixed actual blocker: con01 had no pytest -> test gate fail-closed;
+    installed pytest into ~/CascadeProjects/chaba/.venv + user site, smoke gate now 293p/0f. Audit done: all exec
+    checkouts stamped except con01 (now stamped exec). Omen test alert verified in idc03 served focus-inbox. Outcome:
+    dispatch-outcome-20261126-131153-goal-generated-writes-f'
+- at: 2026-11-26 13:51
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-26 13:51
+  from: chaba
+  text: banked 751 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 13:51
+  from: chaba
+  text: pushed dispatch/20261126-131153-goal-generated-writes-from-non to origin
+- at: 2026-11-26 13:51
+  from: chaba
+  text: 'test gate skipped: pre-existing baseline test failure'
+- at: 2026-11-26 13:51
+  from: chaba
+  text: "auto-merge not done: push: Authorized access only. All activity may be monitored and reported.\nTo tony-dell:CascadeProjects/chaba\n
+    ! [rejected]                HEAD -> master (fetch first)\nerror: failed to push some refs to 'ton — close will
+    block until merged"
+- at: 2026-11-26 13:51
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261126-131153-goal-generated-writes-from-non,
+    branch dispatch/20261126-131153-goal-generated-writes-from-non'
 action:
   type: dispatch
   status: done

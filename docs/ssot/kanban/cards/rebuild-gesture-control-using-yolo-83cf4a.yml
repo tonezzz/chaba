@@ -1,7 +1,7 @@
 id: rebuild-gesture-control-using-yolo-83cf4a
 title: Rebuild gesture control using YOLO
-column: doing
-updated: 2026-11-26 13:19
+column: review
+updated: 2026-11-26 13:39
 priority: medium
 spec: 'Goal: Replace MediaPipe hand tracking with a YOLO-based hand/gesture detection model in the client display
   app. Surface: display UI / vcast client. Sequence: evaluate YOLO pose/hand models suitable for browser/edge, integrate
@@ -11,9 +11,14 @@ action:
   type: dispatch
   repo: ada-voice
   executor: devin
-  status: running
+  status: done
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 -20261126-130417-goal-replace-mediapipe-hand-tr.md`; final status posted to the card. | devin-task-20261126-130417-goal-replace-mediapipe-hand-tr.service:
+    Consumed 1min 12.690s CPU time over 24min 5.231s wall clock time, 579.4M memory peak.'
+  verified: false
+  sweep:
+    merge_err: 2026-11-26 13:40
 note: Rebuild gesture control using YOLO model instead of MediaPipe for the display interface
 ref: OPS-1436
 comms:
@@ -64,5 +69,37 @@ comms:
     wand ?engine=yolo + in-browser ONNX YOLO26n-HaGRID eval merged today. Gap found: yolo-gesture backend (port
     8785) is DOWN on all hosts — hand mode currently delivers frames nobody consumes. Delivering ada-voice side:
     detector-health honesty in vcast_gesture + SSOT eval/integration doc.'
+- at: 2026-11-26 13:28
+  from: devin
+  text: 'DONE (dispatch branch dd8a928+3ca1ffc, not pushed). Audit: MediaPipe->YOLO replacement already shipped
+    in chaba — vcast hand mode = camera uplink -> yolo-gesture.service hand_yolov8n -> gesture msgs (2026-10-15);
+    wand ?engine=yolo + in-browser ONNX YOLO26n-HaGRID eval merged today. GAP: detector service is DOWN on all hosts
+    (omen/idc03 :8785 refused, mn01 unreachable) so hand mode was silently dead. Delivered in ada-voice: vcast_gesture(mode=hand)
+    now probes GET /pointer (ADA_YOLO_POINTER_URL) a'
+- at: 2026-11-26 13:29
+  from: tony-macbook
+  text: 'finished (ok): exit=0 -20261126-130417-goal-replace-mediapipe-hand-tr.md`; final status posted to the card.
+    | devin-task-20261126-13041'
+- at: 2026-11-26 13:29
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-26 13:29
+  from: chaba
+  text: banked 84 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 13:29
+  from: chaba
+  text: pushed dispatch/20261126-130417-goal-replace-mediapipe-hand-tr to origin
+- at: 2026-11-26 13:29
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-26 13:29
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/main'
+- at: 2026-11-26 13:39
+  from: chaba
+  text: "merge-sweep: landing devin-task-20261126-130417-goal-replace-mediapipe-hand-tr failed: push: Authorized
+    access only. All activity may be monitored and reported.\nremote: error: refusing to update checked out branch:
+    refs/heads/main        \nremote: error: By default, updating the current branch"
 claim:
   since: 2026-11-26 13:03
+review_kind: verify

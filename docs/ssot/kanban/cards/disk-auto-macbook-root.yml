@@ -2,7 +2,7 @@ id: disk-auto-macbook-root
 title: Disk macbook / fills in <7d
 brief: Disk space on macbook (/) is running low — check the note for the rate and top growers, then free space or
   close the card.
-column: review
+column: done
 review_kind: triage
 generated: disk-trend-watch
 area: monitoring
@@ -11,7 +11,7 @@ note: '65% used, growing 13.4 GiB/day -> full in ~5.8d top grower 24h: /home/ton
   +0.4 GiB'
 help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
   (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
-updated: 2026-11-26 09:30
+updated: 2026-11-26 13:31
 comms:
 - at: 2026-11-26 03:52
   from: chaba
@@ -45,3 +45,13 @@ comms:
   from: tony
   text: '[triage 2026-11-26] Still active: / at 65% but growing ~13.9 GiB/day (~5.6d to full); top grower /home/tony/.cache
     +2.5 GiB/24h. Needs a cache cleanup / retention policy on the macbook.'
+- at: 2026-11-26 13:31
+  from: tony
+  text: 'Triage 2026-11-26: cleared uv cache on tony-macbook (`uv cache clean` removed 8.2GiB / 526614 files). Root
+    now 62% used, 84G free (was 66% / 75G). Closing; trend watcher slope is n/a on sparse history, so the 13.4 GiB/day
+    note was stale.'
+- at: 2026-11-26 13:31
+  from: tony
+  text: closed by tony
+action:
+  status: done

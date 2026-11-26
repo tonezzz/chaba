@@ -1,7 +1,7 @@
 id: nest-mgr-v2-actuation
 title: Spec + pilot nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
 column: review
-updated: 2026-11-26 09:30
+updated: 2026-11-26 13:35
 brief: Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes
   eligible queued work to idle hosts — without bypassing owner/quota/leash gates. Build on the v1 census and the
   devnest-capacity-aware-dispatch lane machinery.
@@ -528,6 +528,13 @@ comms:
   text: '[triage 2026-11-26] Human-gated design card, left for your decision. Dispatch b9de96d6 auto-merged to origin/master
     with test gate green; held in review by review_kind=design. Please review the actuation spec and either approve
     (close) or send back.'
+- at: 2026-11-26 13:35
+  from: tony
+  text: '[design review 2026-11-26] Phase-0 soak is sound: recommend mode, zero executions, detection/gating/audit
+    correct. Do NOT enable guarded yet — zero units are restart-allowlisted fleet-wide, so guarded is a no-op; the
+    only persistent failure (kk-mac-model-status on idc02) is an orphaned unit missing its script and cannot be
+    fixed by a restart (OPS-1348). Recommend: keep monitor/recommend mode, allowlist only real restart-repairable
+    units via NEST_RESTART_OK=1, then re-soak 7d. Hold the Phase-1 as'
 action:
   type: dispatch
   status: done
