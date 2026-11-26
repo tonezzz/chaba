@@ -1,0 +1,84 @@
+title: gemini-ollama-proxy paid-Gemini leg — re-verify + forced-429 ordering probe
+date: '2026-11-26'
+card: gemini-proxy-paid-last-resort-leg
+host: tony-dell (worktree); targets idc03 (100.102.134.91 via tony-omen jump), con01
+
+verdict: |
+  ALREADY DONE — no code change required. The paid-Gemini leg shipped
+  2026-11-13 (PR #171) and has been extended since (caps af69a924e66,
+  free-key circuit 3d07c239cc6, free-lane budgets eb5dba63b9b). This
+  dispatch re-verified the whole chain live and by forced-failure probe.
+
+live_state_idc03: |
+  - Unit: gemini-ollama-proxy.service active, container Up since
+    2026-11-25 19:15 (+07), healthy. Listens 127.0.0.1:11435 (host net).
+  - RUNNING code = ~/.config/containers/mddb/proxy/gemini-ollama-proxy.mjs
+    sha256 a8c3df805614b191009bb2990a72922734d248d66c470e9a4e6f481b8bb275ba
+    — an UNCOMMITTED variant (free-key ring + LiteLLM embed gateway, no
+    free-lane budgets). See card gemini-proxy-live-repo-divergence.
+  - Repo code = scripts/mddb/gemini-ollama-proxy.mjs sha256
+    d58adf9b59ce608b7db0e681671d16b51370e1086c76cd7038d4e05cd52a1fda —
+    paid leg + caps + budgets, no ring/gateway. The ansible-regenerated
+    quadlet (2026-11-26) mounts THIS file — next restart swaps variants.
+  - Env passthrough VERIFIED: container env contains GEMINI_API_KEY_PAID
+    (present=1, value never read/printed), PAID_GEMINI_DAILY_CAP=2000,
+    PAID_GEMINI_HOURLY_CAP=150, OR_FALLBACK_DAILY_CAP=5000,
+    FREE_GEMINI_HOURLY_BUDGET=1000, FREE_GEMINI_BULK_DAILY_BUDGET=5000,
+    PAID_GEMINI_BULK_ALLOW=0 (last four set in quadlet but unread by the
+    live variant — see divergence card). OPENROUTER_PRIMARY=0,
+    EMBED_GATEWAY_BASE+LITELLM_KEY set (gateway leg live), OLLAMA
+    fallback NOT configured (ollama_fallback: null in /health).
+  - /health: provider_mode=gemini-primary, embed_gateway="embedding",
+    free_keys=6, paid_daily_cap=2000, paid_hourly_cap=150,
+    paid_calls_today=0, consecutive_failures=0.
+  - con01: no proxy installed (inactive, no ~/.config/containers/mddb).
+    idc01: unreachable (warm-DR down) — neither applicable.
+
+ordering_verified: |
+  fetchBackupBatch order in BOTH variants: OR/gateway leg -> direct
+  free-Gemini -> PAID GEMINI_API_KEY_PAID -> Ollama (non-OR path only;
+  OR path hard-fails instead of wrong-space Ollama). Paid leg engages
+  only after free keys exhaust retries; caps refuse BEFORE any billed
+  call; cap-hit emits embed_paid_cap ops event.
+
+probe: |
+  Harness: .dispatch-scratch/probe-paid-leg.mjs + fetch-intercept.mjs in
+  the dispatch worktree (untracked scratch). Mocks Gemini upstream
+  (429 for free keys, 200 for paid), Ollama (hit counter), embed
+  gateway (500). Live file hardcodes generativelanguage.googleapis.com
+  (no GEMINI_API_BASE env) so a node --import preload rewrites that
+  host to the mock — the deployed bytes ran UNMODIFIED.
+  Scenarios vs live file (sha a8c3df):
+  - free-first: 2 free keys x2 retries -> 429, circuits open ->
+    provider=gemini-embedding-2-paid, ollama_hits=0, paid_calls=1/req.
+  - gateway-down: free 429 -> gateway 500 (or_circuit opens) ->
+    direct-free skipped (circuits open) -> paid serves; req2 skips
+    dead gateway entirely.
+  - cap-then-ollama (PAID_GEMINI_DAILY_CAP=1): req1 paid, req2
+    "paid Gemini daily-cap 1 hit" -> Ollama nomic-embed-text serves —
+    literal proof Ollama is last resort and the cap bounds spend.
+  Scenarios vs repo file (sha d58adf): free-first + cap-then-ollama
+  identical results (single free key, geminiFree=2 hits/req).
+
+vector_space_caveat: |
+  Paid key = SAME model gemini-embedding-2, SAME vector space as free
+  (paid is a billing tier, not a different embedding) — index-safe.
+  Ollama nomic-embed-text is a DIFFERENT space: the OR/gateway path
+  refuses it entirely (hard-fail beats wrong-space writes); only the
+  no-OR path may reach it as true last resort. Documented in code
+  comments (both variants) and docs/kb/mddb-embedding-providers.md.
+
+spend_cap: |
+  Live: PAID_GEMINI_DAILY_CAP=2000 batches/day + PAID_GEMINI_HOURLY_CAP
+  =150/hr per UTC window (~<= $0.20/day worst case per KB doc), counters
+  in /health, reset on window roll or restart. Repo defaults 0=uncapped;
+  caps are env-set on idc03.
+
+followups: |
+  - Card gemini-proxy-live-repo-divergence (MEM-1464) filed for the
+    uncommitted live variant vs repo master — decide canonical version
+    BEFORE next gemini-ollama-proxy restart (ansible quadlet now mounts
+    the repo file).
+  - Deploy-runbook drift: docs/kb/mddb-embedding-providers.md still says
+    "copy the .mjs into ~/.config/containers/mddb/proxy/" — superseded by
+    the ansible quadlet repo-mount.
