@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-memory
 title: Timer ada-scenario-memory on idc03 failing
 column: backlog
-updated: 2026-11-26 08:08
+updated: 2026-11-26 09:25
 priority: high
 tags:
 - timer-alert
@@ -103,6 +103,10 @@ comms:
     from the live tony-ha/backend.env (valid HA token, HTTP 200 on tony-omen HA; mode 600). Gate dry-run verdict:
     paid-lane (unmarked PAID key), provider active, no quota dunning, zero churn -- so a one-shot prod-allow-memory
     sentinel is required and is being written with this card ID. The s'
+- at: 2026-11-26 09:25
+  from: devin
+  text: '[still suspicious] Last run (11-26 08:38) of `ada-scenario-memory.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 requests:
 - id: the-timer-ada-scenario-memory-fbdac5
   ask: The timer ada-scenario-memory.service on idc03 failed with a resource error because EnvironmentFile ~/.config/secrets/ada-ha-tony.env
