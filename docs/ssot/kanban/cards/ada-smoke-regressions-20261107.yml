@@ -1,7 +1,7 @@
 id: ada-smoke-regressions-20261107
 title: Smoke tier regressions — 4 fails surfaced after runner repair
-column: backlog
-updated: 2026-11-26 20:43
+column: doing
+updated: 2026-11-26 20:45
 priority: medium
 tags:
 - ada
@@ -388,18 +388,22 @@ comms:
   from: tony
   text: 'routing edited: executor=devin by tony: unstaged free_lane opencode hold — pin devin so the queued dispatch
     can be claimed instead of starving'
+- at: 2026-11-26 20:45
+  from: tony-dell
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  attempts: 1
+  attempts: 2
   result: 'exit=0 e-20261124-214616-first-live-smoke-run-in-11-day.md`; final verdict posted to card comms. | devin-task-20261124-214616-first-live-smoke-run-in-11-day.service:
     Consumed 55.750s CPU time over 11min 13.124s wall clock time, 968.8M memory peak.'
   sweep:
     dirty: 3
   executor: devin
+  runner: tony-dell
 claim:
-  since: 2026-11-24 21:44
+  since: 2026-11-26 20:45
 review_kind: verify
