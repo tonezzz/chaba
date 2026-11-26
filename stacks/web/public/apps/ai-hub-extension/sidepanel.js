@@ -659,3 +659,98 @@ dumpPageBtn.addEventListener("click", async () => {
     clearBusy(dumpPageBtn);
   }
 });
+
+// Dump the Google Cloud Console quota table to the local page-dump bridge.
+// The bridge's /page-dump stores the whole payload, so agents can read the
+// newest *_gcp_quotas.json from ~/.local/ai-hub/page-dumps/ over ssh.
+async function captureGcpQuotas(statusEl, btn) {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab) return (statusEl.textContent = "No active tab.");
+  setBusy(btn, "Capturing quotas…");
+  let payload = {};
+  try {
+    const res = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => {
+        const clean = (s) => (s || "").replace(/\s+/g, " ").trim();
+        const rows = [];
+        const seen = new Set();
+        const selectors = ["table tbody tr", '[role="row"]', ".mat-row", "tr"];
+        for (const sel of selectors) {
+          for (const el of document.querySelectorAll(sel)) {
+            const cells = Array.from(
+              el.querySelectorAll("th,td,[role='cell'],[role='columnheader']")
+            ).map((c) => clean(c.innerText));
+            const text = cells.length ? cells.join(" | ") : clean(el.innerText);
+            if (!text || seen.has(text)) continue;
+            seen.add(text);
+            rows.push(text);
+            if (rows.length >= 400) break;
+          }
+          if (rows.length >= 400) break;
+        }
+        const href = location.href;
+        return {
+          url: href,
+          title: "gcp-quotas",
+          text: clean(document.body ? document.body.innerText : "").slice(0, 200000),
+          rows,
+          project: new URL(href).searchParams.get("project") || "",
+          service: new URL(href).searchParams.get("service") || "",
+        };
+      },
+    });
+    payload = res?.[0]?.result || {};
+    if (!payload.text && !payload.rows?.length) throw new Error("no quota data on page");
+  } catch (err) {
+    statusEl.textContent = `Quota capture failed for ${tab.url}: ${err.message}`;
+    return;
+  }
+  try {
+    const url = (bridgeUrlInput.value.trim() || "http://127.0.0.1:9876").replace(/\/+$/, "");
+    const res = await fetch(`${url}/page-dump`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const text = await res.text();
+    statusEl.textContent = res.ok
+      ? `Quotas dumped: ${payload.rows.length} rows → ${text}`
+      : `Dump failed: ${res.status} ${text}`;
+  } catch (err) {
+    statusEl.textContent = `Dump error: ${err.message}`;
+  } finally {
+    clearBusy(btn);
+  }
+}
+
+const gcpQuotaBtn = document.getElementById("gcpQuotaBtn");
+gcpQuotaBtn.addEventListener("click", () => captureGcpQuotas(debugStatus, gcpQuotaBtn));
+
+// One-click preset: force the local bridge, open the quota page if needed,
+// then capture on the second click (once the Angular table has rendered).
+const gcpQuickBtn = document.getElementById("gcpQuickBtn");
+if (gcpQuickBtn) {
+  gcpQuickBtn.addEventListener("click", async () => {
+    const status = document.getElementById("gcpStatus");
+    bridgeUrlInput.value = "http://127.0.0.1:9876";
+    saveSettings();
+    const project = (document.getElementById("gcpProject")?.value || "").trim();
+    const service = (document.getElementById("gcpService")?.value || "").trim();
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const isQuotaPage = tab && /console\.cloud\.google\.com/.test(tab.url || "")
+      && /quotas/.test(tab.url || "");
+    if (!isQuotaPage) {
+      const params = new URLSearchParams();
+      if (service) params.set("service", service);
+      if (project) params.set("project", project);
+      const qs = params.toString();
+      const url = "https://console.cloud.google.com/iam-admin/quotas" + (qs ? `?${qs}` : "");
+      await chrome.tabs.create({ url, active: true });
+      status.textContent = "Bridge set to local; quota page opened. Wait for the table, then click again to capture.";
+      return;
+    }
+    status.textContent = "Capturing quota table…";
+    await captureGcpQuotas(status, gcpQuickBtn);
+  });
+}

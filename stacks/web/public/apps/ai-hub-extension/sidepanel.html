@@ -26,6 +26,17 @@
     <button id="send">Send to all</button>
     <div id="sendStatus" class="status"></div>
 
+    <details class="section" id="gcpDetails" open>
+      <summary><h2>GCP Quotas → agent</h2></summary>
+      <div class="section-body">
+        <div class="status">1) Click below: sets the local bridge and opens the quota page. 2) Wait for the table to render. 3) Click again to capture. Then tell the agent — it reads the dump from the bridge.</div>
+        <label>Project <input type="text" id="gcpProject" value="gen-lang-client-0694401188"></label>
+        <label>Service <input type="text" id="gcpService" value="aiplatform.googleapis.com"></label>
+        <div class="row"><button id="gcpQuickBtn" type="button">Setup + capture GCP quotas</button></div>
+        <div id="gcpStatus" class="status"></div>
+      </div>
+    </details>
+
     <details class="section" id="nbDetails">
       <summary><h2>NotebookLM</h2></summary>
       <div class="section-body">
@@ -66,6 +77,7 @@
         <div class="row">
           <button id="debugCaptureBtn">Capture page + selectors</button>
           <button id="dumpPageBtn">Dump page text</button>
+          <button id="gcpQuotaBtn">Dump GCP quotas</button>
         </div>
         <div id="debugStatus" class="status"></div>
       </div>

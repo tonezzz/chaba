@@ -1,0 +1,84 @@
+id: gemini-eval-judge-lane
+title: Gemini eval/judge lane — paid-first litellm group with a hard daily cap
+column: backlog
+updated: 2026-11-26
+priority: high
+program: devnest
+tags:
+- devnest
+- eval
+- litellm
+- gemini
+brief: >-
+  Use the essentially untouched Gemini paid-tier allowance for NEW bulk eval/judge
+  work — the 2026-11-26 Console quota capture showed 1 request used against a
+  350,000/day flash-lite allowance. This removes the free-tier 429 failure mode
+  (OPS-1255 run 2) for new work while keeping deterministic verifiers and the
+  pending nemotron canary untouched.
+spec: |
+  CONTEXT
+  - GCP Console quota capture 2026-11-26 (project gen-lang-client-0694401188):
+    Gemini API "Request limit per model per day for a project in the paid tier 2"
+    for gemini-3.5-flash-lite = 350,000, current usage 1. gemini-3.8-live and
+    gemini-3.8-live-extended-thinking are Unlimited with 25 / 31 requests.
+  - OPS-1255 S1 run 2 failed only because or-free-nemotron-ultra had no litellm
+    fallback and OpenRouter free tier returned 429 free-models-per-day-high-balance.
+    Tony's decision: requalify the SAME nemotron canary after quota reset — do not
+    switch its model. This card does NOT touch that canary, its verifier, or the
+    or-free-* group.
+
+  ROUTING (stacks/idc03/litellm/config.yaml)
+  1. Add a new model_name `eval-judge` mirroring the existing paid gemini-3.5-flash-lite
+     entry: litellm_params.model = gemini/gemini-3.5-flash-lite,
+     api_key = os.environ/GEMINI_API_KEY_PAID (mddb-gemini.env on idc03).
+  2. router_settings.fallbacks add:
+       eval-judge: [gemini-3.5-flash-lite, ollama-llama32-3b-kkmac, colab-gemma3]
+     Paid first, local last. NO `:free` and NO `or-free-*` legs — those are the
+     exact rate-limited path this lane exists to avoid. If all legs are down the
+     caller fails closed with a visible reason; no silent free-tier retry.
+  3. Deploy on idc03 via the normal config sync/restart; verify with a single
+     chat completion through the gateway before any bulk run.
+
+  KEY + CAP
+  4. Mint a scoped virtual key on idc03:
+       bash scripts/litellm/mint-key.sh eval-judge 10 30d "eval-judge"
+     Append the returned sk- key to ~/.config/secrets/litellm-keys.env as
+     LITELLM_KEY_EVAL_JUDGE (never print or commit the value). If any service
+     pins this key in its own env file, follow the OPS-1291 dependent-sync
+     pattern in mint-key.sh; otherwise document "no dependents".
+  5. App-level daily ceiling: EVAL_JUDGE_DAILY_MAX=10000 requests (≈3% of the
+     350,000 available), plus the virtual key's $10/30d budget. Add a small
+     ledger writer (extend scripts/litellm/budget-watch.py or add
+     scripts/litellm/eval-budget.py) recording {ts, task, tokens, spend, verdict}
+     to ~/.local/state/eval-judge/<YYYY-MM-DD>.jsonl on the caller host.
+     On cap: park the card/job with a visible reason on the board (gate visibility
+     rule) — no retry storm, no silent fallback to free models.
+
+  ADOPTION + VERIFIER BOUNDARY
+  6. Opt in only NEW bulk eval/judge work (e.g. evals/shadow judge arm,
+     consultant-bench style sweeps) via LITELLM_URL + LITELLM_KEY_EVAL_JUDGE.
+     Do not repoint existing prod/chat lanes and do not modify
+     scripts/devnest/kk_mac_executor.py verify() or any held-out verifier:
+     model verdicts are advisory; the deterministic verifier remains authoritative.
+  7. Update docs/ssot/infrastructure/ssot.llm-gateway.yml: add `eval-judge` to
+     the canonical routing table and the virtual-key section, with the quota
+     source and cap noted.
+
+  TESTS / DONE-CONDITION
+  8. Tests:
+     - unit: config asserts eval-judge fallback chain has no `:free`/`or-free-*`
+       member and that paid gemini leg is first;
+     - smoke: 1 completion via the new key returns 200 and a row with
+       tag service=eval lands in LiteLLM_SpendLogs;
+     - 100-call bounded eval on held-out fixtures: zero 429s, zero escalations,
+       and verdict agreement with the deterministic verifier >= current baseline;
+     - cap test: set EVAL_JUDGE_DAILY_MAX=2, third call is parked with a visible
+       reason and makes no provider request;
+     - regression assert: OPS-1255 card, its canary job and or-free-nemotron-ultra
+       are unchanged.
+  9. Outcome doc under docs/ssot/jobs/devnest/ with the measured spend per 100
+     verdicts and the quota delta from the Console capture. Card to review on
+     completion; no auto-close.
+action:
+  type: dispatch
+  repo: chaba
