@@ -13,6 +13,8 @@ inventory/group_vars/all.yml   # common_packages, unattended-upgrades policy
 inventory/host_vars/<host>.yml  # per-host opt-ins (e.g. docker_enabled)
 inventory/group_vars/ocb_pane.yml   # declared ada-ocb pane contract (pins, units, edge)
 playbooks/site.yml        # baseline: packages, security updates, docker check
+playbooks/host-load-guard.yml    # CPU-job wrapper, slice, thermal gate, alarms, HA telemetry
+playbooks/ha-dashboard-deploy.yml  # idempotent chaba-admin Hosts view promotion
 playbooks/ada-ocb-audit.yml   # read-only pane surface probe + durable artifact
 playbooks/ada-ocb-verify.yml  # contract gate (producer + consumer), nonzero on drift
 playbooks/ada-ocb-upgrade.yml # approval-gated write path (starts the host's update unit)
@@ -270,3 +272,36 @@ hosts. Drift found by `audit-runner-tools.yml` is turned into a board card by
 `scripts/board/runner-drift-rearm.py` (use `--dry-run` to parse without
 writing); `--verify` comments the re-audit result and closes the card when
 clean.
+
+## HA temperature telemetry + dashboard (tony-omen)
+
+Two playbooks own the per-zone temperature history shown on the `chaba-admin`
+Hosts view. Both are tony-omen-only and tagged `ha` so they can be converged
+together. Always pass an explicit `--limit`:
+
+```bash
+cd ansible
+# wrapper, CPU slice, thermal policy, alarms, and the HA telemetry mirror
+ansible-playbook playbooks/host-load-guard.yml --check --diff --limit tony-omen --tags ha
+ansible-playbook playbooks/host-load-guard.yml --limit tony-omen --tags ha
+
+# stage snapshot + helper, probe, back up, promote only the `hosts` view,
+# then verify the entities over HA's REST API
+ansible-playbook playbooks/ha-dashboard-deploy.yml --check --diff --limit tony-omen --tags ha
+ansible-playbook playbooks/ha-dashboard-deploy.yml --limit tony-omen --tags ha
+```
+
+- `host-load-guard.yml` also carries `thermal`, `wrapper`, `slice` and
+  `alarms` tags. `playbooks/vars/thermal.yml` is the single place to change
+  admission thresholds; re-run the `thermal` slice to push them.
+- The telemetry script publishes numeric per-zone sensors
+  (`sensor.<dev>_temp_<zone>`). Its user timer runs every 5 minutes and picks
+  up a new script on the next tick — no service restart is needed.
+- `ha-dashboard-deploy.yml` treats
+  `docs/home-assistant/dashboards/chaba-admin-current.json` as the source of
+  truth for the `hosts` view only; the other prod views are preserved. It
+  backs up `.storage/lovelace.chaba_admin` only before an actual write, and
+  `--check` previews staged file diffs while skipping all websocket/API tasks.
+- The HA token stays in a 0600 host-side secret file — never in play vars or
+  command arguments. `promote-views.py` prints `already current` when the view
+  matches, which keeps the promote task idempotent (`changed=0`).
