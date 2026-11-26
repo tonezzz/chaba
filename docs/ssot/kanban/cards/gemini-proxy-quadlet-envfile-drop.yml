@@ -1,0 +1,25 @@
+id: gemini-proxy-quadlet-envfile-drop
+title: gemini-ollama-proxy quadlet lost EnvironmentFile=mddb-gemini.env — restart = total embed outage
+column: backlog
+updated: 2026-11-27 00:12
+priority: high
+tags:
+- mddb
+- embedding
+- infra
+- drift
+spec: The ansible-regenerated quadlet on idc03 (~/.config/containers/systemd/gemini-ollama-proxy.container, generated
+  2026-11-26T02:17Z, managed-by=ansible, source repo github.com/tony/chaba-ansible) has no EnvironmentFile= line.
+  The quadlet the running container was built from carried EnvironmentFile=/home/tony/.config/secrets/mddb-gemini.env,
+  which supplies GEMINI_API_KEY, GEMINI_API_KEY_PAID, GEMINI_FREE_KEYS_01..10, EMBED_GATEWAY_BASE/MODEL, LITELLM_KEY,
+  GEMINI_PROXY_HOST. The proxy never reads GEMINI_API_KEY_FILE. On the next gemini-ollama-proxy.service restart
+  the container starts with zero provider keys -> "no embedding provider configured" -> all mddb embeds fail. Fix
+  the quadlet template in chaba-ansible to restore the EnvironmentFile (or equivalent env passthrough), regenerate,
+  daemon-reload — do NOT restart the unit until env delivery is verified (podman inspect Config.Env or a dry-run
+  quadlet diff). Found during gemini-proxy-live-repo-divergence (2026-11-26); see docs/ssot/jobs/mddb/2026-11-26-gemini-proxy-variant-reconcile.yml
+  restart_hazard section.
+ref: MEM-1469
+comms:
+- at: 2026-11-27 00:12
+  from: tony
+  text: card captured via board-api
