@@ -8,7 +8,7 @@ priority: medium
 note: 'last_run 1554m overdue (interval 60m). last_run=2026-11-25T01:00:00+00:00 interval=60m status=ok. Page: https://idc03.taila0626a.ts.net/cms/#/cctv-roster'
 help: 'Trigger a manual regen: cms_automation run_now for ''cctv-roster'' (or POST /api/cms/pages/cctv-roster/regenerate).
   If it repeats, check the page''s generator command in the registry doc.'
-updated: 2026-11-26 15:16
+updated: 2026-11-26 15:17
 comms:
 - at: 2026-11-25 09:38
   from: chaba
@@ -105,6 +105,9 @@ comms:
   from: chaba
   text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
     the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-26 15:17
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.94 > 0.7)'
 action:
   status: queued
   type: dispatch
