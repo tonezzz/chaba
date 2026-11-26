@@ -1,7 +1,7 @@
 id: gemini4-interactions-text-agent-eval-2026-11-26
 title: Evaluate Gemini 4 + Interactions API for a stateful text agent
 column: review
-updated: 2026-11-26 20:54
+updated: 2026-11-26 20:58
 brief: Compare gemini-4-hydrogen/neon via the Interactions API against the current 3.x stateless text path on a
   small multi-turn tool-and-recall task set; measure task accuracy, token growth and latency.
 priority: medium
@@ -155,6 +155,10 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261126-191819-read-only-eval-on-idc03-with-g on mn01 still dirty —
     1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-26 20:58
+  from: chaba
+  text: 'merge-sweep: devin-task-20261126-191819-read-only-eval-on-idc03-with-g no longer active on mn01 but card
+    still says running — sweeping its branch'
 action:
   type: dispatch
   status: done
@@ -168,6 +172,7 @@ action:
   verified: false
   sweep:
     dirty: 1
+    stale_running: 2026-11-26 20:58
 claim:
   since: 2026-11-26 19:17
 review_kind: verify
