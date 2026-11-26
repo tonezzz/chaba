@@ -1,0 +1,80 @@
+title: Restore OPS-1406 fleet-audit fix reverted by board auto-updates
+subtitle: Two automated board commits silently undid con01/kk-mac discovery, capability-gated devin checks, and con01's no-devin declaration
+icon: undo
+date: 2026-11-26
+status: deployed
+card: runner-fleet-health-host-regex-gap
+check: tests/board/test_fleet_host_parsing.py
+
+context:
+  why_this_was_not_stale_tests: "The 4 failures in
+    tests/board/test_fleet_host_parsing.py were added by e3bb2d5afa
+    (OPS-1406) and passed there. They began failing after later automated
+    board commits reverted the implementation the tests were written for."
+  first_regression: "4af10b4c5c 'board: live card updates (2026-11-26
+    13:09)' replaced runner-fleet-health.py with an older revision: it
+    removed FLEET_HOST_RE, con01/kk-mac from FALLBACK_HOSTS,
+    fleet_prose(), devin_expected(), the devin-cli capability gate and
+    the tool-pin checks. dispatch_repos.py's con01 comment was also
+    dropped (the regex itself kept con\\d+)."
+  second_regression: "56aac6476c 'board: live card updates (2026-11-26
+    09:54)' compressed the runner_fleet prose and replaced con01's
+    '(script+container only — no devin CLI ...)' declaration with
+    '(dispatch+script — Phase 4 pilot)', removing the marker that
+    devin_expected() reads and changing its served types."
+  effect: "fleet() returned 6 hosts again (con01/kk-mac invisible to the
+    audit) and judge() emitted false devin-cli/devin-dispatch violations
+    on hosts that do not serve devin."
+
+changes:
+  - "restored FLEET_HOST_RE (tony-*, idcN, mnN, conN, kk-*) and added
+    con01/kk-mac back to FALLBACK_HOSTS"
+  - "restored _find_key/fleet_prose (mtime-cached) and devin_expected(),
+    with fleet() driven by the shared host grammar"
+  - "gated both devin-cli and devin-dispatch violations on
+    devin_expected(host); non-devin hosts get an explanatory note"
+  - "SSOT runner_fleet con01 entry: '(script+container — no devin CLI,
+    Phase 4 pilot)' — cap 1 and all current labels preserved"
+  - "extended the devin regression test to cover devin-dispatch as well
+    as devin-cli; the existing 4 tests were left unchanged"
+
+verification:
+  tests: "pytest -q tests/board/test_fleet_host_parsing.py -> 5 passed
+    (baseline clean origin/master: 4 failed, 1 passed)"
+  syntax: "py_compile on script + test OK; ssot.kanban.yml parses"
+  fleet_health: "runner-fleet-health.py now sees 8 hosts. kk-mac is
+    SSH-reachable and included; the false devin violations are gone.
+    Two genuine gaps remain and opened runner-auto-kk-mac (review, high):
+    no push-capable repo for kk-mac, and dispatch_repos.py fails to import
+    on its Python 3.9 ('Path | None' needs 3.10+)."
+  false_positives: "con01 and kk-mac no longer emit devin-cli or
+    devin-dispatch violations; con01's fleet identity violation was
+    previously fixed on the host."
+
+rollback:
+  - "Revert this commit to restore the 6-host audit and unconditional
+    devin checks; restore the previous con01 prose line in ssot.kanban.yml.
+    runner-auto-kk-mac was auto-created by the audit and can be closed as
+    stale if the change is rolled back."
+
+follow_up:
+  - "Investigate why 'board: live card updates' commits carry stale
+    script revisions — both 4af10b4c5c and 56aac6476c look like generated
+    writes from an old checkout. Add a guard so generated board updates
+    cannot replace scripts/SSOT prose with older content."
+  - "4af10b4c5c also reverted the runner-tooling content pins
+    (tool_pins/tool-pin HELP) and LANE_MODELS free_lane back to
+    litellm/gemini-3.5-flash-lite. Both were left untouched here and need
+    their own decisions."
+  - "Fix kk-mac's two genuine audit findings: Python 3.9-compatible
+    dispatch_repos.py annotations and a push:chaba key/label (or an
+    explicit SSOT reason why kk-mac is fetch-only)."
+
+lessons:
+  - "When tests start failing on code that used to pass, check whether a
+    generated commit silently restored an older file before rewriting
+    the tests to accept the regression."
+  - "An audit whose host grammar differs from the claim gate's grammar
+    creates blind spots: one parser for both modules."
+  - "Capability gating must cover every check of a capability — gating
+    only devin-cli still left a false devin-dispatch violation."

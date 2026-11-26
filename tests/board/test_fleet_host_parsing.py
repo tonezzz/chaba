@@ -67,7 +67,9 @@ class FleetHostParsing(unittest.TestCase):
             "devin": {},
         }
         violations, _ = fh.judge("con01", probe, {})
-        self.assertNotIn("devin-cli", [key for key, _ in violations])
+        keys = [key for key, _ in violations]
+        self.assertNotIn("devin-cli", keys)
+        self.assertNotIn("devin-dispatch", keys)
 
     def test_repo_checkout_alert_names_measured_base(self):
         # con01 2026-11-26: repos.conf declares mddb-fork=main, the

@@ -83,7 +83,15 @@ MAX_BEHIND = int(os.environ.get("RUNNER_FLEET_MAX_BEHIND", "200"))
 ESCALATE_H = 12
 SSH_TIMEOUT = 120          # probe includes one git fetch on the host
 FALLBACK_HOSTS = ["tony-dell", "tony-omen", "idc02", "idc03",
-                  "mn01"]
+                  "mn01", "con01", "kk-mac"]
+# One host grammar for the whole audit. con01 (VPS) and kk-mac (macOS)
+# joined the declared fleet after this regex was written; omitting them
+# made the audit silently blind to both (OPS-1406). Restored after
+# commit 4af10b4c5c accidentally reverted the original fix.
+FLEET_HOST_RE = re.compile(
+    r"\b(tony-[\w-]+|idc\d+|mn\d+|con\d+|kk-[\w-]+)\s*:")
+NO_DEVIN_RE = re.compile(
+    r"no devin CLI|devin executor stays Linux-only", re.I)
 
 # repo-side reference copies; installed drift is checked against these
 REFS = {
@@ -400,6 +408,36 @@ def sh(cmd: list, timeout: int = 60,
         return subprocess.CompletedProcess(cmd, 127, "", str(e))
 
 
+def _find_key(d, key):
+    """First recursive match for key — shared by fleet() and prose helpers."""
+    if isinstance(d, dict):
+        for k, v in d.items():
+            if k == key:
+                return v
+            r = _find_key(v, key)
+            if r is not None:
+                return r
+    return None
+
+
+_FLEET_PROSE_CACHE: tuple = (None, "")
+
+
+def fleet_prose() -> str:
+    """runner_fleet prose from KANBAN_SSOT, mtime-cached; '' if unreadable."""
+    global _FLEET_PROSE_CACHE
+    try:
+        stamp = KANBAN_SSOT.stat().st_mtime
+        if _FLEET_PROSE_CACHE[0] == stamp:
+            return _FLEET_PROSE_CACHE[1]
+        doc = yaml.safe_load(KANBAN_SSOT.read_text()) or {}
+        text = str(_find_key(doc, "runner_fleet") or "")
+        _FLEET_PROSE_CACHE = (stamp, text)
+        return text
+    except Exception:
+        return ""
+
+
 def fleet() -> list[str]:
     """Dispatch hosts from ssot.kanban.yml's runner_fleet prose — the
     '<host>:' labels in that string. Env override wins; empty parse
@@ -407,20 +445,9 @@ def fleet() -> list[str]:
     env = os.environ.get("RUNNER_FLEET_HOSTS")
     if env:
         return [h.strip() for h in env.split(",") if h.strip()]
-    def _find(d, key):
-        if isinstance(d, dict):
-            for k, v in d.items():
-                if k == key:
-                    return v
-                r = _find(v, key)
-                if r is not None:
-                    return r
-        return None
-
     try:
-        doc = yaml.safe_load(KANBAN_SSOT.read_text()) or {}
-        text = str(_find(doc, "runner_fleet") or "")
-        hosts = re.findall(r"\b(tony-[\w-]+|idc\d+|mn\d+|con\d+)\s*:", text)
+        text = fleet_prose()
+        hosts = FLEET_HOST_RE.findall(text)
         seen = []
         for h in hosts:
             if h not in seen:
@@ -430,6 +457,24 @@ def fleet() -> list[str]:
     except Exception:
         pass
     return list(FALLBACK_HOSTS)
+
+
+def devin_expected(host: str) -> bool:
+    """Whether this host is declared to serve the devin executor.
+
+    con01 is script/container-only with no devin CLI by design; kk-mac
+    runs launchd lanes with devin Linux-only. Flagging their missing
+    devin binary as a bootstrap failure produced false runner-auto-*
+    cards (OPS-1406).
+    """
+    text = fleet_prose()
+    marks = list(FLEET_HOST_RE.finditer(text))
+    for i, m in enumerate(marks):
+        if m.group(1) != host:
+            continue
+        end = marks[i + 1].start() if i + 1 < len(marks) else len(text)
+        return not bool(NO_DEVIN_RE.search(text[m.end():end]))
+    return True
 
 
 def probe(host: str) -> dict | None:
@@ -601,6 +646,10 @@ def judge(host: str, d: dict, refsha: dict) -> tuple[list, list]:
     inst = d.get("installed") or {}
     for key, label in (("runner_agent", "runner-agent"),
                        ("devin_dispatch", "devin-dispatch")):
+        if key == "devin_dispatch" and not devin_expected(host):
+            notes.append("devin-dispatch intentionally absent — declared "
+                         "lanes do not serve the devin executor")
+            continue
         e = inst.get(key) or {}
         if not e.get("exists"):
             v.append((label, f"~/.local/bin/{label} missing — host "
@@ -660,7 +709,10 @@ def judge(host: str, d: dict, refsha: dict) -> tuple[list, list]:
                              f"review only")
 
     devin = d.get("devin") or {}
-    if not devin.get("path"):
+    if not devin_expected(host):
+        notes.append("devin CLI intentionally absent — declared lanes "
+                     "do not serve the devin executor")
+    elif not devin.get("path"):
         v.append(("devin-cli", "no devin binary resolvable (PATH, "
                                "~/.local/bin, bundled) — dispatch cards "
                                "can't start"))
