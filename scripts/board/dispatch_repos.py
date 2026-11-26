@@ -970,7 +970,10 @@ SERVED_TYPES = {"dispatch", "container", "script"}
 # kk-* hosts join the declared fleet (OPS-0220: kk-mac runner provisioned
 # and e2e-verified 2026-11-19, but host:kk-mac pins were invisible here and
 # produced "pins naming no declared runner" defers fleet-wide).
-_FLEET_HOST_RE = re.compile(r"\b(tony-[\w-]+|idc\d+|mn\d+|kk-[\w-]+)\s*:")
+# con01 joined the declared fleet 2026-11-24; without con\d+ its labels
+# and push:chaba capability were invisible to every claim gate (OPS-1406).
+_FLEET_HOST_RE = re.compile(
+    r"\b(tony-[\w-]+|idc\d+|mn\d+|con\d+|kk-[\w-]+)\s*:")
 _FLEET_LABELS_RE = re.compile(
     r"\blabels\s+([A-Za-z0-9_:.\-]+(?:\s*,\s*[A-Za-z0-9_:.\-]+)*)")
 _FLEET_TYPES_RE = re.compile(r"\(\s*([a-z_]+(?:\s*\+\s*[a-z_]+)*)")
