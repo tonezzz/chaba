@@ -517,6 +517,9 @@ http://127.0.0.1:8080 {
 	handle_path /apps/board/* {
 		root * /srv/public/apps/board
 		file_server
+		# Board JSON is timestamp-busted on every render; without no-store
+		# the service worker keeps one ~17MB copy per tick (45GB on tony-dell).
+		header Cache-Control "no-store"
 	}
 
 	handle /apps/board2 {
@@ -525,6 +528,8 @@ http://127.0.0.1:8080 {
 	handle_path /apps/board2/* {
 		root * /srv/public/apps/board2
 		file_server
+		# Same render-busted cards.json — never let the PWA cache a copy.
+		header Cache-Control "no-store"
 	}
 
 	handle /apps/board-gantt {
