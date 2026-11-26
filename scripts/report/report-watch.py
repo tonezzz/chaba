@@ -408,6 +408,26 @@ def main() -> int:
     quiet = "--quiet" in sys.argv or as_json
     dry_run = "--dry-run" in sys.argv
     gate = "--gate" in sys.argv
+
+    # Single-writer rule (card exec-checkout-generated-writes-focus-inb-
+    # da698a): flags are focus-inbox FILES that only the served checkout's
+    # kanban-commit ever commits. On any stamped non-writer checkout the
+    # writes are dead drift (tony-dell's readonly mirror accumulated 497
+    # stale flag files). Refuse to run there — the idc03 served instance
+    # covers the same registry. REPORT_WATCH_FORCE=1 overrides.
+    try:
+        from checkout_role import checkout_role
+        _role = checkout_role(REPO)
+    except Exception:
+        _role = ""
+    if (_role and _role != "served"
+            and os.environ.get("REPORT_WATCH_FORCE") != "1"):
+        if not quiet:
+            print(f"report-watch: chaba-role={_role} — non-writer "
+                  "checkout; focus-inbox flags can never commit here. "
+                  "Run on the idc03 served checkout (or "
+                  "REPORT_WATCH_FORCE=1 to override).")
+        return 0
     reg = yaml.safe_load(REGISTRY.read_text())
     nodes = reg.get("nodes") or []
     state = load_state()

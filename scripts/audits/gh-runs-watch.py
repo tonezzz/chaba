@@ -11,18 +11,39 @@ broken workflow, not one per run (lesson: 3 days of red SSOT CI wrote
 ~620 draft files).
 
 Runs where `gh` is authenticated (tony-omen). With --git the alert files
-are committed and pushed so downstream checkouts see them on pull.
+are committed and pushed so downstream checkouts see them on pull — but
+only on a checkout that can actually commit. On a stamped non-writer
+checkout (exec/readonly/job — card
+exec-checkout-generated-writes-focus-inb-da698a) --git dead-ends in the
+pre-commit role block, so the watch automatically falls back to posting
+alerts through board-api POST /inbox (the same door the other watchers
+use). --api forces the API path explicitly; BOARD_API env overrides the
+default endpoint.
 """
 import argparse
 import json
 import os
 import subprocess
 import sys
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT / "scripts" / "lib"))
+try:
+    from checkout_role import checkout_role
+except ImportError:  # scripts/lib not importable (e.g. copied standalone)
+    def checkout_role(repo):  # noqa: ANN001
+        return ""
+
 INBOX_DIR = REPO_ROOT / "docs" / "ssot" / "focus-inbox"
+BOARD_API = os.environ.get(
+    "BOARD_API", "https://idc03.taila0626a.ts.net:10000").rstrip("/")
+# API-mode repeat suppression: one /inbox item per (repo, workflow, branch)
+# per window — the remote inbox has no local open_item() view, so the state
+# file carries the last-posted stamp per combo.
+API_ALERT_REPEAT_H = float(os.environ.get("GH_RUNS_WATCH_ALERT_REPEAT_H", "24"))
 STATE_FILE = Path(os.environ.get(
     "GH_RUNS_WATCH_STATE",
     Path.home() / ".local" / "state" / "chaba" / "gh-runs-watch.json"))
@@ -92,20 +113,53 @@ def gh_runs(repo):
 
 
 def load_state():
+    """Return (seen_run_ids, alerted_combos). alerted_combos maps
+    'repo|workflow|branch' -> last /inbox post ISO timestamp (API mode)."""
     try:
-        return set(json.loads(STATE_FILE.read_text()).get("seen", []))
+        doc = json.loads(STATE_FILE.read_text())
     except Exception:
-        return set()
+        return set(), {}
+    if isinstance(doc, list):  # legacy bare-list state
+        return set(doc), {}
+    return set(doc.get("seen", [])), dict(doc.get("alerts", {}))
 
 
-def save_state(seen):
+def save_state(seen, alerts=None):
     STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
     tmp = STATE_FILE.with_name(STATE_FILE.name + ".tmp")
     with tmp.open("w") as f:
-        f.write(json.dumps({"seen": sorted(seen)[-500:]}))
+        f.write(json.dumps({
+            "seen": sorted(seen)[-500:],
+            "alerts": dict(sorted((alerts or {}).items())[-500:]),
+        }))
         f.flush()
         os.fsync(f.fileno())
     tmp.replace(STATE_FILE)
+
+
+def post_inbox(repo, run, now_iso):
+    """Post one CI-failure alert through board-api POST /inbox."""
+    wf = run.get("workflowName", "?")
+    br = run.get("headBranch", "?")
+    text = (f"GitHub Actions run failed on {repo}.\n"
+            f"workflow={wf} branch={br} "
+            f"sha-title={run.get('displayTitle')!r}\n"
+            f"url={run.get('url')}\n"
+            f"Detected {now_iso} by gh-runs-watch.")
+    body = {
+        "text": text,
+        "label": f"gh-run {repo} / {wf}",
+        "priority": "high",
+        "tags": ["ci", "github-actions", repo.split("/")[-1],
+                 "gh-runs-watch"],
+        "owner": "tony",
+        "session": "gh-runs-watch",
+    }
+    req = urllib.request.Request(
+        f"{BOARD_API}/inbox", data=json.dumps(body).encode(),
+        headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        return 200 <= r.status < 300
 
 
 def alert_yaml(repo, run):
@@ -220,17 +274,33 @@ def main():
         "GH_RUNS_WATCH_REPOS", DEFAULT_REPOS),
         help="comma-separated owner/name repos to poll")
     ap.add_argument("--git", action="store_true",
-                    help="commit+push new alert files")
+                    help="commit+push new alert files (served checkouts "
+                         "only — non-writer checkouts auto-fall back to "
+                         "--api)")
+    ap.add_argument("--api", action="store_true",
+                    help="post alerts via board-api POST /inbox instead of "
+                         "writing repo files (the non-writer path)")
     ap.add_argument("--dry-run", action="store_true",
                     help="print what would be alerted, write nothing")
     args = ap.parse_args()
+
+    # --git on a stamped non-writer checkout can never land (pre-commit
+    # role block) — the alert files would rot in the working tree. Route
+    # those runs through board-api instead (card
+    # exec-checkout-generated-writes-focus-inb-da698a).
+    role = checkout_role(REPO_ROOT)
+    api_mode = args.api or (args.git and bool(role) and role != "served")
+    if api_mode and args.git and not args.api:
+        print(f"note: chaba-role={role} — --git cannot commit here; "
+              "posting alerts via board-api /inbox", file=sys.stderr)
+    git_mode = args.git and not api_mode
 
     if not resolve_gh_token():
         print("warn: no GH_TOKEN in env or ~/.config/secrets/github-mcp*.env"
               " — gh may hang on keyring auth", file=sys.stderr)
 
     now_iso = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    seen = load_state()
+    seen, alerted = load_state()
     failures, errors = [], 0
     for repo in [r.strip() for r in args.repos.split(",") if r.strip()]:
         runs = gh_runs(repo)
@@ -247,29 +317,65 @@ def main():
                 run["_repo"] = repo
                 failures.append(run)
 
-    written, suppressed = [], 0
+    written, posted, suppressed = [], [], 0
+    repeat_cutoff = datetime.now(timezone.utc).timestamp() \
+        - API_ALERT_REPEAT_H * 3600
     for run in failures:
-        if existing_alert(run["_repo"], run):
+        repo = run["_repo"]
+        wf = run.get("workflowName", "?")
+        br = run.get("headBranch", "?")
+        if api_mode:
+            combo = f"{repo}|{wf}|{br}"
+            try:
+                last = datetime.fromisoformat(
+                    alerted.get(combo, "")).timestamp()
+            except (TypeError, ValueError):
+                last = 0.0
+            if last > repeat_cutoff:
+                suppressed += 1
+                print(f"DEDUP {repo} {wf} {br} — api alert posted "
+                      f"{alerted.get(combo)}")
+                continue
+        elif existing_alert(repo, run):
             suppressed += 1
-            print(f"DEDUP {run['_repo']} {run.get('workflowName')} "
-                  f"{run.get('headBranch')} — unresolved alert exists")
+            print(f"DEDUP {repo} {wf} {br} — unresolved alert exists")
             continue
-        fname, body = alert_yaml(run["_repo"], run)
-        print(f"FAIL {run['_repo']} {run.get('workflowName')} "
-              f"{run.get('headBranch')} -> {fname}")
-        if not args.dry_run:
+        fname, body = alert_yaml(repo, run)
+        print(f"FAIL {repo} {wf} {br} -> "
+              + (f"{BOARD_API}/inbox" if api_mode else fname))
+        if args.dry_run:
+            continue
+        if api_mode:
+            try:
+                if post_inbox(repo, run, now_iso):
+                    posted.append(combo)
+                    alerted[combo] = now_iso
+                else:
+                    print(f"warn: /inbox post returned non-2xx for {repo}",
+                          file=sys.stderr)
+            except Exception as e:
+                # API unreachable — fall back to a local file so the alert
+                # is not lost entirely (lands when the checkout can commit,
+                # or sits as evidence on a served checkout).
+                print(f"warn: /inbox post failed ({e}) — writing local "
+                      "alert file instead", file=sys.stderr)
+                INBOX_DIR.mkdir(parents=True, exist_ok=True)
+                f = INBOX_DIR / fname
+                f.write_text(body)
+                written.append(f)
+        else:
             INBOX_DIR.mkdir(parents=True, exist_ok=True)
             f = INBOX_DIR / fname
             f.write_text(body)
             written.append(f)
     print(f"polled {len(args.repos.split(','))} repo(s): "
           f"{len(failures)} new failure(s) ({suppressed} deduped), "
-          f"{errors} error(s)")
+          f"{len(posted)} posted, {errors} error(s)")
 
     if not args.dry_run:
-        save_state(seen)
+        save_state(seen, alerted)
         emit_meta(now_iso, failures, errors)
-        if written and args.git:
+        if written and git_mode:
             try:
                 git_commit_push(written)
                 print("pushed alert commit")
