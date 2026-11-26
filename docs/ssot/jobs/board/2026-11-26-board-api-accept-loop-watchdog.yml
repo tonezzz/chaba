@@ -1,0 +1,105 @@
+id: board-api-accept-loop-watchdog-20261126
+title: board-api accept-loop wedge — spawn pool + liveness watchdog auto-restart
+date: 2026-11-26
+card: board-api-accept-loop-wedge-auto-restart-7dd2f1
+ref: KNB-1423
+host: idc03 (fix authored in dispatch worktree on tony-dell)
+status: landed-on-dispatch-branch
+
+goal: >
+  2026-11-26 08:56-09:17Z idc03: chaba-board-api's main thread parked
+  inside Thread.start() -> _started.wait() (socketserver
+  process_request) and never returned — no handler thread could spawn,
+  the listen backlog filled, every door (/cards /comment /lesson
+  /health) 503/504'd ~20min until a manual `systemctl --user restart`.
+  systemd Restart=on-failure could not help: the process stayed alive,
+  just deaf.
+
+what-landed:
+  scripts/board/board-api.py:
+    - >-
+      BoardAPIHTTPServer(ThreadingHTTPServer).process_request enqueues
+      (request, client_address) onto a bounded spawn queue
+      (BOARD_API_SPAWN_QUEUE_MAX=256) drained by SPAWN_WORKERS=4 daemon
+      workers that run the stock socketserver.ThreadingMixIn.
+      process_request verbatim — Thread creation, _threads bookkeeping
+      and t.daemon stay version-correct; only the blocking start() moves
+      off the accept loop. A wedged start() (_started.wait()) now parks
+      a worker, never serve_forever. Spawn exceptions close just that
+      request; a saturated queue answers an inline 503 (fail fast, not
+      listen-backlog timeout).
+    - >-
+      Liveness watchdog (daemon thread started by serve_forever):
+      probes GET /health end-to-end over the server's own bound address
+      every BOARD_API_LIVENESS_INTERVAL_S=5s with
+      BOARD_API_LIVENESS_TIMEOUT_S=6s. LIVENESS_FAILS=3 consecutive
+      failures = no door can be served (dead accept loop OR dead spawn
+      path — the probe measures serviceability, not one heartbeat) ->
+      _on_liveness_wedge: ACCEPT-LOOP-WATCHDOG journal line +
+      faulthandler stack dump + one pending alert record +
+      os._exit(42). Nonzero exit trips Restart=on-failure
+      (RestartSec=10) — worst-case recovery ~35-45s, inside the 60s bar.
+      BOARD_API_LIVENESS_WATCHDOG=0 disables; shutdown()/server_close()
+      stop the loop so tests never see a surprise exit.
+    - >-
+      Alert delivery that survives the wedge: the dying process cannot
+      post to itself, so _watchdog_alert_record appends one JSON line
+      to BOARD_API_WATCHDOG_DIR/alerts.jsonl
+      (~/.local/state/board-api-watchdog/). On the next boot
+      _drain_watchdog_alerts() posts ONE comms entry per record —
+      req-stamped (watchdog-<epoch>-<pid>) so a crash between post and
+      drain can't double-post — to BOARD_API_ALERT_CARD
+      (board-api-watchdog-alerts, created by this dispatch, column:done
+      alert sink), falling back to a focus-inbox entry when the card
+      doesn't resolve. Undelivered records stay for the next boot.
+  tests/board/test_board_api_liveness.py: >-
+    New file, added to the chaba merge-gate smoke set — stuck
+    Thread.start() parks one spawner while /health + /cards keep
+    answering; spawn exceptions close only their request;
+    all-spawns-blocked wedge fires recovery exactly once and writes one
+    alert record; drain posts one deduped comms and falls back to
+    focus-inbox.
+  scripts/board/dispatch_repos.py: >-
+    test file added to REPO_TESTS['chaba']; dispatch_repos sha256 pin
+    bumped in runner-tooling.manifest.json in the same commit
+    (tooling-contract gate).
+  docs/ssot/kanban/cards/board-api-watchdog-alerts.yml: >-
+    the comms sink card created by this dispatch.
+
+deploy-note: >
+  Code lands via the normal dispatch merge -> served checkout pull on
+  idc03 (kanban-commit / git-safe-pull, ~15min cadence). systemd does
+  NOT reload python on file change — chaba-board-api must be restarted
+  once to pick this up: `systemctl --user restart chaba-board-api` on
+  idc03 after the pull lands (served-checkout-watchdog's service-stale
+  check will flag the mtime skew until then). No unit-file change
+  needed: Restart=on-failure + RestartSec=10 already matches the
+  exit-42 recovery path. First wedge after deploy produces one comms on
+  board-api-watchdog-alerts plus ACCEPT-LOOP-WATCHDOG lines in
+  `journalctl --user -u chaba-board-api`.
+
+verify: >-
+  python3 -m pytest tests/board/test_board_api_liveness.py  # 5 passed
+  python3 scripts/board/board-api.py --selftest             # selftest ok
+  chaba merge-gate suite (REPO_TESTS['chaba'])              # 305 passed
+
+env-knobs:
+  BOARD_API_SPAWN_WORKERS: "4 — handler-spawn worker pool"
+  BOARD_API_SPAWN_QUEUE_MAX: "256 — pending spawns before inline 503"
+  BOARD_API_LIVENESS_INTERVAL_S: "5 — probe cadence"
+  BOARD_API_LIVENESS_TIMEOUT_S: "6 — per-probe socket timeout"
+  BOARD_API_LIVENESS_FAILS: "3 — consecutive failures -> restart"
+  BOARD_API_LIVENESS_WATCHDOG: "0 disables the watchdog"
+  BOARD_API_WATCHDOG_DIR: "~/.local/state/board-api-watchdog"
+  BOARD_API_ALERT_CARD: "board-api-watchdog-alerts"
+
+follow-ups:
+  - >-
+    Root cause of the 2026-11-26 _started.wait() stall is still
+    unknown — the fix is resilience, not diagnosis. If wedges recur,
+    the ACCEPT-LOOP-WATCHDOG stack dump in the journal names the
+    culprit thread; correlate with py-spy if it repeats.
+  - >-
+    Other ThreadingHTTPServer/HTTPServer users in the repo (if any)
+    have the same stock spawn path — grep before assuming they're
+    covered; this fix is board-api-local by design.
