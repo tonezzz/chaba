@@ -21,7 +21,7 @@ help: 'Per-check fixes:
   - no-push-creds: A dispatch runner that can''t push ANY repo only strands branches (relay salvages them, but the
   host is a liability). Give it a push-capable deploy key per repo and declare push:<repo> in RUNNER_LABELS, or
   drop it from the fleet.'
-updated: 2026-11-26 18:15
+updated: 2026-11-26 18:34
 comms:
 - at: 2026-11-26 13:30
   from: devin
@@ -34,5 +34,15 @@ comms:
   from: devin
   text: '[review sweep 18:15 +07] Picking up recurrence: earlier close at 13:30 called it stale. Re-running the
     two bootstrap checks live.'
+- at: 2026-11-26 18:34
+  from: tony
+  text: '[escalation 2026-11-26 18:4x +07] Two fixes landed; one decision remains with you.
+
+
+    (1) Probe interpreter: canonical master 84324f16e7 maps kk-mac to /opt/homebrew/bin/python3 (3.15.2), the same
+    interpreter its launchd runner uses. The original dispatch_repos import failure was a probe false positive —
+    the SSH default python3 is 3.9, but the runner was never broken. Evidence: docs/ssot/jobs/infrastructure/2026-11-26-kk-mac-probe-interpreter-fix.yml.
+
+    (2) Python 3.9 compatibility: master ff73da98b'
 action:
   status: done
