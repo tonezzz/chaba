@@ -2,7 +2,7 @@ id: board-api-accept-loop-wedge-auto-restart-7dd2f1
 title: 'board-api accept-loop wedge: auto-restart on handler-thread stall (observed 2026-11-26 ~09:00-09:17Z on
   idc03)'
 column: doing
-updated: 2026-11-26 22:12
+updated: 2026-11-26 22:13
 tags:
 - board-api
 - idc03
@@ -69,6 +69,16 @@ comms:
 - at: 2026-11-26 22:12
   from: tony-dell
   text: claimed
+- at: 2026-11-26 22:13
+  from: chaba
+  text: started devin-task-20261126-221314-fix-chaba-board-api-on-idc03-w on tony-dell (dispatch)
+- at: 2026-11-26 22:13
+  from: chaba
+  text: 'primer injected 8 lesson(s): board-api can wedge with main thread stuck in Thread.start() under load —
+    journa; [yomi-update-active-update-all-fail-every-8afee2] DONE: root cause = yomi-api.se; idc02''s kanban-dispatch.service
+    was a linked unit running a stale scripts/-only ; [ada-capability-verb-wiring] primer injected 8 lesson(s):
+    [board-api-wiki-read-s; [answer-sweep-auto-compose-spec] primer injected 8 lesson(s): idc02''s kanban-dis; [runner-fleet-health-host-regex-gap]
+    primer injected 8 lesson'
 spec: 'Fix chaba-board-api on idc03 wedging its accept loop (2026-11-26 08:56-09:17Z: main thread deadlocked in
   Thread.start()->_started.wait(); every door 503/504 until a manual systemctl --user restart). In scripts/board/board-api.py,
   make handler-thread spawn failures non-fatal and add a watchdog that detects an unresponsive accept loop and restarts
