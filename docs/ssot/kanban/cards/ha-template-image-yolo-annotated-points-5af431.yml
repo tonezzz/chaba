@@ -153,6 +153,10 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261126-231827-repoint-tony-ha-templates-yaml no longer active on mn01 but card
     still says running — sweeping its branch'
+- at: 2026-11-26 23:39
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261126-231827-repoint-tony-ha-templates-yaml on mn01 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 spec: 'Repoint tony-ha templates.yaml image.yolo_annotated from http://192.168.2.86:8780/image to http://127.0.0.1:8780/image
   (HA is host-networked; yolo-detect.service on tony-omen binds 127.0.0.1:8780 only). First verify the /image route
   responds with its required params — a bare GET returned 404 during the 2026-11-25 audit, so check server.py route
@@ -167,5 +171,6 @@ action:
   runner: mn01
   sweep:
     stale_running: 2026-11-26 23:39
+    dirty: 1
 claim:
   since: 2026-11-26 23:17
