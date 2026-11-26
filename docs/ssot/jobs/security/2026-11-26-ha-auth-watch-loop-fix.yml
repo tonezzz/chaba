@@ -38,17 +38,17 @@ verification:
     `systemctl --user start chaba-repo-sync.service` to 02ae1f31e6b with all
     fix markers present. No service restart was needed: systemd executes
     the script fresh on each oneshot invocation."
-  - "Live consumer proof: next ha-auth-watch.timer tick 14:18:39 +07 —
-    verify `systemctl --user status ha-auth-watch.service` is not failed."
+  - "Live consumer proof: the 14:18:39 +07 tick exited `0/SUCCESS`, logged
+    `alerted 2 failure(s) via board-api; no local commit on non-writer
+    checkout`, and left the service inactive (dead) rather than failed."
 rollback: >-
   Revert the single script file. No host config, timer or service unit was
   changed; the next tick would simply run the previous code again (and fail).
 residual: >-
-  The next timer tick had not fired at the time of writing; the fix is
-  proven deterministically and deployed, but the live "not failed" status
-  is still to be confirmed at 14:18:39 +07. The underlying HA invalid-auth
-  attempts themselves are unchanged — this fix stops the alert-spam loop,
-  not the source of the bad logins.
+  The underlying HA invalid-auth attempts are unchanged — this fix stops
+  the alert-spam loop, not the source of the bad logins. Two auth-failure
+  entries per tick still arrive via board-api (deduped by state), but they
+  no longer leave the service failed or generate timer-alert cards.
 lesson: >-
   When routing a producer through the board-api write door, also remove
   the local-commit tail: delivering an alert via the API and then trying
