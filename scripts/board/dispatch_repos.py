@@ -163,10 +163,10 @@ def rate_limit_hit(text: str) -> str:
 # billable model. For the Cline pilot the no-token-cost route is local
 # qwen3:4b via the Nest adapter (PR #45), not a dispatch lane.
 LANE_MODELS = {
-    "free_lane": "litellm/gemini-3.5-flash-lite",
-    # was litellm/or-claude-fable-5.1 — that alias was never deployed
-    # on the litellm proxy (OPS-1021 escalation, 2026-11-02);
-    # gemini-3.5-flash is the strongest served non-lite model
+    # OPS-1363 2026-11-26: free_lane offloaded to the $0 agent-local alias
+    # (S1 gate PASS 16/16, 80.9s, $0.00). Was litellm/gemini-3.5-flash-lite;
+    # before that or-claude-fable-5.1 (never deployed — OPS-1021).
+    "free_lane": "litellm/agent-local",
     "paid_frontier": "litellm/gemini-2.5-flash",
 }
 # devin-native lane picks — every id MUST appear in `devin models list`
@@ -970,7 +970,10 @@ SERVED_TYPES = {"dispatch", "container", "script"}
 # kk-* hosts join the declared fleet (OPS-0220: kk-mac runner provisioned
 # and e2e-verified 2026-11-19, but host:kk-mac pins were invisible here and
 # produced "pins naming no declared runner" defers fleet-wide).
-_FLEET_HOST_RE = re.compile(r"\b(tony-[\w-]+|idc\d+|mn\d+|kk-[\w-]+|con\d+)\s*:")
+# con01 joined the declared fleet 2026-11-24; without con\d+ its labels
+# and push:chaba capability were invisible to every claim gate (OPS-1406).
+_FLEET_HOST_RE = re.compile(
+    r"\b(tony-[\w-]+|idc\d+|mn\d+|con\d+|kk-[\w-]+)\s*:")
 _FLEET_LABELS_RE = re.compile(
     r"\blabels\s+([A-Za-z0-9_:.\-]+(?:\s*,\s*[A-Za-z0-9_:.\-]+)*)")
 _FLEET_TYPES_RE = re.compile(r"\(\s*([a-z_]+(?:\s*\+\s*[a-z_]+)*)")
