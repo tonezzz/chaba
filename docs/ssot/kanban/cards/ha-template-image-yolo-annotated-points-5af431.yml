@@ -1,7 +1,7 @@
 id: ha-template-image-yolo-annotated-points-5af431
 title: HA template image.yolo_annotated points at dead LAN-IP :8780 — repoint to 127.0.0.1
 column: doing
-updated: 2026-11-26 23:30
+updated: 2026-11-26 23:39
 priority: low
 tags:
 - home-assistant
@@ -149,6 +149,10 @@ comms:
     temporarily sourced omen_cam -> /image 200 image/jpeg and HA /api/image_proxy 200; restored declared ip_cam_65_low
     (still frameless, camera outage = separate lane; /image now serves last good frame so dashboard renders). No
     new LAN bind (127.0.0.1:8780 only + pre-existing '
+- at: 2026-11-26 23:39
+  from: chaba
+  text: 'merge-sweep: devin-task-20261126-231827-repoint-tony-ha-templates-yaml no longer active on mn01 but card
+    still says running — sweeping its branch'
 spec: 'Repoint tony-ha templates.yaml image.yolo_annotated from http://192.168.2.86:8780/image to http://127.0.0.1:8780/image
   (HA is host-networked; yolo-detect.service on tony-omen binds 127.0.0.1:8780 only). First verify the /image route
   responds with its required params — a bare GET returned 404 during the 2026-11-25 audit, so check server.py route
@@ -161,5 +165,7 @@ action:
   lane: devin
   attempts: 1
   runner: mn01
+  sweep:
+    stale_running: 2026-11-26 23:39
 claim:
   since: 2026-11-26 23:17
