@@ -1,7 +1,7 @@
 id: deploy-ada-sh-services-resurrects-retire-c2346b
 title: deploy-ada.sh SERVICES resurrects retired idc03 dev twins on every ada-voice deploy
 column: doing
-updated: 2026-11-26 21:28
+updated: 2026-11-26 21:52
 priority: medium
 tags:
 - idc03
@@ -136,5 +136,12 @@ comms:
   from: devin
   text: Dispatch started on tony-dell. SSH to idc03 works direct (ProxyJump=none). Gathering current state of ~/.local/bin/deploy-ada.sh,
     ada-dev/ada-kk-dev units, and kk-bench-env.py before editing.
+- at: 2026-11-26 21:52
+  from: devin
+  text: 'DONE. (1) Repo canon scripts/deploy-ada.sh: ada-dev dropped from SERVICES, ada-kk-dev kept — commit c1eae8c
+    on dispatch branch. (2) idc03 ~/.local/bin/deploy-ada.sh edited in place; backup deploy-ada.sh.bak-20261126-214010.
+    Verified: restart set = 8 units no ada-dev; ada-kk-dev real restart healthy :8009 in 11s; kk-bench-env.py --profile
+    kk-cms-only --check OK rc=0; ada-dev ActiveEnterTimestamp baseline 18:24:39+07 (unchanged = proof next deploy
+    skips it). NOTE: self-drift gate now pauses deploy'
 claim:
   since: 2026-11-26 21:22
