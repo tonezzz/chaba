@@ -1,0 +1,26 @@
+id: cast-loop-breaker-test-failure
+title: Fast pytest gate fails on cast_loop_breaker patch divergence
+column: backlog
+updated: 2026-11-26 22:57
+brief: Current master fast pytest gate (python3 -m pytest tests -x -q) fails on tests/ada/test_cast_loop_breaker.py::test_patches_apply_clean
+  — one patch reports diverged.
+priority: medium
+program: chaba-ci
+tags:
+- tests
+- ci
+- patch
+spec: 'Verified 2026-11-26 on origin/master a5a37c56d4: pytest tests -x -q -> 1 failed, 18 passed, 1 skipped before
+  -x. Failure: tests/ada/test_cast_loop_breaker.py:90 test_patches_apply_clean; assertion shows a patch state dict
+  with one value "diverged" among applies (backend/screens.delivered-zero.patch etc). Not caused by the wiki/doc
+  work; opened from the pre-commit gate investigation after PIL was found installed (Pillow 13.0.0). Fix: identify
+  the diverged patch, refresh or remove it, re-run pytest tests -x -q and the merged-tree gate.'
+ref: MED-1462
+comms:
+- at: 2026-11-26 22:57
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-26 22:57
+  from: devin
+  text: 'Evidence: hook-equivalent run on clean master worktree, not from our documentation branch. See CI card
+    ci-test-gate for hook contract.'
