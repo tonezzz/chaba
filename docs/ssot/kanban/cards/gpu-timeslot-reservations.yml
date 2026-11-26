@@ -1,7 +1,7 @@
 id: gpu-timeslot-reservations
 title: GPU time-slot reservations for shared omen GPU
-column: review
-updated: 2026-11-26 04:04
+column: backlog
+updated: 2026-11-26 08:35
 brief: Add exclusive GPU time-window reservations to the Redis-backed Ansible dispatch queue so a job can hold omen's
   GTX 1650 without contention. Done when a reservation can be created, enforced by scheduler placement, released
   on job completion/timeout, and verified with two overlapping GPU jobs.
@@ -32,7 +32,7 @@ spec: 'Context: /home/tony/ansible (queue_manager.py, scheduler.py, README-DISPA
   Verify with real jobs on omen, and restore bge-rerank.service afterwards if stopped for capacity.'
 action:
   type: dispatch
-  status: done
+  status: idle
   lane: devin
   lane_source: fallback
   runner: tony-dell
@@ -158,6 +158,15 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 08:35
+  from: tony
+  text: '[verify] VERIFY-QUEUE triage 2026-11-26 (Tony): dispatch produced NO commits — merge-sweep: no served checkout
+    for repo ''?'' — dispatch branch never landed. No deliverable exists in origin/master. Holding to backlog for
+    re-dispatch, not closing as done. Note: fleet-wide runner-agent drift (installed 8c28da6b vs pin 1514c75c) was
+    active during these runs; converge is being handled separately.'
+- at: 2026-11-26 08:35
+  from: tony
+  text: put on hold
 ref: OPS-1407
 claim:
   since: 2026-11-25 20:35
