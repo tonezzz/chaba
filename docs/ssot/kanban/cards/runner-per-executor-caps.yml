@@ -1,8 +1,8 @@
 id: runner-per-executor-caps
 title: 'runner-agent: per-executor claim caps + remote-lane load-gate exemption — stop jules/nlm idle slots starving
   local work'
-column: review
-updated: 2026-11-26 20:38
+column: done
+updated: 2026-11-26 20:39
 priority: high
 tags:
 - devnest
@@ -49,6 +49,7 @@ action:
     Failed to open /run/user/1000/systemd/transient/devin-task-20261126-192633-problem-observed-2026-11-09-re.service:
     No such file or directory'
   runner: idc02
+  verified: true
 ref: OPS-1284
 comms:
 - at: 2026-11-09 17:07
@@ -577,6 +578,16 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:39
+  from: chaba
+  text: 'manual verify: session left 9 staged files uncommitted; checkpointed as 348f50f781, merged to chaba master
+    as 264f961688; chaba gate 300 passed + new test 13 passed locally; fixed a YAML colon in the outcome SSOT doc
+    before commit'
 claim:
   since: 2026-11-26 19:25
 review_kind: verify
+auto_close:
+  by: tony (manual)
+  at: 2026-11-26 20:39
+  note: 'manual verify: session left 9 staged files uncommitted; checkpointed as 348f50f781, merged to chaba master
+    as 264f961688; chaba gate 300 passed + new test 13 passed locally; fixed a YAML colon in the '
