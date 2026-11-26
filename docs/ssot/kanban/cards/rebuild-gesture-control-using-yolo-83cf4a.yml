@@ -1,7 +1,7 @@
 id: rebuild-gesture-control-using-yolo-83cf4a
 title: Rebuild gesture control using YOLO
-column: backlog
-updated: 2026-11-26 13:02
+column: doing
+updated: 2026-11-26 13:03
 priority: medium
 spec: 'Goal: Replace MediaPipe hand tracking with a YOLO-based hand/gesture detection model in the client display
   app. Surface: display UI / vcast client. Sequence: evaluate YOLO pose/hand models suitable for browser/edge, integrate
@@ -11,7 +11,9 @@ action:
   type: dispatch
   repo: ada-voice
   executor: devin
-  status: queued
+  status: running
+  runner: tony-macbook
+  attempts: 1
 note: Rebuild gesture control using YOLO model instead of MediaPipe for the display interface
 ref: OPS-1436
 comms:
@@ -40,4 +42,8 @@ comms:
   from: chaba
   text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
-claim: {}
+- at: 2026-11-26 13:03
+  from: tony-macbook
+  text: claimed
+claim:
+  since: 2026-11-26 13:03
