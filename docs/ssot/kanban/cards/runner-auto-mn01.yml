@@ -2,7 +2,7 @@ id: runner-auto-mn01
 title: Runner host `mn01` fails 1 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on mn01 that will strand dispatch cards. Read the note, fix
   on the host, close the card.
-column: review
+column: done
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
@@ -12,7 +12,7 @@ help: 'Per-check fixes:
 
   - unreachable: ssh <host> fails — the runner can''t be probed, claimed, or salvaged. Check tailscale + sshd +
   the key on the host.'
-updated: '2026-11-26'
+updated: 2026-11-26 15:13
 review_kind: triage
 action:
   status: done
@@ -243,6 +243,14 @@ comms:
     1514c75c4679a01b on this host and all others; --check changed=0. See SSOT job 2026-11-26-runner-agent-stale-converge-retire.yml.
     Closing.'
 - at: 2026-11-26 09:29
+  from: tony
+  text: closed by tony
+- at: 2026-11-26 15:13
+  from: tony
+  text: '[close 15:13 +07] Lifecycle bounce: card already carried "closed by tony". Verified installed ~/.local/bin/runner-agent
+    sha256 prefix 1514c75c matches repo; timer fired 15:09/15:10/15:12 with clean Finished, no Failed. Current invocation
+    active (claiming work). Provisioning gaps resolved; closing.'
+- at: 2026-11-26 15:13
   from: tony
   text: closed by tony
 ref: OPS-0301
