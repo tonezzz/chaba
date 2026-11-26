@@ -1,7 +1,7 @@
 id: gemini-38-live-extended-thinking-bench-2026-11-26
 title: Bench gemini-3.8-live-extended-thinking against the 3.8-live pin
 column: doing
-updated: 2026-11-26 18:17
+updated: 2026-11-26 18:19
 brief: Run the 20-fixture voice bench plus barge-in and soak probes on the extended-thinking Live variant; compare
   to the promoted 3.8-live baseline before any pin decision.
 priority: medium
@@ -44,6 +44,11 @@ comms:
     primer injected 8 lesson(s): [chaba-exec-checkout-idc0; [vcast-auto-yt-live-api] primer injected 8 lesson(s):
     jev-bench.service on idc02; "Only en/th supported" was never the MDDB store — verify the store layer first;
     ; LiteLLM per-key model allowlists differ: LITELLM_KEY_BENCH is'
+- at: 2026-11-26 18:19
+  from: devin
+  text: '[devin] dispatch started on idc02. Plan: run scripts/voice-bench gemini-baseline combo with GEMINI_LIVE_MODEL=gemini-3.8-live-extended-thinking
+    (paid key), plus barge-in + session-soak probes mirroring the 2026-11-24 gate; compare vs the recorded 3.8-live
+    baseline (20/20, ttfa ~306-343ms, WER 0.01-0.02, soak 9 turns/507s).'
 action:
   type: dispatch
   status: running
