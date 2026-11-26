@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
-column: doing
-updated: 2026-11-27 02:20
+column: backlog
+updated: 2026-11-27 02:25
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -791,6 +791,9 @@ comms:
     x5, zero safety flags). Quota probe: or-free-nemotron-ultra still 429 until 07:00 +07; gemini-2.5-flash-lite
     200/3.4s (metered); agent-local 200/34.7s. Request still open, no Tony answer. NEW: found churn-loop root cause
     — runner-agent _request_answer() returns the STALE answered '
+- at: 2026-11-27 02:25
+  from: devin
+  text: put on hold
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
@@ -896,7 +899,7 @@ requests:
   - hold
 action:
   type: dispatch
-  status: running
+  status: idle
   lane: devin
   attempts: 1
   repo: chaba
@@ -906,4 +909,3 @@ action:
     dirty: 5
 claim:
   since: 2026-11-26 21:01
-awaiting_action: true
