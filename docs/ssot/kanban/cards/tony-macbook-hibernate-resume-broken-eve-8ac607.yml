@@ -1,7 +1,7 @@
 id: tony-macbook-hibernate-resume-broken-eve-8ac607
 title: tony-macbook hibernate-resume broken — every suspend->hibernate cycle cold-boots
 column: doing
-updated: 2026-11-26 12:33
+updated: 2026-11-26 12:43
 priority: high
 tags:
 - macbook
@@ -84,6 +84,12 @@ comms:
     fleet-wide (all keys rejected from mn01/omen/dell; no; [devin-session-audit-2026-10-29] AUD-0973 independent
     re-check (dispatch 201613 ; [omen-maintenance-preflight-back-up-ha-st-b3738f] Dispatch started on tony-macbo;
     [publish-promote-knowledge-capture-ssot-w-d34a39] [2026-11-23'
+- at: 2026-11-26 12:43
+  from: devin
+  text: 'diagnosis done on-host: every suspend->hibernate cold-boots (systemd-hibernate-resume Unable to resume
+    offset 29630464 -> PM: Image not found code -22). Likely cause: /swap.img fragmented (22 extents) so resume_offset
+    cannot locate image; prior Oct fix attempts failed. s2idle suspend verified working today. Staged scripts/ops/macbook-disable-hibernate.sh
+    (also copied to macbook:~/). Needs Tony sudo — request raised.'
 action:
   type: dispatch
   status: running
