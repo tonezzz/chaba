@@ -1,7 +1,7 @@
 id: ha-template-image-yolo-annotated-points-5af431
 title: HA template image.yolo_annotated points at dead LAN-IP :8780 — repoint to 127.0.0.1
-column: backlog
-updated: 2026-11-26 22:56
+column: doing
+updated: 2026-11-26 23:17
 priority: low
 tags:
 - home-assistant
@@ -125,6 +125,9 @@ comms:
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
     an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-26 23:17
+  from: mn01
+  text: claimed
 spec: 'Repoint tony-ha templates.yaml image.yolo_annotated from http://192.168.2.86:8780/image to http://127.0.0.1:8780/image
   (HA is host-networked; yolo-detect.service on tony-omen binds 127.0.0.1:8780 only). First verify the /image route
   responds with its required params — a bare GET returned 404 during the 2026-11-25 audit, so check server.py route
@@ -133,7 +136,9 @@ spec: 'Repoint tony-ha templates.yaml image.yolo_annotated from http://192.168.2
   recorded in the related post-reboot job doc.'
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
-  attempts: 0
-claim: {}
+  attempts: 1
+  runner: mn01
+claim:
+  since: 2026-11-26 23:17
