@@ -1,7 +1,7 @@
 id: fix-devin-desktop-startup-after-3-12-upgrade
 title: Fix Devin Desktop startup on tony-dell and tony-omen after 3.12 upgrade
 column: done
-updated: 2026-11-26 19:40
+updated: 2026-11-26 20:42
 priority: high
 tags:
 - devin
@@ -339,6 +339,13 @@ comms:
 - at: 2026-11-26 19:40
   from: tony
   text: archived (0d in done, verified)
+- at: 2026-11-26 20:42
+  from: chaba
+  text: '2026-11-26 follow-up (ops, tony-dell + tony-omen): the "starting error" was NOT the 2026-11-24 XDG split-brain
+    recurrence (that fix is installed and still valid). New failure mode: devin-desktop 3.14.30833 launched and
+    died ~10s later with a fresh Crashpad dump each time; minidump showed exception code 5 on a child thread, no
+    OOM/trap. Explicit --disable-gpu relaunch was stable with a window on :20, so the GPU child process was the
+    culprit. Watchdog also TERM''d a healthy instance at 19:30/19:40 '
 action:
   type: dispatch
   status: done
