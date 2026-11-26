@@ -1,30 +1,26 @@
 id: ada-voice-fleet-jobs-verb
 title: 'ada-voice: wire fleet-jobs report verb — read rendered fleet-jobs-report CMS page (sub-second, never live-compute)'
 column: backlog
-updated: 2026-11-26 20:32
+updated: 2026-11-26 20:52
 priority: medium
 tags:
 - ada
 - ada-voice
 - report
 - follow-up
-spec: 'Follow-up to fleet-jobs-report-and-ada-verb. Contract: docs/kb/ada-report-verb-contract.md (chaba repo).
-
-
-  Implement a report-verb tool in ada-voice that answers "how are jobs" / "job status" / "what is the fleet doing"
-  by reading the rendered artifact only:
-
-  - primary: POST {MDDB}/get {collection:ada-cms-pages, key:fleet-jobs-report, lang:en} -> contentMd
-
-  - freshness gate: meta.updated vs fresh_for 4h; stale -> answer "as of <updated>"; missing -> say the report has
-  not been generated
-
-  - NEVER: run the aggregator, scan board-api /cards or /queue, psql, ssh, or systemctl on a voice turn
-
-  - producer: fleet-jobs-report job on idc03 every 4h (ssot.jobs.yml), page already live in ada-cms-pages'
+spec: 'Implement a report-verb tool in ada-voice per docs/kb/ada-report-verb-contract.md (chaba). Answer how are
+  jobs / job status / what is the fleet doing by reading the rendered artifact only: primary POST {MDDB}/get with
+  collection ada-cms-pages, key fleet-jobs-report, lang en, then contentMd; freshness gate compares meta.updated
+  against fresh_for 4h and says as of <updated> when stale or that the report has not been generated when missing.
+  Never run the aggregator, scan board-api /cards or /queue, psql, ssh, or systemctl on a voice turn. The producer
+  is the fleet-jobs-report job on idc03 every 4h and the page already lives in ada-cms-pages. Done: tool-lint clean,
+  full pytest green, a no-network adapter test for fresh/stale/missing, and the outcome names the registered tool.'
 action:
-  type: manual
+  type: dispatch
   repo: ada-voice
+  status: idle
+  lane: devin
+  attempts: 0
 ref: ADA-0041
 comms:
 - at: 2026-11-20 20:10
@@ -164,3 +160,6 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:52
+  from: chaba
+  text: 'TRIAGE 2026-11-26 batch 2: bounded spec written, armed lane=devin, queued for dispatch.'

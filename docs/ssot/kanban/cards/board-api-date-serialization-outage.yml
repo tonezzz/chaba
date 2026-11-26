@@ -1,22 +1,25 @@
 id: board-api-date-serialization-outage
 title: board-api /cards 502 — YAML bare dates crash json.dumps (fleet-wide Ada status outage 2026-11-09)
 column: backlog
-updated: 2026-11-26 20:38
+updated: 2026-11-26 20:52
 priority: medium
 tags:
 - devnest
 - board
 - bug
 - postmortem
-spec: 'Postmortem 2026-11-09 ~18:10-18:40 +07: Tony could not query kk-mac status via ada-code — tool calls to board-api
-  returned 502. Root cause: 42 card YAMLs carry bare created:/updated: date scalars (PyYAML -> datetime.date); board-api
-  json.dumps had no default=str so EVERY /cards request died TypeError -> tailscale-serve 502. Fixed at commit 7ea2e37e47
-  (default=str). REMAINING HYGIENE: (a) card schema should quote/normalize date scalars at write time — otherwise
-  any YAML consumer hitting these fields hits the same edge; (b) board-api needs a watchdog/liveness check — the
-  API was dead long enough to notice only via Ada symptoms; (c) ada_status tool could surface backend-down explicitly
-  instead of a generic failure.'
+spec: 'Hygiene follow-up to the 2026-11-09 board-api 502 outage (fixed at 7ea2e37e47 by json.dumps default=str):
+  card YAML write paths still emit bare created:/updated: date scalars that PyYAML decodes to datetime.date, so
+  any plain json.dumps consumer dies. Quote/normalize date scalars at write time so every card YAML is JSON-safe
+  and add a regression test that writes a card then asserts the persisted YAML parses those fields as strings. The
+  watchdog/liveness half is covered separately by board-api-accept-loop-wedge-auto-restart-7dd2f1 - do not duplicate
+  it. Done: normalization plus test land on chaba master, chaba gate green, outcome names the fields normalized.'
 action:
-  type: manual
+  type: dispatch
+  status: idle
+  lane: devin
+  repo: chaba
+  attempts: 0
 ref: KNB-1292
 comms:
 - at: 2026-11-09 18:16
@@ -244,3 +247,6 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:52
+  from: chaba
+  text: 'TRIAGE 2026-11-26 batch 2: bounded spec written, armed lane=devin, queued for dispatch.'
