@@ -1,7 +1,7 @@
 id: board-api-date-serialization-outage
 title: board-api /cards 502 — YAML bare dates crash json.dumps (fleet-wide Ada status outage 2026-11-09)
-column: review
-updated: 2026-11-26 21:40
+column: done
+updated: 2026-11-26 22:15
 priority: medium
 tags:
 - devnest
@@ -331,6 +331,16 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261126-210344-hygiene-follow-up-to-the-2026- on idc02 still dirty —
     1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-26 22:15
+  from: tony
+  text: '[verify 2026-11-26] VERIFIED — fix landed on origin/master as aa94ae960b (re-land of 509511f969; the dispatch
+    branch auto-merge was blocked by a conflict-resolution failure and its worktree stayed dirty). card_io.json_safe()
+    normalizes datetime.date/datetime to ISO strings in both write chokepoints — atomic_dump_card() and board-api.save()
+    — covering bare created:/updated: date scalars and nested at:/updated: values; strings untouched. tests/board/test_card_date_serialization.py
+    (3 tests) passes'
+- at: 2026-11-26 22:15
+  from: tony
+  text: closed by tony
 claim:
   since: 2026-11-26 21:03
 review_kind: verify
