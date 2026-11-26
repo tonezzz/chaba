@@ -32,9 +32,10 @@
 #
 # Host scope: baseline only (no macOS, no laptops, no con01). kk-mac and
 # idc01 are excluded by the pattern; portable hosts need an explicit --limit.
-# con01 is the absorber tier, not a runner host — runner-fleet-health.py
-# excludes it (FALLBACK_HOSTS + fleet regex) and it has no devin-dispatch
-# provisioning evidence, so it must not fail the required-tool assertion.
+# con01 is the absorber tier with script/container lanes — it has no
+# devin-dispatch provisioning evidence, so it must not fail the required-tool
+# assertion. It IS a declared fleet host: OPS-1406 fixed the fleet parser to
+# include con01 (and kk-mac), so do not re-add a regex exclusion here.
 
 - name: Preview runner-tool drift with rsync dry-run
   hosts: baseline:!disabled:!macos:!con01
