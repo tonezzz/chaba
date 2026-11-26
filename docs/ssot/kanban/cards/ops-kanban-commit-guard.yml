@@ -568,11 +568,21 @@ comms:
 - at: 2026-11-26 17:27
   from: chaba
   text: recovered after 5 consecutive failed ticks
+- at: 2026-11-26 17:28
+  from: tony
+  text: '[root cause + fix 17:28 +07] Not a lifecycle bounce. Served checkout chaba-tony-dell on idc03 was left
+    on branch land/20261126-zero-commit-evidence with 35 board commits, while kanban-commit.sh runs `git push origin
+    master` — that pushes the stale LOCAL master ref (9e367c20), not HEAD, so every tick failed non-fast-forward
+    from 16:26 onward. Fixed under /tmp/board-api.lock: git bundle backup /tmp/opencode/chaba-tony-dell-head-20261126-172610.bundle,
+    `git branch -f master HEAD`, checkout master, '
+- at: 2026-11-26 17:28
+  from: tony
+  text: closed by tony
 id: ops-kanban-commit-guard
 title: 'kanban-commit blocked: unsafe staged state'
-column: review
+column: done
 note: 'kanban-commit failed 3+ consecutive ticks — last: push failed after 3 attempts'
-updated: 2026-11-26 17:27
+updated: 2026-11-26 17:28
 action:
   status: done
 ref: KNB-0309
