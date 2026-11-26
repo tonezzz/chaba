@@ -1,7 +1,7 @@
 id: ansible-ada-ocb-tony-dell-fallback
 title: ADA-OCB tony-dell fallback probe/contract alignment
 column: doing
-updated: 2026-11-26 17:54
+updated: 2026-11-26 18:07
 brief: 'Follow-up from OPS-1424: tony-dell ocb_pane fallback probe incomplete in ada-ocb-verify; align pin/patch/service
   state or harden verify for missing fallback probe.'
 priority: medium
@@ -80,6 +80,13 @@ comms:
     600, litellm dropin present; drift: cli 2.4.1 (pin 2.4.2), patch absent, smoke.timer inactive. Root cause of
     noisy recap: probe play skipped tony-dell (--limit) or unreachable, but localhost assert/report still iterates
     full ocb_pane group -> missing ocb_probe crash/fail. Harden'
+- at: 2026-11-26 18:07
+  from: devin
+  text: 'DONE. Diagnosis: tony-dell fallback is healthy (service+bind+local 200+env/dropin ok; drift cli 2.4.1,
+    patch absent — non-strict by design, kept). Root cause of noisy recap: localhost assert/report iterated full
+    ocb_pane group while probe play was --limit-scoped -> missing ocb_probe crash + all-? fail report. Hardened
+    probe/assert/preflight/verify/audit: unprobed hosts now report unreachable (not fail); strict primary still
+    fails loudly if unprobed. Verified live on tony-dell controller: verify '
 action:
   type: dispatch
   status: running
