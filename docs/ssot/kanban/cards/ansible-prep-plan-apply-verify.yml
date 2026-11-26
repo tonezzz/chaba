@@ -1,0 +1,43 @@
+id: ansible-prep-plan-apply-verify
+title: Ansible prep→plan→apply→verify workflow standard
+column: backlog
+updated: 2026-11-26 09:25
+brief: Standardize Ansible for preparation/baselines, check-diff plan artifacts, gated apply, and verified closeout
+  to increase fleet efficiency.
+priority: medium
+spec: "## Objective\nDefine and pilot an Ansible-first workflow for fleet changes: **prep → plan → apply → verify**,
+  so preparation is stable/idempotent and logs/artifacts are consistent for refinement.\n\n## Why\n- Current Ansible
+  audits already provide read-only probes, controller-side reports, and board-api notify+dedupe (8 playbooks on
+  ansible-audit-board.timer).\n- Ad-hoc prep/apply steps lose evidence and make refinement harder.\n- A standard
+  flow should increase efficiency without weakening safety gates.\n\n## Proposed flow\n1. **Prep (read-only, default)**\n
+  \  - Playbook: `*-preflight.yml` or audit-style tasks.\n   - Checks: SSOT/paths/secrets presence (names only),
+  packages/tools, units/timers, disk/headroom, dependency reachability, env contract.\n   - No host mutation; controller
+  writes report artifacts only.\n   - Output: `reports/ansible-benchmark/<job>/<ts>/` (per-host YAML/JSON), summary,
+  board-api comment/card (fp-deduped) when `board_notify=true`.\n\n2. **Plan (read-only, --check --diff)**\n   -
+  Render deterministic \"what will change\" from check-diff + parsed probes.\n   - Attach artifact path/ref to card;
+  identify blockers (unreachable, missing secret, drift conflict).\n\n3. **Apply (gated mutation)**\n   - Separate
+  playbook; requires explicit approval var (e.g. `*_approved=true` or `ocb_change_approved=true` pattern).\n   -
+  Narrow `--limit`; rollback stated before run; no destructive ops without confirmation.\n   - Use `ansible-first`
+  skill / procedure gates.\n\n4. **Verify (read-only post-change)**\n   - Producer + consumer checks; health endpoints;
+  service status; dashboard/consumer surface when relevant.\n   - Board-api comment with evidence; `fp=cleared`
+  on resolution; close card only with verified evidence.\n\n## Artifact/log schema (proposed)\n- `reports/ansible-benchmark/<playbook>/<YYYYMMDDTHHMMSSZ>/summary.yml`\n-
+  per-host: `<host>.yml` with `summary`, `checks[]`, `deltas[]`, `evidence[]`, `elapsed_s`, `rc`.\n- board-api comment:
+  short human summary + `fp=<fingerprint>` + artifact path.\n- Optional: append JSONL event for trend/refinement.\n\n##
+  Gates / rules\n- Board-api only card write door; no direct `docs/ssot/kanban/cards/*.yml` edits from Ansible.\n-
+  Read-only by default; mutations require explicit approval + rollback + producer/consumer verification.\n- Secrets
+  never logged; only declared env-file/secret presence checks.\n- `--limit` for previews; full-fleet for clean baselines/fingerprints.\n-
+  rc=4 (unreachable) tolerated in scheduled read-only audits; blocker for targeted apply.\n\n## Pilot candidates\n-
+  Existing audit-to-card playbooks as prep/verify pattern (already done).\n- One gated apply flow: `ada-ocb-upgrade.yml`
+  / `install-ada-start-stagger.yml` style, with prep+verify wrappers.\n- Disk-headroom remediation prep (check-diff)
+  before any cleanup.\n\n## Exploration notes\n- Reuse `tasks/board-api-card-notify.yml` and `tasks/board-api-comment.yml`
+  for consistent notify+dedupe.\n- Standardize vars: `board_notify`, `board_api_base`, `board_from`, `report_dir`,
+  `*_approved`.\n- Add `scripts/ansible-preflight.sh` or Make targets for common check-diff runs (optional).\n-
+  Consider a small \"prep report\" Jinja template shared across playbooks.\n\n## Open questions (need decision)\n-
+  Where should canonical prep artifacts live long-term: `reports/ansible-benchmark/` only, or also attached/summarized
+  in card comms?\n- Should apply playbooks require a card id/ref in vars for traceability?\n- Which pilot flow first:
+  ADA-OCB upgrade prep/verify wrapper, or disk-headroom prep+guard?"
+ref: OPS-1424
+comms:
+- at: 2026-11-26 09:25
+  from: devin
+  text: card captured via board-api
