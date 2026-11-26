@@ -1,7 +1,7 @@
 id: health-monitor-config-playlived-postgres
 title: Health monitor config — Playlived target and Postgres check threshold
 column: doing
-updated: 2026-11-26 12:47
+updated: 2026-11-26 13:09
 brief: mcp-health quick_health fails 2/8 (Playlived tony-dell, Postgres) after config reload; evidence suggests
   monitor config/stale state, not confirmed outages.
 priority: medium
@@ -50,6 +50,12 @@ comms:
     is stale (still says hos; idc02''s kanban-dispatch.service was a linked unit running a stale scripts/-only ;
     [ada-review-refresh-log-shipper-timeout] primer injected 8 lesson(s): idc02''s ka; [ada-voice-text-mode-sessions-never-call-e007bd]
     primer injec'
+- at: 2026-11-26 13:09
+  from: devin
+  text: 'Investigating: mcp-health runs ON tony-dell via ssh, so Playlived 127.0.0.1:9230 IS tony-dell — FAIL is
+    a real outage (playlived-dell.container failed: conmon --log-tag). Postgres FAIL is ssh path: live config points
+    host:idc03 but tony-dell→idc03 ssh uses ProxyJump tony-omen, now refused by AllowTcpForwarding no (today''s
+    ssh hardening). Direct ssh works. Fixing config + server.js remote-ssh fallback in worktree.'
 action:
   type: dispatch
   status: running
