@@ -18,6 +18,12 @@ never prod WP:
            primary). Interpretation documented in the report.
   hermes   the identical agent surface pointed at omen ollama /v1
            hermes3:8b (T1 tool-call slot, card try-hermes).
+  local-colibri  the same agent surface pointed at a local colibri
+           serve (`coli serve`, MoE experts streamed from disk) or any
+           other OpenAI-compatible /v1 endpoint — --openai-base sets the
+           URL, --model the served id (colibri 404s on a model mismatch),
+           --openai-timeout the per-call budget (default 600s —
+           disk-streamed experts start slow).
   opencode headless `opencode run --standalone --session` on
            --opencode-host (default idc02 over ssh; 'local' for the
            local binary), --opencode-model per lane (default
@@ -43,6 +49,8 @@ Usage:
   python3 scripts/bench-edu-manage.py --lanes hermes --tasks t1-create-bbr-cubic
   python3 scripts/bench-edu-manage.py --no-judge --out /tmp/bench
   python3 scripts/bench-edu-manage.py --lanes clawbot --or-model nvidia/nemotron-3.5-super-vl:free
+  python3 scripts/bench-edu-manage.py --lanes local-colibri \
+      --openai-base http://127.0.0.1:8000/v1 --model qwen3.6-35b
 Env: OLLAMA_URL (default http://100.75.102.88:11434), OPENROUTER_API_KEY
 or ~/.config/secrets/openrouter.env, GEMINI_API_KEY or the usual secrets
 files. Keys are loaded at runtime and never printed. The opencode lane
@@ -1380,7 +1388,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--lanes", nargs="+",
                     default=["current", "clawbot", "hermes"],
-                    choices=["current", "clawbot", "hermes", "opencode"])
+                    choices=["current", "clawbot", "hermes", "opencode",
+                             "local-colibri"])
     ap.add_argument("--opencode-model", nargs="+",
                     default=[OPENCODE_DEFAULT_MODEL],
                     help="model(s) for the opencode lane, provider/id "
@@ -1408,6 +1417,22 @@ def main():
                     help="per-call timeout (s) for the local-ollama lane "
                          "(default 300 — reasoning models on a shared "
                          "RAM-offloaded GPU need more than the old 150)")
+    ap.add_argument("--openai-base", default=None,
+                    help="OpenAI-compatible base URL for the local-colibri "
+                         "lane (default http://127.0.0.1:8000/v1 — a colibri "
+                         "serve; any /v1 endpoint works)")
+    ap.add_argument("--model", "--openai-model", dest="openai_model",
+                    default="qwen3.6-35b",
+                    help="model id the local-colibri lane requests "
+                         "(default qwen3.6-35b — must equal the served "
+                         "model-id: colibri answers 404 otherwise)")
+    ap.add_argument("--openai-key", default=None,
+                    help="bearer token for the local-colibri lane "
+                         "(default none — local serves usually ignore it)")
+    ap.add_argument("--openai-timeout", type=int, default=600,
+                    help="per-call timeout (s) for the local-colibri lane "
+                         "(default 600 — disk-streamed MoE experts start "
+                         "slow)")
     ap.add_argument("--or-model", default=OR_MODEL,
                     help="OpenRouter model for the clawbot lane "
                          f"(default {OR_MODEL}; pin a named model to "
@@ -1513,6 +1538,14 @@ def main():
             lanes[lname] = AgentLane(lname, ollama + "/v1", "ollama",
                                      args.ollama_model, args.ollama_timeout,
                                      extra_system=agent_prompt)
+    if "local-colibri" in args.lanes:
+        obase = (args.openai_base or "http://127.0.0.1:8000/v1").rstrip("/")
+        if not obase.endswith("/v1"):
+            obase += "/v1"
+        lanes["local-colibri"] = AgentLane(
+            "local-colibri", obase, args.openai_key,
+            args.openai_model, args.openai_timeout,
+            extra_system=agent_prompt)
     if "opencode" in args.lanes:
         for m in args.opencode_model:
             lanes[opencode_lane_name(m)] = OpencodeLane(

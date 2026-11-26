@@ -1,0 +1,143 @@
+{
+  "comment": "Fixed corpus for bench-edu-manage.py (card edu-agent-benchmark). Golden labels are evergreen: seed dates and 'expect' values use day offsets relative to run date ('today+N', '-Nd'). Transcripts use the real Ada transcript format so the current lane runs the genuine lesson-miner parse/filter path.",
+  "seeds": {
+    "default": [
+      {
+        "topic": "spaced repetition",
+        "level": "intro",
+        "status": "open",
+        "learned_at": "today-12",
+        "next_review": "today-1",
+        "source": "chat",
+        "content": "<h3>Spaced repetition</h3><p>Reviewing material at expanding intervals (1d, 3d, 7d, 30d) exploits the spacing effect: each successful recall just before forgetting strengthens retention far more than re-reading. Anki and similar systems schedule the next review from recall quality.</p>"
+      },
+      {
+        "topic": "tailscale acl basics",
+        "level": "working",
+        "status": "open",
+        "learned_at": "today-10",
+        "next_review": "today+5",
+        "source": "chat",
+        "content": "<h3>Tailscale ACLs</h3><p>ACLs gate which tailnet nodes can reach which ports. Tags replace a node's user identity with a role identity so servers keep access when people leave; rules then say 'group:admins can reach tag:server on port 22'.</p>"
+      },
+      {
+        "topic": "ada-nest-map",
+        "level": "intro",
+        "status": "open",
+        "learned_at": "today-4",
+        "next_review": "today+5",
+        "source": "chat",
+        "content": "<h3>Ada Nest — hub</h3><p>Hub lesson for the ada-nest-* topic family (the member-node heartbeat/monitoring design). Sub-topics get their own ada-nest-&lt;topic&gt; lessons; this page keeps the family inventory.</p>"
+      }
+    ],
+    "empty": []
+  },
+  "tasks": [
+    {
+      "id": "t1-create-bbr-cubic",
+      "type": "transcript",
+      "seed": "default",
+      "transcript": "# Ada voice session benchT1\n## User [09:01:10]\nwhat's the difference between TCP BBR and CUBIC congestion control?\n## Ada [09:01:12]\nCUBIC is loss-based — it grows the congestion window until packet loss, then backs off, which fills buffers and adds latency. BBR is model-based: it measures bottleneck bandwidth and round-trip time and paces sends to sit at that operating point instead of filling buffers. In practice BBR keeps latency lower on buffer-bloated links; CUBIC can win on short high-bandwidth paths.\n",
+      "keep": [
+        {"match": ["bbr", "congestion"], "action": "create", "level": ["intro", "working"]}
+      ]
+    },
+    {
+      "id": "t2-skip-commands",
+      "type": "transcript",
+      "seed": "default",
+      "transcript": "# Ada voice session benchT2\n## User [09:05:00]\nturn off the bedroom light\n## Ada [09:05:01]\nDone.\n## User [09:05:20]\nremind me to message KK at six\n## Ada [09:05:21]\nReminder set.\n## User [09:05:40]\nthanks ada\n## Ada [09:05:41]\nAnytime.\n",
+      "keep": []
+    },
+    {
+      "id": "t3-update-tailscale",
+      "type": "transcript",
+      "seed": "default",
+      "transcript": "# Ada voice session benchT3\n## User [09:12:03]\nhow do tailscale ACLs work again — what's the difference between a tag and a regular ACL rule?\n## Ada [09:12:06]\nAn ACL rule says which sources can reach which destinations and ports. A tag is an identity you put on a device instead of a user — tagged devices stop being owned by a person, so servers keep access when users leave. You write rules like 'group:admins can reach tag:server on port 22' — the tag becomes the node identity.\n",
+      "keep": [
+        {"match": ["tailscale", "acl"], "action": "update", "seed_topic": "tailscale acl basics"}
+      ]
+    },
+    {
+      "id": "t4-mixed-cap-private",
+      "type": "transcript",
+      "seed": "default",
+      "transcript": "# Ada voice session benchT4\n## User [09:20:11]\nwhat is the CAP theorem in distributed systems?\n## Ada [09:20:13]\nCAP says a distributed data store under a network partition must choose between consistency and availability — you can't guarantee both while partitioned. In practice you pick CP (refuse writes, stay consistent) or AP (keep serving, reconcile later); when there is no partition you get both, so the real decision is what to do during failures.\n## User [09:21:02]\ndid we already pay the electricity bill this month?\n## Ada [09:21:04]\nI don't have your billing records — check the PEA app or your bank statement.\n",
+      "keep": [
+        {"match": ["cap theorem", "cap"], "action": "create", "level": ["intro", "working"]}
+      ]
+    },
+    {
+      "id": "t5-thai-quantization",
+      "type": "transcript",
+      "seed": "default",
+      "transcript": "# Ada voice session benchT5\n## User [09:30:15]\nAda quantization ในโมเดล LLM คืออะไร ทำไม GGUF ถึงเร็วขึ้น\n## Ada [09:30:18]\nQuantization คือการลดความละเอียดของน้ำหนักโมเดล จาก 16 หรือ 32 บิต เหลือ 8, 4 หรือน้อยกว่า ทำให้โมเดลเล็กลงและคำนวณเร็วขึ้น โดยแลกกับความแม่นที่ลดลงเล็กน้อย GGUF เป็นรูปแบบไฟล์ที่เก็บน้ำหนัก quantized พร้อม layout ที่ map เข้า memory ได้เร็ว เลยเหมาะกับ local inference\n",
+      "keep": [
+        {"match": ["quantiz"], "action": "create", "level": ["intro", "working"]}
+      ]
+    },
+    {
+      "id": "t6-hub-ada-nest-heartbeat",
+      "type": "transcript",
+      "seed": "default",
+      "transcript": "# Ada voice session benchT6\n## User [09:40:22]\nhow does the ada nest heartbeat escalation actually work — when does a member node page me?\n## Ada [09:40:25]\nEach member sends a heartbeat every interval and the hub watches freshness. If a member misses N beats its state goes stale, then degraded; only after the degraded window passes without recovery does it escalate to a page — so a single missed beat or a brief wifi flap never reaches your phone.\n",
+      "keep": [
+        {"match": ["heartbeat"], "action": "hub_create", "family": "ada-nest"}
+      ],
+      "neutral_seed_topics": ["ada-nest-map"]
+    },
+    {
+      "id": "t7-ephemeral",
+      "type": "transcript",
+      "seed": "default",
+      "transcript": "# Ada voice session benchT7\n## User [09:50:30]\nwhat time is it in Tokyo right now?\n## Ada [09:50:31]\nIt's 11:50 PM in Tokyo — two hours ahead of Bangkok.\n## User [09:50:45]\nis it going to rain this afternoon?\n## Ada [09:50:47]\nThere's a 60% chance of showers after 3 PM per the current forecast.\n",
+      "keep": []
+    },
+    {
+      "id": "o1-mark-learned",
+      "type": "ops",
+      "seed": "default",
+      "instruction": "Mark the spaced repetition lesson as learned.",
+      "ops_golden": {"kind": "set_field", "topic": "spaced repetition", "field": "status", "value": "learned"},
+      "checks": [{"topic": "spaced repetition", "field": "status", "expect": "learned"}]
+    },
+    {
+      "id": "o2-push-review",
+      "type": "ops",
+      "seed": "default",
+      "instruction": "Push the next review of the tailscale acl basics lesson out by 30 days from today.",
+      "ops_golden": {"kind": "set_field", "topic": "tailscale acl basics", "field": "next_review", "value": "today+30"},
+      "checks": [{"topic": "tailscale acl basics", "field": "next_review", "expect": "today+30"}]
+    },
+    {
+      "id": "o3-due-list",
+      "type": "ops",
+      "seed": "default",
+      "instruction": "Which lessons are due for review right now? Give me the list.",
+      "ops_golden": {"kind": "due_list"},
+      "expect_topics_in_answer": ["spaced repetition"],
+      "forbid_topics_in_answer": ["tailscale", "ada-nest"]
+    },
+    {
+      "id": "r1-recall-spaced",
+      "type": "recall",
+      "seed": "default",
+      "query": "Tony asks: where's that explainer about reviewing material at expanding intervals — the memory technique?",
+      "expect_topic": "spaced repetition"
+    },
+    {
+      "id": "r2-recall-tailscale",
+      "type": "recall",
+      "seed": "default",
+      "query": "which post covers tailnet access rules and tags?",
+      "expect_topic": "tailscale acl basics"
+    },
+    {
+      "id": "r3-recall-none",
+      "type": "recall",
+      "seed": "default",
+      "query": "do we have a lesson on quantum annealing?",
+      "expect_topic": null
+    }
+  ]
+}
