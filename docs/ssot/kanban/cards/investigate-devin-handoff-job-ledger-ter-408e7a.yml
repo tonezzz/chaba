@@ -1,7 +1,7 @@
 id: investigate-devin-handoff-job-ledger-ter-408e7a
 title: Investigate devin-handoff job-ledger terminal writes (1176/1555 stuck running)
 column: doing
-updated: 2026-11-26 19:33
+updated: 2026-11-26 19:34
 note: 'Found while building devin-dispatch-tg-watch (card implement-and-track-devin-telegram-repor-fc0dc7): the
   shared dispatch ledger in MDDB ada-ha-bank-devin-handoff has 1555 job/answer docs but 1176 still say status=running
   — 268 of the 323 docs touched in the last 7d never got a terminal write (done 186 / failed 119 / superseded 72
@@ -161,6 +161,10 @@ comms:
     primer injected 8 lesson(s): [o; [runner-fleet-health-host-regex-gap] [verify] VERIFY-QUEUE triage 2026-11-26
     (To; [storage-rebalance-underused] primer injected 8 lesson(s): [kanban-card-torn-wri; [timer-alert-tony-dell-runner-agent-converge]
     2026-11-25 11:1'
+- at: 2026-11-26 19:34
+  from: devin
+  text: Investigating the ledger write path and runner-agent versions; I’ll correlate running docs by host against
+    deployed runner hashes.
 spec: 'Investigate why the shared dispatch ledger in MDDB ada-ha-bank-devin-handoff has 1176 out of 1555 job/answer
   docs stuck with status=running, specifically examining whether mddb_job writes are failing to land due to runner-agent
   drift across hosts. Inspect the ledger docs and runner behavior to identify the root cause of missing terminal
