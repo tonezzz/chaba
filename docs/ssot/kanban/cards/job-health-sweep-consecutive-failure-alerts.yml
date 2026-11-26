@@ -1,7 +1,7 @@
 id: job-health-sweep-consecutive-failure-alerts
 title: Job-health sweep — alert when a declared job fails N consecutive runs
 column: doing
-updated: 2026-11-26 22:37
+updated: 2026-11-26 22:39
 brief: 'Found 2026-10-30 (KNB-1008 deploy catchup): chaba-audit, mddb-vector-reindex, devin-bank-distill all had
   ZERO successful finishes in 30d on con01 — nobody knew until a human read journalctl. Dead jobs must surface themselves.'
 priority: medium
@@ -46,6 +46,8 @@ action:
   lane: devin
   attempts: 1
   runner: idc02
+  sweep:
+    stale_running: 2026-11-26 22:39
 ref: OPS-1015
 comms:
 - at: 2026-10-30 18:32
@@ -359,5 +361,13 @@ comms:
     declared for con01/idc02/idc03/mn01/tony_dell in ssot.jobs.yml (units rendered+committed); AUTO_RE updated in
     render-board.py/render-board2.py/test-board-dom.mjs; 24 unit tests (tests/ops/test_job_health_sweep.py, 180/180
     ops tests green); trail doc docs/ssot/jobs/monitoring/2026-11-26-job-health-sweep.yml; outcome doc dispatch-outcome-20261126-213829-context-three-con01-jobs-sat-d'
+- at: 2026-11-26 22:39
+  from: chaba
+  text: 'merge-sweep: devin-task-20261126-213829-context-three-con01-jobs-sat-d no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-26 22:39
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261126-213829-context-three-con01-jobs-sat-d on idc02 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 claim:
   since: 2026-11-26 21:37
