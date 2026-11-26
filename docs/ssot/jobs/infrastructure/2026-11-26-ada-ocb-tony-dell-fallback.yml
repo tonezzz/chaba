@@ -1,0 +1,112 @@
+id: jobs/infrastructure/2026-11-26-ada-ocb-tony-dell-fallback
+title: >-
+  ada-ocb tony-dell fallback — diagnose + harden missing-probe handling
+  (OPS-1424 follow-up)
+card: ansible-ada-ocb-tony-dell-fallback
+date: 2026-11-26
+runner: devin-dispatch worktree (repo landing only — no host mutation, no push)
+status: delivered
+
+# Follow-up to OPS-1424 (decision B). The ada-ocb-verify/preflight recap
+# failed with tony-dell "web=? cli=? local=?" and a missing ocb_probe in
+# the assert path. Diagnosis + read-only verification only; the fallback
+# stays a non-strict soak copy — no host mutation was needed or done.
+
+findings:
+  root_cause: >
+    NOT a tony-dell contract failure. The localhost assert/report phase
+    iterates the full `ocb_pane` group regardless of --limit or probe
+    success, and `hostvars[target].ocb_probe` was undefined for
+    tony-dell (probe play skipped it via --limit idc02,localhost, or the
+    host was unreachable). `p: "{{ hostvars[target].ocb_probe }}"`
+    templated to Undefined -> assert crash; the report builder emitted
+    all-'?' checks that scored 'fail'. Evidence:
+    reports/ansible-benchmark/ada-ocb-verify/20261126T090125Z/tony-dell.yml
+    (probed:true fabricated by the builder, every field '?').
+  tony_dell_live_state_2026-11-26: >
+    Probe deps all present over SSH (BatchMode, python3 3.14.4,
+    ~/.local/node24 npm, @openchamber/web pkg dir). Live pane healthy:
+    openchamber.service active, openchamber-update.timer active,
+    ada-ocb-bridge-sync.timer active (ada-ocb-smoke.timer inactive —
+    idc02-only unit), bind 127.0.0.1:3000, local_http 200,
+    startup.env mode 600, litellm dropin present. Drift vs pins:
+    web 2.8.0 (=pin), cli 2.4.1 (pin 2.4.2), models.status patch absent.
+    Non-strict role already exempts versions+patch — drift is reported,
+    not fatal. Aligning the fallback (cli bump + patch + smoke timer)
+    would be a host mutation needing same-session approval; deferred —
+    the soak copy is pending Tony's retire decision anyway.
+  decision: >-
+    Keep tony-dell declared fallback/non-strict (ocb_strict_roles:
+    [primary] unchanged). Do NOT align to the 2.8.0/2.4.2+patch contract —
+    that contract is the primary's gate; the fallback is observability
+    only until the retire decision lands.
+
+changes:
+  - file: ansible/playbooks/tasks/ada-ocb-probe.yml
+    what: >-
+      Replaced the hard "no JSON" assert with the audit-log-shipper
+      pattern: probe tasks carry ignore_unreachable; ocb_probe becomes
+      parsed JSON or {error: "unreachable or no JSON :: <stderr>"}.
+      Unreachable/--limit-excluded hosts simply never get the fact.
+  - file: ansible/playbooks/tasks/ada-ocb-assert.yml
+    what: >-
+      Producer contract loop now runs only on hosts with a usable
+      ocb_probe (is defined + no .error) and uses p.get() throughout.
+      New assert: strict-role hosts MUST have been probed (unprobed
+      primary fails loudly — strict stays strict). Non-strict unprobed
+      hosts get an INFO debug line instead of a templating crash; the
+      drift-report debug is likewise probe-guarded.
+  - file: ansible/playbooks/ada-ocb-preflight.yml
+    what: >-
+      Report builder branches on probe presence: unprobed hosts emit a
+      probed:false/unreachable:true report (summary bucket
+      'unreachable', not 'fail'); probed hosts unchanged. Builder gains
+      ignore_unreachable + a debug task naming unprobed hosts.
+  - file: ansible/playbooks/ada-ocb-verify.yml
+    what: Same report-builder hardening inside the always block.
+  - file: ansible/playbooks/ada-ocb-audit.yml
+    what: >-
+      Same crash class fixed for consistency: per-host template/verdict
+      loops skip unprobed hosts; a debug task names them.
+
+verification:
+  method: >-
+    Read-only. Staged the worktree ansible/ + ssot.audit.hosts.yml to
+    tony-dell:/tmp/ocb-verify-test and ran the real playbooks
+    (ANSIBLE_CONFIG=./ansible.cfg) — the same controller that produced
+    the failing evidence. Test tree removed afterwards.
+  runs:
+    - >-
+      ada-ocb-verify --limit idc02,localhost (the failing scenario):
+      PASS, exit 0. tony-dell report now
+      summary="unreachable role=fallback ... (no ocb_probe — excluded by
+      --limit or host unreachable)", overall
+      "ok=1 drift=0 fail=0 unreachable=1 probed=1/2".
+    - >-
+      ada-ocb-verify (full): PASS, "ok=2 drift=0 fail=0 unreachable=0
+      probed=2/2" — idc02 ok web=2.8.0 cli=2.4.2; tony-dell ok
+      web=2.8.0 cli=2.4.1 local=200 (non-strict exemptions intact).
+    - >-
+      ada-ocb-verify --limit tony-dell,localhost: strict gate holds —
+      fails loudly "idc02 is role=primary (strict) but produced no
+      usable ocb_probe"; benchmark evidence still written via always.
+    - >-
+      ada-ocb-preflight --limit idc02,localhost: PASS, same unreachable
+      reporting. ada-ocb-audit --limit idc02,localhost: no crash,
+      unprobed host named and skipped.
+
+lessons:
+  - >-
+    localhost-side report/assert phases that loop `groups[...]` ignore
+    --limit — always guard fact access with `hostvars[h].x is defined`
+    (or collect probed hosts via hostvars|dict2items selectattr, the
+    audit-log-shipper pattern) or limited runs fabricate all-'?' fails.
+  - >-
+    `delegate_to: "{{ item }}"` + delegate_facts still SSHes to
+    limit-excluded hosts — reachable ones get facts fine, truly
+    unreachable ones need ignore_unreachable or the whole localhost
+    play dies.
+  - >-
+    benchmark-report-write already has an unreachable bucket — emit
+    probed:false/unreachable:true with summary prefix 'unreachable'
+    and the summary counts it correctly with zero template changes.

@@ -49,6 +49,9 @@
       loop: "{{ groups['ocb_pane'] }}"
       loop_control:
         loop_var: target
+      when: >-
+        hostvars[target].ocb_probe is defined
+        and hostvars[target].ocb_probe.error is not defined
 
     - name: Show the one-line verdict per host
       ansible.builtin.debug:
@@ -61,3 +64,18 @@
       loop: "{{ groups['ocb_pane'] }}"
       loop_control:
         loop_var: item
+      when: >-
+        hostvars[item].ocb_probe is defined
+        and hostvars[item].ocb_probe.error is not defined
+
+    - name: Name pane hosts skipped for lack of a probe
+      ansible.builtin.debug:
+        msg: >-
+          {{ item }}: no usable ocb_probe (excluded by --limit or
+          unreachable) — no audit report rendered.
+      loop: "{{ groups['ocb_pane'] }}"
+      loop_control:
+        loop_var: item
+      when: >-
+        hostvars[item].ocb_probe is not defined
+        or hostvars[item].ocb_probe.error is defined
