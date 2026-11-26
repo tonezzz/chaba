@@ -1,7 +1,7 @@
 id: lesson-polish-run
 title: 'lesson-polish: Fable pass on audit-flagged lessons (auto-queued)'
-column: done
-updated: 2026-11-26 04:04
+column: backlog
+updated: 2026-11-26 07:41
 brief: Auto-queued by chaba-lessons-audit when R1/R3/R4 flags > 0 — the Fable polish pass; standing card, re-armed
   each audit run (AUD-0831 loop).
 priority: medium
@@ -36,8 +36,7 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: done
-  runner: idc02
+  status: queued
   attempts: 1
   result: 'exit=0 ice: No such file or directory | devin-task-20261125-190732-recurring-lesson-polish-pass-q.service:
     Failed to open /run/user/1000/systemd/transient/devin-task-20261125-190732-recurring-lesson-polish-pass-q.service:
@@ -256,6 +255,28 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 07:41
+  from: chaba
+  text: re-spawned from report page
+- at: 2026-11-26 07:41
+  from: chaba
+  text: 'lesson-audit 2026-11-26: 7 lesson(s) with R1/R3/R4 flags -> new-flags (lesson-polish-run)
+
+    flagged:
+
+    - `lesson-021a96fe34da` claude-code-install — `R1:overdue`
+
+    - `lesson-75daf5e2997c` claude-code-update — `R1:overdue`
+
+    - `lesson-7a0c0f5dc791` claude-code-openchamber — `R1:overdue`
+
+    - `lesson-7bc595208216` agent-tool-surfaces — `R1:overdue`
+
+    - `lesson-9a1db3e435c5` claude-code-standard — `R1:overdue`
+
+    - `lesson-b00c79064ad9` claude-code-auth — `R1:overdue`
+
+    - `lesson-ef9b09a8f8db` ada-deploy-flow — `R1:'
 claim:
   since: 2026-11-25 19:06
 review_kind: verify
