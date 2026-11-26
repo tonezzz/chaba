@@ -79,6 +79,14 @@ comms:
   text: 'DONE. Commits b1aca5f9a1 (merged proxy + ring/gateway tests + SSOT note + job record) and 3992c5d0a9 (outcome
     doc) on dispatch/20261126-234625-reconcile-the-two-proxy-varian. Follow-up carded: gemini-proxy-quadlet-envfile-drop
     (MEM-1469) — quadlet template must restore EnvironmentFile before ANY unit restart.'
+- at: 2026-11-27 00:13
+  from: chaba
+  text: 'merge-sweep: devin-task-20261126-234625-reconcile-the-two-proxy-varian no longer active on mn01 but card
+    still says running — sweeping its branch'
+- at: 2026-11-27 00:13
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261126-234625-reconcile-the-two-proxy-varian on mn01 still dirty —
+    2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: running
@@ -87,5 +95,8 @@ action:
   model: swe-2-flash-medium
   runner: mn01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 00:13
+    dirty: 2
 claim:
   since: 2026-11-26 23:45
