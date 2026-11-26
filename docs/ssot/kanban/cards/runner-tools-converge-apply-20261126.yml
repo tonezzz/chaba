@@ -1,7 +1,7 @@
 id: runner-tools-converge-apply-20261126
 title: Apply pinned runner-tool convergence fleet-wide
 column: done
-updated: 2026-11-26 18:43
+updated: 2026-11-26 20:38
 brief: 'Applied deploy-runner-tools.yml to all 7 managed hosts, installed the daily convergence timer, and re-audited:
   no DRIFT remaining.'
 priority: medium
@@ -30,3 +30,7 @@ comms:
   text: 'Re-verified 2026-11-26 after master moved dispatch_repos.py to bf7938: idc03 checkout was already at master
     HEAD (0/0), no git nudge needed. Re-ran deploy-runner-tools.yml — all hosts in-sync, changed=0; audit shows
     OK dispatch_repos.py src=bf793805a0f9 inst=bf793805a0f9 and no DRIFT lines. Daily timer remains active.'
+- at: 2026-11-26 20:38
+  from: chaba
+  text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
