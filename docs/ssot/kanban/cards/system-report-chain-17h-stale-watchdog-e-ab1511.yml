@@ -1,7 +1,7 @@
 id: system-report-chain-17h-stale-watchdog-e-ab1511
 title: system-report chain 17h+ stale; watchdog exit-1 is by design but nodes missing
 column: doing
-updated: 2026-11-26 20:45
+updated: 2026-11-26 21:23
 program: infrastructure
 tags:
 - ops
@@ -361,6 +361,13 @@ comms:
   text: attempt 2 started on tony-dell. Prior run verified healthy but produced no commits (merge-sweep fail). Drift
     defers reappeared 03:55 today for idc02/idc03/tony-dell/tony-macbook — verifying sha256 drift + system-report
     chain now.
+- at: 2026-11-26 21:23
+  from: devin
+  text: 'DONE (attempt 2). runner-agent: fleet converged to pin 4259ca6f — scp''d to idc02+tony-macbook after their
+    checkouts pulled 264f9616881; idc03/tony-dell/mn01/con01/tony-omen self-healed via repo-sync+_self_update; verified
+    sha256 installed==checkout==pin on all 7 runner hosts (kk-mac pending its next sync, consistent-old). system-report:
+    chain healthy — generator on con01 ran clean twice today; served idc02 system-report.yml generated_at 21:18+07
+    (minutes old, was the Nov-10 freeze). Nodes: red c'
 spec: Fix the stuck system-report chain by locating its generator on idc02 and resolving the 17h+ stale generated_at
   timestamp. Address the persistent missing and unreachable nodes across audit-hosts, health-monitor, host-loads,
   disk-trend, kanban, daily-brief, nest-lanes/brains/bench nodes, and chaba-nest. Redeploy the drifted runner-agent
