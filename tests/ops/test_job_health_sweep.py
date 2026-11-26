@@ -206,8 +206,8 @@ class UndeclaredUnits(unittest.TestCase):
 
 
 class EvaluateThresholds(unittest.TestCase):
-    def _job(self, jid="demo"):
-        return {"id": jid, "name": jid}
+    def _job(self, jid="demo", **extra):
+        return {"id": jid, "name": jid, **extra}
 
     def test_consec_three_flags(self):
         events = fail_activation(1) + fail_activation(2) \
@@ -241,6 +241,28 @@ class EvaluateThresholds(unittest.TestCase):
                              lambda u, s: (events, "")):
             verdicts, _ = mod.evaluate([self._job()], "30 days ago")
         self.assertEqual(verdicts["demo"]["reasons"], [])
+
+    def test_expected_alert_exit_marker_suppresses_failure(self):
+        events = fail_activation(1, out="alert filed: log-storm:mddb-lab")
+        with patch.object(mod, "timer_problems",
+                          lambda jid: ([], {})), \
+                patch.object(mod, "journal_events",
+                             lambda u, s: (events, "")):
+            verdicts, _ = mod.evaluate(
+                [self._job(expected_alert_exit=True)], "30 days ago")
+        self.assertEqual(verdicts["demo"]["reasons"], [])
+        self.assertEqual(verdicts["demo"]["successes"], 1)
+
+    def test_expected_alert_exit_without_marker_still_flags(self):
+        events = fail_activation(1, out="Traceback (most recent call last)")
+        with patch.object(mod, "timer_problems",
+                          lambda jid: ([], {})), \
+                patch.object(mod, "journal_events",
+                             lambda u, s: (events, "")):
+            verdicts, _ = mod.evaluate(
+                [self._job(expected_alert_exit=True)], "30 days ago")
+        self.assertTrue(any(r.startswith("zero-successes")
+                            for r in verdicts["demo"]["reasons"]))
 
     def test_timer_problem_surfaces_without_journal(self):
         with patch.object(mod, "timer_problems",

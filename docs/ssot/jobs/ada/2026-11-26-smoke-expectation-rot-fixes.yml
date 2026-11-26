@@ -22,7 +22,8 @@ summary: >
 
 changes:
   scripts/scenario-live.py:
-    - _mddb_base(): routes seed/seed_evict/cleanup posts by collection —
+    - >-
+      _mddb_base(): routes seed/seed_evict/cleanup posts by collection —
       ada-cms-*/chaba-*/kb-* + exact CMS names -> $MDDB_CMS_URL
       (default http://100.102.134.91:11027/v1), else ops :11023. Mirrors
       backend/mddb_client.py is_cms_collection; fixes cleanup 404s that
@@ -30,32 +31,40 @@ changes:
       translate-probe en/th/de litter). Same bug existed in run_seed —
       kk_cms_only_seeded_recall's ada-cms-pages-kk-dev seed could never
       have worked.
-    - _expand_tokens(): new {public_tenant} (ADA_PUBLIC_TENANT, default
+    - >-
+      _expand_tokens(): new {public_tenant} (ADA_PUBLIC_TENANT, default
       tony-ha) and {cms_collection} (ADA_CMS_COLLECTION, default
       ada-cms-pages) for lane-parameterized scenarios.
   tests/scenarios-live/ada_opencode_control.yaml:
-    - turn2 calls_not -> no_calls (calls_not is not a driver key).
-    - turn3 reworked to the approval-handshake contract: no_calls
+    - >-
+      turn2 calls_not -> no_calls (calls_not is not a driver key).
+    - >-
+      turn3 reworked to the approval-handshake contract: no_calls
       [ada_opencode_dispatch] + response assertion. A real receipt needs
       card envelope + board ask + Tony's yes inside the 600s TTL — not
       stageable in a smoke turn; gate refusal is the contract.
   tests/scenarios-live/auto_report_worthy.yaml:
-    - calls_any widened to [ada_memory_search, cms_read, cms_get_page,
+    - >-
+      calls_any widened to [ada_memory_search, cms_read, cms_get_page,
       cms_list_pages]; canonical source is the auto-report CMS page.
   tests/scenarios-live/cms_public_url_lane.yaml:
-    - parameterized: {public_tenant}/{cms_collection} tokens; smoke
+    - >-
+      parameterized: {public_tenant}/{cms_collection} tokens; smoke
       defaults now match the ada-dev tony lane it actually runs on.
       Set ADA_PUBLIC_TENANT=kk-ha ADA_CMS_COLLECTION=ada-cms-pages-kk
       for the kk lane.
   tests/scenarios-live/cms_translate.yaml:
-    - assertions kept as the regression tripwire; comments record the
+    - >-
+      assertions kept as the regression tripwire; comments record the
       lang arg-shape finding.
   backend/tool_guide.yml:
-    - cms_publish_page entry now documents lang= (en/th, default en) —
+    - >-
+      cms_publish_page entry now documents lang= (en/th, default en) —
       root-cause fix for the missing 'lang':'th'.
 
 pending_tony:
-  - board request raised: OK to delete stray PUBLIC page
+  - >-
+    board request raised: OK to delete stray PUBLIC page
     ada-cms-pages/kk-site-test (live surf-thailand.com/tony-ha/
     kk-site-test.html since 2026-10-11) + leftover translate-probe{,-de}
     docs. NOTE: once this branch deploys, the next
