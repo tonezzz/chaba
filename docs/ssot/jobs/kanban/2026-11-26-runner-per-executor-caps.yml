@@ -1,0 +1,81 @@
+title: runner-agent per-executor claim caps + remote load-gate exemption
+subtitle: RUNNER_CAP split into local/remote classes so remote-async
+  executors stop starving local dispatch; remote claims exempt from
+  RUNNER_MAX_LOAD_PC
+icon: gauge
+
+context:
+  card: runner-per-executor-caps
+  ref: OPS-1284
+  problem: "observed 2026-11-09 — remote-async executors (jules ~1h
+    Google-side wait, nlm_batch) held RUNNER_CAP slots while doing
+    ~zero local work; omen at 3/3 jules meant zero local dispatch
+    capacity. Heavyweight claims also deferred at RUNNER_MAX_LOAD_PC
+    even though jules/nlm claims put no load on the host."
+  prior_attempts: "card history shows 4 failed dispatches — all routed
+    executor=jules, which hit FAILED_PRECONDITION when Google read-only'd
+    the Jules API (EOL 2026-11-12, removed from EXECUTORS 2026-11-20).
+    This run is the devin-lane implementation."
+
+design:
+  cap_split: "RUNNER_CAP stays the LOCAL-executor ceiling (devin/
+    opencode/claude/script/container). New RUNNER_REMOTE_CAP (default
+    6) counts executors in RUNNER_REMOTE_EXECUTORS (default
+    jules,nlm_batch,kk_mac_local) separately — a host holds
+    cap_local + cap_remote claims concurrently. REMOTE_CAP=0 disables
+    remote claims."
+  load_gate: "the OPS-1182 RUNNER_SCRIPT_MAX_LOAD_PC pattern applied
+    per class: under host overload, claim_pass computes allowed gate
+    classes — script claims need load <= SCRIPT_MAX_LOAD_PC (2.0),
+    remote claims need load <= REMOTE_MAX_LOAD_PC (default 0 =
+    load-independent, still bounded by lane quotas like
+    JULES_LANE_DAILY_CAP), heavyweight local claims never proceed.
+    Non-overload capacity reasons (cap/ratelimit/kill/disk) still skip
+    the whole pass."
+  executor_resolution: "new claim_executor(card) mirrors claim_pass's
+    ex_decl/JEV kk-route resolution AND start_task's kk_mac fallback:
+    kk_mac_local counts remote only while the lane actually serves
+    (not kk_mac_tried and kk_mac_servable()); its in-claim fallback to
+    the local cascade flips the state entry's 'ex' so _cap_counts
+    draws from the right class. State entries record 'ex' at claim,
+    adopt (reconcile) and restart; entries without 'ex' (pre-split
+    state) count local — conservative."
+  logging: "claim_pass note_defer(kind='cap') per declined card names
+    the holding cap ('runner at local cap (n/N)' /
+    'remote executor cap (n/N)'); whole-pass skips keep the hostgate
+    notes, now gate-aware via _gate_hint so exempt classes aren't
+    noted. verdict_pass mirrors the same per-class gate+cap so /ready
+    projections match."
+
+ops:
+  configure: "per-executor caps live in unit env drop-ins, same
+    mechanism as RUNNER_CAP: scripts/board/runner-cap.sh gained an
+    optional [remote-cap] arg (runner-cap.sh <host> <cap>
+    [max-load-pc] [remote-cap]); ansible/playbooks/runner-cap.yml
+    gained runner_remote_cap host_var (only written when defined — a
+    routine cap run never silently changes remote behavior);
+    scripts/ops/kk-mac-runner-onboard.sh plist template gained the
+    RUNNER_REMOTE_CAP key so the ansible lineinfile has a key to
+    update on kk-mac (backrefs only rewrites existing keys)."
+  rollout: "no fleet change required — defaults (CAP=2 local,
+    REMOTE_CAP=6 remote, remote load-independent) apply on next
+    runner-agent sync. jules is retired (EXECUTORS purge 2026-11-20)
+    so the live remote classes are nlm_batch + kk_mac_local; the
+    default set keeps jules for contract completeness."
+  verify: "tests/board/test_runner_agent_remote_cap.py — local cap
+    full + remote free claims nlm_batch; remote cap full + local free
+    claims devin; load above every ceiling still claims remote but
+    not devin/script; mid-band load claims script+remote; both caps
+    full skips the pass; cap declines land as 'cap' defer notes."
+
+files:
+  - scripts/board/runner-agent.py
+  - tests/board/test_runner_agent_remote_cap.py
+  - scripts/board/runner-cap.sh
+  - ansible/playbooks/runner-cap.yml
+  - scripts/ops/kk-mac-runner-onboard.sh
+  - docs/ssot/kanban/ssot.kanban.yml (runner_hosts/load_gate prose +
+    kk-mac fleet types declaration — pre-existing
+    test_kkmac_is_declared failure — the prose named no served types so
+    fleet_capabilities defaulted kk-mac to dispatch-only)
+  - scripts/devin/runner-tooling.manifest.json (runner_agent pin)

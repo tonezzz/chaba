@@ -40,10 +40,31 @@ Env:
                  canonical writer host (idc03) so the same value works on
                  every host
   RUNNER_HOST    hostname claim identity (default: uname nodename)
-  RUNNER_CAP     max concurrent claimed tasks (default 2)
+  RUNNER_CAP     max concurrent LOCAL-executor claims (default 2) —
+                 devin/opencode/claude/script/container lanes that do
+                 real work on this host
+  RUNNER_REMOTE_CAP  max concurrent REMOTE-executor claims (default 6)
+                 — executors in RUNNER_REMOTE_EXECUTORS (default
+                 jules,nlm_batch,kk_mac_local) hold a claim slot while
+                 the actual work waits on a remote service (~zero local
+                 load), so they count separately: a host holds
+                 RUNNER_CAP local + RUNNER_REMOTE_CAP remote claims
+                 concurrently (runner-per-executor-caps, OPS-1284).
+                 0 disables remote claims.
+  RUNNER_REMOTE_MAX_LOAD_PC  optional per-core load ceiling for the
+                 remote class (default 0 = load-independent — remote
+                 claims are exempt from RUNNER_MAX_LOAD_PC like the
+                 OPS-1182 script split, still bounded by their own
+                 lane quotas e.g. JULES_LANE_DAILY_CAP)
+  RUNNER_REMOTE_EXECUTORS  comma-separated executor names counted
+                 against RUNNER_REMOTE_CAP (default
+                 jules,nlm_batch,kk_mac_local)
   RUNNER_MAX_LOAD_PC  stop claiming when 5-min load per core exceeds
                  this (default 1.0; 0 disables — protects the host and
-                 yields the queue to idle runners)
+                 yields the queue to idle runners). Heavyweight
+                 (local) claims defer here; script claims use
+                 RUNNER_SCRIPT_MAX_LOAD_PC and remote-executor claims
+                 use RUNNER_REMOTE_MAX_LOAD_PC instead.
   RUNNER_LABELS  comma-separated capability labels (e.g. "gpu,ssd";
                  "desktop" marks an interactive host and arms the
                  guards below; "push:<repo>" declares push credentials
@@ -256,6 +277,21 @@ MAX_LOAD_PC = float(os.environ.get("RUNNER_MAX_LOAD_PC", "1.0"))
 # ceiling while dispatch/container claims still defer.
 SCRIPT_MAX_LOAD_PC = float(
     os.environ.get("RUNNER_SCRIPT_MAX_LOAD_PC", "2.0"))
+# OPS-1284 / runner-per-executor-caps: remote-async executors hold a
+# claim slot while doing ~zero local work (jules waited ~1h Google-side,
+# nlm_batch polls NotebookLM, kk_mac_local waits on the KK-Mac) — under
+# one shared RUNNER_CAP, 3/3 jules claims meant zero local dispatch
+# capacity. They now count against RUNNER_REMOTE_CAP separately and are
+# exempt from the RUNNER_MAX_LOAD_PC claim gate (the OPS-1182
+# RUNNER_SCRIPT_MAX_LOAD_PC pattern, applied per class). jules stays in
+# the default set for contract completeness — the lane is retired and a
+# stale pin fails closed at claimable() long before this matters.
+REMOTE_CAP = int(os.environ.get("RUNNER_REMOTE_CAP", "6"))
+REMOTE_MAX_LOAD_PC = float(
+    os.environ.get("RUNNER_REMOTE_MAX_LOAD_PC", "0"))
+REMOTE_EXECUTORS = {x.strip() for x in os.environ.get(
+    "RUNNER_REMOTE_EXECUTORS",
+    "jules,nlm_batch,kk_mac_local").split(",") if x.strip()}
 LABELS = {x.strip() for x in os.environ.get("RUNNER_LABELS", "").split(",")
           if x.strip()}
 STATE_DIR = Path(os.environ.get(
@@ -4120,12 +4156,6 @@ def start_task(card: dict, typ: str) -> tuple:
                 return start_nlm_lane(card, unit)
             except Exception as e:
                 return "", "", f"nlm_batch executor: {e}"
-        if ex == "nlm_batch" or (not ex and
-                                 str(a.get("lane") or "") == "nlm_batch"):
-            try:
-                return start_nlm_lane(card, unit)
-            except Exception as e:
-                return "", "", f"nlm_batch executor: {e}"
         if ex == "manual" or (ex and ex not in EXECUTORS):
             return "", "", (f"action.executor={ex or '?'!r} cannot be "
                             "auto-claimed — fail closed")
@@ -4446,7 +4476,11 @@ def finish_pass(st: dict) -> bool:
                                  f"{e2 or 'no unit'}")
                     verified = False
                 else:
-                    st[cid].update({"unit": u2, "tid": t2})
+                    # the claim continues on a LOCAL lane — flip the
+                    # recorded executor so _cap_counts stops drawing
+                    # this claim from the remote class (OPS-1284)
+                    st[cid].update({"unit": u2, "tid": t2,
+                                    "ex": claim_executor(card)})
                     notes.append(f"kk_mac_local fell back ({kk_fb}) — "
                                  f"next lane running as {u2}")
                     for n in notes:
@@ -4602,6 +4636,7 @@ def reconcile_pass(st: dict) -> bool:
             st[cid] = {"unit": unit,
                        "type": a.get("type") or "dispatch",
                        "tid": tid, "at": int(time.time()),
+                       "ex": claim_executor(c),
                        "adopted": True}
             api("/comment", {"id": cid, "from": "chaba",
                              "text": f"adopted running claim {unit} on "
@@ -4610,8 +4645,13 @@ def reconcile_pass(st: dict) -> bool:
             changed = True
             print(f"{cid}: adopted {unit}")
             continue
-        if len(st) >= CAP:
-            continue  # no free slot — the next pass retries
+        # per-class slot check (OPS-1284) — a zombie remote claim
+        # draws REMOTE_CAP, everything else RUNNER_CAP
+        local_n, remote_n = _cap_counts(st)
+        ex = claim_executor(c)
+        if (ex in REMOTE_EXECUTORS and remote_n >= REMOTE_CAP) or \
+                (ex not in REMOTE_EXECUTORS and local_n >= CAP):
+            continue  # no free slot in this class — next pass retries
         typ = a.get("type") or "dispatch"
         unit, tid, err = start_task(c, typ)
         if err or not unit:
@@ -4627,7 +4667,8 @@ def reconcile_pass(st: dict) -> bool:
             print(f"{cid}: zombie claim released ({err or 'no unit'})")
             continue
         st[cid] = {"unit": unit, "type": typ, "tid": tid,
-                   "at": int(time.time()), "restarted": True}
+                   "at": int(time.time()), "restarted": True,
+                   "ex": claim_executor(c)}
         api("/comment", {"id": cid, "from": "chaba",
                          "text": f"restarted zombie claim as {unit} on "
                                  f"{HOST} — claim committed but the "
@@ -4781,13 +4822,115 @@ def _claim_order(cards: list) -> list:
     return sorter(cards, starve_hours=STARVE_HOURS)
 
 
+def claim_executor(card: dict) -> str:
+    """Executor a claim on this card runs under — mirrors claim_pass's
+    ex_decl/JEV kk-route resolution and start_task's kk_mac fallback.
+    '' = the default devin path (a local executor)."""
+    a = _act(card)
+    typ = a.get("type") or "dispatch"
+    if typ != "dispatch":
+        return str(typ)
+    declared = str(a.get("executor") or "").strip()
+    ex = declared
+    if ex == "kk_mac_local" and \
+            (a.get("kk_mac_tried") or not kk_mac_servable()):
+        # try-first consumed, or this host can't serve the lane — the
+        # claim falls back to the normal (local) lane cascade
+        ex = ""
+    if ex == "nlm_batch" or \
+            (not ex and str(a.get("lane") or "") == "nlm_batch"):
+        return "nlm_batch"
+    if ex:
+        return ex
+    if not declared and os.environ.get("JEV_LANE", "0") == "1":
+        # claim_pass's kk-route: an executor-unset dispatch card whose
+        # task class kk_mac_route admits is claimed AS kk_mac_local —
+        # remote only when this host can actually serve the lane
+        # (otherwise start_task falls back to local work)
+        if not str(a.get("lane") or ""):
+            dr = dr_module()
+            kk_tc = ""
+            if dr and getattr(dr, "kk_mac_route", None):
+                try:
+                    kk_tc = dr.kk_mac_route(card)
+                except Exception:
+                    kk_tc = ""
+            if kk_tc:
+                return "kk_mac_local" if kk_mac_servable() else ""
+    return ""
+
+
+def _cap_counts(st: dict) -> tuple:
+    """(local, remote) in-flight claim counts. State entries carry
+    'ex' — the executor resolved at claim time; entries without it
+    (state written before the split, adopted claims) count local —
+    conservative: unknown load is assumed to be host load."""
+    local = remote = 0
+    for ent in st.values():
+        ex = ent.get("ex") if isinstance(ent, dict) else ""
+        if str(ex or "") in REMOTE_EXECUTORS:
+            remote += 1
+        else:
+            local += 1
+    return local, remote
+
+
+def _claim_gate(typ: str, ex: str) -> str:
+    """'remote' | 'script' | 'heavy' — which load gate a claimable card
+    answers to. Remote executors are exempt from RUNNER_MAX_LOAD_PC;
+    script claims keep their OPS-1182 ceiling; everything else is
+    heavyweight."""
+    if ex in REMOTE_EXECUTORS:
+        return "remote"
+    return "script" if typ == "script" else "heavy"
+
+
+def _gate_hint(a: dict) -> str:
+    """_claim_gate from DECLARED action fields only — the cheap read
+    _note_capacity_skip uses so hostgate defer notes skip cards that
+    would still claim under the relaxed pass. claim_executor is the
+    authoritative per-claim resolution."""
+    ex = str(a.get("executor") or "").strip()
+    if ex in REMOTE_EXECUTORS and \
+            not (ex == "kk_mac_local" and a.get("kk_mac_tried")):
+        return "remote"
+    if not ex and str(a.get("lane") or "") == "nlm_batch":
+        return "remote"
+    if ex == "script" or (a.get("type") or "dispatch") == "script":
+        return "script"
+    return "heavy"
+
+
+def _load_gate_classes(cap: str) -> set | None:
+    """Gate classes allowed to claim under a _capacity_reason result:
+    None = unrestricted pass; a set = only those classes proceed
+    (the OPS-1182 script ceiling plus the remote-lane load exemption —
+    remote claims are bounded by REMOTE_MAX_LOAD_PC, default 0 =
+    load-independent, and by their own lane quotas)."""
+    if not cap:
+        return None
+    if not cap.startswith("host overloaded"):
+        return set()
+    allowed = set()
+    if not overloaded(SCRIPT_MAX_LOAD_PC):
+        allowed.add("script")
+    if not overloaded(REMOTE_MAX_LOAD_PC):
+        allowed.add("remote")
+    return allowed
+
+
 def _capacity_reason(st: dict) -> str:
     """"" when this host may claim now, else the refusal reason —
     shared by claim_pass (journal line) and verdict_pass (/ready
     projection) so a capacity-blocked card stops reporting 'eligible'
-    while the runner silently skips it (OPS-1107)."""
-    if len(st) >= CAP:
-        return f"runner at cap ({len(st)}/{CAP})"
+    while the runner silently skips it (OPS-1107). The cap reason fires
+    only when BOTH classes are full — a local-saturated host still
+    claims remote work and vice versa (OPS-1284); per-class fullness is
+    enforced per card in claim_pass/verdict_pass."""
+    local_n, remote_n = _cap_counts(st)
+    if local_n >= CAP and remote_n >= REMOTE_CAP:
+        return (f"runner at cap ({local_n}/{CAP} local, "
+                f"{remote_n}/{REMOTE_CAP} remote)")
     rl = ratelimit_reason()
     if rl:
         return rl
@@ -4815,8 +4958,10 @@ def _note_capacity_skip(cap: str, exempt: set | None = None) -> None:
     in a journal nobody greps is silent starvation.
 
     Only pins compatible with this host get the note (other hosts' pins
-    write their own). `exempt` action types are skipped — the OPS-1182
-    script-claim exception still lets those run under the same pass."""
+    write their own). `exempt` gate classes (script/remote/heavy — see
+    _gate_hint) are skipped — the OPS-1182 script-claim exception and
+    the OPS-1284 remote-lane exemption still let those run under the
+    same pass."""
     try:
         cards = (api("/cards") or {}).get("cards") or []
     except Exception:
@@ -4829,7 +4974,7 @@ def _note_capacity_skip(cap: str, exempt: set | None = None) -> None:
         if card.get("column") not in ("backlog", "doing") \
                 or a.get("status") != "queued":
             continue
-        if exempt and str(a.get("type") or "dispatch") in exempt:
+        if exempt and _gate_hint(a) in exempt:
             continue
         if (a.get("host") and a["host"] != HOST) or \
            (a.get("target_host") and a["target_host"] != HOST) or \
@@ -4842,28 +4987,29 @@ def _note_capacity_skip(cap: str, exempt: set | None = None) -> None:
 
 def claim_pass(st: dict) -> bool:
     cap = _capacity_reason(st)
-    script_only = False
-    if cap:
-        # OPS-1182: the load gate is one-size-fits-all — a 2s script
-        # probe was starved identically to a heavyweight devin claim.
-        # script claims get a separate higher ceiling; every other
-        # capacity reason still skips the whole pass.
-        if cap.startswith("host overloaded") \
-                and not overloaded(SCRIPT_MAX_LOAD_PC):
-            script_only = True
-            print(f"claim pass: script claims only ({cap}; "
-                  f"script cap {SCRIPT_MAX_LOAD_PC} ok)")
-            _note_capacity_skip(cap, exempt={"script"})
-        else:
-            print(f"claim pass skipped: {cap}")
-            _note_capacity_skip(cap)
-            return False
+    allowed = _load_gate_classes(cap)
+    if allowed is not None and not allowed:
+        # every capacity reason that isn't the overload gate (cap,
+        # ratelimit, kill switch, disk) — and an overload too deep for
+        # even the script/remote ceilings — skips the whole pass
+        print(f"claim pass skipped: {cap}")
+        _note_capacity_skip(cap)
+        return False
+    if allowed:
+        # OPS-1182 + OPS-1284: the load gate is per-class — script
+        # claims answer to RUNNER_SCRIPT_MAX_LOAD_PC, remote-executor
+        # claims to RUNNER_REMOTE_MAX_LOAD_PC (default 0 =
+        # load-independent), heavyweight claims to RUNNER_MAX_LOAD_PC.
+        print(f"claim pass: gated claims only ({cap}; "
+              f"allowed={'+'.join(sorted(allowed))})")
+        _note_capacity_skip(cap, exempt=allowed)
     cards = _claim_order((api("/cards") or {}).get("cards") or [])
     by_id = {c.get("id"): c for c in cards}
+    local_n, remote_n = _cap_counts(st)
     changed = False
     for card in cards:
-        if len(st) >= CAP:
-            break
+        if local_n >= CAP and remote_n >= REMOTE_CAP:
+            break  # both classes full — nothing left to claim
         cid = card.get("id") or ""
         typ = claimable(card)
         if not typ:
@@ -4911,8 +5057,25 @@ def claim_pass(st: dict) -> bool:
                           "runner the capability",
                         awaiting=True)
             continue
-        if script_only and typ != "script":
-            continue  # heavyweight gate holds for non-script claims
+        ex = claim_executor(card)
+        cls = "remote" if ex in REMOTE_EXECUTORS else "local"
+        if allowed is not None and _claim_gate(typ, ex) not in allowed:
+            continue  # this class's load gate holds for the card
+        # per-executor caps (OPS-1284): local claims draw RUNNER_CAP,
+        # remote-executor claims draw RUNNER_REMOTE_CAP — a saturated
+        # remote lane never starves local work and vice versa. The
+        # decline is noted per card so the board shows which cap held.
+        if cls == "remote":
+            if remote_n >= REMOTE_CAP:
+                note_defer(card, "cap",
+                           f"remote executor cap ({remote_n}/"
+                           f"{REMOTE_CAP}) — local slots unaffected")
+                continue
+        elif local_n >= CAP:
+            note_defer(card, "cap",
+                       f"runner at local cap ({local_n}/{CAP}) — "
+                       f"remote slots unaffected")
+            continue
         rg = retry_gate(card)
         if rg:
             print(f"{cid}: {rg}")
@@ -5048,10 +5211,20 @@ def claim_pass(st: dict) -> bool:
             LAST_PRIMER_LINES.clear()
             LAST_GOOD_LINES.clear()
         _notify(cid, "start", f"claimed {typ} — {unit}")
+        # Re-resolve AFTER start_task: a kk_mac_local claim whose lane
+        # declined at admission fell back to a local lane under this
+        # same claim (kk_mac_tried consumed) — the state entry must
+        # carry the executor that ACTUALLY runs so _cap_counts draws
+        # from the right class next pass.
+        ex_actual = claim_executor(card)
         st[cid] = {"unit": unit, "type": typ, "tid": tid,
-                   "at": int(time.time()),
+                   "at": int(time.time()), "ex": ex_actual,
                    "gpu": "gpu" in set((_act(card))
                                       .get("labels") or [])}
+        if ex_actual in REMOTE_EXECUTORS:
+            remote_n += 1
+        else:
+            local_n += 1
         changed = True
         print(f"{cid}: claimed + started {unit}")
     return changed
@@ -5248,6 +5421,12 @@ def verdict_pass(st: dict) -> None:
         cards = (api("/cards") or {}).get("cards") or []
         by_id = {c.get("id"): c for c in cards}
         verdicts = {}
+        # mirror claim_pass's capacity resolution once per pass — the
+        # load gate is per-class (OPS-1182 script + OPS-1284 remote)
+        # and the slot caps are per executor class
+        cap = _capacity_reason(st)
+        allowed = _load_gate_classes(cap)
+        local_n, remote_n = _cap_counts(st)
         for c in cards:
             cid = c.get("id")
             if not cid or (_act(c)).get("status") != "queued":
@@ -5258,10 +5437,24 @@ def verdict_pass(st: dict) -> None:
                 continue
             # verdicts mirror claim_pass's real gate order so /queue's
             # eligible/blocked projection matches what a pass would do:
-            # capacity -> blocked_by -> gpu preflight
-            cap = _capacity_reason(st)
-            if cap:
+            # capacity -> class gate -> per-class cap -> blocked_by ->
+            # gpu preflight
+            ex = claim_executor(c)
+            if allowed is not None and \
+                    (not allowed or
+                     _claim_gate(typ, ex) not in allowed):
                 verdicts[cid] = {"ok": False, "reason": cap}
+                continue
+            if ex in REMOTE_EXECUTORS:
+                if remote_n >= REMOTE_CAP:
+                    verdicts[cid] = {"ok": False, "reason":
+                                     f"remote executor cap "
+                                     f"({remote_n}/{REMOTE_CAP})"}
+                    continue
+            elif local_n >= CAP:
+                verdicts[cid] = {"ok": False, "reason":
+                                 f"runner at local cap "
+                                 f"({local_n}/{CAP})"}
                 continue
             # retry gate mirrors claim_pass position (before blocked_by)
             # so /queue shows a held card's real reason, not 'eligible'

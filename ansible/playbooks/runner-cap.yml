@@ -7,7 +7,11 @@
 #   macOS:  RUNNER_CAP / RUNNER_MAX_LOAD_PC in the launchd plist
 #
 # Per-host values come from host_vars/<host>.yml:
-#   runner_cap (int), runner_max_load_pc (float 0..1, 0 disables the gate)
+#   runner_cap (int), runner_max_load_pc (float 0..1, 0 disables the gate),
+#   runner_remote_cap (int, optional — RUNNER_REMOTE_CAP for remote-async
+#   executors nlm_batch/kk_mac_local; OPS-1284 runner-per-executor-caps.
+#   Only written when defined so a routine cap run never silently changes
+#   remote-claim behavior fleet-wide.)
 # Defaults (playbook vars): runner_cap=2, runner_max_load_pc=1.0
 #
 # Safety ceiling: cap <= floor(mem_total_gb / 3.5) unless --force
@@ -56,6 +60,7 @@
           [Service]
           Environment=RUNNER_CAP={{ runner_cap | default(2) }}
           Environment=RUNNER_MAX_LOAD_PC={{ runner_max_load_pc | default(1.0) }}
+          {% if runner_remote_cap is defined %}Environment=RUNNER_REMOTE_CAP={{ runner_remote_cap }}{% endif %}
         mode: "0644"
       when: ansible_facts['system'] != "Darwin"
       notify: reload systemd runner
@@ -77,6 +82,17 @@
         line: '        <key>RUNNER_MAX_LOAD_PC</key><string>{{ runner_max_load_pc | default(1.0) }}</string>'
         backrefs: true
       when: ansible_facts['system'] == "Darwin"
+      notify: reload launchd runner
+
+    - name: Update RUNNER_REMOTE_CAP in launchd plist (macOS)
+      ansible.builtin.lineinfile:
+        path: "{{ ansible_user_dir }}/Library/LaunchAgents/ai.chaba.runner-agent.plist"
+        regexp: '<key>RUNNER_REMOTE_CAP</key>\s*<string>[^<]*</string>'
+        line: '        <key>RUNNER_REMOTE_CAP</key><string>{{ runner_remote_cap }}</string>'
+        backrefs: true
+      when:
+        - ansible_facts['system'] == "Darwin"
+        - runner_remote_cap is defined
       notify: reload launchd runner
 
   handlers:
