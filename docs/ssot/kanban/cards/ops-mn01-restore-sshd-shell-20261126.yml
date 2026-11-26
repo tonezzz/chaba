@@ -1,7 +1,7 @@
 id: ops-mn01-restore-sshd-shell-20261126
 title: 'mn01: restore standard SSH shell access (SFTP-only lock)'
 column: done
-updated: 2026-11-26 12:53
+updated: 2026-11-26 12:55
 brief: Remove the accidental global ForceCommand internal-sftp on mn01 so shell, Ansible and the canary rerun work
   again.
 priority: high
@@ -114,5 +114,10 @@ comms:
 - at: 2026-11-26 12:53
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-26 12:55
+  from: devin
+  text: 'verified resolved 2026-11-26 ~12:52: mn01 sshd_config now scopes ForceCommand internal-sftp under Match
+    Group sftponly (line 85-86, config mtime 12:50); shell SSH works, ansible audit-runner-tools OK x6. Card likely
+    obsolete — safe to close.'
 claim:
   since: 2026-11-26 12:48
