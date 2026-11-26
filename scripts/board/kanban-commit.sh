@@ -226,12 +226,80 @@ if [ -d "$gitdir/rebase-merge" ] || [ -d "$gitdir/rebase-apply" ] || \
     exit 1
 fi
 
+# index.lock stale recovery (card idc03-writer-hardening-index-lock-race):
+# a git killed mid-add/commit leaves .git/index.lock behind; every later
+# index write then fails "Unable to create index.lock" until someone
+# removes it by hand — and the add loop below swallows that failure, so
+# the sweep stalled silently (live board edits never committed). git does
+# NOT record a holder pid in index.lock (verified empty on git 2.53), so
+# staleness is decided by: a pid token in the file or an fuser-visible
+# holder that is DEAD, or mtime older than KANBAN_INDEX_LOCK_STALE_S
+# (default 900s = 15 min — far longer than any legit index write, short
+# enough to self-heal a crash within a tick or two). A fresh lock with a
+# live holder is left alone; git_lock_retry's backoff still covers real
+# contention. Recovery removes the lock at most once per tick so a
+# pathological recreate can't spin.
+INDEX_LOCK_STALE_S="${KANBAN_INDEX_LOCK_STALE_S:-900}"
+INDEX_LOCK_RECOVERED=0
+
+_index_lock_mtime() {
+    stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null
+}
+
+_index_lock_holder_pids() {
+    # Pids plausibly holding $1: a bare-pid first line when a writer
+    # recorded one, plus fuser-visible openers (psmisc; absent -> the
+    # age check alone decides).
+    local lock="$1" out="" tok p
+    tok=$(head -n1 "$lock" 2>/dev/null | tr -d '[:space:]')
+    case "$tok" in ''|*[!0-9]*) ;; *) out="$tok";; esac
+    if command -v fuser >/dev/null 2>&1; then
+        for p in $(fuser "$lock" 2>/dev/null); do
+            case " $out " in *" $p "*) ;; *) out="${out:+$out }$p";; esac
+        done
+    fi
+    printf '%s\n' $out
+}
+
+index_lock_stale() {
+    # rc 0 = stale (dead holder pid, or older than INDEX_LOCK_STALE_S);
+    # rc 1 = fresh / live / undecidable — leave it alone.
+    local lock="$gitdir/index.lock" now mt p saw=0 alive=0
+    [ -f "$lock" ] || return 1
+    now=$(date +%s)
+    mt=$(_index_lock_mtime "$lock")
+    [[ "$mt" =~ ^[0-9]+$ ]] || return 1
+    while IFS= read -r p; do
+        [ -n "$p" ] || continue
+        saw=1
+        if [ -d "/proc/$p" ] || kill -0 "$p" 2>/dev/null; then
+            alive=1
+        fi
+    done <<< "$(_index_lock_holder_pids "$lock")"
+    [ "$saw" -eq 1 ] && [ "$alive" -eq 0 ] && return 0
+    [ $((now - mt)) -gt "$INDEX_LOCK_STALE_S" ]
+}
+
+recover_stale_index_lock() {
+    # One-shot per tick: clear .git/index.lock iff stale. rc 0 = removed.
+    local lock="$gitdir/index.lock" mt now
+    [ "$INDEX_LOCK_RECOVERED" -eq 0 ] || return 1
+    [ -f "$lock" ] || return 1
+    index_lock_stale || return 1
+    mt=$(_index_lock_mtime "$lock"); now=$(date +%s)
+    rm -f "$lock" || return 1
+    INDEX_LOCK_RECOVERED=1
+    echo "kanban-commit: cleared stale index.lock (age $((now - ${mt:-now}))s, holder dead or absent)" >&2
+    return 0
+}
+
 # index.lock contention: board-api's post-lock commit worker runs git
 # add/commit per card-write batch while this sweep does bulk add+commit
 # — the loser sees "Unable to create index.lock". board-api treats its
 # commit as best-effort (deferred retry); this sweep is the durability
 # path, so retry briefly instead of failing the whole tick (2026-11-17:
-# repeated tick failures while the 2179-commit backlog pushed).
+# repeated tick failures while the 2179-commit backlog pushed). A stale
+# lock (dead holder / >N min old) is cleared once per tick first.
 git_lock_retry() {
     local attempt=0 out
     while [ $attempt -lt 8 ]; do
@@ -239,6 +307,7 @@ git_lock_retry() {
         if [ $rc -eq 0 ]; then printf '%s' "$out"; return 0; fi
         case "$out" in
             *index.lock*|*"Another git process"*)
+                recover_stale_index_lock || true
                 attempt=$((attempt + 1)); sleep $((attempt % 3 + 1));;
             *) printf '%s' "$out" >&2; return $rc;;
         esac
@@ -246,6 +315,11 @@ git_lock_retry() {
     printf '%s' "$out" >&2
     return 1
 }
+
+# Up-front sweep: a stale index.lock would otherwise only surface inside
+# the first `git add` below (whose failure is swallowed by `|| true`) —
+# clear it now so this tick commits normally. Live locks are untouched.
+recover_stale_index_lock || true
 
 for d in docs/ssot/kanban/ docs/ssot/focus-inbox/ stacks/web/public/apps/board/ docs/reports/education-maintenance/ docs/reports/lesson-audit/; do
     [ -d "$d" ] && git_lock_retry git add "$d" ":(exclude)${PROTECTED_PATH}" >/dev/null 2>&1 || true
