@@ -1,7 +1,7 @@
 id: gemini-proxy-quadlet-envfile-drop
 title: gemini-ollama-proxy quadlet lost EnvironmentFile=mddb-gemini.env — restart = total embed outage
 column: doing
-updated: 2026-11-27 01:08
+updated: 2026-11-27 01:09
 priority: high
 tags:
 - mddb
@@ -52,6 +52,13 @@ comms:
     it. Patched inventory/host_vars/{idc03,tony-dell}.yml (+env_file mddb-gemini.env, +GEMINI_PROXY_HOST=127.0.0.1),
     rendered single quadlet to /tmp, diff = +2 lines only, installed on idc03+tony-dell, daemon-reload done. Unit
     now carries EnvironmentFile + --env-file in Exe'
+- at: 2026-11-27 01:09
+  from: devin
+  text: 'DONE. Fixed at source: ansible-chaba host_vars on idc02 gained env_file=mddb-gemini.env + GEMINI_PROXY_HOST
+    for gemini-ollama-proxy (idc03 + tony-dell); rendered via the role template to /tmp (diff = +2 lines), installed
+    both hosts, daemon-reload — unit NOT restarted, running container untouched (StartedAt 2026-11-25). Verified:
+    generated .service carries EnvironmentFile + --env-file; secrets file keys match running Config.Env. Trail:
+    docs/ssot/jobs/mddb/2026-11-27-gemini-proxy-quadlet-envfile-r'
 action:
   type: dispatch
   status: running
