@@ -1,7 +1,7 @@
 id: gemini-eval-judge-lane
 title: Gemini eval/judge lane — paid-first litellm group with a hard daily cap
 column: doing
-updated: 2026-11-26 22:25
+updated: 2026-11-26 22:59
 brief: Use the essentially untouched Gemini paid-tier allowance for NEW bulk eval/judge work — the 2026-11-26 Console
   quota capture showed 1 request used against a 350,000/day flash-lite allowance. This removes the free-tier 429
   failure mode (OPS-1255 run 2) for new work while keeping deterministic verifiers and the pending nemotron canary
@@ -100,5 +100,12 @@ comms:
     expand into its own fallbacks incl. gemini-3.5-flash-lite-free — the free-tier path this lane forbids. Plan:
     pin all 3 legs as dict entries with disable_fallbacks:true so the effective chain is exactly paid->paid-retry->ollama-kkmac->colab,
     fail closed. Building eval-budget.py + tes'
+- at: 2026-11-26 22:59
+  from: devin
+  text: 'eval-judge lane DEPLOYED + verified on idc03: model_name eval-judge (paid gemini-3.5-flash-lite) with fail-closed
+    chain [paid -> ollama-llama32-3b-kkmac -> colab-gemma3], dict legs pin disable_fallbacks (no free-tier recursion).
+    Virtual key minted ($10/30d, models=[eval-judge] only, no dependents) as LITELLM_KEY_EVAL_JUDGE. eval-budget.py
+    owns EVAL_JUDGE_DAILY_MAX=10000 cap + JSONL ledger + service=eval spend tags. Tests 10/10 pass; smoke 200 +
+    tagged SpendLogs row; cap test parks 3rd call with '
 claim:
   since: 2026-11-26 22:04
