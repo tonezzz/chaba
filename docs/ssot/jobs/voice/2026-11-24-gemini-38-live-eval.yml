@@ -123,3 +123,27 @@ rollout:
     wer: 0.0
     tool_calls: "run 1 none (documented flake); runs 2-3 partial with early_turn_complete + tool_call + final turn_complete"
     verdict: "no rollout regression; fixture remains nondeterministic exactly as the gate note records"
+
+mode_verification:
+  verified_on: "2026-11-26"
+  runner: idc03
+  key: paid
+  method: "read-only v1beta catalog + short runtime probes with voice-bench wav fixtures; key never printed"
+  catalog: "gemini-3.8-live / gemini-3.5-live-translate-preview / gemini-3.5-transcribe-live support bidiGenerateContent; gemini-3.5-transcribe supports generateContent,countTokens"
+  results:
+    - mode: live
+      model: gemini-3.8-live
+      result: "runtime VERIFIED — 20/20 fixtures pre-promotion, 3x th-qry-temp post-rollout (WER 0.0, 2/3 two-phase tool calls)"
+    - mode: transcribe_rest
+      model: gemini-3.5-transcribe
+      result: "runtime VERIFIED — generateContent HTTP 200, transcript Is the front door locked? from en-q-02.wav"
+    - mode: transcribe_live
+      model: gemini-3.5-transcribe-live
+      result: "runtime VERIFIED — live input transcription Is the front door locked? with responseModalities=[TEXT]; no turnComplete, which is expected for a transcribe-only stream"
+    - mode: live_translate
+      model: gemini-3.5-live-translate-preview
+      result: "runtime VERIFIED — en-cmd-ac-bedroom.wav -> ES output transcription Pon el aire acondicionado de la habitacion a 24, 190 audio chunks"
+  setup_gotchas:
+    - "transcribe-live rejects responseModalities=[AUDIO] with WS 1007; use [TEXT]."
+    - "live-translate requires generationConfig.translationConfig.targetLanguageCode; setupComplete alone means translation will not start."
+    - "live-translate needs a speech segment long enough to trigger continuous translation; 3.5s fixture worked, 2.0s fixture produced no output."

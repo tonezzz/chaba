@@ -1,7 +1,7 @@
 id: ncm-code-blocks-detail-composer
 title: NCM code-block composer — detail by layer (Variant B, review)
 column: review
-updated: 2026-11-26 08:28
+updated: 2026-11-26 08:52
 brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
   by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
   for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
@@ -207,3 +207,10 @@ comms:
     serve'' on idc03:8017 (jevos-v5 OpenVINO int8). No existing playbook, so added ansible/playbooks/jevos-service.yml:
     check mode ok=3 changed=1 unreachable=0 failed=0; converge ok=8 changed=1; user systemd unit active MainPID
     4168893, health 200 after ~15s; idempotency recheck changed=0. '
+- at: 2026-11-26 08:52
+  from: devin
+  text: 'Real CPU-trained NCM toy attempted (Tony approved 2026-11-26). Self-contained venv torch 2.15.0+cpu in
+    /home/tony/tony-projects/ncm-code-blocks/ncm-trained, copied tracked ncmthai trainers + ncm-upstream, 3000 Sudoku
+    boards, pre-registered gate: reconstruction accuracy >= 0.50 before any generator training. Stage 1 = REAL multiscale
+    residual VQ-VAE (14.90M params, 120 updates @ batch32, CPU 302s): recon CE fell to 1.4422 but held-out-style
+    token accuracy 0.29702 < 0.50 -> gate FAILED, verdict st'

@@ -59,8 +59,12 @@ suspend` — and the autostart covers every graphical login.
 ## Result / how to verify
 
 - Branch `dispatch/20261126-084311-macbook-15g-ram-already-has-ru` carries
-  the full deliverable; merge lands it via the normal dispatch pipeline
-  (pytest present on idc02).
+  the full deliverable (2 commits + merge of current master, 0 behind).
+- **Test gate pre-verified**: ran the exact chaba gate smoke set
+  (`tests/board/test_merge_sweep.py` … `tests/test_ssot_validate_refs.py`,
+  the `REPO_TESTS["chaba"]` command in `scripts/board/dispatch_repos.py`)
+  in this worktree — **300 passed in 61s** (gate budget 240s). The
+  OPS-1191 fail-closed pytest check is satisfied on idc02 (pytest 9.2.0).
 - On tony-macbook: `systemd-inhibit --list | grep 'daytime runner'` shows a
   `block` entry on `sleep,idle` during 07:00–23:00 once any graphical
   session (re)starts.
@@ -69,6 +73,10 @@ suspend` — and the autostart covers every graphical login.
   `/etc/polkit-1/rules.d/50-macbook-day-awake.rules` then
   `systemctl --user enable --now macbook-day-awake.service`. Assessed
   optional — autostart covers the sessions that can actually idle-suspend.
+- NOTE: board-api on idc03 stopped responding mid-session (GET /cards,
+  /health, POST /comment all time out; host was flagged overloaded in
+  card comms) — card comms could not be posted from this dispatch; the
+  dispatcher close-out comms + this doc carry the record.
 
 lessons:
 - Dispatch test gate is per-host: tony-macbook has no pytest so merges routed
