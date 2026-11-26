@@ -1,7 +1,7 @@
 id: gemini4-interactions-text-agent-eval-2026-11-26
 title: Evaluate Gemini 4 + Interactions API for a stateful text agent
-column: backlog
-updated: 2026-11-26 19:16
+column: doing
+updated: 2026-11-26 19:17
 brief: Compare gemini-4-hydrogen/neon via the Interactions API against the current 3.x stateless text path on a
   small multi-turn tool-and-recall task set; measure task accuracy, token growth and latency.
 priority: medium
@@ -49,9 +49,16 @@ comms:
   from: chaba
   text: 'kk-mac defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
     — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-26 19:17
+  from: mn01
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: mn01
+  attempts: 1
+claim:
+  since: 2026-11-26 19:17
