@@ -24,8 +24,8 @@
   become: false
   vars:
     benchmark_report_playbook: "{{ ocb_report_playbook | default('ada-ocb-preflight') }}"
-    benchmark_report_ts: "{{ lookup('pipe', 'date -u +%Y%m%dT%H%M%SZ') }}"
-    benchmark_report_dir: "{{ playbook_dir }}/../../reports/ansible-benchmark/{{ benchmark_report_playbook }}/{{ benchmark_report_ts }}"
+    benchmark_report_ts_default: "{{ lookup('pipe', 'date -u +%Y%m%dT%H%M%SZ') }}"
+    benchmark_report_dir: "{{ playbook_dir }}/../../reports/ansible-benchmark/{{ benchmark_report_playbook }}/{{ benchmark_report_ts | default(benchmark_report_ts_default) }}"
     benchmark_report_hosts: "{{ groups['ocb_pane'] | default([]) | difference(groups['disabled'] | default([])) | sort }}"
     board_notify: false
     board_api_base: "https://idc03.taila0626a.ts.net:10000"
@@ -33,6 +33,13 @@
     card_ref: ""
 
   tasks:
+    - name: Pin benchmark report timestamp
+      ansible.builtin.set_fact:
+        benchmark_report_ts: "{{ benchmark_report_ts | default(benchmark_report_ts_default) }}"
+        benchmark_report_dir: "{{ playbook_dir }}/../../reports/ansible-benchmark/{{ benchmark_report_playbook }}/{{ benchmark_report_ts | default(benchmark_report_ts_default) }}"
+      delegate_to: localhost
+      run_once: true
+
     - name: Load the declared pane contract
       ansible.builtin.include_vars: "{{ playbook_dir }}/../inventory/group_vars/ocb_pane.yml"
 

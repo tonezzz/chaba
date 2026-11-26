@@ -32,7 +32,7 @@
   become: false
   vars:
     benchmark_report_playbook: ada-ocb-verify
-    benchmark_report_ts: "{{ lookup('pipe', 'date -u +%Y%m%dT%H%M%SZ') }}"
+    benchmark_report_ts_default: "{{ lookup('pipe', 'date -u +%Y%m%dT%H%M%SZ') }}"
     benchmark_report_dir: "{{ playbook_dir }}/../../reports/ansible-benchmark/ada-ocb-verify/{{ benchmark_report_ts }}"
     benchmark_report_hosts: "{{ groups['ocb_pane'] | default([]) | difference(groups['disabled'] | default([])) | sort }}"
     board_notify: false
@@ -41,6 +41,13 @@
     card_ref: ""
 
   tasks:
+    - name: Pin benchmark report timestamp
+      ansible.builtin.set_fact:
+        benchmark_report_ts: "{{ benchmark_report_ts | default(benchmark_report_ts_default) }}"
+        benchmark_report_dir: "{{ playbook_dir }}/../../reports/ansible-benchmark/{{ benchmark_report_playbook }}/{{ benchmark_report_ts | default(benchmark_report_ts_default) }}"
+      delegate_to: localhost
+      run_once: true
+
     - name: Run assertions and always emit benchmark evidence
       block:
         - name: Include the shared contract assertions
