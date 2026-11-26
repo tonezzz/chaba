@@ -1,7 +1,7 @@
 id: cast-loop-breaker-test-failure
 title: Fast pytest gate fails on cast_loop_breaker patch divergence
-column: doing
-updated: 2026-11-26 23:54
+column: done
+updated: 2026-11-26 23:55
 brief: Current master fast pytest gate (python3 -m pytest tests -x -q) fails on tests/ada/test_cast_loop_breaker.py::test_patches_apply_clean
   — one patch reports diverged.
 priority: medium
@@ -89,9 +89,19 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261126-233425-verified-2026-11-26-on-origin- no longer active on con01 but card
     still says running — sweeping its branch'
+- at: 2026-11-26 23:55
+  from: chaba
+  text: 'merge-sweep: merged 8ed1d2dd (dispatch/20261126-233425-verified-2026-11-26-on-origin- from con01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261126-233425-verified-2026-11-26-on-origin-.md)
+    — auto-closed'
+- at: 2026-11-26 23:55
+  from: local
+  text: 'pub milestone: card verified: cast-loop-breaker-test-failure on idc03 — merged 8ed1d2dd (dispatch/20261126-233425-verified-2026-11-26-on-origin-
+    from con01) -> origin/master — verified — auto- — merged 8ed1d2dd (dispatch/20261126-233425-verified-2026-11-26-on-origin-
+    from con01) -> origin/master — verified — auto-closed [evt-fa3f00af588bb48d]'
 action:
   type: dispatch
-  status: running
+  status: done
   task_class: repo_fix
   executor: claude
   executor_source: queue
@@ -99,5 +109,10 @@ action:
   attempts: 1
   sweep:
     stale_running: 2026-11-26 23:54
+  verified: true
 claim:
   since: 2026-11-26 23:32
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 23:55
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261126-233425-verified-2026-11-26-on-origin-.md
