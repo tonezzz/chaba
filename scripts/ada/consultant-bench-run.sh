@@ -11,7 +11,8 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 
 FIXTURE="${FIXTURE:-fixtures/consultant-tasks.jsonl}"
-DEFAULT_MODELS="ollama-qwen38b-kkmac ollama-deepseek-v32-kkmac or-claude-fable-5.1"
+# deepseek-v3.2 is retired (card comms 2026-11-24): or-deepseek-v4-flash is the current lane.
+DEFAULT_MODELS="ollama-qwen38b-kkmac or-deepseek-v4-flash or-claude-fable-5.1"
 
 if [ "$#" -gt 0 ]; then
     MODELS="$*"
