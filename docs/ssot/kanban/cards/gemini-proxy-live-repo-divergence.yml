@@ -1,7 +1,7 @@
 id: gemini-proxy-live-repo-divergence
 title: 'gemini-ollama-proxy: reconcile live idc03 variant with repo (uncommitted free-key ring + embed gateway)'
-column: backlog
-updated: 2026-11-26 23:34
+column: doing
+updated: 2026-11-26 23:45
 priority: medium
 tags:
 - mddb
@@ -50,9 +50,16 @@ comms:
 - at: 2026-11-26 23:34
   from: chaba
   text: 'con01 defers: runner at local cap (1/1) — remote slots unaffected'
+- at: 2026-11-26 23:45
+  from: mn01
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
-claim: {}
+  model: swe-2-flash-medium
+  runner: mn01
+  attempts: 1
+claim:
+  since: 2026-11-26 23:45
