@@ -1,7 +1,7 @@
 id: investigate-devin-handoff-job-ledger-ter-408e7a
 title: Investigate devin-handoff job-ledger terminal writes (1176/1555 stuck running)
 column: doing
-updated: 2026-11-26 19:34
+updated: 2026-11-26 19:56
 note: 'Found while building devin-dispatch-tg-watch (card implement-and-track-devin-telegram-repor-fc0dc7): the
   shared dispatch ledger in MDDB ada-ha-bank-devin-handoff has 1555 job/answer docs but 1176 still say status=running
   — 268 of the 323 docs touched in the last 7d never got a terminal write (done 186 / failed 119 / superseded 72
@@ -165,6 +165,13 @@ comms:
   from: devin
   text: Investigating the ledger write path and runner-agent versions; I’ll correlate running docs by host against
     deployed runner hashes.
+- at: 2026-11-26 19:56
+  from: devin
+  text: 'DONE — root cause found + fix committed on dispatch branch (acb050897e4). NOT runner-agent drift (binaries
+    sha-identical fleet-wide). Two defects: (1) devin-dispatch-watch was never in sync-runner-tools manifest ->
+    3 drifted generations, absent on idc02/idc03/con01, tony-dell has binary but NO timer (669+52+11+206 stuck docs
+    trace to missing watch coverage); (2) mddb_job() ended in return 0 so failed /v1/add writes were invisible —
+    notified_fu stamped anyway, ~336 notified-but-running docs on wa'
 spec: 'Investigate why the shared dispatch ledger in MDDB ada-ha-bank-devin-handoff has 1176 out of 1555 job/answer
   docs stuck with status=running, specifically examining whether mddb_job writes are failing to land due to runner-agent
   drift across hosts. Inspect the ledger docs and runner behavior to identify the root cause of missing terminal
