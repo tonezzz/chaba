@@ -1,14 +1,14 @@
 id: ops-tony-dell-ssh-restore-fix
 title: tony-dell - capture Ansible bootstrap failure output
-column: review
+column: backlog
 priority: high
 created: '2026-11-26'
-updated: 2026-11-26 12:26
+updated: 2026-11-26 12:27
 brief: 'Diagnostic follow-up: the first bootstrap run exited 2 in ~4s. Re-run verbosely with all output redirected
   to /home/tony/ssh-restore-fix.txt so it can be read over SFTP while shell access is still blocked. Exit 0 by design.'
 action:
   type: script
-  status: done
+  status: queued
   host: tony-dell
   executor: script
   script:
@@ -18,9 +18,8 @@ action:
       -vvv ansible/playbooks/restore-ssh-shell.yml; echo "PLAYBOOK_EXIT=$?"; } > /home/tony/ssh-restore-fix.txt
       2>&1; true'
     timeout: 300
-  runner: tony-dell
-  attempts: 1
-  result: 'exit=0 .9300513-970557-121580566382482/AnsiballZ_command.py | pam_unix(sudo:session): session closed
+  attempts: 0
+  last_failure: 'exit=0 .9300513-970557-121580566382482/AnsiballZ_command.py | pam_unix(sudo:session): session closed
     for user root | runner-ops-tony-dell-ssh-restore-fix-1795670776.service: Consumed 3.076s CPU time over 3.213s
     wall clock time, 133.6M memory peak.'
 spec: Capture only - do not change the recovery approach. Write stdout and stderr of the -vvv playbook run to /home/tony/ssh-restore-fix.txt
@@ -39,6 +38,9 @@ comms:
   from: tony-dell
   text: 'finished (ok): exit=0 .9300513-970557-121580566382482/AnsiballZ_command.py | pam_unix(sudo:session): session
     closed for user root | run'
+- at: 2026-11-26 12:27
+  from: tony
+  text: retry requested
 claim:
   since: 2026-11-26 12:26
 review_kind: verify
