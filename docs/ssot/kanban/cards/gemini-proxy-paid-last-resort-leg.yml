@@ -1,7 +1,7 @@
 id: gemini-proxy-paid-last-resort-leg
 title: 'gemini-ollama-proxy: add paid-Gemini leg between free and Ollama (bounded outage spend)'
-column: review
-updated: 2026-11-26 23:48
+column: done
+updated: 2026-11-26 23:55
 priority: low
 tags:
 - mddb
@@ -356,6 +356,9 @@ comms:
 - at: 2026-11-26 23:48
   from: chaba
   text: 'worktree kept: dirty — 4 uncommitted file(s)'
+- at: 2026-11-26 23:55
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 spec: 'Add a paid-Gemini leg AFTER free-Gemini and BEFORE Ollama in ~/.config/containers/mddb/proxy/gemini-ollama-proxy.mjs
   (fetchBackupBatch), passing GEMINI_API_KEY_PAID through the container env. Intended for outage windows only (OR
   401 + free key 429), never normal operation. Document the vector-space caveat (paid vs free embeddings) and a
@@ -377,3 +380,7 @@ action:
 claim:
   since: 2026-11-26 23:00
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 23:55
+  note: verified — evidence checks green, closing itself
