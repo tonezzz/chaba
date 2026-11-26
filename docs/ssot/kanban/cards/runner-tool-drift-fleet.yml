@@ -1,7 +1,7 @@
 id: runner-tool-drift-fleet
 title: Runner tool drift from audit-runner-tools.yml — re-arm convergence
-column: backlog
-updated: 2026-11-26 12:31
+column: doing
+updated: 2026-11-26 12:32
 brief: Runner tool drift from audit-runner-tools.yml — re-arm convergence
 priority: high
 program: chaba-ci
@@ -51,9 +51,15 @@ comms:
 - at: 2026-11-26 12:31
   from: chaba
   text: '[auto-dispatch] wave 11 (2026-11-26 12:31): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-26 12:32
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: codemod
   lane_source: kw
-claim: {}
+  runner: tony-macbook
+  attempts: 1
+claim:
+  since: 2026-11-26 12:32
