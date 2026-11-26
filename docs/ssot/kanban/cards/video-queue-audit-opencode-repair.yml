@@ -1,7 +1,7 @@
 id: video-queue-audit-opencode-repair
 title: 'OpenCode artifact repair: video queue audit'
 column: backlog
-updated: 2026-11-26 13:54
+updated: 2026-11-26 14:33
 brief: Retry ADA-1046 with a write-capable artifact contract so the queue audit report lands and verifies.
 priority: high
 program: ai-workforce
@@ -10,7 +10,7 @@ tags:
 - queue
 - opencode
 - artifact-write
-spec: Run scripts/devnest/video_queue_status.py read-only against both video roots, write reports/video-queue-status-opencode.md
+spec: Run scripts/devnest/video_queue_status.py read-only against both video roots, write reports/card-runner/video-queue-status-opencode.md
   with counts, stale claim ages, canonical Sacred Father packages, and safe recommendations. Do not release claims
   or start renders.
 action:
@@ -19,7 +19,7 @@ action:
   executor: opencode
   profile: artifact-write
   target_host: idc02
-  artifact: reports/video-queue-status-opencode.md
+  artifact: reports/card-runner/video-queue-status-opencode.md
   prompt: Run the existing queue status tool read-only, write the declared report artifact, and preserve evidence.
     Do not delete/release claims or start renders.
   expect:
@@ -282,5 +282,12 @@ comms:
     held ... reports/video-queue-status-opencode.md is gitignored'', plus 2026-11-07 ''[KNB-1098] provably failed
     ... no artifact. Back to backlog''. Runner only claims status=queued. Left open; needs status reset + a versioned
     artifact path.'
+- at: 2026-11-26 14:33
+  from: devin
+  text: 'Prep 2026-11-26 (no re-queue yet): the declared artifact path reports/video-queue-status-opencode.md was
+    gitignored (.gitignore:22 reports/*), which is why the verifier rejected an otherwise landed artifact. Changed
+    the declared spec/artifact path to reports/card-runner/video-queue-status-opencode.md (the exempt dir), editing
+    the card YAML directly under the board-api lock so comms and action state are preserved. Status stays done;
+    re-queue is a separate decision, pending the two-card pilot outc'
 review_kind: verify
 claim: {}

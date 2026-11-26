@@ -1,7 +1,7 @@
 id: ansible-prep-plan-apply-verify
 title: Ansible prep→plan→apply→verify workflow standard
-column: doing
-updated: 2026-11-26 14:07
+column: done
+updated: 2026-11-26 14:25
 brief: Standardize Ansible for preparation/baselines, check-diff plan artifacts, gated apply, and verified closeout
   to increase fleet efficiency.
 priority: medium
@@ -195,9 +195,54 @@ comms:
     Prior merge-hold cause reproduced: pytest unavailable on mn01. Found+fixing a real gate break on master: dispatch_repos
     sha256 pin stale vs source (sweep commit changed dispatch_repos.py without pin bump) — bumped pin in runner-tooling.manifest.json;
     re-running the chaba merge-gate smoke set to confirm green.'
+- at: 2026-11-26 14:13
+  from: devin
+  text: 'Attempt 2 DONE. Prior OPS-1424 work verified already on master (swept into 62c638d). Root-caused the merge
+    hold chain: mn01 lacked pytest (fail-closed gate), and on con01 the chaba gate smoke set was RED on clean master
+    — dispatch_repos sha256 pin stale after sweep commit changed the source. Fixed: bumped pin in runner-tooling.manifest.json
+    (commit 28924b33705) + job trail docs/ssot/jobs/infrastructure/2026-11-26-dispatch-test-gate-pin-drift.yml.
+    Verified: full chaba merge-gate smoke set 300 pas'
+- at: 2026-11-26 14:20
+  from: con01
+  text: 'finished (ok): exit=0 nal status posted to the card; noted follow-up that mn01 needs pytest for future
+    chaba dispatches. | devin-task-2'
+- at: 2026-11-26 14:20
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-26 14:20
+  from: chaba
+  text: banked 755 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 14:20
+  from: chaba
+  text: pushed dispatch/20261126-135732-objective-define-and-pilot-an- to origin
+- at: 2026-11-26 14:20
+  from: chaba
+  text: 'auto-merge not done: merge: runner-tooling pin contract gate blocked: (failures=1) — close will block until
+    merged'
+- at: 2026-11-26 14:20
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-26 14:25
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — branch head == base tip — nothing committed; unit:
+    exit_code=0; attempt limit reached, needs a human (column -> backlog)'
+- at: 2026-11-26 14:25
+  from: chaba
+  text: 'merge-sweep: merged f6cb72e0 (dispatch/20261126-135732-objective-define-and-pilot-an- from con01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261126-135732-objective-define-and-pilot-an-.md)
+    — auto-closed'
+- at: 2026-11-26 14:25
+  from: local
+  text: 'pub milestone: card verified: ansible-prep-plan-apply-verify on idc03 — merged f6cb72e0 (dispatch/20261126-135732-objective-define-and-pilot-an-
+    from con01) -> origin/master — verified — auto- — merged f6cb72e0 (dispatch/20261126-135732-objective-define-and-pilot-an-
+    from con01) -> origin/master — verified — auto-closed [evt-a1e5639e7a3fe09c]'
+- at: 2026-11-26 14:25
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261126-135732-objective-define-and-pilot-an-,
+    branch dispatch/20261126-135732-objective-define-and-pilot-an- on con01'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
@@ -206,9 +251,13 @@ action:
     stale_running: 2026-11-26 12:39
     no_repo: 2026-11-26 12:39
     dirty: 1
-  result: 'exit=0 ml`; outcome doc at `dispatch-outcome-20261126-123352-objective-define-and-pilot-an-.md`. | devin-task-20261126-123352-objective-define-and-pilot-an-.service:
-    Consumed 32.765s CPU time over 11min 11.836s wall clock time, 347.4M memory peak.'
+    zero_commit: 2026-11-26 14:25
+  result: 'exit=0 nal status posted to the card; noted follow-up that mn01 needs pytest for future chaba dispatches.
+    | devin-task-20261126-135732-objective-define-and-pilot-an-.service: Consumed 8min 36.717s CPU time, 679.7M
+    memory peak, 0B memory swap peak.'
   runner: con01
+  verified: true
+  last_failure: 'no delivered work — branch head == base tip — nothing committed; unit: exit_code=0'
 claim:
   since: 2026-11-26 13:55
 requests:
@@ -225,3 +274,7 @@ requests:
   answer: proceed
   executed: 2026-11-26 queue
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 14:25
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261126-135732-objective-define-and-pilot-an-.md

@@ -1,7 +1,7 @@
 id: dispatch-zero-commit-sessions-epidemic
 title: dispatch sessions produce zero commits at high rate — root cause
-column: doing
-updated: 2026-11-26 14:06
+column: review
+updated: 2026-11-26 14:40
 spec: 'OPS-0894 fixed the closeout gate (empty branches no longer auto-close — held in review correctly). The SOURCE
   defect is unfixed and burning dispatches: 10+ sessions Oct 26-27 across hosts (tony-macbook, idc02, mn01) and
   lanes (deepseek-v4-pro, others) produced ZERO commits — pushed branch head = plain master commit, service often
@@ -14,19 +14,20 @@ spec: 'OPS-0894 fixed the closeout gate (empty branches no longer auto-close —
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   sweep:
     stale_running: 2026-10-27 16:47
     zero_commit: 2026-10-27 16:47
     session_gone: 2026-10-27 17:02
+    dirty: 1
   last_failure: 'no delivered work — branch head == base tip — nothing committed; unit: exit_code=1'
-  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261027-164816-ops-0894-fixed-the-closeout-ga.service: Main
-    process exited, code=exited, status=1/FAILURE | devin-task-20261027-164816-ops-0894-fixed-the-closeout-ga.service:
-    Failed with result ''exit-code''.'
+  result: 'exit=0 lt=success DEFAULTS — exit evidence must come from the task-dir exit_code file first | devin-task-20261126-140633-ops-0894-fixed-the-closeout-ga.service:
+    Consumed 1min 48.799s CPU time over 30min 38.383s wall clock time, 732.6M memory peak.'
   lane: paid_frontier
   lane_source: kw
   runner: mn01
   attempts: 1
+  verified: false
 ref: OPS-0941
 comms:
 - at: 2026-10-27 16:44
@@ -354,6 +355,39 @@ comms:
     session produced no commits — the branc; Dispatch branches that sit unmerged rot fast: master gained lane_source
     stamping; [cline-nest-model-evaluation] session produced no commits — the branch head is j; [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f]
     session pro'
+- at: 2026-11-26 14:37
+  from: devin
+  text: 'ROOT CAUSE FOUND: litellm/* lane model leaked onto `devin --model`. Pre-DEV-0958 runner-agent stamped action.model=LANE_MODELS[lane]
+    (litellm alias) executor-blind → devin -p --model litellm/... → "Error: Unknown model" exit 1 in <3s → exit_code=1,
+    no transcript, no sessions.db row, branch head==base. Smoking gun: unit journal tail ".6, deepseek-v4-pro" was
+    the end of devin Available-models list. Reproduced live on mn01. Only lane-classified cards falling through
+    to devin path died = coin flip. '
+- at: 2026-11-26 14:39
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261126-140633-ops-0894-fixed-the-closeout-ga on mn01 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-26 14:40
+  from: mn01
+  text: 'finished (ok): exit=0 lt=success DEFAULTS — exit evidence must come from the task-dir exit_code file first
+    | devin-task-20261126-140633'
+- at: 2026-11-26 14:40
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-26 14:40
+  from: chaba
+  text: 'session-end checkpoint d3645184: 1 leftover file(s) committed'
+- at: 2026-11-26 14:40
+  from: chaba
+  text: banked 755 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 14:40
+  from: chaba
+  text: pushed dispatch/20261126-140633-ops-0894-fixed-the-closeout-ga to origin
+- at: 2026-11-26 14:40
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-26 14:40
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 claim:
   since: 2026-11-26 14:05
 review_kind: verify
