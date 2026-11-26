@@ -111,8 +111,11 @@ PY
 
 meta_stamp() { # dir result fu_index channels_done mddb_ok — stamps
     # per-channel flags. notified_fu is only set when the durable MDDB
-    # outcome doc landed (or there was no session id to write) — otherwise
+    # writes landed (or there was no session id to write) — otherwise
     # the next tick retries the whole notification instead of losing it.
+    # chan_fu records which follow-up index the channel stamps belong to
+    # so a new fu-N re-fires every channel instead of being skipped by
+    # stamps left over from the previous unit.
     python3 - "$1" "$2" "$3" "$4" "$5" <<'PY'
 import json, sys
 from datetime import datetime, timezone
@@ -126,10 +129,30 @@ if mddb_ok == "1":
     m["notified_at"] = now
 else:
     m.pop("notified_at", None)
+if any(chans.split(",")):
+    m["chan_fu"] = int(fu)
 for c in chans.split(","):
     if c:
         m[f"{c}_at"] = now
 json.dump(m, open(f"{d}/meta.json", "w"), indent=1)
+PY
+}
+
+meta_chan_done() { # dir channel fu_index — rc 0 if channel already
+    # fired for THIS follow-up index. Channels are per-fu: a stamp from
+    # fu-0 must not suppress the notification for fu-1.
+    python3 - "$1" "$2" "$3" <<'PY'
+import json, sys
+try:
+    m = json.load(open(sys.argv[1] + "/meta.json"))
+except Exception:
+    sys.exit(1)
+if not m.get(sys.argv[2] + "_at"):
+    sys.exit(1)
+try:
+    sys.exit(0 if int(m.get("chan_fu") or -1) == int(sys.argv[3]) else 1)
+except Exception:
+    sys.exit(1)
 PY
 }
 
@@ -208,8 +231,8 @@ PY
 }
 
 mddb_add() { # key body
-    KEY="$1" BODY="$2" python3 - <<'PY' | curl -sf -X POST \
-        -H "Content-Type: application/json" -d @- "$MDDB/add" >/dev/null 2>&1
+    KEY="$1" BODY="$2" python3 - <<'PY' | curl -sf -m 30 --retry 2 --retry-delay 2 \
+        -X POST -H "Content-Type: application/json" -d @- "$MDDB/add" >/dev/null 2>&1
 import json, os
 body = os.environ["BODY"]
 print(json.dumps({
@@ -225,7 +248,12 @@ PY
 mddb_job() { # id status summary question — job/<id> doc in devin-handoff,
     # the ledger Ada's devin_pending and the Report dispatch layer read.
     local id="$1" st="$2" summ="${3:-}" q="${4:-}"
-    ID="$id" ST="$st" SUMM="$summ" Q="$q" python3 - <<'PY' | curl -sf -m 15 \
+    # rc propagates from curl (pipefail): the caller only stamps jobdoc_at
+    # and counts the channel when the ledger write actually landed —
+    # previously `return 0` made every failure invisible and the doc
+    # stayed status=running forever (2026-11-26 ledger audit).
+    ID="$id" ST="$st" SUMM="$summ" Q="$q" python3 - <<'PY' | curl -sf -m 30 \
+        --retry 2 --retry-delay 2 \
         -X POST -H "Content-Type: application/json" -d @- \
         "$MDDB/add" >/dev/null 2>&1
 import json, os, socket
@@ -247,7 +275,6 @@ print(json.dumps({"collection": "ada-ha-bank-devin-handoff",
                   "key": "job/" + os.environ["ID"], "lang": "en",
                   "contentMd": body, "meta": meta}))
 PY
-    return 0
 }
 
 EVENT_LOG_LOCAL="$EVENT_LOG"
@@ -322,12 +349,17 @@ for d in "$DISPATCH_DIR"/tasks/*/; do
     fi
 
     log "task $id finished: unit=$unit fu=$fu result=${result:-none} verdict=${verdict:-none} sid=${sid:-?}${question:+ q=$question}"
+    # Channels are idempotent per follow-up index: a channel already
+    # stamped for this fu is skipped, so a retry after a failed MDDB
+    # write re-sends ONLY the missing channel instead of re-firing the
+    # iPhone push and event feed every tick.
     chans=""; mddb_ok=1
     evbody="$out"
     [ -n "$question" ] && evbody="Question: ${question}"$'\n\n'"$out"
-    [ "${WATCH_EVENTS:-1}" = "1" ] \
-        && emit_event "devin task $id: $label" "$sev" "$rr" "$evbody" && chans="event"
-    if [ "${WATCH_NOTIFY:-1}" = "1" ]; then
+    if [ "${WATCH_EVENTS:-1}" = "1" ] && ! meta_chan_done "$d" event "$fu"; then
+        emit_event "devin task $id: $label" "$sev" "$rr" "$evbody" && chans="$chans,event"
+    fi
+    if [ "${WATCH_NOTIFY:-1}" = "1" ] && ! meta_chan_done "$d" notify "$fu"; then
         if [ -n "$question" ]; then
             notify_iphone "Devin job needs input" \
                 "${id}: ${question} — reply via Ada or Devin" && chans="$chans,notify"
@@ -338,9 +370,16 @@ for d in "$DISPATCH_DIR"/tasks/*/; do
     fi
     if [ -n "$question" ]; then jstate="awaiting-user"
     elif [ "$result" = "success" ]; then jstate="done"; else jstate="failed"; fi
-    [ "${WATCH_JOB_DOC:-1}" = "1" ] \
-        && mddb_job "$id" "$jstate" "$out" "$question" && chans="$chans,jobdoc"
-    if [ -n "$sid" ]; then
+    jobdoc_ok=1
+    if [ "${WATCH_JOB_DOC:-1}" = "1" ] && ! meta_chan_done "$d" jobdoc "$fu"; then
+        if mddb_job "$id" "$jstate" "$out" "$question"; then
+            chans="$chans,jobdoc"
+        else
+            jobdoc_ok=0
+            log "WARN: mddb job/$id write failed ($jstate) — will retry next run"
+        fi
+    fi
+    if [ -n "$sid" ] && ! meta_chan_done "$d" mddb "$fu"; then
         if mddb_add "devin/$sid" \
             "$(printf 'Dispatched task %s (unit %s, result %s).\n\n%s' "$id" "$unit" "$result" "$out")"; then
             chans="$chans,mddb"
@@ -349,6 +388,10 @@ for d in "$DISPATCH_DIR"/tasks/*/; do
             log "WARN: mddb write failed for $id — will retry next run"
         fi
     fi
+    # notified_fu gates on BOTH durable MDDB writes: the session outcome
+    # doc AND the job/<id> ledger doc — a swallowed jobdoc failure must
+    # withhold the stamp so the next tick retries it.
+    [ "$jobdoc_ok" = "1" ] || mddb_ok=0
     [ -n "$chans" ] || log "WARN: all channels failed for $id — will retry next run"
     meta_stamp "$d" "${result:-unknown}" "$fu" "$chans" "$mddb_ok"
 done

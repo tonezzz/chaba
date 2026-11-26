@@ -196,7 +196,8 @@ _slug() { tr '[:upper:]' '[:lower:]' <<<"$1" | tr -cs 'a-z0-9' '-' | sed 's/^-//
 mddb_job() { # id status summary question
   local id="$1" st="$2" summ="${3:-}" q="${4:-}"
   ID="$id" ST="$st" SUMM="$summ" Q="$q" HOSTN="$(hostname)" python3 - <<'PY' \
-    | curl -sf -m 15 -X POST -H "Content-Type: application/json" -d @- \
+    | curl -sf -m 30 --retry 2 --retry-delay 2 -X POST \
+      -H "Content-Type: application/json" -d @- \
       "${MDDB_URL:-http://100.102.134.91:11023/v1}/add" >/dev/null 2>&1
 import json, os
 from datetime import datetime, timezone

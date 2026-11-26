@@ -13,6 +13,11 @@
 #                                          (update-only: when present it
 #                                          shadows the checkout copy in
 #                                          runner-agent.dr_module())
+#   scripts/devin/devin-dispatch-watch.sh-> ~/.local/bin/devin-dispatch-watch
+#                                          (the job/<id> ledger terminal
+#                                          writer — was NEVER synced, which
+#                                          is how idc02/idc03/con01 ended up
+#                                          with no watcher at all)
 #
 # Nothing converged them when master moved — they drifted until a manual
 # scp (OPS-1026; card runner-tooling-drift-recurs-installed-ru-3aad1e:
@@ -32,12 +37,12 @@
 #   * dest newer-mtime + differs-> warn + keep (never downgrade — a manual
 #                                  hotfix snapshot beats a stale repo;
 #                                  the same guard _self_update carries)
-#   * dest missing              -> install only for runner-agent and
-#                                  devin-dispatch, and only when the host
-#                                  shows provisioning evidence (systemd
-#                                  user unit / LaunchAgent / DISPATCH_DIR)
-#                                  — never bootstrap a runner on a plain
-#                                  checkout
+#   * dest missing              -> install only for runner-agent,
+#                                  devin-dispatch and devin-dispatch-watch,
+#                                  and only when the host shows provisioning
+#                                  evidence (systemd user unit / LaunchAgent
+#                                  / DISPATCH_DIR) — never bootstrap a
+#                                  runner on a plain checkout
 #   * repos.conf                -> NEVER overwritten (per-host tables are
 #                                  legitimate — kk-mac ships chaba-only);
 #                                  a differing repo set is reported.
@@ -131,6 +136,15 @@ _provisioned() {
                 [ -e "$f" ] && return 0
             done
             return 1 ;;
+        devin-dispatch-watch)
+            # The binary is useless without its timer — only install where
+            # the watch units exist (a host that never provisioned the
+            # timer gets nothing; installing the timer is the rollout step).
+            local f
+            for f in "$HOME"/.config/systemd/user/devin-dispatch-watch.*; do
+                [ -e "$f" ] && return 0
+            done
+            return 1 ;;
         *) return 1 ;;   # leaf tools: update-only, never auto-bootstrap
     esac
 }
@@ -173,6 +187,7 @@ _sync_one "scripts/devin/claude-dispatch.sh"      "$BIN/claude-dispatch"
 _sync_one "scripts/devin/devin-dispatch-prune.sh" "$BIN/devin-dispatch-prune"
 _sync_one "scripts/devin/dispatch-queue.sh"       "$BIN/dispatch-queue"
 _sync_one "scripts/board/dispatch_repos.py"       "$BIN/dispatch_repos.py"
+_sync_one "scripts/devin/devin-dispatch-watch.sh" "$BIN/devin-dispatch-watch"
 
 # --- repos.conf audit (card: audit dispatch_repos.conf drift in the same
 # pass). The table is per-host — reported, never rewritten.
