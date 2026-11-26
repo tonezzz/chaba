@@ -16,5 +16,13 @@ comms:
   text: card captured via board-api
 - at: 2026-11-26 23:44
   from: devin
-  text: '[still suspicious] `cert-sync.timer` on `idc03` is disabled but expected active (audit census / critical
-    list). Deliberate? If not: `systemctl --user enable --now cert-sync.timer`. See CMS `timer-timeline`.'
+  text: '[still suspicious] `cert-sync.timer` on `idc03` is disabled but expected active (audit census
+    / critical list). Deliberate? If not: `systemctl --user enable --now cert-sync.timer`. See CMS `timer-timeline`.'
+- at: 2026-11-27 01:23
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
+spec: The goal is to ensure `cert-sync.timer` is active on `idc03` if the disabled state was not deliberate.
+  Connect to host `idc03` and run `systemctl --user enable --now cert-sync.timer` unless the CMS `timer-timeline`
+  indicates the disablement is deliberate. Constraints include operating strictly on `idc03` as specified
+  by the card note. The verifiable done-condition is that `systemctl --user is-active cert-sync.timer`
+  returns active on `idc03` or a documented intentional disablement is logged in the CMS.

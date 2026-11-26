@@ -7,8 +7,8 @@ tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-27 00:00) of `runner-tools-converge.service` on `mn01` result=exit-code — investigate journal:
-  `journalctl --user -u runner-tools-converge.service` on the host. See CMS `timer-timeline-mn01`.'
+note: 'Last run (11-27 00:00) of `runner-tools-converge.service` on `mn01` result=exit-code — investigate
+  journal: `journalctl --user -u runner-tools-converge.service` on the host. See CMS `timer-timeline-mn01`.'
 ref: OPS-1467
 comms:
 - at: 2026-11-27 00:04
@@ -18,3 +18,13 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-27 00:00) of `runner-tools-converge.service` on `mn01` result=exit-code
     — investigate journal: `journalctl --user -u runner-tools-converge.service` on the host. See CMS `timer-timeline-mn01`.'
+- at: 2026-11-27 01:23
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
+spec: Investigate the failure of runner-tools-converge.service on mn01 resulting in an exit-code during
+  the 11-27 00:00 run, as noted in CMS timer-timeline-mn01. The goal is to inspect the user journal via
+  journalctl --user -u runner-tools-converge.service on mn01, identify the root cause of the exit-code
+  failure, and resolve or document it. Constraints include operating strictly on host mn01 and utilizing
+  existing systemd journal logs without modifying unrelated infrastructure. The verifiable done-condition
+  is a documented root cause in the card comments along with a successful manual trigger or subsequent
+  clean run of runner-tools-converge.service on mn01.
