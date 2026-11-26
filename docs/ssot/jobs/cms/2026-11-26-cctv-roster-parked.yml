@@ -1,0 +1,63 @@
+id: 2026-11-26-cctv-roster-parked
+title: cctv-roster CMS automation parked — roster-audit timer disabled fleet-wide, registry marked enabled:false
+domain: cms
+date: 2026-11-26
+status: resolved
+cards:
+- cms-auto-cctv-roster
+ref: OPS-1368
+
+summary: >
+  cms-auto-health carded `cctv-roster` stale (last_run 2026-11-25T01:00Z,
+  ~31h overdue vs interval_min=60). Verified live state via MDDB and the
+  timer-timeline CMS pages: the registry doc is written exclusively by
+  cam-wall-roster-audit.py (written_by=cam-wall-roster-audit), whose only
+  remaining systemd timer is cam-wall-roster-audit.timer on tony-omen —
+  and it is DISABLED (Tony disabled it 2026-11-25/26 after the run ended
+  with repeated "mddb add ... Remote end closed connection" errors; the
+  tony-dell unit was already retired/not-found since the 2026-11-12
+  sweep). Tony triaged the card at 15:15 +07: "put on hold — re-enabling
+  needs approval because of those prior MDDB write failures."
+
+  The stale card was therefore an intentionally parked scheduler, not a
+  break. Two durable fixes landed so the park stops generating noise:
+
+  1. Live registry: ada-cms-automation/cctv-roster set enabled:false with
+     a disabled_reason note ("parked 2026-11-26 ... flip enabled back to
+     true to resume"). cms-auto-health judge() returns "ok — disabled —
+     no check" for enabled:false, so the open card auto-closes through
+     the normal GREEN_WINDOWS path, and cam-wall-roster-audit's own
+     gated() honors the same flag if the timer ever fires.
+  2. SSOT census (docs/ssot/infrastructure/ssot.audit.hosts.yml):
+     tony-dell cam-wall-roster-audit.timer moved expected_services ->
+     expected_absent (unit retired); tony-omen gained the entry with
+     expected_state:inactive + PARKED note; idc03 cam-wall-cms-vps.timer
+     (the sibling CMS generator Tony parked for the same MDDB write
+     failures) marked expected_state:inactive + PARKED note. Both
+     timer-sentinel and drift-reconcile key off expected_state, so the
+     deliberate disables no longer card as failures.
+
+changes:
+  - "MDDB ada-cms-automation/cctv-roster — enabled:false + disabled_reason
+    (live write via /v1/add, meta.written_by appended devin-dispatch)."
+  - "docs/ssot/infrastructure/ssot.audit.hosts.yml — census reflects the
+    parked/retired state of cam-wall-roster-audit.timer (dell absent,
+    omen inactive) and cam-wall-cms-vps.timer (idc03 inactive)."
+
+verification: >
+  Re-GET ada-cms-automation/cctv-roster shows enabled:false.
+  cms-auto-health's next kanban-sync tick judges state=ok (disabled) and
+  the card auto-closes after 2 consecutive green ticks. timer-sentinel
+  reads expected_state from the same census file — exp!=active means a
+  disabled unit no longer cards. To resume: re-enable the timer on
+  tony-omen AND flip registry enabled back to true (Tony's call — the
+  MDDB write-failure cause was never root-caused).
+
+followups:
+  - "cam-wall-cms.timer + cam-wall-cms-kk.timer are still declared
+    expected-active on tony-dell but absent from the 2026-11-26
+    timer-timeline page — likely same VPS-lane retirement class; verify
+    and census-fix on a host that can reach dell."
+  - "Root cause of the MDDB 'Remote end closed' write failures that got
+    both cam-wall timers parked is still open — likely the embed queue
+    backlog (see card mddb-embed-providers-down history)."
