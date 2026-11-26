@@ -1,7 +1,7 @@
 id: gemini-proxy-paid-last-resort-leg
 title: 'gemini-ollama-proxy: add paid-Gemini leg between free and Ollama (bounded outage spend)'
 column: doing
-updated: 2026-11-26 23:35
+updated: 2026-11-26 23:39
 priority: low
 tags:
 - mddb
@@ -319,6 +319,10 @@ comms:
     file (fetch-rewrite preload, mocks for Gemini/Ollama/gateway): free->paid->ollama ordering proven in free-first
     AND gateway-down paths; cap-hit falls to Ollama last resort. Vector-space caveat documented in code + docs/kb/mddb-embedding-providers.md.
     Added tests/embed/test_gemini_pr'
+- at: 2026-11-26 23:39
+  from: chaba
+  text: 'merge-sweep: devin-task-20261126-230122-add-a-paid-gemini-leg-after-fr no longer active on tony-dell but
+    card still says running — sweeping its branch'
 spec: 'Add a paid-Gemini leg AFTER free-Gemini and BEFORE Ollama in ~/.config/containers/mddb/proxy/gemini-ollama-proxy.mjs
   (fetchBackupBatch), passing GEMINI_API_KEY_PAID through the container env. Intended for outage windows only (OR
   401 + free key 429), never normal operation. Document the vector-space caveat (paid vs free embeddings) and a
@@ -331,5 +335,7 @@ action:
   lane: devin
   attempts: 1
   runner: tony-dell
+  sweep:
+    stale_running: 2026-11-26 23:39
 claim:
   since: 2026-11-26 23:00
