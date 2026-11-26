@@ -1,7 +1,7 @@
 id: job-auto-health-idc02
 title: Job health sweep — declared-job failures on idc02
 column: review
-updated: 2026-11-26 22:23
+updated: 2026-11-26 22:54
 brief: Automated per-host sweep (scripts/ops/job-health-sweep.py, ssot.jobs.yml job-health-sweep) found declared
   jobs that are failing, never firing, or running stale units. Each comment names the job, the journal/systemd evidence,
   and the consecutive-fail count. Fix on the host; the card auto-closes when green.
@@ -54,3 +54,23 @@ comms:
 
     - single-writer-fleet-audit[undeclared-job-unit]'
   req: jhs-idc02-newbatch-2026-11-26-1
+- at: 2026-11-26 22:54
+  from: chaba
+  text: '[job-health-sweep] RECOVERED on idc02: chaba-capture-harvest — was failing (units-missing:chaba-capture-harvest.service,chaba-capture-harvest.timer),
+    now green.'
+  req: jhs-idc02-chaba-capture-harvest-rec-e1
+- at: 2026-11-26 22:54
+  from: chaba
+  text: '[job-health-sweep] RECOVERED on idc02: job-health-sweep — was failing (units-missing:job-health-sweep.service,job-health-sweep.timer),
+    now green.'
+  req: jhs-idc02-job-health-sweep-rec-e1
+- at: 2026-11-26 22:54
+  from: chaba
+  text: '[job-health-sweep] RECOVERED on idc02: opencode-models-sync — was failing (units-missing:opencode-models-sync.service,opencode-models-sync.timer),
+    now green.'
+  req: jhs-idc02-opencode-models-sync-rec-e1
+- at: 2026-11-26 22:54
+  from: chaba
+  text: '[job-health-sweep] RECOVERED on idc02: retry-storm-watch — was failing (units-missing:retry-storm-watch.service,retry-storm-watch.timer),
+    now green.'
+  req: jhs-idc02-retry-storm-watch-rec-e1
