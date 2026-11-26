@@ -1,7 +1,7 @@
 id: gemini-eval-judge-lane
 title: Gemini eval/judge lane — paid-first litellm group with a hard daily cap
 column: backlog
-updated: 2026-11-26 21:55
+updated: 2026-11-26 22:01
 brief: Use the essentially untouched Gemini paid-tier allowance for NEW bulk eval/judge work — the 2026-11-26 Console
   quota capture showed 1 request used against a 350,000/day flash-lite allowance. This removes the free-tier 429
   failure mode (OPS-1255 run 2) for new work while keeping deterministic verifiers and the pending nemotron canary
@@ -48,8 +48,18 @@ spec: "CONTEXT\n- GCP Console quota capture 2026-11-26 (project gen-lang-client-
 action:
   type: dispatch
   repo: chaba
+  status: queued
+  lane: codemod
+  lane_source: kw
 ref: ADA-1458
 comms:
 - at: 2026-11-26 21:55
   from: tony
   text: card captured via board-api
+- at: 2026-11-26 22:01
+  from: chaba
+  text: classified as codemod (kw:cap conf 1.00)
+- at: 2026-11-26 22:01
+  from: chaba
+  text: queued for processing
+claim: {}
