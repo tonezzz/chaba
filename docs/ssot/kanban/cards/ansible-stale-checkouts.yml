@@ -212,6 +212,10 @@ comms:
   from: devin
   text: 'raised request con01-chaba-exec-checkout-is-stale-dirty-0bb3b1: con01 chaba exec checkout is stale/dirty
     (dirty; behind=2, ahead=0, dirty=8). How should it be brought current? No work '
+- at: 2026-11-27 06:32
+  from: devin
+  text: 'raised request idc02-chaba-exec-checkout-is-stale-dirty-88af89: idc02 chaba exec checkout is stale/dirty
+    (dirty; behind=2, ahead=0, dirty=47). How should it be brought current? No work'
 requests:
 - id: idc02-chaba-exec-checkout-is-stale-dirty-02eca1
   ask: idc02 chaba exec checkout is stale/dirty (dirty; behind=29, ahead=0, dirty=18). How should it be brought
@@ -343,6 +347,20 @@ requests:
     (recommended, reversible)
 - id: con01-chaba-exec-checkout-is-stale-dirty-0bb3b1
   ask: con01 chaba exec checkout is stale/dirty (dirty; behind=2, ahead=0, dirty=8). How should it be brought current?
+    No work will be destroyed.
+  status: open
+  at: 2026-11-27 06:32
+  from: devin
+  options:
+  - stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner (recommended,
+    reversible)
+  - commit-wip — commit dirty work on a branch, then bring checkout current; preserves work in history
+  - leave — accept stale checkout on this host for now; exclude from stale audit until resolved
+  - abandon — discard dirty work and hard-reset to origin/master (destructive, explicit approval required)
+  suggested: stash-u-ff — git stash -u (tracked+untracked) then pull/rebase to origin/master; stash left for owner
+    (recommended, reversible)
+- id: idc02-chaba-exec-checkout-is-stale-dirty-88af89
+  ask: idc02 chaba exec checkout is stale/dirty (dirty; behind=2, ahead=0, dirty=47). How should it be brought current?
     No work will be destroyed.
   status: open
   at: 2026-11-27 06:32
