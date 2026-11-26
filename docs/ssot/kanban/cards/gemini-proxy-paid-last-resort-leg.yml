@@ -1,7 +1,7 @@
 id: gemini-proxy-paid-last-resort-leg
 title: 'gemini-ollama-proxy: add paid-Gemini leg between free and Ollama (bounded outage spend)'
 column: doing
-updated: 2026-11-26 23:01
+updated: 2026-11-26 23:25
 priority: low
 tags:
 - mddb
@@ -306,6 +306,12 @@ comms:
     DONE (ab8533ba5e): gemini-ollama-proxy now honors OPENRO; [timer-alert-idc03-mddb-embed-probe] VERDICT CHANGED
     - probe is working correctl; [llm-provider-verification-2026-11] 2026-11-23 — step 4 attempted (read-only key;
     [timer-alert-idc03-mddb-embed-probe] TRIAGED 2026-11-26 (true'
+- at: 2026-11-26 23:25
+  from: devin
+  text: 'VERIFY pass: paid leg already live — repo master AND deployed idc03 proxy both have GEMINI_API_KEY_PAID
+    after free, before Ollama, caps 150/hr+2000/day in container env. Forced-429 probes (mock upstreams, unmodified
+    live file via fetch-intercept): free->paid->ollama ordering proven; cap-hit falls through to Ollama as last
+    resort. Found drift: live proxy runs uncommitted free-key-ring+gateway variant not in git — carding separately.'
 spec: 'Add a paid-Gemini leg AFTER free-Gemini and BEFORE Ollama in ~/.config/containers/mddb/proxy/gemini-ollama-proxy.mjs
   (fetchBackupBatch), passing GEMINI_API_KEY_PAID through the container env. Intended for outage windows only (OR
   401 + free key 429), never normal operation. Document the vector-space caveat (paid vs free embeddings) and a
