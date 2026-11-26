@@ -1,0 +1,30 @@
+id: health-monitor-config-playlived-postgres
+title: Health monitor config — Playlived target and Postgres check threshold
+column: backlog
+updated: 2026-11-26 12:41
+brief: mcp-health quick_health fails 2/8 (Playlived tony-dell, Postgres) after config reload; evidence suggests
+  monitor config/stale state, not confirmed outages.
+priority: medium
+program: chaba-ci
+tags:
+- health
+- monitoring
+- config
+spec: 'Evidence 2026-11-26 ~05:36-05:37Z: quick_health 8 services, 6 pass / 2 fail — Playlived (tony-dell) FAIL
+  response_time 11-12ms, Postgres FAIL response_time 1320-1362ms. reload_config succeeded (131 services, 11 groups,
+  0 stale alerts resolved); re-run quick_health unchanged. get_troubleshooting_info: Postgres current_status=healthy,
+  service_url=unknown, last_checked 2026-11-25T01:12:13Z (stale); Playlived current_status=unknown, service_url=http://127.0.0.1:9230/sessions
+  — localhost from the health host, not tony-dell. get_health_status timed out. Old unresolved alerts remain (id
+  122 Home Assistant Live degraded, id 119 Raceman Web degraded). Fix: point Playlived check at tony-dell (correct
+  host/port), review Postgres check command/timeout (1.3s suggests threshold), refresh stale health state, investigate
+  get_health_status timeout. Verify with mcp-health quick_health -> 8/8 and get_health_status normal. No host service
+  restarts without separate approval.'
+ref: AUD-1433
+comms:
+- at: 2026-11-26 12:41
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-26 12:41
+  from: devin
+  text: Filed from read-only mcp-health checks; no services restarted or hosts mutated. Evidence is in the spec.
+    Pair with runner drift card OPS-1431 if host work is later approved.
