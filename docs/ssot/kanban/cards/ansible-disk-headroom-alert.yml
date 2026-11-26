@@ -1,7 +1,7 @@
 id: ansible-disk-headroom-alert
 title: 'Ansible audit: disk headroom alert'
 column: backlog
-updated: 2026-11-26 18:52
+updated: 2026-11-26 19:29
 spec: 'Read-only ansible disk-headroom detected CRIT/warn/unreachable mounts. Hosts: tony-dell. Report dir: reports/ansible-benchmark/disk/.
   No remediation performed.'
 action:
@@ -26,3 +26,15 @@ comms:
     playbooks: `disk-headroom.yml --limit tony-dell --check` → unreachable=0 failed=0, and `disk-remediate.yml --check
     --diff --limit tony-dell` → "verify whether remediation is warranted" passed with uv/pip/journal all under caps,
     so every fix task skipped. Podman is down to 11 imag'
+- at: 2026-11-26 19:29
+  from: tony
+  text: '[tony-dell dig 19:35 +07] Root cause of the 85% root disk found — a runaway Chrome Cache Storage for the
+    board.
+
+
+    Usage: 174G used on `/` (220G, 32G free). Breakdown: `/home/tony` 143G, `/usr` 23G, `/var` 7.4G, `/opt` 1.5G.
+    Inside home: `.config` 61G, CascadeProjects 38G, `.local` 22G, `.cache` 12G. `.config` is dominated by `google-chrome/Default/Service
+    Worker/CacheStorage` = **45G**; MDDB container data 8.2G and other Chrome profiles <1G.
+
+
+    The 45G is one origin: `CacheStorage/3e542f5de860dee8b'
