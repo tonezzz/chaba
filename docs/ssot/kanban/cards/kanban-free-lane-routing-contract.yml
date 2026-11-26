@@ -1,7 +1,7 @@
 id: kanban-free-lane-routing-contract
 title: 'Kanban lane-routing contract: free-first dispatch, envelope, verify, escalate'
-column: doing
-updated: 2026-11-26 23:10
+column: review
+updated: 2026-11-26 23:44
 brief: 'Codify the lane-routing and closeout contract proven by the ADA-0242 free-lane pilot and the ADA-0042 runner
   fixes: exhaust free/deterministic lanes before paid_frontier and Devin; every opencode dispatch carries a complete
   lane_envelope; verification is held-out and merge-gated; escalation is deliberate and recorded.'
@@ -20,7 +20,7 @@ spec: 'DECISION 2026-11-26 Tony: adopt. Implement the dispatch envelope part of 
   records the envelope shape.'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   attempts: 1
   repo: chaba
@@ -28,6 +28,9 @@ action:
   sweep:
     stale_running: 2026-11-26 23:10
     dirty: 13
+  result: 'exit=0 ice: No such file or directory | devin-task-20261126-213920-decision-2026-11-26-tony-adopt.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261126-213920-decision-2026-11-26-tony-adopt.service:
+    No such file or directory'
 ref: KNB-0244
 comms:
 - at: 2026-11-19 18:10
@@ -294,5 +297,30 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261126-213920-decision-2026-11-26-tony-adopt on idc02 still dirty —
     13 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-26 23:44
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261126-213920-decision-2026-11-26-tony-adopt.service:
+    Failed to ope'
+- at: 2026-11-26 23:44
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-26 23:44
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261126-213920-decision-2026-11-26-tony-adopt'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 13 l'
+- at: 2026-11-26 23:44
+  from: chaba
+  text: banked 697 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 23:44
+  from: chaba
+  text: pushed dispatch/20261126-213920-decision-2026-11-26-tony-adopt to origin
+- at: 2026-11-26 23:44
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-26 23:44
+  from: chaba
+  text: 'worktree kept: dirty — 14 uncommitted file(s)'
 claim:
   since: 2026-11-26 21:38
+review_kind: verify
