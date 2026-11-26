@@ -9,7 +9,7 @@ priority: medium
 note: 'last_run 3041m overdue (interval 15m). last_run=2026-11-24T00:58:02+00:00 interval=15m status=ok. Page: https://idc03.taila0626a.ts.net/cms/#/nest-tony-dell'
 help: 'Trigger a manual regen: cms_automation run_now for ''nest-tony-dell'' (or POST /api/cms/pages/nest-tony-dell/regenerate).
   If it repeats, check the page''s generator command in the registry doc.'
-updated: 2026-11-26 15:19
+updated: 2026-11-26 15:20
 comms:
 - at: 2026-11-24 08:57
   from: chaba
@@ -172,6 +172,13 @@ comms:
     can re-hold an already-merged card on a stale "no committed ; `_self_stale_check`/`_claimable` gate every claim
     on installed==checkout-ref byt; idc02''s kanban-dispatch.service was a linked unit running a stale scripts/-only
     ; [ada-nest-drive-store-hardening-stale-cla-558c90] primer inje'
+- at: 2026-11-26 15:20
+  from: devin
+  text: '[dispatch 2026-11-26] Root cause confirmed unchanged: nest-mgr.service on tony-dell still intentionally
+    stopped (Tony hold 15:15 — restart-v1 vs v2-pilot decision pending). Applied the designed hold: set enabled=false
+    (+disabled_reason) on MDDB registry ada-cms-automation/nest-tony-dell — cms-auto-health judge() returns ok/disabled,
+    so no more stale cards; card auto-closes after 2 green ticks on next kanban-sync. Reversible: flip enabled=true
+    when the generator restarts (nest-mgr publish preserv'
 action:
   status: running
   type: dispatch
