@@ -1,7 +1,7 @@
 id: kk-cms-only-memory-pilot-acceptance
 title: KK acceptance — CMS-only memory pilot for Kaewta
-column: doing
-updated: 2026-11-26 13:12
+column: review
+updated: 2026-11-26 13:14
 brief: Decide whether Kaewta (ada-kk) should answer from her CMS reports only, with bank recall and web_search withheld.
   Bench read-side is proven; prod profile unchanged.
 priority: medium
@@ -99,6 +99,27 @@ comms:
     re-rendered (snapshot .bak.20261126T060430Z), ada-kk restarted, /api/health ok:true degraded:false. Effective
     surface=19 tools, zero memory/web leaks. Side note: tony env also re-rendered but only retired a dead hand-written
     exclude line (no'
+- at: 2026-11-26 13:14
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ms and `dispatch-outcome-20261126-124228-ask-kk-to-accept-a-reversible-.md` are posted.
+    | devin-task-20261126-124'
+- at: 2026-11-26 13:14
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-26 13:14
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261126-124228-ask-kk-to-accept-a-reversible-
+    is 103 commits behind origin/master —\n   run 'git pull"
+- at: 2026-11-26 13:14
+  from: chaba
+  text: pushed dispatch/20261126-124228-ask-kk-to-accept-a-reversible- to origin
+- at: 2026-11-26 13:14
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-26 13:14
+  from: chaba
+  text: 'worktree kept: dirty — 7 uncommitted file(s)'
 requests:
 - id: kk-do-you-accept-a-reversible-3-7-day-cm-d8c11e
   ask: 'KK: do you accept a reversible 3–7 day CMS-only memory pilot? If yes, Tony proceeds via the deploy gate;
@@ -115,10 +136,13 @@ requests:
   executed: 2026-11-26 queue
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   lane_source: claim
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 ms and `dispatch-outcome-20261126-124228-ask-kk-to-accept-a-reversible-.md` are posted. | devin-task-20261126-124228-ask-kk-to-accept-a-reversible-.service:
+    Consumed 2min 49.733s CPU time over 30min 3.793s wall clock time, 1.4G memory peak.'
 claim:
   since: 2026-11-26 12:41
+review_kind: verify
