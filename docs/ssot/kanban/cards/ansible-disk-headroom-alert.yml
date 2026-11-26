@@ -1,11 +1,12 @@
 id: ansible-disk-headroom-alert
 title: 'Ansible audit: disk headroom alert'
-column: backlog
-updated: 2026-11-26 19:29
+column: done
+updated: 2026-11-26 19:37
 spec: 'Read-only ansible disk-headroom detected CRIT/warn/unreachable mounts. Hosts: tony-dell. Report dir: reports/ansible-benchmark/disk/.
   No remediation performed.'
 action:
   type: manual
+  status: done
 ref: OPS-1421
 comms:
 - at: 2026-11-26 08:47
@@ -38,3 +39,15 @@ comms:
 
 
     The 45G is one origin: `CacheStorage/3e542f5de860dee8b'
+- at: 2026-11-26 19:36
+  from: tony
+  text: '[tony-dell disk RESOLVED 19:40 +07] Followed the approved "fix headers, then clear cache" path.
+
+
+    1) Live header fix: added `header Cache-Control "no-store"` to both `/apps/board/*` and `/apps/board2/*` handlers
+    in stacks/web/Caddyfile (canonical checkout on idc02 and the served checkout chaba-tony-dell on tony-dell).
+    Verified on tony-dell via local curl and via tailnet: both routes now return `cache-control: no-store` (previously
+    no header / `no-cache`). Both edits are currently uncommitted in t'
+- at: 2026-11-26 19:37
+  from: tony
+  text: closed by tony
