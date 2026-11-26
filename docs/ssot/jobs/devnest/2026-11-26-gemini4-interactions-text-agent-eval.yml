@@ -189,12 +189,52 @@ advanced_surface_probe:
     - "Google Search grounding is quota-blocked on the free-tier key."
     - "Implicit caching produced zero hits even with a 6k-token shared prefix; the model is absent from the documented minimum-token table."
 
+model_comparison:
+  reason: "User asked to explore gemini-3.1-flash-lite as a comparison model."
+  harnesses:
+    - scripts/voice-bench/g4-model-compare.py
+    - scripts/voice-bench/g4-interactions-eval.py (reused graded stateful loop)
+  result_jsons:
+    - scripts/voice-bench/results/g4-model-compare-20261126.json
+    - scripts/voice-bench/results/g4-model-latency-20261126.json
+  design: "Same 4 synthetic multi-turn tool-and-recall tasks, stateful Interactions arm, both models in one run; 5 surface checks per model; 3 single-call latency trials per model."
+  agent_loop:
+    gemini-3.1-flash-lite:
+      completed: "4/4"
+      tool_strict: "0/4"
+      tool_relaxed: "4/4"
+      recall: "4/4"
+      input_tokens: 3951
+      output_tokens: 543
+      mean_elapsed_s: 111.99
+      note: "Strict tool misses were all topic enrichment, e.g. 'Q3 planning for project Lighthouse' instead of 'Q3 planning'; attendees, date and time were exact on 4/4."
+    gemini-3.5-flash-lite:
+      completed: "4/4"
+      tool_strict: "3/4"
+      tool_relaxed: "4/4"
+      recall: "4/4"
+      input_tokens: 3904
+      output_tokens: 510
+      mean_elapsed_s: 22.99
+  surfaces:
+    both_models_pass: [streaming_text, structured_output, background_execution, flex_tier, code_execution]
+    note: "code_execution returned Fibonacci(20)=6765 with the same step sequence on both; flex echoed 'flex' on both."
+  single_call_latency_s:
+    gemini-3.1-flash-lite: [136.43, 2.86, 69.08]
+    gemini-3.5-flash-lite: [5.67, 6.38, 3.14]
+  findings:
+    - "Functionally the two lite models are equivalent on this small set: both scored 4/4 relaxed tool calls and 4/4 recall, with nearly identical token use (~3.9k input, ~0.5k output)."
+    - "Strict topic matching penalised 3.1 because it enriches tool arguments with recalled context. That is a rubric artifact; on the fields that matter for scheduling (attendees, date, time) it was exact on 4/4."
+    - "3.1 was much slower and wildly variable (136s / 2.9s / 69s on identical calls vs 3-6s for 3.5). Treat this as free-tier queueing/throttling, not an inherent model-speed result; do not use it for model selection without a paid-tier repeat."
+    - "All five Interactions surfaces work on both models, so surface availability does not differentiate them."
+
 verdict: >
   Interactions API is a viable stateful text-agent primitive and is worth a
   paid-tier trial with a Gemini 4 model, but this run cannot validate the
   Gemini 4 half of the track. Server-side state showed only a ~2-3% input-token
-  saving on a 20-turn session, and no cache hits were observed on free tier.
-  Do not change the production agent path on this evidence.
+  saving on a 20-turn session, no cache hits were observed on free tier, and
+  gemini-3.1-flash-lite showed severe free-tier latency variance without any
+  accuracy advantage. Do not change the production agent path on this evidence.
 
 guardrails:
   - "No key, billing, gateway, model-pin or production agent change."
