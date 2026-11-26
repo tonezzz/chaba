@@ -1,7 +1,7 @@
 id: dispatch-queue-approval-gate
 title: Dispatch queue approval gate (RBAC-lite) — /home/tony/ansible on idc02
-column: doing
-updated: 2026-11-26 13:02
+column: review
+updated: 2026-11-26 13:06
 priority: medium
 tags:
 - dispatch
@@ -120,13 +120,37 @@ comms:
     (gpus>0|prio<=2|gpu tag), scheduler 24h expiry sweep, queue_operations approve/reject/pending ops. Verified
     live: gated enqueue->awaiting_approval (queue empty), approve->scheduler dispatched->completed on omen, reject->never
     dispatched (list --status rejected). Job rec'
+- at: 2026-11-26 13:06
+  from: tony-macbook
+  text: 'finished (ok): exit=0  to con01/idc02/idc03 currently fail — only omen/dell (podman 5.7) can run containers.
+    | devin-task-20261126-1234'
+- at: 2026-11-26 13:06
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-26 13:06
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261126-123407-follow-up-from-card-awx-aap-rb
+    is 113 commits behind origin/master —\n   run 'git pull"
+- at: 2026-11-26 13:06
+  from: chaba
+  text: pushed dispatch/20261126-123407-follow-up-from-card-awx-aap-rb to origin
+- at: 2026-11-26 13:06
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-26 13:06
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0  to con01/idc02/idc03 currently fail — only omen/dell (podman 5.7) can run containers. | devin-task-20261126-123407-follow-up-from-card-awx-aap-rb.service:
+    Consumed 2min 28.665s CPU time over 28min 15.782s wall clock time, 2.4G memory peak.'
+  verified: false
 claim:
   since: 2026-11-26 12:33
+review_kind: verify
