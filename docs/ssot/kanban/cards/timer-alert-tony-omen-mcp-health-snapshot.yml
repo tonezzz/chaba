@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-mcp-health-snapshot
 title: Timer mcp-health-snapshot on tony-omen failing
-column: done
-updated: 2026-11-26 03:59
+column: backlog
+updated: 2026-11-26 11:34
 priority: high
 tags:
 - timer-alert
@@ -123,6 +123,14 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 11:34
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-26 11:34
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-26 11:29) of `mcp-health-snapshot.service` on `tony-omen`
+    result=exit-code — investigate journal: `journalctl --user -u mcp-health-snapshot.service` on the host. See
+    CMS `timer-timeline-tony-omen`.'
 spec: Investigate the failing mcp-health-snapshot.service timer on host tony-omen by checking its journal logs via
   journalctl --user -u mcp-health-snapshot.service and referencing CMS timer-timeline-tony-omen. The target host
   is tony-omen and the relevant repository is chaba. The done-condition is verified when the root cause of the exit-code
