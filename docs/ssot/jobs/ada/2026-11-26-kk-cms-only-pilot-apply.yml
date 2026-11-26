@@ -1,0 +1,83 @@
+date: 2026-11-26
+title: kk CMS-only memory pilot — prod profile declared + applied to ada-kk
+domain: ada
+job: card kk-cms-only-memory-pilot-acceptance (ref MEM-1429)
+host: idc03
+repo: chaba (dispatch worktree, branch dispatch/20261126-124228-ask-kk-to-accept-a-reversible-)
+
+summary: >
+  KK accepted and Tony approved the reversible 3-7d CMS-only memory
+  pilot (board request kk-do-you-accept-a-reversible-3-7-day-cm-d8c11e,
+  answered "approve — KK accepts, proceed with pilot" 2026-11-26 12:26).
+  persons.kk.tools now withholds ada_memory_search / ada_remember /
+  ada_forget / ada_session_recall / web_search (moved include->exclude)
+  and declares env_knobs ADA_SESSION_PRIME=1 + ADA_PRIME_SKIP_HISTORY=1.
+  render-tool-profiles.py learned to render a second managed block
+  (ada-env-knobs) for person profiles — previously knob blocks existed
+  only via the dev-only kk-bench-env.py. Applied live on idc03:
+  kk-ha/backend.env re-rendered, ada-kk.service restarted, /api/health
+  ok. Effective session surface verified = 19 resolvable tools, zero
+  memory/web_search leaks.
+
+what_changed:
+  ssot: docs/ssot/apps/ssot.apps.ada-persons.yml — persons.kk.tools
+    include minus 5, exclude plus 5, new env_knobs map; tool_profiles
+    fields doc + bench_profiles comments updated; kk-parity include/
+    exclude re-mirrored to new prod (env_knobs kept at pre-pilot
+    SKIP_HISTORY=0 as the deliberate control arm).
+  script: scripts/ada/render-tool-profiles.py — env_knobs support
+    (render_knobs_block + generic _merge_block; managed block marker
+    'ada-env-knobs'). Absent env_knobs = unmanaged; empty map = managed
+    block cleared.
+  tests: tests/ada/test_render_tool_profiles.py (new, 9 tests);
+    tests/ada/test_bench_profile_parity.py comments/assertions updated
+    for post-promotion semantics. 21 targeted tests green; tests/ada
+    suite 415 passed (only pre-existing env-dependent patch-apply
+    failures deselected).
+
+apply_evidence:
+  snapshot: ~/.config/secrets/kk-ha/backend.env.bak.20261126T060430Z
+    on idc03 (last-5 rotation)
+  env_after: managed blocks at lines 25-29 (tool profile) and 47-51
+    (env knobs ADA_PRIME_SKIP_HISTORY=1, ADA_SESSION_PRIME=1)
+  restart: ada-kk.service restarted 13:05:12->13:06:17 +07; env mtime
+    13:04:41 < ActiveEnterTimestamp — process has the new env
+  health: GET /api/health :8007 -> ok:true, degraded:false,
+    active_sessions:0 (first poll ~11s after restart command)
+  surface_check: env-parsed include=21/exclude=36; all 5 drops in
+    exclude and absent from include; all 21 keep tools present;
+    effective resolvable surface = 19 tools (wp_read/wp_update are
+    stale include names — tools.d drop never installed on idc03,
+    pre-existing, harmless — nonexistent tools cannot be declared).
+  startup_log: tools.d loaded 32 tools; MDDB /v1/search 200; only
+    pre-existing warning HOME_ASSISTANT_TOKEN unset (member lane).
+
+side_effect_disclosure: >
+  render-tool-profiles --host idc03 --apply also reported
+  "UPDATED tony/tony-ha/backend.env" — the only diff was retiring a
+  DEAD hand-written ADA_EXCLUDED_TOOLS=get_habit_status,
+  report_habit_observation line that sat outside the managed block and
+  was already overridden by it (last-wins). Functionally a no-op; no
+  tony service was restarted.
+
+pending:
+  - "LINE smoke — post one message in the kk-ha group, confirm a sane
+    Kaewta reply; needs a human (yomi LINE session expired; webhook
+    cannot be synthesized). KK's first real message doubles as smoke."
+  - "daily checks per docs/assessments/kk-cms-only-pilot-plan.md —
+    /api/health, one covered CMS recall, one honest miss, session-audit
+    review for fabrication/tool_denied storms. 3-7d window from
+    2026-11-26."
+  - "keep-or-revert decision at window end; revert = restore the 5
+    tools to persons.kk.tools include list, drop env_knobs, re-render,
+    restart ada-kk (env snapshot also on idc03)."
+  - "kk-parity/kk-cms-only bench profiles re-baseline if pilot is kept
+    permanently (parity currently = prod tools + pre-pilot prime
+    control arm)."
+
+rollback: >
+  ssh idc03 'cp -p ~/.config/secrets/kk-ha/backend.env.bak.20261126T060430Z
+  ~/.config/secrets/kk-ha/backend.env && systemctl --user restart
+  ada-kk.service' — or revert the SSOT edit and re-run
+  render-tool-profiles.py --host idc03 --apply. No data touched;
+  banks/CMS/calendars are lane-scoped and unchanged.

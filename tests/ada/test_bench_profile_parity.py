@@ -1,12 +1,21 @@
 """Parity + delta assertions for the kk CMS-only bench profiles.
 
-MEM-0498 / step 2 of the 2026-11-24 CMS-only re-test plan.
+MEM-0498 / step 2 of the 2026-11-24 CMS-only re-test plan; updated
+2026-11-26 for the pilot promotion (card kk-cms-only-memory-pilot-acceptance).
 
 persons.kk.tools is the production surface. kk-parity must be an exact
-copy: a stale "restore" profile silently changes the dev lane after a
-bench run and invalidates every before/after comparison. kk-cms-only must
-be production MINUS the declared experimental drops, PLUS the documented
-test-only seed writers; any other delta is drift.
+copy of its include/exclude: a stale "restore" profile silently changes
+the dev lane after a bench run and invalidates every before/after
+comparison. kk-cms-only must be production MINUS the declared
+experimental drops, PLUS the documented test-only seed writers; any
+other delta is drift.
+
+Post-promotion notes:
+- prod now carries the CMS-only drops itself, so kk-cms-only's only
+  list delta vs prod is the test-only cms_publish_page seed writer.
+- kk-parity's env_knobs deliberately keep the PRE-PILOT prime
+  (ADA_PRIME_SKIP_HISTORY=0) — the dev lane is the control arm that
+  isolates the skip-history knob against prod's =1.
 
 No network, no live hosts — pure SSOT YAML assertions.
 """
@@ -80,8 +89,12 @@ def test_cms_only_is_prod_minus_declared_drops() -> None:
 def test_prime_knobs_match_profile_purpose() -> None:
     cms = _profile("kk-cms-only")["env_knobs"]
     parity = _profile("kk-parity")["env_knobs"]
-    assert cms["ADA_SESSION_PRIME"] == "1"  # keeps CMS catalog + identity
-    assert cms["ADA_PRIME_SKIP_HISTORY"] == "1"  # drops stale history only
+    # kk-cms-only mirrors the prod pilot knobs exactly.
+    prod_knobs = _prod().get("env_knobs") or {}
+    assert cms["ADA_SESSION_PRIME"] == prod_knobs["ADA_SESSION_PRIME"] == "1"
+    assert cms["ADA_PRIME_SKIP_HISTORY"] == \
+        prod_knobs["ADA_PRIME_SKIP_HISTORY"] == "1"
+    # kk-parity keeps the pre-pilot prime as the control arm.
     assert parity["ADA_SESSION_PRIME"] == "1"
     assert parity["ADA_PRIME_SKIP_HISTORY"] == "0"
 

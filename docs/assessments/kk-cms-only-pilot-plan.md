@@ -1,7 +1,13 @@
-# Kaewta CMS-only memory — production pilot plan (draft, not approved)
+# Kaewta CMS-only memory — production pilot plan
 
-**Status:** draft. No production change has been made. Requires KK's
-acceptance and Tony's explicit approval through the existing deploy gate.
+**Status:** **APPROVED + APPLIED 2026-11-26.** KK accepted and Tony
+approved (board request `kk-do-you-accept-a-reversible-3-7-day-cm-d8c11e`,
+answer "approve — KK accepts, proceed with pilot"). Prod profile declared
+in `persons.kk.tools` (+ new `env_knobs` support in
+`render-tool-profiles.py`), applied to `kk-ha/backend.env` on idc03,
+`ada-kk.service` restarted, health green. Apply evidence + pending items:
+`docs/ssot/jobs/ada/2026-11-26-kk-cms-only-pilot-apply.yml`. Pilot window:
+2026-11-26 → ~2026-11-29/12-03, daily checks below, then keep-or-revert.
 
 ## Goal
 
@@ -23,10 +29,13 @@ this is better for KK in daily use.
    the preserved patch is `docs/assessments/ada-voice-kk-cms-only-seed.patch`.
 3. Embedding/indexing health is stable (`get_indexing_status` backlog
    draining), since CMS publish fidelity depends on MDDB writes.
-4. A prod-specific profile is declared and reviewed. **`kk-bench-env.py`
-   must not be used for prod** — it deliberately refuses non-`-dev` env
-   files. Add a separate, explicitly named prod profile and apply it via
-   the board deploy-gate with an approval request, not via the bench toggle.
+4. ~~A prod-specific profile is declared and reviewed.~~ **Done
+   2026-11-26:** the prod profile IS `persons.kk.tools` — the five tools
+   moved to `exclude:`, and `tools.env_knobs` (new
+   `render-tool-profiles.py` support; `kk-bench-env.py` remains
+   dev-only) carries `ADA_SESSION_PRIME=1` + `ADA_PRIME_SKIP_HISTORY=1`.
+   Applied via `render-tool-profiles.py --host idc03 --apply` after the
+   board approval, not via the bench toggle.
 
 ## Apply (only after approval)
 
