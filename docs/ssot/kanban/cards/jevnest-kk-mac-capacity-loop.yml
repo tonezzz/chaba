@@ -1,7 +1,7 @@
 id: jevnest-kk-mac-capacity-loop
 title: JevNest KK-Mac capacity-aware queue refill
 column: doing
-updated: 2026-11-26 19:32
+updated: 2026-11-26 19:40
 brief: Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner
   load, disk, and fallback gates.
 priority: high
@@ -389,6 +389,12 @@ comms:
     Capacity producer now implemented in scripts/devn; runbook docs/kb/devnest-capacity-aware-dispatch-procedure.md:
     DevNest capacity-a; [jevnest-bounded-package-planner] primer injected 8 lesson(s): [jevnest-kk-mac-c; kk-mac
     HID idle gate is the real bottleneck on owner machines'
+- at: 2026-11-26 19:40
+  from: devin
+  text: 'dispatch picked up on idc02. Auditing producer vs spec: gates/caps/classes verified in code; found doc
+    drift (procedure docs still say load_1m<=4.0 absolute + depth 3/new 3, deployed is per-core gate + 5/5 since
+    2026-11-13/25) and a real gap — kk_mac_metrics.py exists but nothing publishes its rollup into the L0-L3 report
+    graph, so weekly JevTeam review has no feed. Wiring that now.'
 action:
   status: running
   type: dispatch
