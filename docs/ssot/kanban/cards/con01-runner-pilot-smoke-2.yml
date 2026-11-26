@@ -1,7 +1,7 @@
 id: con01-runner-pilot-smoke-2
 title: con01 runner pilot smoke 2 — runner-agent dispatch path
-column: doing
-updated: 2026-11-26 11:12
+column: backlog
+updated: 2026-11-26 11:13
 brief: Low-risk con01 runner-agent dispatch pilot. Dispatch a tiny verification task on the chaba repo via devin-dispatch
   and confirm claim/start/close on con01.
 priority: low
@@ -23,11 +23,16 @@ action:
   - con01
   - dispatch
   target_host: con01
-  status: running
+  status: queued
   lane: free_lane
   lane_source: jevos
   attempts: 1
-  runner: con01
+  result: 'journal=exit-code xited, code=exited, status=2/INVALIDARGUMENT | devin-task-20261126-051057-low-risk-dispatch-pilot-for-th.service:
+    Failed with result ''exit-code''. | devin-task-20261126-051057-low-risk-dispatch-pilot-for-th.service: Consumed
+    5.182s CPU time.'
+  last_failure: 'journal=exit-code xited, code=exited, status=2/INVALIDARGUMENT | devin-task-20261126-051057-low-risk-dispatch-pilot-for-th.service:
+    Failed with result ''exit-code''. | devin-task-20261126-051057-low-risk-dispatch-pilot-for-th.service: Consumed
+    5.182s CPU time.'
 comms:
 - at: 2026-11-26 09:36
   from: chaba
@@ -124,6 +129,10 @@ comms:
   from: devin
   text: 'DONE: py_compile exit 0, syntax valid, no modifications. Outcome doc: dispatch-outcome-20261126-051057-low-risk-dispatch-pilot-for-th.md
     in worktree.'
+- at: 2026-11-26 11:13
+  from: con01
+  text: 'finished (failed): journal=exit-code xited, code=exited, status=2/INVALIDARGUMENT | devin-task-20261126-051057-low-risk-dispatch-pilot-for-
+    — auto-retry queued (attempt 2/2) (column -> backlog)'
 ref: OPS-1428
 claim:
   since: 2026-11-26 11:09
