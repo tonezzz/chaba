@@ -1,7 +1,7 @@
 id: board-api-date-serialization-outage
 title: board-api /cards 502 — YAML bare dates crash json.dumps (fleet-wide Ada status outage 2026-11-09)
 column: doing
-updated: 2026-11-26 21:09
+updated: 2026-11-26 21:31
 priority: medium
 tags:
 - devnest
@@ -293,5 +293,12 @@ comms:
   from: devin
   text: 'dispatch started: mapped card-YAML write paths — all funnel through board-api.save() and card_io.atomic_dump_card();
     adding json_safe normalization at both + regression test'
+- at: 2026-11-26 21:31
+  from: devin
+  text: 'DONE on dispatch branch (commit 509511f969, worktree dispatch/20261126-210344). card_io.json_safe() normalizes
+    datetime.date/datetime -> ISO str inside atomic_dump_card() + board-api.save() — the two chokepoints all parse-dump
+    card writers funnel through. Fields normalized: created (bare date-only scalars), any nested at:/updated:-shaped
+    date scalars; plain strings untouched, updated: YYYY-MM-DD HH:MM dumps unchanged (no diff churn). New tests/board/test_card_date_serialization.py
+    asserts persis'
 claim:
   since: 2026-11-26 21:03
