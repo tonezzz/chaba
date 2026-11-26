@@ -1,7 +1,7 @@
 id: gpu-timeslot-reservations
 title: GPU time-slot reservations for shared omen GPU
 column: backlog
-updated: 2026-11-26 12:31
+updated: 2026-11-26 12:32
 brief: Add exclusive GPU time-window reservations to the Redis-backed Ansible dispatch queue so a job can hold omen's
   GTX 1650 without contention. Done when a reservation can be created, enforced by scheduler placement, released
   on job completion/timeout, and verified with two overlapping GPU jobs.
@@ -179,6 +179,9 @@ comms:
 - at: 2026-11-26 12:31
   from: chaba
   text: '[auto-dispatch] wave 11 (2026-11-26 12:31): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-26 12:32
+  from: chaba
+  text: 'con01 defers: runner at cap (1/1)'
 ref: OPS-1407
 claim:
   since: 2026-11-25 20:35
