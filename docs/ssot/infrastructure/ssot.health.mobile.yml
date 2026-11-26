@@ -126,10 +126,12 @@ services:
     name: Playlived (tony-dell)
     type: http
     host: tony_dell
-    url: http://127.0.0.1:9230/sessions
+    url: http://tony-dell:9230/sessions
     expected_status: 200
     timeout: 5
     category: api
+    disabled: true
+    note: "Loopback-bound on tony-dell; not reachable from the health host over tailnet. Verified manually via ssh tony-dell curl/systemd status. Re-enable only after an explicit tailnet endpoint exists."
     profiles:
       - home
       - mobile
