@@ -1,7 +1,7 @@
 id: line-lane-lock-retire
 title: Retire LINE_LANE_LOCK once chat_send targeting is verified
-column: review
-updated: 2026-11-26 23:51
+column: done
+updated: 2026-11-26 23:55
 priority: low
 action:
   type: dispatch
@@ -356,6 +356,9 @@ comms:
 - at: 2026-11-26 23:51
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-26 23:55
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 spec: 'DECISION 2026-11-26 Tony: verify then retire. Phase 1 only - read-only verification that chat_send lane targeting
   uses LINE_LANE_ALLOW and the last-room fallback as documented; report exact config locations and observed behavior.
   Do NOT remove the line-lane lock or change routing. Done: verification report posted; retirement stays gated on
@@ -363,3 +366,7 @@ spec: 'DECISION 2026-11-26 Tony: verify then retire. Phase 1 only - read-only ve
 claim:
   since: 2026-11-26 23:22
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 23:55
+  note: verified — evidence checks green, closing itself
