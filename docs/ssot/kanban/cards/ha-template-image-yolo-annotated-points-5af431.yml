@@ -1,7 +1,7 @@
 id: ha-template-image-yolo-annotated-points-5af431
 title: HA template image.yolo_annotated points at dead LAN-IP :8780 — repoint to 127.0.0.1
 column: doing
-updated: 2026-11-26 23:20
+updated: 2026-11-26 23:30
 priority: low
 tags:
 - home-assistant
@@ -142,6 +142,13 @@ comms:
   from: devin
   text: 'Dispatch started on mn01. server.py check: /image takes NO params — 404 means state.annotated is None ("no
     image yet"), not a route miss. Now verifying live on tony-omen and locating templates.yaml.'
+- at: 2026-11-26 23:30
+  from: devin
+  text: 'DONE. templates.yaml on omen repointed to http://127.0.0.1:8780/image (backup .bak-20261126), template.reload
+    applied. /image takes NO params — audit 404 was empty-state ("no image yet"), not a route miss. Verified end-to-end:
+    temporarily sourced omen_cam -> /image 200 image/jpeg and HA /api/image_proxy 200; restored declared ip_cam_65_low
+    (still frameless, camera outage = separate lane; /image now serves last good frame so dashboard renders). No
+    new LAN bind (127.0.0.1:8780 only + pre-existing '
 spec: 'Repoint tony-ha templates.yaml image.yolo_annotated from http://192.168.2.86:8780/image to http://127.0.0.1:8780/image
   (HA is host-networked; yolo-detect.service on tony-omen binds 127.0.0.1:8780 only). First verify the /image route
   responds with its required params — a bare GET returned 404 during the 2026-11-25 audit, so check server.py route
