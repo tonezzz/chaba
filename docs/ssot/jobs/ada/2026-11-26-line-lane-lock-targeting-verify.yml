@@ -1,0 +1,180 @@
+title: LINE lane-lock targeting verification (Phase 1, read-only)
+subtitle: Verified chat_send lane targeting uses LINE_LANE_ALLOW + the
+  last-room fallback exactly as documented — deployed code is
+  byte-identical to ada-voice origin/main @ 0892c82; LINE_LANE_LOCK
+  stays until Tony decides on retirement
+icon: shield-check
+
+planning:
+  goal: |
+    Card line-lane-lock-retire, DECISION 2026-11-26 Tony "verify then
+    retire — Phase 1 only": read-only verification that chat_send lane
+    targeting uses LINE_LANE_ALLOW and the last-room fallback as
+    documented; report exact config locations and observed behavior.
+    Do NOT remove the lock or change routing.
+  scope: |
+    ada-voice backend (line_relay.py /send, tool_runner chat_send,
+    pwa_server session binding) + live env on idc03/tony-omen.
+    Read-only: no sends, no config edits, no restarts.
+  owner: devin (dispatch)
+  related_focus:
+    - label: line-lane-lock-retire
+      file: docs/ssot/kanban/cards/line-lane-lock-retire.yml
+
+processing:
+  status: completed
+  started_at: 2026-11-26T23:25:00+07:00
+  steps:
+    - id: 1
+      label: Trace targeting chain in ada-voice origin/main
+      status: completed
+      notes: |
+        tool_runner/chat.py chat_send -> _chat_send_run POSTs
+        {to, chat_id, instance=ADA_INSTANCE_ID} to ADA_LINE_SEND_URL
+        (default http://127.0.0.1:8912/send). Empty to -> session_chat_id()
+        (SESSION_CHAT bound from ?chat_id= at ws connect; relay appends
+        &chat_id= to the persona ws URL, line_relay.py:879;
+        pwa_server.py:1176 binds / 1188,2080 unbinds). Explicit to= wins.
+    - id: 2
+      label: Verify deployed code on idc03 == origin/main
+      status: completed
+      notes: |
+        idc03 checkout HEAD 5d1d383 (merge; its origin/main ref stale).
+        byte-diff vs tonezzz/ada-voice origin/main @ 0892c82:
+        backend/line_relay.py, backend/tool_runner/chat.py,
+        backend/tool_runner/common.py, pwa_server.py — all IDENTICAL.
+    - id: 3
+      label: Read live lane config on idc03 + tony-omen
+      status: completed
+      notes: |
+        line-bot.env + per-lane ADA_INSTANCE_ID envs collected (below).
+    - id: 4
+      label: Observed behavior — relay journal + ops-events
+      status: completed
+      notes: |
+        journal retention ~Nov 25->now: 68 /send deliveries, zero
+        'lane lock' rewrites, zero 'send denied' 403s. ops-events.jsonl
+        month of send_rollup only; LINE quota healthy (126/300 used).
+
+config_locations:
+  relay_env: |
+    idc03:~/.config/secrets/line-bot.env — EnvironmentFile of
+    ada-line-relay.service (with tony-ha/backend.env). Live values
+    2026-11-26:
+      LINE_LANE_LOCK=kk,kk-dev,chaba
+      LINE_LANE_DEFAULT=kk:C822026077530a29620b5041bd1a955c5,
+        kk-dev:C822026077530a29620b5041bd1a955c5,
+        chaba:C4fb0ce548a58e2d758335b7e21ce3411,
+        ada:Cb754717565d4cee5eab43a0e848654a2
+      LINE_LANE_ALLOW=kk:C822…,kk-dev:C822…,
+        chaba:C4fb…,
+        tony:U7efe5dde785e89fc998de234dfbe3d90+
+          Uc0b894d3f0e715e8077fca887ce4534c+
+          U749908a2e83d9c2242d11fd2a9920478+
+          C822026077530a29620b5041bd1a955c5,
+        ada:Cb754717565d4cee5eab43a0e848654a2
+      (allow sets are '+'-separated; _lane_env_map splits on ':')
+      LINE_NAME_BACKENDS — kaewta->:8007, chaba->:8008, ada->:8002
+        (idc03 loopback); kaewta-dev/kaewta-cms/chaba-dev/ada-dev ->
+        100.75.102.88:8009/:8005 (tony-omen dev twins)
+      LINE_GROUP_PERSONA — C4fb->chaba, Cb75->ada, Cc92->kaewta-dev,
+        C464->chaba-dev, Ca00->ada-dev
+      LINE_DEFAULT_PERSONA=kaewta
+  instance_ids: |
+    ADA_INSTANCE_ID per lane (systemd EnvironmentFiles):
+      ada-ha-tony :8002  tony-ha/backend.env      -> tony
+      ada-kk      :8007  kk-ha/backend.env        -> kk
+      ada-kk-dev  :8009  ada-kk-dev.env (idc03 AND tony-omen) -> kk-dev
+      ada-chaba   :8008  ada-chaba.env            -> chaba
+      ada-dev     :8005  ada-dev.env (idc03 lab + omen) -> dev
+      ada-ha-ada  :8006  ada-ha/backend.env       -> ada
+      ada-ai-kraut:8003  michael-ha/backend.env   -> michael
+    send endpoint: ADA_LINE_SEND_URL unset everywhere -> default
+    http://127.0.0.1:8912/send (idc03 relay). Omen dev backends have no
+    reachable relay on loopback:8912 — LINE sends from omen dev lanes
+    would fail to connect (no observed traffic; dev lanes are
+    web/telegram-facing).
+
+verified_chain: |
+  /send resolution order (line_relay.py ~2424-2545, deployed==main):
+    1. uid = body.to or body.chat_id (explicit target; chat_send fills
+       both with to_eff = explicit to= OR session-bound chat OR "")
+    2. display-name resolution (owner alias, profile cache,
+       LINE_USER_CALLERS, LINE_PERSON_ALIASES)
+    3. empty + instance -> _recent_chat[inst] if age < 600s
+       (LAST-ROOM FALLBACK — in-memory dict, wiped on relay restart)
+    4. empty + instance -> LINE_LANE_DEFAULT[inst]
+    5. empty -> first _allowed_users() entry (LINE_ALLOWED_USER_IDS)
+    6. instance in LINE_LANE_LOCK -> uid rewritten to
+       LINE_LANE_DEFAULT[inst] ('lane lock: %s send to %s rewritten')
+    7. instance in LINE_LANE_ALLOW and uid not in allow[inst] ->
+       403 'target outside lane allowlist' ('send denied' warning)
+    8. deliver; _recent_chat[inst] refreshed on every inst-tagged send
+  chat_send tool side: explicit to= wins; empty to= on a bound session
+  posts the originating chat (in-context); unbound -> to="" -> chain above.
+  LINE_LANE_ALLOW/LOCK vet the bound target like any other (403, not
+  silent reroute) — matches README drop-8 contract + Oct-13 job spec.
+
+observed_behavior: |
+  journalctl --user -u ada-line-relay (retention Nov 25 -> Nov 26 23:14):
+    - 68 'send: inst=' deliveries: 67 inst=- (script pushes with
+      explicit to= member DMs U7ef/Uc0b/U749 — ungated by design) and
+      1 inst=kk-dev -> C822 class=bulk (consistent with lock/default).
+    - 0 'lane lock' rewrites, 0 'send denied' 403s in window.
+    - Relay healthy: hourly quota polls, pushes 200, restarts ~deploys.
+  ops-events.jsonl (since Oct): send_rollup daily only; no lane/deny
+  event codes exist (lock rewrite and 403 are journal-only, not ops
+  events).
+  line-media journals: group dirs C4fb/C822 last entries Oct 14-17;
+  Cb75 (ada-home) has NO journal dir at all — group appears inactive.
+
+findings: |
+  VERIFIED as documented:
+    - LINE_LANE_ALLOW allowlist + LINE_LANE_LOCK rewrite + last-room
+      fallback all present in deployed code, config live, mechanism
+      correct.
+    - All three locked lanes (kk, kk-dev, chaba) have LINE_LANE_DEFAULT
+      targets inside their own LINE_LANE_ALLOW sets -> the rewrite can
+      never produce a self-inflicted 403.
+    - Lock runs BEFORE the allow gate: a locked lane's effective
+      reachable set is exactly {LINE_LANE_DEFAULT[inst]} — member DMs
+      are unreachable via chat_send while locked (intended).
+  NUANCES for the retirement decision:
+    - _recent_chat is per-process memory with a 600s TTL: after a relay
+      restart or 10 quiet minutes, context-free sends fall to
+      LINE_LANE_DEFAULT (deterministic) then first-allowed-user.
+    - _deliver_turn warms _recent_chat under the PERSONA key; only the
+      chaba lane (persona==instance=='chaba') gets turn-warmed fallback.
+      For kk/kk-dev/tony lanes the instance-keyed fallback is warmed
+      only by prior /send deliveries — 'last room' means 'last room
+      this lane pushed to', not 'last active conversation' (per-session
+      accuracy comes from the ?chat_id= binding instead).
+    - First-allowed-user fallback iterates a set — which of the 3
+      member DMs wins can vary across relay restarts (hash order).
+    - instance 'tony' (:8002, persona ada) is allowlisted WITHOUT its
+      pinned group Cb75 — a bare chat_send inside an ada-home turn
+      would 403. Latent only: Cb75 shows zero journal activity (group
+      likely dead). Same class: dev/michael instances have no
+      LINE_LANE_ALLOW entries -> exempt from the gate entirely.
+    - Lane-targeted chat_send traffic is thin: 1 inst-tagged send in
+      the ~2-day journal window. The lock is verified correct but has
+      had almost no live exercise — 'targeting stabilises' evidence
+      is mechanistic, not behavioral.
+
+results:
+  deliverables:
+    - docs/ssot/jobs/ada/2026-11-26-line-lane-lock-targeting-verify.yml
+      (this file)
+  outcome: |
+    Phase 1 gate input ready: targeting mechanism verified end-to-end
+    (code==deployed, config live, chain matches docs). Retirement of
+    LINE_LANE_LOCK stays gated on Tony's call — recommend unblocking
+    per-lane (kk-dev first: dev lane, lowest blast radius) rather than
+    all three at once, and fixing the tony/Cb75 allowlist hole first
+    if the ada-home group is still meant to be live.
+  next_steps: |
+    - Tony decision: retire per-lane or keep; if retire, sequence
+      kk-dev -> kk -> chaba with a soak between each.
+    - Optional pre-work: add Cb75 to LINE_LANE_ALLOW[tony] or confirm
+      the ada-home group is retired; decide whether dev/michael
+      instances should get explicit allow entries (currently exempt).
