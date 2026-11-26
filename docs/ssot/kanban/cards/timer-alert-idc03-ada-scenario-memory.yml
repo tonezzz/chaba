@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-memory
 title: Timer ada-scenario-memory on idc03 failing
 column: backlog
-updated: 2026-11-26 11:20
+updated: 2026-11-26 12:27
 priority: high
 tags:
 - timer-alert
@@ -134,6 +134,13 @@ comms:
     08:38/06:25), not a new failure. The retry watcher is active and waiting for the shared :8199 lock held by the
     long-running ada-scenario-smoke suite; no new run is due until that clears. Leave in backlog — it will turn
     green and auto-close after the queued run.'
+- at: 2026-11-26 12:27
+  from: tony
+  text: 'answered the-timer-ada-scenario-memory-fbdac5: Postpone investigation until paid-lane credentials are systematically
+    re-evaluated'
+- at: 2026-11-26 12:27
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: the-timer-ada-scenario-memory-fbdac5
   ask: The timer ada-scenario-memory.service on idc03 failed with a resource error because EnvironmentFile ~/.config/secrets/ada-ha-tony.env
@@ -144,9 +151,11 @@ requests:
   - Disable or mask the ada-scenario-memory.service timer on idc03 to stop recurring alert failures while staying
     parked
   - Postpone investigation until paid-lane credentials are systematically re-evaluated
-  status: open
+  status: answered
   at: 2026-11-25 19:23
   from: backlog-spec-enrich
   escalated_at: 2026-11-26 07:24
+  answer: Postpone investigation until paid-lane credentials are systematically re-evaluated
 action:
   status: done
+awaiting_action: true
