@@ -407,8 +407,15 @@ def cmd_banks(args, url, key):
     del url, key  # banks ride the target's own embed queue, not litellm
     colls = args.collection or sorted(set(BANK_COLLS.values()))
     hi = args.queue_hi
+    t0 = time.monotonic()
+
+    def over_budget():
+        return bool(args.budget) and time.monotonic() - t0 > args.budget
+
     total_copied = total_fail = 0
     for coll in colls:
+        if over_budget():
+            break
         src = mddb_base(coll)
         try:
             have = {d.get("key") for d in _docs(MDDB_EMBED, coll, False)}
@@ -427,13 +434,25 @@ def cmd_banks(args, url, key):
             continue
         copied = fail = 0
         for i, d in enumerate(todo):
+            if over_budget():
+                print(f"  {coll}: budget {args.budget}s exhausted at "
+                      f"{i}/{len(todo)} — stopping run cleanly "
+                      f"(next run resumes via key-set diff)", flush=True)
+                break
             # throttle: never let the target's embed queue near its cap
             depth, dropped = _queue_depth()
             while depth >= hi:
+                if over_budget():
+                    print(f"  queue depth {depth} (dropped {dropped}) — "
+                          f"budget exhausted while waiting for drain < "
+                          f"{hi}; stopping run cleanly", flush=True)
+                    break
                 print(f"  queue depth {depth} (dropped {dropped}) — "
                       f"waiting for drain < {hi}", flush=True)
                 time.sleep(30)
                 depth, dropped = _queue_depth()
+            if over_budget():
+                break
             meta = d.get("meta") or {}
             if isinstance(meta, str):
                 try:
@@ -457,9 +476,11 @@ def cmd_banks(args, url, key):
         total_fail += fail
         print(f"banks {coll}: copied={copied} failed={fail}", flush=True)
     depth, dropped = _queue_depth()
+    note = ("; run budget exhausted — remaining docs resume next run"
+            if over_budget() else "")
     print(f"banks: {total_copied} docs delivered, {total_fail} failed; "
           f"embed queue depth={depth} dropped={dropped} "
-          f"(drains async via embed-pool)")
+          f"(drains async via embed-pool){note}")
 
 
 # ---------------------------------------------------------------- recall
@@ -530,6 +551,11 @@ def main():
                    help="one collection (repeatable); default BANK_COLLS")
     p.add_argument("--limit", type=int, default=0,
                    help="cap docs per collection")
+    p.add_argument("--budget", type=int, default=0,
+                   help="wall-clock seconds for the whole run — stop "
+                        "copying cleanly (exit 0) once exceeded so the "
+                        "service finishes inside TimeoutStartSec; the "
+                        "next run resumes via key-set diff")
     p.add_argument("--force", action="store_true",
                    help="re-add docs already on target (repair drops)")
     p.add_argument("--queue-hi", type=int, default=3000,

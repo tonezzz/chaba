@@ -1,0 +1,9 @@
+[Unit]
+Description=Ansible runner-tool drift guard (read-only fleet check) (job:ansible-runner-tool-guard, rendered from ssot.jobs.yml — do not edit)
+ConditionPathExists=%h/CascadeProjects/chaba/ansible/playbooks/verify-runner-tools-sync.yml
+
+[Service]
+Type=oneshot
+TimeoutStartSec=900
+ExecStart=/usr/bin/ansible-playbook playbooks/verify-runner-tools-sync.yml
+WorkingDirectory=%h/CascadeProjects/chaba/ansible

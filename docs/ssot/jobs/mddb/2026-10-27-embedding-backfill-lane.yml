@@ -80,6 +80,12 @@ jobs:
       Ops-routed collections (recall-summary, scenario-reports)
       intentionally absent — keyword-ranked, no vectors needed.
     refresh: dispatcher every 1d on idc02 (driver off idc03).
+      Rendered unit runs `banks --budget 2400` — a 40min wall-clock cap
+      inside the 45min TimeoutStartSec (card embed-lane-banks-bounded-run,
+      2026-11-26). The ~71K-doc backlog at queue-throttled copy speed
+      cannot finish in one window; the cap makes each run exit 0 with
+      incremental progress and the daily timer advances the resume-safe
+      key-set cursor instead of dying on SIGTERM.
     seed: "2026-10-27: full-surface backfill delivered from idc02 —
       7179 docs copied across 23 collections, 0 failed, 0 queue drops
       (devin-tony bank was already 2561/2561 from MEM-0805; instance
