@@ -1,7 +1,7 @@
 id: lesson-comments-dev-board
 title: Comment → work bridge — turn WP post comments into a dev discussion board
-column: backlog
-updated: 2026-11-26 13:54
+column: doing
+updated: 2026-11-26 14:06
 brief: 'Tony wants comment sections on boards (lesson/CMS posts) to function as a development discussion board —
   comments become actionable threads, not just a suggestion log. Today the digest bot files comments as reference-only
   (digest:74) and nothing acts. Live demo of the target loop already ran: Tony commented images-vertical→horizontal
@@ -275,14 +275,51 @@ comms:
   text: 'Triage 2026-11-26: action.status=done is WRONG. 2026-11-07 comm: ''not landed - wp-comment-sync.py exists
     but still has no lesson lane ... dispatch produced nothing. Back to backlog.'' Runner only claims status=queued;
     left open for a status reset + re-dispatch decision.'
+- at: 2026-11-26 14:04
+  from: chaba
+  text: classified as paid_frontier (kw:discussion board conf 1.00)
+- at: 2026-11-26 14:04
+  from: devin
+  text: queued for processing
+- at: 2026-11-26 14:04
+  from: devin
+  text: 'Pilot re-queue 2026-11-26 (Tony approved): status was stuck at done despite the work not landing; runners
+    only claim queued. Status reset via /action do=queue. Watch this card for claim + dispatch outcome; if the closeout
+    bug repeats (exit=0 with no artifact/commits), do NOT re-queue blind again.'
+- at: 2026-11-26 14:04
+  from: chaba
+  text: 'con01 defers: runner at cap (1/1)'
+- at: 2026-11-26 14:05
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.54 > 1.5)'
+- at: 2026-11-26 14:05
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-26 14:05
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.22 > 0.7)'
+- at: 2026-11-26 14:06
+  from: chaba
+  text: started devin-task-20261126-140605-phase-1-only-1-digest-worker-c on tony-macbook (dispatch)
+- at: 2026-11-26 14:06
+  from: chaba
+  text: 'primer injected 8 lesson(s): [lesson-comments-dev-board] Carded from chat ask on the lesson page. Phase-1
+    spe; [board-cli-request-ask-field] primer injected 8 lesson(s): board-api /comment an; [lesson-comments-dev-board]
+    Triage 2026-11-26: action.status=done is WRONG. 2026; [lesson-comments-dev-board] Verified 2026-10-28: wp-comment-sync.timer
+    is active; [lesson-comments-dev-board] [KNB-1098] not landed — wp-comment-sync.py exists bu; [lesson-comments-dev-board]
+    merge-sweep: no session/worktree '
 action:
   type: dispatch
-  status: done
-  runner: idc02
+  status: running
   result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261028-123905-phase-1-only-1-digest-worker-c.service: Main
     process exited, code=exited, status=1/FAILURE | devin-task-20261028-123905-phase-1-only-1-digest-worker-c.service:
     Failed with result ''exit-code''.'
   sweep:
     session_gone: 2026-10-28 12:47
+  lane: paid_frontier
+  lane_source: kw
+  runner: tony-macbook
+  attempts: 1
 review_kind: verify
-claim: {}
+claim:
+  since: 2026-11-26 14:05

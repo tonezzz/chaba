@@ -1,7 +1,7 @@
 id: dispatch-zero-commit-sessions-epidemic
 title: dispatch sessions produce zero commits at high rate — root cause
-column: backlog
-updated: 2026-11-26 13:54
+column: doing
+updated: 2026-11-26 14:06
 spec: 'OPS-0894 fixed the closeout gate (empty branches no longer auto-close — held in review correctly). The SOURCE
   defect is unfixed and burning dispatches: 10+ sessions Oct 26-27 across hosts (tony-macbook, idc02, mn01) and
   lanes (deepseek-v4-pro, others) produced ZERO commits — pushed branch head = plain master commit, service often
@@ -14,17 +14,19 @@ spec: 'OPS-0894 fixed the closeout gate (empty branches no longer auto-close —
 action:
   type: dispatch
   repo: chaba
-  status: done
+  status: running
   sweep:
     stale_running: 2026-10-27 16:47
     zero_commit: 2026-10-27 16:47
     session_gone: 2026-10-27 17:02
-  verified: false
   last_failure: 'no delivered work — branch head == base tip — nothing committed; unit: exit_code=1'
-  runner: tony-macbook
   result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261027-164816-ops-0894-fixed-the-closeout-ga.service: Main
     process exited, code=exited, status=1/FAILURE | devin-task-20261027-164816-ops-0894-fixed-the-closeout-ga.service:
     Failed with result ''exit-code''.'
+  lane: paid_frontier
+  lane_source: kw
+  runner: mn01
+  attempts: 1
 ref: OPS-0941
 comms:
 - at: 2026-10-27 16:44
@@ -315,5 +317,43 @@ comms:
   text: 'Triage 2026-11-26: action.status=done is WRONG. 2026-11-07 comm: ''root-cause work not landed - the OPS-0894
     investigation dispatch produced zero commits ... Back to backlog.'' Runner only claims status=queued; left open.
     Partial closeout guards landed since (OPS-1066), but the source defect investigation remains.'
-claim: {}
+- at: 2026-11-26 14:04
+  from: chaba
+  text: classified as paid_frontier (kw:rename conf 1.00)
+- at: 2026-11-26 14:04
+  from: devin
+  text: queued for processing
+- at: 2026-11-26 14:04
+  from: devin
+  text: 'Pilot re-queue 2026-11-26 (Tony approved): status was stuck at done despite the work not landing; runners
+    only claim queued. Status reset via /action do=queue. Watch this card for claim + dispatch outcome; if the closeout
+    bug repeats (exit=0 with no artifact/commits), do NOT re-queue blind again.'
+- at: 2026-11-26 14:04
+  from: chaba
+  text: 'con01 defers: runner at cap (1/1)'
+- at: 2026-11-26 14:05
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 1.54 > 1.5)'
+- at: 2026-11-26 14:05
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.22 > 0.7)'
+- at: 2026-11-26 14:05
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-26 14:05
+  from: mn01
+  text: claimed
+- at: 2026-11-26 14:06
+  from: chaba
+  text: started devin-task-20261126-140633-ops-0894-fixed-the-closeout-ga on mn01 (dispatch)
+- at: 2026-11-26 14:06
+  from: chaba
+  text: 'primer injected 8 lesson(s): [dispatch-zero-commit-sessions-epidemic] merge-sweep: no session/worktree
+    found ; [dispatch-zero-commit-sessions-epidemic] merge-sweep: verified gate failed — no ; [dispatch-zero-commit-sessions-epidemic]
+    session produced no commits — the branc; Dispatch branches that sit unmerged rot fast: master gained lane_source
+    stamping; [cline-nest-model-evaluation] session produced no commits — the branch head is j; [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f]
+    session pro'
+claim:
+  since: 2026-11-26 14:05
 review_kind: verify

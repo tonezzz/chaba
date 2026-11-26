@@ -1,7 +1,7 @@
 id: timer-alert-idc03-yomi-update-all
 title: Timer yomi-update-all on idc03 failing
-column: backlog
-updated: 2026-11-26 13:15
+column: done
+updated: 2026-11-26 14:04
 priority: high
 tags:
 - timer-alert
@@ -281,6 +281,12 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-26 12:48) of `yomi-update-all.service` on `idc03` result=exit-code — investigate
     journal: `journalctl --user -u yomi-update-all.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-26 14:04
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-26 13:48 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-26 14:04
+  from: tony
+  text: closed by tony
 spec: Investigate the failure of yomi-update-all.service on host idc03, which exited with an error code during its
   last run on 11-11 at 20:00. Inspect the systemd user journal using journalctl --user -u yomi-update-all.service
   on idc03 and cross-reference the CMS timer-timeline-idc03 for additional context. The done-condition is verified
