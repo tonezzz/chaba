@@ -39,6 +39,21 @@ Inventory: `ansible/inventory/hosts.yml`. Always `--limit` or an explicit group.
 9. **File evidence** — job SSOT under `docs/ssot/jobs/<area>/` with hashes, outputs,
    consumer proof, rollback path, lessons; mirror the lesson to KB/MDDB.
 
+## Prep → plan → apply → verify (standard for non-trivial changes)
+
+Canonical: `docs/ssot/infrastructure/ssot.ansible-change-procedure.yml#prep_plan_apply_verify` (OPS-1424, decisions 1A/2A/3A, 2026-11-26).
+
+Use this shape when a fleet change is more than a trivial read-only check:
+
+| Stage | Mode | Gate | Artifact |
+|---|---|---|---|
+| **Prep** | read-only | No host mutation; baseline preflight (SSOT/paths/secret names, tools, units, disk/headroom, deps) | `reports/ansible-benchmark/<playbook>/<ts>/summary.yml` + `<host>.yml` |
+| **Plan** | `--check --diff` | No mutation; blockers identified before approval | check-diff + parsed delta report referenced on card |
+| **Apply** | gated mutation | Explicit `*_approved=true`, `card_id/card_ref` required, rollback stated, narrow `--limit` | run log/evidence refs on card |
+| **Verify** | read-only | Producer+consumer proof; unverifiable = hold | verify report + board-api comment with `fp=` + artifact path |
+
+Rules: board-api is the only card write door; no secret values in logs/artifacts; `rc=4` tolerated for scheduled read-only audits but blocker for targeted apply; bulky logs never pasted into card comms (reference artifact path).
+
 ## Worked example — runner-agent drift, 2026-11-25
 
 All 7 Linux hosts held a stale installed `runner-agent`; the board-api drift gate
