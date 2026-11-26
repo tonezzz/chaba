@@ -1,0 +1,106 @@
+icon: wrench
+title: Reconcile ansible-chaba stale quadlet inventory — restore live truth, retire generator
+date: 2026-11-27
+card: ansible-chaba-stale-quadlet-inventory
+context: >-
+  The 2026-11-26T02:17Z fleet regeneration run by
+  /home/tony/tony-projects/ansible-chaba (on idc02, previously NOT under
+  version control) rewrote ~/.config/containers/systemd/*.container files
+  from host_vars inventory that had drifted badly from live podman state.
+  Worst case: idc03 mddb.container would have restarted the MDDB primary
+  on tradik/mddb:2.15.3 with /data instead of /app/data (empty DB),
+  dropping EnvironmentFile=mddb-follower.env (replication secret) and
+  ~30 env vars. tony-dell suffered a mass unit-failure at 11:55-11:56
+  (conmon "k8s-file doesn't support --log-tag"), idc02 mddb-cms/mddb-panel
+  restart-looped to failed, mn01's podman CLI broke entirely on invalid
+  storage.conf TOML. Card required: audit every ansible-managed quadlet
+  vs podman inspect + stacks/ SSOT, reconcile or retire the generator,
+  get ansible-chaba into VC, and NEVER restart affected units.
+changes:
+  - "Restored .container files to live truth (podman inspect + pre-regen
+    .bak files + stacks/ SSOT), daemon-reload only, zero restarts:"
+  - "idc03: mddb.container (image 2.18.10-merge, /app/data, embed env ->
+    100.102.134.91:11436 bge-m3/1024, +MDDB_OUTBOUND_ALLOWLIST),
+    mddb-cms.container (same embed fix), ollama.container, and
+    gemini-ollama-proxy.container replaced with stacks/ version
+    (node /app/gemini-ollama-proxy.mjs, proxy dir mounted :ro — the
+    ansible version ran repo-file proxy.mjs which is NOT what runs live)."
+  - "idc03: retired obsidian-vault.container — the live service is a
+    NATIVE systemd unit (~/.config/systemd/user/obsidian-vault.service,
+    python server.py); the quadlet was an inert shadow that would have
+    taken over with CHANGEME_ada_api_key if the native unit were removed."
+  - "idc02: mddb.container reconstructed as follower (localhost/mddb:
+    2.18.10-merge, env_file=secrets/mddb.env, MODE=ro, leader
+    100.102.134.91:11024). notebooklm-rest.container fixed (removed
+    CHANGEME_* env that would override env_file, slirp4netns port binds
+    3011->8000 on tailnet+loopback, +QUEUE_WRITES=1). notebooklm-mcp.container
+    rewritten to the fleet sleep-stub pattern (matches mn01 — service is
+    intentionally parked)."
+  - "idc02: retired mddb-cms.container + mddb-panel.container (generated
+    units that NEVER ran — phantom services; CMS plane lives on idc03) and
+    status-data-api.container (shadowed by enabled manual unit)."
+  - "con01: mddb-follower.container installed from stacks/ SSOT with image
+    bumped 2.15.4-lsn -> 2.18.10-merge (image present locally; service
+    stays inactive — warm standby)."
+  - "mn01: mn-ha-dev.container installed from stacks/ SSOT (restores
+    PodmanArgs add-hosts, tailnet PublishPort 9585, HealthCmd* keys the
+    ansible version dropped)."
+  - "tony-dell: chaba-postgres-16.container + raceman-php.container
+    rewritten to live truth (pasta net + dual 5432 binds; host net +
+    /app + php-fpm.conf mount). Retired 10 quadlets for services that
+    migrated off dell (mddb, mddb-cms, ollama, weaviate->idc02,
+    redis/yomi-api/gemini-ollama-proxy->idc03, rview-api, rview-live,
+    playlived-dell, node-red) — all had ActiveEnterTimestamp empty and
+    no containers; reset-failed applied. gemini-ollama-proxy.container
+    kept (maintained by sibling card gemini-proxy-quadlet-envfile-drop;
+    still in failed state — needs manual start when approved)."
+  - "storage.conf rewritten on idc03/idc02/con01/mn01/tony-dell: removed
+    invalid rootless key (podman decode warning on every call) and fixed
+    mn01's fatal multi-line inline table that made ALL podman commands
+    fail. Backups at storage.conf.bak-20261127-quadsweep."
+  - "ansible-chaba retired as quadlet generator: quadlet_services renamed
+    to quadlet_services_retired in all 5 host_vars (data preserved,
+    role loops see undefined -> skip). storage.conf.j2 fixed (rootless
+    key removed)."
+  - "ansible-chaba is now under version control:
+    https://github.com/tonezzz/chaba-ansible (private). NOTE: declared
+    repo in quadlet templates was github.com/tony/chaba-ansible which
+    does not exist and tonezzz cannot create under user 'tony'; the
+    GitHub identity for this fleet is tonezzz (same as tonezzz/chaba).
+    .github/workflows/ansible.yml excluded pending gh token workflow
+    scope (file remains on disk, gitignored)."
+verification:
+  - "podman info/images clean on all 5 hosts (mn01 recovered from total
+    CLI failure)."
+  - "systemctl --user list-units: idc03 mddb/mddb-cms/ollama/
+    gemini-ollama-proxy active running with restored descriptions;
+    idc02 mddb/notebooklm-* regenerated; con01 follower inactive;
+    mn01 mn-ha-dev active, container Up 17h healthy untouched; dell
+    only chaba-postgres-16/gemini-ollama-proxy/gpu-queue*/raceman-php
+    .container files remain."
+  - "No systemctl start/restart was issued anywhere — all changes are
+    file-level + daemon-reload; running containers untouched."
+residual: >-
+  - idc02 mddb-cms/mddb-panel quadlets were retired as phantoms but the
+    generated failed units may linger until reset-failed; harmless.
+  - tony-dell gemini-ollama-proxy.service is enabled+failed — it will
+    attempt start at next boot/login (log_tag is already fixed in
+    containers.conf, so it may succeed; left for operator decision).
+  - stacks/ SSOT gaps: stacks/idc02 has no mddb/notebooklm-*/status-data
+    entries; stacks/idc03 has no tony-ha (running as systemd-tony-ha).
+    Quadlet truth currently lives only on-host + in this trail.
+  - con01/mddb-follower.container (stacks/) contains the replication
+    secret in PLAINTEXT — pre-existing repo exposure, flagged not fixed.
+  - ansible-chaba still contains other roles (security, monitoring,
+    gpu-workers) applied by site.yml to all hosts — only the
+    quadlet-services surface was retired; a future site.yml run could
+    still rewrite storage.conf/containers.conf (templates now valid).
+lesson: >-
+  Quadlet-generated unit names hide the container name: without
+  ContainerName= the container is systemd-<unit> — audit with
+  `podman ps -a`, not assumed names. Ansible 'Managed by Ansible'
+  headers + Documentation= URLs are the tell for generated files;
+  cross-check every one against `podman inspect` before trusting.
+  TOML inline tables must be single-line AND podman's storage.conf
+  schema wants STRING values for pull_options — bools fail decode.
+  `rootless` is not a valid storage.conf key (podman autodetects).
