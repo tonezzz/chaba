@@ -1,7 +1,7 @@
 id: timer-alert-idc03-mddb-embed-probe
 title: Timer mddb-embed-probe on idc03 failing
-column: review
-updated: 2026-11-26 17:39
+column: done
+updated: 2026-11-26 18:00
 priority: high
 tags:
 - timer-alert
@@ -1512,6 +1512,16 @@ comms:
   from: chaba
   text: 'stalled-claim reaper: moved doing -> review — run reported done with no live claim — the verified gate
     owns the close decision'
+- at: 2026-11-26 18:00
+  from: devin
+  text: '[ops timer batch 18:05 +07] Root cause: unit ExecStart pointed at nonexistent scripts/ada/mddb-embed-probe.py
+    (203/EXEC; real script scripts/ada/embed-probe.py), and OnCalendar=*/15 * * * * is cron syntax rejected by systemd
+    ("bad unit file setting"). Fix: ExecStart=/usr/bin/python3 .../embed-probe.py, OnCalendar=*:0/15; daemon-reload
+    + systemd-analyze verify clean. Backups /tmp/opencode/unit-backup-20261126-175350. Verified live tick: Result=success,
+    embed path down->up with reindex triggered ('
+- at: 2026-11-26 18:00
+  from: tony
+  text: closed by tony
 action:
   status: done
   type: dispatch
