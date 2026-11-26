@@ -2,7 +2,7 @@ id: yomi-update-active-update-all-fail-every-8afee2
 title: yomi-update-active/update-all fail every run — --network=container:yomi-api but no yomi-api container exists
   on idc03
 column: doing
-updated: 2026-11-26 22:05
+updated: 2026-11-26 22:08
 priority: medium
 tags:
 - bug
@@ -378,6 +378,13 @@ comms:
     primer injected 8 lesson(s): [; [ops-1244d-janitor-merge] [sweep 2026-11-12] board-janitor is declared in ssot.j;
     [timer-alert-tony-dell-network-scan-tony] 2026-11-25 12:40 (+07): diagnosed the ; [job-health-sweep-consecutive-failure-alerts]
     primer injected'
+- at: 2026-11-26 22:08
+  from: devin
+  text: 'attempt 3 (tony-dell): re-verified live — https://idc03.taila0626a.ts.net:3000/api/yomi/health -> ok:true
+    ~31h after attempt-1 fix. Cherry-picked attempt-2 deliverable commit 20edca5439b (vendored systemd/yomi-api.service
+    + jobs doc + ssot.services.yml note) onto dispatch/20261126-220547-idc03-yomi-update-active-servi and committed
+    this session''s outcome file — branch is now 2 commits ahead of origin/master, so merge-sweep has real work
+    to land. Prior merge-hold was the mn01 runner''s pytest-unav'
 action:
   type: dispatch
   status: running
