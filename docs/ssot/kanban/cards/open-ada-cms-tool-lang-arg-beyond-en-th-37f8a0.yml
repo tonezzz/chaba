@@ -1,18 +1,19 @@
 id: open-ada-cms-tool-lang-arg-beyond-en-th-37f8a0
 title: Open Ada cms tool lang arg beyond en/th (de verified working)
-column: doing
+column: done
 updated: 2026-11-27 00:25
 priority: low
 action:
   type: dispatch
   repo: ada-voice
   executor: devin
-  status: running
+  status: done
   lane: devin
   attempts: 1
   runner: idc02
   sweep:
     stale_running: 2026-11-27 00:25
+  verified: true
 note: 'Follow-up from support-german-language-variants-on-cms-69ef23. Store + chaba readers now support any lang
   (de variant of translate-probe live, cms-render ?lang=de verified, board-api /report create accepts lang). Remaining
   gate is ada-voice: cms_publish_page / cms_edit / cms_read lang argument still presents en/th only — find whether
@@ -174,6 +175,17 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261126-234627-follow-up-to-support-german-la no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-27 00:25
+  from: chaba
+  text: 'merge-sweep: merged c95a5c1e (dispatch/20261126-234627-follow-up-to-support-german-la from idc02) -> origin/main
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261126-234627-follow-up-to-support-german-la.md)
+    — auto-closed'
+- at: 2026-11-27 00:25
+  from: local
+  text: 'pub milestone: card verified: open-ada-cms-tool-lang-arg-beyond-en-th-37f8a0 on idc03 — merged c95a5c1e
+    (dispatch/20261126-234627-follow-up-to-support-german-la from idc02) -> origin/main — verified — auto-cl — merged
+    c95a5c1e (dispatch/20261126-234627-follow-up-to-support-german-la from idc02) -> origin/main — verified — auto-closed
+    [evt-c6e80f901ad8712c]'
 spec: 'Follow-up to support-german-language-variants-on-cms-69ef23: store and chaba readers accept any language
   tag, but ada-voice cms_publish_page / cms_edit / cms_read still present en/th only. Determine whether the gate
   is a tool-declaration enum or CMS_INSTRUCTIONS wording in backend/realtime_provider.py (see integrations/ada-voice/backend/cms-slug-derivation.patch),
@@ -181,3 +193,7 @@ spec: 'Follow-up to support-german-language-variants-on-cms-69ef23: store and ch
   pytest green, a live lang=de publish/read round-trip verified, and the outcome states which layer was the gate.'
 claim:
   since: 2026-11-26 23:45
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 00:25
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261126-234627-follow-up-to-support-german-la.md
