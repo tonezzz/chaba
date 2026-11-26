@@ -100,8 +100,15 @@ residuals:
     remains after the legacy timer was disabled. Monitor for recurrence."
   - "tony-dell SSH now answers with 'Ubuntu 26.04.1 LTS / This service allows
     sftp connections only.' to shell requests, so fleet-health marks it
-    unreachable and con01's push probe fails with the same banner. Separate
-    investigation needed; this job used idc02 as the Ansible controller."
+    unreachable and con01's push probe fails with the same banner. Its
+    /etc/ssh/sshd_config (mtime 11:23) has a global ForceCommand internal-sftp
+    with the Include line commented out, and the sibling
+    sshd_config.backup.2026-11-26 is byte-identical (not a pre-change rollback).
+    A broader grep found no repo/playbook source; an unanswered OpenChamber
+    decision page records the same global ForceCommand on mn01 at 08:25. Treat
+    as a possible deliberate fleet-hardening event pending Tony's decision —
+    do not change sshd without explicit approval. This job used idc02 as the
+    Ansible controller."
   - "Pre-existing fleet-health failures remain: idc03/no-push-creds,
     mn01 and kk-mac unreachable."
   - "OPS-1406 host-parsing gap is closed (commit e3bb2d5afaf plus d71b491170e)
