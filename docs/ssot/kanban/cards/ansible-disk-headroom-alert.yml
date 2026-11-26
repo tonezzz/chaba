@@ -1,7 +1,7 @@
 id: ansible-disk-headroom-alert
 title: 'Ansible audit: disk headroom alert'
 column: done
-updated: 2026-11-26 20:38
+updated: 2026-11-27 06:33
 spec: 'Read-only ansible disk-headroom detected CRIT/warn/unreachable mounts. Hosts: tony-dell. Report dir: reports/ansible-benchmark/disk/.
   No remediation performed.'
 action:
@@ -62,3 +62,7 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-27 06:33
+  from: devin
+  text: 'ansible disk-headroom: 1 host(s) alerting. fp=tony-macbook:unreachable. [{"host": "tony-macbook", "kind":
+    "unreachable", "summary": "unreachable (offline_ok)"}]'
