@@ -1,7 +1,7 @@
 id: idc03-writer-hardening-index-lock-race-l-f77129
 title: idc03 writer hardening — index.lock race, .local-conflict debris, report-watch ping-pong
 column: doing
-updated: 2026-11-26 22:27
+updated: 2026-11-26 22:32
 tags:
 - ops
 - idc03
@@ -284,5 +284,12 @@ comms:
   text: 'picked up: scoping index.lock stale recovery in kanban-commit.sh. Finding: git 2.53 leaves index.lock empty
     (no pid) — holder detection will use pid-token-if-present + fuser + mtime age (N=15min default, env-overridable).
     Tests going into tests/board/ as pytest e2e like test_kanban_commit_guard.py.'
+- at: 2026-11-26 22:32
+  from: devin
+  text: 'DONE on dispatch/20261126-221940-scope-to-residual-hardening-it @ 13b36a4057c (no push per rails). kanban-commit.sh
+    now clears .git/index.lock when provably stale: dead holder pid (pid-token in file or fuser-visible opener —
+    git 2.53 leaves index.lock empty, verified) OR mtime > KANBAN_INDEX_LOCK_STALE_S=900s (15min, env-tunable),
+    once per tick, proactively before the add loop + on git_lock_retry lock errors. Live-lock no-op: fresh lock
+    w/ live holder left alone, adds retry ~17s, tick exits 0 de'
 claim:
   since: 2026-11-26 22:18
