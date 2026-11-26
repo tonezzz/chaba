@@ -1,7 +1,7 @@
 id: ansible-ada-ocb-tony-dell-fallback
 title: ADA-OCB tony-dell fallback probe/contract alignment
 column: doing
-updated: 2026-11-26 18:07
+updated: 2026-11-26 18:09
 brief: 'Follow-up from OPS-1424: tony-dell ocb_pane fallback probe incomplete in ada-ocb-verify; align pin/patch/service
   state or harden verify for missing fallback probe.'
 priority: medium
@@ -87,6 +87,10 @@ comms:
     ocb_pane group while probe play was --limit-scoped -> missing ocb_probe crash + all-? fail report. Hardened
     probe/assert/preflight/verify/audit: unprobed hosts now report unreachable (not fail); strict primary still
     fails loudly if unprobed. Verified live on tony-dell controller: verify '
+- at: 2026-11-26 18:09
+  from: chaba
+  text: 'merge-sweep: devin-task-20261126-174901-context-ops-1424-ansible-prep- no longer active on con01 but card
+    still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -94,5 +98,7 @@ action:
   lane_source: kw
   runner: con01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-26 18:09
 claim:
   since: 2026-11-26 17:47
