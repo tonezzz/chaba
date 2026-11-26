@@ -1,7 +1,7 @@
 id: auto-route-bounded-card-classes-to-execu-257c7a
 title: Auto-route bounded card classes to executor=claude (classifier policy)
 column: backlog
-updated: 2026-11-26 20:33
+updated: 2026-11-26 20:44
 priority: medium
 tags:
 - claude-lane
@@ -38,10 +38,9 @@ spec: 'Follow-up to PR #187 (claude executor lane, merged 2026-11-18). Today exe
 action:
   type: dispatch
   repo: chaba
-  status: idle
+  status: queued
   lane: paid_frontier
   lane_source: kw
-  runner: tony-macbook
   attempts: 1
   sweep:
     stale_running: 2026-11-24 23:39
@@ -313,6 +312,12 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 20:44
+  from: chaba
+  text: classified as paid_frontier (kw:compare conf 1.00)
+- at: 2026-11-26 20:44
+  from: tony
+  text: queued for processing
 claim:
   since: 2026-11-24 22:11
 review_kind: verify
