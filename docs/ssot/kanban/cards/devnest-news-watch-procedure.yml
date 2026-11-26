@@ -1,7 +1,7 @@
 id: devnest-news-watch-procedure
 title: 'DevNest news watch: detect milestones and update news reports'
 column: backlog
-updated: 2026-11-26 13:54
+updated: 2026-11-26 15:34
 brief: Keep DevNest news reports current as the system advances, without turning every routine run into a news item.
 priority: medium
 program: ai-workforce
@@ -293,14 +293,21 @@ comms:
   text: 'Triage 2026-11-26: action.status=done is WRONG. 2026-11-07 comm: ''not landed - no procedure doc on master;
     dispatch died on the push-cred gap. Back to backlog for re-dispatch.'' Runner only claims status=queued; left
     open. Needs a host with push creds before re-queueing.'
+- at: 2026-11-26 15:34
+  from: chaba
+  text: classified as free_lane (kw:report conf 1.00)
+- at: 2026-11-26 15:34
+  from: devin
+  text: queued for processing
 action:
   type: dispatch
-  status: done
-  runner: mn01
+  status: queued
   result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261026-223603-daily-weekly-scan-sources-boar.service: Main
     process exited, code=exited, status=1/FAILURE | devin-task-20261026-223603-daily-weekly-scan-sources-boar.service:
     Failed with result ''exit-code''.'
   sweep:
     session_gone: 2026-10-27 05:46
+  lane: free_lane
+  lane_source: kw
 review_kind: verify
 claim: {}
