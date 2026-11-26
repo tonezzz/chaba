@@ -1,7 +1,7 @@
 id: gemini-proxy-quadlet-envfile-drop
 title: gemini-ollama-proxy quadlet lost EnvironmentFile=mddb-gemini.env — restart = total embed outage
 column: doing
-updated: 2026-11-27 00:20
+updated: 2026-11-27 01:08
 priority: high
 tags:
 - mddb
@@ -45,6 +45,13 @@ comms:
     DONE (ab8533ba5e): gemini-ollama-proxy now honors OPENRO; [publish-promote-knowledge-capture-ssot-w-d34a39]
     Phase B+ ansible session-captu; [timer-alert-tony-dell-bank-inspect] 2026-11-25 14:35 (+07): Bank-inspect reads
     ; [yomi-update-active-update-all-fail-every-8afee2] investigati'
+- at: 2026-11-27 01:08
+  from: devin
+  text: 'progress: located generator — ~/tony-projects/ansible-chaba on idc02 (NOT a git repo; github.com/tony/chaba-ansible
+    404s). Template roles/quadlet-services/templates/quadlet-container.j2 already supports env_file; host_vars lacked
+    it. Patched inventory/host_vars/{idc03,tony-dell}.yml (+env_file mddb-gemini.env, +GEMINI_PROXY_HOST=127.0.0.1),
+    rendered single quadlet to /tmp, diff = +2 lines only, installed on idc03+tony-dell, daemon-reload done. Unit
+    now carries EnvironmentFile + --env-file in Exe'
 action:
   type: dispatch
   status: running
