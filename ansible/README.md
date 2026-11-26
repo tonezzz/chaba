@@ -247,3 +247,26 @@ asserts to warnings for a broad survey.
   contract and the playbook stay in sync.
 - After running, `python3 scripts/audit-hosts.py --host <h>` should show
   no unexpected drift.
+
+## Runner tool convergence (all pinned tools)
+
+`deploy-runner-agent.yml` only covered `runner-agent`; the other pinned tools
+in `scripts/devin/runner-tooling.manifest.json` drifted because they were
+repaired ad-hoc (`scp`). The canonical path is now:
+
+```bash
+cd ansible
+ansible-playbook playbooks/deploy-runner-tools.yml --check --diff   # read-only
+ansible-playbook playbooks/deploy-runner-tools.yml                  # apply
+ansible-playbook playbooks/audit-runner-tools.yml                   # re-audit
+```
+
+`deploy-runner-tools.yml` copies every pinned tool, verifies the installed
+sha256 against the manifest, uses `serial: 1` and a non-blocking restart
+handler, and is safe to call from cron. `scripts/devin/runner-tools-converge.sh`
+wraps check → apply → audit → board re-arm → re-audit, and
+`install-runner-tools-converge.yml` installs the daily user timer on managed
+hosts. Drift found by `audit-runner-tools.yml` is turned into a board card by
+`scripts/board/runner-drift-rearm.py` (use `--dry-run` to parse without
+writing); `--verify` comments the re-audit result and closes the card when
+clean.
