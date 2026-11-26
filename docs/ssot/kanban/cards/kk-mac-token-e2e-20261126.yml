@@ -1,0 +1,29 @@
+id: kk-mac-token-e2e-20261126
+title: E2E kk-mac token attribution proof (read-only)
+column: backlog
+updated: 2026-11-26 13:58
+priority: low
+tags:
+- kk-mac
+- e2e-probe
+- lane-savings
+spec: 'Read-only supervised e2e probe: verify kk_mac_local token usage lands in action.result and lane-savings monthly
+  report. No mutations.'
+action:
+  type: dispatch
+  executor: kk_mac_local
+  artifact: evals/kk-mac-lane/out/kk-mac-token-e2e-20261126.json
+  task_class: summary
+  prompt: 'Summarize in two sentences: KK-Mac is the local bounded read-only lane; this supervised e2e probe should
+    record token usage evidence in the lane-savings report. No mutations occurred.'
+  expect:
+    facts:
+    - KK-Mac
+    - read-only
+    - no mutations
+  status: queued
+ref: OPS-1439
+comms:
+- at: 2026-11-26 13:58
+  from: tony
+  text: card captured via board-api
