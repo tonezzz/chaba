@@ -68,6 +68,8 @@ GREPS = [
      "grep -nE '%s' ~/.config/caddy/Caddyfile 2>/dev/null"),
     ("idc02:web-origin", "idc02",
      "grep -nE '%s' ~/web-srv/caddy/Caddyfile 2>/dev/null"),
+    ("idc02:apps-index", "idc02",
+     "grep -nE '%s' ~/web-srv/public/apps/apps.yml ~/web-srv/public/apps/index.html 2>/dev/null"),
     ("idc02:units", "idc02",
      "grep -rInE '%s' ~/.config/systemd/user/ ~/.config/containers/systemd/ 2>/dev/null"),
     ("idc03:units", None,

@@ -62,7 +62,7 @@
       ).join('');
       const appMap = new Map((data.apps || []).map(a => [a.id, a]));
       const hostname = window.location.hostname;
-      const hostLabel = hostname.includes('mn01') ? 'mn01' : 'tony-dell';
+      const hostLabel = hostname.includes('mn01') ? 'mn01' : 'idc02';
       const resolve = (a) =>
         (a.host && a.host_url && a.host !== hostLabel) ? a.host_url + a.href : a.href;
       let html = '';

@@ -12,7 +12,7 @@ REPO = Path.home() / "CascadeProjects" / "chaba"
 APPS_DIR = REPO / "stacks" / "web" / "public" / "apps"
 APPS_YML = APPS_DIR / "apps.yml"
 SSOT_APPS = REPO / "docs" / "ssot" / "apps" / "ssot.apps.yml"
-BASE_URL = "https://tony-dell.taila0626a.ts.net"
+BASE_URL = "https://idc02.taila0626a.ts.net"
 SKIP_PATHS = {"", ".", "shared", "shared/js", "shared/tests"}
 SKIP_PATTERNS = ["yomi/media", "yomi/fetch-data", "trade/data/imported"]
 
@@ -94,8 +94,8 @@ def load_ssot_apps():
             continue
         for app_id in host_cfg.get("apps", []):
             mapping[app_id] = {"host": host_id, "host_url": host_url}
-    # Anything not in the registry defaults to tony-dell for historical reasons
-    mapping.setdefault("tony-dell", {"host": "tony-dell", "host_url": "https://tony-dell.taila0626a.ts.net"})
+    # Anything not in the registry defaults to idc02 — the /apps web origin
+    mapping.setdefault("idc02", {"host": "idc02", "host_url": "https://idc02.taila0626a.ts.net"})
     return mapping
 
 
@@ -121,8 +121,8 @@ def generate():
         href = app["href"]
         rel = app.pop("rel", None)
         ssot = ssot_by_id.get(app["id"], {})
-        app["host"] = ssot.get("host", "tony-dell")
-        app["host_url"] = ssot.get("host_url", "https://tony-dell.taila0626a.ts.net")
+        app["host"] = ssot.get("host", "idc02")
+        app["host_url"] = ssot.get("host_url", "https://idc02.taila0626a.ts.net")
         existing = existing_by_href.get(href)
         if existing:
             # preserve the existing id/icon, but refresh title/description from the page
@@ -150,8 +150,8 @@ def generate():
         if not any(a.get("href") == existing["href"] for a in merged):
             if not existing.get("host"):
                 ssot = ssot_by_id.get(existing.get("id", ""), {})
-                existing["host"] = ssot.get("host", "tony-dell")
-                existing["host_url"] = ssot.get("host_url", "https://tony-dell.taila0626a.ts.net")
+                existing["host"] = ssot.get("host", "idc02")
+                existing["host_url"] = ssot.get("host_url", "https://idc02.taila0626a.ts.net")
             merged.append(existing)
 
     data["apps"] = sorted(merged, key=lambda a: a.get("id", ""))

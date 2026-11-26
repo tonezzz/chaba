@@ -1,0 +1,45 @@
+title: Migrate apps.yml host_url off tony-dell + canary coverage for deployed apps index
+subtitle: OPS-1195 — 47 stale host entries (42 host:tony-dell + 5 host:yomi) repointed to the idc02 /apps web origin; consumer-canary now greps the deployed index
+icon: server
+card: apps-yml-host-url-still-tony-dell-x42
+
+state: done  # repo-side verified 2026-11-26; deploys via merge -> idc03 served checkout -> web-srv-sync (~15min cadence)
+
+context:
+  origin: "idc02 web.service (rootless podman caddy) serves ~/web-srv/public — fronted by https://idc02.taila0626a.ts.net; web-srv-sync.timer rsyncs public/+docs/ from idc03 served checkout on :00/15/30/45 (OPS-0731, 2026-10-20)"
+  mirror: "mn01 serves the same apps tree via caddy public dir (~/.config/caddy/public/apps, fed by apps-health-sync.py rsync); index.html hostLabel is mn01|idc02 aware"
+  prior_attempt: "dispatch 2026-11-24 completed identical analysis on tony-macbook but committed nothing (16 dirty files, checkpoint failed on 103-commit-behind worktree) — this run re-did the work and committed"
+
+changes_2026-11-26:
+  stacks/web/public/apps/apps.yml:
+    - "42 entries host:tony-dell + 5 entries host:yomi -> host:idc02, host_url:https://idc02.taila0626a.ts.net (47 total; zero tony-dell.taila0626a.ts.net refs remain)"
+  stacks/web/public/apps/lab/index.html:
+    - "hostLabel fallback 'tony-dell' -> 'idc02' (matches apps/index.html hostLabel logic)"
+  stacks/web/public/ssot.apps.yml:
+    - "stale public copy: tony-dell group -> idc02 (host_url https://idc02.taila0626a.ts.net), yomi group folded into idc02 apps list, yomi host_url dell ref removed"
+  docs/ssot/apps/ssot.apps.yml:
+    - "apps-hosts: tony-dell group renamed idc02 (web origin description + note documenting OPS-0731 move and yomi-group absorption); ada-voice removed from it (lives on idc03) and added to idc03 group with speaker-enroll; yomi group deleted, its 5 apps moved under idc02"
+  scripts/apps-yml-generate.py:
+    - "BASE_URL + all host/host_url defaults tony-dell -> idc02 (regen can no longer reintroduce retired refs)"
+  scripts/apps-health-sync.py:
+    - "fallback host/host_url defaults -> idc02; SYNCABLE_HOSTS {tony-dell,mn01} -> {mn01} (idc02 content arrives via web-srv-sync, not ~/.config/caddy/public rsync)"
+  docs/ssot/infrastructure/ssot.health.home.apps.yml:
+    - "regenerated from apps.yml — 55 services, all web-origin checks now https://idc02.taila0626a.ts.net (also picked up app-percussion missing since last regen)"
+  scripts/audit/consumer-canary.py:
+    - "new GREPS entry idc02:apps-index — greps deployed ~/web-srv/public/apps/{apps.yml,index.html} on idc02 for retired hostnames (closes the verify-by-surface gap: canary previously covered only the web-origin Caddyfile, not the deployed webroot)"
+
+verification:
+  - "grep -c tony-dell.taila0626a.ts.net stacks/web/public/apps/apps.yml -> 0 (was 47)"
+  - "host distribution after edit: idc02 x47, mn01 x4, idc03 x4; yaml.safe_load OK on all touched files; no dup ids/hrefs"
+  - "live: https://idc02.taila0626a.ts.net/apps/{,cams/,yomi/,lab/} all 200 from tony-dell"
+  - "canary grep shape proven: ssh idc02 \"grep -nE '<pat>' ~/web-srv/public/apps/apps.yml ~/web-srv/public/apps/index.html\" runs clean (currently reports the 47 stale deployed refs — expected until web-srv-sync picks up the merge)"
+  - "ssot.health.home.apps.yml regen: 0 tony-dell refs, 47 idc02 URLs, 55 services"
+
+known_remaining:
+  - "deployed ~/web-srv/public/apps/apps.yml on idc02 still carries the 47 dell refs until merge -> idc03 pull -> web-srv-sync; the new canary grep will flag them in that window (correct canary behavior, self-clears)"
+  - "apps/lab/index.html ENDPOINTS block still lists idc01.taila0626a.ts.net URLs (Ada ws/PWA, MDDB stats) — idc01 prod role retired 2026-11-14; separate stale-refs issue, not tony-dell scope"
+  - "scripts/make-apps-pwa.py fallback description string '{name} on tony-dell' — cosmetic, not a URL"
+  - "~33 other scripts still reference tony-dell.taila0626a.ts.net — parent migration scope (tony-dell-full-migration), not this card"
+
+lessons:
+  - "dispatch close-out requires COMMITS on the dispatch branch — attempt 1 did all the analysis but left 16 dirty files and was scored a failure; commit before writing the outcome doc"
