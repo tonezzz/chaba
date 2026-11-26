@@ -96,3 +96,30 @@ promotion:
     - Re-run th-qry-temp and confirm the tool call is restored.
     - Watch HA/GEV bridges for an early 'done' event on tool turns; the harness
       now handles the two-phase completion, the bridges still forward both.
+
+rollout:
+  deployed_on: "2026-11-25"
+  deployed_by: devin
+  authority: "Tony: roll out the updated source pins and restart the runtime services"
+  services:
+    - host: tony-omen
+      unit: ha-live.service
+      change: "deployed bridge.py both live.connect models -> gemini-3.8-live"
+      verified: "active; bridge on :9005; tailnet :8444 re-established; container sees updated file"
+      rollback: "~/.config/home-assistant/ha-live/bridge.py.bak-20261125-rollout"
+    - host: idc02
+      unit: gev-gemini.service
+      change: "ExecStart env GEV_GEMINI_MODEL=gemini-3.8-live"
+      verified: "active; running container env reports GEV_GEMINI_MODEL=gemini-3.8-live"
+      rollback: "~/.config/systemd/user/gev-gemini.service.bak-20261125-rollout"
+  served_from_repo_no_restart:
+    - "stacks/web/gemini-mic-test/server.mjs — no deployed service running"
+    - "stacks/web/public/apps/gev-direct/client.js — Caddy mounts repo public/ to /srv/public on idc03"
+  th_qry_temp_post_rollout:
+    runner: idc03
+    combo: gemini-baseline
+    key: paid
+    runs: 3
+    wer: 0.0
+    tool_calls: "run 1 none (documented flake); runs 2-3 partial with early_turn_complete + tool_call + final turn_complete"
+    verdict: "no rollout regression; fixture remains nondeterministic exactly as the gate note records"
