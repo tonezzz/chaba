@@ -70,6 +70,14 @@ podman unshare rm ~/.config/containers/mddb-<bank>/data/mddb.db.pre-compact
 - ~10-15 min for an 8.8G db on idc03's loaded SSD. Downtime = the whole sequence.
 - Rollback: `.pre-compact` file stays until verified.
 - bbolt@v1.4.3 because latest needs go>=1.25; the 1.23-bookworm image is already pulled on idc03.
+- Verified 2026-11-24 (idc03 mddb-ops, 76G -> 6.2G): after restart, `/v1/stats` stayed
+  `statsPending` with empty collections for many minutes — NOT data loss. Verify with
+  `POST /v1/search {"collection":"<name>","query":"","limit":1,"offset":0}` and compare a
+  returned document id to the live bank (device-telemetry and host-logs both matched).
+- The compacted `.db` and `.pre-compact` are subuid-owned (100999) after a `:U` mount:
+  plain `rm` fails `Permission denied`; use `podman unshare rm -f` (already in the command
+  above). A large bbolt compact can outlive an SSH session — run it detached or reattach
+  before the swap; do not re-trigger it.
 
 ## Distillation guidance
 
