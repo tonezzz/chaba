@@ -1,7 +1,7 @@
 id: audit-miss-unlanded-oct06-dispatch-artifacts
 title: Audit unlanded Oct 6 dispatch artifacts on Dell mirror
-column: doing
-updated: 2026-11-26 21:48
+column: review
+updated: 2026-11-26 21:52
 brief: Three unique outputs from the Oct 6 audit were found only as untracked files in tony-dell's frozen chaba-tony-dell
   mirror; origin/master does not contain them.
 priority: medium
@@ -21,10 +21,13 @@ spec: 'Reconcile these three Oct 6 outputs found only as untracked files on tony
   origin/master. The archived ada-dead-turn-guard card is tracked and is not a miss.'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   attempts: 1
   runner: tony-dell
+  result: 'exit=0 outcome-20261126-211926-reconcile-these-three-oct-6-ou.md`. | devin-task-20261126-211926-reconcile-these-three-oct-6-ou.service:
+    Consumed 3min 37.620s CPU time over 29min 17.294s wall clock time, 846.5M memory peak, 358.3M memory swap peak.'
+  verified: true
 ref: AUD-0020
 comms:
 - at: 2026-11-20 16:38
@@ -264,6 +267,32 @@ comms:
     via later merge, only ada-pi→ada-voice rename diff). (2) service-name-indirection outcome MD — summary of the
     inventory YAML, redundant once YAML lands; OPS-0124 archived card already carries outcome. (3) tailnet-ip-indirection-inventory
     YAML — SALVAGED: was untracked under'
+- at: 2026-11-26 21:52
+  from: tony-dell
+  text: 'finished (ok): exit=0 outcome-20261126-211926-reconcile-these-three-oct-6-ou.md`. | devin-task-20261126-211926-reconcile-these-three-oc'
+- at: 2026-11-26 21:52
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-26 21:52
+  from: chaba
+  text: banked 817 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 21:52
+  from: chaba
+  text: pushed dispatch/20261126-211926-reconcile-these-three-oct-6-ou to origin
+- at: 2026-11-26 21:52
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-26 21:52
+  from: chaba
+  text: auto-merged 0e921f41 (dispatch/20261126-211926-reconcile-these-three-oct-6-ou) → origin/master
+- at: 2026-11-26 21:52
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261126-211926-reconcile-these-three-oct-6-ou,
+    branch dispatch/20261126-211926-reconcile-these-three-oct-6-ou'
 review_kind: verify
 claim:
   since: 2026-11-26 21:18
