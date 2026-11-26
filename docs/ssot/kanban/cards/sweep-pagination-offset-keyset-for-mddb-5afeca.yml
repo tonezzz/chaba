@@ -1,7 +1,7 @@
 id: sweep-pagination-offset-keyset-for-mddb-5afeca
 title: 'sweep pagination: offset -> keyset for mddb pruning scripts'
-column: doing
-updated: 2026-11-26 12:39
+column: done
+updated: 2026-11-26 12:40
 brief: 'prune-old-docs.py and device-telemetry prune.py enumerate via /v1/search offset paging (skip += kept). Under
   concurrent bulk writes the offset window shifts: stale docs get skipped, scanned under-counts, sweeps report deleted
   0 while work remains (observed 2026-11-12 on ops host-logs during refill). Fix = iterate by key cursor (seek from
@@ -463,9 +463,28 @@ comms:
     sort=key asc + X-Limit cap-aware termination + MAX_PASSES=5 convergence in scripts/ada/prune-old-docs.py and
     scripts/device-telemetry/prune.py; meta filter on host-logs expiry; job trail docs/ssot/jobs/mddb/2026-11-26-sweep-pagination-keyset.yml;
     outcome d'
+- at: 2026-11-26 12:40
+  from: chaba
+  text: 'merge-sweep: merged 4e5a5dd2 (dispatch/20261126-123501-sweep-pagination-offset-keyset from tony-dell) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261126-123501-sweep-pagination-offset-keyset.md)
+    — auto-closed'
+- at: 2026-11-26 12:40
+  from: local
+  text: 'pub milestone: card verified: sweep-pagination-offset-keyset-for-mddb-5afeca on idc03 — merged 4e5a5dd2
+    (dispatch/20261126-123501-sweep-pagination-offset-keyset from tony-dell) -> origin/master — verified — a — merged
+    4e5a5dd2 (dispatch/20261126-123501-sweep-pagination-offset-keyset from tony-dell) -> origin/master — verified
+    — auto-closed [evt-7c81ea3d4ac521f0]'
+- at: 2026-11-26 12:40
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261126-123501-sweep-pagination-offset-keyset,
+    branch dispatch/20261126-123501-sweep-pagination-offset-keyset on tony-dell'
+- at: 2026-11-26 12:40
+  from: chaba
+  text: 'merge-sweep: dispatch/20261126-123501-sweep-pagination-offset-keyset already in origin/master — marked
+    verified (exit_code=0; outcome doc dispatch-outcome-20261126-123501-sweep-pagination-offset-keyset.md) — auto-closed'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   executor: devin
@@ -476,6 +495,11 @@ action:
   result: 'exit=0 acklog warning and the idc03 install step needed post-merge. | devin-task-20261125-210908-sweep-pagination-offset-keyset.service:
     Consumed 2min 7.369s CPU time over 17min 16.876s wall clock time, 962.1M memory peak, 571.8M memory swap peak.'
   runner: tony-dell
+  verified: true
 claim:
   since: 2026-11-26 12:34
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 12:40
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261126-123501-sweep-pagination-offset-keyset.md
