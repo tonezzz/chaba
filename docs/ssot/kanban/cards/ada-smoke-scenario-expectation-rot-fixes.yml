@@ -1,7 +1,7 @@
 id: ada-smoke-scenario-expectation-rot-fixes
 title: 'Smoke scenarios: fix expectation rot (4 yamls) + scenario-live cleanup MDDB plane bug'
 column: doing
-updated: 2026-11-26 22:23
+updated: 2026-11-26 22:24
 priority: medium
 tags:
 - ada
@@ -96,6 +96,10 @@ comms:
     unasserted -> no_calls); lang= arg-shape miss root-caused to tool_guide omitting the arg — now documented there.
     Plane routing applied to seed+seed_evict+cleanup (seed had the same bug). Stray-page delete + translate-probe
     sweep raised as board request pending Tony OK. Trail: docs/sso'
+- at: 2026-11-26 22:24
+  from: chaba
+  text: 'merge-sweep: devin-task-20261126-220949-follow-up-to-ada-smoke-regress no longer active on con01 but card
+    still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -103,6 +107,8 @@ action:
   lane_source: kw
   runner: con01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-26 22:24
 claim:
   since: 2026-11-26 22:08
 requests:
