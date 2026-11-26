@@ -1,6 +1,6 @@
 id: ada-voice-fleet-jobs-verb
 title: 'ada-voice: wire fleet-jobs report verb — read rendered fleet-jobs-report CMS page (sub-second, never live-compute)'
-column: backlog
+column: doing
 updated: 2026-11-26 21:02
 priority: medium
 tags:
@@ -18,9 +18,10 @@ spec: 'Implement a report-verb tool in ada-voice per docs/kb/ada-report-verb-con
 action:
   type: dispatch
   repo: ada-voice
-  status: queued
+  status: running
   lane: devin
-  attempts: 0
+  attempts: 1
+  runner: idc02
 ref: ADA-0041
 comms:
 - at: 2026-11-20 20:10
@@ -186,4 +187,8 @@ comms:
   from: chaba
   text: 'con01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
-claim: {}
+- at: 2026-11-26 21:02
+  from: idc02
+  text: claimed
+claim:
+  since: 2026-11-26 21:02
