@@ -1,7 +1,7 @@
 id: con01-runner-pilot-smoke-2
 title: con01 runner pilot smoke 2 — runner-agent dispatch path
 column: backlog
-updated: 2026-11-26 09:36
+updated: 2026-11-26 09:37
 brief: Low-risk con01 runner-agent dispatch pilot. Dispatch a tiny verification task on the chaba repo via devin-dispatch
   and confirm claim/start/close on con01.
 priority: low
@@ -37,5 +37,9 @@ comms:
   from: chaba
   text: 'WARNING: unclaimable by the declared runner fleet — action.host=con01 names no declared runner. Fix action.labels/host
     pins or teach a runner the capability (RUNNER_LABELS + ssot.kanban.yml runner_fleet)'
+- at: 2026-11-26 09:37
+  from: chaba
+  text: 'tony-dell defers: unclaimable by the declared runner fleet: con01 lacks labels [''con01'', ''dispatch'']
+    and serves [''container'', ''script''], not dispatch — fix action.labels/host pins or teach a runner the capability'
 ref: OPS-1428
 awaiting_action: true
