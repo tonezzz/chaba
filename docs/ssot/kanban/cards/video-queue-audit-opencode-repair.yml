@@ -1,7 +1,7 @@
 id: video-queue-audit-opencode-repair
 title: 'OpenCode artifact repair: video queue audit'
 column: backlog
-updated: 2026-11-26 15:01
+updated: 2026-11-26 15:13
 brief: Retry ADA-1046 with a write-capable artifact contract so the queue audit report lands and verifies.
 priority: high
 program: ai-workforce
@@ -16,7 +16,7 @@ spec: Run scripts/devnest/video_queue_status.py read-only against both video roo
 action:
   type: dispatch
   model: litellm/gemini-3.5-flash-lite
-  executor: opencode
+  executor: devin
   profile: artifact-write
   target_host: idc02
   artifact: reports/card-runner/video-queue-status-opencode.md
@@ -302,5 +302,11 @@ comms:
   from: chaba
   text: 'idc02 defers: executor=opencode declared but action.lane_envelope is not staged — admission would hold
     at start, so the claim is held too: stage the envelope or pin executor=devin (no attempt burned)'
+- at: 2026-11-26 15:13
+  from: devin
+  text: 'Pin 2026-11-26: executor changed opencode->devin. Staged opencode envelopes are impossible here — the runner
+    on idc02 hard-gates stage=S3 while lane_gate.admit requires the envelope stage to equal the live lane stage
+    (S1). The DEV-0958 drop guard will replace the declared litellm/* model with the devin default, so this claim
+    should run cleanly. Verify a real committed artifact on closeout.'
 review_kind: verify
 claim: {}
