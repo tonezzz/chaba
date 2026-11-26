@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: doing
-updated: 2026-11-27 01:22
+updated: 2026-11-27 01:26
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -694,6 +694,13 @@ comms:
     x5, human_minutes=0) = evals/opencode-lane/reports/2026-11-27-promotion-review.{json,md}. Probe: or-free-* 429
     until 07:00 +07; NEW coverage — gemini-*-free also 429/400 (every remote free pool capped); gemini-2.5-flash-lite
     200 in 3.3s (4th probe, metered-vs-free unverified)'
+- at: 2026-11-27 01:26
+  from: devin
+  text: 'attempt 9 wrap-up: BLOCKED, no gate run possible — same provider-quota wall, verified live ~01:22 +07.
+    Committed on dispatch/20261127-011421 (96fb6018ca + 580e3ef35e): dispatch-outcome-20261127-011421-*.md, fresh
+    2026-11-27 promotion-review pair (HOLD 0/5), trail doc attempt_9 section, all prior-attempt evidence carried
+    file-identical (8 outcomes + envelope + review pairs — still nothing on master). needs-input.txt filed. Unblock
+    path unchanged: OpenRouter free resets 07:00 +07 / Zen ~08:00 +07,'
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
