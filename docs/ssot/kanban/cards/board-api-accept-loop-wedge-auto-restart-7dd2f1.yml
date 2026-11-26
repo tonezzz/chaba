@@ -2,7 +2,7 @@ id: board-api-accept-loop-wedge-auto-restart-7dd2f1
 title: 'board-api accept-loop wedge: auto-restart on handler-thread stall (observed 2026-11-26 ~09:00-09:17Z on
   idc03)'
 column: doing
-updated: 2026-11-26 22:51
+updated: 2026-11-26 22:55
 tags:
 - board-api
 - idc03
@@ -90,6 +90,14 @@ comms:
     request); liveness watchdog probes /health end-to-end every 5s, 3 fails -> ACCEPT-LOOP-WATCHDOG dump + exit
     42 -> systemd Restart=on-failure (~35-45s recovery, inside 60s). Alert survives the wedge via ~/.local/state/board-api-watchdog/alerts.jsonl
     drained post-boot into ONE r'
+- at: 2026-11-26 22:55
+  from: chaba
+  text: 'merge-sweep: devin-task-20261126-221314-fix-chaba-board-api-on-idc03-w no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-26 22:55
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261126-221314-fix-chaba-board-api-on-idc03-w on tony-dell still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 spec: 'Fix chaba-board-api on idc03 wedging its accept loop (2026-11-26 08:56-09:17Z: main thread deadlocked in
   Thread.start()->_started.wait(); every door 503/504 until a manual systemctl --user restart). In scripts/board/board-api.py,
   make handler-thread spawn failures non-fatal and add a watchdog that detects an unresponsive accept loop and restarts
@@ -103,5 +111,8 @@ action:
   attempts: 1
   repo: chaba
   runner: tony-dell
+  sweep:
+    stale_running: 2026-11-26 22:55
+    dirty: 1
 claim:
   since: 2026-11-26 22:12
