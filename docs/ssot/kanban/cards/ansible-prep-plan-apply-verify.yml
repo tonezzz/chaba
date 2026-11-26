@@ -1,7 +1,7 @@
 id: ansible-prep-plan-apply-verify
 title: Ansible prep→plan→apply→verify workflow standard
 column: review
-updated: 2026-11-26 12:47
+updated: 2026-11-26 12:54
 brief: Standardize Ansible for preparation/baselines, check-diff plan artifacts, gated apply, and verified closeout
   to increase fleet efficiency.
 priority: medium
@@ -152,6 +152,10 @@ comms:
 - at: 2026-11-26 12:47
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-26 12:54
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261126-123352-objective-define-and-pilot-an- on mn01 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: done
@@ -163,6 +167,7 @@ action:
   sweep:
     stale_running: 2026-11-26 12:39
     no_repo: 2026-11-26 12:39
+    dirty: 1
   result: 'exit=0 ml`; outcome doc at `dispatch-outcome-20261126-123352-objective-define-and-pilot-an-.md`. | devin-task-20261126-123352-objective-define-and-pilot-an-.service:
     Consumed 32.765s CPU time over 11min 11.836s wall clock time, 347.4M memory peak.'
   verified: false
