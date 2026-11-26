@@ -1,0 +1,42 @@
+id: ansible-ada-ocb-tony-dell-fallback
+title: ADA-OCB tony-dell fallback probe/contract alignment
+column: backlog
+updated: 2026-11-26 17:44
+brief: 'Follow-up from OPS-1424: tony-dell ocb_pane fallback probe incomplete in ada-ocb-verify; align pin/patch/service
+  state or harden verify for missing fallback probe.'
+priority: medium
+spec: '## Context
+
+  OPS-1424 (Ansible prep→plan→apply→verify, 1A ADA-OCB pilot, decision B) completed for idc02 primary. idc02 is
+  green: web 2.8.0, cli 2.4.2, patch_present true, units active, local 200, edge 200/CSP ok. Evidence: reports/ansible-benchmark/ada-ocb-verify/20261126T090125Z/.
+
+
+  ## Problem
+
+  ada-ocb-verify/preflight overall recap failed (localhost failed=1) because tony-dell fallback probe returned incomplete
+  data (`web=? cli=? local=?` / missing ocb_probe in assert path). This is not an idc02 contract failure, but it
+  makes full ocb_pane verify noisy.
+
+
+  ## Scope
+
+  - Read-only diagnose tony-dell ocb_pane fallback: probe availability, openchamber service/pin/patch state, SSH/host
+  facts.
+
+  - Decide: align tony-dell fallback to accepted contract (2.8.0/2.4.2 + patch) or declare fallback offline/non-strict
+  handling.
+
+  - Optional hardening: ada-ocb-verify/preflight should report missing fallback probe as unreachable/reported, not
+  crash/assert on missing ocb_probe, while keeping primary strict.
+
+
+  ## Gates
+
+  - Any host mutation requires explicit same-session approval, rollback, card_ref, producer+consumer verification.
+
+  - Board-api only for card writes.'
+ref: ADA-1444
+comms:
+- at: 2026-11-26 17:44
+  from: tony
+  text: card captured via board-api
