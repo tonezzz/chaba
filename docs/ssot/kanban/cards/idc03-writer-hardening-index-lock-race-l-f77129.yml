@@ -1,7 +1,7 @@
 id: idc03-writer-hardening-index-lock-race-l-f77129
 title: idc03 writer hardening — index.lock race, .local-conflict debris, report-watch ping-pong
-column: doing
-updated: 2026-11-26 22:32
+column: review
+updated: 2026-11-26 22:37
 tags:
 - ops
 - idc03
@@ -15,11 +15,14 @@ spec: 'Scope to residual hardening item 1 only. In scripts/board/kanban-commit.s
   and live-lock no-op behavior.'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   repo: chaba
   attempts: 1
   runner: tony-dell
+  result: 'exit=0 ners.image.url=https://github.com/github/github-mcp-server) | devin-task-20261126-221940-scope-to-residual-hardening-it.service:
+    Consumed 1min 25.012s CPU time over 12min 49.113s wall clock time, 917.4M memory peak, 324.6M memory swap peak.'
+  verified: true
 ref: OPS-0072
 comms:
 - at: 2026-11-12 16:37
@@ -291,5 +294,32 @@ comms:
     git 2.53 leaves index.lock empty, verified) OR mtime > KANBAN_INDEX_LOCK_STALE_S=900s (15min, env-tunable),
     once per tick, proactively before the add loop + on git_lock_retry lock errors. Live-lock no-op: fresh lock
     w/ live holder left alone, adds retry ~17s, tick exits 0 de'
+- at: 2026-11-26 22:37
+  from: tony-dell
+  text: 'finished (ok): exit=0 ners.image.url=https://github.com/github/github-mcp-server) | devin-task-20261126-221940-scope-to-residual-harden'
+- at: 2026-11-26 22:37
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-26 22:37
+  from: chaba
+  text: banked 825 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 22:37
+  from: chaba
+  text: pushed dispatch/20261126-221940-scope-to-residual-hardening-it to origin
+- at: 2026-11-26 22:37
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_kanban_act.py tests/board/test_wiki_extension.py tests/board/test_board_api_action_persistence.py
+    tests/board/tes
+- at: 2026-11-26 22:37
+  from: chaba
+  text: auto-merged 8cf104f1 (dispatch/20261126-221940-scope-to-residual-hardening-it) → origin/master
+- at: 2026-11-26 22:37
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261126-221940-scope-to-residual-hardening-it,
+    branch dispatch/20261126-221940-scope-to-residual-hardening-it'
 claim:
   since: 2026-11-26 22:18
+review_kind: verify
