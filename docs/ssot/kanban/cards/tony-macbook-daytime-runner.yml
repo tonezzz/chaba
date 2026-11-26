@@ -1,7 +1,7 @@
 id: tony-macbook-daytime-runner
 title: tony-macbook as daytime-elastic dispatch runner
-column: review
-updated: 2026-11-26 08:00
+column: backlog
+updated: 2026-11-26 08:09
 spec: 'Macbook (15G RAM) already has runner-agent.timer enabled + devin-dispatch-watch. If it stays awake during
   day at home: inhibit suspend during day hours (systemd-inhibit wrapper on lid-blank-watch or gnome power setting),
   then it serves as a second runner slot for dispatches/bench/media batch + LAN-fast backup target. offline_ok semantics
@@ -317,16 +317,17 @@ comms:
 - at: 2026-11-26 08:00
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-26 08:09
+  from: chaba
+  text: 'answer-sweep: executed ''proceed'' -> queued for processing'
 action:
   type: dispatch
-  status: done
+  status: queued
   lane: devin
   lane_source: fallback
-  runner: tony-macbook
   attempts: 1
   result: 'exit=0 ull details in `dispatch-outcome-20261125-190949-macbook-15g-ram-already-has-ru.md`. | devin-task-20261125-190949-macbook-15g-ram-already-has-ru.service:
     Consumed 5min 22.668s CPU time over 2h 1min 53.597s wall clock time, 1.7G memory peak.'
-  verified: false
   sweep:
     no_repo: 2026-11-25 21:24
 claim:
@@ -347,5 +348,5 @@ requests:
   - proceed
   - hold
   answer: proceed
+  executed: 2026-11-26 queue
 review_kind: verify
-awaiting_action: true
