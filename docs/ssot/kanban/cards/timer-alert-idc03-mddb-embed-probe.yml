@@ -1,7 +1,7 @@
 id: timer-alert-idc03-mddb-embed-probe
 title: Timer mddb-embed-probe on idc03 failing
 column: backlog
-updated: 2026-11-26 10:14
+updated: 2026-11-26 10:22
 priority: high
 tags:
 - timer-alert
@@ -1456,6 +1456,13 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-26 10:00) of `mddb-embed-probe.service` on `idc03` result=exit-code — investigate
     journal: `journalctl --user -u mddb-embed-probe.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-26 10:22
+  from: devin
+  text: 'TRIAGED 2026-11-26 (true positive — NOT a timer glitch, left open): mddb-embed-probe correctly detected
+    an active embed-path outage at 10:00 (transition up->down). Vector-search POST to leader :11023 returns HTTP
+    400 because all query-embedding providers are circuit-open (free_keys, or_daily_cap, paid_daily_cap, paid_hourly_cap);
+    the same circuits are repeatedly failing/requeueing the ada-ha-bank-devin-handoff lesson/20261126-093600 doc.
+    Manual rerun at 10:2x still result=exit-code/1, state=down'
 action:
   status: done
   type: dispatch
