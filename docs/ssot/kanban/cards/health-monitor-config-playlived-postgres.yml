@@ -1,6 +1,6 @@
 id: health-monitor-config-playlived-postgres
 title: Health monitor config — Playlived target and Postgres check threshold
-column: backlog
+column: doing
 updated: 2026-11-26 12:46
 brief: mcp-health quick_health fails 2/8 (Playlived tony-dell, Postgres) after config reload; evidence suggests
   monitor config/stale state, not confirmed outages.
@@ -37,9 +37,15 @@ comms:
 - at: 2026-11-26 12:46
   from: chaba
   text: '[auto-dispatch] wave 12 (2026-11-26 12:46): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-26 12:46
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-claim: {}
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-26 12:46
