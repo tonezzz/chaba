@@ -10,8 +10,11 @@ skipped, armed cards defer), and the noop receipt path.
 from __future__ import annotations
 
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+
+import yaml
 
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "scripts" / "board"))
@@ -228,6 +231,155 @@ class TriageCard(unittest.TestCase):
         self.assertEqual(acted, [])
         self.assertTrue(any("MAX" in n for n in notes))
         self.assertNotIn("executed", c["requests"][0])
+
+
+class SpecCompose(unittest.TestCase):
+    """KNB-0180 option 2 phase 1 — when every ask is answered/closed/
+    executed, awaiting_action is still set, and the card is an unarmed
+    dispatch with no spec:, raise ONE consolidated spec-compose-<date>
+    request inlining the answered asks+answers. Raise only — never
+    arms dispatch; the spec-compose-* id is the re-raise guard."""
+
+    def dead(self, **kw):
+        c = card(awaiting_action=True,
+                 action={"type": "dispatch", "status": "idle"},
+                 requests=[
+                     req("decide-pool", "two-pools — Two pools: "
+                         "tony-lane vs member/dev"),
+                     req("done-ask", "move-cache — Move caches",
+                         executed=f"{REF} none")])
+        c.update(kw)
+        return c
+
+    def test_ready_and_raises_single_consolidated_request(self):
+        c = self.dead()
+        self.assertTrue(swe.spec_compose_ready(c))
+        rid = swe.raise_spec_compose(c, REF)
+        self.assertEqual(rid, "spec-compose-2026-10-15")
+        comp = c["requests"][-1]
+        self.assertEqual(comp["id"], rid)
+        self.assertEqual(comp["status"], "open")
+        self.assertEqual(comp["from"], "chaba")
+        # the answered asks+answers are inlined for the spec author
+        self.assertIn("decide-pool", comp["ask"])
+        self.assertIn("Two pools: tony-lane vs member/dev", comp["ask"])
+        self.assertIn("done-ask", comp["ask"])
+        self.assertIn("(executed)", comp["ask"])
+        # options declare safe consequences — nothing may arm dispatch
+        acts = {o.get("action") for o in comp["options"]}
+        self.assertNotIn("queue", acts)
+        self.assertNotIn("retry", acts)
+        self.assertIn("hold", acts)
+        self.assertIn("close", acts)
+        # never auto-arm: action untouched
+        self.assertEqual(c["action"]["status"], "idle")
+        self.assertNotEqual(c["action"].get("status"), "queued")
+
+    def test_open_request_blocks_until_answered_then_guard_holds(self):
+        c = self.dead()
+        swe.raise_spec_compose(c, REF)
+        # the open spec-compose ask itself breaks 'all resolved'
+        self.assertFalse(swe.spec_compose_ready(c))
+        # once answered, the spec-compose-* id still guards re-raise
+        c["requests"][-1].update(status="answered",
+                                 answer="spec-written — done",
+                                 executed=f"{REF} none")
+        self.assertFalse(swe.spec_compose_ready(c))
+        self.assertIsNone(swe.raise_spec_compose(c, REF))
+        self.assertEqual(
+            sum(1 for r in c["requests"]
+                if str(r.get("id") or "").startswith("spec-compose-")),
+            1)
+
+    def test_prior_spec_compose_any_status_blocks(self):
+        for st in ("open", "answered", "closed"):
+            c = self.dead(requests=[
+                req("spec-compose-2026-01-01", "prior raise", status=st),
+                req("decide-pool", "two-pools — Two pools")])
+            self.assertFalse(swe.spec_compose_ready(c), st)
+            self.assertIsNone(swe.raise_spec_compose(c, REF), st)
+
+    def test_requires_awaiting_action_flag(self):
+        c = self.dead()
+        c.pop("awaiting_action")
+        self.assertFalse(swe.spec_compose_ready(c))
+
+    def test_requires_dispatch_action_type(self):
+        for action in (None, {"type": "manual"}, {"type": "script"},
+                       "spec-review"):
+            c = self.dead(action=action)
+            self.assertFalse(swe.spec_compose_ready(c), action)
+
+    def test_skips_armed_or_finished_action_status(self):
+        for st in ("queued", "starting", "running", "done"):
+            c = self.dead(action={"type": "dispatch", "status": st})
+            self.assertFalse(swe.spec_compose_ready(c), st)
+
+    def test_spec_or_column_gates(self):
+        c = self.dead(spec="do the thing")
+        self.assertFalse(swe.spec_compose_ready(c))
+        # brief/note are NOT the dispatch spec — still ready without spec
+        c = self.dead(brief="short summary", note="long notes")
+        self.assertTrue(swe.spec_compose_ready(c))
+        for col in ("done", "lab"):
+            c = self.dead(column=col)
+            self.assertFalse(swe.spec_compose_ready(c), col)
+
+    def test_open_ask_blocks(self):
+        c = self.dead(requests=[
+            req("decide-pool", "two-pools — Two pools"),
+            {"id": "still-open", "ask": "q", "status": "open"}])
+        self.assertFalse(swe.spec_compose_ready(c))
+
+    def test_all_executed_has_nothing_to_compose(self):
+        # every ask executed -> pending() empty -> flag heals, no raise
+        c = self.dead(requests=[
+            req("a", "superseded — re-raised", executed=f"{REF} none")])
+        self.assertFalse(swe.spec_compose_ready(c))
+
+    def test_no_requests_no_raise(self):
+        c = self.dead(requests=[])
+        c.pop("ask", None)
+        self.assertFalse(swe.spec_compose_ready(c))
+
+    def test_card_level_ask_inlined(self):
+        c = self.dead(requests=[],
+                      ask={"question": "which pool?", "status": "answered",
+                           "answer": "two-pools — Two pools"})
+        self.assertTrue(swe.spec_compose_ready(c))
+        rid = swe.raise_spec_compose(c, REF)
+        comp = c["requests"][-1]
+        self.assertEqual(comp["id"], rid)
+        self.assertIn("which pool?", comp["ask"])
+        self.assertIn("two-pools — Two pools", comp["ask"])
+
+    def test_main_end_to_end_raises_once(self):
+        c = self.dead()
+        c["id"] = "t-card"
+        with tempfile.TemporaryDirectory() as td:
+            cdir = Path(td) / "cards"
+            cdir.mkdir()
+            (cdir / "t-card.yml").write_text(yaml.dump(c))
+            old_dir, old_lock = swe.CARD_DIR, swe.LOCK
+            swe.CARD_DIR, swe.LOCK = cdir, Path(td) / "board-api.lock"
+            try:
+                self.assertEqual(swe.main(cards=[dict(c)]), 0)
+                # second pass — re-raise guard holds through main()
+                after1 = yaml.safe_load((cdir / "t-card.yml").read_text())
+                self.assertEqual(swe.main(cards=[after1]), 0)
+                after = yaml.safe_load(
+                    (cdir / "t-card.yml").read_text())
+            finally:
+                swe.CARD_DIR, swe.LOCK = old_dir, old_lock
+        comps = [r for r in after["requests"]
+                 if str(r.get("id") or "").startswith("spec-compose-")]
+        self.assertEqual(len(comps), 1)
+        self.assertEqual(comps[0]["status"], "open")
+        # detection + raise only: dispatch was never armed
+        self.assertNotEqual(after["action"].get("status"), "queued")
+        self.assertTrue(after.get("awaiting_action"))
+        self.assertTrue(any("spec-compose" in str(m.get("text"))
+                            for m in after.get("comms") or []))
 
 
 if __name__ == "__main__":

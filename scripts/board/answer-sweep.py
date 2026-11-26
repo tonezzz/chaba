@@ -56,6 +56,18 @@ recognized verbs on one card defer the card — a human untangles
 An executed answer stamps `executed: "<date> <verb>"`; awaiting_action
 clears when no unanswered-for-triage answer remains.
 
+Spec-compose (KNB-0180 option 2, phase 1 — card
+answer-sweep-auto-compose-spec): when every ask on a card is
+answered/closed/executed, awaiting_action is still set, and the card
+is an unarmed dispatch with no `spec:`, the answers are decision
+dead-letters — the gap is composition, not answers. The sweep raises
+ONE consolidated `spec-compose-<date>` request inlining the answered
+asks+answers so a human (or phase-2 template composition, a later
+card) can write the spec. Detection + raise only: the sweep NEVER
+arms dispatch here — the spec quality bar is unresolved. The
+spec-compose-* request id on the card is the re-raise guard: once
+raised (open, answered, or closed), the card never gets a second one.
+
 Usage: answer-sweep.py [--dry-run]
 Env:   CHABA_REPO (cards checkout), ANSWER_SWEEP_MAX (executions cap,
        default 10)
@@ -143,6 +155,33 @@ SOFT = {"yes", "yeah", "approve", "approved", "continue", "go", "run",
         "start", "build"}
 
 EM_DASH = re.compile(r"\s+[—–-]\s+|\s+[—–-]\s*|\s*—\s*")
+
+# KNB-0180 option 2 phase 1 — spec-compose dead-letter detection.
+# Request-id prefix is the re-raise guard: any spec-compose-* entry on
+# the card (open, answered, closed) means the consolidated ask already
+# exists — never raise a second one.
+SPEC_COMPOSE_PREFIX = "spec-compose-"
+
+# Dict options declare their consequence (KNB-0180 contract) — and none
+# of them may arm dispatch: the spec quality bar is unresolved, so the
+# only queue path stays the human board button / Phase 2.
+SPEC_COMPOSE_OPTIONS = [
+    {"id": "spec-written",
+     "label": "spec composed into the card spec — resolve this ask ★",
+     "action": "none"},
+    {"id": "hold",
+     "label": "hold — keep the card flagged for later",
+     "action": "hold"},
+    {"id": "close",
+     "label": "close — abandon the work",
+     "action": "close"},
+]
+SPEC_COMPOSE_SUGGESTED = ("spec-written — spec composed into the card "
+                          "spec — resolve this ask ★")
+
+# action.status values where a spec-compose ask is noise: already
+# armed/in-flight, or the work already concluded.
+SPEC_COMPOSE_SKIP_STATUS = {"queued", "starting", "running", "done"}
 
 
 def now() -> str:
@@ -256,6 +295,103 @@ def pending(card: dict) -> list[dict]:
         ask.setdefault("id", "ask")
         out.append(ask)
     return out
+
+
+def _all_asks(card: dict) -> list[dict]:
+    """Every ask-shaped entry on the card — requests[] dicts plus the
+    card-level `ask` (the same set pending() triages)."""
+    out = [r for r in (card.get("requests") or [])
+           if isinstance(r, dict)]
+    ask = card.get("ask")
+    if isinstance(ask, dict):
+        out.append(ask)
+    return out
+
+
+def _ask_resolved(r: dict) -> bool:
+    """answered/closed/executed — nothing left for a human to answer."""
+    if r.get("executed"):
+        return True
+    return str(r.get("status") or "open") in ("answered", "closed")
+
+
+def spec_compose_ready(card: dict) -> bool:
+    """KNB-0180 option 2 phase 1 — the dead-letter-compose state:
+
+    awaiting_action still set, EVERY ask resolved (answered/closed/
+    executed — no open ask remains), at least one answered-unexecuted
+    ask (the unmapped decisions pending() holds — the composition
+    material), action is an unarmed dispatch with no `spec:`, and no
+    spec-compose-* request has ever been raised on this card.
+
+    `spec:` is the dispatch-prompt source (dispatch_task.build_task_text
+    falls back to title+note — exactly the low-quality prompt this
+    guards); brief/note do not count. Never mutates the card."""
+    if card.get("column") in ("done", "lab"):
+        return False
+    if not card.get("awaiting_action"):
+        return False
+    a = _act(card)
+    if a.get("type") != "dispatch":
+        return False
+    if str(a.get("status") or "") in SPEC_COMPOSE_SKIP_STATUS:
+        return False
+    if str(card.get("spec") or "").strip():
+        return False
+    asks = _all_asks(card)
+    if not asks or not all(_ask_resolved(r) for r in asks):
+        return False
+    # pending() non-empty = at least one answered ask still unexecuted
+    # (unmapped decision answers — the dead letters this composes from).
+    # All-executed cards have nothing left to compose and their stale
+    # flag heals on its own.
+    if not pending(card):
+        return False
+    return not any(str(r.get("id") or "").startswith(SPEC_COMPOSE_PREFIX)
+                   for r in asks)
+
+
+def raise_spec_compose(card: dict, ref: str | None = None) -> str | None:
+    """Append the single consolidated spec-compose request — phase 1
+    raise only, NEVER arms dispatch. Returns the request id, or None
+    when the re-raise guard trips (a spec-compose-* request already
+    exists on the card in any status). The caller's note becomes the
+    card's comms line (main()'s fresh-notes path)."""
+    asks = _all_asks(card)
+    if any(str(r.get("id") or "").startswith(SPEC_COMPOSE_PREFIX)
+           for r in asks):
+        return None
+    day = ref or today()
+    rid = f"{SPEC_COMPOSE_PREFIX}{day}"
+    reqs = card.get("requests")
+    if not isinstance(reqs, list):
+        card["requests"] = reqs = []
+    taken = {str(r.get("id") or "") for r in reqs if isinstance(r, dict)}
+    base, n = rid, 2
+    while rid in taken:  # defensive — prefix guard should prevent this
+        rid, n = f"{base}-{n}", n + 1
+    answered = [r for r in asks
+                if str(r.get("answer") or "").strip() or r.get("executed")]
+    lines = []
+    for r in answered[:15]:
+        q = _clean(str(r.get("ask") or r.get("question") or ""))[:240]
+        a = _clean(str(r.get("answer") or ""))[:300]
+        done = " (executed)" if r.get("executed") else ""
+        lines.append(f"- {r.get('id') or 'ask'}{done}: {q}\n"
+                     f"  answer: {a or '(none)'}")
+    if len(answered) > 15:
+        lines.append(f"- … +{len(answered) - 15} more answered ask(s)")
+    ask = ("Every ask on this card is answered/closed but it is still "
+           "dispatch-typed with no `spec:` — the gap is composition, "
+           "not answers (answer-sweep, KNB-0180 option 2 phase 1). "
+           "Write the dispatch spec from these answers into the card's "
+           "`spec:` field, then pick an option:\n\n"
+           + ("\n".join(lines) or "- (no answered asks)"))
+    reqs.append({"id": rid, "ask": ask[:6000], "status": "open",
+                 "options": [dict(o) for o in SPEC_COMPOSE_OPTIONS],
+                 "suggested": SPEC_COMPOSE_SUGGESTED,
+                 "at": now(), "from": "chaba"})
+    return rid
 
 
 def close_ok(card: dict) -> tuple[bool, str]:
@@ -445,9 +581,10 @@ def main(cards=None) -> int:
             reqs = pending(card)
             kinds = [(str(r.get("id")), classify(r)) for r in reqs]
             flag = "" if card.get("awaiting_action") else " +flag"
+            compose = " +spec-compose" if spec_compose_ready(card) else ""
             print(f"  {cid}: " + "; ".join(
                 f"{rid}={act or 'unmapped'} ({why})"
-                for rid, (act, why) in kinds) + flag)
+                for rid, (act, why) in kinds) + flag + compose)
         print(f"answer-sweep: dry-run — {len(cands)} card(s) with "
               "answered requests")
         return 0
@@ -464,6 +601,18 @@ def main(cards=None) -> int:
                 acted, notes = [], []  # flag hygiene only on done/lab
             else:
                 acted, notes = triage_card(card, ref, budget)
+                # KNB-0180 option 2 phase 1: all asks resolved +
+                # awaiting_action + unarmed dispatch + no spec -> raise
+                # the single consolidated spec-compose request. Raise
+                # only — never arms dispatch (quality bar unresolved).
+                if spec_compose_ready(card):
+                    rid = raise_spec_compose(card, ref)
+                    if rid:
+                        notes.append(
+                            f"answer-sweep: raised {rid} — all asks "
+                            "answered, dispatch card has no spec; spec "
+                            "composition stays human (phase 1, no "
+                            "auto-queue)")
             # deferred-verb notes repeat every tick — dedup against the
             # card's recent comms so a held card doesn't spam the log
             recent = {str(m.get("text")) for m in
