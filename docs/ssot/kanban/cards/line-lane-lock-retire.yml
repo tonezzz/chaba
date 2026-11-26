@@ -1,7 +1,7 @@
 id: line-lane-lock-retire
 title: Retire LINE_LANE_LOCK once chat_send targeting is verified
 column: doing
-updated: 2026-11-26 23:26
+updated: 2026-11-26 23:34
 priority: low
 action:
   type: dispatch
@@ -306,6 +306,13 @@ comms:
   text: 'Phase 1 verify in progress: relay /send chain confirmed in ada-voice origin/main (to->session chat->LINE_LANE_DEFAULT->allowed-user;
     LINE_LANE_LOCK rewrite then LINE_LANE_ALLOW 403). Now checking live line-bot.env + per-lane ADA_INSTANCE_ID
     on idc03.'
+- at: 2026-11-26 23:34
+  from: devin
+  text: 'Phase 1 verify DONE (read-only). Deployed ada-voice on idc03 is byte-identical to origin/main @0892c82
+    (line_relay.py, tool_runner/chat.py+common.py, pwa_server.py). Chain confirmed: chat_send to= -> session-bound
+    chat -> LINE_LANE_DEFAULT -> first allowed user; LINE_LANE_LOCK rewrites to lane default BEFORE the LINE_LANE_ALLOW
+    403 gate. Live config: ~/.config/secrets/line-bot.env on idc03 (LOCK=kk,kk-dev,chaba; all 3 defaults inside
+    their allow sets — rewrite cannot self-403). Observed: 68 send'
 spec: 'DECISION 2026-11-26 Tony: verify then retire. Phase 1 only - read-only verification that chat_send lane targeting
   uses LINE_LANE_ALLOW and the last-room fallback as documented; report exact config locations and observed behavior.
   Do NOT remove the line-lane lock or change routing. Done: verification report posted; retirement stays gated on
