@@ -1,7 +1,7 @@
 id: ops-1025-remote-read-smoke-idc03
 title: 'OPS-1025 one-shot remote-read verification: idc02 to idc03'
-column: backlog
-updated: 2026-11-26 22:56
+column: doing
+updated: 2026-11-26 23:44
 brief: One supervised, read-only S3 verification of the merged remote-read gates.
 priority: medium
 program: OPS-1025
@@ -69,14 +69,15 @@ action:
       of guessing. Set services to the observed failed units (or []), and include a concrete failure_class plus
       the exact read-only output as evidence in findings. Emit only the JSON artifact required by the profile, with
       read_only=true and an ISO-8601 collected_at. No paid fallback; this is one attempt only.'
-  status: queued
-  attempts: 0
+  status: running
+  attempts: 1
   last_failure: 'exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795696328.service: Main
     process exited, code=exited, status=2/INVALIDARGUMENT | devin-task-ops-1025-remote-read-smoke-idc03-1795696328.service:
     Failed with result ''exit-code''.'
   sweep:
     stale_running: 2026-11-26 15:53
     zero_commit: 2026-11-26 15:53
+  runner: idc02
 ref: OPS-0245
 comms:
 - at: 2026-11-19 20:36
@@ -826,5 +827,8 @@ comms:
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
     an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-26 23:44
+  from: idc02
+  text: claimed
 claim:
-  since: 2026-11-26 19:32
+  since: 2026-11-26 23:44

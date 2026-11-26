@@ -1,7 +1,7 @@
 id: ha-template-image-yolo-annotated-points-5af431
 title: HA template image.yolo_annotated points at dead LAN-IP :8780 — repoint to 127.0.0.1
-column: doing
-updated: 2026-11-26 23:39
+column: review
+updated: 2026-11-26 23:44
 priority: low
 tags:
 - home-assistant
@@ -157,6 +157,38 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261126-231827-repoint-tony-ha-templates-yaml on mn01 still dirty —
     1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-26 23:44
+  from: mn01
+  text: 'finished (ok): exit=0 ony-ha-templates-yaml.md` (commit `48dba03818`), and final comms were posted to the
+    card. | devin-task-20261126-2'
+- at: 2026-11-26 23:44
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-26 23:44
+  from: chaba
+  text: 'session-end checkpoint cd6a40c7: 1 leftover file(s) committed'
+- at: 2026-11-26 23:44
+  from: chaba
+  text: banked 347 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 23:44
+  from: chaba
+  text: pushed dispatch/20261126-231827-repoint-tony-ha-templates-yaml to origin
+- at: 2026-11-26 23:44
+  from: chaba
+  text: 'auto-merge not done: worktree add: Preparing worktree (detached HEAD 8a96eae596)
+
+    Updating files:  25% (4325/17239)
+
+    Updating files:  26% (4483/17239)
+
+    Updating files:  27% (4655/17239)
+
+    Updating files:  28% (4827/17239)
+
+    Updating files:  2 — close will block until merged'
+- at: 2026-11-26 23:44
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 spec: 'Repoint tony-ha templates.yaml image.yolo_annotated from http://192.168.2.86:8780/image to http://127.0.0.1:8780/image
   (HA is host-networked; yolo-detect.service on tony-omen binds 127.0.0.1:8780 only). First verify the /image route
   responds with its required params — a bare GET returned 404 during the 2026-11-25 audit, so check server.py route
@@ -165,12 +197,15 @@ spec: 'Repoint tony-ha templates.yaml image.yolo_annotated from http://192.168.2
   recorded in the related post-reboot job doc.'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   attempts: 1
   runner: mn01
   sweep:
     stale_running: 2026-11-26 23:39
     dirty: 1
+  result: 'exit=0 ony-ha-templates-yaml.md` (commit `48dba03818`), and final comms were posted to the card. | devin-task-20261126-231827-repoint-tony-ha-templates-yaml.service:
+    Consumed 31.485s CPU time over 12min 46.835s wall clock time, 437.2M memory peak.'
 claim:
   since: 2026-11-26 23:17
+review_kind: verify
