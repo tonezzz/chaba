@@ -1,7 +1,7 @@
 id: dispatch-zero-commit-sessions-epidemic
 title: dispatch sessions produce zero commits at high rate — root cause
 column: doing
-updated: 2026-11-26 14:05
+updated: 2026-11-26 14:06
 spec: 'OPS-0894 fixed the closeout gate (empty branches no longer auto-close — held in review correctly). The SOURCE
   defect is unfixed and burning dispatches: 10+ sessions Oct 26-27 across hosts (tony-macbook, idc02, mn01) and
   lanes (deepseek-v4-pro, others) produced ZERO commits — pushed branch head = plain master commit, service often
@@ -344,6 +344,16 @@ comms:
 - at: 2026-11-26 14:05
   from: mn01
   text: claimed
+- at: 2026-11-26 14:06
+  from: chaba
+  text: started devin-task-20261126-140633-ops-0894-fixed-the-closeout-ga on mn01 (dispatch)
+- at: 2026-11-26 14:06
+  from: chaba
+  text: 'primer injected 8 lesson(s): [dispatch-zero-commit-sessions-epidemic] merge-sweep: no session/worktree
+    found ; [dispatch-zero-commit-sessions-epidemic] merge-sweep: verified gate failed — no ; [dispatch-zero-commit-sessions-epidemic]
+    session produced no commits — the branc; Dispatch branches that sit unmerged rot fast: master gained lane_source
+    stamping; [cline-nest-model-evaluation] session produced no commits — the branch head is j; [con01-jobs-silently-dead-chaba-audit-mdd-0eb30f]
+    session pro'
 claim:
   since: 2026-11-26 14:05
 review_kind: verify
