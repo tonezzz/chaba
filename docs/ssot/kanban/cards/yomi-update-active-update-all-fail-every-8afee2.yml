@@ -1,8 +1,8 @@
 id: yomi-update-active-update-all-fail-every-8afee2
 title: yomi-update-active/update-all fail every run — --network=container:yomi-api but no yomi-api container exists
   on idc03
-column: doing
-updated: 2026-11-26 22:08
+column: done
+updated: 2026-11-26 22:10
 priority: medium
 tags:
 - bug
@@ -385,9 +385,20 @@ comms:
     + jobs doc + ssot.services.yml note) onto dispatch/20261126-220547-idc03-yomi-update-active-servi and committed
     this session''s outcome file — branch is now 2 commits ahead of origin/master, so merge-sweep has real work
     to land. Prior merge-hold was the mn01 runner''s pytest-unav'
+- at: 2026-11-26 22:10
+  from: chaba
+  text: 'merge-sweep: merged f9e1a89b (dispatch/20261126-220547-idc03-yomi-update-active-servi from tony-dell) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261126-220547-idc03-yomi-update-active-servi.md)
+    — auto-closed'
+- at: 2026-11-26 22:10
+  from: local
+  text: 'pub milestone: card verified: yomi-update-active-update-all-fail-every-8afee2 on idc03 — merged f9e1a89b
+    (dispatch/20261126-220547-idc03-yomi-update-active-servi from tony-dell) -> origin/master — verified — a — merged
+    f9e1a89b (dispatch/20261126-220547-idc03-yomi-update-active-servi from tony-dell) -> origin/master — verified
+    — auto-closed [evt-0f1604a696b6cd87]'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
@@ -400,6 +411,11 @@ action:
     25.201s wall clock time, 631.1M memory peak.'
   executor: devin
   runner: tony-dell
+  verified: true
 claim:
   since: 2026-11-26 22:04
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-26 22:10
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261126-220547-idc03-yomi-update-active-servi.md
