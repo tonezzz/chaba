@@ -1,0 +1,67 @@
+id: dispatch-queue-approval-gate-20261126
+title: Dispatch queue approval gate (RBAC-lite) — implemented on /home/tony/ansible @ idc02
+date: 2026-11-26
+card: dispatch-queue-approval-gate
+status: implemented + verified (gate mechanics); one infra finding filed separately
+host: idc02
+repo: /home/tony/ansible (untracked prototype — see git_note)
+
+# ─── What changed (all live on idc02, verified byte-identical via sftp) ────
+changes:
+  queue/queue_manager.py:
+    - "JobSpec gained status/approval_state/approved_by/approved_at/approval_reason fields"
+    - "enqueue(): resolves user from SUDO_USER/getpass.getuser() when user unset/'default'; gated jobs get status=awaiting_approval + approval_state=pending and LPUSH to queue:pending:{priority} (never queue:jobs:{priority})"
+    - "new: approve_job/reject_job/_decide_approval (Lua-atomic, approver check vs policy, self_approve rule), list_pending(), expire_pending_approvals(), requires_approval()"
+    - "approval policy loaded from approval_policy.yml (repo root) with built-in defaults; PyYAML optional — _parse_simple_yaml fallback keeps system python3 dependency-free"
+    - "cancel_job() now handles awaiting_approval (LREMs from queue:pending:{p})"
+    - "list_jobs() status filter fixed (was reading metadata.status which is never set — now job.status); list --status rejected/awaiting_approval/expired works"
+    - "get_queue_stats() counts pending_approval + new statuses"
+    - "CLI: --user defaults to caller identity, mismatch rejected rc=2 unless --as-user; new subcommands approve/reject/pending"
+  queue/scheduler.py:
+    - "_tick() calls _sweep_expired_approvals() -> qm.expire_pending_approvals(): pending > ttl_sec (24h) => approval_state=expired, status=expired, queue:events approval_expired"
+  playbooks/queue_operations.yml:
+    - "operation=approve/reject/pending mapped to the CLI (approval_by from QUEUE_APPROVER/USER env, reason from QUEUE_REASON)"
+  approval_policy.yml: "NEW — enabled, ttl_sec=86400, self_approve=true, approvers=[tony], require_approval_when: job_gpus>0 OR priority<=2 OR 'gpu' in require_tags"
+  queue/test_gpu_reservations.py: "approves gated test jobs after enqueue (db 15 isolated suite still all-PASS)"
+
+patch_artifact: docs/ssot/jobs/infrastructure/2026-11-26-dispatch-queue-approval-gate.patch
+
+# ─── Verification (live Redis 100.123.163.11:6379, real queue) ────────────
+verification:
+  - "enqueue gpu/priority job -> 'awaiting approval', queue:pending:1 populated, queue:jobs:1 empty (stats pending_approval=2)"
+  - "approve -> LPUSH queue:jobs:1 -> live scheduler (pid old code) claimed within ~5s (status processing) — zero scheduler diff needed as designed"
+  - "reject -> status=rejected, approval_state=rejected, visible via 'list --status rejected', never entered queue:jobs"
+  - "pending subcommand lists awaiting jobs; empty after decisions"
+  - "--user mallory -> rc=2 'does not match caller'; --as-user override works"
+  - "expiry sweep unit-verified on db15: 25h-old pending -> expired; fresh pending untouched; bad approver rejected; double-decide blocked by Lua"
+  - "queue_operations.yml --syntax-check PASS"
+  - "test_gpu_reservations.py all checks PASS (with approve step added)"
+
+# ─── Findings / caveats ────────────────────────────────────────────────────
+findings:
+  dispatch_infra_bug: >
+    ALL gpus=0 dispatches currently fail on con01/idc02/idc03 (podman 4.9.3):
+    reproduced locally — 'conmon:e] k8s-file doesn't support --log-tag /
+    conmon failed: exit status 1'. Only omen+dell (podman 5.7.0) can run
+    dispatched containers today; macbook has no podman at all. Placement
+    (_select_target_host) does not check container-runtime capability, so
+    CPU jobs land on podman-4.9.3 hosts and DLQ after max_retries. GPU jobs
+    targeting omen still work (gpu-rsv4-b completed 2026-11-26 12:46).
+    Pre-existing, unrelated to the gate — needs its own card (upgrade podman
+    on con01/idc02/idc03 or pin a working log-driver/config).
+  service_restart_needed: >
+    dispatch-scheduler.service and gpu-dispatch-webui on idc02 still run the
+    OLD queue_manager in memory. Scheduler keeps working (dequeue unaffected)
+    but the expiry sweep only starts after `systemctl --user restart
+    dispatch-scheduler`; webui enqueue gating likewise needs gpu-webui restart.
+  git_note: >
+    Card asked for 'git init + remote first' on idc02 — ssh there is
+    sftp-only (no exec), so git could not be initialized remotely. Changes
+    were made against an sftp snapshot, verified byte-identical after upload,
+    and the reviewable diff is the patch artifact above. Operator should run
+    on idc02: cd /home/tony/ansible && git init && git add -A && git commit
+    (baseline) — or apply the patch to a fresh clone — then add a remote.
+  webui_note: >
+    webui/gpu_dispatch_webui.py calls qm.enqueue() directly — gated jobs
+    from the UI now land in pending correctly, but the UI has no approve/
+    reject buttons yet; approvals happen via CLI/playbook on idc02.
