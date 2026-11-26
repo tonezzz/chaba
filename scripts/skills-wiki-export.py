@@ -81,6 +81,31 @@ LESSON = {
     "result": "Adding deploy-runner-tools.yml was not convergence: only --check --diff had been run, so drift stayed live. Apply the playbook, install the schedule, then re-audit independently. The first timer install failed with BadUnitSetting because OnCalendar/Persistent/Unit were in [Unit] instead of [Timer] — validate user units with systemd-analyze --user verify before rollout. After PR #236 all hosts are in-sync, the daily timer is active, and the audit shows no DRIFT.",
 }
 
+FINDABILITY = {
+    "name": "MDDB findability eval",
+    "ref": "chaba-lessons — 3 eval queries",
+    "result": "recall@5 / nDCG / MRR = 1.0 for all configs; FTS/bm25 ~5 ms p50 vs hybrid/vector ~1.6 s. Saved lessons are retrievable; keyword search is the cheap path.",
+}
+
+AUDIT_RULE = {
+    "name": "Runner audit compares to controller pins",
+    "ref": "PR #246 — ansible/playbooks/audit-runner-tools.yml",
+    "result": "Installed sha256 must be compared to scripts/devin/runner-tooling.manifest.json pins, not each host's checkout; an ahead or stale checkout produced false DRIFT.",
+}
+
+SCHEDULES = {
+    "name": "Scheduled automation",
+    "ref": "fleet timer + monitor acfd73e3-04e7-43f9-82e5-bdc5635e3358",
+    "result": "Daily runner-tools convergence timer on all managed hosts, plus a read-only 09:00 Asia/Bangkok SSOT/CI monitor covering ssot-validate-all, tooling pins, Cargo verifier and health/alerts.",
+}
+
+TOOLING2 = {
+    "name": "build-mcp-server",
+    "ref": "~/.claude/skills/build-mcp-server/ (from anthropics/claude-plugins-official)",
+    "role": "Second ported plugin skill — MCP server design workflow with 8 bundled reference docs",
+    "note": "Apache-2.0 LICENSE retained; OpenCode adaptation note covers Context7 fallback, board-api door for chaba mutations and {env:...} secrets in opencode.json.",
+}
+
 TOOLING = {
     "name": "ansible-first",
     "ref": ".agents/skills/ansible-first/SKILL.md (repo-canonical; ~/.claude/skills/ansible-first is a symlink on OpenCode hosts)",
@@ -230,11 +255,25 @@ def render_page(skills: list[dict], today: str, next_review: str,
         "*",
         f"* '''{_cell(LESSON['name'])}''' — {_cell(LESSON['ref'])}: "
         f"{_cell(LESSON['result'])}",
+        "*",
+        f"* '''{_cell(FINDABILITY['name'])}''' — {_cell(FINDABILITY['ref'])}: "
+        f"{_cell(FINDABILITY['result'])}",
+        "",
+        "== Operations ==",
+        "",
+        f"* '''{_cell(AUDIT_RULE['name'])}''' — {_cell(AUDIT_RULE['ref'])}: "
+        f"{_cell(AUDIT_RULE['result'])}",
+        "*",
+        f"* '''{_cell(SCHEDULES['name'])}''' — {_cell(SCHEDULES['ref'])}: "
+        f"{_cell(SCHEDULES['result'])}",
         "",
         "== Related tooling ==",
         "",
         f"* '''{_cell(TOOLING['name'])}''' — {_cell(TOOLING['ref'])}: "
         f"{_cell(TOOLING['role'])}. {_cell(TOOLING['note'])}",
+        "*",
+        f"* '''{_cell(TOOLING2['name'])}''' — {_cell(TOOLING2['ref'])}: "
+        f"{_cell(TOOLING2['role'])}. {_cell(TOOLING2['note'])}",
         "",
         "[[Category:Education]]",
         "[[Category:Education/Level/intro]]",
