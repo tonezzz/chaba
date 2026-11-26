@@ -2,10 +2,13 @@
 # open-jev-guard.yml — bound OpenMP threads and reclaim accumulated swap.
 #
 # Follow-up to the 2026-11-25 load incident and the 2026-11-26 08:07 reclaim.
-# open-jev.service (gemma-3-4b-it on CPU) runs under CPUQuota=200% but the
-# torch runtime still starts ~43 threads, and over ~15h its working set
-# accumulates multi-GiB of swap at the MemoryHigh=4G cap.  Restarting the unit
-# reclaims it (1m load 93.91 -> 5.74, zram 23.9 -> 18.2 GiB on 2026-11-26).
+# open-jev.service (gemma-3-4b-it on CPU) runs under CPUQuota=200% but torch
+# sizes its intra-op pool to the CPU count and sync FastAPI routes add anyio's
+# 40-thread pool (~43 threads total); over ~15h the working set accumulates
+# multi-GiB of swap at the MemoryHigh=4G cap. Restarting the unit reclaims it
+# (1m load 93.91 -> 5.74, zram 23.9 -> 18.2 GiB on 2026-11-26).
+# OMP_NUM_THREADS=2 binds torch's intra-op pool to the 2-CPU quota; it does not
+# resize anyio's threadpool.
 #
 # Changes (all idempotent):
 #   * ~/.config/systemd/user.control/open-jev.service.d/60-OMPThreads.conf
