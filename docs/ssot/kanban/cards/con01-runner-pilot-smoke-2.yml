@@ -1,0 +1,41 @@
+id: con01-runner-pilot-smoke-2
+title: con01 runner pilot smoke 2 — runner-agent dispatch path
+column: backlog
+updated: 2026-11-26 09:36
+brief: Low-risk con01 runner-agent dispatch pilot. Dispatch a tiny verification task on the chaba repo via devin-dispatch
+  and confirm claim/start/close on con01.
+priority: low
+program: chaba-ci
+tags:
+- con01
+- dispatch
+- runner-pilot
+- low-risk
+spec: Low-risk dispatch pilot for the con01 runner-agent. Work only in the provided dispatch worktree. Run a read-only
+  Python syntax check on scripts/board/runner-agent.py (python3 -m py_compile scripts/board/runner-agent.py) and
+  report the result. Do not modify files. When finished write ./dispatch-outcome-<task>.md with what changed/found
+  and end with a one-paragraph summary. If blocked, write $TASK_DIR/needs-input.txt and stop.
+action:
+  type: dispatch
+  repo: chaba
+  host: con01
+  labels:
+  - con01
+  - dispatch
+  target_host: con01
+  status: queued
+  lane: free_lane
+  lane_source: jevos
+comms:
+- at: 2026-11-26 09:36
+  from: chaba
+  text: classified as free_lane (jevos conf 0.92)
+- at: 2026-11-26 09:36
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-26 09:36
+  from: chaba
+  text: 'WARNING: unclaimable by the declared runner fleet — action.host=con01 names no declared runner. Fix action.labels/host
+    pins or teach a runner the capability (RUNNER_LABELS + ssot.kanban.yml runner_fleet)'
+ref: OPS-1428
+awaiting_action: true
