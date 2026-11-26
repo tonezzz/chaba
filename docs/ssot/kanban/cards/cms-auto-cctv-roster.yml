@@ -8,7 +8,7 @@ priority: medium
 note: 'last_run 1554m overdue (interval 60m). last_run=2026-11-25T01:00:00+00:00 interval=60m status=ok. Page: https://idc03.taila0626a.ts.net/cms/#/cctv-roster'
 help: 'Trigger a manual regen: cms_automation run_now for ''cctv-roster'' (or POST /api/cms/pages/cctv-roster/regenerate).
   If it repeats, check the page''s generator command in the registry doc.'
-updated: 2026-11-26 09:30
+updated: 2026-11-26 15:14
 comms:
 - at: 2026-11-25 09:38
   from: chaba
@@ -74,3 +74,10 @@ comms:
   from: tony
   text: '[triage 2026-11-26] Still active: last_run 2026-11-25T01:00Z, 1254m overdue against a 60m interval. CMS
     automation has not run for ~21h; needs scheduler/job repair on idc03.'
+- at: 2026-11-26 15:14
+  from: tony
+  text: '[triage 15:15 +07] Root cause found: MDDB registry entry cctv-roster is enabled with interval_min=60, but
+    its generator timer cam-wall-cms-vps.timer is DISABLED on idc03. Last generator run 2026-11-25 08:20 +07 (01:20Z)
+    ended with several "mddb add ... Remote end closed connection without response" errors before the timer was
+    disabled. This is an intentionally parked scheduler, not an acute break; re-enabling it needs approval because
+    of those prior MDDB write failures. Holding pending that deci'
