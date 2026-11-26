@@ -1,0 +1,82 @@
+job: board-api-date-serialization-outage
+title: Card YAML date scalars normalized to strings at write time
+date: 2026-11-26
+domain: board
+card: board-api-date-serialization-outage
+summary: >-
+  Hygiene follow-up to the 2026-11-09 board-api /cards 502 outage
+  (reader side fixed by json.dumps default=str at ca8d850275). Card YAML
+  write paths emitted bare created:/updated: date scalars that PyYAML
+  decodes to datetime.date/datetime, so any plain json.dumps consumer
+  died. Both card write doors now normalize date/datetime objects to
+  ISO strings before dumping.
+changes:
+  - >-
+    scripts/board/card_io.py — new json_safe(obj): recursive in-place
+    rewrite of datetime.datetime/datetime.date to .isoformat() strings
+    (tuples -> lists; dict keys untouched). Wired into
+    atomic_dump_card(), covering every parse-dump card writer:
+    merge-sweep, merge-card-yaml, kanban-commit alert cards,
+    answer-sweep, request-sweep, runner-fleet-health, deploy-preflight,
+    board-render-guard, reconcile-local-conflicts, ref-backfill,
+    lab-review-sweep, review-digest, audit-hosts, card-pipeline
+    FileSink, kanban-act callers, ada/* health watchers.
+  - >-
+    scripts/board/board-api.py — save() calls card_io.json_safe(card)
+    before yaml.dump, covering the HTTP write door (/card /comment
+    /action /move /respond /request ...).
+  - >-
+    tests/board/test_card_date_serialization.py (new) — regression:
+    writes a card with bare date scalars through BOTH doors and asserts
+    the persisted YAML re-parses created:/updated:/comms[].at as str
+    and survives plain json.dumps; nested datetime objects too.
+  - >-
+    evals/shadow/fixtures/mcp-safety/task.yaml — drive-by gate fix:
+    unquoted `classification one of: ...` and quote-then-plain rule
+    strings made the fixture unparseable (ci-qa yaml parse red on
+    master since 0c7e3c1b3a).
+fields_normalized: >-
+  Any datetime.date/datetime found anywhere in the card structure at
+  write time — concretely `created` (date-only bare scalars, the ~16
+  cards Tony flagged) and any nested `at:`/`updated:`-shaped scalars
+  that load as date/datetime. Strings are never touched; the common
+  `updated: YYYY-MM-DD HH:MM` form (no seconds, already a str) dumps
+  unchanged, so steady-state card diffs stay minimal — only genuinely
+  hazardous scalars get quoted on rewrite.
+verified:
+  - >-
+    pytest tests/board/test_card_date_serialization.py
+    tests/board/test_card_io_atomic.py -q -> 11 passed.
+  - >-
+    chaba merge-critical gate (dispatch_repos.REPO_TESTS[chaba],
+    14 files, -x -q) -> 300 passed in 57.69s.
+  - >-
+    scripts/ci-qa.sh -> 5/5 (was 4/5 on master — pre-existing yaml parse
+    failure in evals/shadow/fixtures/mcp-safety/task.yaml, now fixed).
+  - >-
+    scripts/ci-standard.sh -> 5/6; the jobs-manifest-render FAIL is
+    pre-existing generated/ drift (con01 cline units vs tony_dell
+    ansible-runner-tool-guard), unrelated to this change.
+  - >-
+    Full tests/board sweep: 1084 passed, 2 failed —
+    test_control_pane_projection needs git-ignored generated
+    stacks/web/public/apps/board2/{index.html,cards.json}; fails in any
+    fresh worktree, unrelated.
+notes:
+  - >-
+    Existing bare-scalar cards are NOT bulk-rewritten (Tony's triage —
+    the 2026-11-21 bulk rewrite re-stamped every card and stalled the
+    KNB-1178 archive timer for days). Hazard decays naturally: each
+    card's next write through either door quotes its date scalars.
+  - >-
+    Text-surgery writers that never parse the YAML (kanban-act.py,
+    backfill-briefs.py, card-column-guard.py) preserve existing scalars
+    verbatim — they cannot introduce date objects and were left alone.
+  - >-
+    Focus-inbox/report YAML writers (board-api /inbox, report-watch,
+    focus-sweep) build dicts of strings only; not card YAML, out of
+    scope, but card_io.json_safe is importable if they ever need it.
+residual: >-
+  ~16 card YAMLs still carry bare created:/updated: scalars on disk;
+  they stay JSON-unsafe for plain json.dumps readers until each card's
+  next write. Reader-side default=str remains the safety net.

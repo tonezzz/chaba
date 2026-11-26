@@ -890,6 +890,11 @@ def save(p: Path, card: dict, extra: list | None = None) -> None:
     interval — short enough that autostash can't eat them in practice."""
     t0 = _phase_clock()
     try:
+        # date/datetime scalars (bare `created: 2026-11-09` loads as
+        # datetime.date) must persist as quoted strings — plain
+        # json.dumps consumers die on them (2026-11-09 /cards 502;
+        # card board-api-date-serialization-outage)
+        card_io.json_safe(card)
         text = yaml.dump(card, Dumper=_YAML_DUMP, allow_unicode=True,
                          sort_keys=False, width=110)
         if not isinstance(yaml.load(text, Loader=_YAML_LOAD), dict):

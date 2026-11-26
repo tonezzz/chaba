@@ -26,6 +26,7 @@ On any failure the tmp is removed and the target file is left UNTOUCHED
 """
 from __future__ import annotations
 
+import datetime
 import os
 from pathlib import Path
 
@@ -66,6 +67,36 @@ def atomic_write_text(p: Path, text: str) -> None:
         raise
 
 
+def json_safe(obj):
+    """Rewrite date/datetime scalars to ISO strings, in place.
+
+    PyYAML resolves a bare ``created: 2026-11-09`` to datetime.date and
+    ``...T..:..:..``/``... ..:..:..`` to datetime.datetime; any consumer
+    doing a plain ``json.dumps(card)`` then dies with TypeError — the
+    2026-11-09 board-api /cards 502 outage (reader side fixed by
+    ``default=str`` at ca8d850275; card board-api-date-serialization-
+    outage). Normalizing at write time persists the value as a string,
+    which the emitter quotes because a plain scalar would re-resolve as
+    a timestamp — so the file parses back as str and stays JSON-safe
+    for every downstream consumer. Dict keys are left alone (card keys
+    are always strings); tuples become lists since YAML has one seq
+    type anyway.
+    """
+    if isinstance(obj, datetime.datetime):
+        return obj.isoformat()
+    if isinstance(obj, datetime.date):
+        return obj.isoformat()
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            obj[k] = json_safe(v)
+    elif isinstance(obj, list):
+        for i, v in enumerate(obj):
+            obj[i] = json_safe(v)
+    elif isinstance(obj, tuple):
+        return [json_safe(v) for v in obj]
+    return obj
+
+
 def atomic_dump_card(p: Path, card: dict, **dump_kw) -> None:
     """safe_dump `card` to `p` atomically; refuse a dump that won't
     re-parse as a mapping BEFORE the file is touched (same contract as
@@ -75,6 +106,7 @@ def atomic_dump_card(p: Path, card: dict, **dump_kw) -> None:
     dump_kw.setdefault("sort_keys", False)
     dump_kw.setdefault("width", 110)
     dump_kw.setdefault("Dumper", _YAML_DUMP)
+    json_safe(card)
     text = yaml.dump(card, **dump_kw)
     if not isinstance(yaml.load(text, Loader=_YAML_LOAD), dict):
         raise ValueError(
