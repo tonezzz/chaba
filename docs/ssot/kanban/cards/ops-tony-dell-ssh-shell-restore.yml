@@ -1,15 +1,15 @@
 id: ops-tony-dell-ssh-shell-restore
 title: tony-dell - restore SSH shell via local Ansible bootstrap
-column: backlog
+column: done
 priority: high
 created: '2026-11-26'
-updated: 2026-11-26 12:21
+updated: 2026-11-26 12:35
 brief: sshd has a global ForceCommand internal-sftp; all shell SSH requests answer 'This service allows sftp connections
   only.' Run the idempotent local Ansible bootstrap from branch ops/restore-ssh-shell on tony-dell itself (the runner
   is the only remaining shell path) to back up, remove and validate the line, then reload sshd.
 action:
   type: script
-  status: queued
+  status: done
   host: tony-dell
   executor: script
   script:
@@ -46,5 +46,13 @@ comms:
 - at: 2026-11-26 12:21
   from: chaba
   text: 'tony-dell retry backoff: fail 1/3 — next claim not before 11-26 12:51'
+- at: 2026-11-26 12:35
+  from: tony
+  text: 'Superseded: the retry of -fix succeeded with the corrected multiline regex. Global ForceCommand removed
+    from tony-dell via ansible/playbooks/restore-ssh-shell.yml (commit 5a4a5e96c6); backup /etc/ssh/sshd_config.pre-shell-restore.20261126T122845.
+    Closing this earlier attempt so its backoff does not re-queue it.'
+- at: 2026-11-26 12:35
+  from: tony
+  text: closed by tony
 claim:
   since: 2026-11-26 12:20
