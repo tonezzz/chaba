@@ -1,0 +1,480 @@
+{
+  "schema": "decision-gate-expanded-dataset",
+  "date": "2026-11-26",
+  "source": "origin/master docs/ssot/kanban/cards/*.yml + archive/*.yml",
+  "label_rule": {
+    "not_ready": [
+      "no action needed",
+      "nothing needed",
+      "leave it alone",
+      "details in the note",
+      "test fixture",
+      "blocked on",
+      "awaiting",
+      "waiting in the backlog",
+      "parked",
+      "deferred",
+      "on hold",
+      "not needed",
+      "no-op",
+      "informational"
+    ],
+    "ready": "non-empty spec and brief starts with a concrete action verb",
+    "excluded": [
+      "ada-ocb-skills-wiki-education-2026-11-24",
+      "audit-ollama-service-tony-dell",
+      "board-write-lock-scope-narrowing",
+      "card-runner-lifecycle-test",
+      "chat-send-photos-picker",
+      "diagnose-unattended-devin-session-storm-20261108",
+      "dispatch-priority-order",
+      "prune-old-docs-sweep-exits-in-223ms-veri-6e0db7"
+    ],
+    "digest_template_cap": 5
+  },
+  "counts": {
+    "ready": 30,
+    "not_ready": 30
+  },
+  "items": [
+    {
+      "n": 1,
+      "id": "ada-dead-turn-guard",
+      "brief": "Transcript audit 2026-10-07 (session 56d2e4d167): user asked \"\u0e23\u0e16 KK \u0e17\u0e30\u0e40\u0e1a\u0e35\u0e22\u0e19\u0e2d\u0e30\u0e44\u0e23\" twice at 13:41; memory search had ALREADY returned the answer (plate 5\u0e02\u0e27 6249 in hits)\u2026 A worker session is on it \u2014 nothing needed unless it posts a question.",
+      "label": false,
+      "source": "archive"
+    },
+    {
+      "n": 2,
+      "id": "ada-kanban-access",
+      "brief": "Ada should review and take action on the board. Waiting in the backlog \u2014 no action needed yet.",
+      "label": false,
+      "source": "archive"
+    },
+    {
+      "n": 3,
+      "id": "ada-look-tool",
+      "brief": "Implement the ada_look voice tool in ada-pi: GET the ada-ha-scenario-reports/eye:latest MDDB doc, answer \"what do you see\" with class counts + source + freshness. Read-only; never triggers actions on detections (confirm-gate model preserved).",
+      "label": true,
+      "source": "archive"
+    },
+    {
+      "n": 4,
+      "id": "ada-market-tool",
+      "brief": "When you ask Ada about gold, exchange rates, or Thai stocks she often guesses instead of looking up real numbers. The plan is a lookup tool backed by the trade database \u2014 waiting in the backlog, no action needed.",
+      "label": false,
+      "source": "archive"
+    },
+    {
+      "n": 5,
+      "id": "ada-ocb-ansible-audit-verify",
+      "brief": "Ground Ansible as the declared-state/verification layer for ada-ocb: two read-only playbooks (surface audit + contract verify) plus an ocb_pane inventory group. The npm upgrade path already exists and stays the executor.",
+      "label": true,
+      "source": "active"
+    },
+    {
+      "n": 6,
+      "id": "ada-ocb-ansible-upgrade",
+      "brief": "Follow-up to AUD-0014. Build an approval-gated ada-ocb-upgrade.yml that starts idc02's existing openchamber-update.service (never reimplements npm i -g), then runs ada-ocb-verify.yml. Blocked on explicit same-session production-write approval.",
+      "label": false,
+      "source": "active"
+    },
+    {
+      "n": 7,
+      "id": "ada-ocb-openchamber-e2e-smoke",
+      "brief": "Verify an actual fresh OpenChamber conversation uses injected Ada instructions and same-session ada-control MCP tools; separate from ADA-0173 direct-bridge verification.",
+      "label": true,
+      "source": "active"
+    },
+    {
+      "n": 8,
+      "id": "ada-ocb-ssot-search-query",
+      "brief": "Add bounded exact SSOT search to OpenChamber and update the canonical tool registry; reuse existing SSOT sources instead of creating a duplicate.",
+      "label": true,
+      "source": "archive"
+    },
+    {
+      "n": 9,
+      "id": "ada-opencode-command-publisher-20261108",
+      "brief": "Make the OpenCode-Ada command fix durable and callable from both Ada and Devin without arbitrary repo writes.",
+      "label": true,
+      "source": "archive"
+    },
+    {
+      "n": 10,
+      "id": "ada-opencode-control-plane-tab",
+      "brief": "Deploy a protected read-only Ada/OpenCode control-plane surface on idc02 and insert it immediately after Board in the ada-ha chaba-admin dashboard.",
+      "label": true,
+      "source": "archive"
+    },
+    {
+      "n": 11,
+      "id": "ada-opencode-result-review-pilot",
+      "brief": "Evaluate Ada as an independent review-plane QA/QC stage for OpenCode-generated result bundles. Ada reviews; she does not execute or approve deployment.",
+      "label": true,
+      "source": "archive"
+    },
+    {
+      "n": 12,
+      "id": "ada-tool-retry-storm",
+      "brief": "Audit 2026-10-09: on CalendarAuthError the model re-issued tasks action=list ~11 times in 9s (16:31:03\u201316:31:12 ICT) and calendar_read 5 times in 9s (16:32:09\u201316:32:18). Burns quota, adds dead air, never succeeds.",
+      "label": true,
+      "source": "archive"
+    },
+    {
+      "n": 13,
+      "id": "ansible-host-baseline-scaffold",
+      "brief": "Create ansible/ scaffold (inventory of tony-omen, tony-dell, idc02, idc03 + portable/macos groups) verbatim from spec, then ansible ping + site.yml --check --diff. Dry-run only.",
+      "label": true,
+      "source": "archive"
+    },
+    {
+      "n": 14,
+      "id": "ansible-verify-host-software-r7",
+      "brief": "Add a parallel read-only ansible playbook that probes ssot.host-software.yml capabilities and writes per-host benchmark reports.",
+      "label": true,
+      "source": "active"
+    },
+    {
+      "n": 15,
+      "id": "awx-aap-rbac-approval-gates",
+      "brief": "Evaluate and wire an AWX/AAP front end onto the existing dispatch queue so job submission is RBAC-controlled and can require approval before dispatch. Done when a decision record and, if adopted, a gated playbook path exist without breaking the current scheduler.",
+      "label": true,
+      "source": "active"
+    },
+    {
+      "n": 16,
+      "id": "board-structured-responses",
+      "brief": "Most review/decide asks get a one-word Tony answer. Queued \u2014 a worker session will pick it up; no action needed.",
+      "label": false,
+      "source": "archive"
+    },
+    {
+      "n": 17,
+      "id": "chaba-nest-models",
+      "brief": "Idea: give every small node its own tiny AI model that gets smarter when the nodes connect. It's a vision card sitting in the backlog \u2014 no action needed yet.",
+      "label": false,
+      "source": "archive"
+    },
+    {
+      "n": 18,
+      "id": "cline-chaba-admin-tab",
+      "brief": "Add Cline Kanban after the Board tab without a second browser key prompt; reuse Cloudflare Access SSO through a server-side, tailnet-only proxy. Confirm the correct HA instance before mutating the dashboard.",
+      "label": true,
+      "source": "archive"
+    },
+    {
+      "n": 19,
+      "id": "cms-auto-ada-debug-report",
+      "brief": "A scheduled report-page job ('ada-debug-report') is stale. Re-run it or check the generator \u2014 details in the note.",
+      "label": false,
+      "source": "archive"
+    },
+    {
+      "n": 20,
+      "id": "cms-auto-ada-digest",
+      "brief": "A scheduled report-page job ('ada-digest') is error. Re-run it or check the generator \u2014 details in the note.",
+      "label": false,
+      "source": "active"
+    },
+    {
+      "n": 21,
+      "id": "cms-auto-architecture-digest",
+      "brief": "A scheduled report-page job ('architecture-digest') is error. Re-run it or check the generator \u2014 details in the note.",
+      "label": false,
+      "source": "active"
+    },
+    {
+      "n": 22,
+      "id": "cms-auto-bench-digest",
+      "brief": "A scheduled report-page job ('bench-digest') is error. Re-run it or check the generator \u2014 details in the note.",
+      "label": false,
+      "source": "active"
+    },
+    {
+      "n": 23,
+      "id": "cms-auto-car-activity-digest",
+      "brief": "A scheduled report-page job ('car-activity-digest') is error. Re-run it or check the generator \u2014 details in the note.",
+      "label": false,
+      "source": "archive"
+    },
+    {
+      "n": 24,
+      "id": "colab-single-notebook-job-console-with-c-2528c5",
+      "brief": "Make Colab the one operator surface for DevNest, voice/video, eval and GPU jobs: one canonical notebook, clear instructions, safe runtime/session preflight, and standard cache-warmup scheduling.",
+      "label": true,
+      "source": "archive"
+    },
+    {
+      "n": 25,
+      "id": "dev-ha-edge",
+      "brief": "Adds the two development Home Assistant sites to the same public-edge setup the live ones already use. Queued \u2014 a worker session will pick it up; no action needed.",
+      "label": false,
+      "source": "archive"
+    },
+    {
+      "n": 26,
+      "id": "device-tracking",
+      "brief": "All the pieces to locate a lost device already exist \u2014 this adds one place that pulls them together. Waiting in the backlog \u2014 no action needed.",
+      "label": false,
+      "source": "archive"
+    },
+    {
+      "n": 27,
+      "id": "devin-executor-model-routing",
+      "brief": "Fix the MacBook dispatch rejection by making model IDs executor-aware; do not pass litellm/* aliases into `devin --model` or silently enable paid frontier.",
+      "label": true,
+      "source": "archive"
+    },
+    {
+      "n": 28,
+      "id": "devnest-continuous-improvement-standard",
+      "brief": "Make DevNest advance at the same pace as the rest of Chaba: every delegated job must be specified, routed, isolated, verified, audited, measured, and fed back into JEV/skills/education.",
+      "label": true,
+      "source": "archive"
+    },
+    {
+      "n": 29,
+      "id": "devnest-free-lane-savings-pilot",
+      "brief": "Run three small verified jobs through OpenCode + Gemini Flash Lite and compare against matched Devin historical work.",
+      "label": true,
+      "source": "archive"
+    },
+    {
+      "n": 30,
+      "id": "devnest-free-pilot-code",
+      "brief": "Add a tiny deterministic helper plus unit test through OpenCode Flash Lite.",
+      "label": true,
+      "source": "archive"
+    },
+    {
+      "n": 31,
+      "id": "devnest-host-load-scenario",
+      "brief": "Run a supervised OpenCode scenario that assesses a declared target host load without changing anything.",
+      "label": true,
+      "source": "archive"
+    },
+    {
+      "n": 32,
+      "id": "devnest-news-promote-wp4010",
+      "brief": "Review and, only after Ada approval and Tony confirmation, promote the protected WP-4010 news story to the public News hierarchy.",
+      "label": false,
+      "source": "archive"
+    },
+    {
+      "n": 33,
+      "id": "eval-ide-antigravity",
+      "brief": "Only true agent-first IDE on the list; free weekly quota. Blocked on Tony: needs his Google login.",
+      "label": false,
+      "source": "archive"
+    },
+    {
+      "n": 34,
+      "id": "gemini4-interactions-text-agent-eval-2026-11-26",
+      "brief": "Compare gemini-4-hydrogen/neon via the Interactions API against the current 3.x stateless text path on a small multi-turn tool-and-recall task set; measure task accuracy, token growth and latency.",
+      "label": true,
+      "source": "active"
+    },
+    {
+      "n": 35,
+      "id": "gev-program-design",
+      "brief": "Tracker card that maps all the God's-Eye-View work and the order to do it in. For orientation \u2014 no action needed.",
+      "label": false,
+      "source": "archive"
+    },
+    {
+      "n": 36,
+      "id": "idc02-runner-smoke",
+      "brief": "Verifies the new idc02 runner can claim, run, merge, and auto-close a dispatch card. Nothing needed from you \u2014 it should drain itself; flag me only if it stalls.",
+      "label": false,
+      "source": "archive"
+    },
+    {
+      "n": 37,
+      "id": "jack-llm-stack-agent-eval",
+      "brief": "Run a matched, gated evaluation of OpenCode and Cline building a disposable Jack LLM stack on a safe host.",
+      "label": true,
+      "source": "active"
+    },
+    {
+      "n": 38,
+      "id": "jevnest-bounded-package-planner",
+      "brief": "Evaluate a bounded planner that proposes additional real task packages from existing evidence without allowing KK-Mac to mutate or recursively feed its own queue.",
+      "label": true,
+      "source": "active"
+    },
+    {
+      "n": 39,
+      "id": "jevteam-omen-or-lane-admission",
+      "brief": "Make Omen local Jev decision services and OpenRouter free/paid tiers dependable optional lanes with health, quota, cost, verifier, and fallback gates.",
+      "label": true,
+      "source": "active"
+    },
+    {
+      "n": 40,
+      "id": "kk-mac-live-jev-probe2",
+      "brief": "Run one supervised explicit kk_mac_local executor job on tony-dell runner against KK-Mac qwen3:8b.",
+      "label": true,
+      "source": "active"
+    },
+    {
+      "n": 41,
+      "id": "kk-mac-live-probe-idc03-20261030",
+      "brief": "Run the one bounded local-Qwen summary probe already approved on OPS-0978, using the newly authorized idc03 SSH key; do not enable automatic KK-Mac routing.",
+      "label": true,
+      "source": "active"
+    },
+    {
+      "n": 42,
+      "id": "kraut-zombie-session-dead-upstream-7b37c8",
+      "brief": "mn-ha voice session loses its Gemini upstream (idle-kill 1008/1011) while the client ws stays open \u2014 pump never sees the death, is_stalled only arms on a pending user turn, send_audio errors are suppressed, deferred notifies log into the corpse every ~10s. User: permanent silence = no voice out.",
+      "label": false,
+      "source": "archive"
+    },
+    {
+      "n": 43,
+      "id": "lab-mddb-quantized",
+      "brief": "An experiment to shrink the memory database's vectors so lookups get cheaper; it's now testable on the spare node. Sitting in the backlog \u2014 no action needed.",
+      "label": false,
+      "source": "archive"
+    },
+    {
+      "n": 44,
+      "id": "lab-parakeet-batch-asr",
+      "brief": "A 178MB speech model that transcribes on plain CPU at ~100x real time \u2014 free local transcripts for our non-Thai audio instead of burning Gemini tokens. Waiting in the backlog \u2014 no action needed.",
+      "label": false,
+      "source": "archive"
+    },
+    {
+      "n": 45,
+      "id": "lab-thai-voice-clone",
+      "brief": "Open-source models can now clone a Thai voice from a ~15s clip \u2014 usable for the YouTube dub pipeline and a consistent Ada voice. Waiting in the backlog \u2014 no action needed.",
+      "label": false,
+      "source": "archive"
+    },
+    {
+      "n": 46,
+      "id": "lab-yolo-ha-detect",
+      "brief": "An experiment to run object detection on the home camera feeds. Sitting in the backlog \u2014 no action needed.",
+      "label": false,
+      "source": "active"
+    },
+    {
+      "n": 47,
+      "id": "llm-provider-verification-2026-11",
+      "brief": "Close the four verification gaps recorded on Education:LLM Providers and its five leaf pages before any provider leg is promoted in the idc03 gateway chains.",
+      "label": true,
+      "source": "active"
+    },
+    {
+      "n": 48,
+      "id": "logs-digest-program",
+      "brief": "Umbrella card for turning raw logs into a readable digest \u2014 detection and daily reports are already live. It tracks the remaining lanes; no action needed.",
+      "label": false,
+      "source": "archive"
+    },
+    {
+      "n": 49,
+      "id": "logs-drain-rate",
+      "brief": "The log shipper reads logs faster than it sends them, so some hosts fall days behind. Waiting in the backlog \u2014 no action needed yet.",
+      "label": false,
+      "source": "archive"
+    },
+    {
+      "n": 50,
+      "id": "mddb-follower-stall",
+      "brief": "One memory-database replica quietly stops copying new data while still looking connected \u2014 no errors anywhere. Waiting in the backlog \u2014 no action needed yet.",
+      "label": false,
+      "source": "archive"
+    },
+    {
+      "n": 51,
+      "id": "nest-collective-bench",
+      "brief": "Exploring whether many small AI models working together beat one big one. Work is in progress \u2014 nothing needed unless a question appears on the card.",
+      "label": false,
+      "source": "archive"
+    },
+    {
+      "n": 52,
+      "id": "nest-edge-vision",
+      "brief": "A page that shows a camera feed and draws object labels on it right in the browser, castable to the TV. Waiting in the backlog \u2014 no action needed.",
+      "label": false,
+      "source": "archive"
+    },
+    {
+      "n": 53,
+      "id": "nest-efficiency-session-level-drive-gpu-bf7681",
+      "brief": "Measure whether the Drive-store improvements (ADA-0806, 10-23/24) actually pay. Parses queue/run-*.out.log + done markers + heartbeat to emit per-session metrics: wall_min, gpu_min (from gpu% in DONE lines), idle_min, packs_done, failures, cold_start_min, and estimated $/pack.",
+      "label": true,
+      "source": "active"
+    },
+    {
+      "n": 54,
+      "id": "nest-lane-metrics",
+      "brief": "The chaba-nest hub page shows \"no metrics\" on every lane, so the decisions-\u0394 and escalation-% columns are dead. The metrics module is already written (scripts/jev/lane_metrics.py) \u2014 the openjev lane servers just haven't adopted it. Expected action: dispatch it; nothing needed from you.",
+      "label": true,
+      "source": "archive"
+    },
+    {
+      "n": 55,
+      "id": "nest-micro-training",
+      "brief": "The small-model training loop that already turned a weak model into a good one needs an owner to keep improving it. Waiting in the backlog \u2014 no action needed.",
+      "label": false,
+      "source": "active"
+    },
+    {
+      "n": 56,
+      "id": "openchamber-session-goals-adobe-stock-qc",
+      "brief": "Evaluate whether OpenChamber Session Goals can drive a bounded Adobe Stock reuse review to a verifiable stopping condition.",
+      "label": true,
+      "source": "active"
+    },
+    {
+      "n": 57,
+      "id": "opencode-adobe-stock-image-preview",
+      "brief": "Make Adobe Stock reuse results useful in OpenChamber by showing source-bound image previews and safe asset selection without uploading or mutating Adobe Stock.",
+      "label": true,
+      "source": "active"
+    },
+    {
+      "n": 58,
+      "id": "ops-incident-ladder",
+      "brief": "We detect failures well but respond ad-hoc \u2014 every alert should know its severity, playbook, and whether a machine may fix it. Waiting in the backlog \u2014 no action needed.",
+      "label": false,
+      "source": "archive"
+    },
+    {
+      "n": 59,
+      "id": "ops-mn01-restore-sshd-shell-20261126",
+      "brief": "Remove the accidental global ForceCommand internal-sftp on mn01 so shell, Ansible and the canary rerun work again.",
+      "label": true,
+      "source": "active"
+    },
+    {
+      "n": 60,
+      "id": "precommit-warning-baseline",
+      "brief": "The commit-time SSOT check fails on warnings that were already filed as known debt, which blocks merges. Plan: keep a baseline and fail only on new warnings. In the backlog \u2014 no action needed.",
+      "label": false,
+      "source": "archive"
+    }
+  ],
+  "tony_label_review": {
+    "date": "2026-11-26",
+    "decisions": [
+      {
+        "id": "nest-lane-metrics",
+        "from": false,
+        "to": true,
+        "reason": "explicit Expected action: dispatch it - human no-action, but dispatchable"
+      },
+      {
+        "id": "devnest-news-promote-wp4010",
+        "from": true,
+        "to": false,
+        "reason": "explicit approval gate before the action (only after Ada approval and Tony confirmation)"
+      }
+    ],
+    "rule_refinement": "nothing needed from you alone does not mean NOT_READY when the brief explicitly asks for dispatch; an approval precondition does mean NOT_READY",
+    "unchanged_example": "idc02-runner-smoke stays NOT_READY: it should drain itself is an existing worker, not a dispatch request"
+  }
+}

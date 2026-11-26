@@ -61,6 +61,18 @@ usage:  96 input tokens, 0 output tokens
 This is a strong fit for cheap, calibrated gates (triage yes/no, rubric
 scoring) without generating a paragraph we then have to parse.
 
+**Expanded eval (2026-11-26, 60 balanced briefs, zero output tokens):** after
+Tony reviewed two more borderline labels, agreement at the default 0.5
+threshold was **55/60 (0.9167)** — 25/30 READY approved and 30/30 NOT_READY
+rejected, with **zero false approvals** (Brier 0.0842). A `p_yes >= 0.5162`
+threshold calibrated on 40 briefs held up on 20 unseen briefs: 10/10 NOT_READY
+rejected, 6/10 READY approved, zero false approvals. High-confidence reject
+also replicated: 13/13 rejects at confidence ≥ 0.90 were genuinely NOT_READY.
+This supports a **high-precision approve pre-filter**, not hands-off dispatch:
+10 held-out negatives still leave roughly a 26% upper bound on the false-
+approval rate at 95% confidence. See
+`docs/ssot/jobs/devnest/2026-11-26-gemini-decision-1-approve-gate-expanded.yml`.
+
 ### Managed Agents
 
 `client.agents` / `agent=...` with a sandboxed filesystem, code execution, web
@@ -130,8 +142,11 @@ be empty, so code must handle that. This is distinct from the separate
 3. Gemini 4 Carbon/Neon remains untested — free tier returns 0 output tokens
    and the paid keys share a project at its monthly cap. Do not change the
    production agent path without a paid-tier repeat.
-4. `gemini-decision-1` was evaluated: strong reject gate (8/10 agreement, zero
-   output tokens), not yet an approve gate without label review.
+4. `gemini-decision-1` was evaluated: strong reject gate, then a 60-brief
+   expansion gave 55/60 agreement with zero output tokens and zero false
+   approvals. Use it as a high-precision approve pre-filter; keep human
+   dispatch approval until a larger held-out set bounds the false-approval
+   rate.
 5. The official `gemini-api-dev` skill is installed and trialled (87.5% vs
    25% pass rate with vs without it); load it for any Gemini API code work.
 6. Guardrails unchanged: no key, billing, or gateway edits without explicit

@@ -1,0 +1,76 @@
+title: Expand decision-1 gate evaluation to an approve-gate threshold
+subtitle: >
+  One batched Decisions API call over 60 real kanban briefs, with Tony's label
+  review and a held-out threshold calibration. High precision, still not a
+  hands-off approve gate.
+icon: education
+version: 1
+
+card: gemini-decision-1-gate-eval-2026-11-26  # ADA-1445
+date: 2026-11-26
+source_session: "2026-11-26 exploration track after the Managed Agents verification"
+
+delivered:
+  method:
+    source: "origin/master docs/ssot/kanban/cards/*.yml + archive/*.yml"
+    selection: "brief 60-300 chars; deterministic label rule; 60 unique IDs, 30 READY / 30 NOT_READY; 21 active / 39 archive"
+    exclusions: "8 ambiguous briefs excluded (tool-name openers, 'no-op'/'parked' false markers, mixed deferral wording); digest templates capped at 5"
+    call: "POST https://generativelanguage.googleapis.com/v1beta/decisions - one shared input, 60 noul questions"
+    key_used: GEMINI_API_KEY_MICHAEL  # free-tier key; value never displayed or copied
+    artifacts:
+      - scripts/voice-bench/results/g4-decision-gate-expanded-dataset.json
+      - scripts/voice-bench/results/g4-decision-gate-expanded-payload.json
+      - scripts/voice-bench/results/g4-decision-gate-expanded-response.json
+      - scripts/voice-bench/results/g4-decision-gate-expanded-graded.json
+  results:
+    input_chars: 11627
+    usage: {input_tokens: 8826, output_tokens: 0}
+    answers: 60
+    overall_at_p_yes_0.5:
+      confusion: {tp: 25, fn: 5, tn: 30, fp: 0}
+      accuracy: 0.9167
+      approve_precision: 1.0
+      approve_recall: 0.8333
+      reject_precision: 0.8571
+      brier: 0.0842
+    p_yes_ranges: {ready_min: 0.3222, not_ready_max: 0.4831}
+    high_confidence_reject_gate:
+      confidence_threshold: 0.90
+      rejects: 13
+      all_correct: true
+      coverage_of_not_ready: "13/30"
+    held_out_approve_calibration:
+      split: "seed 42, stratified 20/20 train and 10/10 test"
+      chosen_threshold: 0.5162
+      train: {tp: 18, fn: 2, tn: 20, fp: 0, accuracy: 0.95}
+      test_at_chosen: {tp: 6, fn: 4, tn: 10, fp: 0, accuracy: 0.80, precision: 1.0, recall: 0.60}
+      test_at_0.5: {tp: 7, fn: 3, tn: 10, fp: 0, accuracy: 0.85, precision: 1.0, recall: 0.70}
+      false_approval_upper_bound_95pct: "~26% with 0/10 held-out negatives (exact binomial)"
+
+findings:
+  - "The 60-brief set lifted accuracy from 0.80 to 0.9167 with zero false approvals at the default 0.5 threshold; 25/30 READY approved and 30/30 NOT_READY rejected."
+  - "Tony reviewed the two borderline labels: nest-lane-metrics changed NOT_READY -> READY because it explicitly asks for dispatch, and devnest-news-promote-wp4010 changed READY -> NOT_READY because the action is gated on Ada/Tony approval. Rule refined: 'nothing needed from you' alone does not mean NOT_READY when dispatch is explicitly requested; idc02-runner-smoke stays NOT_READY because it says the worker drains itself."
+  - "A zero-false-approval threshold calibrated on 40 train briefs (p_yes >= 0.5162) held up on 20 unseen briefs: 10/10 NOT_READY rejected, 6/10 READY approved, zero false approvals. Recall dropped versus the 0.5 threshold, so the trade-off is explicit."
+  - "Approve gate is promising but not proven: zero false approvals on only 10 held-out negatives still admits roughly a 26% upper bound at 95% confidence, and the calibration set contains near-duplicate digest templates despite a cap of 5."
+  - "High-confidence reject signal replicates: 13/13 rejects at confidence >= 0.90 were genuinely NOT_READY, covering 13/30 of that class."
+  - "Cost stays zero output tokens: 60 decisions on 11,627 input characters used 8,826 input tokens and 0 output tokens."
+
+guardrails:
+  - "No key, billing, gateway, model-pin or production-path changes."
+  - "No wiki publish in this track; the Education page remains at revid 798."
+  - "Read-only batch Decisions call; briefs came from repo cards, no card state changed."
+
+activation_gate:
+  - "DONE 2026-11-26: Tony said 'please proceed' after the open-items review."
+  - "DONE 2026-11-26: dataset built and two borderline labels confirmed by Tony before metrics were finalized."
+
+verify:
+  - "DONE 2026-11-26: response contained 60 answers and usage {total_input_tokens: 8826, total_output_tokens: 0}."
+  - "DONE 2026-11-26: label overrides recorded in the dataset JSON; graded locally with a seeded stratified train/test split."
+  - "DONE 2026-11-26: YAML receipt and all four JSON artifacts parsed before push."
+
+remaining:
+  - "Expand to 100+ briefs with more diverse NOT_READY examples and a larger held-out negative set before treating the approve gate as hands-off."
+  - "Compare the gate against the current full-model dispatch judgment path on the same briefs."
+  - "Do not replace human dispatch approval on this evidence; use as a high-precision pre-filter that escalates low/medium-confidence cases."
+  - "Do not retry any paid key until the cap situation is explicitly resolved by Tony."

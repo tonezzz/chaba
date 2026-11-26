@@ -1,9 +1,10 @@
 title: Evaluate gemini-decision-1 as a dispatch-readiness gate
 subtitle: >
-  One batched Decisions API call over 10 real kanban briefs. Promising as a
-  high-confidence reject gate, not yet as an approve gate.
+  One batched Decisions API call over 10 real kanban briefs, then a 60-brief
+  expansion with held-out threshold calibration. High-confidence reject gate;
+  approve gate remains a high-precision pre-filter, not hands-off.
 icon: education
-version: 2  # v2: labels for both disputed cards confirmed by Tony on 2026-11-26
+version: 3  # v3: 60-brief expansion recorded in the companion receipt
 
 card: gemini-decision-1-gate-eval-2026-11-26  # ADA-1445
 date: 2026-11-26
@@ -85,6 +86,19 @@ label_review:
     confidence rejects to a human. Do not auto-approve dispatch on this
     evidence; validate a threshold on 30+ unambiguous labeled briefs first.
 
+expanded_followup:
+  receipt: docs/ssot/jobs/devnest/2026-11-26-gemini-decision-1-approve-gate-expanded.yml
+  summary: >
+    A second batched call over 60 balanced briefs (Tony reviewed two more
+    borderline labels) gave 55/60 agreement at the default threshold, zero
+    false approvals, and a train-calibrated p_yes >= 0.5162 threshold that held
+    zero false approvals on 20 held-out briefs with 6/10 READY approved.
+  consequence: >
+    The original 'not yet an approve gate' caveat is narrowed: it is now viable
+    as a high-precision approve pre-filter, but 10 held-out negatives still
+    leave a ~26% upper bound on the false-approval rate, so human dispatch
+    approval is not replaced.
+
 guardrails:
   - "No key, billing, gateway, or model-pin changes."
   - "No wiki publish in this track."
@@ -101,6 +115,6 @@ verify:
 
 remaining:
   - "DONE 2026-11-26: Tony confirmed both disputed labels as READY; 0.80 is a true accuracy figure, confusion {tp:3, fn:2, tn:5, fp:0}."
-  - "If pursuing an approve gate, expand to 30+ unambiguous briefs, calibrate a p_yes threshold on held-out labels, and compare against the current full-model judgment path."
+  - "DONE 2026-11-26: expanded to 60 labeled briefs and calibrated p_yes >= 0.5162 on a seeded 40/20 train/test split; see the companion expanded receipt."
   - "Consider using the model only as a high-confidence reject pre-filter; do not replace human dispatch approval on this evidence."
   - "Do not retry the paid key until the cap situation is explicitly resolved by Tony."
