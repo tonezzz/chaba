@@ -1,9 +1,9 @@
 id: ops-tony-dell-ssh-restore-diag
 title: tony-dell - capture Ansible bootstrap failure output
-column: review
+column: done
 priority: high
 created: '2026-11-26'
-updated: 2026-11-26 12:24
+updated: 2026-11-26 15:06
 brief: 'Diagnostic follow-up: the first bootstrap run exited 2 in ~4s. Re-run verbosely with all output redirected
   to /home/tony/ssh-restore-diag.txt so it can be read over SFTP while shell access is still blocked. Exit 0 by
   design.'
@@ -40,6 +40,13 @@ comms:
   from: tony-dell
   text: 'finished (ok): exit=0 5.1309543-964496-264251857421097/AnsiballZ_slurp.py | pam_unix(sudo:session): session
     closed for user root | runn'
+- at: 2026-11-26 15:06
+  from: tony
+  text: '[close 15:05 +07] Stale diagnostic follow-up: comms show "finished (ok): exit=0". Live check: SSH shell
+    on tony-dell works (echo OK), SFTP-only policy unchanged. No further诊断 needed; closing.'
+- at: 2026-11-26 15:06
+  from: tony
+  text: closed by tony
 claim:
   since: 2026-11-26 12:23
 review_kind: verify
