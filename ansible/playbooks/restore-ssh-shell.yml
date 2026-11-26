@@ -19,7 +19,8 @@
   any_errors_fatal: true
   vars:
     sshd_conf: /etc/ssh/sshd_config
-    force_re: '^\s*ForceCommand\s+internal-sftp\s*$'
+    # (?m) matters: set_fact searches the whole file, not one line.
+    force_re: '(?m)^\s*ForceCommand\s+internal-sftp\s*$'
     backup_conf: >-
       /etc/ssh/sshd_config.pre-shell-restore.{{
       ansible_date_time.iso8601_basic_short }}
