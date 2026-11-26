@@ -1,7 +1,7 @@
 id: monitor-bangkok-flood-situation-and-high-896dc6
 title: Monitor Bangkok flood situation and high tide warnings
 column: backlog
-updated: 2026-11-26 04:03
+updated: 2026-11-26 12:26
 priority: medium
 note: Tony requested ongoing monitoring of BMA flood & Chao Phraya high tide conditions until Dec 2; keep flood-report
   current.
@@ -70,6 +70,13 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-26 12:26
+  from: tony
+  text: 'answered tony-requested-ongoing-monitor-0ece05: Postpone flood monitoring until the runner-agent drift
+    is resolved independently.'
+- at: 2026-11-26 12:26
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: tony-requested-ongoing-monitor-0ece05
   ask: Tony requested ongoing monitoring of Bangkok flood and Chao Phraya high tide conditions until Dec 2, maintaining
@@ -81,6 +88,8 @@ requests:
   - ★ Deploy monitoring to tony-dell using the chaba repo and redeploy the runner-agent across all hosts first.
   - Deploy monitoring to con01 using the chaba repo and redeploy the runner-agent across all hosts first.
   - Postpone flood monitoring until the runner-agent drift is resolved independently.
-  status: open
+  status: answered
   at: 2026-11-26 01:23
   from: backlog-spec-enrich
+  answer: Postpone flood monitoring until the runner-agent drift is resolved independently.
+awaiting_action: true
