@@ -1,7 +1,7 @@
 id: cline-nest-model-evaluation
 title: Evaluate Cline models through the Nest worker adapter
 column: doing
-updated: 2026-11-26 15:35
+updated: 2026-11-26 15:58
 priority: medium
 tags:
 - cline-kanban
@@ -302,6 +302,13 @@ comms:
     Triage 2026-11-26: action.status=done is WRONG. Co; [kk-mac-video-render-lane-ltx-video-mps-p-267f14] Read-only
     inventory update: KK; [opencode-retry-stale-worktree] Pilot halted after model route failure. OpenRout; [pin-a-free-openrouter-model-for-store-aw-ed0cc2]
     Cooldown pr'
+- at: 2026-11-26 15:58
+  from: devin
+  text: 'dispatch 20261126-153552 on idc02: verified KNB-0932 adapter live on con01 (cline-kanban container up,
+    kanban CLI OK via KANBAN_RUNTIME_PORT=3485, providers.json has ollama->Omen qwen3:4b and openrouter->LiteLLM
+    idc03:4000 or-free-nemotron-nano). BLOCKER: all OpenRouter :free models return 429 free-models-per-day-high-balance,
+    account quota exhausted until 2026-11-27 00:00 UTC (07:00 ICT); bench OR key is same OR account so no alternate
+    key helps. Proceeding with Ollama arm (3 reps) now; OR arm '
 action:
   type: dispatch
   status: running
