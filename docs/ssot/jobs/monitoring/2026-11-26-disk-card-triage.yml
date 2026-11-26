@@ -1,0 +1,41 @@
+icon: chart
+date: 2026-11-26
+card: disk-auto-macbook-root,disk-auto-kk-mac-System-Volumes-Data
+context: >-
+  Two disk-auto review cards were still open from the 09:30 watcher pass:
+  macbook / at 65% with a reported 13.4 GiB/day growth, and kk-mac
+  /System/Volumes/Data at 95% / 22.1 GiB free. Fresh probes showed both
+  stale: macbook was 66% / 75G, kk-mac was 86% / 59GiB free.
+changes:
+  - "tony-macbook: ran `uv cache clean` (no --force) to bound the real
+    grower — ~/.cache/uv was 9.2G with 82k files touched in 7d. Removed
+    526614 files / 8.2GiB; root fell to 62% used / 84G free."
+  - "Closed both stale cards through the board-api door with evidence
+    comments (no user caches removed on kk-mac, a member device)."
+  - "scripts/ada/disk-trend-watch.py: load_history now coerces `epoch` to
+    float and skips non-numeric samples; one injected sample had epoch as
+    a string and made `--report` crash with a TypeError."
+verification:
+  - "`ssh tony-macbook 'df -h /'` -> 62% used, 84G available after cleanup."
+  - "`ssh kk-mac 'df -h /System/Volumes/Data'` -> 86% used, 59GiB available."
+  - "disk-trend-watch.py --report now runs and shows macbook 65% / 77.4
+    GiB free; slope n/a because the 7d window has only sparse samples."
+  - "Both cards verified in `done` via board-cli --ssh idc03 get."
+rollback: >-
+  uv cache is rebuildable — `uv sync`/`uv pip install` repopulates it;
+  the cleanup cannot be undone byte-for-byte. The watcher change is a
+  one-line parse hardening with no state effect. The card comments
+  remain in the board history.
+residual: >-
+  disk-trend-watch cannot sample kk-mac: its SSH probe resolves the local
+  user tony against 100.108.217.17, while ansible inventory declares
+  kkkakk + ~/.ssh/id_ed25519_opencode. kk-mac history still contains only
+  unreachable samples from 2026-10-23, so its cards can go stale again.
+  The watcher's history window also has too few samples for a macbook
+  slope, so the 13.4 GiB/day figure could not be reproduced.
+lesson: >-
+  Verify the current df before acting on a trend card — a 'critical'
+  card may have self-healed while the watcher was unable to probe the
+  host. Clear rebuildable tool caches (uv, pip) rather than personal
+  caches on member devices; fix the watcher's SSH identity gap before
+  trusting its mac cards again.

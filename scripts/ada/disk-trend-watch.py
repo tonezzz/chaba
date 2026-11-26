@@ -340,7 +340,12 @@ def load_history(history: Path, window_s: float) -> dict[str, list[dict]]:
             r = json.loads(l)
         except json.JSONDecodeError:
             continue
-        if r.get("epoch", 0) >= since and r.get("host"):
+        try:
+            epoch = float(r.get("epoch", 0))
+        except (TypeError, ValueError):
+            continue  # injected/hand-written sample with a non-numeric epoch
+        if epoch >= since and r.get("host"):
+            r["epoch"] = epoch
             out.setdefault(r["host"], []).append(r)
     return out
 
