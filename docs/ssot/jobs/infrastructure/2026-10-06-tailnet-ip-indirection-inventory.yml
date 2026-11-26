@@ -1,0 +1,196 @@
+title: "Tailnet IP indirection — fleet inventory + migration list"
+subtitle: "Hardcoded 100.x addresses in ~/.config (all hosts) and repo configs, classified per service-name-indirection card"
+icon: list-check
+version: 1
+date: "2026-10-06"
+card: service-name-indirection
+status: inventory-complete-no-edits
+
+method:
+  pattern: '100\.(64-129.x.x) — full Tailscale CGNAT range 100.64.0.0/10'
+  scanned:
+    - "tony-dell ~/.config (all dirs incl. systemd, secrets, caddy, devin, containers, autostart, home-assistant, dnsmasq, yomi)"
+    - "fleet ~/.config over SSH: tony-omen, idc01, idc02, mn01"
+    - "repo: scripts/, stacks/, systemd/, apps/, tony-dell/, docs/, data/, backups/"
+    - "tony-dell ~/.local/bin (deployed script copies)"
+  not_scanned:
+    - "idc03 ~/.config — SSH permission denied for tony@ and root@ from this host (key not installed); inventoried via stacks/idc03/ repo sources instead"
+    - "michael-ha — SSH denied (HAOS; service config lives in /config, not ~/.config anyway)"
+    - "kk-macbook — offline 3d"
+    - "chrome/Devin profile caches (1.6G+ state, not config)"
+
+tailnet_map:
+  "100.68.142.13":  "tony-dell (self; postgres dnsmasq-alias 'postgre', caddy upstreams :3000 yomi/:3001 gpu/:3007-3009/:8000 status-data-api/:8084 weaviate/:9002 trade-api/:3011 notebooklm-rest)"
+  "100.74.146.0":   "idc01 (RETIRED 2026-10-05 — any remaining reference is stale)"
+  "100.102.134.91": "idc03 (mddb leader :11023 http /:11024 grpc /:9000 mcp, jev :8778, camwall-edge :3010/:8380, ollama :11434)"
+  "100.123.163.11": "idc02 (mddb-ops :11025, camwall-edge :8380, open-jev :8777)"
+  "100.106.196.22": "mn01 (xmeye-vms :5900, vms-snap :8377, gev :8780, weaviate-embed :5000, playwright :3939)"
+  "100.75.102.88":  "tony-omen (frigate :8080, sensor-reader :8001, barrier-server :24800, desktop-stream :8082, open-jev :8777)"
+  "100.80.105.88":  "michael-ha (:8123)"
+  "100.124.59.112": "kk-macbook (vnc :5900, playlive :9231)"
+
+decision_matrix:
+  class_a_unit_envs:
+    rule: "Environment=/ExecStart literals in systemd units + quadlets -> MagicDNS host name (e.g. idc03.taila0626a.ts.net). Valid today; pins host not service."
+    caveat: "PublishPort=/BIND_HOST=/listen-address= need a literal IP at bind time — keep literal or render at deploy (class c). dnsmasq postgre.conf IS the indirection layer — keep."
+    grpc_note: "MDDB_REPLICATION_LEADER_ADDR exists in exactly 2 places (dell + idc02 mddb.container) -> leader MagicDNS name."
+  class_b_http_clients:
+    rule: "http://<ip>:<port> in scripts/app code/MCP config -> edge alias (mddb.internal, camwall.internal, jev.internal ...) served by Caddy svc.internal blocks."
+    prerequisite: "svc.internal does NOT exist yet. Needs (1) vhost blocks on the edge Caddy reverse-proxying to current backend, (2) tailnet-wide name resolution — MagicDNS cannot do custom names, so extend the existing ~/.config/dnsmasq pattern (port 5353, server=100.100.100.100 fallback) per host or use /etc/hosts+tailscale0. Design decision required before mass edit."
+    interim: "Script defaults like ${MDDB_URL:-http://100.102.134.91:11023/v1} can go to MagicDNS today if alias lands later."
+  class_c_secrets_env:
+    rule: "~/.config/secrets/*.env and ~/.config/yomi/*.env -> rendered from ssot.values.yml hosts.* table."
+    mechanism: "Existing ${ssot(...)} resolver in scripts/mcp_debug/ssot.py (ssot.dynamic-references.yml). Add an env-file renderer (render-env.py or extend regen) so a host move = edit ssot.values.yml + re-render + restart units."
+  exempt:
+    - "docs/ ~125 files — kanban history, KB, runbooks. Refresh opportunistically; legit historical records."
+    - "backups/, data/migration-snapshots/, michael-dev .storage/auth last_used_ip + *.log — runtime state, not config."
+    - "~/.config/Devin/User/History, ~/.config/containers/mddb/rebuild-*/ — editor history + one-off ingest snapshot."
+    - "~/.config/secrets/archive-*/ — archives."
+    - "ssot.values.yml itself — the canonical source."
+
+inventory:
+
+  tony_dell_config:
+    # live files under ~/.config — 16 files
+    systemd_units:
+      - {file: "~/.config/systemd/user/log-shipper.service", hit: "MDDB_BASE_URL=http://100.102.134.91:11023/v1", class: a, to: "idc03.taila0626a.ts.net (or mddb.internal via env)"}
+      - {file: "~/.config/systemd/user/log-shipper-severe.service", hit: "same", class: a}
+      - {file: "~/.config/systemd/user/log-shipper-mha.service", hit: "same", class: a}
+      - {file: "~/.config/systemd/user/log-shipper-severe-mha.service", hit: "same", class: a}
+      - {file: "~/.config/systemd/user/chaba-audit.service", hit: "MDDB_BASE=http://100.102.134.91:11023", class: a}
+      - {file: "~/.config/systemd/user/chaba-audit-full.service", hit: "same", class: a}
+      - {file: "~/.config/systemd/user/ada-flood-news.service", hit: "comment only", class: a}
+      - {file: "~/.config/systemd/user/yomi-api.service", hit: "--add-host postgre:100.68.142.13", class: a, to: "postgre:tony-dell.taila0626a.ts.net"}
+      - {file: "~/.config/systemd/user/yomi-update-all.service", hit: "--add-host postgre:100.68.142.13", class: a}
+      - {file: "~/.config/systemd/user/yomi-mddb-digest.service", hit: "--add-host postgre:100.68.142.13", class: a}
+      - {file: "~/.config/systemd/user/trade-api.service", hit: "--add-host postgre:100.68.142.13", class: a}
+      - {file: "~/.config/systemd/user/trade-automation.service", hit: "--add-host postgre:100.68.142.13", class: a}
+      - {file: "~/.config/systemd/user/websockify-vms-mn01.service", hit: "websockify 127.0.0.1:6082 100.106.196.22:5900", class: a, to: "mn01.taila0626a.ts.net:5900"}
+      - {file: "~/.config/systemd/user/websockify-macbook.service", hit: "websockify 6080 100.124.59.112:5900", class: a, to: "kk-macbook.taila0626a.ts.net:5900"}
+      - {file: "~/.config/systemd/user/secrets-console.service", hit: "BIND_HOST=100.68.142.13", class: keep-literal, note: "bind addr"}
+      - {file: "~/.config/systemd/user/status-data-api.service", hit: "FRIGATE_URL+SENSOR_READER_URL=http://100.75.102.88:...", class: b, to: "tony-omen.taila0626a.ts.net or omen-svc alias"}
+      - {file: "~/.config/systemd/user/mddb.service.bak-embeds", hit: "MDDB_EMBEDDING_API_URL=100.68.142.13:11435", class: exempt, note: "backup file"}
+    containers:
+      - {file: "~/.config/containers/systemd/mddb.container", hit: "MDDB_ADDR/GRPC/MCP=100.68.142.13 (self-bind) + MDDB_REPLICATION_LEADER_ADDR=100.102.134.91:11024", class: "a (leader) / keep-literal (self bind)", note: "1 of 2 gRPC leader refs"}
+    devin_mcp:
+      - {file: "~/.config/devin/mcp_config.json:109", hit: "mddb.url=http://100.74.146.0:9000/mcp", class: STALE, note: "points at retired idc01 — verify; likely the live mddb MCP is dead or overridden elsewhere"}
+      - {file: "~/.config/devin/mcp-scripts/run-playlive-macbook.sh", hit: "PLAYLIVE_URL=http://100.124.59.112:9231", class: b}
+    autostart:
+      - {file: "~/.config/autostart/barrierc.desktop", hit: "barrierc ... 100.75.102.88", class: a, to: "tony-omen.taila0626a.ts.net"}
+    homeassistant:
+      - {file: "~/.config/home-assistant/configuration.yaml:44", hit: "ffmpeg input http://100.75.102.88:8082/tony-omen/desktop/index0.m3u8", class: b}
+      - {file: "~/.config/home-assistant/configuration.yaml:289", hit: "rest resource http://100.75.102.88:8001/api/sensors", class: b}
+    env_files:
+      - {file: "~/.config/yomi/yomi-api.env", hit: "REDIS_URL, WEAVIATE_URL, WEAVIATE_SEARCH_URL (lines 1,13,14)", class: c}
+      - {file: "~/.config/yomi/yomi-update-all.env", hit: "WEAVIATE_URL, WEAVIATE_SEARCH_URL, EMBEDDING_SERVICE_URL, MDDB_OPS_URL (11-14)", class: c}
+      - {file: "~/.config/secrets/archive-ada-pre-idc01-20260925/ada-pi-pwa.env", hit: "MDDB_BASE_URL=100.74.146.0", class: exempt}
+    dnsmasq:
+      - {file: "~/.config/dnsmasq/postgre.conf", hit: "listen-address=...,100.68.142.13; address=/postgre/100.68.142.13", class: keep-literal, note: "this IS the 'postgre' service-name layer; extend this pattern for svc.internal"}
+    caddy:
+      - {file: "~/.config/caddy/Caddyfile.tony-dell*", hit: "backups only (12 refs in newest .bak)", class: exempt, note: "unit caddy-tony-dell.service is INACTIVE and its --config file is deleted — live edge = web.service podman mounting repo stacks/web/Caddyfile; a stale copy also exists at host /etc/caddy/Caddyfile (12 refs, missing recent board-api block) served by a separate bare 'caddy run' process"}
+      - {file: "~/.config/caddy/public/", hit: "8 deployed copies of stacks/web/public files", class: repo-derived}
+
+  fleet:
+    tony_omen:  # ssh ok
+      - {file: "~/.config/systemd/user/log-shipper.service", hit: "MDDB_BASE_URL=100.102.134.91:11023/v1", class: a}
+      - {file: "~/.config/systemd/user/log-shipper-severe.service", hit: "same", class: a}
+      - {file: "~/.config/systemd/user/yomi-api.service.d/override.conf", hit: "REDIS_URL=redis://100.68.142.13:6379", class: a, to: "tony-dell.taila0626a.ts.net"}
+      - {file: "~/.config/systemd/user/weaviate-embed-proxy.service", hit: "systemd-socket-proxyd 100.106.196.22:5000", class: a, to: "mn01.taila0626a.ts.net"}
+      - {file: "~/.config/systemd/user/open-jev.service", hit: "--host 100.75.102.88 (self bind)", class: keep-literal}
+      - {file: "~/.config/secrets/idc02.env", hit: "IDC02_HOST=<ip>", class: c}
+    idc02:  # ssh ok
+      - {file: "~/.config/systemd/user/log-shipper.service", hit: "MDDB_BASE_URL=100.102.134.91", class: a}
+      - {file: "~/.config/systemd/user/jev-bench.service", hit: "http://100.74.146.0:8778 + :11023", class: STALE, note: "targets retired idc01 — broken now"}
+      - {file: "~/.config/systemd/user/ssot-optimization-snapshot.service", hit: "MDDB_BASE=100.74.146.0:11023", class: STALE}
+      - {file: "~/.config/caddy/Caddyfile", hit: "reverse_proxy http://100.74.146.0 (x2)", class: STALE, note: "edge upstream points at dead host"}
+      - {file: "~/.config/systemd/user/mddb-ops.service", hit: "-p 100.123.163.11:11025:11023 (self)", class: keep-literal}
+      - {file: "~/.config/systemd/user/open-jev.service", hit: "--host 100.123.163.11 (self)", class: keep-literal}
+      - {file: "~/.config/containers/systemd/mddb.container", hit: "self 100.123.163.11 binds + LEADER_ADDR=100.102.134.91:11024", class: "a (leader) / keep-literal (self)", note: "2 of 2 gRPC leader refs"}
+      - {file: "~/.config/containers/systemd/camwall-edge.container", hit: "PublishPort=100.123.163.11:8380 (self)", class: keep-literal}
+      - {file: "~/.config/secrets/ada-lab.env", hit: "NOTEBOOKLM_REST_BASE_URL, DOC_ARCHIVE_URL, VCAST_API, ADA_JEV_URL, ADA_VISION_BASE_URL (5 keys)", class: c}
+      - {file: "~/.config/containers/mddb/data/mddb.db", hit: "binary data", class: exempt}
+    idc01:  # ssh ok but host retired — 28 files, mostly stale
+      note: "migrated to idc03 2026-10-05; remaining hits are dead config. Do NOT migrate — leave until decommission, or clean during teardown. Files: 15 systemd units (ada-scenario-*, log-shipper, jev-*, ops-health-report, ada-*-gate dropins), 6 quadlets, Caddyfile, 7 secrets/*.env — mixed 100.74.146.0 (self, dead) and 100.102.134.91 (already-sed'ed)."
+    mn01:  # ssh ok
+      - {file: "~/.config/systemd/user/log-shipper.service", hit: "MDDB_BASE_URL=100.102.134.91", class: a}
+      - {file: "~/.config/systemd/user/yolo-ipad-1.service + yolo-ipad-2.service", hit: "YOLO_HOST=100.106.196.22 (self) + YOLO_FRAME_URL=http://100.102.134.91:3010 (idc03 camwall)", class: "keep-literal + a"}
+      - {file: "~/.config/systemd/user/yolo-xiaomi.service.d/bind.conf", hit: "YOLO_HOST=100.106.196.22", class: keep-literal}
+      - {file: "~/.config/systemd/user/weaviate-embedding.service.d/bind.conf", hit: "HOST=100.106.196.22", class: keep-literal}
+      - {file: "~/.config/systemd/user/vms-snap.service", hit: "--bind 100.106.196.22", class: keep-literal}
+      - {file: "~/.config/systemd/user/playwright-server.service", hit: "--host 100.106.196.22", class: keep-literal}
+      - {file: "~/.config/containers/systemd/xmeye-vms.container", hit: "PublishPort=100.106.196.22:5900", class: keep-literal}
+      - {file: "~/.config/containers/systemd/google-home-mcp.container", hit: "BIND_HOST=100.106.196.22", class: keep-literal}
+      - {file: "~/.config/secrets/ada-ha-tony.env + ada-ha-michael.env", hit: "NOTEBOOKLM_REST_BASE_URL, MDDB_BASE_URL", class: c}
+      - {file: "~/.config/caddy/public/apps/*", hit: "7 deployed copies of stacks/web/public files", class: repo-derived}
+    idc03:
+      note: "SSH denied — repo sources: stacks/idc03/{mddb,mddb-panel,ollama,camwall-edge} quadlets pin self IP 100.102.134.91 (bind — keep-literal/render). Verify live ~/.config once key installed."
+
+  repo:
+    # chaba-tony-dell worktree, deployable config only (docs/backups exempt)
+    caddy_edge:
+      - {file: "stacks/web/Caddyfile", hit: "14 refs: reverse_proxy 100.106.196.22:8780 (gev), 100.74.146.0:8380+100.123.163.11:8380 (camwall LB), 100.68.142.13:{3000,3001,3007,3008,3009,8000,8084,9002x3,3011}, 100.74.146.0:3010 (STALE idc01 upstream line 399)", class: b, note: "THE edge file — svc.internal blocks land here; mounted live by web.service on dell"}
+    stacks_quadlets:
+      - {file: "stacks/services/ada-scenario-runner/{ada-scenario-full.container,ada-scenario-smoke.container x2,ada-scenario-research.service,ada-scenario-casting.service}", hit: "MDDB_BASE_URL=http://100.74.146.0:11023/v1", class: STALE, note: "all 4 still on retired idc01"}
+      - {file: "stacks/idc03/{mddb,mddb-panel,ollama,camwall-edge}/*.container", hit: "self-bind 100.102.134.91 + HOST/MDDB_SERVER envs", class: "keep-literal / a"}
+      - {file: "stacks/idc01/* (ollama, mddb, mddb-panel, camwall-edge, doc-archive, open-notebook)", hit: "100.74.146.0 self refs", class: exempt, note: "retired host tree — remove with decommission, not migrate"}
+      - {file: "stacks/mn01/google-home-mcp.container + stacks/services/xmeye-vms/{xmeye-vms.container,vms-snap.service}", hit: "100.106.196.22 bind", class: keep-literal}
+      - {file: "stacks/tony-dell/notebooklm-rest.container", hit: "PublishPort=100.68.142.13:3011", class: keep-literal}
+      - {file: "stacks/web/public/ssot.mysystem.home.yml + apps/trade/tradecanvas-ui/ssot*.yml + apps/notebooklm/v0/index.html + apps/ai-hub-extension/sidepanel.html", hit: "served static config", class: b, note: "redeploy flows to ~/.config/caddy/public on dell+mn01"}
+      - {file: "stacks/tony-dell/gev-gemini/bridge.py + stacks/web/input-bridge/server.mjs + stacks/services/cast-browser/cast-browser-server.mjs + stacks/services/xmeye-vms/vms-snap.py", hit: "code literals", class: b}
+    systemd_repo:
+      - {file: "systemd/generated/{tony_dell,tony_omen,mn01,idc01,idc02,idc03}/log-shipper*.service + idc02/ssot-optimization-snapshot.service", hit: "MDDB_BASE(_URL)=100.102.134.91", class: a, note: "generated — fix the generator/template, not the outputs"}
+      - {file: "systemd/{websockify-macbook,secrets-console,obsidian-vault,mddb.service,ada-flood-news.service}", hit: "macbook VNC IP, BIND_HOST, ADA_MEMORY_MDDB_URL=100.68.142.13:11023/v1, --add-host ollama:100.75.102.88, comment", class: "a / keep-literal"}
+    scripts:
+      count: "~65 files"
+      dominant: "MDDB http default literals — env-overridable pattern os.environ.get(\"MDDB_BASE(URL)?\", \"http://100.102.134.91:11023(/v1)\") or ${MDDB_URL:-...}"
+      groups:
+        - {set: "scripts/ada/*.py (~30 files), scripts/{sync-*-to-mddb.py,report-*.py,ops-digest.py,mddb-binlog-canary.py,mddb/*.py,bench-*.py,monitoring-dashboard.mjs,gpu-monitor.mjs,audits/*.mjs,board/board-api.py,chaba/render-report-feed.py,cam-wall/*.py,devin/{job-run.sh,devin-dispatch.sh,devin-dispatch-watch.sh},yomi/digest-to-mddb.mjs,chaba-ask,mcp-health-client.py,mcp_debug/ssot.py}", class: b, to: "mddb.internal once edge lands; defaults only"}
+        - {set: "scripts/barrier/{barrier-client-run.sh,barrier-enforce-lan.sh} + health-monitor.sh:157", hit: "barrierc 100.75.102.88", class: a, to: "tony-omen.taila0626a.ts.net"}
+        - {set: "scripts/tony-dell-monitor.sh,tony-dell-mcp-health.sh,test-global-rules-and-mddb.sh,ops/{ssh-canary.sh,mn01-canary.sh},jev/{voice-bench.py,probe-probs.py},mcp-scripts/run-playlive-macbook.sh,overnight-jobs-expanded.sh", hit: "mixed host URLs", class: "a/b mixed"}
+    misc:
+      - {file: "apps/obsidian/server.py:41", hit: "default ADA_MEMORY_MDDB_URL=http://100.74.146.0:11023/v1", class: STALE}
+      - {file: "tony-dell/status-data-api/{.container,.service}", hit: "FRIGATE_URL+SENSOR_READER_URL=100.75.102.88", class: b}
+      - {file: "experiments/ultralytics-yolo-ha/server.py:20", hit: "comment 100.74.146.0:3010", class: exempt}
+      - {file: "backups/ada-memory/*.json, data/migration-snapshots/*", hit: "snapshots", class: exempt}
+    deployed_copies:
+      - {file: "~/.local/bin/{barrier-*.sh,cast-browser-server.mjs,devin-dispatch,devin-dispatch-watch,job-run,tony-dell-*.sh} (9 files)", note: "mirrors of repo scripts — fix repo, redeploy"}
+      - {file: "~/.config/caddy/public + mn01 same", note: "mirrors of stacks/web/public"}
+
+stale_broken_now:
+  # references to retired idc01 (100.74.146.0) still live — these are broken/misconfigured TODAY, independent of indirection work
+  - "~/.config/devin/mcp_config.json mddb.url -> 100.74.146.0:9000 (verify: mddb MCP may be down or repointed elsewhere)"
+  - "idc02: jev-bench.service, ssot-optimization-snapshot.service, caddy Caddyfile x2 -> 100.74.146.0"
+  - "stacks/services/ada-scenario-runner/* x4 units -> MDDB_BASE_URL=100.74.146.0"
+  - "stacks/web/Caddyfile:399 reverse_proxy 100.74.146.0:3010 (camwall upstream on dead host; line 345 LB still includes idc01:8380)"
+  - "apps/obsidian/server.py default -> 100.74.146.0"
+  - "idc01 host itself: 28 files on a retired box — decide teardown vs cleanup"
+
+migration_plan:
+  phase_0_prereq:
+    - "Stand up svc.internal: add vhost blocks to stacks/web/Caddyfile (mddb.internal->current leader:11023, camwall.internal, jev.internal, ...) AND a tailnet-wide resolver — extend ~/.config/dnsmasq pattern to other hosts (or document /etc/hosts approach). Without this, class-b edits have nowhere to point."
+    - "Decide rendered-file mechanism: extend scripts/mcp_debug/ssot.py ${ssot(...)} resolver into an env/quadlet renderer (render-env.py) driven by ssot.values.yml."
+  phase_1_stale_fixes: "Fix the 6 stale idc01 sites above (correctness fix; lands naturally on the new names)."
+  phase_2_class_a: "~40 unit/env lines fleet-wide -> MagicDNS names. Bulk-sed safe: IPs are unique per host. Generated units: fix generator/template, then regen."
+  phase_3_class_c: "Render yomi envs (dell) + secrets envs (omen idc02.env, idc02 ada-lab.env, mn01 ada-ha-*.env) from ssot.values.yml; retire hand-edits."
+  phase_4_class_b: "~80 repo files (script defaults + Caddyfile + served statics) -> svc.internal aliases; redeploy ~/.local/bin + caddy public copies."
+  phase_5_sweep: "docs/ pass on next host move (or leave — history is legitimate). Keep ssot.values.yml, dnsmasq, PublishPort/self-binds literal."
+
+open_questions:
+  - "idc03 ssh access (key not on box from this user) — needed to inventory its live ~/.config; stacks/idc03 is the assumed source."
+  - "Which host is 'the edge' for svc.internal — tony-dell web.service (tailnet-only) or idc03 public edge? Affects whether LAN/off-tailnet clients can use aliases."
+  - "Bind-side literals (PublishPort, BIND_HOST, --host, dnsmasq listen-address): podman PublishPort requires literal IP — accept render-at-deploy (class c) rather than names."
+  - "kk-macbook unreachable — playlive/VNC refs unverifiable but names already exist (kk-macbook.taila0626a.ts.net)."
+
+verify:
+  - "rg -l '100\\.(6[4-9]|[7-9][0-9]|1[0-2][0-9])\\.' on target set should shrink to: ssot.values.yml, dnsmasq/postgre.conf, PublishPort/BIND literals (or rendered outputs), exempt docs/backups."
+  - "next host move drill: edit ssot.values.yml (+ 1 Caddyfile upstream line), re-render envs, restart units — no sed sweep."
+
+historical_followup:
+  note: >-
+    This is the 2026-10-06 inventory snapshot, not current host state.
+    The 2026-10-09 follow-up in
+    docs/ssot/jobs/infrastructure/2026-10-09-mddb-stale-endpoint-sweep.yml
+    clarified that idc01 remained an active warm-DR follower; only its former
+    leader endpoint was stale. Do not interpret the original "retired idc01"
+    findings as a current host-retirement record.
+  follow_up: docs/ssot/jobs/infrastructure/2026-10-09-mddb-stale-endpoint-sweep.yml
