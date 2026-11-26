@@ -1,7 +1,7 @@
 id: timer-alert-mn01-log-shipper
 title: Timer log-shipper on mn01 failing
 column: backlog
-updated: 2026-11-26 05:55
+updated: 2026-11-26 09:21
 priority: high
 tags:
 - timer-alert
@@ -340,6 +340,12 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-25 22:39) of `log-shipper.service` on `mn01` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-mn01`.'
+- at: 2026-11-26 09:21
+  from: devin
+  text: '2026-11-26 verified fix: mddb-ops :11026 HTTP write timeout raised 30s->120s (writes observed 32-79s);
+    log-shipper BATCH 10->5; unit TimeoutStartSec->45m fleet-wide. Runner-agent drift cleared (all 6 hosts pinned
+    1514c75c...). State doc ship/mn01 1427 shipped, 0 failures (updated 08:40). NOTE: unit still 10m timeout pending
+    shell-access decision on mn01.'
 action:
   status: done
 spec: Investigate the timeout failure of `log-shipper.service` on host mn01 by checking the systemd journal via
