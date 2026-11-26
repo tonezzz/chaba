@@ -28,6 +28,16 @@ except ImportError:
     websockets = None
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT / "scripts" / "lib"))
+try:
+    from inbox_door import emit_doc, local_writable
+except ImportError:
+    def local_writable(repo):  # noqa: ANN001
+        return True
+
+    def emit_doc(doc, **kw):  # noqa: ANN001, ANN003
+        return "api-failed"
+
 INBOX_DIR = REPO_ROOT / "docs" / "ssot" / "focus-inbox"
 STATE_FILE = Path(os.environ.get(
     "HA_AUTH_WATCH_STATE",
@@ -270,15 +280,31 @@ def main():
             seen.add(key)
             failures.append((name, src, ts, text))
 
+    writable = local_writable(REPO_ROOT)
     written, suppressed = [], 0
     for inst, src, ts, line in failures:
-        if existing_alert(inst, src):
+        # Local-glob dedupe only means something where the files can be
+        # committed; on exec checkouts stale files would suppress forever.
+        if writable and existing_alert(inst, src):
             suppressed += 1
             print(f"DEDUP {inst} {src} — unresolved alert exists")
             continue
         fname, body = alert_yaml(inst, src, ts, line)
         print(f"FAIL {inst} {src} @ {ts} -> {fname}")
         if not args.dry_run:
+            if not writable:
+                try:
+                    import yaml as _yaml
+                    res = emit_doc(_yaml.safe_load(body),
+                                   session="ha-auth-watch")
+                except Exception:
+                    res = "api-failed"
+                if res == "api":
+                    written.append(fname)
+                else:
+                    print(f"warn: /inbox emit {res} for {fname}",
+                          file=sys.stderr)
+                continue
             INBOX_DIR.mkdir(parents=True, exist_ok=True)
             f = INBOX_DIR / fname
             f.write_text(body)

@@ -109,6 +109,17 @@ try:
 except ImportError:  # pragma: no cover - missing sibling dir or PyYAML
     card_io = None
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT / "scripts" / "lib"))
+try:
+    from inbox_door import emit_doc, local_writable
+except ImportError:  # pragma: no cover
+    def local_writable(repo):  # noqa: ANN001
+        return True
+
+    def emit_doc(doc, **kw):  # noqa: ANN001, ANN003
+        return "api-failed"
+
 HOME = Path.home()
 # ada-ha-events-* and ada-ha-scenario-reports are ops-plane collections
 # since the mddb-ops split — the leader copies are pre-split residue.
@@ -877,6 +888,11 @@ def write_inbox_entry(sig_row: dict, day: str) -> str:
         },
         "source": {"session": GENERATOR, "date": day},
     }
+    if not local_writable(REPO_ROOT):
+        # Exec checkout — the inbox file would die uncommitted; the
+        # board-api /inbox door lands it on the served checkout instead.
+        res = emit_doc(item, session=GENERATOR)
+        return f"inbox-api-{res} ({slug})"
     fname = f"{day}-{slug}-session-audit.yml"
     if not INBOX_DIR.is_dir():
         return f"skipped (inbox dir {INBOX_DIR} absent)"

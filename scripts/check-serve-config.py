@@ -26,7 +26,16 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "board"))
+sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
 import card_io
+try:
+    from inbox_door import emit_doc, local_writable
+except ImportError:
+    def local_writable(repo):  # noqa: ANN001
+        return True
+
+    def emit_doc(doc, **kw):  # noqa: ANN001, ANN003
+        return "api-failed"
 
 REPO = Path(__file__).resolve().parent.parent
 ROUTES = REPO / "docs/ssot/infrastructure/ssot.routes.yml"
@@ -119,6 +128,9 @@ def write_alert(host: str, findings: list[str]) -> str:
         "ownership": {"owner": "tony", "locked": False, "lock_reason": ""},
         "source": {"date": today},
     }
+    if not local_writable(REPO):
+        res = emit_doc(doc, session="check-serve-config")
+        return f"inbox-api-{res}"
     p = INBOX / f"serve-config-{host}.yml"
     card_io.atomic_write_text(p, yaml.safe_dump(doc, sort_keys=False,
                                                width=120))

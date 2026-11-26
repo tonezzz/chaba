@@ -1,19 +1,42 @@
 #!/usr/bin/env node
 // Periodic snapshot of mcp-health status without desktop notifications.
 // Spawns mcp-health via the SSH wrapper, calls get_health_status, logs to file,
-// and writes to the SSOT focus-inbox only when something is failing.
+// and posts to the focus inbox via board-api only when something is failing.
 import { spawn } from "child_process";
-import { mkdirSync, writeFileSync } from "fs";
+import { mkdirSync, readFileSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const LOG_DIR = "/home/tony/CascadeProjects/chaba-tony-dell/logs";
+// This unit runs on exec-role checkouts where focus-inbox file writes can
+// never commit — findings go through board-api POST /inbox instead
+// (card exec-checkout-generated-writes-focus-inb-da698a).
+const LOG_DIR = "/home/tony/CascadeProjects/chaba/logs";
 const LOG_FILE = join(LOG_DIR, "mcp-health-snapshot.log");
-const INBOX_DIR = "/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/focus-inbox";
+const BOARD_API = (process.env.BOARD_API ||
+  "https://idc03.taila0626a.ts.net:10000").replace(/\/+$/, "");
 const WRAPPER = "/home/tony/.config/devin/mcp-scripts/mcp-health-ssh.sh";
+const STATE_FILE = "/home/tony/.local/state/mcp-health-snapshot.json";
+const ALERT_REPEAT_MS = 6 * 3600 * 1000;
 
 mkdirSync(LOG_DIR, { recursive: true });
+mkdirSync(dirname(STATE_FILE), { recursive: true });
+
+function lastAlertAt() {
+  try {
+    return JSON.parse(readFileSync(STATE_FILE, "utf8")).at || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function markAlerted() {
+  try {
+    writeFileSync(STATE_FILE, JSON.stringify({ at: Date.now() }));
+  } catch (e) {
+    log(`state write failed: ${e.message}`);
+  }
+}
 
 function log(message) {
   const line = `${new Date().toISOString()} ${message}`;
@@ -120,11 +143,40 @@ async function runSnapshot() {
 
     if (failing.length > 0) {
       log(`failing services: ${failing.map((s) => s.service).join(", ")}`);
-      mkdirSync(INBOX_DIR, { recursive: true });
-      const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-      const inbox = join(INBOX_DIR, `mcp-health-snapshot-${stamp}.yml`);
-      const txt = `title: Health Snapshot Alert\nsubtitle: ${failing.length} services not healthy\nicon: heart-pulse\nfocus:\n  label: 'mcp-health: ${failing.length} failing'\n  text: |\n${failing.map((s) => `    - ${s.category} / ${s.service}: ${s.status}${s.error ? " - " + s.error : ""}`).join("\n")}\n  status: draft\n  priority: high\n  tags:\n  - health\n  - monitoring\n  - snapshot\n  subtasks:\n${failing.map((s) => `  - label: Investigate ${s.service}\n    status: not_started`).join("\n")}\nsource:\n  session: mcp-health-snapshot\n  date: ${new Date().toISOString().slice(0, 10)}\n`;
-      writeFileSync(inbox, txt);
+      if (Date.now() - lastAlertAt() < ALERT_REPEAT_MS) {
+        log("alert suppressed — posted within the last 6h");
+      } else {
+      const text = failing.map((s) =>
+        `- ${s.category} / ${s.service}: ${s.status}` +
+        (s.error ? ` - ${s.error}` : "")).join("\n");
+      const body = {
+        text: `mcp-health snapshot: ${failing.length} service(s) not healthy\n${text}`,
+        label: `mcp-health: ${failing.length} failing`,
+        priority: "high",
+        tags: ["health", "monitoring", "snapshot", "mcp-health"],
+        owner: "tony",
+        session: "mcp-health-snapshot",
+        subtasks: failing.map((s) => ({
+          label: `Investigate ${s.service}`, status: "not_started",
+        })),
+      };
+      try {
+        const res = await fetch(`${BOARD_API}/inbox`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(20000),
+        });
+        if (!res.ok) {
+          log(`inbox post failed: HTTP ${res.status}`);
+        } else {
+          markAlerted();
+          log("inbox alert posted via board-api");
+        }
+      } catch (e) {
+        log(`inbox post failed: ${e.message}`);
+      }
+      }
     } else {
       log("all healthy");
     }

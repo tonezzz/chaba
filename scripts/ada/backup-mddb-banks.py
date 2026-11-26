@@ -14,6 +14,17 @@ recall summaries carry raw transcripts that have already leaked real
 secrets once (GEMINI_API_KEY / HOME_ASSISTANT_TOKEN, blocked by GitHub
 push protection 2026-09-21).
 
+Checkout role (card exec-checkout-generated-writes-focus-inb-da698a):
+only the served (writer) checkout may keep repo-bound dumps — exec/readonly/
+job checkouts cannot commit, so `backups/ada-memory/*.json` written there
+rot as permanent working-tree drift (last landed dump was 2026-10-10 while
+omen's nightly --git run failed its commit every night). On a stamped
+non-writer checkout ALL output goes to the private dir and --git is a
+no-op with a warning; the exec-checkout copies are ephemeral scratch, the
+served checkout's dumps are the canonical git history. Unstamped
+checkouts keep the legacy behavior (they can still commit — the
+pre-commit block is role-based).
+
 Usage:
   backup-mddb-banks.py                # dump all banks (shared→repo, private→local)
   backup-mddb-banks.py --dry-run      # report what would be written
@@ -25,19 +36,35 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import re
 import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
+# CHABA_REPO lets a standalone-installed copy (e.g. ~/.local/lib on an
+# exec host awaiting the next repo-sync) still resolve the real checkout
+# for role detection and repo-relative defaults.
+REPO = Path(os.environ.get(
+    "CHABA_REPO", Path(__file__).resolve().parents[2])).resolve()
 
 _spec = importlib.util.spec_from_file_location(
     "ada_sync", Path(__file__).with_name("sync-ada-memory-to-mddb.py")
 )
 ada_sync = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(ada_sync)
+
+try:
+    _spec2 = importlib.util.spec_from_file_location(
+        "checkout_role",
+        Path(__file__).resolve().parents[1] / "lib" / "checkout_role.py")
+    _checkout_role = importlib.util.module_from_spec(_spec2)
+    _spec2.loader.exec_module(_checkout_role)
+    checkout_role = _checkout_role.checkout_role
+except Exception:  # standalone copy — treat as unstamped (legacy behavior)
+    def checkout_role(repo):  # noqa: ANN001
+        return ""
 
 DEFAULT_OUT = REPO / "backups/ada-memory"
 DEFAULT_PRIVATE_OUT = Path.home() / ".local/share/ada-backups/ada-memory"
@@ -97,6 +124,18 @@ def main() -> int:
     ap.add_argument("--git", action="store_true",
                     help="git add+commit+push the repo dump dir afterwards")
     args = ap.parse_args()
+
+    # Non-writer checkouts can't commit repo dumps — route everything to
+    # the private dir and make --git a no-op so the run leaves the working
+    # tree clean (exec-checkout-generated-writes card).
+    role = checkout_role(REPO)
+    writer_ok = (not role) or role == "served"
+    if not writer_ok:
+        print(f"note: chaba-role={role} — exec-checkout dumps are "
+              "ephemeral; writing all banks to the private dir, --git "
+              "skipped")
+        args.output = args.private_output
+        args.git = False
 
     mapping = ada_sync.load_bank_map()
     mddb = ada_sync.Mddb(args.mddb)

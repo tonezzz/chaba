@@ -1,15 +1,28 @@
 #!/usr/bin/env python3
 """Create focus-inbox drafts from mcp-health status for later triage."""
 import argparse
+import hashlib
 import json
 import re
 import subprocess
 import sys
-import yaml
 from datetime import datetime
 from pathlib import Path
 
+import yaml
+
 REPO = Path(__file__).resolve().parent.parent  # whichever checkout runs the job — drafts land next to the other inbox items it produces
+sys.path.insert(0, str(REPO / "scripts" / "lib"))
+try:
+    from inbox_door import local_writable, post_inbox
+except ImportError:  # standalone copy — legacy file behavior
+    def local_writable(repo):  # noqa: ANN001
+        return True
+
+    def post_inbox(**kw):  # noqa: ANN003
+        return False
+
+POSTED_STATE = Path.home() / ".local" / "state" / "mcp-health-to-inbox-posted.json"
 CLIENT = REPO / "scripts" / "mcp-health-client.py"
 INBOX_DIR = REPO / "docs" / "ssot" / "focus-inbox"
 HEALTH_SSOT = REPO / "docs" / "ssot" / "infrastructure" / "ssot.health.yml"
@@ -107,7 +120,14 @@ def main():
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
-    INBOX_DIR.mkdir(parents=True, exist_ok=True)
+    api_mode = not local_writable(REPO)
+    if api_mode:
+        try:
+            posted = json.loads(POSTED_STATE.read_text())
+        except Exception:
+            posted = {}
+    else:
+        INBOX_DIR.mkdir(parents=True, exist_ok=True)
     crit_map = load_criticality_map()
     data = get_health_status()
     services = flatten_services(data)
@@ -122,6 +142,32 @@ def main():
         if crit == "optional" and status == "unknown":
             continue
         priority = priority_for(name, status, crit_map)
+
+        if api_mode:
+            # Remote inbox has no local open_item view — dedupe on
+            # (service, status, error) hash in a local state file.
+            item = make_inbox_item(name, status, s.get("error"), crit, priority)
+            focus = item["focus"]
+            sha = hashlib.sha256(
+                f"{status}|{s.get('error')}|{priority}".encode()
+            ).hexdigest()[:16]
+            if posted.get(service_key(name)) == sha:
+                print(f"skip {name}: already posted ({status})")
+                continue
+            if args.dry_run:
+                print(f"would post {name} via /inbox ({status}, {crit}, {priority})")
+            elif post_inbox(
+                    text=focus["text"], label=focus["label"],
+                    priority=priority, tags=focus["tags"], owner="tony",
+                    session="mcp-health-to-inbox"):
+                posted[service_key(name)] = sha
+                print(f"posted {name} via /inbox ({status}, {crit}, {priority})")
+            else:
+                print(f"/inbox post failed for {name}", file=sys.stderr)
+                continue
+            created += 1
+            continue
+
         existing = existing_inbox_for(name)
         if existing:
             print(f"skip {name}: existing {existing}")
@@ -146,6 +192,9 @@ def main():
             print(f"created {path} for {name} ({status}, {crit}, {priority})")
         created += 1
 
+    if api_mode and not args.dry_run:
+        POSTED_STATE.parent.mkdir(parents=True, exist_ok=True)
+        POSTED_STATE.write_text(json.dumps(posted, indent=1, sort_keys=True))
     print(f"{'would create' if args.dry_run else 'created'} {created} inbox item(s)")
 
 

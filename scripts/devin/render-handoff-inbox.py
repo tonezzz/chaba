@@ -20,7 +20,10 @@ Usage: render-handoff-inbox.py [--dry-run] [--inbox DIR]
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
+import json
+import os
 import re
 import sys
 from datetime import date
@@ -43,6 +46,19 @@ MARKER = "render-handoff-inbox"
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_INBOX = REPO_ROOT / "docs/ssot/focus-inbox"
+POSTED_STATE = Path(os.environ.get(
+    "HANDOFF_INBOX_STATE",
+    Path.home() / ".local" / "state" / "render-handoff-inbox-posted.json"))
+
+sys.path.insert(0, str(REPO_ROOT / "scripts" / "lib"))
+try:
+    from inbox_door import local_writable, post_inbox
+except ImportError:  # standalone copy — legacy file behavior
+    def local_writable(repo):  # noqa: ANN001
+        return True
+
+    def post_inbox(**kw):  # noqa: ANN003
+        return False
 
 
 def _first(meta: dict, name: str) -> str | None:
@@ -141,6 +157,53 @@ def main() -> int:
         status = (_first(doc.get("meta"), "status") or "active").lower()
         if key and status not in DEAD_STATES:
             live[key] = doc
+
+    # Non-writer checkouts can't land inbox files — post each spec through
+    # board-api /inbox instead, deduped by rendered-content hash in a local
+    # state file (the remote inbox has no local open_item view). GC is
+    # file-mode only: /inbox has no delete, so retracted specs simply stop
+    # being re-posted and their drafts age out of triage.
+    if not local_writable(REPO_ROOT):
+        try:
+            posted = json.loads(POSTED_STATE.read_text())
+        except Exception:
+            posted = {}
+        sent = skipped_api = failed = 0
+        for key, doc in sorted(live.items()):
+            entry = render_entry(key, doc)
+            focus = entry["focus"]
+            sha = hashlib.sha256(_dump(entry).encode()).hexdigest()[:16]
+            if posted.get(key) == sha:
+                skipped_api += 1
+                continue
+            if args.dry_run:
+                print(f"would post {key} via /inbox")
+                sent += 1
+                continue
+            text = (f"Devin handoff spec from bank doc `{key}`"
+                    f" (repo: {focus.get('branch', 'chaba')}).\n\n"
+                    f"{focus.get('text', '')}")
+            ok = post_inbox(
+                text=text, label=focus.get("label") or entry["title"],
+                priority=focus.get("priority") or "medium",
+                tags=focus.get("tags") or [], owner="tony",
+                session=MARKER,
+                subtasks=focus.get("subtasks"),
+                safe_to_parallel=focus.get("safe_to_parallel", {}).get("value"))
+            if ok:
+                posted[key] = sha
+                sent += 1
+            else:
+                failed += 1
+                print(f"[render-handoff-inbox] /inbox post failed for {key}",
+                      file=sys.stderr)
+        if not args.dry_run:
+            POSTED_STATE.parent.mkdir(parents=True, exist_ok=True)
+            POSTED_STATE.write_text(
+                json.dumps(posted, indent=1, sort_keys=True))
+        print(f"handoff inbox (api): {sent} posted, {skipped_api} unchanged, "
+              f"{failed} failed, {len(live)} live bank docs")
+        return 0 if failed == 0 else 1
 
     args.inbox.mkdir(parents=True, exist_ok=True)
     written = skipped = removed = 0
