@@ -1,7 +1,7 @@
 id: ops-mn01-restore-sshd-shell-20261126
 title: 'mn01: restore standard SSH shell access (SFTP-only lock)'
 column: doing
-updated: 2026-11-26 12:49
+updated: 2026-11-26 12:50
 brief: Remove the accidental global ForceCommand internal-sftp on mn01 so shell, Ansible and the canary rerun work
   again.
 priority: high
@@ -61,5 +61,9 @@ comms:
     SLICE 1 DONE — verifier first (per answered scope ; "Only kraut/tony have a gate" understated it: the gate was
     an untracked ad-hoc d; /home/tony/ansible on idc02 is a git repo with history but ALL working files unt; Before
     landing a write-door contract change, audit ALL produc'
+- at: 2026-11-26 12:50
+  from: devin
+  text: '[progress] Confirmed on mn01: /etc/ssh/sshd_config line 80 = `ForceCommand internal-sftp`; no ForceCommand
+    in sshd_config.d drop-ins. Running prescribed backup+sed+validate+restart sequence now.'
 claim:
   since: 2026-11-26 12:48
