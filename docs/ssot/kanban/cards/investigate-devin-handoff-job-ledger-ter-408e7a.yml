@@ -1,7 +1,7 @@
 id: investigate-devin-handoff-job-ledger-ter-408e7a
 title: Investigate devin-handoff job-ledger terminal writes (1176/1555 stuck running)
-column: doing
-updated: 2026-11-26 19:56
+column: review
+updated: 2026-11-26 19:58
 note: 'Found while building devin-dispatch-tg-watch (card implement-and-track-devin-telegram-repor-fc0dc7): the
   shared dispatch ledger in MDDB ada-ha-bank-devin-handoff has 1555 job/answer docs but 1176 still say status=running
   — 268 of the 323 docs touched in the last 7d never got a terminal write (done 186 / failed 119 / superseded 72
@@ -172,6 +172,29 @@ comms:
     3 drifted generations, absent on idc02/idc03/con01, tony-dell has binary but NO timer (669+52+11+206 stuck docs
     trace to missing watch coverage); (2) mddb_job() ended in return 0 so failed /v1/add writes were invisible —
     notified_fu stamped anyway, ~336 notified-but-running docs on wa'
+- at: 2026-11-26 19:58
+  from: tony-macbook
+  text: 'finished (ok): exit=0 me-20261126-193351-investigate-why-the-shared-dis.md` carries the summary plus lessons.
+    | devin-task-20261126-193'
+- at: 2026-11-26 19:58
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-26 19:58
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261126-193351-investigate-why-the-shared-dis
+    is 38 commits behind origin/master —\n   run 'git pull -"
+- at: 2026-11-26 19:58
+  from: chaba
+  text: banked 799 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 19:58
+  from: chaba
+  text: pushed dispatch/20261126-193351-investigate-why-the-shared-dis to origin
+- at: 2026-11-26 19:58
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-26 19:58
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
 spec: 'Investigate why the shared dispatch ledger in MDDB ada-ha-bank-devin-handoff has 1176 out of 1555 job/answer
   docs stuck with status=running, specifically examining whether mddb_job writes are failing to land due to runner-agent
   drift across hosts. Inspect the ledger docs and runner behavior to identify the root cause of missing terminal
@@ -179,11 +202,15 @@ spec: 'Investigate why the shared dispatch ledger in MDDB ada-ha-bank-devin-hand
   running status persists and addressing the write landing issue.'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 me-20261126-193351-investigate-why-the-shared-dis.md` carries the summary plus lessons. | devin-task-20261126-193351-investigate-why-the-shared-dis.service:
+    Consumed 1min 52.670s CPU time over 23min 7.438s wall clock time, 1.1G memory peak.'
+  verified: false
 claim:
   since: 2026-11-26 19:32
+review_kind: verify
