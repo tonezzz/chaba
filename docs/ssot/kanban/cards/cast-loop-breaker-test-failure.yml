@@ -1,7 +1,7 @@
 id: cast-loop-breaker-test-failure
 title: Fast pytest gate fails on cast_loop_breaker patch divergence
 column: backlog
-updated: 2026-11-26 23:19
+updated: 2026-11-26 23:22
 brief: Current master fast pytest gate (python3 -m pytest tests -x -q) fails on tests/ada/test_cast_loop_breaker.py::test_patches_apply_clean
   — one patch reports diverged.
 priority: medium
@@ -54,6 +54,10 @@ comms:
 - at: 2026-11-26 23:19
   from: chaba
   text: 'mn01 defers: runner at local cap (1/1) — remote slots unaffected'
+- at: 2026-11-26 23:22
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
 action:
   type: dispatch
   status: queued

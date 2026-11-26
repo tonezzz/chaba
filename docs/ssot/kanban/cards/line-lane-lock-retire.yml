@@ -1,14 +1,15 @@
 id: line-lane-lock-retire
 title: Retire LINE_LANE_LOCK once chat_send targeting is verified
-column: backlog
-updated: 2026-11-26 22:56
+column: doing
+updated: 2026-11-26 23:22
 priority: low
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
-  attempts: 0
+  attempts: 1
   repo: chaba
+  runner: tony-dell
 note: 'LINE_LANE_LOCK=kk,kk-dev,chaba rewrites chat_send targets to the lane group instead of 403 on bad targets
   — a stopgap until targeting stabilises. Gate: verify lane-targeting correctness first (LINE_LANE_ALLOW allowlist
   + last-room fallback), then remove lock entries. Risk: silent misdelivery if removed early.'
@@ -287,8 +288,12 @@ comms:
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — _self_update/sync-runner-tools converge it within a sync cycle; persistent drift means a stale checkout or
     an unpinned source (runner-tooling.manifest.json), not a missing scp'
+- at: 2026-11-26 23:22
+  from: tony-dell
+  text: claimed
 spec: 'DECISION 2026-11-26 Tony: verify then retire. Phase 1 only - read-only verification that chat_send lane targeting
   uses LINE_LANE_ALLOW and the last-room fallback as documented; report exact config locations and observed behavior.
   Do NOT remove the line-lane lock or change routing. Done: verification report posted; retirement stays gated on
   this result.'
-claim: {}
+claim:
+  since: 2026-11-26 23:22
