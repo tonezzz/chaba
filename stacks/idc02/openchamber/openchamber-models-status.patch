@@ -1,26 +1,26 @@
---- a/build/server/runtime.js
-+++ b/build/server/runtime.js
-@@ -1523,6 +1523,8 @@
-     registerOpenChamberRoutes,
-     registerAgentToolRoutes: (app, options) => options.agentToolRuntime.registerRoutes(app, options.express),
+--- a/build/server/runtime.js	2026-11-26 15:33:51.136104417 +0700
++++ b/build/server/runtime.js	2026-11-26 15:34:44.608248114 +0700
+@@ -1503,6 +1503,8 @@
+         sessionLead.registerRoutes(app, options.express, options.agentToolRuntime.authorizeRequest);
+     },
      express,
 +    // Resolved lazily: the control service is created later in this module.
 +    get controlService() { return openChamberControlService; },
  });
  const tunnelWiringRuntime = createTunnelWiringRuntime({
      crypto,
---- a/build/server/lib/server-frame/bootstrap-runtime.js
-+++ b/build/server/lib/server-frame/bootstrap-runtime.js
-@@ -97,6 +97,7 @@
+--- a/build/server/lib/server-frame/bootstrap-runtime.js	2026-11-26 15:33:51.920135848 +0700
++++ b/build/server/lib/server-frame/bootstrap-runtime.js	2026-11-26 15:35:08.391201572 +0700
+@@ -96,6 +96,7 @@
              getCachedZenModels,
              desktopUpdater,
              getOpenCodeCompatibility,
 +            controlService: dependencies.controlService,
          });
+         registerExternalBridgeRoutes?.(app);
          return {
-             uiAuthController,
---- a/build/server/lib/openchamber-control/service.js
-+++ b/build/server/lib/openchamber-control/service.js
+--- a/build/server/lib/openchamber-control/service.js	2026-11-26 15:33:52.705167320 +0700
++++ b/build/server/lib/openchamber-control/service.js	2026-11-26 15:35:58.039191958 +0700
 @@ -31,6 +31,8 @@
  const WAIT_POLL_INTERVAL_MS = 500;
  const CONTROL_ACTIONS = new Set(OPENCHAMBER_ALL_ACTIONS);
@@ -30,11 +30,10 @@
  const SCHEDULE_TASK_ID_ACTIONS = new Set([
      'schedule.update',
      'schedule.run',
-@@ -143,6 +145,25 @@
+@@ -103,6 +105,24 @@
          schedule.timezone = timezone;
      return schedule;
  };
-+
 +// Live liveness of one gateway model: a minimal completion answers whether
 +// the upstream provider served the model, without spending a real generation.
 +const probeGatewayModel = async ({ url, apiKey, modelID, timeoutMs = MODELS_STATUS_PROBE_TIMEOUT_MS }) => {
@@ -56,7 +55,7 @@
  const assertWorktreeIsolation = (input, targetSessionId) => {
      for (const field of ['runInWorktree', 'cleanupWorktree']) {
          if (input[field] !== undefined && !isBoolean(input[field])) {
-@@ -472,6 +493,50 @@
+@@ -436,6 +456,50 @@
              next: offset + limit < matching.length ? offset + limit : null,
          };
      };
@@ -107,7 +106,7 @@
      const activeSessions = async (client) => {
          const statuses = await client.session.active();
          if (!isRecord(statuses)) {
-@@ -1229,6 +1294,8 @@
+@@ -1112,6 +1176,8 @@
                  return models();
              if (action === 'models.search')
                  return searchModels(input, contextDirectory);
@@ -116,18 +115,18 @@
              if (action === 'schedule.status')
                  return scheduledTaskService.status();
              if (action.startsWith('schedule.')) {
---- a/build/server/lib/openchamber-control/actions.js
-+++ b/build/server/lib/openchamber-control/actions.js
+--- a/build/server/lib/openchamber-control/actions.js	2026-11-26 15:33:53.520199995 +0700
++++ b/build/server/lib/openchamber-control/actions.js	2026-11-26 15:34:24.017422628 +0700
 @@ -2,6 +2,7 @@
      { action: 'projects.list', title: 'List session destinations', description: 'Projects and Chats; use an id as projectId for session.create. No parameters' },
      { action: 'models.list', title: 'Show model preferences', description: 'Default, favorite and recent models; no parameters' },
      { action: 'models.search', title: 'Search models', description: 'The model catalog, favorites and recent models first; optional query, provider, all, limit, offset' },
 +    { action: 'models.status', title: 'Model status', description: 'Live availability of models through the LiteLLM gateway: which answer and which are unavailable; optional provider. An unavailable model is an upstream outage or quota exhaustion, not a catalog state' },
-     { action: 'session.list', title: 'List sessions', description: 'Newest top-level sessions here; each has inWork (in the sidebar\'s In work) and doneSuggested (its last turn looks finished). Filters inWork, busy (running now), query (title words); inWork and busy span every project unless scoped and return all matches. Optional limit, all, children, withStatus (status as in session.status)' },
+     { action: 'session.list', title: 'List sessions', description: 'Newest top-level sessions here; each has inWork (in the sidebar\'s In work) and doneSuggested (its last turn looks finished). Filters inWork, busy (running now), mine (sessions you created with ownWork, with their status), query (title words); inWork, busy and mine span every project unless scoped and return all matches. Optional limit, all, children, withStatus (status as in session.status)' },
+     { action: 'session.archive', title: 'Archive a session', description: 'Archive sessionId, a session you created with ownWork, once you used its result. Restoring one is the user\'s' },
      { action: 'session.markDone', title: 'Mark a session done', description: 'Take sessionId (default: this session) out of In work, as the Done button does. Only on the user\'s word; a later message puts it back' },
-     { action: 'session.track', title: 'Put a session in work', description: 'Put sessionId back in In work, as the Track button does, such as to undo a markDone' },
---- a/build/server/lib/self-update/openchamber-routes.js
-+++ b/build/server/lib/self-update/openchamber-routes.js
+--- a/build/server/lib/self-update/openchamber-routes.js	2026-11-26 15:33:54.335232670 +0700
++++ b/build/server/lib/self-update/openchamber-routes.js	2026-11-26 15:34:24.018422668 +0700
 @@ -41,7 +41,7 @@
      '',
  ].join('\r\n');
