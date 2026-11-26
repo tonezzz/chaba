@@ -1,7 +1,7 @@
 id: health-monitor-config-playlived-postgres
 title: Health monitor config — Playlived target and Postgres check threshold
 column: review
-updated: 2026-11-26 13:18
+updated: 2026-11-26 13:24
 brief: mcp-health quick_health fails 2/8 (Playlived tony-dell, Postgres) after config reload; evidence suggests
   monitor config/stale state, not confirmed outages.
 priority: medium
@@ -90,6 +90,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261126-124709-evidence-2026-11-26-05-36-05-3,
     branch dispatch/20261126-124709-evidence-2026-11-26-05-36-05-3'
+- at: 2026-11-26 13:24
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''approve-repair-of-playlived-de''] block close)'
 action:
   type: dispatch
   status: done
@@ -101,6 +104,8 @@ action:
     | devin-task-20261126-124709-evidence-2026-11-26-05-36-05-3.service: Consumed 1min 54.931s CPU time, 2.2G memory
     peak, 0B memory swap peak.'
   verified: true
+  sweep:
+    close_held: 2026-11-26 13:24
 claim:
   since: 2026-11-26 12:46
 requests:
