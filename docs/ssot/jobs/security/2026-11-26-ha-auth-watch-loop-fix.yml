@@ -29,17 +29,26 @@ verification:
   - "Live root cause confirmed from `journalctl --user -u
     ha-auth-watch.service` on tony-dell: identical traceback at
     13:48:41 and 14:03:40, next tick 14:18:39."
-  - "Consumer-side proof pending the next timer tick after master sync —
-    see residual. No service restart was needed: systemd executes the
-    script fresh on each oneshot invocation."
+  - "Deterministic reproduction of the exact failing path: imported the
+    module, patched the poll to return one failure, forced
+    `local_writable=False` and `emit_doc()='api'`, ran `main(['--git'])` →
+    `alerted 1 failure(s) via board-api; no local commit on non-writer
+    checkout`, exit 0, zero subprocess calls (old code raised here)."
+  - "Deployed: master e45adace24; tony-dell ff-pulled via
+    `systemctl --user start chaba-repo-sync.service` to 02ae1f31e6b with all
+    fix markers present. No service restart was needed: systemd executes
+    the script fresh on each oneshot invocation."
+  - "Live consumer proof: next ha-auth-watch.timer tick 14:18:39 +07 —
+    verify `systemctl --user status ha-auth-watch.service` is not failed."
 rollback: >-
   Revert the single script file. No host config, timer or service unit was
-  changed; the next tick simply runs the previous code again (and fails).
+  changed; the next tick would simply run the previous code again (and fail).
 residual: >-
-  tony-dell must ff-pull the fix via its repo-sync/converge path before the
-  next 15-minute tick. Until then the old code keeps failing. No restart
-  is required or performed — restarting an oneshot timer service would
-  kill an in-flight poll and needs explicit approval.
+  The next timer tick had not fired at the time of writing; the fix is
+  proven deterministically and deployed, but the live "not failed" status
+  is still to be confirmed at 14:18:39 +07. The underlying HA invalid-auth
+  attempts themselves are unchanged — this fix stops the alert-spam loop,
+  not the source of the bad logins.
 lesson: >-
   When routing a producer through the board-api write door, also remove
   the local-commit tail: delivering an alert via the API and then trying
