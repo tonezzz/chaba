@@ -1,7 +1,7 @@
 id: ada-voice-map-embed-pr22-merge-deploy
 title: 'ada-voice: merge PR #22 (map_embed drop 17), deploy, drop GOOGLE_MAPS_API_KEY'
 column: backlog
-updated: 2026-11-26 21:00
+updated: 2026-11-26 21:39
 brief: 'PR https://github.com/tonezzz/ada-voice/pull/22 is open and green (tool-lint clean, 1942 tests pass). Needs:
   merge -> deploy-ada.sh idc03 -> render-tool-profiles --apply -> key drop (or accept keyless).'
 priority: medium
@@ -130,6 +130,13 @@ comms:
   from: chaba
   text: 'HUMAN CALL 2026-11-26: production restart approved; awaiting GOOGLE_MAPS_API_KEY via the private secret
     path before dispatch.'
+- at: 2026-11-26 21:39
+  from: tony
+  text: 'MAP KEY RETEST 2026-11-26 (after Maps JavaScript API enablement): no working key on file. Probed all candidates
+    without printing values: (1) GEV key in ~/.config/secrets/gev-google-maps.env on tony-dell (= idc03 from-dell-20261021
+    copy), (2) newly supplied private-card key. Headless Chrome on tony-dell loading maps/api/js with each key returned
+    window.gm_authFailure / console ''Google Maps JavaScript API error: InvalidKeyMapError'' for both. Server-side
+    Maps Embed and Static Maps returned 403 ''The'
 action:
   type: dispatch
   status: idle
