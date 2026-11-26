@@ -2,8 +2,9 @@
 under integrations/ada-voice/ (card ada-cast-wrong-target-verbose-loop,
 ADA-0684, Tony voice session 2026-10-14 4029a6447f).
 
-Applies the six staged patches to a COPY of the ada-voice checkout
-(ADA_PI env or ~/CascadeProjects/ada-voice), drops in the new
+Applies the six staged patches to a COPY of ada-voice's upstream main
+(origin/main via tests/ada/_checkout.py; ADA_PI env or
+~/CascadeProjects/ada-voice supplies the repo + .venv), drops in the new
 cast_wrong_target_loop scenario, and runs ada-voice's own offline
 scenario engine against it via the checkout's .venv — the scenario
 replays the incident shape end to end: wrong-target cast, unavailable
@@ -21,7 +22,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.ada._checkout import materialize_head
+from tests.ada._checkout import materialize_main
 from tests.ada._drops import apply_patch, check_patch, drop_guard_ok
 
 REPO = Path(__file__).resolve().parents[2]
@@ -40,9 +41,9 @@ ADA_PI = Path(os.environ.get(
 
 
 def _scratch_tree(tmp_path: Path) -> Path:
-    """Copy the ada-voice checkout and apply every staged patch."""
+    """Copy ada-voice upstream main and apply every staged patch."""
     dst = tmp_path / "ada-voice"
-    materialize_head(dst, ADA_PI)
+    materialize_main(dst, ADA_PI)
     for rel in PATCHES:
         apply_patch(DROP / rel, dst)
     shutil.copy(SCENARIO, dst / "tests" / "scenarios" /
@@ -85,7 +86,7 @@ def test_patches_apply_clean(tmp_path):
     upstream; divergence only fails when nothing in the drop landed
     (pending drop on a rotted base — tests/ada/_drops.py)."""
     dst = tmp_path / "ada-voice"
-    materialize_head(dst, ADA_PI)
+    materialize_main(dst, ADA_PI)
     states = {rel: check_patch(DROP / rel, dst) for rel in PATCHES}
     assert drop_guard_ok(states.values()), (
         f"drop rotted on its base — re-dispatch: {states}")

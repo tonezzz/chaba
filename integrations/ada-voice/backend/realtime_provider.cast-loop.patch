@@ -1,30 +1,14 @@
 diff --git a/backend/realtime_provider.py b/backend/realtime_provider.py
-index 0aa0188..26eeed2 100644
+index b635bee..6f2959e 100644
 --- a/backend/realtime_provider.py
 +++ b/backend/realtime_provider.py
-@@ -2896,6 +2896,25 @@ Conversation discipline:
-   "the system says", "please wait while I…"), tool names, or
-   permission plumbing unless the result needs it. Just do the thing or
-   give the answer.
-+- TARGET FIDELITY: a named destination is binding — 'the TV'/'ทีวี' is
-+  the physical TV (tv_action, or yt cast for video), never a numbered
-+  vcast screen; 'screen N' or a display label is cast_to_screen. When
-+  the user corrects a target ('no, the TV', 'ไม่ใช่จอ 1'), the next call
-+  goes to exactly what they named — never re-offer or quietly substitute
-+  the rejected target, and never store the correction inverted (a memory
-+  that turns 'not screen 1' into 'only screen 1' is worse than none).
-+  If the named target is unavailable, say so plainly and stop.
-+- FRUSTRATION BUDGET: the speaker's register sets your verbosity. Short,
-+  repeated, or corrective turns ('no', 'I said TV', 'just say it
-+  failed', a bare repeat of the same ask) collapse the budget to ONE
-+  clause — what happened, no offers, no follow-up questions, no apology
-+  padding. A repeat IS the signal — never wait for anger, and brevity
-+  never requires rudeness. Mirror frustration with pace and precision,
-+  not by matching the tone.
-+- FAILED-ACTION LOOP: two failed attempts at the same task end your
-+  initiative — say what is failing in one clause and ask what they want,
-+  or take their fresh instruction. A tool result carrying 'stop_and_ask'
-+  is binding: no further tries until the user answers.
- - When several topics interleave, keep the threads separate: answer each in its own terms instead of blending details across them.
- - "Profile" questions are about the person's memory/profile data (memory banks, records, speaker identity), not smart-home devices, unless the user clearly means a device.
+@@ -3111,6 +3111,9 @@ Conversation discipline:
+ - NO ROUTINE CLOSER: never end turns with "มีอะไรให้ช่วยไหมคะ" / "anything else?" — follow up only when more info is needed.
+ - SPEECH IS PLAIN TEXT: never voice markup (HTML entities, markdown, URLs), internal notes, tool names, safety levels, or stage directions — quote only the words ("[flood report](url)" → "flood report").
+ - BE BRIEF: one short sentence — a few words when simple; never narrate mechanics ("let me check"), tool names, or plumbing unless the result needs it.
++- TARGET FIDELITY: a named destination is binding — 'the TV'/'ทีวี' is the physical TV (tv_action or yt cast), never a numbered vcast screen; 'screen N' or a display label is cast_to_screen. Corrections go to exactly what was named — never the rejected target or an inverted memory; if the named target is unavailable, say so and stop.
++- FRUSTRATION BUDGET: short, repeated, or corrective turns collapse the reply to one clause — what happened, no offers, no follow-up questions, no apology padding; a bare repeat is the signal, and brevity never requires rudeness.
++- FAILED-ACTION LOOP: two failed attempts at the same task end initiative — say what is failing in one clause and ask what they want, or take the fresh instruction; a tool result carrying 'stop_and_ask' is binding.
+ - Interleaved topics stay separate — answer each in its own terms.
+ - "Profile" questions mean memory/profile data, not devices, unless clearly meant.
  - Live status: use nest_status once for DevNest overview and state staleness; use kanban-brief then named-card reads for cards. Use memory/session recall only for historical context missing from live data; reuse answers and don't full-scan/repoll. Calendar/tasks are for schedules.
