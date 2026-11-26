@@ -1,0 +1,37 @@
+id: ops-tony-dell-ssh-shell-restore
+title: tony-dell - restore SSH shell via local Ansible bootstrap
+column: doing
+priority: high
+created: '2026-11-26'
+updated: 2026-11-26 12:20
+brief: sshd has a global ForceCommand internal-sftp; all shell SSH requests answer 'This service allows sftp connections
+  only.' Run the idempotent local Ansible bootstrap from branch ops/restore-ssh-shell on tony-dell itself (the runner
+  is the only remaining shell path) to back up, remove and validate the line, then reload sshd.
+action:
+  type: script
+  status: running
+  host: tony-dell
+  executor: script
+  script:
+    repo: chaba
+    ref: ops/restore-ssh-shell
+    cmd: ANSIBLE_LOCALHOST_WARNING=False ~/.local/bin/ansible-playbook -i localhost, -c local --limit localhost
+      ansible/playbooks/restore-ssh-shell.yml
+    timeout: 600
+  runner: tony-dell
+  attempts: 1
+spec: 'Bootstrap only: run ansible/playbooks/restore-ssh-shell.yml with a local connection on tony-dell. The play
+  removes only the global ForceCommand internal-sftp, keeps the commented Include untouched, takes a timestamped
+  sibling backup, validates with sshd -t, reloads sshd and rolls back on failure. Post a comms result with the backup
+  path and the idempotency check outcome.'
+recoverability: R0
+comms:
+- at: 2026-11-26 12:18
+  from: tony
+  text: queued via direct card file under /tmp/board-api.lock - POST /card still refuses action.type=script. Approved
+    sshd change with rollback copy in the playbook.
+- at: 2026-11-26 12:20
+  from: tony-dell
+  text: claimed
+claim:
+  since: 2026-11-26 12:20
