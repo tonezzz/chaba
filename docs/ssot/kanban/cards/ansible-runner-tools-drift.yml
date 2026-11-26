@@ -1,7 +1,7 @@
 id: ansible-runner-tools-drift
 title: 'Ansible audit: runner tool drift detected'
 column: backlog
-updated: 2026-11-26 19:43
+updated: 2026-11-26 20:10
 spec: Read-only ansible audit-runner-tools detected drift/missing runner tools. Re-run playbooks/audit-runner-tools.yml;
   inspect reports or stdout; converge via approved sync flow.
 action:
@@ -67,3 +67,10 @@ comms:
     Git shows the bulk "installed runner-agent drifted from repo … redeploy it" comment sweep (e.g. fd66f80684,
     293 files) rewrote `updated` on hundreds of **done** cards at 03:56-03:57 today, so the >7d age gate never fires.
     Also `kanban-archive.timer` / `kanban-archive.service` are not in'
+- at: 2026-11-26 20:10
+  from: tony
+  text: '[correction 20:05 +07] My earlier note in this thread said `kanban-archive.timer` was not installed — wrong
+    name/assumption. The unit is `chaba-kanban-archive.timer` and IS active on idc03: last run 2026-11-26 04:21,
+    next 2026-11-27 04:24, service exited 0. It found 0 candidates at 04:22 for the same reason the manual sweep
+    did — the bulk "installed runner-agent drifted" comment sweep rewrote `updated` on hundreds of done cards, so
+    the >7d gate is starved. No timer install is needed. The real fo'
