@@ -1,7 +1,7 @@
 id: exec-checkout-generated-writes-focus-inb-da698a
 title: Exec-checkout generated writes (focus-inbox, ada-memory) never reach the writer
-column: review
-updated: 2026-11-26 13:04
+column: doing
+updated: 2026-11-26 13:10
 brief: 'Hosts with exec-role chaba checkouts (omen confirmed; audit dell/idc02/mn01) run producers that write generated
   files — docs/ssot/focus-inbox/*.yml alerts, backups/ada-memory/*.json dumps, routes.json, SSOT_OPTIMIZATION_WARNINGS.json
   — directly into the working tree. Exec role cannot commit (pre-commit block), so the content never reaches the
@@ -455,25 +455,31 @@ comms:
 - at: 2026-11-26 13:04
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-26 13:10
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — branch head == base tip — nothing committed; unit:
+    exit_code=0; auto-retry queued (attempt 2/2) (column -> backlog)'
+- at: 2026-11-26 13:10
+  from: con01
+  text: claimed
 action:
   type: dispatch
-  status: done
+  status: running
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
-  attempts: 1
+  attempts: 2
   sweep:
     no_repo: 2026-11-25 19:09
     stale_running: 2026-11-25 19:54
     dirty: 30
-  last_failure: 'exit=1 261125-125447-goal-generated-writes-from-non.service: Failed with result ''exit-code''.
-    | devin-task-20261125-125447-goal-generated-writes-from-non.service: Consumed 2min 8.634s CPU time over 59min
-    17.276s wall clock time, 497.5M memory peak.'
-  runner: con01
+    zero_commit: 2026-11-26 13:10
+  last_failure: 'no delivered work — branch head == base tip — nothing committed; unit: exit_code=0'
   result: 'exit=0 ice: No such file or directory | devin-task-20261126-122820-goal-generated-writes-from-non.service:
     Failed to open /run/user/1001/systemd/transient/devin-task-20261126-122820-goal-generated-writes-from-non.service:
     No such file or directory'
   verified: false
+  runner: con01
 claim:
-  since: 2026-11-26 12:26
+  since: 2026-11-26 13:10
 review_kind: verify
