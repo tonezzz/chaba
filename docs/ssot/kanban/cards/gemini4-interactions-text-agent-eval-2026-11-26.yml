@@ -1,7 +1,7 @@
 id: gemini4-interactions-text-agent-eval-2026-11-26
 title: Evaluate Gemini 4 + Interactions API for a stateful text agent
 column: done
-updated: 2026-11-26 21:36
+updated: 2026-11-26 22:00
 brief: Compare gemini-4-hydrogen/neon via the Interactions API against the current 3.x stateless text path on a
   small multi-turn tool-and-recall task set; measure task accuracy, token growth and latency.
 priority: medium
@@ -172,6 +172,13 @@ comms:
 - at: 2026-11-26 21:36
   from: tony
   text: closed by tony
+- at: 2026-11-26 22:00
+  from: ada
+  text: 'Final free-tier batch closed. Thought summaries, inline-image generation and OpenAI compatibility could
+    not be tested: all five keys hit the 500 requests/day free generation cap (raw REST 429, ~17h reset), so these
+    are UNVERIFIED, not failed. Non-generation surfaces all passed: countTokens (15 tokens for 67-char prompt),
+    model metadata (1,048,576 in / 65,536 out), and Files API upload/get/list/delete. Notable: countTokens reported
+    1,089 image tokens for a 64x64 PNG vs the documented 258; measure'
 action:
   type: dispatch
   status: done
