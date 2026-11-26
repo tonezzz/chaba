@@ -1,7 +1,7 @@
 id: gemini4-interactions-text-agent-eval-2026-11-26
 title: Evaluate Gemini 4 + Interactions API for a stateful text agent
 column: doing
-updated: 2026-11-26 20:05
+updated: 2026-11-26 20:08
 brief: Compare gemini-4-hydrogen/neon via the Interactions API against the current 3.x stateless text path on a
   small multi-turn tool-and-recall task set; measure task accuracy, token growth and latency.
 priority: medium
@@ -83,6 +83,16 @@ comms:
     9424 input tokens vs stateless 9679 (2.6% saving), recall 7/8 vs 8/8 codenames, both 4/4 dates. Input tokens
     still grew ~140 to ~830 in both arms. Gemini 4 remains blocked by free-tier 0-token limit and the paid cap.'
 - at: 2026-11-26 20:05
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-26 20:07
+  from: ada
+  text: 'Track concluded (partial): Gemini 4 unreachable on all five existing keys (free tier 0 input tokens/min;
+    PAID/TONY/KK monthly cap). Interactions API evaluated on gemini-3.5-flash-lite: 6/6 tool + 6/6 recall in both
+    stateful/stateless; 20-turn stateful saved only 2.6% input tokens and was slower. Receipt + harness + result
+    JSON committed on master (fe0bf5ec5bf, c21979db286). Awaiting Tony decision on paid cap / alternate paid project
+    before Gemini 4 can be tested. No key, billing, gateway, pin, o'
+- at: 2026-11-26 20:08
   from: chaba
   text: comment saved but session delivery skipped (bad task_id)
 action:
