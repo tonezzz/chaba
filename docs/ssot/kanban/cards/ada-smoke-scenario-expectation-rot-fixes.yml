@@ -1,7 +1,7 @@
 id: ada-smoke-scenario-expectation-rot-fixes
 title: 'Smoke scenarios: fix expectation rot (4 yamls) + scenario-live cleanup MDDB plane bug'
 column: doing
-updated: 2026-11-26 22:16
+updated: 2026-11-26 22:19
 priority: medium
 tags:
 - ada
@@ -85,6 +85,10 @@ comms:
   text: 'picked up — worktree ada-voice-wt-smoke-fixes on dispatch/20261126-smoke-expectation-rot. Found extra rot:
     scenario-live.py has no calls_not key (turn2 silently ignored; real key is no_calls) and cms_get_page-style
     names still pass via LEGACY_TOOL_ALIASES. Fixing all 5 items.'
+- at: 2026-11-26 22:19
+  from: devin
+  text: 'raised request ok-to-delete-the-stray-public-page-ada-c-11e29f: OK to delete the stray PUBLIC page ada-cms-pages/kk-site-test
+    (public=true since 2026-10-11, live at surf-thailand.com/t'
 action:
   type: dispatch
   status: running
@@ -94,3 +98,15 @@ action:
   attempts: 1
 claim:
   since: 2026-11-26 22:08
+requests:
+- id: ok-to-delete-the-stray-public-page-ada-c-11e29f
+  ask: 'OK to delete the stray PUBLIC page ada-cms-pages/kk-site-test (public=true since 2026-10-11, live at surf-thailand.com/tony-ha/kk-site-test.html)?
+    It is scenario litter from the broken cleanup. Note: once the plane-routing fix deploys, the next cms_public_url_lane
+    smoke run will delete it via cleanup anyway — say no if you want it kept/unpublished instead. Same question
+    for leftover translate-probe{,-de} test docs in ada-cms-pages.'
+  status: open
+  at: 2026-11-26 22:19
+  from: devin
+  options:
+  - proceed
+  - hold
