@@ -1,7 +1,7 @@
 id: apps-yml-host-url-still-tony-dell-x42
 title: 'apps.yml: 42 entries still host_url tony-dell + canary blind to deployed apps index'
 column: doing
-updated: 2026-11-26 21:02
+updated: 2026-11-26 21:14
 priority: medium
 tags:
 - ops
@@ -351,6 +351,13 @@ comms:
     already idc02/mn01-aware. Plan: apps.yml 47 stale entries (42 host:tony-dell + 5 host:yomi) -> host:idc02/https://idc02.taila0626a.ts.net;
     repoint producers (apps-yml-generate, apps-health-sync, ssot.apps.yml apps-hosts, public ssot.apps.yml copy,
     lab page hostLabel); regen ssot.health.h'
+- at: 2026-11-26 21:14
+  from: devin
+  text: '[done] Attempt 2 committed on dispatch/20261126-204208-migrate-the-42-entries-in-stac (77e30316111, 10
+    files). apps.yml: 0 refs to tony-dell.taila0626a.ts.net (was 47 — 42 host:tony-dell + 5 host:yomi all -> host:idc02/https://idc02.taila0626a.ts.net).
+    Producers repointed so regen cannot reintroduce: apps-yml-generate defaults+BASE_URL, apps-health-sync fallbacks
+    + SYNCABLE_HOSTS->{mn01}, ssot.apps.yml apps-hosts (tony-dell group -> idc02, yomi folded in, ada-voice/speaker-enroll
+    -> idc03), publ'
 spec: Migrate the 42 entries in stacks/web/public/apps/apps.yml that still carry host_url https://tony-dell.taila0626a.ts.net
   to the correct host configuration, and ensure the consumer canary covers the deployed apps index. The repository
   is chaba and the host is tony-dell. The done-condition is verified when zero entries in stacks/web/public/apps/apps.yml
