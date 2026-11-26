@@ -1,7 +1,7 @@
 id: con01-runner-pilot-smoke-runner-agent-di-a73b38
 title: con01 runner pilot smoke — runner-agent dispatch path
-column: doing
-updated: 2026-11-26 09:36
+column: review
+updated: 2026-11-26 09:37
 brief: Low-risk con01 runner-agent dispatch pilot. Dispatch a tiny verification task on the chaba repo via devin-dispatch
   and confirm claim/start/close.
 priority: low
@@ -18,12 +18,16 @@ spec: Low-risk dispatch pilot for the con01 runner-agent. Work only in the provi
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: free_lane
   lane_source: jevos
   model: swe-2-flash-medium
   runner: tony-macbook
   attempts: 1
+  result: 'exit=0 anch, and a final comms entry was posted to card `con01-runner-pilot-smoke-runner-agent-di-a73b38`.
+    | devin-task-20261126-093600-low-risk-dispatch-pilot-for-th.service: Consumed 17.534s CPU time over 24.204s
+    wall clock time, 1G memory peak.'
+  verified: false
 comms:
 - at: 2026-11-26 09:34
   from: chaba
@@ -65,6 +69,26 @@ comms:
   from: devin
   text: 'Pilot smoke done: python3 -m py_compile scripts/board/runner-agent.py exited 0 — syntax valid, no modifications
     (worktree clean). Outcome doc committed in dispatch worktree.'
+- at: 2026-11-26 09:37
+  from: tony-macbook
+  text: 'finished (ok): exit=0 anch, and a final comms entry was posted to card `con01-runner-pilot-smoke-runner-agent-di-a73b38`.
+    | devin-task-'
+- at: 2026-11-26 09:37
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-26 09:37
+  from: chaba
+  text: banked 735 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 09:37
+  from: chaba
+  text: pushed dispatch/20261126-093600-low-risk-dispatch-pilot-for-th to origin
+- at: 2026-11-26 09:37
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-26 09:37
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
 ref: OPS-1426
 claim:
   since: 2026-11-26 09:35
+review_kind: verify
