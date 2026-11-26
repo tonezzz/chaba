@@ -1,7 +1,7 @@
 id: bigquery-usage-ledger-writer
 title: BigQuery usage ledger — dataset, MERGE writer, 10-row backfill, verification
 column: backlog
-updated: 2026-11-26 22:27
+updated: 2026-11-26 22:28
 brief: Turn the local usage reports into a durable, queryable ledger now that the BigQuery API is enabled on the
   Chaba project (0 datasets). Implement the schema in infra/bigquery-ledger-schema-2026-11-26.md, a dry-run-first
   MERGE writer, a bounded backfill, and verification queries. Card ADA-1458 (eval-judge lane) stays independent
@@ -42,8 +42,7 @@ action:
   type: dispatch
   repo: chaba
   status: queued
-  lane: free_lane
-  lane_source: kw
+  executor: devin
 ref: OPS-1460
 comms:
 - at: 2026-11-26 22:19
@@ -59,4 +58,8 @@ comms:
   from: chaba
   text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
     — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-26 22:28
+  from: ada
+  text: 'routing edited: lane cleared, executor=devin by ada: code-change card: free_lane keyword (report) misclassification;
+    pin devin for repo writes + push'
 claim: {}
