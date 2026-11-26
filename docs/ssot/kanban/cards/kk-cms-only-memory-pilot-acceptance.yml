@@ -1,0 +1,62 @@
+id: kk-cms-only-memory-pilot-acceptance
+title: KK acceptance — CMS-only memory pilot for Kaewta
+column: review
+updated: 2026-11-26 09:40
+brief: Decide whether Kaewta (ada-kk) should answer from her CMS reports only, with bank recall and web_search withheld.
+  Bench read-side is proven; prod profile unchanged.
+priority: medium
+tags:
+- memory
+- kaewta
+- pilot
+- cms
+spec: 'Ask KK to accept a reversible 3-7 day pilot on ada-kk.
+
+
+  WHY: kk_memory_cms is reproducible with seeded_recall green after fine-grained session-prime isolation (ADA_PRIME_SKIP_HISTORY=1).
+  Covered recall from a CMS page after a fresh session, honest miss on uncovered questions, no bank-tool leak. This
+  is a product decision, not an automatic promotion.
+
+
+  WHAT CHANGES: withhold ada_memory_search/ada_remember/ada_forget/ada_session_recall + web_search from ada-kk;
+  keep cms_read, conv_journal, wp_post, cpt_post, calendar/tasks and the Kaewta persona. Set ADA_PRIME_SKIP_HISTORY=1
+  so stale session summaries/tails cannot answer; keep ADA_SESSION_PRIME=1 so identity + CMS catalog stay.
+
+
+  IF CMS HAS NO INFORMATION: she may list/read CMS, then says honestly she has no report / ไม่มีข้อมูลในรายงาน.
+  No fabricated page or URL, no silent bank recall, no web search. She may offer to ask Tony to create a report
+  via the normal wp_post/cpt_post path. Live calendar/tasks still work — that is state, not memory.
+
+
+  FLOW: KK acceptance + Tony approval -> snapshot prod env + /api/tools -> declare prod profile (NOT kk-bench-env.py,
+  which is dev-only) -> deploy-gate apply -> restart ada-kk -> health 200 + tool declarations + LINE smoke -> daily
+  covered recall / honest miss / audit review -> keep or revert.
+
+
+  STOP/ROLLBACK: fabrication, invented URLs, KK dissatisfaction, tool_denied storm, CMS write failures, or bench
+  regression -> restore env snapshot / re-render persons.kk.tools, restart, re-verify. No data touched.
+
+
+  EVIDENCE: docs/assessments/kk-cms-only-memory-retest-2026-11-24.md (all runs and triage), docs/assessments/kk-cms-only-pilot-plan.md
+  (full procedure). Prod Kaewta profile has NOT been changed.'
+ref: MEM-1429
+comms:
+- at: 2026-11-26 09:40
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-26 09:40
+  from: tony
+  text: 'raised request kk-do-you-accept-a-reversible-3-7-day-cm-d8c11e: KK: do you accept a reversible 3–7 day
+    CMS-only memory pilot? If yes, Tony proceeds via the deploy gate; nothing changes'
+requests:
+- id: kk-do-you-accept-a-reversible-3-7-day-cm-d8c11e
+  ask: 'KK: do you accept a reversible 3–7 day CMS-only memory pilot? If yes, Tony proceeds via the deploy gate;
+    nothing changes on prod until then. If CMS has no report, Kaewta says so honestly — no invented page, no bank
+    recall, no web search.'
+  status: open
+  at: 2026-11-26 09:40
+  from: tony
+  options:
+  - approve — KK accepts, proceed with pilot
+  - hold — not yet
+  - abort — keep current profile

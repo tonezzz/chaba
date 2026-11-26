@@ -511,53 +511,33 @@ execution:
                cap: pin cards via action.host or match labels —
                unpinned queued cards already flow to any host under cap
                and under its load gate."
-    runner_fleet: "as of 2026-11-25 (idc caps re-audited live 2026-10-27,
+    runner_fleet: "as of 2026-10-10 (idc caps re-audited live 2026-10-27,
                card dispatch-concurrency-bump-idc — both already at 3;
                4 refused: ~3.5GB/session vs ~5G available on idc03) —
-               tony-dell: runner-agent cap 3 gate 1.0 labels
+               tony-dell: runner-agent cap 3 gate 0.85 labels
                desktop,cpu,push:chaba,push:ada-voice,push:sunsynk-card,push:mddb-fork,
                push:gods-eye-view (dispatch+script — unit restored
                2026-11-13 after OPS-0725 parked it; claims via 60s timer); tony-omen: cap 3 labels gpu,desktop,cpu (dispatch
-               +container+script); idc02: cap 3 labels ssd,always-on,cpu,small,push:chaba,push:ada-voice,vps (dispatch
+               +container+script); idc02: cap 3 labels ssd,always-on,cpu,small,push:chaba (dispatch
                +container+script — push:chaba added via runner-agent.service.d/ada-pilot.conf
                2026-11-04, push creds verified 2026-11-08; prose was stale and
-               starved OPS-1039; push:ada-voice+vps added via
-               runner-agent.service.d/vps-lane.conf 2026-11-24, card
-               idc02-second-ada-pi-lane — VPS-grade ada-pi/ada-voice
-               failover lane so tony-dell isn't single-point; 'vps' is the
-               fleet-unique opt-in label, dell stays canonical edit point;
-               kanban-dispatch.service.d/vps-lane.conf mirrors the set via
-               KANBAN_HOST_LABELS for manual drains); idc03: cap 3 gate 0.85 labels
+               starved OPS-1039); idc03: cap 3 gate 0.85 labels
                ssd,always-on,ada,cpu,small (dispatch+container+script);
                mn01: cap 1
                labels low-mem,edge,small (dispatch+container+script — devin CLI
-               IS present; RAM-tight so cap stays 1); con01: cap 4 RUNNER_MAX_LOAD_PC=1.6
-               labels push:chaba,container,script (script+container only — no devin
-               CLI; onboarded 2026-11-24, runner-agent service+timer installed and
-               push:chaba probe verified, e2e card con01-script-smoke claimed and
-               finished exit=0; 8c/23Gi but 24/7 ollama load, hence load gate 1.6);
-               tony-macbook: cap 4
-               gate 1.0 labels macbook,local-8c,always-home (dispatch+script,
+               IS present; RAM-tight so cap stays 1); tony-macbook: cap 2
+               gate 0.8 labels macbook,local-8c,always-home (dispatch+script,
                no podman so no container; devin CLI enrolled — running
                devin-task dispatches since 2026-10-2x; runner + repo-sync
-               installed; cap 2->3 2026-11-24 via card tony-macbook-cap-raise,
-               unit rewritten to cap 4 gate 1.0 2026-11-25 — mirrored from the
-               live unit, flag if 4 wasn't deliberate); day-awake inhibit
-               live 2026-11-25 via card tony-macbook-daytime-runner —
-               scripts/ops/macbook-day-awake.sh holds a logind sleep:idle
-               block inhibitor 07:00-23:00 while on AC or (lid open +
-               battery>=30%), delivered via XFCE autostart
-               (scripts/ops/macbook-day-awake.desktop) since block inhibitors
-               require a session subject; suspend-prone member, don't park
-               long sessions).
-               kk-mac: ACTIVE in fleet (OPS-0220 — launchd runner
-               provisioned via scripts/ops/kk-mac-runner-onboard.sh
-               and e2e-verified 2026-11-19: claimed+finished script
-               card kk-mac-script-smoke exit=0, deploy key enrolled;
-               RUNNER_TASK_RUNTIME=launchd, cap 1, labels desktop,
-               mac,arm64,cpu (dispatch+script+container — devin
-               executor stays Linux-only; opencode/script/container
-               lanes serve). Runbook:
+               installed; suspend-prone member, don't park long sessions).
+               kk-mac: STAGED, not yet in fleet (2026-11-14, card
+               kk-mac-launchd-runner-port — KK approved fleet use
+               2026-10-30): launchd task runtime (RUNNER_TASK_
+               RUNTIME=launchd) landed in runner-agent.py; provision
+               via scripts/ops/kk-mac-runner-onboard.sh as kkkakk —
+               cap 1, labels desktop,mac,arm64,cpu (+push:chaba after
+               the deploy-key probe). devin executor stays Linux-only;
+               opencode/script/container lanes serve. Runbook:
                docs/kb/kk-mac-launchd-runner.md.
                Push creds (2026-10-14 audit, runner-push-cred-gap):
                tony-dell pushes all dispatch_repos repos; tony-macbook's
@@ -571,7 +551,7 @@ execution:
                micro-training cold batch -> idc02 (idc01 RETIRED — removed
                from fleet 2026-10-10; runner-agent.timer stopped+disabled after
                stranded dispatches), bench cadence/corpus ->
-               idc02/idc03, GPU FT/LoRA -> omen (labels)."
+               idc02/idc03, GPU FT/LoRA -> omen (labels). con01: cap 1 labels con01,vps,batch,script,container,dispatch,always-on,push:chaba (dispatch+script — Phase 4 pilot)."
     dead_runner: "kanban-dispatch sweeps 'running' cards each pass —
                a runner unreachable via ssh for KANBAN_REQUEUE_MISSES
                consecutive passes (default 3 ≈ 6min) gets its card

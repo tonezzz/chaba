@@ -1,0 +1,15 @@
+{# benchmark-report-summary.j2 — standard run summary (OPS-1424 2A).
+   Caller sets benchmark_summary_report (dict) in scope. #}
+{%- set r = benchmark_summary_report | default({}) -%}
+playbook: {{ r.get('playbook', benchmark_report_playbook | default('unknown')) | to_json }}
+ts: {{ r.get('ts', benchmark_report_ts | default('')) | to_json }}
+artifact_dir: {{ r.get('artifact_dir', benchmark_report_dir | default('')) | to_json }}
+hosts_total: {{ r.get('hosts_total', 0) | int }}
+hosts_probed: {{ r.get('hosts_probed', 0) | int }}
+hosts_ok: {{ r.get('hosts_ok', 0) | int }}
+hosts_drift: {{ r.get('hosts_drift', 0) | int }}
+hosts_fail: {{ r.get('hosts_fail', 0) | int }}
+hosts_unreachable: {{ r.get('hosts_unreachable', 0) | int }}
+summary: {{ r.get('summary', '') | to_json }}
+hosts:
+{{ r.get('hosts', []) | to_nice_yaml(indent=2) | indent(2, true) }}

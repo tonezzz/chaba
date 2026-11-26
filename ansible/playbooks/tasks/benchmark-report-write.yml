@@ -1,0 +1,106 @@
+---
+# benchmark-report-write.yml — write standard prep/plan/verify reports (OPS-1424 2A).
+#
+# Required vars:
+#   benchmark_report_dir      - controller path, e.g. reports/ansible-benchmark/<playbook>/<ts>
+#   benchmark_report_playbook - playbook/id name
+#   benchmark_report_ts       - ISO-8601 timestamp
+#   benchmark_report_hosts    - list of inventory hosts to write
+#
+# Per host, caller sets hostvars[h].benchmark_host_report dict with:
+#   summary, checks[], deltas[], evidence[], elapsed_s, rc, probed, unreachable, host, inventory_host
+# Missing hosts/reports are skipped.
+#
+# Writes:
+#   <benchmark_report_dir>/<host>.yml
+#   <benchmark_report_dir>/summary.yml
+
+- name: Ensure benchmark report dir exists
+  ansible.builtin.file:
+    path: "{{ benchmark_report_dir }}"
+    state: directory
+    mode: "0755"
+  delegate_to: localhost
+  run_once: true
+
+- name: Write per-host benchmark reports
+  ansible.builtin.template:
+    src: benchmark-report-host.j2
+    dest: "{{ benchmark_report_dir }}/{{ item }}.yml"
+    mode: "0644"
+  loop: "{{ benchmark_report_hosts | default([]) }}"
+  loop_control:
+    label: "{{ item }}"
+  vars:
+    benchmark_host_report: >-
+      {{ hostvars[item].benchmark_host_report | default({
+           'host': item,
+           'inventory_host': item,
+           'playbook': benchmark_report_playbook,
+           'ts': benchmark_report_ts,
+           'probed': false,
+           'unreachable': false,
+           'rc': 0,
+           'elapsed_s': 0,
+           'summary': "not reported (no benchmark_host_report)",
+           'checks': [],
+           'deltas': [],
+           'evidence': []
+         }) }}
+  when: hostvars[item].benchmark_host_report is defined
+  delegate_to: localhost
+  run_once: true
+
+- name: Build benchmark summary data
+  ansible.builtin.set_fact:
+    benchmark_summary_report: >-
+      {%- set hosts = [] -%}
+      {%- set ns = namespace(ok=0, drift=0, fail=0, unreachable=0, probed=0) -%}
+      {%- for h in benchmark_report_hosts | default([]) -%}
+        {%- set r = hostvars[h].benchmark_host_report | default({}) -%}
+        {%- if hostvars[h].benchmark_host_report is defined -%}
+          {%- set s = r.get('summary', '') | string -%}
+          {%- set is_unreachable = r.get('unreachable', false) | bool -%}
+          {%- set rc = r.get('rc', 0) | int -%}
+          {%- set deltas = r.get('deltas', []) -%}
+          {%- set checks_failed = r.get('checks', []) | selectattr('status', 'defined') | selectattr('status', 'in', ['fail','failed','error','crit','down','missing']) | list | length -%}
+          {%- if r.get('probed', true) | bool -%}{%- set ns.probed = ns.probed + 1 -%}{%- endif -%}
+          {%- if is_unreachable or s.startswith('unreachable') -%}
+            {%- set ns.unreachable = ns.unreachable + 1 -%}
+            {%- set bucket = 'unreachable' -%}
+          {%- elif rc != 0 or checks_failed > 0 or s.startswith('fail') or s.startswith('CRIT') or s.startswith('error') -%}
+            {%- set ns.fail = ns.fail + 1 -%}
+            {%- set bucket = 'fail' -%}
+          {%- elif (deltas | length) > 0 or s.startswith('drift') or s.startswith('warn') -%}
+            {%- set ns.drift = ns.drift + 1 -%}
+            {%- set bucket = 'drift' -%}
+          {%- else -%}
+            {%- set ns.ok = ns.ok + 1 -%}
+            {%- set bucket = 'ok' -%}
+          {%- endif -%}
+          {%- set _ = hosts.append({'host': h, 'summary': s, 'bucket': bucket, 'rc': rc}) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ {
+        'playbook': benchmark_report_playbook,
+        'ts': benchmark_report_ts,
+        'artifact_dir': benchmark_report_dir,
+        'hosts_total': (benchmark_report_hosts | default([]) | length),
+        'hosts_probed': ns.probed,
+        'hosts_ok': ns.ok,
+        'hosts_drift': ns.drift,
+        'hosts_fail': ns.fail,
+        'hosts_unreachable': ns.unreachable,
+        'summary': 'ok=' ~ ns.ok ~ ' drift=' ~ ns.drift ~ ' fail=' ~ ns.fail ~ ' unreachable=' ~ ns.unreachable ~ ' probed=' ~ ns.probed ~ '/' ~ (benchmark_report_hosts | default([]) | length),
+        'hosts': hosts
+      } }}
+  delegate_to: localhost
+  run_once: true
+
+- name: Write benchmark summary report
+  ansible.builtin.template:
+    src: benchmark-report-summary.j2
+    dest: "{{ benchmark_report_dir }}/summary.yml"
+    mode: "0644"
+  delegate_to: localhost
+  run_once: true

@@ -27,7 +27,10 @@ import asyncio
 import websockets
 
 DEV_URL = os.environ.get(
-    "DEV_URL", "http://mn01.taila0626a.ts.net:8124"
+    # HA moved idc02 -> mn01 (2026-11-25) and :8124 is now tailscale-served
+    # HTTPS; plain HTTP on :8124 returns 400 and :9585 is MCP, not the HA
+    # API (timer-alert-tony-omen-mn-ha-dev-parity, 2026-11-26).
+    "DEV_URL", "https://mn01.taila0626a.ts.net:8124"
 )
 HA_URL = os.environ.get("HA_URL", "http://michael-ha:8123")
 DASH = os.environ.get("DASH", "tony-test")

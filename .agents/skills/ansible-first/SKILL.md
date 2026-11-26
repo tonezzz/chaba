@@ -67,3 +67,14 @@ Ground truths worth carrying into every similar job:
 - A "newer than repo" guard compares **mtime, not content** — a newer-mtime installed copy can still be missing features. Hash both sides before choosing a direction.
 - Drift flags are a lagging indicator between repo-sync and tool-sync; often already healed by the time a job lands. Verify before mutating.
 - The runner-agent pin in `scripts/devin/runner-tooling.manifest.json` is the shared gate for both `sync-runner-tools.sh` and `runner-agent._self_update()` — don't deploy an unpinned build.
+
+## 6. Prep → plan → apply → verify (default for non-trivial fleet changes)
+
+Canonical: `docs/ssot/infrastructure/ssot.ansible-change-procedure.yml#prep_plan_apply_verify` (OPS-1424, 1A/2A/3A, 2026-11-26).
+
+- **Prep (read-only, default):** preflight/baseline — SSOT/paths/secret names (never values), packages/tools, units/timers, disk/headroom, deps, env contract. No host mutation. Artifacts: `reports/ansible-benchmark/<playbook>/<ts>/summary.yml` + `<host>.yml`.
+- **Plan (`--check --diff`):** deterministic "what will change"; capture parsed delta report and reference it on the card. Blockers (unreachable, missing secret, drift conflict) stop targeted apply.
+- **Apply (gated mutation):** separate playbook/run; requires explicit approval var (`*_approved=true`), `card_id/card_ref`, rollback stated before run, narrow `--limit`. No destructive ops without confirmation.
+- **Verify (read-only):** producer+consumer proof; board-api comment with short summary + `fp=` + artifact path. `fp=cleared` on resolution. Unverifiable = hold, not done.
+
+Contract: board-api is the only card write door; no secret values in logs/artifacts/comments; artifacts canonical in `reports/ansible-benchmark/<playbook>/<ts>/` (no bulky card logs); `rc=4` tolerated for scheduled read-only audits, blocker for targeted apply.
