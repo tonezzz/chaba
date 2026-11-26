@@ -55,13 +55,15 @@ alerts:
     - status-data-api
     - trade-api
     - mddb-api
-    - playlived-dell
     optional:
     - redis
     - weaviate
     - activepieces
     - frigate
     - camera-control
+    # loopback-only on tony-dell; disabled in the health profile and verified
+    # manually via ssh tony-dell curl/systemd status (not a quick-health gate)
+    - playlived-dell
     - imagen2
     - txt2vid
     - thai-legal
