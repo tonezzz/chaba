@@ -732,6 +732,17 @@ check "N: stale code not committed" \
   "! git -C '$TMP/served' log -1 --format=%H | xargs -I{} git -C '$TMP/served' show --name-only --format= {} | grep -q 'scripts/board/stale.py'"
 check "N: refusal explained on stderr" \
   "grep -qi 'out-of-scope staged' '$TMP/n.err'"
+# staged deletion of an out-of-scope file must be refused too
+echo "REAL CODE" > "$TMP/served/scripts/board/kept.py"
+git -C "$TMP/served" add scripts/board/kept.py
+git -C "$TMP/served" commit -qm "seed kept.py" -- scripts/board/kept.py
+git -C "$TMP/served" rm -q scripts/board/kept.py
+bash "$KANBAN_COMMIT" >/dev/null 2>"$TMP/n2.err"; rc_n2=$?
+check "N: staged deletion of code refused" "[ $rc_n2 -ne 0 ]"
+check "N: deletion refusal explained on stderr" \
+  "grep -qi 'out-of-scope staged: scripts/board/kept.py' '$TMP/n2.err'"
+git -C "$TMP/served" reset -q HEAD scripts/board/kept.py
+git -C "$TMP/served" checkout -q -- scripts/board/kept.py
 # leave the tree clean for O
 git -C "$TMP/served" reset -q HEAD scripts/board/stale.py
 rm -f "$TMP/served/scripts/board/stale.py" "$TMP/served/docs/ssot/kanban/cards/tick-n.yml"

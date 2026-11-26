@@ -273,7 +273,7 @@ done
 # scripts/ file or a stale docs/ssot/kanban/ssot.kanban.yml was swept into
 # "board: live card updates" and reverted newer origin/master content.
 # Refuse and surface it on the ops card instead of silently undoing work.
-staged_files=$(git diff --cached --name-only --diff-filter=ACM)
+staged_files=$(git diff --cached --name-only --diff-filter=ACMD)
 bad_scope=""
 bad_prose=""
 while IFS= read -r p; do
