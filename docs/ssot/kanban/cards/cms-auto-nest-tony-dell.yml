@@ -2,14 +2,14 @@ id: cms-auto-nest-tony-dell
 title: CMS automation `nest-tony-dell` stale
 brief: A scheduled report-page job ('nest-tony-dell') is stale. Re-run it or check the generator — details in the
   note.
-column: doing
+column: review
 review_kind: triage
 generated: cms-auto-health
 priority: medium
 note: 'last_run 3041m overdue (interval 15m). last_run=2026-11-24T00:58:02+00:00 interval=15m status=ok. Page: https://idc03.taila0626a.ts.net/cms/#/nest-tony-dell'
 help: 'Trigger a manual regen: cms_automation run_now for ''nest-tony-dell'' (or POST /api/cms/pages/nest-tony-dell/regenerate).
   If it repeats, check the page''s generator command in the registry doc.'
-updated: 2026-11-26 15:20
+updated: 2026-11-26 15:23
 comms:
 - at: 2026-11-24 08:57
   from: chaba
@@ -179,13 +179,39 @@ comms:
     (+disabled_reason) on MDDB registry ada-cms-automation/nest-tony-dell — cms-auto-health judge() returns ok/disabled,
     so no more stale cards; card auto-closes after 2 green ticks on next kanban-sync. Reversible: flip enabled=true
     when the generator restarts (nest-mgr publish preserv'
+- at: 2026-11-26 15:23
+  from: mn01
+  text: 'finished (ok): exit=0 ell-.md` and the card has a final comms entry; the restart-vs-retire decision remains
+    Tony''s. | devin-task-202611'
+- at: 2026-11-26 15:23
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-26 15:23
+  from: chaba
+  text: 'session-end checkpoint 2b0e7ac8: 1 leftover file(s) committed'
+- at: 2026-11-26 15:23
+  from: chaba
+  text: banked 757 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-26 15:23
+  from: chaba
+  text: pushed dispatch/20261126-151927-cms-automation-nest-tony-dell- to origin
+- at: 2026-11-26 15:23
+  from: chaba
+  text: 'test gate failed — merge held: pytest unavailable — no test evidence'
+- at: 2026-11-26 15:23
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
 action:
-  status: running
+  status: done
   type: dispatch
   lane: free_lane
   lane_source: kw
   model: swe-2-flash-medium
   runner: mn01
   attempts: 1
+  result: 'exit=0 ell-.md` and the card has a final comms entry; the restart-vs-retire decision remains Tony''s.
+    | devin-task-20261126-151927-cms-automation-nest-tony-dell-.service: Consumed 3.169s CPU time over 1min 49.759s
+    wall clock time, 277M memory peak.'
+  verified: false
 claim:
   since: 2026-11-26 15:18
