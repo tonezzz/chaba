@@ -1,7 +1,7 @@
 id: dispatch-zero-commit-sessions-epidemic
 title: dispatch sessions produce zero commits at high rate — root cause
 column: done
-updated: 2026-11-26 20:12
+updated: 2026-11-26 20:13
 spec: 'OPS-0894 fixed the closeout gate (empty branches no longer auto-close — held in review correctly). The SOURCE
   defect is unfixed and burning dispatches: 10+ sessions Oct 26-27 across hosts (tony-macbook, idc02, mn01) and
   lanes (deepseek-v4-pro, others) produced ZERO commits — pushed branch head = plain master commit, service often
@@ -401,6 +401,12 @@ comms:
 - at: 2026-11-26 20:12
   from: tony
   text: closed by tony
+- at: 2026-11-26 20:13
+  from: tony
+  text: 'Verified closeout: root cause documented in docs/ssot/jobs/kanban/2026-11-26-dispatch-zero-commit-litellm-model-leak.yml
+    (litellm/* lane alias leaked onto devin --model). Live check 2026-11-26: installed runner-agent md5 9b50a157141fa539b32a2e4b57b26356
+    on all 8 fleet hosts == repo pin; _model_preflight present on all 6 devin hosts (4 occurrences each); zero exit-1/no-transcript
+    failures since 2026-11-25. Guards landed via DEV-0958. Closing verified.'
 claim:
   since: 2026-11-26 14:05
 review_kind: verify
