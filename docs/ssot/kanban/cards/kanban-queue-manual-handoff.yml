@@ -1,7 +1,7 @@
 id: kanban-queue-manual-handoff
 title: 'Kanban queue truth: separate human-owned cards from the dispatch queue'
 column: doing
-updated: 2026-11-27 08:40
+updated: 2026-11-27 09:26
 priority: high
 tags:
 - kanban
@@ -220,6 +220,13 @@ comms:
     Pilot re-queue 2026-11-26 (Tony approve; [runner-readiness-projection] DONE + deployed + verified live (commit
     d2146addf); The runner posts "defers: installed runner-agent drifted" on EVERY card it scans; `_self_stale_check`/`_claimable`
     gate every claim on installe'
+- at: 2026-11-27 09:26
+  from: devin
+  text: 'verification pass: write-door invariant + /queue human_waiting already live since 33a06385718 (2026-11-20).
+    This session closed the residue: board2 Needs Tony now lists awaiting_action cards with owner+reason+next (was
+    invisible), cycle-pane claim reason labels queued-but-unclaimable, classic board waitReason() same, modal Start
+    suppressed for human/unserved, board-invariants Q1 now catches executor/lane=manual + unknown executor + unserved
+    types (was type!=dispatch only), do=finish auto-retry g'
 requests:
 - id: queue-truth-sequencing
   ask: How should we sequence the queue-truth fix?
