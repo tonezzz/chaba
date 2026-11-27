@@ -532,25 +532,28 @@ jobs:
   name: Embed lane — MDDB bank sync into mddb-embed (bge-m3)
   host: idc02
   dispatch: systemd   # dispatcher->systemd 2026-10-29 (OPS-0790)
-  every: 1d
-  timeout: 45m
+  every: 1h
+  timeout: 15m
   cwd: '%h/CascadeProjects/chaba'
-  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/embed/embed-lane.py banks --budget 2400
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/embed/embed-lane.py banks --budget 600
   condition_path: '%h/CascadeProjects/chaba/scripts/embed/embed-lane.py'
   note: 'card embedding-backfill-lanes — keeps the self-owned local bank
     (mddb-embed :11028 on idc02, bge-m3 space via embed-pool-shim, MEM-0788/0805)
     in sync with the 24 vector-searched leader+CMS collections
     (BANK_COLLS). /add copies are cheap; vectors land through the target
     embed queue racing idle ollama cores. Queue-depth throttled (pauses
-    at 3000/4000) and resume-safe, so a daily run only copies the delta.
-    --budget 2400 (card embed-lane-banks-bounded-run, 2026-11-26): the
-    backlog is ~71K docs at ~15-70/min drain, so an unbounded run was
-    SIGTERMed at TimeoutStartSec=2700 every day (Result=timeout, ~3200
-    copied). The 40min wall-clock cap — which also bounds saturated-queue
-    drain waits — makes the oneshot exit 0 with incremental progress;
-    the next daily run resumes via the key-set diff. 5min margin covers
-    collection fetch + final queue stats. Driver on idc02 to keep it off
-    idc03; embed work is fleet-pooled.'
+    at 3000/4000). Hourly bounded slices (card
+    embed-lane-banks-incremental-copy-fix, 2026-11-27): embed-lane.py
+    banks persists a per-bank cursor (banks-state.json) + target
+    key-set (banks-have/<coll>.keys) under EMBED_DIR, so each run
+    copies a <=10min wall-clock slice per collection and the next run
+    resumes mid-collection; synced banks skip until --rescan-hours
+    (6h) or the have-refresh (24 runs). --budget 600 bounds fetch +
+    copy + queue-drain waits inside TimeoutStartSec=15m; exit 0 on
+    budget completion, non-zero on real copy/fetch errors. ExecStart
+    deliberately uses only --budget (already deployed) — --max-docs
+    and the cursor flags stay manual-tunable until the checkout syncs.
+    Driver on idc02 to keep it off idc03; embed work is fleet-pooled.'
 - id: device-telemetry
   name: Device telemetry beacon (lost-device locate)
   host: tony_omen

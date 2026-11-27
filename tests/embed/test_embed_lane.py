@@ -181,5 +181,115 @@ class TestDocsPagination(unittest.TestCase):
         self.assertEqual(len(docs), 40)
 
 
+class TestBanksCursor(unittest.TestCase):
+    """cmd_banks resumable slices (card embed-lane-banks-incremental-
+    copy-fix): per-bank offset cursor + persisted have-set mean each
+    run copies a bounded slice and the next resumes — no re-scan, no
+    dup adds, exit 0 on budget/cap, non-zero on real errors."""
+
+    def _env(self, ndocs=6, coll="c1", page=None):
+        src = {f"k{i}": {"key": f"k{i}", "lang": "en",
+                        "contentMd": f"body {i}", "meta": {}}
+               for i in range(ndocs)}
+        target = {}
+        reqs = []
+
+        def fake_post(url, payload, timeout=60, headers=None):
+            if url.endswith("/v1/search"):
+                reqs.append((":11028" in url, payload["offset"]))
+                off, lim = payload["offset"], payload["limit"]
+                if ":11028" in url:
+                    docs = list(target.values())
+                else:
+                    docs = list(src.values()) if payload["collection"] == coll else []
+                return docs[off:off + lim]
+            if url.endswith("/v1/add"):
+                target[payload["key"]] = payload
+                return {"ok": True}
+            if url.endswith("/v1/vector-stats"):
+                return {"queue": {"depth": 0, "dropped": 0}}
+            raise AssertionError(url)
+
+        def run(d, **kw):
+            args = mock.Mock(collection=["c1" if coll == "c1" else coll],
+                             dir=d, dry_run=False, force=False, budget=0,
+                             max_docs=0, limit=0, queue_hi=3000,
+                             rescan_hours=6.0, have_refresh=24)
+            for k, v in kw.items():
+                setattr(args, k, v)
+            with mock.patch.object(el, "_post", fake_post), \
+                    mock.patch.object(el, "PAGE", page or el.PAGE), \
+                    mock.patch.object(el.time, "sleep"):
+                return el.cmd_banks(args, None, None)
+        return run, target, reqs
+
+    def _state(self, d, coll="c1"):
+        return json.load(open(os.path.join(
+            d, "banks-state.json")))["collections"][coll]
+
+    def test_bounded_runs_resume_and_converge(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            run, target, _ = self._env(ndocs=6, page=2)
+            # three capped runs of 2 docs each — offset must advance
+            offs = []
+            for _ in range(3):
+                self.assertEqual(run(d, max_docs=2), 0)
+                offs.append(self._state(d)["offset"])
+            self.assertEqual(offs, [2, 4, 6])
+            self.assertEqual(len(target), 6)
+            # fourth run sees the short/empty tail and closes the pass
+            self.assertEqual(run(d, max_docs=2), 0)
+            st = self._state(d)
+            self.assertEqual(st["pass"], 1)
+            self.assertEqual(st["src_total"], 6)
+            self.assertTrue(st["synced_at"])
+            # synced bank skips — zero new /v1/add calls
+            n_add = len(target)
+            self.assertEqual(run(d), 0)
+            self.assertEqual(len(target), n_add)
+
+    def test_resume_does_not_rescan_or_duplicate(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            run, target, reqs = self._env(ndocs=6, page=2)
+            run(d, max_docs=2)
+            reqs.clear()
+            run(d, max_docs=2)
+            src_offs = [o for is_t, o in reqs if not is_t]
+            # resumed at the persisted cursor — never re-requests row 0
+            self.assertNotIn(0, src_offs)
+            self.assertEqual(sorted(target), [f"k{i}" for i in range(4)])
+
+    def test_all_add_failures_exit_nonzero(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            run, target, _ = self._env(ndocs=2, page=2)
+
+            def boom(url, payload, timeout=60, headers=None):
+                if url.endswith("/v1/add"):
+                    raise RuntimeError("target down")
+                if url.endswith("/v1/search"):
+                    off, lim = payload["offset"], payload["limit"]
+                    docs = ([] if ":11028" in url else
+                            [{"key": f"k{i}", "lang": "en",
+                              "contentMd": "x", "meta": {}}
+                             for i in range(2)])
+                    return docs[off:off + lim]
+                if url.endswith("/v1/vector-stats"):
+                    return {"queue": {"depth": 0, "dropped": 0}}
+                raise AssertionError(url)
+            args = mock.Mock(collection=["c1"], dir=d, dry_run=False,
+                             force=False, budget=0, max_docs=0, limit=0,
+                             queue_hi=3000, rescan_hours=6.0,
+                             have_refresh=24)
+            with mock.patch.object(el, "_post", boom), \
+                    mock.patch.object(el, "PAGE", 2), \
+                    mock.patch.object(el.time, "sleep"):
+                rc = el.cmd_banks(args, None, None)
+            self.assertEqual(rc, 1)
+            self.assertEqual(target, {})
+
+
 if __name__ == "__main__":
     unittest.main()
