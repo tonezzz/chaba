@@ -1,7 +1,7 @@
 id: ada-ocb-eval-smoke-harness-fix
 title: ada-ocb-eval and ada-ocb-smoke harness failures on idc02
 column: doing
-updated: 2026-11-27 11:05
+updated: 2026-11-27 11:10
 spec: 'Two nightly Ada bridge benchmark services on idc02 both fail:
 
   - ada-ocb-eval.service: gate `preflight-gates-readonly` FAIL — its answer is missing required fields ''start_check'',
@@ -23,6 +23,9 @@ action:
   status: running
   runner: tony-dell
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 11:10
+    dirty: 1
 ref: ADA-1489
 comms:
 - at: 2026-11-27 10:29
@@ -74,5 +77,13 @@ comms:
     ADA-1110. (2) smoke 10:00 flake = _context_card ran 3 uncached /cards fetches inside the 8s pack deadline during
     idc03 board-api slowness; now resolves via _compact_cards/_fetch_card_full with deadline timeouts + skips the
     guaranteed-miss id= probe for refs. Fix: ada-voice 912e064 '
+- at: 2026-11-27 11:10
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-103128-two-nightly-ada-bridge-benchma no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-27 11:10
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261127-103128-two-nightly-ada-bridge-benchma on tony-dell still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 claim:
   since: 2026-11-27 10:30
