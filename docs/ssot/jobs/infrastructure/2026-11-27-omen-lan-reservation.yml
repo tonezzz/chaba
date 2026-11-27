@@ -26,9 +26,12 @@ processing:
       notes: >-
         tony-omen has TWO LAN attachments: eno1 wired on tony-home 192.168.2.0/24
         (gw 192.168.2.1 ZTE F688) and wlo1 wifi on TP-Link_C4DC_5G 192.168.0.0/24
-        (gw 192.168.0.1, preferred default route metric 10). eno1 NM profile is
-        ipv4.method=manual 192.168.2.86/24 — NOT DHCP (netplan profile ~2026-11-13),
-        so host-side drift is impossible on eno1.
+        (gw 192.168.0.1, preferred default route metric 10). The ACTIVE eno1 NM
+        connection (named "eno1") is ipv4.method=manual 192.168.2.86/24 — NOT
+        DHCP, so host-side drift is impossible on eno1. (An inactive
+        "netplan-eno1" profile with method=auto also exists — it is not the
+        live connection; verified via `nmcli -t -f NAME,DEVICE con show
+        --active` on 2026-11-27 attempt 2.)
     - id: 2
       label: Verify router DHCP bindings live
       status: completed
@@ -67,6 +70,20 @@ processing:
         (kind=static, NM manual + binding tonyomen); old .86 mac-72b5f0db14f3
         allocation marked stale/superseded. ssot.tony-omen-multi-wan.yml: binding
         table verified-live note + eno1 static/cast-stack state note.
+    - id: 6
+      label: Attempt 2 — land the stranded branch
+      status: completed
+      notes: >-
+        Attempt 1 (devin-task-20261127-142035) delivered everything above but
+        auto-merge aborted on a conflict in the GENERATED file
+        docs/ssot/ssot.dev-system.assessment.yml (both sides regenerated it;
+        only last_reviewed/score counts differed). Attempt 2
+        (devin-task-20261127-152620) merged dispatch/20261127-142035 into its
+        own branch, resolved the conflict taking the newer generated version,
+        and re-verified live state from tony-dell + tony-omen: ping .86 OK,
+        :8090 -> 200, cast-browser MEDIA_BASE=.86 active, eno1 connection
+        "eno1" confirmed ipv4.method=manual. Branch delta vs master is exactly
+        the 7 deliverable files; `git merge-tree` vs origin/master is clean.
 
 outcome:
   result: fixed
