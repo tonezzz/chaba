@@ -1,6 +1,6 @@
 id: idc03-swap-workload-placement
 title: 'MEM-1511: idc03 swap 4/4 GiB — workload placement triage'
-column: backlog
+column: doing
 updated: 2026-11-27 19:17
 brief: 'After MEM-1507/1510 fixes, idc03 still has 4.0/4.0 GiB swap used, 5.1 GiB RAM available, user cgroup 14.4
   GiB RAM + 4.16 GiB swap. Top swap holders: jevos 761MiB, ada-dev 243MiB, ada-kk-dev 184MiB, ada-bankq-student
@@ -35,10 +35,19 @@ comms:
 - at: 2026-11-27 19:17
   from: chaba
   text: '[auto-dispatch] wave 33 (2026-11-27 19:17): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-27 19:17
+  from: tony-dell
+  text: claimed
+- at: 2026-11-27 19:17
+  from: chaba
+  text: claude auto-route not servable on this host — running the next lane
 action:
   type: dispatch
-  status: queued
+  status: running
   task_class: report_triage
   executor: claude
   executor_source: queue
-claim: {}
+  runner: tony-dell
+  attempts: 1
+claim:
+  since: 2026-11-27 19:17
