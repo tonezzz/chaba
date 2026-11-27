@@ -1,7 +1,7 @@
 id: idc03-swap-workload-placement
 title: 'MEM-1511: idc03 swap 4/4 GiB — workload placement triage'
 column: backlog
-updated: 2026-11-27 19:14
+updated: 2026-11-27 19:16
 brief: 'After MEM-1507/1510 fixes, idc03 still has 4.0/4.0 GiB swap used, 5.1 GiB RAM available, user cgroup 14.4
   GiB RAM + 4.16 GiB swap. Top swap holders: jevos 761MiB, ada-dev 243MiB, ada-kk-dev 184MiB, ada-bankq-student
   309MiB, ada-chaba 364MiB, ada-ha-ada 359MiB, mddb-cms 290MiB.'
@@ -26,3 +26,16 @@ comms:
     no cgroup MemoryMax. Top swap: jevos 760.6MiB swap + 938MiB RSS (cgroup 1.02GiB RAM); ada-chaba 364MiB swap/42MiB
     RSS; ada-ha-ada 359/48; ada-bankq-student 309/14 (no logs 24h); mddb-cms 290/1439 (leader, followers idc02+con01);
     kk-ha 262/52; ada-kk 262/112; ada-dev 243/139; ada-kk-dev 18'
+- at: 2026-11-27 19:16
+  from: chaba
+  text: auto-routed to executor=claude (task_class=report_triage)
+- at: 2026-11-27 19:16
+  from: chaba
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  task_class: report_triage
+  executor: claude
+  executor_source: queue
+claim: {}
