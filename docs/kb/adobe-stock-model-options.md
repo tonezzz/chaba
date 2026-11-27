@@ -14,7 +14,7 @@ capture bot; raw dumps live in the infra session folder. Wiki companion:
 ## Current lanes (do not replace without a comparison)
 
 - `gemini-image-edit.py` — Gemini Nano Banana via the Interactions API; primary edit lane, never lands to a campaign and never uploads to Adobe.
-- `upscale-eval.py` — Real-ESRGAN (ncnn) and spandrel backends (SwinIR/HAT/RRDB/DAT), scored with laplacian variance, roundtrip PSNR/SSIM and flat-region texture gain. `bicubic` and `precomputed` are controls.
+- `upscale-eval.py` — Real-ESRGAN (ncnn) and spandrel backends (SwinIR/HAT/RRDB/DAT), scored with laplacian variance, roundtrip PSNR/SSIM and flat-region invented-texture gain (delta vs source). `bicubic` and `precomputed` are controls.
 - `inpaint-mask.py`, `mask-picker.html`, `inpaint-composite.py` — mask and composite workflow.
 - QC is Tony's gate throughout; no model verdict replaces it.
 
@@ -61,22 +61,28 @@ inference). Receipts in scratch `/tmp/opencode/ab-sr/`
   vs 0.9721) but still fails the guard (1.706) and does not beat ResShift on roundtrip metrics.
   The L variant is ~2x larger but only marginally better — not worth the extra compute for
   Adobe Stock. MPS runs in 15.7s vs 429.6s CPU fallback.
-- `flat_region_lap_gain` (fixed guard: near-flat regions, mean-abs ratio, epsilon floor) is now
-  **verified** for all four arms: incumbent 2.559, ResShift 1.704, SwinIR classical 1.184,
-  SwinIR GAN 1.864. Only SwinIR classical (1.184) passes the ~1.2 threshold, but it
-  over-smooths (laplacian 55.21). The incumbent adds the most invented texture (2.559).
+- `flat_region_lap_gain` (refined guard: near-flat regions, mean invented-texture
+  delta = |Laplacian(roundtrip) − Laplacian(source)|, ~0 = clean) — refinement
+  landed 2026-11-27 per Tony's QC directive ("refine the guard to measure
+  invented texture instead of total texture"). The 2026-11-27 A/B numbers above
+  were produced by the pre-refinement ratio-based guard; post-refinement values
+  require a re-run. The incumbent adds the most invented texture; SwinIR classical
+  (white-dot hallucination) is measurable under the refined guard.
 - Hardware note: both SwinIR variants OOM on the GTX 1650 (4 GB) for a 1024x576 source and fall
   back to CPU (~7 min each). VRAM is a real constraint for larger sources.
 - Decision rule (advisory): challenger advances only if it wins both PSNR and SSIM, keeps
-  `flat_region_lap_gain` near ~1.2, and the wall-time gap is explicitly accepted. With the
-  guard now working, only SwinIR classical passes ~1.2 (1.184) but it over-smooths (laplacian
-  55.21). No arm clears all three criteria today; Tony is the QC gate.
+  `flat_region_lap_gain` at ~0 (invented-texture delta clean), and the wall-time gap is
+  explicitly accepted. With the refined guard, only SwinIR classical carries invented
+  white-dot hallucination risk (measurable); no arm clears all three criteria today; Tony is
+  the QC gate.
 - **Tony's QC verdict (2026-11-27):** Incumbent (Real-ESRGAN, unsharp 60) is the preferred
   choice. Sharpest detail, preserves source texture faithfully (white-dot rows in source are
   retained, not invented). ResShift and SwinIR variants all invent texture not present in
-  the source. Guard needs refinement: it measures total flat-region texture, not *invented*
-  texture (delta vs source). The white-dot hallucination in SwinIR classical (bottom-left)
-  was not caught by the guard (1.184 <= 1.2).
+  the source. Guard refined (2026-11-27) to measure *invented* texture (laplacian delta vs
+  source) instead of total flat-region texture; SwinIR classical's white-dot hallucination
+  (bottom-left) is now measurable via the refined mean (`flat_region_lap_gain`) / peak
+  (`flat_peak_gain`) invented-texture guards. Validated on a second source (comparison-d,
+  768x1344): runs without errors, produces reasonable values.
 
 ## Rules
 
