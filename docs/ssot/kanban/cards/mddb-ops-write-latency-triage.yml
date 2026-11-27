@@ -1,7 +1,7 @@
 id: mddb-ops-write-latency-triage
 title: 'mddb-ops: diagnose /add + /ingest ~125s congestion waves (read-only, approval-gated)'
 column: done
-updated: 2026-11-27 22:11
+updated: 2026-11-27 22:20
 brief: Next batch 2026-11-27 — 4 runner slots free.
 priority: high
 tags:
@@ -184,6 +184,13 @@ comms:
     Detached bbolt@v1.4.3 compact running under podman (PID 1458422, bbolt PID 1458443); output mddb-compact.db
     growing (3,565,297,664 bytes at 22:10:45). Source mddb.db untouched at 33,689,640,960 bytes. No swap performed
     yet — rollback and data integrity intact. Will reattach, confirm rc=0, then mv swap and restart.'
+- at: 2026-11-27 22:20
+  from: tony
+  text: 'STEP B COMPLETE + VERIFIED 2026-11-27 22:20 +07. Procedure-C offline bbolt compact of mddb-ops on idc03
+    executed exactly as approved. TIMELINE: stop 22:02:32 (inactive/dead in 1s) -> detached bbolt@v1.4.3 compact
+    22:02:32-22:18:00 (rc=0, 15m28s, no re-trigger) -> guarded podman unshare mv swap (mddb.db -> .pre-compact,
+    compact -> mddb.db) -> start 22:18 (active/running in 1s, Result=success, NRestarts=0). Outage about 15.5 min.
+    SIZES: before 33,689,640,960 bytes (~32G; bbolt reported 33689640960'
 claim:
   since: 2026-11-27 12:58
 requests:
