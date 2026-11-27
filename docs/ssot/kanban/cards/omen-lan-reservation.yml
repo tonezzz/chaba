@@ -1,7 +1,7 @@
 id: omen-lan-reservation
 title: tony-omen LAN IP needs DHCP reservation (or dynamic refs)
 column: doing
-updated: 2026-11-27 15:25
+updated: 2026-11-27 15:26
 brief: 'Omen DHCP drifted 192.168.2.86->.84 on 2026-10-12 and silently broke every hardcoded LAN reference (cast-browser-proxy
   target, cast-shots-http bind, MEDIA_BASE, barrier scripts). Proxy+shots now DHCP-proof, but MEDIA_BASE=http://192.168.2.84:8090
   must stay a LAN IP (Chromecast cannot reach tailnet) — it will break again on the next renumber. Fix: pin a DHCP
@@ -322,6 +322,16 @@ comms:
   from: chaba
   text: 'kk-mac defers: executor=devin declared but this runner is launchd — devin-dispatch drives systemd-run internally;
     the card stays queued for a Linux runner (executor=opencode/script serve here)'
+- at: 2026-11-27 15:26
+  from: chaba
+  text: started devin-task-20261127-152620-configure-a-static-dhcp-reserv on idc02 (dispatch executor=devin)
+- at: 2026-11-27 15:26
+  from: chaba
+  text: 'primer injected 8 lesson(s): [omen-lan-reservation] primer injected 8 lesson(s): idc02''s kanban-dispatch.serv;
+    idc02''s kanban-dispatch.service was a linked unit running a stale scripts/-only ; Units migrated idc03→tony-omen
+    2026-11-18 lost ALL drop-ins (stagger + gates) — ; `- ` YAML sequence items containing `: ` must be quoted or
+    they parse as mapping; [publish-promote-knowledge-capture-ssot-w-d34a39] Phase B+ ansible session-captu; runbook
+    docs/kb/host-hygiene-rules.md: Host Hygiene Rules — h'
 requests:
 - id: the-card-notes-that-the-tony-o-1dbcf8
   ask: The card notes that the tony-omen LAN IP needs a DHCP reservation or dynamic refs, but does not specify the
