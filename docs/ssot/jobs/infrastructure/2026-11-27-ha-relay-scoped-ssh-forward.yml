@@ -1,0 +1,73 @@
+icon: shield
+title: Scoped HA relay forward restored after fleet sshd hardening
+date: 2026-11-27
+card: timer-alert-idc03-kraut-rain-watch
+ref: SYS-1510
+context: >-
+  kraut-rain-watch failed three consecutive ticks (17:41, 18:11, 18:23 +07)
+  with ConnectionResetError while reading the HA /api/config response.
+  Initial triage blamed mddb congestion; the full traceback showed the
+  failure in scripts/ada/weather-bakeoff.py http_json() at main() line ~534,
+  fetching HOME_ASSISTANT_URL=http://127.0.0.1:18123 on idc03. That endpoint
+  is a user-systemd SSH relay (michael-ha-via-omen-tunnel.service) forwarding
+  through tony-omen to michael-ha:8123. Read-only probes found the relay unit
+  active but every channel refused: journal repeated "channel 1: open failed:
+  administratively prohibited: open failed", curl to the local endpoint reset
+  3/3, while the upstream HA answered 401 from tony-omen. Effective sshd policy
+  on tony-omen was global "allowtcpforwarding no", applied by the 2026-11-26
+  scoped-SFTP hardening. Restarting the relay alone could not help; a scoped
+  exception was required. A separate code card (HOM-1509 /
+  weather-bakeoff-ha-config-bounded-retry, branch
+  dispatch/20261127-182454-root-cause-scripts-ada-weather commit ce1c4ef8ad3)
+  adds bounded transport retry as defence in depth and remains under review.
+changes:
+  - "roles/common/templates/sshd_config.j2 (canonical template under
+    /home/tony/tony-projects/ansible-chaba): added a Match User tony block
+    before the trailing Match Group sftponly block with
+    AllowTcpForwarding local and PermitOpen michael-ha:8123. Global forwarding
+    remains disabled for everyone else; the Match is restricted to the single
+    HA upstream and to a client-side -L forward. Template backup kept at
+    sshd_config.j2.bak-20261127-ha-relay (old hash 9bc8948e905b1618, new hash
+    a896b3c7549d3f58, first 16 hex chars)."
+  - "Converged only tony-omen with
+    ansible-playbook -i inventory/production.yml playbooks/site.yml --tags ssh
+    --limit tony-omen; handler 'Restart ssh' fired. Host-side config backup
+    existed as /etc/ssh/sshd_config.backup.2026-11-26."
+  - "Restarted michael-ha-via-omen-tunnel.service on idc03 so the relay used
+    the new sshd policy; no unit file or HOME_ASSISTANT_URL value changed."
+verification:
+  - "Preflight: --check --diff --limit tony-omen --tags ssh returned
+    ok=10 changed=2 unreachable=0 failed=0 before the change."
+  - "Post-change: sshd -t OK on tony-omen; effective policy for tony from
+    idc03 is allowtcpforwarding local / permitopen michael-ha:8123; tony is
+    not in the sftponly group so the final Match does not override the
+    exception."
+  - "Tunnel probe from idc03 after relay restart: three consecutive curl
+    requests to http://127.0.0.1:18123/api/config returned HTTP 401 (HA alive
+    and reachable) instead of connection reset."
+  - "Consumer proof: python3 scripts/ada/weather-bakeoff.py --rain-check on
+    idc03 (no --send) exited 0 with 'cond=partlycloudy raining=False
+    next6[ECMWF 6% GFS 3% ICON 0%] ha_mm=0.0 - no event'."
+  - "Idempotency: --check --diff --limit tony-omen --tags ssh returned
+    ok=9 changed=1 unreachable=0 failed=0; the single change is the
+    date-stamped sshd_config backup task, not a config diff."
+rollback: >-
+  Restore roles/common/templates/sshd_config.j2 from
+  sshd_config.j2.bak-20261127-ha-relay, rerun the same play with --limit
+  tony-omen, and restart the relay on idc03. The tunnel then returns to the
+  administratively-prohibited state and weather-bakeoff consumers will fail
+  again until the direct route is restored; do not roll back while HOM-1509
+  or any other HA consumer depends on the relay.
+residual: >-
+  The exception applies to the admin user on tony-omen only; any other
+  account needing this relay needs its own Match block and PermitOpen. The
+  canonical ansible-chaba working copy at /home/tony/tony-projects has no
+  .git metadata, so the durable record is this SSOT job plus the template
+  backup. Con01's HOM-1509 retry branch is still unmerged and undeployed;
+  merging and deploying it requires a separate review/approval.
+lesson: >-
+  A global AllowTcpForwarding no disables every SSH -L relay, and a healthy
+  systemd unit can still be functionally dead. Check the forwarding channel,
+  not just is-active. Scope narrow exceptions with a trailing Match User and
+  PermitOpen, mirror them in the canonical Ansible template, and verify the
+  consumer (not just the endpoint) after convergence.
