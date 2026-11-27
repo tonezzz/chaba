@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
-column: doing
-updated: 2026-11-27 09:11
+column: review
+updated: 2026-11-27 09:14
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -852,6 +852,16 @@ comms:
   from: devin
   text: 'raised request s0-gate-ran-twice-post-reset-or-free-nem-a3e28c: S0 gate ran twice post-reset: or-free-nemotron-ultra
     verified 2/5 both climbs (0.40 < 0.60 gate). backup-freshness (untr'
+- at: 2026-11-27 09:14
+  from: chaba
+  text: 'merge-sweep: merged c653c23b (dispatch/20261127-080530-decision-2026-11-26-tony-run-s from mn01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261127-080530-decision-2026-11-26-tony-run-s.md)
+    — held in review (open request(s) [''s0-gate-ran-twice-post-reset-o''] block close)'
+- at: 2026-11-27 09:14
+  from: local
+  text: 'pub milestone: card verified: opencode-lane-regraduation on idc03 — merged c653c23b (dispatch/20261127-080530-decision-2026-11-26-tony-run-s
+    from mn01) -> origin/master — verified — held i — merged c653c23b (dispatch/20261127-080530-decision-2026-11-26-tony-run-s
+    from mn01) -> origin/master — verified — held in review (open request(s) [''s0-gate-ran- [evt-187255efcb71bdbc]'
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
@@ -973,7 +983,7 @@ requests:
   - hold
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   attempts: 2
   repo: chaba
@@ -981,6 +991,7 @@ action:
     stale_running: 2026-11-26 21:24
     dirty: 5
   runner: mn01
+  verified: true
 claim:
   since: 2026-11-27 08:04
 awaiting_action: true
