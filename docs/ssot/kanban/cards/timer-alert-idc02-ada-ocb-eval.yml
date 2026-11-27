@@ -1,7 +1,7 @@
 id: timer-alert-idc02-ada-ocb-eval
 title: Timer ada-ocb-eval on idc02 failing
-column: backlog
-updated: 2026-11-27 00:44
+column: done
+updated: 2026-11-27 09:03
 priority: high
 tags:
 - timer-alert
@@ -188,6 +188,13 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-27 00:20) of `ada-ocb-eval.service` on `idc02` result=exit-code — investigate
     journal: `journalctl --user -u ada-ocb-eval.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-27 09:03
+  from: tony
+  text: '[cleanup 2026-11-27] Already resolved — action.status=done — but the card was left in backlog. Closing
+    the stale timer alert; no new work needed.'
+- at: 2026-11-27 09:03
+  from: tony
+  text: closed by tony
 requests:
 - id: multiple-runner-agents-across-fa4249
   ask: Multiple runner-agents across hosts (tony-dell, tony-omen, mn01) are deferring execution because the installed
@@ -208,4 +215,3 @@ spec: 'Goal: Redeploy runner-agent from repository to idc02 via scp and resume t
   is investigated.'
 action:
   status: done
-awaiting_action: true
