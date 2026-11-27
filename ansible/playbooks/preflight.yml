@@ -1,0 +1,275 @@
+---
+# preflight.yml — read-only readiness / post-verify gate for risky jobs.
+#
+# Read-only by default: gathers facts and evaluates assertions only.
+# Fails when gates fail unless preflight_fail_fast=false (report-only).
+#
+# Examples:
+#   cd ansible
+#   ansible-playbook playbooks/preflight.yml --limit idc03 -i inventory/hosts.yml -e preflight_profile=mddb_reindex
+#   ansible-playbook playbooks/preflight.yml --limit con01 -i inventory/hosts.yml -e preflight_profile=runner_pilot
+#   ansible-playbook playbooks/preflight.yml --limit con01 -i inventory/hosts.yml -e preflight_profile=runner_pilot -e preflight_mode=post_verify
+#   ansible-playbook playbooks/preflight.yml --limit idc03 -i inventory/hosts.yml -e preflight_profile=mddb_reindex -e preflight_fail_fast=false
+
+- name: Read-only preflight/post-verify gate
+  hosts: "{{ preflight_hosts | default('all') }}"
+  gather_facts: true
+  become: false
+
+  vars:
+    preflight_profile: generic
+    preflight_mode: preflight   # preflight | post_verify
+    preflight_fail_fast: true
+
+    # Threshold overrides. Set to null to use profile default; pass explicit -e to override.
+    preflight_max_load_per_cpu_override: null
+    preflight_min_mem_available_mb_override: null
+    preflight_min_swap_free_mb_override: null
+    preflight_min_disk_free_gb: 5
+    preflight_disk_path: "{{ ansible_facts.env.HOME }}"
+
+    preflight_http_checks: []          # [{name,url,expected_status:200,timeout:5,body_not_contains:[],body_must_contain:[]}]
+    preflight_systemd_user_units: []   # [name.service] must be active
+    preflight_systemd_system_units: [] # [name.service] must be active
+    preflight_systemd_user_units_absent_or_inactive: []  # [name.service]
+    preflight_ports_listening: []      # [8914]
+    preflight_ports_free: []           # [8914]
+    preflight_paths_must_exist: []     # [/path]
+    preflight_commands_must_exist: []  # [git,curl]
+    preflight_env_files: []            # [{path:/...,keys:[KEY1]}] key names only; never prints values
+
+    _profile_defaults:
+      generic:
+        preflight_max_load_per_cpu: 2.0
+        preflight_min_mem_available_mb: 512
+        preflight_min_swap_free_mb: 128
+        preflight_http_checks: []
+        preflight_systemd_user_units: []
+        preflight_systemd_system_units: []
+        preflight_commands_must_exist: []
+      runner_pilot:
+        preflight_max_load_per_cpu: 1.5
+        preflight_min_mem_available_mb: 1024
+        preflight_min_swap_free_mb: 0
+        preflight_systemd_user_units: ["runner-agent.timer"]
+        preflight_commands_must_exist: ["git", "curl", "systemctl"]
+      service_cutover:
+        preflight_max_load_per_cpu: 2.0
+        preflight_min_mem_available_mb: 512
+        preflight_min_swap_free_mb: 128
+        preflight_commands_must_exist: ["systemctl", "curl"]
+      mddb_reindex:
+        preflight_max_load_per_cpu: 2.0
+        preflight_min_mem_available_mb: 1024
+        preflight_min_swap_free_mb: 256
+        preflight_http_checks:
+          - name: mddb-health
+            url: "http://100.102.134.91:11023/v1/health"
+            expected_status: 200
+            timeout: 10
+            body_not_contains: ["warming_up"]
+            body_must_contain: ["healthy"]
+        preflight_commands_must_exist: ["curl", "systemctl"]
+
+  tasks:
+    - name: Resolve profile defaults
+      ansible.builtin.set_fact:
+        _pf: "{{ _profile_defaults[preflight_profile] | default(_profile_defaults.generic) }}"
+
+    - name: Apply profile defaults only when caller did not override
+      ansible.builtin.set_fact:
+        preflight_max_load_per_cpu: "{{ preflight_max_load_per_cpu_override if preflight_max_load_per_cpu_override is not none else _pf.preflight_max_load_per_cpu | default(2.0) }}"
+        preflight_min_mem_available_mb: "{{ preflight_min_mem_available_mb_override if preflight_min_mem_available_mb_override is not none else _pf.preflight_min_mem_available_mb | default(512) }}"
+        preflight_min_swap_free_mb: "{{ preflight_min_swap_free_mb_override if preflight_min_swap_free_mb_override is not none else _pf.preflight_min_swap_free_mb | default(128) }}"
+        preflight_http_checks: "{{ preflight_http_checks if (preflight_http_checks | length) > 0 else _pf.preflight_http_checks | default([]) }}"
+        preflight_systemd_user_units: "{{ preflight_systemd_user_units if (preflight_systemd_user_units | length) > 0 else _pf.preflight_systemd_user_units | default([]) }}"
+        preflight_systemd_system_units: "{{ preflight_systemd_system_units if (preflight_systemd_system_units | length) > 0 else _pf.preflight_systemd_system_units | default([]) }}"
+        preflight_commands_must_exist: "{{ preflight_commands_must_exist if (preflight_commands_must_exist | length) > 0 else _pf.preflight_commands_must_exist | default([]) }}"
+
+    - name: Compute load threshold
+      ansible.builtin.set_fact:
+        _load_1m: "{{ ansible_facts.loadavg['1m'] | float }}"
+        _nproc: "{{ ansible_facts.processor_vcpus | int }}"
+        _load_limit: "{{ (ansible_facts.processor_vcpus | int) * (preflight_max_load_per_cpu | float) }}"
+
+    - name: Capture memory/swap facts
+      ansible.builtin.set_fact:
+        _mem_avail_mb: "{{ ansible_facts.memfree_mb | int }}"
+        _swap_free_mb: "{{ ansible_facts.swapfree_mb | int }}"
+        _swap_total_mb: "{{ ansible_facts.swaptotal_mb | int }}"
+
+    - name: Check disk free
+      ansible.builtin.command: "df -Pm {{ preflight_disk_path }}"
+      register: _df
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: Parse disk free MB
+      ansible.builtin.set_fact:
+        _disk_avail_mb: "{{ (_df.stdout_lines | last | split() | list)[3] | int }}"
+      when: _df.rc == 0 and (_df.stdout_lines | length) > 1
+
+    - name: Check HTTP endpoints
+      ansible.builtin.uri:
+        url: "{{ item.url }}"
+        method: GET
+        status_code: "{{ item.expected_status | default(200) }}"
+        timeout: "{{ item.timeout | default(5) }}"
+        return_content: true
+      loop: "{{ preflight_http_checks }}"
+      register: _http
+      failed_when: false
+      changed_when: false
+      check_mode: false
+      when: preflight_http_checks | length > 0
+
+    - name: Check user systemd units are active
+      ansible.builtin.command: "systemctl --user is-active {{ item }}"
+      loop: "{{ preflight_systemd_user_units }}"
+      register: _user_units
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      when: preflight_systemd_user_units | length > 0
+
+    - name: Check system systemd units are active
+      ansible.builtin.command: "systemctl is-active {{ item }}"
+      loop: "{{ preflight_systemd_system_units }}"
+      register: _system_units
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      when: preflight_systemd_system_units | length > 0
+
+    - name: Check user systemd units absent/inactive
+      ansible.builtin.command: "systemctl --user is-active {{ item }}"
+      loop: "{{ preflight_systemd_user_units_absent_or_inactive }}"
+      register: _user_units_absent
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      when: preflight_systemd_user_units_absent_or_inactive | length > 0
+
+    - name: Check commands exist
+      ansible.builtin.command: "bash -lc 'command -v {{ item }}'"
+      loop: "{{ preflight_commands_must_exist }}"
+      register: _cmds
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      when: preflight_commands_must_exist | length > 0
+
+    - name: Check paths exist
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop: "{{ preflight_paths_must_exist }}"
+      register: _paths
+      check_mode: false
+      when: preflight_paths_must_exist | length > 0
+
+    - name: Check env file keys exist (names only)
+      ansible.builtin.shell: |
+        set -euo pipefail
+        f={{ item.path | quote }}
+        [ -f "$f" ] || { echo "MISSING_FILE"; exit 2; }
+        missing=0
+        {% for k in item.keys | default([]) %}
+        grep -qE '^{{ k }}=' "$f" || { echo "MISSING_KEY={{ k }}"; missing=1; }
+        {% endfor %}
+        exit $missing
+      args:
+        executable: /bin/bash
+      loop: "{{ preflight_env_files }}"
+      register: _env_keys
+      changed_when: false
+      failed_when: false
+      no_log: true
+      check_mode: false
+      when: preflight_env_files | length > 0
+
+    - name: Check listening ports
+      ansible.builtin.shell: "ss -ltnH 'sport = :{{ item }}' | wc -l"
+      args: { executable: /bin/bash }
+      loop: "{{ preflight_ports_listening }}"
+      register: _listen
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      when: preflight_ports_listening | length > 0
+
+    - name: Check free ports
+      ansible.builtin.shell: "ss -ltnH 'sport = :{{ item }}' | wc -l"
+      args: { executable: /bin/bash }
+      loop: "{{ preflight_ports_free }}"
+      register: _freeports
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      when: preflight_ports_free | length > 0
+
+    - name: Evaluate base gates
+      ansible.builtin.set_fact:
+        _failures: >-
+          {{
+            ([] +
+            ([ 'load_high:' ~ _load_1m ~ '>' ~ _load_limit ] if (_load_1m | float) > (_load_limit | float) else []) +
+            ([ 'mem_low_mb:' ~ _mem_avail_mb ~ '<' ~ preflight_min_mem_available_mb ] if (_mem_avail_mb | int) < (preflight_min_mem_available_mb | int) else []) +
+            ([ 'swap_low_mb:' ~ _swap_free_mb ~ '<' ~ preflight_min_swap_free_mb ] if (_swap_total_mb | int) > 0 and (_swap_free_mb | int) < (preflight_min_swap_free_mb | int) else []) +
+            ([ 'disk_low_mb:' ~ (_disk_avail_mb | default(999999)) ~ '<' ~ ((preflight_min_disk_free_gb | int) * 1024) ] if ((_disk_avail_mb | default(999999) | int) < ((preflight_min_disk_free_gb | int) * 1024)) else []) +
+            ((_http.results | default([]) | selectattr('status', 'defined') | rejectattr('status', 'equalto', 200) | map(attribute='item.name') | map('regex_replace', '^', 'http_status:') | list))
+            )
+          }}
+
+    - name: Evaluate HTTP body gates
+      ansible.builtin.set_fact:
+        _http_body_failures: "{{ _http_body_failures | default([]) + (item.1 is in (item.0.content | default('')) ) | ternary([ 'http_body_forbidden:' ~ item.0.item.name ~ ':' ~ item.1 ], []) }}"
+      loop: "{{ (_http.results | default([])) | subelements('item.body_not_contains', skip_missing=True) }}"
+      when: preflight_http_checks | length > 0
+
+    - name: Evaluate HTTP required body gates
+      ansible.builtin.set_fact:
+        _http_body_missing: "{{ _http_body_missing | default([]) + (item.1 is in (item.0.content | default('')) ) | ternary([], [ 'http_body_missing:' ~ item.0.item.name ~ ':' ~ item.1 ]) }}"
+      loop: "{{ (_http.results | default([])) | subelements('item.body_must_contain', skip_missing=True) }}"
+      when: preflight_http_checks | length > 0
+
+    - name: Finalize failures
+      ansible.builtin.set_fact:
+        preflight_report:
+          host: "{{ inventory_hostname }}"
+          profile: "{{ preflight_profile }}"
+          mode: "{{ preflight_mode }}"
+          as_of: "{{ ansible_facts.date_time.iso8601 }}"
+          load_1m: "{{ _load_1m }}"
+          nproc: "{{ _nproc }}"
+          load_limit: "{{ _load_limit }}"
+          mem_available_mb: "{{ _mem_avail_mb }}"
+          swap_free_mb: "{{ _swap_free_mb }}"
+          swap_total_mb: "{{ _swap_total_mb }}"
+          disk_avail_mb: "{{ _disk_avail_mb | default('unknown') }}"
+          http: "{{ (_http.results | default([])) | map(attribute='item.name') | list }}"
+          failed: >-
+            {{
+              (_failures | default([])) +
+              (_http_body_failures | default([])) +
+              (_http_body_missing | default([])) +
+              ((_user_units.results | default([]) | rejectattr('stdout', 'equalto', 'active') | map(attribute='item') | map('regex_replace', '^', 'user_unit_not_active:') | list)) +
+              ((_system_units.results | default([]) | rejectattr('stdout', 'equalto', 'active') | map(attribute='item') | map('regex_replace', '^', 'system_unit_not_active:') | list)) +
+              ((_user_units_absent.results | default([]) | selectattr('stdout', 'equalto', 'active') | map(attribute='item') | map('regex_replace', '^', 'user_unit_should_be_inactive:') | list)) +
+              ((_cmds.results | default([]) | rejectattr('rc', 'equalto', 0) | map(attribute='item') | map('regex_replace', '^', 'missing_cmd:') | list)) +
+              ((_paths.results | default([]) | rejectattr('stat.exists') | map(attribute='item') | map('regex_replace', '^', 'missing_path:') | list)) +
+              ((_env_keys.results | default([]) | rejectattr('rc', 'equalto', 0) | map(attribute='item.path') | map('regex_replace', '^', 'env_key_missing:') | list)) +
+              ((_listen.results | default([]) | rejectattr('stdout', 'match', '^[1-9]') | map(attribute='item') | map('regex_replace', '^', 'port_not_listening:') | list)) +
+              ((_freeports.results | default([]) | rejectattr('stdout', 'equalto', '0') | map(attribute='item') | map('regex_replace', '^', 'port_in_use:') | list))
+            }}
+
+    - name: Show preflight report
+      ansible.builtin.debug:
+        var: preflight_report
+
+    - name: Fail if gates failed
+      ansible.builtin.assert:
+        that:
+          - (preflight_report.failed | length) == 0
+        fail_msg: "{{ preflight_mode }} FAILED for {{ inventory_hostname }}: {{ preflight_report.failed | join(', ') }}"
+      when: preflight_fail_fast | bool

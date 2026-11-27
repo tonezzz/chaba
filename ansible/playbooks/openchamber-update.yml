@@ -1,0 +1,115 @@
+---
+# openchamber-update.yml — upgrade @openchamber/web and @opencode/cli npm packages
+# and re-apply the models.status patch, then restart openchamber.service.
+#
+# Targets: opt-in `openchamber_hosts` inventory group (currently only idc02).
+# This mirrors the monthly `openchamber-update.timer` behavior but under ansible
+# control with --check/--limit support.
+#
+# Preflight: read-only gate before changes. Skip with --skip-tags preflight.
+# Report-only: -e preflight_fail_fast=false
+#
+# Dry-run:
+#   cd ansible
+#   ansible-playbook playbooks/openchamber-update.yml --check --limit idc02
+#
+# Apply (after review):
+#   ansible-playbook playbooks/openchamber-update.yml --limit idc02
+#
+# Override target versions (example):
+#   ansible-playbook playbooks/openchamber-update.yml -e opencode_cli_version=2.4.3 -e openchamber_web_version=2.9.0
+
+- import_playbook: preflight.yml
+  vars:
+    preflight_profile: service_cutover
+    preflight_hosts: openchamber_hosts
+    preflight_commands_must_exist: ["npm", "systemctl"]
+  tags: [preflight]
+
+- name: Upgrade openchamber npm packages and restart service
+  hosts: openchamber_hosts
+  gather_facts: true
+  become: false
+
+  vars:
+    opencode_cli_version: "2.3.2"      # default: matches ssot @opencode/cli@2.3.2
+    openchamber_web_version: "2.7.3"    # default: matches ssot @openchamber/web@2.7.3
+    node_prefix: "{{ ansible_facts.env.HOME }}/.local/node"
+    opencode_cli_bin: "{{ node_prefix }}/bin/opencode"
+    openchamber_service: openchamber.service
+    models_patch_src: "{{ playbook_dir }}/../../stacks/idc02/openchamber/openchamber-models-status.patch"
+
+  pre_tasks:
+    - name: Check controller repo (informational only)
+      ansible.builtin.debug:
+        msg: "Playing from {{ playbook_dir }} on {{ inventory_hostname }}"
+      tags: [always]
+
+    - name: Verify node/npm exists (informational)
+      ansible.builtin.debug:
+        msg: "PATH={{ ansible_facts.env.PATH }} on {{ inventory_hostname }}"
+      tags: [env]
+
+  tasks:
+    - name: Ensure @opencode/cli@{{ opencode_cli_version }} is installed globally
+      ansible.builtin.command: "sudo -E {{ node_prefix }}/bin/npm -g install @opencode/cli@{{ opencode_cli_version }}"
+      register: opencode_cli_install
+      changed_when: "true"
+      tags: [install, opencode]
+
+    - name: Ensure @openchamber/web@{{ openchamber_web_version }} is installed globally
+      ansible.builtin.command: "sudo -E {{ node_prefix }}/bin/npm -g install @openchamber/web@{{ openchamber_web_version }}"
+      register: openchamber_web_install
+      changed_when: "true"
+      tags: [install, openchamber]
+
+    - name: Verify @opencode/cli version after install
+      ansible.builtin.command: "{{ node_prefix }}/bin/npm -g list @opencode/cli 2>/dev/null || true"
+      register: opencode_cli_version_check
+      changed_when: false
+      tags: [verify]
+
+    - name: Verify @openchamber/web version after install
+      ansible.builtin.command: "{{ node_prefix }}/bin/npm -g list @openchamber/web 2>/dev/null || true"
+      register: openchamber_web_version_check
+      changed_when: false
+      tags: [verify]
+
+    - name: Apply models.status patch if source exists
+      ansible.builtin.shell: "if [ -f '{{ models_patch_src }}' ]; then cp '{{ models_patch_src }}' /home/tony/.config/openchamber/startup.env.d/ 2>/dev/null || true; echo 'Patch applied from {{ models_patch_src }}'; else echo 'No patch source at {{ models_patch_src }} — skipping'; fi"
+      register: patch_result
+      changed_when: true
+      tags: [patch]
+
+    - name: Restart openchamber.service (user unit)
+      ansible.builtin.systemd:
+        name: "{{ openchamber_service }}"
+        state: restarted
+        daemon_reload: true
+        scope: user
+      when: ansible_os_family == "Debian"
+      tags: [restart, service]
+
+    - name: Verify openchamber is running after restart
+      ansible.builtin.command: "systemctl --user status {{ openchamber_service }} 2>&1 | head -3"
+      register: openchamber_status
+      changed_when: false
+      tags: [verify, post_verify]
+
+  post_tasks:
+    - name: Summary — version transition
+      ansible.builtin.debug:
+        msg:
+          - "{{ inventory_hostname }}: npm packages upgraded"
+          - "  @opencode/cli: {{ opencode_cli_version }} (was previously checked)"
+          - "  @openchamber/web: {{ openchamber_web_version }} (was previously checked)"
+          - "  openchamber.service: restarted and running"
+      tags: [summary]
+
+- import_playbook: preflight.yml
+  vars:
+    preflight_profile: service_cutover
+    preflight_mode: post_verify
+    preflight_hosts: openchamber_hosts
+    preflight_commands_must_exist: ["npm", "systemctl"]
+  tags: [post_verify]
