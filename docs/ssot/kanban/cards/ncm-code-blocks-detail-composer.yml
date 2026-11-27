@@ -1,7 +1,7 @@
 id: ncm-code-blocks-detail-composer
 title: NCM code-block composer — detail by layer (Variant B, review)
 column: lab
-updated: 2026-11-27 17:38
+updated: 2026-11-27 21:03
 brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
   by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
   for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
@@ -457,6 +457,13 @@ comms:
     On the SAME 200 held-out boards: official tokenizer 0.7917 mean codebook utilisation / 1.000 recon vs our sudoku
     toy 0.0990 / 0.805 and pack toy 0.0097 / 0.838. Official per-level unique codes /16: 14,3,12,14,2,15,15,15,15,15,16,16;
     ours: 1,1,1,1,1,1'
+- at: 2026-11-27 21:03
+  from: devin
+  text: 'Pre-registered CPU retrain DONE (Tony asked to run it; no GPU/network/spend). Intervention: kmeans_init_level
+    on all 12 levels + per-level relative dead-code restart (revive codes with EMA cluster size <25% of level max),
+    250 updates from configs/ncm-v2.yaml, seed 42, all other hyperparameters unchanged. Amended the pre-registration
+    BEFORE seeing results: the originally fixed slice data-v2[200:400] is actually training data (data/sudoku_train.pt
+    == data-v2[0:3000]), so gate set is genuinely unse'
 requests:
 - id: review-decision-ncm-variant-b-research-l-448a63
   ask: 'REVIEW DECISION — NCM Variant B research lane concluded; P3 (shadow/promotion) needs your call. Results:
