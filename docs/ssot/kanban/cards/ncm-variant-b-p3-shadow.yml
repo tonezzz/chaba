@@ -1,0 +1,64 @@
+id: ncm-variant-b-p3-shadow
+title: NCM Variant B P3 — shadow rollout of the role-conditioned detail lane
+column: backlog
+updated: 2026-11-27 15:15
+brief: Tony approved P3 shadow 2026-11-27 after scaled gate PASS (median +0.533, guard 0). Run the role-conditioned
+  lane in shadow on real packs with a pre-registered promotion gate; no user-facing promotion, no paid resources.
+priority: medium
+program: ncm-code-blocks
+tags:
+- ncm
+- code-generation
+- research
+- p3
+- shadow
+spec: 'Tony approved P3 shadow rollout 2026-11-27 (decision on card ncm-code-blocks-detail-composer). Run the role-conditioned
+  Variant B detail lane in SHADOW alongside the existing Jev/nest + LLM-glue lane; no user-facing promotion and
+  no change to production nest/pack configs.
+
+
+  Background: VQ tokenizer branch is STOP (Sudoku + pack tokenizers collapse; anti-collapse v1/v2 and supervised
+  block-identity v1/v2 all failed gates). Dropping the tokenizer and conditioning a supervised MLP on the block
+  role passed: end-to-end 12 tasks lane 0.8333 vs glue 0.5000; KK-Mac 12x3 lane 0.8333 vs glue 0.0000 (baseline
+  caveat: qwen3:8b omits produce tokens); SCALED 30 real packs x 3 paired reps lane 0.6333 vs glue 0.10-0.1333,
+  median advantage +0.5333, guard 0, gate PASS.
+
+
+  Scope (repo chaba, work under experiments/ncm-code-blocks-p3/):
+
+  1. Freeze the exact scaled-run artifacts (role-conditioned generator + deterministic compat checker) with manifest.json:
+  code hashes, corpus/data hashes, seeds, model/token files. Replay must be deterministic with zero provider calls.
+
+  2. Shadow harness on the 30 real-pack corpus, 3 paired reps, same seeds. Arm A = existing Jev/nest + LLM glue
+  (recorded qwen2.5:7b baseline on tony-dell or fresh equivalent), B = Jev/nest + role-conditioned NCM detail. Deterministic
+  verifier is PRIMARY; LLM judge secondary only.
+
+  3. PRE-REGISTER the promotion gate BEFORE running: median advantage >= +0.10 with zero authority/guard violations
+  on the shadow corpus, AND at least one fresh real pack not used in the prior training/eval. Write the pre-registration
+  into the experiment packet before the first run.
+
+  4. Guardrails: generated code never sets allowed_paths/tools/credentials/human gates; Nest owns the queue; zero
+  paid GPU/API spend and no account-tier change; no production lane switch; no closing of ncm-code-blocks-detail-composer
+  until the shadow report lands.
+
+  5. Deliver: report file + board comment with row counts, replay PASS/FAIL, guard count, advantage distribution,
+  breakdown by block role, and an explicit PROMOTE or HOLD recommendation. If the gate fails, verdict = stop, shadow
+  stays shadow.
+
+
+  Reference: docs/kb/ncm-jev-nest-exploration-procedure.md, card ncm-code-blocks-detail-composer (full comms history).
+  Reuse experiments/ncm-code-blocks-p0/p1/p2 conventions.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+  lane: paid_frontier
+  lane_source: kw
+comms:
+- at: 2026-11-27 15:15
+  from: chaba
+  text: classified as paid_frontier (kw:promotion gate conf 1.00)
+- at: 2026-11-27 15:15
+  from: tony
+  text: card captured via board-api
+ref: OPS-1504

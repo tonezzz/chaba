@@ -1,7 +1,7 @@
 id: mddb-ops-write-latency-triage
 title: 'mddb-ops: diagnose /add + /ingest ~125s congestion waves (read-only, approval-gated)'
 column: done
-updated: 2026-11-27 14:51
+updated: 2026-11-27 15:15
 brief: Next batch 2026-11-27 — 4 runner slots free.
 priority: high
 tags:
@@ -146,6 +146,17 @@ comms:
   from: tony
   text: 'raised request approval-needed-step-b-of-ops-1500-a-b-t-887257: APPROVAL NEEDED — step B of OPS-1500 A+B
     (Tony approved A+B 2026-11-27). Step A is complete and verified: detached drain'
+- at: 2026-11-27 15:15
+  from: tony
+  text: 'answered approval-needed-step-b-of-ops-1500-a-b-t-887257: window-tonight-2200 — Tonight 2026-11-27 22:00
+    +07. Tony 2026-11-27.'
+- at: 2026-11-27 15:15
+  from: tony
+  text: 'DOWNTIME WINDOW CONFIRMED (Tony 2026-11-27): Procedure-C offline bbolt compact of mddb-ops starts TONIGHT
+    2026-11-27 22:00 +07. Expected full mddb-ops outage ~15-30 min (26G -> ~3G); rollback file ''.pre-compact''
+    retained until verification. Announcing here per the A+B approval before any service change. Sequence per docs/kb/mddb-prune-compact.md:
+    stop mddb-ops.service -> golang:1.23-bookworm bbolt@v1.4.3 compact -> podman unswap mv (mddb.db -> .pre-compact,
+    compact -> mddb.db) -> start service -'
 claim:
   since: 2026-11-27 12:58
 requests:
@@ -179,7 +190,7 @@ requests:
     per docs/kb/mddb-prune-compact.md (26.85GB -> ~3GB, ~15-30min full outage of mddb-ops, .pre-compact rollback
     retained until verified). The A+B approval explicitly requires a SEPARATE downtime window on this card before
     touching the service. Pick a window; no service change will happen until you answer.'
-  status: open
+  status: answered
   at: 2026-11-27 14:51
   from: tony
   options:
@@ -189,6 +200,7 @@ requests:
     label: Tomorrow 2026-11-28 03:00 +07 (lowest traffic)
   - id: hold-compact
     label: Hold — defer compact, keep the 26.85GB file for now
+  answer: window-tonight-2200 — Tonight 2026-11-27 22:00 +07. Tony 2026-11-27.
 review_kind: verify
 auto_close:
   by: merge-sweep
