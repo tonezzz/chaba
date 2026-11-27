@@ -1,7 +1,7 @@
 id: idc03-chaba-vault-sync-gap
 title: idc03 chaba-vault checkout has no sync mechanism — 119k commits behind, caused 2 outages
 column: backlog
-updated: 2026-11-27 11:16
+updated: 2026-11-27 11:17
 priority: high
 tags:
 - infra
@@ -35,6 +35,17 @@ comms:
 - at: 2026-11-27 11:16
   from: chaba
   text: '[auto-dispatch] wave 29 (2026-11-27 11:16): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-27 11:17
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 11:17
+  from: chaba
+  text: 'mn01 defers: runner at local cap (1/1) — remote slots unaffected'
+- at: 2026-11-27 11:17
+  from: chaba
+  text: 'kk-mac defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
 action:
   type: dispatch
   status: queued
