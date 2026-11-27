@@ -129,10 +129,10 @@ def flat_region_lap_gain(src: np.ndarray, rt: np.ndarray) -> float:
 
 
 def flat_peak_gain(src: np.ndarray, rt: np.ndarray) -> float:
-    \"\"\"Peak invented texture: max |Laplacian(rt) - Laplacian(src)| in
+    """Peak invented texture: max |Laplacian(rt) - Laplacian(src)| in
     near-flat source regions. Catches sparse white-dot hallucinations that
     the mean-based flat_region_lap_gain misses.
-    \"\"\"
+    """
     g = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
     lap = cv2.Laplacian(g, cv2.CV_64F)
     abs_lap = np.abs(lap)
