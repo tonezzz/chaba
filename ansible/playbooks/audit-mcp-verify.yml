@@ -20,6 +20,10 @@
   hosts: all:!disabled
   gather_facts: false
   become: false
+  # Several probes reach other fleet hosts over SSH (mcp-gpu, mcp-health,
+  # playlive). Running hosts in parallel makes those cross-host handshakes
+  # contend and produces false "no initialize response" results.
+  serial: 1
 
   vars:
     audited_hosts: >-
