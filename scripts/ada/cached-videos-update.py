@@ -29,7 +29,6 @@ import json
 import os
 import re
 import sys
-import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -44,6 +43,8 @@ APPDIR = Path(os.environ.get(
     os.path.expanduser("~/CascadeProjects/chaba-tony-dell/"
                        "stacks/web/public/apps/yt-live")))
 REPO_LIB = Path(__file__).resolve().parents[2] / "scripts" / "lib"
+sys.path.insert(0, str(REPO_LIB))
+from mddb_http import post as _mddb_post
 COLLECTION = "ada-cms-pages"
 REGISTRY = "ada-cms-automation"
 PAGE = "cached-videos-report"
@@ -69,10 +70,7 @@ VID_RE = re.compile(r"^[A-Za-z0-9_-]{6,15}\.")
 # ---------- MDDB ----------
 
 def _post(path, payload, timeout=60):
-    req = urllib.request.Request(
-        f"{MDDB}/{path}", data=json.dumps(payload).encode(),
-        headers={"Content-Type": "application/json"})
-    return json.load(urllib.request.urlopen(req, timeout=timeout))
+    return _mddb_post(MDDB, path, payload, timeout=timeout)
 
 
 def _search_all(collection, page_size=500):
