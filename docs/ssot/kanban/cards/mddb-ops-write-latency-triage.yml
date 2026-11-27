@@ -1,0 +1,36 @@
+id: mddb-ops-write-latency-triage
+title: 'mddb-ops: diagnose /add + /ingest ~125s congestion waves (read-only, approval-gated)'
+column: backlog
+updated: 2026-11-27 12:58
+brief: Next batch 2026-11-27 — 4 runner slots free.
+priority: high
+tags:
+- ops
+- mddb
+- latency
+spec: 'Diagnose (read-only first) the current mddb-ops write-latency congestion that is breaking fleet log shipping.
+
+  Evidence: POST http://100.102.134.91:11026/v1/add measured 12.96s / 12.7s / >20s from idc02; the in-flight log-shipper
+  fix found /add and /ingest handlers at ~125s during congestion waves. Earlier context: ~590k host-logs docs, 2.7M
+  meta-index entries, ~23.6GB freelist pressure, mddb-ops on idc03 under high load.
+
+  Tasks: (1) inspect mddb-ops health/metrics, collection sizes, index/freelist stats, replication lag and systemd/journal
+  warnings; (2) identify the dominant cause of slow /add and /ingest; (3) propose a concrete, safe remediation (e.g.
+  compaction/GC window, index tuning, batch-size or retention adjustment, replica catch-up) with expected impact
+  and rollback. DO NOT apply any change to the production MDDB service or data without an explicit human approval
+  request on this card. File the diagnosis and proposal as a comment and open an approval request for the recommended
+  change if one is warranted.
+
+  Verify only with read-only probes; report p50/p95 /add latency and whether the congestion correlates with a specific
+  collection or time window.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  lane: paid_frontier
+  status: queued
+ref: OPS-1500
+comms:
+- at: 2026-11-27 12:58
+  from: tony
+  text: card captured via board-api

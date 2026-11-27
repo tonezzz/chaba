@@ -1,0 +1,32 @@
+id: ansible-audit-alerts-triage-2026-11-27
+title: Triage 5 open Ansible audit alerts — stale vs real drift (approval-gated)
+column: backlog
+updated: 2026-11-27 12:58
+brief: Next batch 2026-11-27 — 4 runner slots free.
+priority: high
+tags:
+- ansible
+- ops
+- audit
+spec: 'Triage the five open read-only Ansible audit alerts filed 2026-11-27: ansible-fleet-service-drift, ansible-log-shipper-alert,
+  ansible-mcp-verify-alert, ansible-runner-tools-drift, ansible-worktree-audit-alert.
+
+  For each: re-run the corresponding existing read-only playbook (audit-fleet-services, audit-log-shipper, audit-mcp-verify,
+  audit-runner-tools, audit-worktrees) against its current report path, compare against ssot.audit.hosts.yml, and
+  decide live-stale vs real drift. Where real drift exists, identify the approved ansible playbook that can converge
+  it idempotently and run it with --check first; do not hand-edit host state. For runner-tool drift, use the approved
+  sync flow (scripts/devin/runner-tools-converge.sh + manifest pins), not ad-hoc scp.
+
+  Comment the verdict on each of the five cards, close the stale ones after live verification, and open a separate
+  approval request on this card before applying any remediation that changes host state.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  lane: paid_frontier
+  status: queued
+ref: OPS-1501
+comms:
+- at: 2026-11-27 12:58
+  from: tony
+  text: card captured via board-api
