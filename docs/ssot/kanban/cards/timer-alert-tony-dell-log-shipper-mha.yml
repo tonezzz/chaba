@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-log-shipper-mha
 title: Timer log-shipper-mha on tony-dell failing
-column: backlog
-updated: 2026-11-27 10:44
+column: done
+updated: 2026-11-27 12:25
 priority: high
 tags:
 - timer-alert
@@ -72,6 +72,12 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-27 10:02) of `log-shipper-mha.service` on `tony-dell` result=exit-code
     — investigate journal: `journalctl --user -u log-shipper-mha.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-27 12:25
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-27 12:03 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-27 12:25
+  from: tony
+  text: closed by tony
 spec: Investigate the failure of the `log-shipper-mha.service` timer on the host `tony-dell` by inspecting the user
   journal using `journalctl --user -u log-shipper-mha.service`. The target host is `tony-dell` and the associated
   repository context references `chaba`. The done-condition is verified when the root cause of the exit-code failure
