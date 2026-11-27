@@ -1,7 +1,7 @@
 id: ncm-code-blocks-detail-composer
 title: NCM code-block composer — detail by layer (Variant B, review)
 column: review
-updated: 2026-11-27 08:35
+updated: 2026-11-27 09:27
 brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
   by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
   for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
@@ -289,3 +289,10 @@ comms:
     — not pack-specific; it is in the training recipe/budget. This weakens the earlier ''first end-to-end trained
     NCM evidence'' claim: both stages ran, but the tokenizer never learned a useful discrete hierarchy; Sudoku wellformed
     1.000 / valid 0 / solved 0 is consistent with th'
+- at: 2026-11-27 09:27
+  from: devin
+  text: 'Anti-collapse tokenizer v2 done — BOTH pre-registered gates FAIL, verdict stop. Gates: pad-excluded reconstruction
+    >= 0.50 and mean unique codes >= 5 with >= 6 multi-code levels. Changes from v1: commitment 0.25->0.1, fine_drop
+    0.5->0.2, learned_l1_sampling off, quant_resi off, 600 updates/batch64 (1177s CPU). Result: pad-excluded reconstruction
+    0.000 (gate FAIL), mean unique codes 1.000, 0 of 12 levels with >1 code (usage FAIL); overall accuracy 0.768
+    is entirely padding (pad fraction 0.768). D'
