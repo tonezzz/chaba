@@ -1,7 +1,7 @@
 id: log-shipper-mddb-heartbeat-timeout-fix
 title: 'Log shipper: heartbeat /add 10s timeout < observed 13-20s (fleet-wide false failures)'
-column: doing
-updated: 2026-11-27 12:27
+column: done
+updated: 2026-11-27 13:19
 brief: Systemic fix from live triage 2026-11-27; two runner slots free.
 priority: high
 tags:
@@ -29,7 +29,7 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: running
+  status: done
   runner: tony-dell
   attempts: 1
 ref: OPS-1497
@@ -80,5 +80,18 @@ comms:
     that. Raised all write budgets to 130s (above server deadline; >deadline still fails = honest distress), redeployed
     fleet-wide, retriggered all 14 lanes on 6 hosts. idc02 full lane already green (235 shipped, 0 failed). omen-severe
     v1 run confirmed the 45s gap (heartbeat fail at 4'
+- at: 2026-11-27 13:19
+  from: tony
+  text: '[merge-gap guard] Dispatch branch was stalled polling mn01''s drain run (that congestion is now OPS-1502),
+    so I took over the merge: bundled its 5 commits (354d127..916e958), merged cleanly into origin/master as dcc68663f76.
+    Merged script sha256 953992b431d5878d matches the deployed copy on all 5 fleet hosts — master/fleet are consistent
+    and a converge can no longer regress to timeout=10. py_compile + YAML parse pass. Closing; mn01 TimeoutStartSec/congestion
+    tracked in OPS-1502.'
+- at: 2026-11-27 13:19
+  from: tony
+  text: closed by tony
+- at: 2026-11-27 13:19
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
 claim:
   since: 2026-11-27 11:34
