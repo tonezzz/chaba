@@ -219,6 +219,20 @@ hosts:
       - gpu
       - colab
     note: mcp-debug installed 2026-11-02 to unblock ops-remote-read remote diagnosis (OPS-1021) — reachable from tony-dell via the 'con01' ssh alias.
+  idc03:
+    name: idc03 (Siamdata VPS, Bangkok)
+    description: mddb leader + Ada backends + public edge — canonical served checkout host
+    role: server
+    hostname: idc03.taila0626a.ts.net
+    ssh_user: tony
+    mcp_debug_path: /home/tony/.local/bin/mcp-debug
+    compact: true
+    clipboard: false
+    tags:
+      - server
+      - idc
+      - mddb-primary
+    note: Registered 2026-11-27 for OPS-1025 ops-remote-read smoke (idc02 -> idc03); tailscale_ip 100.102.134.91 per ssot.values.yml.
 debug_commands:
   systemctl list-units:
     description: Running systemd services
