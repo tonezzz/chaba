@@ -1,7 +1,7 @@
 id: gemini-ollama-proxy-conmon-logtag-failure
 title: 'tony-dell gemini-ollama-proxy: conmon rejects --log-tag, exit 126'
-column: doing
-updated: 2026-11-27 21:55
+column: done
+updated: 2026-11-27 21:56
 brief: 'Persistent failure since 2026-11-26 11:56 +07: conmon says k8s-file doesn t support --log-tag; podman create/remove
   churn; ExecMainStatus=126; NRestarts=5 then start-rate limited. Unrelated to existing MEM-1464/MEM-1469 proxy
   cards.'
@@ -59,9 +59,14 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261127-211932-inspect-the-quadlet-unit-on-to no longer active on con01 but card
     still says running — sweeping its branch'
+- at: 2026-11-27 21:56
+  from: chaba
+  text: 'merge-sweep: merged cc8d8bb2 (dispatch/20261127-211932-inspect-the-quadlet-unit-on-to from con01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261127-211932-inspect-the-quadlet-unit-on-to.md)
+    — auto-closed'
 action:
   type: dispatch
-  status: running
+  status: done
   task_class: report_triage
   executor: claude
   executor_source: queue
@@ -69,5 +74,10 @@ action:
   attempts: 1
   sweep:
     stale_running: 2026-11-27 21:56
+  verified: true
 claim:
   since: 2026-11-27 21:18
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 21:56
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261127-211932-inspect-the-quadlet-unit-on-to.md
