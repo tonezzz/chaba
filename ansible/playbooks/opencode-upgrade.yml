@@ -1,0 +1,109 @@
+---
+# opencode-upgrade.yml — upgrade the standalone opencode CLI to a target version.
+#
+# Targets: opt-in `opencode_hosts` inventory group (hosts with opencode installed
+# via the official curl installer at ~/.opencode/bin/opencode). Default behavior
+# is idempotent: hosts already at the target version are skipped.
+#
+# Preflight: read-only gate (generic profile, commands: bash/curl checked by preflight defaults? generic has none; override below).
+# Skip with --skip-tags preflight. Report-only: -e preflight_fail_fast=false
+#
+# Dry-run:
+#   cd ansible
+#   ansible-playbook playbooks/opencode-upgrade.yml --check --diff --limit idc02
+#
+# Apply (after review):
+#   ansible-playbook playbooks/opencode-upgrade.yml --limit idc02
+#   ansible-playbook playbooks/opencode-upgrade.yml   # whole opencode_hosts group
+#
+# Override target:
+#   ansible-playbook playbooks/opencode-upgrade.yml -e opencode_target_version=2.4.3
+
+- import_playbook: preflight.yml
+  vars:
+    preflight_profile: generic
+    preflight_hosts: opencode_hosts
+    preflight_commands_must_exist: ["curl"]
+    preflight_min_mem_available_mb_override: 256
+  tags: [preflight]
+
+- name: Upgrade opencode CLI to target version
+  hosts: opencode_hosts
+  gather_facts: true
+  become: false
+
+  vars:
+    opencode_target_version: "2.4.2"
+    opencode_bin: "{{ ansible_facts.env.HOME }}/.opencode/bin/opencode"
+    opencode_backup: "{{ ansible_facts.env.HOME }}/.opencode/bin/opencode.bak-{{ opencode_target_version }}"
+
+  tasks:
+    - name: Check opencode binary present
+      ansible.builtin.stat:
+        path: "{{ opencode_bin }}"
+      register: oc_stat
+      tags: [always]
+
+    - name: Fail if opencode is not installed on this host
+      ansible.builtin.assert:
+        that:
+          - oc_stat.stat.exists
+        fail_msg: "opencode not installed at {{ opencode_bin }} on {{ inventory_hostname }}"
+      tags: [always]
+
+    - name: Get current opencode version
+      ansible.builtin.command: "{{ opencode_bin }} --version"
+      register: oc_version_raw
+      changed_when: false
+      check_mode: false
+      tags: [version]
+
+    - name: Set current version fact
+      ansible.builtin.set_fact:
+        oc_current_version: "{{ (oc_version_raw.stdout | regex_search('v?[0-9][0-9.]*')) | regex_replace('^v', '') }}"
+      tags: [version]
+
+    - name: Show version transition
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: {{ oc_current_version }} -> {{ opencode_target_version }}"
+      tags: [version]
+
+    - name: Back up current binary before upgrade
+      ansible.builtin.copy:
+        src: "{{ opencode_bin }}"
+        dest: "{{ opencode_backup }}"
+        remote_src: true
+        mode: preserve
+      when:
+        - oc_current_version != opencode_target_version
+      tags: [backup]
+
+    - name: Upgrade opencode via official installer method
+      ansible.builtin.command: "{{ opencode_bin }} upgrade {{ opencode_target_version }} --method curl"
+      when:
+        - oc_current_version != opencode_target_version
+      register: oc_upgrade
+      tags: [upgrade]
+
+    - name: Verify opencode version after upgrade
+      ansible.builtin.command: "{{ opencode_bin }} --version"
+      register: oc_verify
+      changed_when: false
+      check_mode: false
+      tags: [verify]
+
+    - name: Assert target version is installed
+      ansible.builtin.assert:
+        that:
+          - "opencode_target_version in oc_verify.stdout"
+        fail_msg: "Expected {{ opencode_target_version }} on {{ inventory_hostname }}, got {{ oc_verify.stdout }}"
+      tags: [verify, post_verify]
+
+- import_playbook: preflight.yml
+  vars:
+    preflight_profile: generic
+    preflight_mode: post_verify
+    preflight_hosts: opencode_hosts
+    preflight_commands_must_exist: ["curl"]
+    preflight_min_mem_available_mb_override: 256
+  tags: [post_verify]

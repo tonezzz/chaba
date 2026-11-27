@@ -1,0 +1,204 @@
+---
+# agent-runner.yml — converge kanban runner-agent installs (draft/safe).
+#
+# Targets: opt-in `agent_runners` inventory group. Default behavior is
+# conservative: deploy ~/.local/bin/runner-agent from the controller repo and
+# write a version stamp. Systemd unit management is OFF by default because
+# hosts carry host-specific env/drop-ins (api.conf, cap.conf, jev-lane.conf,
+# claude.conf, ...).
+#
+# Preflight: runs read-only preflight.yml (runner_pilot profile) before changes.
+# Override with -e preflight_profile=... or skip with --skip-tags preflight.
+# Report-only: -e preflight_fail_fast=false
+#
+# Dry-run:
+#   cd ansible
+#   ansible-playbook playbooks/agent-runner.yml --check --diff --limit tony-dell
+#
+# Apply (after review):
+#   ansible-playbook playbooks/agent-runner.yml --limit tony-dell
+#
+# To also manage base systemd service+timer (review host_vars first!):
+#   ansible-playbook playbooks/agent-runner.yml --limit tony-dell -e runner_agent_manage_units=true
+
+- import_playbook: preflight.yml
+  vars:
+    preflight_profile: runner_pilot
+    preflight_hosts: agent_runners
+  tags: [preflight]
+
+- name: Converge kanban runner-agent (opt-in, safe defaults)
+  hosts: agent_runners
+  gather_facts: true
+  become: false
+
+  vars:
+    runner_agent_controller_src: "{{ playbook_dir }}/../../scripts/board/runner-agent.py"
+    runner_agent_state_dir: "{{ ansible_facts.env.HOME }}/.local/share/runner-agent"
+    runner_agent_systemd_user_dir: "{{ ansible_facts.env.HOME }}/.config/systemd/user"
+
+  pre_tasks:
+    - name: Check controller runner-agent source exists
+      ansible.builtin.stat:
+        path: "{{ runner_agent_controller_src }}"
+      delegate_to: localhost
+      run_once: true
+      register: runner_agent_src_stat
+      tags: [always]
+
+    - name: Fail if controller runner-agent source is missing
+      ansible.builtin.assert:
+        that:
+          - runner_agent_src_stat.stat.exists
+        fail_msg: "Missing {{ runner_agent_controller_src }} — run from the chaba repo checkout."
+      tags: [always]
+
+    - name: Compute controller git SHA for version stamp
+      ansible.builtin.command: git rev-parse --short HEAD
+      args:
+        chdir: "{{ playbook_dir }}/../.."
+      delegate_to: localhost
+      run_once: true
+      check_mode: false
+      changed_when: false
+      register: runner_agent_git_sha
+      tags: [always]
+
+  tasks:
+    - name: Ensure runner-agent directories exist
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        mode: "{{ item.mode }}"
+      loop:
+        - { path: "{{ ansible_facts.env.HOME }}/.local/bin", mode: "0755" }
+        - { path: "{{ runner_agent_state_dir }}", mode: "0755" }
+        - { path: "{{ runner_agent_systemd_user_dir }}", mode: "0700" }
+      tags: [install, dirs]
+
+    - name: Deploy runner-agent script from controller repo
+      ansible.builtin.copy:
+        src: "{{ runner_agent_controller_src }}"
+        dest: "{{ runner_agent_install_path }}"
+        mode: "0755"
+        backup: true
+      register: runner_agent_copy
+      tags: [install]
+
+    - name: Write runner-agent installed version stamp
+      ansible.builtin.copy:
+        dest: "{{ runner_agent_version_path }}"
+        mode: "0644"
+        content: |
+          sha={{ runner_agent_git_sha.stdout | trim }}
+          source={{ runner_agent_controller_src }}
+          installed_at={{ ansible_facts.date_time.iso8601 }}
+          host={{ inventory_hostname }}
+      when: not ansible_check_mode or runner_agent_copy is not changed
+      tags: [install, version]
+
+    - name: Report version stamp skipped in check mode when install would change
+      ansible.builtin.debug:
+        msg: "Check mode: version stamp would be written after runner-agent deploy."
+      when:
+        - ansible_check_mode
+        - runner_agent_copy is changed
+      tags: [install, version]
+
+    - name: Install runner-agent base systemd service (opt-in)
+      ansible.builtin.copy:
+        dest: "{{ runner_agent_systemd_user_dir }}/{{ runner_agent_service_name }}.service"
+        mode: "0644"
+        content: |
+          # Managed by ansible (ansible/playbooks/agent-runner.yml). Host-specific
+          # overrides should live in runner-agent.service.d/*.conf drop-ins.
+          [Unit]
+          Description=Kanban runner-agent — claim+execute queued board cards on this host
+
+          [Service]
+          Type=oneshot
+          ExecStart=%h/.local/bin/runner-agent
+          Environment=RUNNER_API={{ runner_agent_api }}
+          Environment=RUNNER_CAP={{ runner_agent_cap }}
+          {% if runner_agent_max_load_pc | string | length > 0 %}
+          Environment=RUNNER_MAX_LOAD_PC={{ runner_agent_max_load_pc }}
+          {% endif %}
+          {% if runner_agent_labels | length > 0 %}
+          Environment=RUNNER_LABELS={{ runner_agent_labels | join(',') }}
+          {% endif %}
+          {% for k, v in runner_agent_extra_env.items() %}
+          Environment={{ k }}={{ v }}
+          {% endfor %}
+      when: runner_agent_manage_units | bool
+      register: runner_agent_service_unit
+      tags: [systemd, units]
+
+    - name: Install runner-agent systemd timer (opt-in)
+      ansible.builtin.copy:
+        dest: "{{ runner_agent_systemd_user_dir }}/{{ runner_agent_timer_name }}.timer"
+        mode: "0644"
+        content: |
+          # Managed by ansible (ansible/playbooks/agent-runner.yml).
+          [Unit]
+          Description=Poll board-api for queued cards (runner-agent)
+
+          [Timer]
+          OnBootSec={{ runner_agent_timer_on_boot_sec }}
+          OnUnitActiveSec={{ runner_agent_timer_on_unit_active_sec }}
+
+          [Install]
+          WantedBy=timers.target
+      when: runner_agent_manage_units | bool
+      register: runner_agent_timer_unit
+      tags: [systemd, units]
+
+    - name: Reload user systemd daemon when units changed
+      ansible.builtin.command: systemctl --user daemon-reload
+      when:
+        - not ansible_check_mode
+        - runner_agent_manage_units | bool
+        - (runner_agent_service_unit is changed) or (runner_agent_timer_unit is changed)
+      changed_when: true
+      tags: [systemd, units]
+
+    - name: Enable and start runner-agent timer
+      ansible.builtin.command: "systemctl --user enable --now {{ runner_agent_timer_name }}.timer"
+      when:
+        - not ansible_check_mode
+        - runner_agent_manage_units | bool
+      register: runner_agent_timer_enable
+      changed_when: "'Created symlink' in ((runner_agent_timer_enable.stdout | default('')) + (runner_agent_timer_enable.stderr | default('')))"
+      failed_when: false
+      tags: [systemd, units]
+
+    - name: Report systemd unit management skipped
+      ansible.builtin.debug:
+        msg: >-
+          runner_agent_manage_units=false (default): left systemd units/drop-ins untouched.
+          Re-run with -e runner_agent_manage_units=true after reviewing host_vars.
+      when: not (runner_agent_manage_units | bool)
+      tags: [systemd, units]
+
+    - name: Check runner-agent timer status (read-only)
+      ansible.builtin.command: "systemctl --user is-active {{ runner_agent_timer_name }}.timer"
+      check_mode: false
+      register: runner_agent_timer_status
+      changed_when: false
+      failed_when: false
+      tags: [status, post_verify]
+
+    - name: Report runner-agent install status
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }}: script={{ runner_agent_install_path }}
+          changed={{ runner_agent_copy is changed }}
+          sha={{ runner_agent_git_sha.stdout | trim }}
+          timer={{ runner_agent_timer_status.stdout | default('unknown') }}
+      tags: [status, post_verify]
+
+- import_playbook: preflight.yml
+  vars:
+    preflight_profile: runner_pilot
+    preflight_mode: post_verify
+    preflight_hosts: agent_runners
+  tags: [post_verify]
