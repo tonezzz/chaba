@@ -272,12 +272,19 @@ def main() -> int:
             [sys.executable, str(ADA_SCRIPTS / "vocab-pages-sync.py")],
             capture_output=True, text=True, timeout=120)
         print((r.stdout.strip().splitlines() or ["vocab-sync: no output"])[-1])
-        # retention sweep — append-only collections (host-logs 14d, events/
-        # snapshots 30d); standing rule that bounds their growth
-        r = subprocess.run(
-            [sys.executable, str(ADA_SCRIPTS / "prune-old-docs.py")],
-            capture_output=True, text=True, timeout=600)
-        print((r.stdout.strip().splitlines() or ["prune: no output"])[-1])
+        # retention sweep — append-only collections (host-logs 3d on ops,
+        # events/snapshots 30d); standing rule that bounds their growth.
+        # Budget-capped internally (--budget-seconds 540 default); if MDDB
+        # has a bad enough day to still exceed 600s, degrade like the
+        # shipper above instead of failing the whole unit (ADA-1485).
+        try:
+            r = subprocess.run(
+                [sys.executable, str(ADA_SCRIPTS / "prune-old-docs.py")],
+                capture_output=True, text=True, timeout=600)
+            print((r.stdout.strip().splitlines() or ["prune: no output"])[-1])
+        except subprocess.TimeoutExpired:
+            print("warn: prune-old-docs exceeded 600s — skipped "
+                  "(per-doc deletes resume next run)", file=sys.stderr)
         # bloat watch — docs/revisions/size block in the digest output
         r = subprocess.run(
             [sys.executable, str(ADA_SCRIPTS / "bloat-report.py")],

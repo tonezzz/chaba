@@ -1,0 +1,58 @@
+card: ada-review-refresh-prune-timeout-fix-unpinned
+ref: ADA-1485
+date: 2026-11-27
+host: tony-omen (service), idc03 (ops MDDB), idc02 (ada-ops MDDB)
+status: fix-landed-verify-running
+
+problem: >
+  ada-review-refresh.service on tony-omen failed 09:03 —
+  export-transcripts.py's prune-old-docs.py subprocess hit its 600s
+  timeout. ops host-logs had grown to ~590k docs (~390k older than the
+  3d policy) because the sweep could not keep up: every /v1/search page
+  on mddb materializes ALL matching docs server-side (O(matches) per
+  request), so enumerating ~390k expired docs was ~390 requests x
+  ~15-60s each = hours, and any single >60s request aborted the whole
+  collection ("list failed — timed out"). Unit ran 18m52s wall / 51M
+  swap; idc03's standalone 09:30 timer showed the same silent failure.
+
+root_cause: >
+  prune-old-docs.py paginated /v1/search (offset + sort=key + meta
+  filter). mddb's searchDocuments loads every matching doc per request
+  before slicing the page — quadratic across pages. Compounded by
+  ~590k-doc collection, 2.7M meta-index entries, idc03 load ~16, and
+  mddb-ops 23.6GB freelist pressure making per-doc deletes slow while
+  the backlog is large.
+
+fix:
+  - scripts/ada/prune-old-docs.py: prefer POST /v1/documents:deleteWhere
+    (mddb >= 2.18.8, GO-045) — server evaluates the meta filter once per
+    call and deletes <=1000 docs/call with nextCursor continuation;
+    per-call timeout 110s (under the 120s server write timeout),
+    --budget-seconds (default 540, 0=unlimited) shared across
+    collections, 404 -> legacy /v1/search fallback for mddb 2.15.x.
+  - scripts/ada/export-transcripts.py: catch subprocess.TimeoutExpired
+    on the prune call -> warn + continue (same pattern as the
+    log-shipper guard); the unit can no longer die on the prune leg.
+  - systemd/ada-review-refresh.service: TimeoutStartSec 1200 -> 2400
+    (chain is ~15 sequential steps; prune legitimately needs ~10min
+    when retention has a backlog).
+  - idc03 prune-old-docs.service ExecStart += --budget-seconds 0
+    (primary sweeper, no TimeoutStartSec — drains fully each day).
+
+deployed: >
+  scp'd the two scripts + unit to tony-omen's exec checkout
+  (~/CascadeProjects/chaba) and daemon-reloaded; prune-old-docs.py also
+  scp'd to idc03's exec checkout + unit updated. All match the dispatch
+  branch — post-merge repo-sync is a no-op.
+
+backlog: >
+  ~390k expired host-logs docs on ops (11026). A detached drain
+  (prune-old-docs.py --only host-logs --budget-seconds 0, setsid on
+  idc03, log /tmp/prune-drain.log) is running to clear it; per-doc
+  deletes are slow while the freelist is poisoned, so this takes hours.
+  Steady-state after drain ~53k/day fits the daily budget.
+
+verify: >
+  systemctl --user start ada-review-refresh.service on tony-omen;
+  expect Result=success, journal shows the deleteWhere prune line,
+  ~/.local/share/ada-review corpus refreshed (focus-digest.md mtime).
