@@ -1,7 +1,7 @@
 id: mddb-idc03-oom-coldstart-publisher-window
 title: MDDB idc03 OOM restarts + cold-start window break publishers
 column: doing
-updated: 2026-11-27 16:34
+updated: 2026-11-27 16:37
 brief: mddb.service on idc03 was OOM-killed 15:58:20 (NRestarts=7 today); ~104s cold start leaves /v1 routes 404
   after health port opens. mddb-cms POST /v1/add write timeout 30s under embed congestion. Two timer publishers
   exited 1 at 15:55 and 16:00; both self-healed next tick.
@@ -59,6 +59,13 @@ comms:
     Tony approved A+B on the approval request (2026-; [mddb-ops-write-latency-triage] primer injected 8 lesson(s):
     [log-shipper-mddb-h; [runner-fleet-health-host-regex-gap] [triage] Live evidence 2026-11-25: health.f; [timer-alert-idc03-mddb-embed-probe]
     RESOLVED 2026-11-27: roo'
+- at: 2026-11-27 16:37
+  from: chaba
+  text: 'ROOT CAUSE (read-only diagnosis, 2026-11-27 ~16:40): SYSTEM-WIDE MEMORY EXHAUSTION on idc03, not an mddb
+    code bug. Kernel OOM logs: global_oom / CONSTRAINT_NONE / cpuset=user.slice; user@1000 cgroup memory.max=max
+    with oom=0, oom_kill=0 — no cgroup cap is being hit. 15Gi RAM + 4Gi swap with SwapFree=1.9Mi (swap fully exhausted),
+    active+inactive anon ~15.5GB at the 16:33 OOM. All victims carry oom_score_adj=200 (container processes): mddbd
+    killed 8x today (11:03, 13:57, 15:24, 15:38, 15:49, 15:58'
 action:
   type: dispatch
   status: running
