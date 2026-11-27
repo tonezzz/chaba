@@ -1,7 +1,7 @@
 id: ncm-code-blocks-detail-composer
 title: NCM code-block composer — detail by layer (Variant B, review)
 column: review
-updated: 2026-11-27 11:09
+updated: 2026-11-27 11:11
 brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
   by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
   for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
@@ -324,3 +324,10 @@ comms:
     unit was used. Playbook ansible/playbooks/install-ollama-userlocal.yml: preflight ok=6 changed=5 unreachable=0
     failed=0; converge ok=10 changed=5; idempotency recheck changed=0. Verified upstream v0.40.18 tarball with pinned
     sha256, service active, qwen3:8b pulled (5.2GB), API retur'
+- at: 2026-11-27 11:11
+  from: devin
+  text: 'Scaled Variant B lane finished (30 real packs x 3 paired reps, fresh qwen2.5:7b glue per task/rep on tony-dell,
+    3306s). Pre-registered gate: median advantage >= +0.10 with zero guard. Results: lane 0.6333 in all three reps;
+    glue 0.1333 / 0.1000 / 0.1000; advantages +0.500 / +0.533 / +0.533; guard 0 -> median +0.5333, gate PASS, verdict
+    watch. Scaling from 12 to 30 packs lowered both arms (lane 0.833->0.633, glue 0.500->0.10) but the lane advantage
+    stayed large and stable; harder roles (probe, mi'
