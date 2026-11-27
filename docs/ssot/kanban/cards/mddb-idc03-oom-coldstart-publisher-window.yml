@@ -1,7 +1,7 @@
 id: mddb-idc03-oom-coldstart-publisher-window
 title: MDDB idc03 OOM restarts + cold-start window break publishers
 column: doing
-updated: 2026-11-27 16:32
+updated: 2026-11-27 16:34
 brief: mddb.service on idc03 was OOM-killed 15:58:20 (NRestarts=7 today); ~104s cold start leaves /v1 routes 404
   after health port opens. mddb-cms POST /v1/add write timeout 30s under embed congestion. Two timer publishers
   exited 1 at 15:55 and 16:00; both self-healed next tick.
@@ -49,6 +49,16 @@ comms:
 - at: 2026-11-27 16:32
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 3.24 > 0.7)'
+- at: 2026-11-27 16:34
+  from: chaba
+  text: started devin-task-20261127-163402-follow-up-from-triage-of-timer on con01 (dispatch)
+- at: 2026-11-27 16:34
+  from: chaba
+  text: 'primer injected 8 lesson(s): [cms-publish-remote-end-closed-fix] [timer-fix batch 2026-11-27] Approved
+    after ; [ada-memory-sync-mddb-readtimeout-fix] primer injected 8 lesson(s): [timer-alert; [mddb-ops-write-latency-triage]
+    Tony approved A+B on the approval request (2026-; [mddb-ops-write-latency-triage] primer injected 8 lesson(s):
+    [log-shipper-mddb-h; [runner-fleet-health-host-regex-gap] [triage] Live evidence 2026-11-25: health.f; [timer-alert-idc03-mddb-embed-probe]
+    RESOLVED 2026-11-27: roo'
 action:
   type: dispatch
   status: running
