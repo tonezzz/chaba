@@ -1,14 +1,14 @@
 id: timer-alert-tony-omen-runner-agent
 title: Timer runner-agent on tony-omen disabled
-column: backlog
-updated: 2026-11-26 21:00
+column: done
+updated: 2026-11-27 08:33
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: '`runner-agent.timer` on `tony-omen` is disabled but expected active (audit census / critical list).
-  Deliberate? If not: `systemctl --user enable --now runner-agent.timer`. See CMS `timer-timeline`.'
+note: '`runner-agent.timer` on `tony-omen` is disabled but expected active (audit census / critical list). Deliberate?
+  If not: `systemctl --user enable --now runner-agent.timer`. See CMS `timer-timeline`.'
 ref: OPS-1453
 comms:
 - at: 2026-11-26 20:34
@@ -20,22 +20,31 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-26 20:44
   from: devin
-  text: '[still suspicious] `runner-agent.timer` on `tony-omen` is disabled but expected active (audit
-    census / critical list). Deliberate? If not: `systemctl --user enable --now runner-agent.timer`. See
-    CMS `timer-timeline`.'
+  text: '[still suspicious] `runner-agent.timer` on `tony-omen` is disabled but expected active (audit census /
+    critical list). Deliberate? If not: `systemctl --user enable --now runner-agent.timer`. See CMS `timer-timeline`.'
 - at: 2026-11-26 20:47
   from: chaba
-  text: 'TRIAGE 2026-11-26: DECISION NEEDED — runner-agent.timer on tony-omen disabled; same drift context.
-    SSH shell access on omen has been SFTP-only at times, so confirm access and intent before re-enabling.'
+  text: 'TRIAGE 2026-11-26: DECISION NEEDED — runner-agent.timer on tony-omen disabled; same drift context. SSH
+    shell access on omen has been SFTP-only at times, so confirm access and intent before re-enabling.'
 - at: 2026-11-26 21:00
   from: chaba
   text: 'HUMAN CALL 2026-11-26: keep timer disabled on tony-omen until reliable shell access is confirmed.'
 - at: 2026-11-27 01:23
   from: backlog-spec-enrich
-  text: skipped — Human decision recorded on 2026-11-26 to keep the runner-agent timer disabled on tony-omen
-    until reliable shell access is confirmed.
+  text: skipped — Human decision recorded on 2026-11-26 to keep the runner-agent timer disabled on tony-omen until
+    reliable shell access is confirmed.
 - at: 2026-11-27 07:23
   from: backlog-spec-enrich
-  text: skipped — Human decision was recorded on 2026-11-26 to keep the runner-agent timer disabled on
-    tony-omen until reliable shell access is confirmed, making the current task obsolete or intentionally
-    deferred.
+  text: skipped — Human decision was recorded on 2026-11-26 to keep the runner-agent timer disabled on tony-omen
+    until reliable shell access is confirmed, making the current task obsolete or intentionally deferred.
+- at: 2026-11-27 08:33
+  from: tony
+  text: '[next batch 2026-11-27] CLOSED AS INTENDED. Tony''s decision on this card was to keep runner-agent.timer
+    disabled on tony-omen until reliable shell access is confirmed (SSH there is intermittently SFTP-only). Live
+    check: timer inactive, service Result=success, so this is a deliberate disabled state, not a failure. No change
+    made.'
+- at: 2026-11-27 08:33
+  from: tony
+  text: closed by tony
+action:
+  status: done
