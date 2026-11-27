@@ -1,6 +1,6 @@
 id: adobe-stock-kkmac-vision-qa
 title: adobe-stock candidates — kk-mac qwen2.5vl visual QA pass
-column: backlog
+column: doing
 updated: 2026-11-27 14:41
 spec: '3 adobe-stock cards sit in review (illustration-pivot-test, inpaint-defect-repair, upscaler-eval). Once kk-mac
   vision eval proves qwen2.5vl:7b usable, run a visual QA pass over the stock candidate images: defect detection,
@@ -10,7 +10,9 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: queued
+  status: running
+  runner: mn01
+  attempts: 1
 ref: OPS-0222
 comms:
 - at: 2026-11-19 08:58
@@ -199,3 +201,8 @@ comms:
 - at: 2026-11-27 14:41
   from: chaba
   text: 'con01 defers: runner at local cap (1/1) — remote slots unaffected'
+- at: 2026-11-27 14:41
+  from: mn01
+  text: claimed
+claim:
+  since: 2026-11-27 14:41
