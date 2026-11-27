@@ -1,6 +1,6 @@
 id: runner-tools-converge-timer-2min-bug
 title: runner-tools-converge.timer fires every 2 minutes, not 2 hours
-column: backlog
+column: doing
 updated: 2026-11-27 21:17
 brief: ansible/systemd/runner-tools-converge.timer uses OnCalendar=*:0/2:05 (hour=*, minute=0/2, second=05) = every
   2 minutes fleet-wide. Description and commit 45219a493cc claim every 2 hours. tony-omen journal shows full check/apply/audit/re-audit
@@ -29,9 +29,15 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 21:17
+  from: tony-dell
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-claim: {}
+  runner: tony-dell
+  attempts: 1
+claim:
+  since: 2026-11-27 21:17
