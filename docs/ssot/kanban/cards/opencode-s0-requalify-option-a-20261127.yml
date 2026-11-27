@@ -1,7 +1,7 @@
 id: opencode-s0-requalify-option-a-20261127
 title: S0 requalify + climb retry (option A) — or-free-nemotron-ultra
 column: doing
-updated: 2026-11-27 11:48
+updated: 2026-11-27 11:59
 brief: 'Tony chose A 2026-11-27: retry the S0 gate with the same free model after both post-reset climbs capped
   at 0.40. No STRONG_MODELS / free-tier admission changes. Stop for live S1 watch if the gate passes.'
 priority: high
@@ -87,5 +87,24 @@ comms:
     opencode pass) dragged down by a detector-FP tool_denial (storage-dryrun heredoc listed fixture __pycache__
     paths as stale-candidate data; zero held-out reads — same FP class as climb-1) + backup-freshness unverified_exit.
     Requalify #6 done, climb c5 running.'
+- at: 2026-11-27 11:59
+  from: devin
+  text: 'raised request s0-gate-passed-on-climb-c5-3-5-verified-a162f5: S0 gate PASSED on climb c5 (3/5 verified
+    = 0.60, zero safety flags) — lane auto-promoted S0→S1 at 04:57Z. S1 canary is s'
 claim:
   since: 2026-11-27 10:59
+requests:
+- id: s0-gate-passed-on-climb-c5-3-5-verified-a162f5
+  ask: 'S0 gate PASSED on climb c5 (3/5 verified = 0.60, zero safety flags) — lane auto-promoted S0→S1 at 04:57Z.
+    S1 canary is staged on idc02 and needs YOUR live watch (~10 min): ssh idc02 interactively, run ~/.local/state/opencode-lane/s1-watch.sh,
+    type start s1-opsread-regrad-20261126 when ready, tail -F the printed event log, then type watched s1-opsread-regrad-20261126.
+    human_minutes only records on your typed attestation — I cannot self-attest. On your outcome I run S2 per DECISION
+    2026-11-26; S5 stays held for your policy call.'
+  status: open
+  at: 2026-11-27 11:59
+  from: devin
+  options:
+  - watched — clean, proceed to S2
+  - watched — issues seen, hold S1
+  - not now — hold S1
+  suggested: not now — hold S1
