@@ -24,7 +24,7 @@
       ansible.builtin.copy:
         src: "{{ playbook_dir }}/../../scripts/devin/runner-tools-converge.sh"
         dest: "{{ ansible_facts.user_dir }}/CascadeProjects/chaba/scripts/devin/runner-tools-converge.sh"
-        mode: "0755"
+        mode: preserve
         backup: true
 
     - name: Install unit files
