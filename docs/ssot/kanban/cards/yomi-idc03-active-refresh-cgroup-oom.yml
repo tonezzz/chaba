@@ -1,6 +1,6 @@
 id: yomi-idc03-active-refresh-cgroup-oom
 title: 'MEM-1508: idc03 yomi-api cgroup OOM loop from active refresh sweep'
-column: backlog
+column: doing
 updated: 2026-11-27 18:47
 brief: yomi-api 2 GiB cgroup is hit repeatedly by yomi-update-active refresh of top-20 chats; mcpb/run.mjs browser
   worker grows to ~2 GiB on heavy chats. 9 CONSTRAINT_MEMCG kills 18:00-18:44.
@@ -36,9 +36,15 @@ comms:
 - at: 2026-11-27 18:47
   from: chaba
   text: '[auto-dispatch] wave 32 (2026-11-27 18:47): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-27 18:47
+  from: tony-dell
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-claim: {}
+  runner: tony-dell
+  attempts: 1
+claim:
+  since: 2026-11-27 18:47
