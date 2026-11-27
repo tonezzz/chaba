@@ -8,7 +8,7 @@ generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: medium
-note: 'Auto-recovered 2026-11-27: all bootstrap checks pass.'
+note: 'Failing: probe failed: ssh: connect to host 100.108.217.17 port 22: Connection timed out.'
 help: 'Per-check fixes:
 
   - tool-pin: A deployed tool''s sha differs from the pin read from origin/master (scripts/devin/runner-tooling.manifest.json).
@@ -31,7 +31,7 @@ help: 'Per-check fixes:
 
   - runner-agent: Usually self-heals within one chaba-repo-sync tick (sync-runner-tools.sh via git-safe-pull). Manual:
   scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent && ssh <host> chmod +x ~/.local/bin/runner-agent'
-updated: '2026-11-27'
+updated: 2026-11-27 10:31
 comms:
 - at: 2026-11-26 13:30
   from: devin
@@ -64,6 +64,13 @@ comms:
     and ran the canonical scripts/devin/sync-runner-tools.sh; installed runner-agent is now 38d84bc073da matching
     the pin. Fleet health: 0 failing / 8 ok.'
 - at: 2026-11-27 09:54
+  from: tony
+  text: closed by tony
+- at: 2026-11-27 10:31
+  from: tony
+  text: '[verify 2026-11-27] Fast-forwarded clean checkout to origin/master and ran sync-runner-tools.sh; installed
+    runner-agent now d0465bfe2a6e matching the refreshed pin. Fleet health 0 failing / 8 ok.'
+- at: 2026-11-27 10:31
   from: tony
   text: closed by tony
 action:
