@@ -1,0 +1,128 @@
+---
+title: OPS-1511 follow-up — mddb swap reclaim, runner pin propagation, failed-service triage
+subtitle: Three approved follow-ups after the JevOS relocation; one applied, one already self-healed, one read-only
+icon: shield
+date: 2026-11-27
+card: idc03-swap-workload-placement
+ref: OPS-1511
+status: applied-verified
+
+context:
+  trigger: >-
+    Owner selected all three follow-ups from the 2026-11-27 next-batch choice:
+    propagate the new dispatch_repos.py pin to five hosts, restart primary
+    mddb on idc03 to reclaim swap, and triage failed fleet services.
+  state_at_start: >-
+    tony-omen still had installed dispatch_repos.py sha256 022176564c26 and
+    JEVOS_URL=http://127.0.0.1:8017; the other five hosts had already self-healed
+    to c77eecb4264a / http://100.123.163.11:8017. idc03 swap had regrown from
+    2.9 GiB used (post-OPS-1511) to 3.8/4.0 GiB with SwapFree 228,256 kB;
+    mddb.service held ~977 MiB swap / 2.42 GiB RSS.
+
+changes:
+  - id: runner_pin_propagation
+    verdict: applied-verified (root cause was a stale host checkout, not the tool sync)
+    action: >-
+      tony-omen's canonical chaba checkout was 141 commits behind (HEAD
+      eb06c251da, origin/master c286127ef4) with seven uncommitted local files;
+      runner-tools-converge.sh reads the manifest from that checkout, so the
+      two-hourly local converge kept re-validating against the OLD 022176 pin.
+      Ran `ansible-playbook playbooks/fleet-repo-sync.yml --check --diff --limit
+      tony-omen` then the real run (ok=4 changed=1 failed=0). git-safe-pull.sh
+      fast-forwarded to a0785d8d62, preserved all local modifications, and its
+      tail-step sync-runner-tools.sh installed the pinned dispatch_repos.py.
+      No separate deploy-runner-tools.yml run was needed: the installed hash
+      was already c77eecb4264a with the tailnet JEVOS_URL afterwards.
+    verification: >-
+      `ansible-playbook playbooks/audit-runner-tools.yml --limit
+      tony-dell:tony-omen:idc02:idc03:con01:tony-macbook` reports
+      "OK dispatch_repos.py pin=c77eecb4264a inst=c77eecb4264a" on every host,
+      0 DRIFT, 0 MISSING-DEST, 0 unreachable, 0 failed. Direct sha256/GREP on all
+      six installed copies agrees.
+  - id: idc03_mddb_swap_reclaim
+    verdict: applied-verified (owner explicitly approved the brief primary-MDDB interruption)
+    action: >-
+      Approved restart of primary mddb.service on idc03 via
+      `ansible idc03 -b -m command -a 'systemctl --machine=tony@.host --user
+      restart mddb.service'` (rc=0). Baseline health
+      http://100.102.134.91:11023/health = 200; new ActiveEnterTimestamp
+      21:00:29 +07, NRestarts=0. Health returned 200 after 75s of polling
+      (matches the known ~80s /v1 cold start).
+    verification: >-
+      SwapFree 228,256 kB -> 1,213,028 kB (~1.2 GiB free); swap used 3.8 ->
+      2.8 GiB; mddb cgroup memory.swap.current ~977 MiB -> 0 MiB and RSS ~2.42
+      GiB -> 1,272 MiB at T+90s; MemAvailable 7.5 -> 9.6 GiB immediately after
+      restart. /health stayed 200 and mddb stayed active at the follow-up check.
+      Caveat: the 2026-11-27 19:44 placement job already observed that freed
+      pages were reclaimed by mddb within ~3 min (whack-a-mole); a later recheck
+      is required to call this durable.
+  - id: failed_services_triage
+    verdict: read-only classification — no fixes applied
+    benign:
+      - >-
+        tony-omen yomi-process.service: LoadState=not-found (system unit removed),
+        no journal entries in 72h; stale failed state only. Clear with
+        `systemctl reset-failed yomi-process.service`.
+      - >-
+        con01 cline-intake.service: LoadState=not-found, last event 2026-11-26
+        16:09 TERM during a clean Stop; unit retired from ssot.jobs.yml. Stale
+        failed state only; reset-failed.
+      - >-
+        idc03 two podman healthcheck one-shot units failed earlier but are no
+        longer listed as failed; transient, no action.
+    actionable:
+      - >-
+        tony-dell gemini-ollama-proxy.service: real, persistent failure —
+        conmon "k8s-file doesn't support --log-tag", podman create/remove churn,
+        exit=126, NRestarts=5, capped at 11:56 on 2026-11-26. Needs a quadlet
+        fix (drop --log-tag or switch log driver), not a restart. Related
+        cards MEM-1464 / MEM-1469 cover other proxy defects, not this one.
+      - >-
+        con01 mddb-vector-reindex.service: failed twice — 2026-11-26 ended
+        embedded=5 skipped=111688 failed=13 (ada-cms-pages:1,
+        ada-ha-bank-devin-handoff:1, ada-ha-events-michael:1,
+        ada-ha-scenario-reports:10); 2026-11-27 05:40 hit the 45-min
+        TimeoutStartSec and was TERMed at 06:25. Needs bounded batching and
+        per-collection error isolation, not just a timeout bump.
+      - >-
+        runner-tools-converge.timer on all six hosts has
+        `OnCalendar=*:0/2:05`, which systemd reads as hour=*, minute=0/2,
+        second=05 — EVERY TWO MINUTES, not the "every 2 hours" in its
+        Description and in commit 45219a493cc. Observed on tony-omen at
+        20:52/20:54/20:56 with full check->apply->audit->re-audit each time and
+        repeated runner-agent restarts. Correct expression for the intent is
+        `0/2:05:00` (hour=0/2, minute=05, second=00). Fix belongs in
+        ansible/systemd/runner-tools-converge.timer via
+        install-runner-tools-converge.yml; NOT applied in this batch.
+      - >-
+        con01 cloud-init.service (system scope) failed at Network Stage —
+        out of scope here, left for host provisioning triage.
+
+rollback:
+  - >-
+    Runner pin: restore ~/.local/bin/dispatch_repos.py from
+    tony-omen:/home/tony/.local/bin/dispatch_repos.py.bak-20261127-205622 and
+    re-checkout the two manifest/source files from the pre-sync commit; no
+    rollback was needed.
+  - >-
+    mddb: no config changed; the only rollback would be another
+    `systemctl --machine=tony@.host --user restart mddb.service` (~80s cold
+    start). Not needed.
+
+lessons:
+  - >-
+    A host's local timer can silently pin the fleet to an old manifest: the
+    converge script audits against its own checkout, so a 141-commit-stale
+    repo keeps reporting drift=false while an old tool stays installed. Fix the
+    checkout first (`fleet-repo-sync.yml --limit <host>`), then audit tools.
+  - >-
+    git-safe-pull --autostash fast-forwarded a host with seven uncommitted work
+    files without touching them; prefer it over hand-editing a host's pinned
+    files when the checkout is merely behind.
+  - >-
+    Stale failed state on not-found units is not an outage: check LoadState
+    before escalating; reset-failed is enough.
+  - >-
+    "Description says every 2h" is not evidence — verify OnCalendar semantics
+    (`*:0/2:05` is every 2 minutes). A misread timer multiplies every converge
+    and service restart by 60x.
