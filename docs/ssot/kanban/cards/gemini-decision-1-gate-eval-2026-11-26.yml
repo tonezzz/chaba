@@ -1,7 +1,7 @@
 id: gemini-decision-1-gate-eval-2026-11-26
 title: Evaluate gemini-decision-1 as a cheap dispatch-readiness gate
 column: done
-updated: 2026-11-27 08:33
+updated: 2026-11-27 09:57
 brief: Grade calibrated noul decisions on 10 real kanban briefs against a reproducible spec-present label, measure
   confidence and token use, decide whether to replace a full-model yes/no judgment.
 priority: medium
@@ -47,5 +47,12 @@ comms:
     fresh event id + idempotency key, no direct MediaWiki call. Section 2 now records the 60-brief decision-1 expansion:
     55/60 (tp25/fn5/tn30/fp0), Brier 0.0842, p_yes>=0.5162 calibrated on 40 briefs with 10/10 not-ready rejected
     and 6/10 ready approved on 20 held-out brief'
+- at: 2026-11-27 09:57
+  from: ada
+  text: 110-brief held-out comparison complete (55 READY / 55 NOT_READY, disjoint from train and earlier probes).
+    At the old 0.5162 threshold gemini-decision-1 approved 37/55 with 1 false approval in 55 negatives (Wilson 95%
+    0.32-9.61%, Brier 0.1248, 0 output tokens, 0.77s); a gemini-3.8-flash full-model stand-in approved 42/55 with
+    0 false approvals (upper bound 6.53%, accuracy 88.18% vs 82.73%, Brier 0.087) but took 252s and 2,723 output
+    plus 10,940 thought tokens. Agreement 98/110; full model right o
 action:
   status: done
