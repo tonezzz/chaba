@@ -1,7 +1,7 @@
 id: openjev-idc02-earlyoom-exposure
 title: idc02 openjev (~2.5 GiB RSS) remains earlyoom-exposed after jev exemption
-column: doing
-updated: 2026-11-27 22:01
+column: review
+updated: 2026-11-27 22:05
 brief: 'Found while applying OPS-1516 fix (card jevos-idc02-earlyoom-kill): earlyoom --avoid ''(^|/)(jev)$'' was
   scoped to comm=jev only. The sibling openjev process (gemma-3-4b-it torch CPU lane on :8777, comm=openjev) is
   the LARGEST process on idc02 (~2.5 GiB RSS vs jev''s ~1.7 GiB) and remains an earlyoom kill candidate — idc02
@@ -64,13 +64,40 @@ comms:
     (full live evidence) + dispatch-outcome-20261127-214825-decide-openjev-s-protection-on.md, committed on dispatch
     branch. Follow-up filed: OPS-1519 idc02-zram-swap-earlyoom-relief (backlog) — zram swap is the real fix for
     idc02s zero-swap earlyoom churn (15 kills/14d).'
+- at: 2026-11-27 22:05
+  from: tony-dell
+  text: 'finished (ok): exit=0 ntainers.image.source=https://github.com/github/github-mcp-server) | devin-task-20261127-214825-decide-openjev-s-'
+- at: 2026-11-27 22:05
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 22:05
+  from: chaba
+  text: pushed dispatch/20261127-214825-decide-openjev-s-protection-on to origin
+- at: 2026-11-27 22:05
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_board_api_liveness.py tests/board/test_kanban_act.py
+    tests/board/test_wiki_extension.py tests/board/test_board_ap
+- at: 2026-11-27 22:05
+  from: chaba
+  text: auto-merged f3690ff4 (dispatch/20261127-214825-decide-openjev-s-protection-on) → origin/master
+- at: 2026-11-27 22:05
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-214825-decide-openjev-s-protection-on,
+    branch dispatch/20261127-214825-decide-openjev-s-protection-on'
 action:
   type: dispatch
-  status: running
+  status: done
   task_class: report_triage
   executor: claude
   executor_source: queue
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 ntainers.image.source=https://github.com/github/github-mcp-server) | devin-task-20261127-214825-decide-openjev-s-protection-on.service:
+    Consumed 45.313s CPU time over 13min 47.268s wall clock time, 1.1G memory peak, 543.2M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-27 21:47
+review_kind: verify
