@@ -1,0 +1,148 @@
+---
+title: idc03 swap workload placement — rank, capacity check, gated reclaim
+subtitle: MEM-1511; restart-reclaim is whack-a-mole on an oversubscribed host — real fix is migration
+icon: gauge
+date: 2026-11-27
+card: idc03-swap-workload-placement
+ref: MEM-1511 / OPS-1511
+status: partially-applied — owner decisions pending
+
+context:
+  symptom: >-
+    After MEM-1507 (memory guard) and MEM-1510 (yomi bounds), idc03 still sat
+    at swap 4.0/4.0 GiB, ~5 GiB MemAvailable, user cgroup 14.4 GiB RAM +
+    4.16 GiB swap, Committed_AS 34.7 GB on a 15 GiB host.
+  method: >-
+    Live re-measure per-unit MemoryCurrent/MemorySwapCurrent over SSH +
+    capacity probe of con01/idc02/tony-omen, then a gated Ansible play
+    (ansible/playbooks/idc03-swap-placement.yml) with per-action toggles.
+
+ranking_reclaim_vs_risk:
+  - candidate: jevos.service (OpenVINO v5 /v1/systemone, 127.0.0.1:8017)
+    swap_mib: 780
+    rss_mib: 961
+    footprint_gib: 1.7
+    reclaim: "move to omen/idc02/con01 (owner decision) — biggest single win"
+    risk: medium — JEV_LANE=1 claim-classify on idc03 runner-agent uses
+      default JEVOS_URL=127.0.0.1:8017; falls back to devin lane if down
+    verdict: "PENDING OWNER — destination asked on card request"
+  - candidate: ada-dev + ada-kk-dev (idc03 localhost twins :8005/:8009)
+    swap_mib: 430
+    rss_mib: 320
+    footprint_gib: 0.75
+    reclaim: "stopped+disabled 2026-11-27 ~19:42; durable fix = remove from
+      ada-voice deploy-ada.sh SERVICES (outside this repo)"
+    risk: low — zero consumers since 2026-11-25; all scenario units target
+      omen ws://100.75.102.88; only conn observed was idc03->omen
+    verdict: applied (reclaim until next ada-voice deploy resurrects them)
+  - candidate: ada-bankq-student.service (distilbert shadow, :8791)
+    swap_mib: 309
+    rss_mib: 14
+    footprint_gib: 0.34
+    reclaim: "restarted 2026-11-27 ~19:44 — swap partially regrew to ~244MiB
+      within minutes (idle shadow re-faults); kept enabled"
+    risk: low — no journal 72h+, zero connections, localhost-only
+    verdict: applied (restart; stop+disable available via swap_bankq_action=stop)
+  - candidate: cold ada lanes ada-ha-ada/kk-ha/ada-kk/ada-chaba
+    swap_mib: 1270
+    rss_mib: 300
+    footprint_gib: ~1.5 cold pages
+    reclaim: "staggered restart 2026-11-27 ~19:44-19:47 — per-unit swap fell
+      to ~0-2MiB each, but mddb/jev/litellm re-swapped into the space within
+      ~3min; net SwapFree still ~0"
+    risk: medium — four prod voice/HA lanes bounced one at a time, all
+      health-verified (:8006/:8007/:8008 OK, kk-ha container up)
+    verdict: applied — WHACK-A-MOLE, see lessons
+  - candidate: mddb-cms.service (leader, followers idc02+con01)
+    swap_mib: 290-338
+    rss_mib: 1900
+    verdict: "DO NOT TOUCH — hot leader; its swap regrew to ~1GiB under
+      pressure anyway"
+  - candidate: mddb.service / litellm.service
+    swap_mib: "mddb 28->990 (regrew!), litellm ~14"
+    verdict: "hot path — mddb absorbed the freed RAM and swapped ~1GiB;
+      litellm took a contained cgroup OOM kill 19:50 (MemoryMax=1600M,
+      auto-restarted, active again)"
+
+capacity_verified_live_2026_11_27_1920:
+  con01: "23GiB total, 18GiB avail, NO swap, load ~10 (busiest)"
+  idc02: "15GiB total, 6GiB avail, NO swap, load ~2.3"
+  tony-omen: "30GiB total, 11-13GiB avail, swap 25/39GiB used, load ~8.5;
+    already hosts ada-dev/ada-kk-dev twins + jev-student:8778 + open-jev +
+    openjev-student — jev plane consolidation candidate"
+
+applied:
+  playbook: ansible/playbooks/idc03-swap-placement.yml
+  preflight: "--check --diff --limit idc03: ok=11 changed=4 failed=0"
+  apply: >-
+    2026-11-27 ~19:42-19:49 +07, gated -e idc03_swap_approved=true
+    -e card_id=idc03-swap-workload-placement -e swap_retire_twins=true
+    -e swap_restart_cold_ada=true. Twins verified inactive+disabled;
+    bankq restarted (active/enabled); 4 cold lanes restarted, all
+    is-active OK and :8006/:8007/:8008 /api/health 200 (ada-chaba needed
+    ~20s extra ramp — probe now wait-loops up to 2min).
+  repo_change: >-
+    scripts/deploy-ada.sh — removed ada-dev/ada-kk-dev from the idc03
+    SERVICES/ports list (port map realigned ,,,8007,8003,8002).
+    NOTE: the actual resurrection source is ada-voice's OWN
+    scripts/deploy-ada.sh (SERVICES=...ada-dev ada-kk-dev... unconditional
+    `systemctl --user restart`) — outside this repo; flagged on the card
+    as the required follow-up or the twins return on the next ada-voice
+    deploy.
+  guard_installed: >-
+    ~/.local/bin/jevos-swap-reclaim.sh + jevos-swap-reclaim.{service,timer}
+    on idc03 — daily 04:30 check, restarts jevos only when
+    MemorySwapCurrent > 512MiB (open-jev-guard.yml pattern). Timer verified
+    listed, next elapse 2026-11-28 04:30. Safe if jevos later moves —
+    show returns 0 for a missing unit.
+  litellm_oom: >-
+    19:50:14 contained cgroup OOM kill during the pressure spike
+    (MemoryMax=1600M guard working as designed); unit active again.
+    MemAvailable recovered 332MiB -> ~3.6GiB within ~2min once the
+    transient node job exited.
+
+measurements:
+  before_1920: "swap 4095/4095 used, MemAvailable ~5.1GiB, load ~5-8"
+  after_1950: "swap 4095/4095 used, MemAvailable ~3.6GiB, load ~8"
+  verdict: >-
+    TOTAL swap unchanged — expected. Restart-reclaim frees per-unit swap
+    but hot services (mddb +1GiB swap, jevos +260MiB) immediately re-occupy
+    it; the host is structurally oversubscribed (~13-14GiB demand / 15GiB).
+    Per-unit swap DID clear for all restarted lanes (real but borrowed
+    headroom). Durable swap reduction needs workload migration (jevos
+    ~1.7GiB is the top candidate) or capacity (zram-swap.yml precedent on
+    omen; VPS resize = spend, Tony decision).
+
+pending_owner_decisions:
+  - "dev-twin bench lane: asked whether to retire idc03 twins durably —
+    stop+disable + deploy-ada.sh SERVICES removal applied proactively
+    (reversible); awaiting confirm or 'keep as hot backup'"
+  - "JevOS destination: asked omen vs idc02 vs con01 vs stay+guard vs
+    retire — jev plane already consolidated on omen (jev-student:8778,
+    open-jev, openjev-student); idc02 serves open-jev:8777 tailnet;
+    con01 has most RAM but load~10 and no swap. jev serve supports
+    --host/--port so a tailnet bind is possible."
+
+rollback: >-
+  Twins: systemctl --user enable --now ada-dev ada-kk-dev (they were
+  disabled before; restart is enough to run). bankq: already restarted,
+  no rollback needed. Cold lanes: already healthy. Guard: systemctl
+  --user disable --now jevos-swap-reclaim.timer + rm the 3 installed
+  files. deploy-ada.sh: revert the one-line SERVICES edit.
+
+lessons:
+  - "On an oversubscribed host, restart-reclaim is whack-a-mole: freed
+    swap is re-occupied by hot services within minutes. Measure SwapFree,
+    not per-unit swap, to judge real progress."
+  - "systemctl is-active/is-enabled return non-zero for inactive/disabled
+    — append || true or failed_when:false in verify commands or the play
+    fails after doing the right thing."
+  - "ansible command tasks skip in --check mode; read-only probes need
+    check_mode: no. systemd_service can't see a unit whose file is only
+    a pending copy — enable timers via command+changed_when:false."
+  - "pwa_server HTTP health lags is-active by 30-90s; single-shot probes
+    race the bind — wait-loop up to ~2min."
+  - "The unit-resurrection source for 'disabled but restarted' services
+    is an unconditional `systemctl --user restart $SERVICES` in
+    ada-voice's deploy-ada.sh — chaba's deploy-ada.sh has an is-active
+    guard and was NOT the culprit."

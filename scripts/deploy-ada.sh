@@ -37,7 +37,12 @@ host_config() {
     # ladder — dev lanes first, relays, member lanes, tony lanes last — and
     # ada-kk-dev/ada-tg-relay-kk joined the set (same fresh-code rationale;
     # every unit left out drifts on old code silently).
-    idc03)     echo "ada-dev.service,ada-kk-dev.service,ada-line-relay.service,ada-tg-relay.service,ada-tg-relay-kk.service,ada-kk.service,ada-ha-michael.service,ada-ha-tony.service|8005,8009,,,,8007,8003,8002" ;;
+    # 2026-11-27 (MEM-1511 idc03-swap-workload-placement): ada-dev/ada-kk-dev
+    # removed — the dev twins live on tony-omen (:8005/:8009) since 2026-11-25
+    # and every scenario unit targets ws://100.75.102.88; the idc03 copies
+    # were localhost-only dead weight (~750MB) that `restart` resurrected on
+    # every deploy. Re-add only if the bench lane moves back.
+    idc03)     echo "ada-line-relay.service,ada-tg-relay.service,ada-tg-relay-kk.service,ada-kk.service,ada-ha-michael.service,ada-ha-tony.service|,,,8007,8003,8002" ;;
   esac
 }
 
