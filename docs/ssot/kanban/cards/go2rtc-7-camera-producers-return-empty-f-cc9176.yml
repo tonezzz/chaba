@@ -1,7 +1,7 @@
 id: go2rtc-7-camera-producers-return-empty-f-cc9176
 title: 'go2rtc: 7 camera producers return empty frames on omen'
 column: doing
-updated: 2026-11-27 14:41
+updated: 2026-11-27 15:16
 program: infrastructure
 tags:
 - ops
@@ -374,6 +374,13 @@ comms:
     c100 cloud IP churned again (.81->.92, .92 is a different device). All 7 producers still 200/0B, omen_cam OK.
     Hardening xiaomi-cam-resolve to sweep ALL local /24s (was cloud-ip /24 only) + carrying attempt-1 branch changes
     so they can land.'
+- at: 2026-11-27 15:16
+  from: devin
+  text: 'attempt 2 DONE — software self-healing complete; done-condition still blocked by hardware. ALL 3 cams still
+    off-L2 (fresh /24 sweep both omen subnets, none of the 3 MACs present); all 7 producers still 200/0B, omen_cam
+    OK. NEW this attempt: (1) xiaomi-cam-resolve.py hardened — two-pass resolve, sweeps ALL local /24s on physical
+    ifaces only (unfiltered would hit docker/libvirt/tailnet ~2000 pings >2m timeout); verified live via timer run
+    15:15. (2) NEW ipcam65-ip.sh — runtime MAC resolver for ip_'
 spec: Fix the remaining go2rtc camera producers on tony-omen that return empty 200/0B frames for ip_cam_65 and the
   xiaomi_c100/c201 variants. Inspect and correct the producer configurations located in ~/.config/go2rtc/*.sh on
   tony-omen and check xiaomi-token-refresh.py. The target host is tony-omen and the relevant repo/environment context
