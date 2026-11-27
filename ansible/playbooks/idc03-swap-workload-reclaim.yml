@@ -1,0 +1,268 @@
+---
+# idc03-swap-workload-reclaim.yml — OPS-1511 / MEM-1511.
+#
+# Residual idc03 swap exhaustion after MEM-1507/1510: 4.0/4.0 GiB swap used,
+# user@1000 cgroup 14.4 GiB RAM + 4.16 GiB swap, top holders jevos (760 MiB
+# swap / 938 MiB RSS) and four idle-or-relocated ada units (~1.2 GiB swap).
+#
+# Three approved moves (owner choice 2026-11-27):
+#   1. install the JevOS decision lane on idc02 (6.7 GiB available, load 1.5,
+#      already hosts the sibling open-jev lane) and bind it on the tailnet IP;
+#   2. stop/disable the relocated jevos + ada-dev + ada-kk-dev units on idc03
+#      and remove ada-kk-dev from deploy-ada.sh SERVICES on both canon and
+#      installed copies so the next fleet deploy cannot resurrect it;
+#   3. stop/disable ada-bankq-student (shadow router, 309 MiB swap, 14 MiB
+#      RSS, no journal activity in 24h).
+#
+# This SUPERSEDES the 2026-11-26 ADA-1395 decision that kept ada-kk-dev on
+# idc03:8009 as the kk-cms-only bench target. The bench_profiles host moves
+# to tony-omen in the same change (chaba SSOT), where :8009 was already
+# healthy and already carried the CMS-only tool surface.
+#
+# Ordering is deliberate: the idc02 lane must pass /health before anything
+# on idc03 is stopped. Plays run top to bottom; a failure in play 1 aborts
+# before play 2.
+#
+# Usage (controller: tony-dell /home/tony/CascadeProjects/chaba/ansible):
+#   ansible-playbook playbooks/idc03-swap-workload-reclaim.yml --check --diff
+#   ansible-playbook playbooks/idc03-swap-workload-reclaim.yml
+#   # tag subsets: --tags install_jevos | retire | deploy_gate | verify
+#
+# Disruption: stops jevos.service on idc03 (in-flight Choice/noul calls fail
+# until idc02 answers) and stops three ada units. Approved by owner 2026-11-27.
+# Rollback: re-run `systemctl --machine=tony@.host --user enable --now <unit>`
+# on idc03 from the preflight snapshot; restore both deploy-ada.sh .bak files;
+# for JevOS, disable/stop idc02's unit and delete its unit file + runtime dir.
+
+- name: Install JevOS decision lane on idc02
+  hosts: idc02
+  gather_facts: false
+  vars:
+    jev_dir: /home/tony/jev-bench/jev
+    jev_src: idc03
+    jev_bind_ip: 100.123.163.11
+    unit_dest: /home/tony/.config/systemd/user/jevos.service
+
+  tasks:
+    - name: Ensure JevOS runtime and user unit directories exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: tony
+        group: tony
+        mode: "0755"
+      loop:
+        - "{{ jev_dir }}"
+        - /home/tony/.config/systemd/user
+      tags: [install_jevos]
+
+    - name: Check-mode notice — JevOS runtime copy (~755 MiB)
+      ansible.builtin.debug:
+        msg: "CHECK MODE: would rsync {{ jev_dir }}/ from {{ jev_src }} to idc02 (binary + model, ~755 MiB)"
+      when: ansible_check_mode
+      tags: [install_jevos]
+
+    # 2026-11-27: the delegated command task stalled under Ansible's ssh
+    # connection reuse even though the identical rsync works from a direct
+    # ssh session (19s). It is tagged separately so an operator can skip it
+    # after doing the copy by hand; the explicit -e ssh keeps it usable too.
+    - name: Sync JevOS runtime from idc03 to idc02
+      ansible.builtin.command:
+        cmd: "rsync -az --delete --checksum --itemize-changes -e 'ssh -o BatchMode=yes -o ConnectTimeout=6' {{ jev_dir }}/ tony@idc02:{{ jev_dir }}/"
+      delegate_to: "{{ jev_src }}"
+      register: jev_sync
+      changed_when: jev_sync.stdout_lines | length > 0
+      when: not ansible_check_mode
+      tags: [install_jevos, jevos_sync]
+
+    - name: Install JevOS unit bound to the tailnet IP
+      ansible.builtin.copy:
+        dest: "{{ unit_dest }}"
+        owner: tony
+        group: tony
+        mode: "0644"
+        content: |
+          # Managed by chaba/ansible (idc03-swap-workload-reclaim.yml). Do not edit on host.
+          # Relocated from idc03 2026-11-27 (OPS-1511). Bind on the tailnet IP
+          # so every chaba host can reach it via JEVOS_URL, not just localhost.
+          [Unit]
+          Description=JevOS v5 OpenVINO /v1/systemone decision lane (idc02)
+          After=network-online.target
+
+          [Service]
+          Type=simple
+          WorkingDirectory={{ jev_dir }}
+          ExecStart={{ jev_dir }}/jev serve --host {{ jev_bind_ip }} --port 8017 --threads 2
+          Restart=on-failure
+          RestartSec=5
+          MemoryMax=2G
+          MemorySwapMax=0
+
+          [Install]
+          WantedBy=default.target
+      tags: [install_jevos]
+
+    - name: Reload the user systemd manager on idc02
+      ansible.builtin.command:
+        cmd: systemctl --machine=tony@.host --user daemon-reload
+      become: true
+      changed_when: false
+      tags: [install_jevos]
+
+    - name: Enable and start JevOS on idc02
+      ansible.builtin.command:
+        cmd: systemctl --machine=tony@.host --user enable --now jevos.service
+      become: true
+      changed_when: false
+      tags: [install_jevos]
+
+    - name: Wait for JevOS health on the tailnet endpoint
+      ansible.builtin.uri:
+        url: "http://{{ jev_bind_ip }}:8017/health"
+        method: GET
+        status_code: 200
+        use_proxy: false
+        timeout: 10
+      register: jevos_health
+      retries: 15
+      delay: 4
+      until: jevos_health.status == 200
+      tags: [install_jevos, verify]
+
+    - name: Confirm JevOS listens on the routable IP
+      ansible.builtin.shell:
+        cmd: "ss -ltn | grep -q '{{ jev_bind_ip }}:8017'"
+      changed_when: false
+      tags: [verify]
+
+- name: Retire relocated and idle services from idc03
+  hosts: idc03
+  gather_facts: false
+  vars:
+    retire_units:
+      - jevos.service
+      - ada-dev.service
+      - ada-kk-dev.service
+      - ada-bankq-student.service
+    canon: /home/tony/CascadeProjects/ada-voice/scripts/deploy-ada.sh
+    installed: /home/tony/.local/bin/deploy-ada.sh
+    stamp: "{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
+
+  tasks:
+    - name: Back up canon and installed deploy-ada.sh
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "{{ item }}.bak-{{ stamp }}"
+        remote_src: true
+        mode: preserve
+      loop:
+        - "{{ canon }}"
+        - "{{ installed }}"
+      changed_when: false
+      tags: [backup]
+
+    - name: Record pre-state of retiring units
+      ansible.builtin.command:
+        cmd: "systemctl --machine=tony@.host --user show {{ item }} -p ActiveState -p UnitFileState"
+      become: true
+      changed_when: false
+      register: pre_state
+      loop: "{{ retire_units }}"
+      tags: [retire]
+
+    - name: Show pre-state
+      ansible.builtin.debug:
+        msg: "{{ item.item }}: {{ item.stdout_lines | join(' ') }}"
+      loop: "{{ pre_state.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      tags: [retire]
+
+    - name: Remove ada-kk-dev from canonical deploy SERVICES
+      ansible.builtin.lineinfile:
+        path: "{{ canon }}"
+        regexp: "^SERVICES="
+        line: 'SERVICES="${ADA_SERVICES:-ada-ha-tony ada-ai-kraut ada-tg-relay-kk ada-tg-relay-mn ada-kk ada-line-relay ada-tg-relay}"'
+      tags: [deploy_gate]
+
+    - name: Reinstall deploy-ada.sh from canon to satisfy its self-drift gate
+      ansible.builtin.copy:
+        src: "{{ canon }}"
+        dest: "{{ installed }}"
+        remote_src: true
+        owner: tony
+        group: tony
+        mode: "0755"
+      tags: [deploy_gate]
+
+    - name: Stop and disable retired units
+      ansible.builtin.command:
+        cmd: "systemctl --machine=tony@.host --user disable --now {{ item }}"
+      become: true
+      changed_when: false
+      loop: "{{ retire_units }}"
+      tags: [retire]
+
+    - name: Verify retired units are inactive and disabled
+      ansible.builtin.command:
+        cmd: "systemctl --machine=tony@.host --user show {{ item }} -p ActiveState -p UnitFileState"
+      become: true
+      changed_when: false
+      register: post_state
+      loop: "{{ retire_units }}"
+      tags: [verify]
+
+    - name: Show post-state
+      ansible.builtin.debug:
+        msg: "{{ item.item }}: {{ item.stdout_lines | join(' ') }}"
+      loop: "{{ post_state.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      tags: [verify]
+
+    - name: Assert every retired unit is inactive
+      ansible.builtin.assert:
+        that:
+          - "'ActiveState=inactive' in item.stdout_lines"
+        fail_msg: "{{ item.item }} is still active"
+      loop: "{{ post_state.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      when: not ansible_check_mode
+      tags: [verify]
+
+    - name: Verify canon and installed deploy-ada.sh now match
+      ansible.builtin.command:
+        cmd: "cmp -s {{ canon }} {{ installed }}"
+      changed_when: false
+      tags: [verify, deploy_gate]
+
+    - name: Report swap after reclaim
+      ansible.builtin.shell:
+        cmd: "free -h | grep -E 'Mem:|Swap:'; grep -E 'MemAvailable|SwapFree' /proc/meminfo"
+      changed_when: false
+      tags: [verify]
+
+- name: Verify cross-host consumers after reclaim
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Confirm omen dev twins still healthy
+      ansible.builtin.uri:
+        url: "http://100.75.102.88:{{ item }}/api/health"
+        method: GET
+        status_code: 200
+        use_proxy: false
+        timeout: 10
+      loop: [8005, 8009]
+      tags: [verify]
+
+    - name: Confirm JevOS decision endpoint on idc02
+      ansible.builtin.uri:
+        url: "http://100.123.163.11:8017/health"
+        method: GET
+        status_code: 200
+        use_proxy: false
+        timeout: 10
+      tags: [verify]

@@ -21,7 +21,7 @@ Env: JEV_STUDENT_URL / JEVOS_URL / LAYA_URL override backend bases.
 import json, os, statistics, subprocess, sys, time, urllib.request
 
 STUDENT = os.environ.get("JEV_STUDENT_URL", "http://100.75.102.88:8780")
-JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
+JEVOS = os.environ.get("JEVOS_URL", "http://100.123.163.11:8017")
 LAYA_URL = os.environ.get("LAYA_URL", "http://127.0.0.1:8021")
 
 CORPUS_VERSION = 2  # v1 = 27 cases; v2 = 50 labeled cases (2026-10-25)

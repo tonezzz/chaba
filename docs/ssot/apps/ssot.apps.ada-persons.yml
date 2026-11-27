@@ -536,7 +536,10 @@ bench_profiles:
   kk-cms-only:
     instance: kk-dev
     env_file: ada-kk-dev.env
-    host: idc03
+    # 2026-11-27 (OPS-1511): relocated with the dev twin to tony-omen.
+    # Supersedes the 2026-11-26 ADA-1395 decision that kept this bench
+    # target on idc03:8009; the idc03 twin is retired.
+    host: tony-omen
     port: 8009  # health probe after --apply (/api/health)
     # Session prime injects "Recent sessions:" + channel tails into every
     # new session regardless of the tool surface — with it on, "CMS-only

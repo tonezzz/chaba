@@ -1,0 +1,86 @@
+---
+title: idc03 swap reclaim — relocate JevOS, retire dev twins and bankq shadow
+subtitle: OPS-1511 / MEM-1511 — non-spend workload placement after MEM-1507/1510
+icon: shield
+date: 2026-11-27
+card: idc03-swap-workload-placement
+ref: OPS-1511
+status: applied-verified
+
+context:
+  symptom: >-
+    After the memory guard (MEM-1507) and Yomi refresh bounds (MEM-1510),
+    idc03 still showed swap 4.0/4.0 GiB used, MemAvailable ~5.1 GiB and a
+    user@1000 cgroup at 14.4 GiB RAM + 4.16 GiB swap with no MemoryMax.
+    vmstat showed continuing si/so, not a stale high-water mark.
+  root_cause: >-
+    Four resident units were either relocated already or idle but still
+    swap-resident: jevos (760.6 MiB swap + 938 MiB RSS), ada-dev (243 MiB),
+    ada-kk-dev (185 MiB), ada-bankq-student (309 MiB swap / 14 MiB RSS, no
+    journal activity in 24h), plus ada-chaba/ada-ha-ada (~720 MiB combined).
+    SYS-0151 moved the dev twins to tony-omen in 2026-11-18 but deploy-ada.sh
+    SERVICES resurrected ada-kk-dev on every deploy.
+  decision: >-
+    Owner choice 2026-11-27: reclaim both dev twins on omen, move JevOS to
+    idc02, stop ada-bankq-student. This supersedes the 2026-11-26 ADA-1395
+    decision that kept ada-kk-dev on idc03:8009 as the kk-cms-only bench
+    target; bench_profiles.kk-cms-only now declares host: tony-omen.
+
+changes:
+  - "ansible/playbooks/idc03-swap-workload-reclaim.yml — new tagged play:
+    install JevOS on idc02 behind a /health gate, then stop+disable jevos,
+    ada-dev, ada-kk-dev and ada-bankq-student on idc03 and drop ada-kk-dev
+    from deploy-ada.sh SERVICES on canon and installed copies."
+  - "idc02 /home/tony/.config/systemd/user/jevos.service — 755 MiB runtime
+    copied from idc03; ExecStart `jev serve --host 100.123.163.11 --port
+    8017 --threads 2`, MemoryMax=2G, MemorySwapMax=0. sha256
+    cfb0ca31abd5783e644ad3cbe447bc7ef79f395934609fb668165da6aea316a0."
+  - "docs/ssot/apps/ssot.apps.ada-persons.yml — bench_profiles.kk-cms-only
+    host idc03 -> tony-omen; omen :8009 already carried the CMS-only tool
+    surface and /api/health=200."
+  - "scripts/{board/dispatch_repos,jev/loop-gate,jev/code-decision,
+    jev/code-decision-eval,ops/decision-arena}.py — JEVOS_URL default
+    127.0.0.1:8017 -> 100.123.163.11:8017 so all chaba hosts reach the
+    relocated lane; env override still wins."
+
+evidence:
+  preflight: >-
+    `ansible-playbook ... --check --diff`: idc02 ok=3 changed=2 failed=0,
+    idc03 ok=5 changed=2 failed=0, 0 unreachable; only the intended unit,
+    SERVICES and rsync diffs.
+  deploy: >-
+    20:24 +07, real run with --skip-tags jevos_sync (the delegated rsync
+    task stalled under Ansible ssh reuse; the identical copy was run from a
+    direct ssh session in 19.5s, checksum verified). Recap idc02 ok=6
+    changed=1 failed=0, idc03 ok=11 changed=2 failed=0, localhost ok=2.
+    Health gate passed after 2 retries before any idc03 unit was stopped.
+  verification: >-
+    All four retired units now ActiveState=inactive / UnitFileState=disabled.
+    Both deploy-ada.sh copies list no ada-kk-dev and hash-match
+    83b5f2e2eafa530e6ac88bab3ebfb82313c16d430f838aecaa612c9e1a96b438.
+    idc03 swap fell 4.0/4.0 GiB -> 2.9 GiB used / 1.1 GiB free
+    (SwapFree 1,196,852 kB), user cgroup swap.current 4.16 -> 2.93 GiB,
+    MemAvailable 4.1 GiB. idc02 JevOS PID 1233450, RSS 1.37 GiB,
+    NRestarts=0, listening on 100.123.163.11:8017, /health=200 and POST
+    /v1/systemone=422 (schema validation, endpoint alive). Omen twins
+    :8005/:8009 /api/health=200 after the cutover. Re-run `--check` with
+    --skip-tags jevos_sync: changed=0 on every host.
+
+rollback: >-
+  idc03: `systemctl --machine=tony@.host --user enable --now <unit>` for any
+  of the four retired units; restore both deploy-ada.sh copies from
+  /home/tony/.local/bin/deploy-ada.sh.bak-20261127-202422 and
+  /home/tony/CascadeProjects/ada-voice/scripts/deploy-ada.sh.bak-20261127-202420.
+  JevOS: disable/stop idc02's unit and delete its unit file plus
+  /home/tony/jev-bench/jev. No rollback was needed.
+
+lessons:
+  - "A delegated Ansible command that nests ssh to a second host can stall
+    under connection reuse; tag such a task so a direct, checksum-verified
+    copy can be used without skipping the rest of the play."
+  - "Put the remote health gate in the same play as the relocation so a
+    failed cutover cannot stop the source service."
+  - "Check-mode verifies state, not effects: gate assert tasks that read
+    command output on `not ansible_check_mode` or they fail on empty stdout."
+  - "Superseding an owner decision is fine, but say which card it supersedes
+    in the SSOT so the next session does not restore the old target."

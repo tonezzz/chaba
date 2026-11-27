@@ -9,8 +9,9 @@ Metrics (no ground truth exists for generated images, so we measure
 consistency + sharpness, and leave semantic QC to Tony):
   - laplacian_var: sharpness proxy (higher = sharper)
   - roundtrip_psnr / roundtrip_ssim: downscale(upscaled) vs source
-  - flat_region_lap_gain: laplacian-var ratio in flat source regions
-    (invented-texture / noise-amplification artifact proxy; ~1 = clean)
+  - flat_region_lap_gain: mean laplacian delta (roundtrip vs source) in
+    flat source regions (invented-texture / hallucination artifact proxy;
+    ~0 = clean)
   - dims, bytes, wall_s
 
 Backends:
@@ -99,12 +100,17 @@ def unsharp(img: np.ndarray, percent: int, radius: float = 2.0) -> np.ndarray:
 
 
 def flat_region_lap_gain(src: np.ndarray, rt: np.ndarray) -> float:
-    """Mean-abs-Laplacian ratio (roundtripped output vs source) in near-flat
-    source regions — invented texture / noise amplification proxy.
+    """Mean |Laplacian(roundtrip) − Laplacian(source)| over near-flat source
+    regions — invented-texture / hallucination artifact proxy.
+
+    Refined to measure *invented* texture (the laplacian deviation the
+    roundtrip introduced beyond the source, i.e. delta vs source) instead of
+    total flat-region texture, so sparse high-frequency spikes (e.g. the SwinIR
+    classical white-dot hallucination) register as positive invented deviation.
 
     Perfectly flat pixels (laplacian == 0) are excluded; near-flat pixels
-    (0 < |lap| < 25th pct of nonzero values) are used instead. An epsilon
-    floor prevents division by zero.
+    (0 < |lap| < 25th pct of nonzero values) are used instead. Returns ~0 = clean
+    (no invented texture); NaN when insufficient flat pixels.
     """
     g = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
     lap = cv2.Laplacian(g, cv2.CV_64F)
@@ -116,11 +122,31 @@ def flat_region_lap_gain(src: np.ndarray, rt: np.ndarray) -> float:
     flat = (abs_lap > 0) & (abs_lap < thr)
     if flat.sum() < 100:
         return float("nan")
-    l_src = np.abs(lap[flat]).mean()
     rt_lap = cv2.Laplacian(
         cv2.cvtColor(rt, cv2.COLOR_BGR2GRAY), cv2.CV_64F)
-    l_rt = np.abs(rt_lap[flat]).mean()
-    return float(l_rt / max(l_src, 1e-6))
+    delta = np.abs(rt_lap[flat] - lap[flat])
+    return float(delta.mean())
+
+
+def flat_peak_gain(src: np.ndarray, rt: np.ndarray) -> float:
+    \"\"\"Peak invented texture: max |Laplacian(rt) - Laplacian(src)| in
+    near-flat source regions. Catches sparse white-dot hallucinations that
+    the mean-based flat_region_lap_gain misses.
+    \"\"\"
+    g = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
+    lap = cv2.Laplacian(g, cv2.CV_64F)
+    abs_lap = np.abs(lap)
+    nz = abs_lap[abs_lap > 0]
+    if nz.size < 100:
+        return float("nan")
+    thr = np.percentile(nz, 25)
+    flat = (abs_lap > 0) & (abs_lap < thr)
+    if flat.sum() < 100:
+        return float("nan")
+    rt_lap = cv2.Laplacian(
+        cv2.cvtColor(rt, cv2.COLOR_BGR2GRAY), cv2.CV_64F)
+    delta = np.abs(rt_lap[flat] - lap[flat])
+    return float(delta.max()) if delta.size > 0 else float("nan")
 
 
 def dn_blend(src: np.ndarray, sr: np.ndarray, dn: float) -> np.ndarray:
@@ -294,6 +320,7 @@ def main() -> int:
             "roundtrip_psnr_db": round(psnr(src_img, rt), 2),
             "roundtrip_ssim": round(ssim(src_img, rt), 4),
             "flat_region_lap_gain": round(flat_region_lap_gain(src_img, rt), 3),
+            "flat_peak_gain": round(flat_peak_gain(src_img, rt), 3),
         },
         "wall_s": round(wall, 1),
         "note": "roundtrip metrics measure self-consistency, not ground truth; "

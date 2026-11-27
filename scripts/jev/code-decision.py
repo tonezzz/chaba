@@ -35,7 +35,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 # --- backend endpoints -------------------------------------------------
 JEV_API_URL = os.environ.get("JEV_API_URL", "https://api.typesafe.ai")
 JEV_API_KEY = os.environ.get("JEV_API_KEY", "")
-JEVOS_URL = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
+JEVOS_URL = os.environ.get("JEVOS_URL", "http://100.123.163.11:8017")
 STUDENT_URL = os.environ.get("JEV_STUDENT_URL", "http://100.75.102.88:8780")
 NOUL_THR = float(os.environ.get("JEV_NOUL_THR", "0.5"))
 TIMEOUT = float(os.environ.get("JEV_TIMEOUT_S", "60"))

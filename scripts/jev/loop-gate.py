@@ -45,7 +45,7 @@ from pathlib import Path
 
 JEV_API_URL = os.environ.get("JEV_API_URL", "https://api.typesafe.ai")
 JEV_API_KEY = os.environ.get("JEV_API_KEY", "")
-JEVOS_URL = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
+JEVOS_URL = os.environ.get("JEVOS_URL", "http://100.123.163.11:8017")
 STUDENT_URL = os.environ.get("JEV_STUDENT_URL", "http://100.75.102.88:8780")
 TIMEOUT = float(os.environ.get("JEV_GATE_TIMEOUT_S", "30"))
 HALT_P = float(os.environ.get("JEV_GATE_HALT_P", "0.7"))
