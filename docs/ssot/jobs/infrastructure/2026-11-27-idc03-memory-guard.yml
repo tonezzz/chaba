@@ -62,14 +62,17 @@ evidence:
       litellm restarted once at 16:58:01, active with 170 MB cgroup usage."
     - "media-inbox-update-kk 16:54:52 tick ExecMainStatus=0;
       ops-health-report 16:45 tick ExecMainStatus=0, report published."
-  residual_risk: >-
-    This bounds failure, it does not free RAM: post-apply free shows 14 GiB used,
-    649 MiB available, 4/4 GiB swap. A 3.2 GiB node job and two llama-server
-    processes (~2.5 GiB + 1.8 GiB) remain the main pressure. Moving those
-    workloads off idc03 or adding RAM is still needed to stop OOM churn entirely.
+  residual_risk_at_first_apply: >-
+    The guard bounded failure but did not free RAM: immediately after the first
+    apply, free showed 14 GiB used, 649 MiB available, 4/4 GiB swap. The
+    follow-ups below freed ~1.8 GiB; swap is still nearly full and a 3.2 GiB
+    node job remains. Moving that workload off idc03 or adding RAM is still
+    needed to end oversubscription entirely.
 
-prepared_followups:
-  status: "prepared and preflighted 2026-11-27, NOT APPLIED"
+applied_followups:
+  status: "applied and verified 2026-11-27 ~17:25"
+  branch: ops/idc03-memory-guard
+  commits: [fa66afb1b5d, 263c7734b0f, b5990cf1b6c]
   embed_offload:
     playbook: ansible/playbooks/idc03-embed-offload.yml
     finding: >-
@@ -77,16 +80,34 @@ prepared_followups:
       the shim, and the shim races every primary. Health stats showed remote
       100.75.102.88 winning 1239 races at ~136ms (warm probe 0.07s) while local
       100.102.134.91 had 17 consecutive failures and ~4.7s last call (direct
-      probe 16.4s). Fix: drop local from primaries, keep remote as sole primary
-      with 100.72.146.39 + kk-mac 11447 deferred, restart the stateless shim,
-      then `ollama stop bge-m3` to release ~1.8 GiB immediately.
+      probe 16.4s).
+    result: >-
+      Shim now has only 100.75.102.88 as primary; 100.72.146.39 and kk-mac
+      11447 are deferred. `ollama ps` is empty (bge-m3 unloaded). Embed probe
+      through the shim returned 200 in 0.12s; mddb /health 200. Memory improved
+      to 11 GiB used / 4.3 GiB available, swap 3.9/4 GiB. No kernel OOM since
+      17:22. Apply: ok=10 changed=3 failed=0; idempotency changed=0.
+    first_apply_failure: >-
+      The initial drop-in was named 60-idc03-remote-upstreams.conf, but
+      zzzz-drop-local-idc03.conf (added 11-26 when remote was off-net) sorted
+      later and restored local as a racing primary. The verify task caught it
+      before `ollama stop` ran. Fixed by renaming the managed drop-in to
+      zzzzz-idc03-remote-only.conf and removing the ineffective 60- file
+      (commit b5990cf1b6c); re-apply passed all assertions.
   runner_cap:
     file: ansible/inventory/host_vars/idc03.yml
     change: "runner_cap 2 -> 1 (RUNNER_MAX_LOAD_PC stays 0.7)"
-    mechanism: "ansible-playbook playbooks/runner-cap.yml --limit idc03"
+    result: >-
+      Apply ok=5 changed=1; cap.conf now RUNNER_CAP=1 / MAX_LOAD_PC=0.7 and
+      systemd reloaded. runner-agent.service was inactive at verification, so
+      the next start picks up cap 1 automatically; no restart was forced.
+      Idempotency changed=0.
   litellm_cap:
     file: ansible/playbooks/idc03-memory-guard.yml
     change: "MemoryHigh/MemoryMax 900M/1200M -> 1200M/1600M (OOMScoreAdjust stays 500)"
+    result: >-
+      Effective properties read back as 1258291200 / 1677721600 bytes with
+      OOMScoreAdjust=500. Idempotency changed=0.
 
 rollback: >-
   Restore both .conf files from the timestamped backup directory, delete the
@@ -102,3 +123,7 @@ lessons:
     resource-control property; deliver it by drop-in, not set-property."
   - "idc01→idc03 migrations must retune memory drop-ins — host size is part
     of the config, not just the service list."
+  - "systemd drop-ins are applied in filename order: a managed 60-*.conf was
+    silently overridden by an existing zzzz-*.conf, and the shim kept both
+    upstreams. Name managed override drop-ins to sort last, and verify the
+    *effective* config (shim /health, systemctl show), not just file install."
