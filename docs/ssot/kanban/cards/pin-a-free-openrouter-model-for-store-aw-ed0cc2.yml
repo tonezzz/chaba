@@ -1,7 +1,7 @@
 id: pin-a-free-openrouter-model-for-store-aw-ed0cc2
 title: Pin a free OpenRouter model for store-awareness A/B
 column: doing
-updated: 2026-11-27 14:42
+updated: 2026-11-27 15:06
 action:
   type: dispatch
   status: running
@@ -469,6 +469,12 @@ comms:
     is now confirmed capped, not just OpenRouter: gemini-3.5-; OpenRouter `:free` daily cap (1000/day high-balance)
     is ACCOUNT-wide across all ; OpenRouter account state is checkable cheaply: `/api/v1/auth/key` (key limits,
     :; Paid-lane gating pattern that worked: keep the lane in LANE_M'
+- at: 2026-11-27 15:06
+  from: devin
+  text: 'Pin landed in scripts/bench-edu-manage.py: --or-model default is now nvidia/nemotron-3.5-super-vl:free
+    (or-free scorecard winner, same model as the completed baseline reps). Raw OR slugs bypass the LiteLLM gateway
+    so the pin resolves identically on every host; openrouter/free stays available explicitly. Verified: py_compile,
+    pytest 2/2, pipeline-load smoke shows correct base+model under direct/litellm envs. Job record: docs/ssot/jobs/models/2026-11-27-edu-agent-bench-or-model-pin.yml'
 requests:
 - id: pinned-nemotron-store-aware-treatment-hi-0672dc
   ask: Pinned Nemotron store-aware treatment hit OpenRouter free-tier HTTP 429 twice and was stopped. What should
