@@ -19,9 +19,15 @@ Subcommands:
   banks    Copy vector-searched collections from the mddb leader +
            cms plane into mddb-embed :11028 — the self-owned local bank
            (bge-m3 space via embed-pool-shim, MEM-0788/MEM-0805). The
-           realized "MDDB bank reindex" lane; resume-safe and throttled
-           on the target's embed-queue depth so bulk copies can't
-           overflow its 4000-chunk queue.
+           realized "MDDB bank reindex" lane; incremental and
+           throttled on the target's embed-queue depth so bulk copies
+           can't overflow its 4000-chunk queue. Each run copies a
+           bounded slice (--budget wall clock / --max-docs per bank)
+           and resumes from a persisted per-bank cursor
+           (<dir>/banks-state.json + banks-have/<coll>.keys) — a
+           112k-doc collection drains over successive runs instead of
+           dying on TimeoutStartSec (card
+           embed-lane-banks-incremental-copy-fix).
   recall   search_query:-prefix a question and rank a store file —
            the edu-review recall probe for the lessons space.
   stats    store line counts + mddb-embed queue/vector state.
@@ -369,13 +375,17 @@ def cmd_news(args, url, key):
 
 
 # ----------------------------------------------------------------- banks
-def _docs(base, coll, include_content):
-    """All docs in a collection. /v1/search caps a page at PAGE docs
-    regardless of the requested limit, so a single big-limit call
-    silently truncates larger collections (card
-    embed-lane-banks-search-pagination). Page by offset until a short
-    page — same loop shape as mddb_probe.cmd_expired."""
-    out, offset, seen = [], 0, set()
+def _docs_pages(base, coll, include_content, start=0):
+    """Yield successive /v1/search pages for a collection, beginning at
+    row offset `start`. /v1/search caps a page at PAGE docs regardless
+    of the requested limit, so a single big-limit call silently
+    truncates larger collections (card embed-lane-banks-search-pagination).
+    Page by offset until a short page — same loop shape as
+    mddb_probe.cmd_expired. NOTE: the server ignores include_content
+    and always returns contentMd — pages are the only bulk content
+    channel, which is why the banks cursor scans with content and
+    resumes mid-collection instead of re-fetching."""
+    offset, seen = start, set()
     while True:
         d = _post(f"{base}/v1/search",
                   {"collection": coll, "limit": PAGE, "offset": offset,
@@ -384,13 +394,20 @@ def _docs(base, coll, include_content):
             d.get("results") or d.get("documents") or [])
         fresh = [x for x in page if x.get("key") not in seen]
         if page and not fresh:
-            break               # offset ignored — same page again
+            return               # offset ignored — same page again
         seen.update(x.get("key") for x in page)
-        out.extend(page)
+        yield page
         offset += len(page)
         if len(page) < PAGE:
-            break
+            return
         time.sleep(0.05)
+
+
+def _docs(base, coll, include_content):
+    """All docs in a collection (see _docs_pages)."""
+    out = []
+    for page in _docs_pages(base, coll, include_content):
+        out.extend(page)
     return out
 
 
@@ -403,84 +420,402 @@ def _queue_depth():
         return -1, -1
 
 
+# ------------------------------------------------------- banks cursor
+# Resumable/incremental bank sync (card embed-lane-banks-incremental-
+# copy-fix). A one-shot 112k-doc collection cannot finish inside one
+# timer window, so each run copies a bounded slice and the next run
+# resumes. State lives under --dir:
+#   banks-state.json        per-collection cursor/pass/counters + the
+#                           round-robin start index (atomic tmp+rename)
+#   banks-have/<coll>.keys  append-only set of target keys this lane has
+#                           confirmed — rebuilt from /v1/search every
+#                           --have-refresh runs so external target
+#                           writes/deletes reconcile; between refreshes
+#                           confirmed copies are appended, which keeps
+#                           hourly runs from re-downloading the whole
+#                           target collection (search always returns
+#                           contentMd — there is no key-only page mode).
+#
+# Cursor semantics: `offset` is the next unscanned /v1/search row
+# offset. Rows are bolt key-order (stable for a static set); inserts
+# can shift offsets by a row or two, which costs at most a skipped or
+# repeated doc per pass — repeated docs are idempotent /v1/add upserts
+# and skipped docs are caught when the cursor wraps to 0. A "pass" is
+# one full 0->end->0 sweep; it completes clean (no copy failures,
+# quarantined bad_keys aside) -> synced_at is stamped and the
+# collection is skipped until --rescan-hours or a have-refresh forces
+# a verification pass.
+BANKS_STATE = "banks-state.json"
+BANKS_HAVE_DIR = "banks-have"
+HAVE_REFRESH_DEFAULT = 24     # runs between full target-key refreshes
+RESCAN_HOURS_DEFAULT = 6.0    # synced collections re-verify this often
+BAD_KEY_FAILS = 2             # add failures before a key is quarantined
+BAD_KEYS_CAP = 500
+SCAN_FAIL_ALERT = 3           # consecutive src-scan errors before rc=1
+
+
+def _bank_state_path(args):
+    return os.path.join(args.dir, BANKS_STATE)
+
+
+def _load_bank_state(path):
+    try:
+        with open(path) as f:
+            st = json.load(f)
+        if isinstance(st, dict) and isinstance(st.get("collections"), dict):
+            st.setdefault("next_idx", 0)
+            return st
+    except Exception:
+        pass
+    return {"version": 1, "next_idx": 0, "collections": {}}
+
+
+def _save_bank_state(path, st):
+    try:
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        tmp = f"{path}.tmp"
+        with open(tmp, "w") as f:
+            json.dump(st, f, separators=(",", ":"))
+        os.replace(tmp, path)
+    except OSError as e:
+        print(f"  warn: banks state save failed: {e}", file=sys.stderr)
+
+
+def _have_path(args, coll):
+    return os.path.join(args.dir, BANKS_HAVE_DIR, f"{coll}.keys")
+
+
+def _load_have(path):
+    try:
+        with open(path) as f:
+            return {ln.strip() for ln in f if ln.strip()}
+    except OSError:
+        return None
+
+
+def _write_have(path, keys):
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        tmp = f"{path}.tmp"
+        with open(tmp, "w") as f:
+            for k in sorted(keys):
+                f.write(k + "\n")
+        os.replace(tmp, path)
+    except OSError as e:
+        print(f"  warn: banks have write failed: {e}", file=sys.stderr)
+
+
+def _append_have(path, keys):
+    if not keys:
+        return
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "a") as f:
+            for k in keys:
+                f.write(k + "\n")
+    except OSError as e:
+        print(f"  warn: banks have append failed: {e}", file=sys.stderr)
+
+
+def _bank_add(coll, d):
+    """One doc -> target /v1/add. meta may arrive as a python-repr str
+    (older writers) — normalize to dict."""
+    meta = d.get("meta") or {}
+    if isinstance(meta, str):
+        try:
+            meta = ast.literal_eval(meta)
+        except Exception:
+            meta = {}
+    return _post(f"{MDDB_EMBED}/v1/add",
+                 {"collection": coll, "key": d["key"],
+                  "lang": d.get("lang") or "en",
+                  "contentMd": d["contentMd"], "meta": meta},
+                 timeout=60)
+
+
+def _bank_fetch_have(args, coll, cs, over_budget):
+    """Target key set for skip-decisions. Returns (have, budget_stop):
+    have is the persisted banks-have file while fresh, else a full
+    paged /v1/search refresh (rewrites the file); under --force it is
+    empty so every src doc re-adds. budget_stop=True means the wall
+    clock died mid-refresh — caller ends the run without touching
+    cursor state (the partial set is discarded)."""
+    have_path = _have_path(args, coll)
+    if args.force:
+        return set(), False
+    file_keys = _load_have(have_path)
+    if file_keys is not None and int(cs.get("have_refresh_in") or 0) > 0:
+        cs["have_refresh_in"] = int(cs["have_refresh_in"]) - 1
+        return file_keys, False
+    have = set()
+    try:
+        for page in _docs_pages(MDDB_EMBED, coll, False):
+            if over_budget():
+                return None, True
+            have.update(x.get("key") for x in page if x.get("key"))
+    except Exception as e:
+        raise RuntimeError(f"have fetch failed: {e}")
+    _write_have(have_path, have)
+    cs["have_refresh_in"] = args.have_refresh
+    return have, False
+
+
+def _bank_scan_coll(args, coll, cs, have, state, state_path,
+                    over_budget, max_docs):
+    """Scan src pages from cs['offset'], /v1/add every doc missing from
+    `have`. Returns (copied, failed, stop_reason) where stop_reason is
+    None | 'budget' | 'cap' | 'error'. Mutates cs; caller persists the
+    full `state`."""
+    src = mddb_base(coll)
+    bad = cs.setdefault("bad_keys", {})
+    copied = fail = 0
+    base = int(cs.get("offset") or 0)
+    pass_fail = int(cs.get("pass_failures") or 0)
+    wrapped = False
+    added_have = []
+    stop = None
+
+    def checkpoint():
+        _append_have(_have_path(args, coll), added_have)
+        added_have.clear()
+        _save_bank_state(state_path, state)
+
+    try:
+        for page in _docs_pages(src, coll, True, start=base):
+            if over_budget() or (max_docs and copied >= max_docs):
+                stop = "budget" if over_budget() else "cap"
+                break
+            for i, d in enumerate(page):
+                if over_budget() or (max_docs and copied >= max_docs):
+                    cs["offset"] = base + i
+                    stop = "budget" if over_budget() else "cap"
+                    break
+                key = d.get("key")
+                if not key or key in have:
+                    continue
+                if int(bad.get(key) or 0) >= BAD_KEY_FAILS:
+                    continue
+                if not (d.get("contentMd") or "").strip():
+                    continue
+                # throttle: never let the target's embed queue near cap
+                depth, dropped = _queue_depth()
+                while depth >= args.queue_hi:
+                    if over_budget() or (max_docs and copied >= max_docs):
+                        cs["offset"] = base + i
+                        stop = "budget" if over_budget() else "cap"
+                        break
+                    print(f"  {coll}: queue depth {depth} (dropped "
+                          f"{dropped}) — waiting for drain < "
+                          f"{args.queue_hi}", flush=True)
+                    time.sleep(30)
+                    depth, dropped = _queue_depth()
+                if stop:
+                    break
+                try:
+                    _bank_add(coll, d)
+                except Exception:
+                    try:
+                        time.sleep(2)
+                        _bank_add(coll, d)
+                    except Exception as e:
+                        fail += 1
+                        pass_fail += 1
+                        bad[key] = int(bad.get(key) or 0) + 1
+                        if len(bad) > BAD_KEYS_CAP:
+                            bad.pop(next(iter(bad)), None)
+                        print(f"  FAIL {key}: {e}", file=sys.stderr)
+                        continue
+                have.add(key)
+                added_have.append(key)
+                copied += 1
+                cs["copied_total"] = int(cs.get("copied_total") or 0) + 1
+                if copied % 250 == 0:
+                    print(f"  {coll}: +{copied} copied "
+                          f"(row {base + i + 1})", flush=True)
+                if len(added_have) >= 200:
+                    checkpoint()
+                time.sleep(0.03)
+            if stop:
+                break
+            base += len(page)
+            cs["offset"] = base
+            if len(page) < PAGE:
+                # reached end of collection — close the pass
+                cs["src_total"] = base
+                cs["offset"] = 0
+                cs["pass"] = int(cs.get("pass") or 0) + 1
+                wrapped = True
+                cs["synced_at"] = (datetime.now(timezone.utc)
+                                   .isoformat(timespec="seconds")
+                                   if pass_fail == 0 else None)
+                break
+            checkpoint()
+    except Exception as e:
+        if over_budget():
+            stop = "budget"
+        else:
+            stop = "error"
+            cs["last_error"] = str(e)
+            # transient transport drops ("Remote end closed") self-heal
+            # via the cursor — only count consecutive failures so one
+            # blip doesn't fail the whole run / flap the alert card.
+            cs["scan_failures"] = int(
+                cs.get("scan_failures") or 0) + 1
+    else:
+        cs["scan_failures"] = 0
+    if wrapped:
+        cs["pass_failures"] = 0
+    else:
+        cs["pass_failures"] = pass_fail
+    cs["updated"] = datetime.now(timezone.utc).isoformat(
+        timespec="seconds")
+    checkpoint()
+    return copied, fail, stop
+
+
 def cmd_banks(args, url, key):
     del url, key  # banks ride the target's own embed queue, not litellm
     colls = args.collection or sorted(set(BANK_COLLS.values()))
-    hi = args.queue_hi
+    max_docs = args.max_docs or args.limit or 0
+    rescan_s = max(0.0, args.rescan_hours) * 3600.0
     t0 = time.monotonic()
+    state_path = _bank_state_path(args)
+    state = _load_bank_state(state_path)
+    colls_state = state["collections"]
 
     def over_budget():
         return bool(args.budget) and time.monotonic() - t0 > args.budget
 
+    def save():
+        _save_bank_state(state_path, state)
+
+    now = datetime.now(timezone.utc)
     total_copied = total_fail = 0
-    for coll in colls:
+    run_errors = []
+    n = len(colls)
+    start_idx = int(state.get("next_idx") or 0) % n if n else 0
+    next_idx = start_idx
+    budget_stop = False
+
+    for i in range(n):
+        idx = (start_idx + i) % n
+        coll = colls[idx]
         if over_budget():
+            next_idx = idx
+            budget_stop = True
             break
-        src = mddb_base(coll)
-        try:
-            have = {d.get("key") for d in _docs(MDDB_EMBED, coll, False)}
-            src_docs = _docs(src, coll, True)
-        except Exception as e:
-            print(f"banks {coll}: fetch failed {e}", file=sys.stderr)
-            continue
-        todo = [d for d in src_docs
-                if (args.force or d.get("key") not in have)
-                and d.get("contentMd")]
-        if args.limit:
-            todo = todo[:args.limit]
-        print(f"banks {coll}: src={len(src_docs)} have={len(have)} "
-              f"todo={len(todo)}", flush=True)
-        if args.dry_run:
-            continue
-        copied = fail = 0
-        for i, d in enumerate(todo):
-            if over_budget():
-                print(f"  {coll}: budget {args.budget}s exhausted at "
-                      f"{i}/{len(todo)} — stopping run cleanly "
-                      f"(next run resumes via key-set diff)", flush=True)
-                break
-            # throttle: never let the target's embed queue near its cap
-            depth, dropped = _queue_depth()
-            while depth >= hi:
-                if over_budget():
-                    print(f"  queue depth {depth} (dropped {dropped}) — "
-                          f"budget exhausted while waiting for drain < "
-                          f"{hi}; stopping run cleanly", flush=True)
-                    break
-                print(f"  queue depth {depth} (dropped {dropped}) — "
-                      f"waiting for drain < {hi}", flush=True)
-                time.sleep(30)
-                depth, dropped = _queue_depth()
-            if over_budget():
-                break
-            meta = d.get("meta") or {}
-            if isinstance(meta, str):
-                try:
-                    meta = ast.literal_eval(meta)
-                except Exception:
-                    meta = {}
+        cs = colls_state.setdefault(coll, {
+            "offset": 0, "pass": 0, "src_total": 0, "copied_total": 0,
+            "fail_total": 0, "pass_failures": 0, "have_refresh_in": 0,
+            "synced_at": None, "bad_keys": {}, "updated": None})
+        if args.force:
+            cs["bad_keys"] = {}      # retry quarantined docs this pass
+
+        # synced collections skip entirely until rescan/refresh is due —
+        # keeps hourly runs near-free once a bank is caught up.
+        synced_at = cs.get("synced_at")
+        if not args.force and synced_at and rescan_s \
+                and int(cs.get("have_refresh_in") or 0) > 0:
             try:
-                _post(f"{MDDB_EMBED}/v1/add",
-                      {"collection": coll, "key": d["key"],
-                       "lang": d.get("lang") or "en",
-                       "contentMd": d["contentMd"], "meta": meta},
-                      timeout=60)
-                copied += 1
+                age = (now - datetime.fromisoformat(synced_at)
+                       ).total_seconds()
+            except Exception:
+                age = rescan_s + 1
+            if age < rescan_s:
+                print(f"banks {coll}: synced (clean pass at {synced_at})"
+                      f" — skip, re-verify in {(rescan_s - age) / 3600:.1f}h",
+                      flush=True)
+                continue
+
+        print(f"banks {coll}: pass={cs.get('pass') or 0} "
+              f"offset={cs.get('offset') or 0}/"
+              f"{cs.get('src_total') or '?'} "
+              f"copied_total={cs.get('copied_total') or 0} "
+              f"bad={len(cs.get('bad_keys') or {})}", flush=True)
+
+        if args.dry_run:
+            # diagnostic only: count src rows missing from the target
+            # have-set; no copies, no cursor/state mutation.
+            try:
+                have, bstop = _bank_fetch_have(args, coll, cs, over_budget)
+                if bstop or have is None:
+                    next_idx = idx
+                    budget_stop = True
+                    break
+                missing = scanned = 0
+                for page in _docs_pages(mddb_base(coll), coll, True):
+                    if over_budget():
+                        break
+                    for d in page:
+                        scanned += 1
+                        k = d.get("key")
+                        if k and k not in have and (d.get("contentMd")
+                                                    or "").strip():
+                            missing += 1
+                print(f"banks {coll}: dry-run {missing} missing of "
+                      f"{scanned} scanned", flush=True)
             except Exception as e:
-                fail += 1
-                print(f"  FAIL {d.get('key')}: {e}", file=sys.stderr)
-            if (i + 1) % 50 == 0:
-                print(f"  {coll}: {i+1}/{len(todo)} copied", flush=True)
-            time.sleep(0.03)
+                run_errors.append(f"{coll}: dry-run failed: {e}")
+                print(f"banks {coll}: dry-run failed {e}",
+                      file=sys.stderr)
+            continue
+
+        try:
+            have, bstop = _bank_fetch_have(args, coll, cs, over_budget)
+        except Exception as e:
+            run_errors.append(f"{coll}: {e}")
+            print(f"banks {coll}: {e}", file=sys.stderr)
+            continue
+        if bstop or have is None:
+            next_idx = idx
+            budget_stop = True
+            break
+
+        copied, fail, stop = _bank_scan_coll(
+            args, coll, cs, have, state, state_path, over_budget,
+            max_docs)
         total_copied += copied
         total_fail += fail
-        print(f"banks {coll}: copied={copied} failed={fail}", flush=True)
+        if stop == "error":
+            scan_fails = int(cs.get("scan_failures") or 0)
+            if scan_fails >= SCAN_FAIL_ALERT:
+                run_errors.append(
+                    f"{coll}: scan failed {scan_fails}x consecutively: "
+                    f"{cs.get('last_error')}")
+            print(f"banks {coll}: scan failed "
+                  f"{cs.get('last_error')} ({scan_fails}/"
+                  f"{SCAN_FAIL_ALERT})", file=sys.stderr)
+            continue
+        if fail and not copied:
+            run_errors.append(
+                f"{coll}: {fail} add failures, 0 copied — target "
+                f"likely unhealthy")
+        synced_now = bool(cs.get("synced_at")) and \
+            int(cs.get("pass") or 0) > 0
+        print(f"banks {coll}: +{copied} copied, {fail} failed "
+              f"(offset={cs.get('offset') or 0}/"
+              f"{cs.get('src_total') or '?'}, "
+              f"pass={cs.get('pass') or 0}"
+              f"{', synced' if synced_now else ''})", flush=True)
+        if stop == "budget":
+            next_idx = (idx + 1) % n
+            budget_stop = True
+            break
+        # 'cap' or clean finish — move on to the next collection
+        save()
+
+    state["next_idx"] = next_idx
+    save()
+
     depth, dropped = _queue_depth()
-    note = ("; run budget exhausted — remaining docs resume next run"
-            if over_budget() else "")
+    note = ("; run budget exhausted — cursors persisted, next run "
+            "resumes" if budget_stop or over_budget() else "")
     print(f"banks: {total_copied} docs delivered, {total_fail} failed; "
           f"embed queue depth={depth} dropped={dropped} "
-          f"(drains async via embed-pool){note}")
+          f"(drains async via embed-pool){note}", flush=True)
+    for e in run_errors:
+        print(f"banks ERROR: {e}", file=sys.stderr)
+    return 1 if run_errors else 0
 
 
 # ---------------------------------------------------------------- recall
@@ -550,14 +885,29 @@ def main():
     p.add_argument("--collection", action="append",
                    help="one collection (repeatable); default BANK_COLLS")
     p.add_argument("--limit", type=int, default=0,
-                   help="cap docs per collection")
+                   help="cap docs copied per collection this run "
+                        "(alias for --max-docs)")
+    p.add_argument("--max-docs", type=int, default=0,
+                   help="cap docs copied per collection this run — "
+                        "the bounded slice; the per-bank cursor resumes "
+                        "the rest next run (0 = unlimited)")
     p.add_argument("--budget", type=int, default=0,
                    help="wall-clock seconds for the whole run — stop "
                         "copying cleanly (exit 0) once exceeded so the "
                         "service finishes inside TimeoutStartSec; the "
-                        "next run resumes via key-set diff")
+                        "per-bank cursor resumes next run")
+    p.add_argument("--rescan-hours", type=float,
+                   default=RESCAN_HOURS_DEFAULT,
+                   help="synced collections re-verify after this many "
+                        "hours (default %(default)s)")
+    p.add_argument("--have-refresh", type=int,
+                   default=HAVE_REFRESH_DEFAULT,
+                   help="runs between full target-key-set refreshes "
+                        "(default %(default)s)")
     p.add_argument("--force", action="store_true",
-                   help="re-add docs already on target (repair drops)")
+                   help="re-add docs already on target (repair drops) "
+                        "— ignores the have-set and quarantined "
+                        "bad_keys; the cursor still bounds each pass")
     p.add_argument("--queue-hi", type=int, default=3000,
                    help="pause /add calls while the target embed queue "
                         "is this deep (cap 4000)")
@@ -572,8 +922,10 @@ def main():
     args = ap.parse_args()
     url, key = (litellm_creds() if args.cmd != "banks"
                 else (None, None))
-    {"lessons": cmd_lessons, "news": cmd_news, "banks": cmd_banks,
-     "recall": cmd_recall, "stats": cmd_stats}[args.cmd](args, url, key)
+    rc = {"lessons": cmd_lessons, "news": cmd_news, "banks": cmd_banks,
+          "recall": cmd_recall, "stats": cmd_stats}[args.cmd](
+              args, url, key)
+    sys.exit(rc or 0)
 
 
 if __name__ == "__main__":

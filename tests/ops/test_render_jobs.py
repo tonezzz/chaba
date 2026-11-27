@@ -39,7 +39,7 @@ GENERATED = REPO / "systemd" / "generated"
 MIGRATED = {
     "embed-lane-news":        ("idc03",     "1h",  300,  "60min"),
     "embed-lane-lessons":     ("idc03",     "1d",  600,  "1440min"),
-    "embed-lane-banks":       ("idc02",     "1d",  2700, "1440min"),
+    "embed-lane-banks":       ("idc02",     "1h",  900,  "60min"),
     "yomi-update-active":     ("idc03",     "15m", 120,  "15min"),
     "mcp-debug-h3-sync":      ("tony_dell", "10m", 60,   "10min"),
     "tony-dell-health-snapshot": ("tony_dell", "5m", 60, "5min"),
