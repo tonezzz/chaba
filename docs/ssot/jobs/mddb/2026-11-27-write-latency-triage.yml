@@ -1,0 +1,142 @@
+title: mddb-ops write-latency triage — deleteWhere orphan convoy (read-only diagnosis + approval-gated fix)
+date: '2026-11-27'
+card: mddb-ops-write-latency-triage
+host: idc02 (dispatch worktree); probes vs idc03 mddb-ops :11026; journal/systemd read-only on idc03/tony-omen/con01
+
+summary: |
+  mddb-ops (/v1/add, /v1/ingest) degraded to 10-200s handler times,
+  breaking fleet log shipping. Root cause is NOT capacity or
+  replication — it is a detached client-side drain loop on idc03
+  flooding the server with orphaned deleteWhere handlers that convoy
+  bbolt's single write transaction.
+
+root_cause: |
+  1. host-logs backlog: 592,247 docs, of which 387,737 are expired
+     (>3d retention). Backlog accumulated because the retention sweep
+     was broken for weeks — 14d policy exceeded the ~250k /v1/search
+     paging limit (MEM-0871, silently disabled), then sweeps timed out
+     (ADA-1485).
+  2. The ADA-1485 fix (merged ~10:57 ICT 2026-11-27, con01 dispatch
+     ada-review-refresh-prune-timeout-fix-unpinned) switched
+     prune-old-docs.py to POST /v1/documents:deleteWhere
+     (limit=1000, 110s client timeout, 4x same-cursor retry).
+  3. That dispatch also left a DETACHED drain loop on idc03:
+     PID 3862968 (PPID=1, started 10:48:50 ICT),
+     `bash -c 'while true; do python3 .../prune-old-docs.py --only
+     host-logs --budget-seconds 1800 >> /tmp/prune-drain.log 2>&1;
+     sleep 90; done'`.
+  4. Every loop iteration's deleteWhere calls TIME OUT client-side
+     (/tmp/prune-drain.log: "deleteWhere failed — timed out
+     (deleted 0 before failure)" x20+), but the server-side handlers
+     keep running 4,000-4,900s (66-82 min) each — orphaned, detached
+     from dead client connections. New orphans spawn every ~10 min,
+     all re-scanning the SAME cursor range (duplicate work,
+     notFound errors).
+  5. bbolt allows ONE write tx at a time. Dozens of overlapping
+     orphaned deleteWhere handlers (37 completed since restart, more
+     in flight) serialize on the write lock; each walks the
+     2.97M-entry host-logs meta-index and commits up-to-1000-doc
+     deletes with MDDB_FREELIST_SYNC=true on a 26.85GB db carrying
+     ~23.6GB freelist. /v1/add and /v1/ingest queue behind →
+     125-198s observed handler times vs the 120s write timeout.
+  6. Self-reinforcing: client timeout (110s) << server handler time
+     (4000s+) → every retry/iteration spawns MORE orphans on the same
+     range → longer queues → more timeouts. Net drain ~2 docs/min
+     (matched 387,768→387,737 in ~15min) → ~134 days to clear at this
+     rate. The loop can never succeed.
+
+why_deletewhere_is_slow: |
+  docs/ssot/jobs/mddb/2026-11-26-sweep-pagination-keyset.yml already
+  measured it: applyWhere runs the full per-doc write path
+  (~0.5s+/doc → limit=1000 call ≈ 500s+ minimum, before convoy).
+  deleteWhere was chosen over /search enumeration (which was worse:
+  hours) but neither fits inside the 110-120s HTTP window on this db.
+  /v1/delete-batch (parallel lookup + single tx) is the faster delete
+  primitive but showed the same convoy (11 calls avg 3443s) once the
+  write lock saturated.
+
+live_evidence_2026-11-27_~13:30_ICT: |
+  - /v1/add n=12 tiny docs: 10.0,11.8,12.4,13.1,13.5,14.6,15.0,15.4,
+    16.6,16.7,25.1,27.0s → p50≈14s, p95≈26s, max 27s
+    (28h server histogram p50 was 0.5s; healthy under-load baseline
+    ~2-6s per log-shipper comments).
+  - /v1/ingest 5 docs (shipper shape): 12.8s.
+  - /v1/search host-logs limit=5 sort=key: 58.6s; /v1/get: 10ms
+    (point reads unaffected → write-lock convoy, not general overload).
+  - dryRun deleteWhere: 2.2s then 17.5s as congestion returned.
+  - mddb-ops journal: 40 deleteWhere timeout-WARNs since 10:00 ICT,
+    still ongoing at 13:14; /add//ingest handlers 125-198s.
+  - idc03: mem 14/15GB used (~1GB avail), load ~12, mddb-ops RSS
+    ~1.95GB vs GOMEMLIMIT=2GB; db file grew 26.37→26.85GB during the
+    observation window; stats recompute 127-226s every ~5min
+    (statsAge 2.3h — never catches up on the 26GB db).
+
+not_causal: |
+  - replication: role=standalone, current_lsn=0, no followers → no lag.
+  - embeddings: disabled on mddb-ops (vector-stats enabled=false,
+    embedded_documents=0 everywhere) → no embed queue.
+  - leader :11023 / mddb-cms: separate DBs, unaffected.
+  - host CPU alone: load ~12 is high but reads stay fast; the
+    write-specific convoy is the differentiator.
+
+collection_sizes: |
+  host-logs 592,247 docs / 589,096 revs / 2,971,590 meta-index
+  device-telemetry 24,364 / 50,379 / 166,192
+  host-logs-state 50 / 4,567 / 75
+  ada-nest-heartbeats 6 docs / 19,104 revs (churny — worth a look)
+  totals: 616,667 docs, 663,146 revs, 3,137,875 meta indices,
+  db file 26.85GB (~23.6GB freelist per prior measurement).
+
+remediation: |
+  Phase A — IMMEDIATE (approval requested on card):
+    kill the drain loop: `kill 3862968` (+ any in-flight
+    prune-old-docs.py child) on idc03. Client-side only — no MDDB
+    service or data change; deletes are idempotent; orphaned server
+    handlers finish their committed work and drain in ~1-2h.
+    Expected: /v1/add back to ~2-6s baseline within the drain window.
+    Rollback: none needed — the loop is pure harm (0 successful
+    deletes in 2.5h); if a drain is still wanted use Phase B/C.
+
+  Phase B — REAL FIX (maintenance window, approval requested):
+    Procedure C offline bbolt compact per docs/kb/mddb-prune-compact.md
+    (verified 2026-11-24: 76G→6.2G): stop mddb-ops →
+    `bbolt compact -o mddb-compact.db mddb.db` → swap → start →
+    verify → rm .pre-compact. 26.85GB→~3GB, ~15-30min downtime,
+    rollback = .pre-compact file. Kills the freelist poison →
+    commits/deletes fast → stats recompute drops to seconds.
+    Writers (log-shipper, telemetry) self-heal via cursor replay.
+
+  Phase C — BACKLOG (after B, or instead):
+    Re-run retention on the compacted db. NOTE: deleteWhere
+    limit=1000 still won't fit the 120s window (~0.5s/doc) — use
+    smaller limit (50-100) so calls finish and cursors advance, or
+    /v1/delete-batch chunks paced off-peak, or Procedure B
+    export→fresh re-adding only non-expired docs (~204k host-logs +
+    24k telemetry; embeddings OFF on ops → no vector loss). At
+    healthy post-compact delete cost the 387k backlog clears in
+    hours, not the ~134 days the current loop projects.
+
+  DO NOT: re-run the same `while true` drain pattern, or raise
+  WHERE_LIMIT — both amplify the orphan convoy.
+
+followups: |
+  - Card-worthy: deleteWhere/delete-batch calls can outlive any
+    client timeout on a big db — mddb should chunk commits per-doc
+    (or the endpoint needs a detach+poll contract) so a call can't
+    run 4000s; also consider a server-side guard refusing
+    deleteWhere limit>~100 on huge collections.
+  - prune-old-docs.py should log per-call progress (cursor position,
+    docs deleted) — "deleted 0 before failure" x20 gave no signal the
+    server-side orphans were still working.
+  - idc03 host memory pressure (~1GB avail, 3x mddbd + litellm + HA)
+    is chronic — separate capacity card.
+  - ada-nest-heartbeats: 6 docs / 19,104 revisions — check
+    maxRevisions on that collection.
+
+verify: |
+  Read-only only — no prod change applied. Probes: POST /v1/add x12,
+  /v1/ingest x1, /v1/search, /v1/get, deleteWhere dryRun x2 against
+  http://100.102.134.91:11026; journalctl --user -u mddb-ops.service
+  + systemctl/timer/ps on idc03 (ssh read-only); card comms via
+  board-api. Probe collection devin-latency-probe deleted afterwards
+  (delete-collection 200, 62s — itself queued behind the convoy).
