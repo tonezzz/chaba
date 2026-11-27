@@ -1,0 +1,46 @@
+id: opencode-s0-requalify-option-a-20261127
+title: S0 requalify + climb retry (option A) — or-free-nemotron-ultra
+column: backlog
+updated: '2026-11-27'
+brief: 'Tony chose A 2026-11-27: retry the S0 gate with the same free model after both post-reset climbs capped
+  at 0.40. No STRONG_MODELS / free-tier admission changes. Stop for live S1 watch if the gate passes.'
+priority: high
+program: chaba-ci
+tags:
+- opencode-lane
+- s0
+- requalify
+- gate
+- decision
+spec: 'DECISION 2026-11-27 (Tony, answer to request s0-gate-ran-twice-post-reset-or-free-nem-a3e28c): option A —
+  proceed.
+
+
+  Requalify + climb again with or-free-nemotron-ultra (same free model). The two post-reset S0 climbs on idc02 both
+  verified 2/5 (0.40 < 0.60 gate); backup-freshness (untruthful mtimes) and worktree-safety (worktree enumeration)
+  failed identically both times — treat as a capability ceiling, not bad luck. Retry several climbs with fresh evidence;
+  ~30-40% per climb, so more than one attempt is expected.
+
+
+  Hard constraints:
+
+  - Do NOT change STRONG_MODELS or admit any free model. S5 stays reserved for Tony.
+
+  - Keep the lane at S0 until a fresh gate genuinely passes (0.60+ verified, zero safety flags). No invented human_minutes.
+
+  - If a fresh S0 gate passes, STOP and raise the live S1 canary watch request — no S1 canary without Tony actually
+  observing on idc02 (s1-watch.sh). Then run S1, then S2 per DECISION 2026-11-26; hold S5.
+
+  - Record all gate evidence on this card. Done = gate evidence and human_minutes recorded, with the S1 watch request
+  raised if the gate passed.'
+ref: OPS-1494
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  status: queued
+comms:
+- at: 2026-11-27 10:57
+  from: tony
+  text: Queued as fresh dispatch after opencode-lane-regraduation auto-closed on verified code. Option A decision
+    recorded on the parent card.
