@@ -1,0 +1,45 @@
+icon: shield
+title: tony-dell root disk reclaimed below threshold via regenerable caches
+date: 2026-11-27
+card: disk-auto-tony-dell-root
+ref: DISK-DELL-ROOT
+context: >-
+  The automated disk alert reopened with tony-dell / at 88% used (26-28G
+  free), above the 85% threshold in ssot.audit.hosts.yml. Read-only triage
+  found 41G of Chrome profiles and 8.3G of podman container storage that
+  could not be safely removed, plus 7.3G in ~/.cache/uv and 789M of old .deb
+  files in /var/cache/apt/archives that are regenerable. Tony approved a
+  bounded cleanup of those two caches, then approved briefly stopping the
+  two live uv lanes because uv cache clean refused to run while they held
+  builds-v0 paths.
+changes:
+  - "Ran sudo -n apt-get clean on tony-dell; /var/cache/apt/archives went
+    from 789M to 16K."
+  - "Stopped oswe-backend.service and oswe-mda.service (uv run langgraph dev
+    :2024 and uv run --locked mda dev :2025), ran uv cache clean with
+    ~/.local/bin/uv on PATH (Removed 113227 files / 5.8GiB), then restarted
+    both units. ~/.cache/uv went from 7.3G to 4K."
+  - "No Chrome profile, podman image, application source or unit file was
+    changed."
+verification:
+  - "df -h / before cleanup: 87% used / 28G free; after apt clean: 87% /
+    29G free; after uv cache clean and restart: 84% used / 34G free."
+  - "Both units active/running, Result=success, NRestarts=0 after restart."
+  - "ss -ltnp shows listeners on 127.0.0.1:2024 and 127.0.0.1:2025; curl
+    http://127.0.0.1:2024/ and http://127.0.0.1:2025/ both return 200."
+  - "Journal for both units shows clean application startup and queue/graph
+    registration after the restart."
+rollback: >-
+  No configuration rollback is required. Cache contents regenerate on the
+  next uv/apt use; if a lane fails, restart oswe-backend.service and
+  oswe-mda.service and re-check ports 2024/2025. Do not attempt to restore
+  the deleted cache files.
+residual: >-
+  The root volume is now 84%, only 1 point below the threshold. Chrome
+  profiles (41G) and podman containers (8.3G) remain the largest consumers
+  and need an owner-reviewed retention decision if growth continues.
+lesson: >-
+  uv cache clean blocks while uv run processes hold builds-v0 paths; check
+  service cgroups before forcing it, stop only the named lanes with
+  approval, and verify the consumer ports after restart rather than trusting
+  ActiveState alone.
