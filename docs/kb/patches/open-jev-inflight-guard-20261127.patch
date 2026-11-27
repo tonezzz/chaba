@@ -1,0 +1,201 @@
+# open-jev in-flight inference guard + lane metrics + CPU bf16
+#
+# Provenance: changes made 2026-11-27 on tony-omen and idc02 checkouts of
+# https://github.com/daseinlabs/open-jev.git, layered on top of pre-existing
+# uncommitted user work. Clean commit built on origin/main (8f2ced8) in a
+# local worktree: ops/openjev-inflight-guard @ 7c864c3. Push was denied
+# (403: no write access to daseinlabs/open-jev, no personal fork), so the
+# diff is archived here until a PR can be opened by someone with access.
+#
+# Apply with: git apply docs/kb/patches/open-jev-inflight-guard-20261127.patch
+# from the root of an open-jev checkout at origin/main (8f2ced8) or newer
+# where server.py matches. Verify with:
+#   python -m py_compile openjev/server.py openjev/torch_backend.py openjev/lane_metrics.py
+# Guard behavior: 3 concurrent /score calls -> [200, 200, 429]; /health stays 200.
+# Env knob: OPENJEV_MAX_INFLIGHT (default 2, set in open-jev-guard.yml drop-in).
+#
+# --- diff starts here ---
+
+diff --git a/openjev/lane_metrics.py b/openjev/lane_metrics.py
+new file mode 100644
+index 0000000..a51fb92
+--- /dev/null
++++ b/openjev/lane_metrics.py
+@@ -0,0 +1,76 @@
++"""Cheap monotonic /metrics for /v1/systemone lane servers.
++
++Stdlib-only on purpose: the prod gemma lanes run the `openjev` package
++(~/CascadeProjects/open-jev — a separate repo outside chaba). Vendor this
++file there to give those lanes the same endpoint; nest-overview.py falls
++back to "no metrics" for lanes that don't expose it yet.
++
++GET /metrics -> JSON, all counters monotonic since process start:
++
++    uptime_s           wall seconds since process start
++    cpu_seconds        process CPU time (user+system), monotonic
++    requests_total     /v1/systemone calls served
++    questions_total    individual questions answered
++    escalations_total  questions answered with a fallback/stub — the
++                       caller must route these to a heavier tier
++    latency_seconds    {count, sum, buckets{le_*: cumulative}}
++
++Cheap by design: a few int/float adds per request, no locks beyond
++FastAPI's per-request thread, no persistence.
++"""
++import time
++from collections import OrderedDict
++
++# Latency histogram edges (seconds) — covers a 10ms distilbert gate up to
++# a 60s gemma-4b CPU decision.
++BUCKETS = (0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 15.0, 60.0)
++
++
++class LaneMetrics:
++    def __init__(self):
++        self._t0 = time.monotonic()
++        self.requests = 0
++        self.questions = 0
++        self.escalations = 0
++        self.latency_sum = 0.0
++        self.latency_buckets = OrderedDict((b, 0) for b in BUCKETS)
++        self.latency_count = 0
++
++    def observe(self, elapsed_s: float, questions: int = 0,
++                escalations: int = 0):
++        """Record one served request. `escalations` = questions answered
++        with a stub/fallback the caller must route to a heavier tier."""
++        self.requests += 1
++        self.questions += questions
++        self.escalations += escalations
++        self.latency_sum += elapsed_s
++        self.latency_count += 1
++        for edge in self.latency_buckets:
++            if elapsed_s <= edge:
++                self.latency_buckets[edge] += 1
++
++    def snapshot(self) -> dict:
++        return {
++            "uptime_s": round(time.monotonic() - self._t0, 3),
++            "cpu_seconds": round(time.process_time(), 3),
++            "requests_total": self.requests,
++            "questions_total": self.questions,
++            "escalations_total": self.escalations,
++            "latency_seconds": {
++                "count": self.latency_count,
++                "sum": round(self.latency_sum, 3),
++                "buckets": {"le_inf": self.latency_count,
++                            **{f"le_{b:g}": n
++                               for b, n in self.latency_buckets.items()}},
++            },
++        }
++
++
++METRICS = LaneMetrics()
++
++
++def attach(app):
++    """Register GET /metrics on a FastAPI app."""
++    @app.get("/metrics")
++    def metrics():
++        return METRICS.snapshot()
+diff --git a/openjev/server.py b/openjev/server.py
+index d5ccd7a..3423401 100644
+--- a/openjev/server.py
++++ b/openjev/server.py
+@@ -7,15 +7,34 @@
+ from __future__ import annotations
+ 
+ import os
++import threading
+ import time
+ from typing import Literal
+ 
+ from fastapi import Depends, FastAPI, Header, HTTPException
+ from pydantic import BaseModel, Field
+ 
++from . import lane_metrics
+ from .scorer import DEFAULT_MODEL, OptionScorer
+ from .systemone import SystemOneRequest, SystemOneResponse, system_one
+ 
++# Bound in-flight inference. Every route here is a sync `def`, so Starlette
++# dispatches it to anyio's 40-token threadpool. An unbounded burst of scoring
++# requests fills all 40 workers with multi-minute Gemma3 forwards, /health
++# can no longer get a slot, and the process must be SIGKILLed. Reject excess
++# work immediately instead of queueing it into another pileup.
++_MAX_INFLIGHT = max(1, int(os.environ.get("OPENJEV_MAX_INFLIGHT", "2")))
++_INFER_GATE = threading.Semaphore(_MAX_INFLIGHT)
++
++
++def _acquire_infer_slot() -> None:
++    if not _INFER_GATE.acquire(blocking=False):
++        raise HTTPException(
++            429,
++            f"too many concurrent inference requests (max {_MAX_INFLIGHT}); retry later",
++            headers={"Retry-After": "60"},
++        )
++
+ 
+ class ScoreRequest(BaseModel):
+     context: str
+@@ -46,6 +65,7 @@ def create_app(model_path: str | None = None, batch_size: int = 8, backend: str
+     model_path = model_path or os.environ.get("OPENJEV_MODEL", DEFAULT_MODEL)
+     adapter_path = os.environ.get("OPENJEV_ADAPTER")  # optional LoRA adapter dir
+     app = FastAPI(title="openjev", version="0.1.0")
++    lane_metrics.attach(app)
+     state: dict = {}
+     api_key = os.environ.get("OPENJEV_API_KEY")  # if set, /v1/systemone requires "Authorization: Bearer <key>"
+     model_name = os.path.basename(model_path.rstrip("/"))
+@@ -71,10 +91,13 @@ def create_app(model_path: str | None = None, batch_size: int = 8, backend: str
+         scorer: OptionScorer = state.get("scorer")
+         if scorer is None:
+             raise HTTPException(503, "model still loading")
++        _acquire_infer_slot()
+         try:
+             res = scorer.score(req.context, req.options, norm=req.norm, chat=req.chat, sep=req.sep)
+         except ValueError as e:
+             raise HTTPException(400, str(e))
++        finally:
++            _INFER_GATE.release()
+         best = max(range(len(res)), key=lambda i: res[i].score)
+         return ScoreResponse(
+             best=res[best].option,
+@@ -89,10 +112,20 @@ def create_app(model_path: str | None = None, batch_size: int = 8, backend: str
+         scorer: OptionScorer = state.get("scorer")
+         if scorer is None:
+             raise HTTPException(503, "model still loading")
++        _acquire_infer_slot()
++        t0 = time.perf_counter()
+         try:
+-            return system_one(scorer, req, model_name=req.model or model_name)
++            resp = system_one(scorer, req, model_name=req.model or model_name)
+         except ValueError as e:
+             raise HTTPException(400, str(e))
++        finally:
++            _INFER_GATE.release()
++        # every question type gets a real scored answer here — no
++        # stub/heavier-tier fallback path, so escalations stay 0.
++        lane_metrics.METRICS.observe(time.perf_counter() - t0,
++                                     questions=len(resp.answers),
++                                     escalations=0)
++        return resp
+ 
+     return app
+ 
+diff --git a/openjev/torch_backend.py b/openjev/torch_backend.py
+index 366715d..12d8955 100644
+--- a/openjev/torch_backend.py
++++ b/openjev/torch_backend.py
+@@ -25,8 +25,12 @@ class TorchBackend:
+         if self.device.type == "mps" and not torch.backends.mps.is_available():
+             raise ValueError("MPS is unavailable on this machine")
+         # Gemma's activations overflow float16 (NaN hidden states), so use bfloat16 where
+-        # the device has it (CUDA from Ampere, MPS) and float32 otherwise (e.g. T4, V100, CPU).
++        # the device has it (CUDA from Ampere, MPS) and float32 otherwise (e.g. T4, V100).
++        # CPU exception: bf16 halves the ~18G fp32 working set to ~9G and avoids the
++        # swap churn seen with gemma-3-4b-it on 30G workstations.
+         dtype = torch.float32
++        if self.device.type == "cpu":
++            dtype = torch.bfloat16
+         if self.device.type == "cuda":
+             with torch.cuda.device(self.device):
+                 dtype = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float32
