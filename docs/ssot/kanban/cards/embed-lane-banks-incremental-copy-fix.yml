@@ -1,7 +1,7 @@
 id: embed-lane-banks-incremental-copy-fix
 title: 'embed-lane-banks: 112k-doc one-shot copy exceeds 15min timer — make resumable'
 column: doing
-updated: 2026-11-27 11:34
+updated: 2026-11-27 11:52
 brief: Systemic fix from live triage 2026-11-27; two runner slots free.
 priority: high
 tags:
@@ -56,5 +56,9 @@ comms:
     attempt 2 (con01): prior branch never merged — re; [timer-alert-idc02-mddb-backup] 2026-11-25 14:2x (+07): TRIAGE:
     part of the MDDB; Drift flags flap transiently: chaba-repo-sync updates the checkout copy, and unt; [embed-lane-banks-bounded-run]
     primer injected 8 lesson(s): ['
+- at: 2026-11-27 11:52
+  from: devin
+  text: 'investigating: live idc02 unit is stale (ExecStart lacks --budget; repo checkout HAS the budget code but
+    rendered unit was never installed). Redesigning banks as cursor-resumable per-bank slices; will verify on idc02.'
 claim:
   since: 2026-11-27 11:33
