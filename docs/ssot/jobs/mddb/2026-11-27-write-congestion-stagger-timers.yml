@@ -11,7 +11,7 @@ slug: write-congestion-stagger-timers
 card: mddb-ops-write-congestion-stagger-timers
 ref: OPS-1502
 host: idc03 (mddb-ops), fleet (shippers)
-status: fix-landed-awaiting-install
+status: drain-loop-killed-verified-awaiting-timer-install
 
 problem: >
   mddb-ops journal showed /v1/add + /v1/ingest handlers running
@@ -106,7 +106,31 @@ verify: >
     show no add/ingest write-timeout warnings during shipper waves.
 
 followups:
-  - Board request raised on the card: drain-loop intervention decision
-    (pause vs let-run vs fix+restart bounded).
-  - Install staggered units after merge: render-jobs.py --host <h>
-    --install on each of the 6 hosts (or ansible playbook path).
+  - "Board request raised on the card: drain-loop intervention decision (pause vs let-run vs fix+restart bounded)."
+  - "Install staggered units after merge: render-jobs.py --host <h> --install on each of the 6 hosts (or ansible playbook path)."
+
+post_kill_verify: >
+  2026-11-27 ~14:31 +07 (attempt-2 dispatch, OPS-1071 zombie-claim
+  restart): Tony-approved kill EXECUTED — SIGTERM to drain-loop bash
+  pid 3862968 and its in-flight child prune-old-docs.py pid 269016 on
+  idc03; pgrep confirms zero prune-old-docs processes remain. The
+  request had been answered at 14:20 but the auto-close at 14:25
+  dropped execution — this run closed that gap.
+  - mddb-ops journal after kill: every deleteWhere "response not
+    delivered" completion has arrival <=13:57 (computed
+    completion-elapsed) — all pre-kill orphans draining; warning rate
+    decaying (elapsed 3450s -> 2530s across the window). Zero
+    add/ingest/search write-timeout warnings since ~14:40.
+  - Consumer proof: POST /v1/stats 200 in 11ms (was 154s at 13:32);
+    POST /v1/add probe doc 200 in 3.8s (was 125-198s during congestion);
+    POST /v1/delete-collection cleanup 200 in 12.7s (was 62s queued
+    behind the convoy). Probe collection devin-latency-probe removed.
+  - Residual: prune-old-docs.timer (idc03 user unit, daily 09:30,
+    --budget-seconds 0) is NOT declared in ssot.jobs.yml (host-hygiene
+    gap, MEM-0871 lineage) and will retry the ~390k-doc host-logs
+    backlog tomorrow — it runs %h/CascadeProjects/chaba exec-checkout
+    code, so chaba-repo-sync delivers the backoff-fixed script within
+    the hour; watch the 2026-11-28 09:30 run. Staggered shipper timers
+    remain uninstalled (deploy gate) — next waves still phase-locked
+    but mddb-ops is healthy and OPS-1497's 130s budgets absorb
+    residual congestion.
