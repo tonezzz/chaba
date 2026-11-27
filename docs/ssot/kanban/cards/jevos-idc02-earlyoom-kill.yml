@@ -1,7 +1,7 @@
 id: jevos-idc02-earlyoom-kill
 title: idc02 JevOS killed by earlyoom; clean SIGTERM bypassed Restart=on-failure
 column: doing
-updated: 2026-11-27 21:36
+updated: 2026-11-27 21:37
 brief: '2026-11-27 20:47:40 +07: earlyoom on idc02 (0 swap, avail 9.92% < 10% threshold) sent SIGTERM to jev PID
   1233450 (RSS 1543 MiB) after killing three chrome processes. systemd saw Result=success, so Restart=on-failure
   did not restart it; lane stayed down ~17min (health=000). Restored 21:05, health 200 in 15s.'
@@ -52,6 +52,13 @@ comms:
     earlyoom.service. Live proof: pgrep shows /usr/bin/earlyoom -r 3600 --avoid (^|/)(jev)$, is-active=active, jev
     /health=200, second --check changed=0. Backup /etc/default/earlyoom.1398770.2026-11-27@21:32:57~. Quoting proven
     via systemd-run transient unit first. Chose ('
+- at: 2026-11-27 21:37
+  from: devin
+  text: '(clean restatement of outcome) Chose option (a) and applied it: EARLYOOM_ARGS now carries --avoid with
+    regex (^|/)(jev)$ in /etc/default/earlyoom on idc02; earlyoom.service restarted 21:32:58 +07. Verified: running
+    argv is /usr/bin/earlyoom -r 3600 --avoid (^|/)(jev)$, is-active=active, jev /health=200, idempotent re-check
+    changed=0. systemd quote-stripping proven via transient unit before the run. Rationale vs (b): Restart=always
+    allows kill/restart loops under sustained pressure and manual sto'
 action:
   type: dispatch
   status: running
