@@ -2,6 +2,7 @@ import { Client } from "/home/tony/.yomi/mcpb/node_modules/@modelcontextprotocol
 import { StdioClientTransport } from "/home/tony/.yomi/mcpb/node_modules/@modelcontextprotocol/sdk/dist/esm/client/stdio.js";
 import { writeFileSync, readFileSync, mkdirSync, existsSync } from "node:fs";
 import pool from "./db.mjs";
+import { mcpbTransportEnv } from "./refresh-limits.mjs";
 
 function normalizeTimestamp(deliveredTime) {
   if (!deliveredTime) return null;
@@ -33,6 +34,7 @@ const nodePath = process.env.NODE_BINARY_PATH || "/usr/bin/node";
 const transport = new StdioClientTransport({
   command: nodePath,
   args: [YOMI_MCP_PATH],
+  env: mcpbTransportEnv(),
 });
 
 const client = new Client({ name: "yomi-conversations-fetch", version: "0.1" });

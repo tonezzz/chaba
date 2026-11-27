@@ -1,9 +1,14 @@
 import { Client } from "/home/tony/.yomi/mcpb/node_modules/@modelcontextprotocol/sdk/dist/esm/client/index.js";
 import { StdioClientTransport } from "/home/tony/.yomi/mcpb/node_modules/@modelcontextprotocol/sdk/dist/esm/client/stdio.js";
 import { readFileSync, existsSync } from "node:fs";
+import { mcpbTransportEnv } from "./refresh-limits.mjs";
 
 const YOMI_MCP_PATH = "/home/tony/.yomi/mcpb/run.mjs";
-const transport = new StdioClientTransport({ command: "/usr/bin/node", args: [YOMI_MCP_PATH] });
+const transport = new StdioClientTransport({
+  command: "/usr/bin/node",
+  args: [YOMI_MCP_PATH],
+  env: mcpbTransportEnv(),
+});
 const client = new Client({ name: "yomi-login", version: "0.1" });
 await client.connect(transport);
 

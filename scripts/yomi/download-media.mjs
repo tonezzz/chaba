@@ -1,6 +1,7 @@
 import { Client } from "/home/tony/.yomi/mcpb/node_modules/@modelcontextprotocol/sdk/dist/esm/client/index.js";
 import { StdioClientTransport } from "/home/tony/.yomi/mcpb/node_modules/@modelcontextprotocol/sdk/dist/esm/client/stdio.js";
 import { writeFileSync, mkdirSync, existsSync, readdirSync } from "node:fs";
+import { mcpbTransportEnv } from "./refresh-limits.mjs";
 
 const MEDIA_DIR =
   process.env.MEDIA_DIR ||
@@ -12,6 +13,7 @@ const transport = new StdioClientTransport({
   command: nodePath,
   args: [YOMI_MCP_PATH],
   stderr: "pipe",
+  env: mcpbTransportEnv(),
 });
 
 const client = new Client({ name: "yomi-media-download", version: "0.1" });

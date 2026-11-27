@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { limitFromEnv, truncateMessages, capMediaMessages } from "./refresh-limits.mjs";
+import {
+  limitFromEnv,
+  truncateMessages,
+  capMediaMessages,
+  mcpbTransportEnv,
+} from "./refresh-limits.mjs";
 
 test("limitFromEnv falls back on missing/invalid values and clamps to range", () => {
   const name = "YOMI_TEST_LIMIT";
@@ -42,4 +47,18 @@ test("capMediaMessages selects media types and caps fan-out", () => {
     ["2", "3", "4"]
   );
   assert.deepEqual(capMediaMessages(messages, 0), []);
+});
+
+test("mcpbTransportEnv caps the worker heap via NODE_OPTIONS", () => {
+  const name = "YOMI_MCPB_MAX_OLD_SPACE_MB";
+  delete process.env[name];
+  assert.deepEqual(mcpbTransportEnv(), { NODE_OPTIONS: "--max-old-space-size=1024" });
+
+  process.env[name] = "768";
+  assert.deepEqual(mcpbTransportEnv(), { NODE_OPTIONS: "--max-old-space-size=768" });
+
+  process.env[name] = "not-a-number";
+  assert.deepEqual(mcpbTransportEnv(), { NODE_OPTIONS: "--max-old-space-size=1024" });
+
+  delete process.env[name];
 });

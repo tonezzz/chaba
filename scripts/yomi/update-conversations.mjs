@@ -3,7 +3,7 @@ import { StdioClientTransport } from "/home/tony/.yomi/mcpb/node_modules/@modelc
 import { writeFileSync, readFileSync, mkdirSync, existsSync, readdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { categorize } from "./categorize-conversations.mjs";
-import { limitFromEnv, capMediaMessages } from "./refresh-limits.mjs";
+import { limitFromEnv, capMediaMessages, mcpbTransportEnv } from "./refresh-limits.mjs";
 import {
   evaluateSummaryQuality,
   isMeaningfulSummary,
@@ -156,6 +156,7 @@ const nodePath = process.env.NODE_BINARY_PATH || "/usr/local/bin/node";
 const transport = new StdioClientTransport({
   command: nodePath,
   args: [YOMI_MCP_PATH],
+  env: mcpbTransportEnv(),
 });
 
 const client = new Client({ name: "yomi-conversations-export", version: "0.1" });

@@ -1,0 +1,74 @@
+title: idc03 Yomi mcpb worker heap cap — NODE_OPTIONS via StdioClientTransport env
+subtitle: MEM-1510 follow-up; the env-file NODE_OPTIONS never reached run.mjs
+icon: shield
+date: 2026-11-27
+card: yomi-idc03-active-refresh-cgroup-oom
+ref: MEM-1510
+status: committed-awaiting-sync
+
+context:
+  situation: >-
+    A parallel ops session landed the bulk of MEM-1510 at 18:56 (commit
+    1d696bf948c): MAX_ACTIVE 20->5, per-chat page/message/media ceilings,
+    NODE_OPTIONS=--max-old-space-size=1536 in yomi-api.env, verified clean
+    sweep at 18:54 with zero CONSTRAINT_MEMCG kills. This dispatch
+    (20261127-184834) started before that close and independently verified
+    the live state.
+  gap_found: >-
+    The spec item "cap mcpb node heap via NODE_OPTIONS" was only half
+    implemented. yomi-api.env's NODE_OPTIONS reaches yomi-api and its
+    spawnNode() children (env: process.env), but the mcpb worker run.mjs is
+    spawned through MCP SDK StdioClientTransport, which builds the child env
+    from getDefaultEnvironment() — HOME/LOGNAME/PATH/SHELL/TERM/USER only.
+    NODE_OPTIONS was never inherited, so run.mjs stayed uncapped inside the
+    2 GiB cgroup. The job doc's lesson "NODE_OPTIONS in the container env
+    file is inherited by spawned node workers" is wrong for MCP stdio
+    workers.
+
+changes:
+  - >-
+    scripts/yomi/refresh-limits.mjs — new mcpbTransportEnv() helper returning
+    NODE_OPTIONS=--max-old-space-size=<mb> (YOMI_MCPB_MAX_OLD_SPACE_MB,
+    default 1024, clamp 256-8192).
+  - >-
+    scripts/yomi/{update-conversations,fetch-conversations,download-media,
+    send-message,yomi-login}.mjs — pass env: mcpbTransportEnv() to every
+    StdioClientTransport that spawns run.mjs.
+  - >-
+    scripts/yomi/test-refresh-limits.mjs — coverage for the new helper
+    (4/4 pass).
+  - >-
+    systemd/yomi-api.service — vendored copy updated with
+    --memory=2g --memory-swap=2g to match the live unit patched by
+    bound-yomi-api-memory.yml (repo/live drift fix).
+
+deploy:
+  path: >-
+    No Ansible re-run needed: these are repo scripts read fresh per
+    invocation. The delta converges via merge-sweep -> origin/master ->
+    idc03 chaba-repo-sync (15-min cadence); the next yomi-update-active tick
+    picks it up. yomi-api.mjs is untouched so no container restart is
+    required. Deliberately NOT hot-patched into the served checkout: its
+    working tree already carries the identical-to-merge hot-patch, and
+    copying divergent content would risk a git-safe-pull autostash conflict.
+  rollback: >-
+    Revert the dispatch commit; workers simply return to the uncapped
+    default (still bounded by the merged page/message/media ceilings).
+
+verification:
+  local: "node --check clean on all touched files; node --test
+    test-refresh-limits.mjs 4/4 pass."
+  live: >-
+    idc03 verified read-only at ~19:05: container libpod-2936537f memory.events
+    oom_kill=0, zero CONSTRAINT_MEMCG kernel kills since the 18:50:55
+    restart, yomi-update-active 18:54 sweep finished Result=success in ~93s.
+    Post-merge convergence to be confirmed on the next timer tick.
+
+lessons:
+  - "MCP SDK StdioClientTransport does NOT inherit process.env — it uses
+    getDefaultEnvironment() (HOME/PATH/shell vars only). Env-file
+    NODE_OPTIONS caps the parent and spawnNode() children but never the MCP
+    worker; pass env: explicitly on the transport."
+  - "Two agents can work the same card minutes apart (dispatch + ops
+    session): check card comms and the served checkout's git status before
+    implementing — verify-then-extend beats re-doing."
