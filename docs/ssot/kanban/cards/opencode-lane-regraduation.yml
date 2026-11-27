@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: review
-updated: 2026-11-27 09:25
+updated: 2026-11-27 10:53
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -895,6 +895,9 @@ comms:
 - at: 2026-11-27 09:25
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''s0-gate-ran-twice-post-reset-o''] block close)'
+- at: 2026-11-27 10:53
+  from: tony
+  text: queue refused — attempt cap reached (2/2) — /action do=retry re-arms it
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
@@ -1016,7 +1019,7 @@ requests:
   - hold
 action:
   type: dispatch
-  status: done
+  status: failed
   lane: devin
   attempts: 2
   repo: chaba
@@ -1026,6 +1029,6 @@ action:
     close_held: 2026-11-27 09:25
   runner: mn01
   verified: true
+  last_failure: attempt cap reached (2/2) — /action do=retry re-arms it
 claim:
   since: 2026-11-27 08:04
-awaiting_action: true
