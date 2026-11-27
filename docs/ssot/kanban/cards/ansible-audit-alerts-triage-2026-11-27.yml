@@ -1,7 +1,7 @@
 id: ansible-audit-alerts-triage-2026-11-27
 title: Triage 5 open Ansible audit alerts — stale vs real drift (approval-gated)
 column: doing
-updated: 2026-11-27 13:37
+updated: 2026-11-27 13:38
 brief: Next batch 2026-11-27 — 4 runner slots free.
 priority: high
 tags:
@@ -55,6 +55,13 @@ comms:
   from: devin
   text: 'raised request approve-host-state-remediation-on-mn01-f-fc1183: Approve host-state remediation on mn01?
     Fresh audits confirm mn-ha-dev.service (HA dev, MCP mn01:9585 — drives the mcp-v'
+- at: 2026-11-27 13:38
+  from: devin
+  text: 'DONE — triage complete. Re-ran all 5 read-only audits on idc02 @13:10-13:14 (no board_notify). CLOSED stale:
+    ansible-runner-tools-drift (healed vs pin d0465bfe; kk-mac MISSING-DEST = chaba-only lane, audit false-positive)
+    + ansible-log-shipper-alert (OPS-1497 fix verified deployed; residual clears on merge). OPEN real drift: ansible-mcp-verify-alert
+    (mn-ha-dev + xmeye-vms crash-looping on mn01 since ~09:16, rootless netns broken), ansible-fleet-service-drift
+    (persistent; mostly ssot.audit.hosts.'
 claim:
   since: 2026-11-27 12:58
 requests:
