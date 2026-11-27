@@ -1,7 +1,7 @@
 id: embed-lane-banks-incremental-copy-fix
 title: 'embed-lane-banks: 112k-doc one-shot copy exceeds 15min timer — make resumable'
 column: doing
-updated: 2026-11-27 13:16
+updated: 2026-11-27 13:25
 brief: Systemic fix from live triage 2026-11-27; two runner slots free.
 priority: high
 tags:
@@ -27,6 +27,9 @@ action:
   status: running
   runner: tony-dell
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 13:25
+    dirty: 1
 ref: OPS-1498
 comms:
 - at: 2026-11-27 11:32
@@ -78,5 +81,13 @@ comms:
     22/24 banks synced-clean, scan_failures=0. Hourly timer live (next 14:03). timer-alert-idc02-embed-lane-banks
     already in done — sentinel keeps it green. Deliverables: scripts/embed/embed-lane.py resumable banks, ssot.jobs.yml
     hourly/15m/--budget 600, re-rendered units, +4 unit tests. '
+- at: 2026-11-27 13:25
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-113424-embed-lane-banks-service-on-id no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-27 13:25
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261127-113424-embed-lane-banks-service-on-id on tony-dell still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 claim:
   since: 2026-11-27 11:33
