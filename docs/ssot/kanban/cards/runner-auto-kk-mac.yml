@@ -2,7 +2,7 @@ id: runner-auto-kk-mac
 title: Runner host `kk-mac` fails 1 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on kk-mac that will strand dispatch cards. Read the note, fix
   on the host, close the card.
-column: review
+column: done
 review_kind: triage
 generated: runner-fleet-health
 program: chaba-ci
@@ -17,7 +17,7 @@ help: 'Per-check fixes:
 
   - clone-stale: ssh <host> ''git -C ~/CascadeProjects/chaba pull --ff-only'' — stale clones crash runner-agent
   on missing dispatch_repos helpers (idc01, 860 behind).'
-updated: '2026-11-27'
+updated: 2026-11-27 17:43
 comms:
 - at: 2026-11-26 13:30
   from: devin
@@ -57,6 +57,9 @@ comms:
   text: '[verify 2026-11-27] Fast-forwarded clean checkout to origin/master and ran sync-runner-tools.sh; installed
     runner-agent now d0465bfe2a6e matching the refreshed pin. Fleet health 0 failing / 8 ok.'
 - at: 2026-11-27 10:31
+  from: tony
+  text: closed by tony
+- at: 2026-11-27 17:43
   from: tony
   text: closed by tony
 action:
