@@ -1,7 +1,7 @@
 id: omen-lan-reservation
 title: tony-omen LAN IP needs DHCP reservation (or dynamic refs)
-column: review
-updated: 2026-11-27 15:47
+column: done
+updated: 2026-11-27 15:51
 brief: 'Omen DHCP drifted 192.168.2.86->.84 on 2026-10-12 and silently broke every hardcoded LAN reference (cast-browser-proxy
   target, cast-shots-http bind, MEDIA_BASE, barrier scripts). Proxy+shots now DHCP-proof, but MEDIA_BASE=http://192.168.2.84:8090
   must stay a LAN IP (Chromecast cannot reach tailnet) — it will break again on the next renumber. Fix: pin a DHCP
@@ -371,6 +371,14 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-152620-configure-a-static-dhcp-reserv,
     branch dispatch/20261127-152620-configure-a-static-dhcp-reserv'
+- at: 2026-11-27 15:51
+  from: chaba
+  text: 'Verified: tony-dell /etc/hosts now maps tony-omen to reachable Tailscale 100.75.102.88 (was stale 192.168.1.48,
+    which failed ping); getent + ping pass. Dispatch 20261127-152620 also documented the router reservation + multi-WAN
+    SSOT and auto-merged 13277333; action=done, worktree GC''d. Closing.'
+- at: 2026-11-27 15:51
+  from: chaba
+  text: closed by chaba
 requests:
 - id: the-card-notes-that-the-tony-o-1dbcf8
   ask: The card notes that the tony-omen LAN IP needs a DHCP reservation or dynamic refs, but does not specify the
@@ -417,4 +425,3 @@ action:
 claim:
   since: 2026-11-27 15:25
 review_kind: verify
-awaiting_action: true
