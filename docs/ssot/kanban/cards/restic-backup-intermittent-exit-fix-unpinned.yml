@@ -1,7 +1,7 @@
 id: restic-backup-intermittent-exit-fix-unpinned
 title: fleet-restic-backup on tony-macbook intermittently exits 1
 column: done
-updated: 2026-11-27 10:00
+updated: 2026-11-27 10:06
 spec: fleet-restic-backup.service on tony-macbook alternates between Result=success (1.8-4.9s) and status=1/FAILURE
   on consecutive runs (including 09:06). Read the full journal around the failed runs to identify the actual restic
   error (repository lock, target tony-dell:/mnt/sdb unavailable, or a transient network drop), then add a bounded
@@ -81,6 +81,29 @@ comms:
   from: chaba
   text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-093800-fleet-restic-backup-service-on,
     branch dispatch/20261127-093800-fleet-restic-backup-service-on on tony-dell'
+- at: 2026-11-27 10:06
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 10:06
+  from: chaba
+  text: banked 341 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-27 10:06
+  from: chaba
+  text: 'branch push failed: fatal: cannot change to ''/home/tony/CascadeProjects/dispatch-wt-20261127-093800-fleet-restic-backup-service-on'':
+    No such file or directory'
+- at: 2026-11-27 10:06
+  from: chaba
+  text: 'push failed AND patch-relay failed: bundle: cannot pin session head to a ref — rescue the branch by hand'
+- at: 2026-11-27 10:06
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_board_api_liveness.py tests/board/test_kanban_act.py
+    tests/board/test_wiki_extension.py tests/board/test_board_ap
+- at: 2026-11-27 10:06
+  from: chaba
+  text: auto-merged 5129b132 (dispatch/20261127-093800-fleet-restic-backup-service-on) → origin/master
 claim:
   since: 2026-11-27 09:37
 auto_close:
