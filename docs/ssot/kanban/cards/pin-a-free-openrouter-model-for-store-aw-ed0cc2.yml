@@ -1,7 +1,7 @@
 id: pin-a-free-openrouter-model-for-store-aw-ed0cc2
 title: Pin a free OpenRouter model for store-awareness A/B
 column: doing
-updated: 2026-11-27 15:09
+updated: 2026-11-27 15:10
 action:
   type: dispatch
   status: running
@@ -10,6 +10,8 @@ action:
   lane: paid_frontier
   runner: tony-dell
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 15:10
 ref: OPS-0827
 comms:
 - at: 2026-10-24 17:03
@@ -482,6 +484,10 @@ comms:
     pending store-aware treatment stays comparable). Also fixed the LiteLLM path: raw OR slugs bypass the gateway
     so the pin resolves identically on every host (previously an explicit pin 404d on litellm-creds hosts); openrouter/free
     remains via explicit flag. Verified: py_compile, pytest'
+- at: 2026-11-27 15:10
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-144253-pin-a-free-openrouter-model-in no longer active on tony-dell but
+    card still says running — sweeping its branch'
 requests:
 - id: pinned-nemotron-store-aware-treatment-hi-0672dc
   ask: Pinned Nemotron store-aware treatment hit OpenRouter free-tier HTTP 429 twice and was stopped. What should
