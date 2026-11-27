@@ -1,7 +1,7 @@
 id: oswe-eval-ada-test-tab
 title: Self-deploy OpenSWE (Robin) on tony-dell + Ada Test tab on ada-ha
 column: doing
-updated: 2026-11-27 15:02
+updated: 2026-11-27 15:31
 brief: Evaluate OpenSWE/Robin; self-deploy on tony-dell dev-mode, expose like ada-ocb, add 'Ada Test' sidebar tab
   (OSWE first) on ada-ha chaba-admin.
 priority: medium
@@ -336,6 +336,10 @@ comms:
     -> litellm or-deepseek-v4-flash; LangSmith gateway not enabled for org, no Anthropic key needed). Minted workspace
     API key osk_ (30d) -> robin CLI built with bun, E2E smoke PASSED: agent fixed calc.py bug in bridged local dir.
     Still Tony-gated: GitHub App (dashboard login), public DNS'
+- at: 2026-11-27 15:31
+  from: devin
+  text: 'raised request stack-is-live-on-tony-dell-tailnet-3-rem-3dbf41: Stack is LIVE on tony-dell (tailnet). 3
+    remaining gates, all yours: (1) LangSmith OAuth app — Chaba Lab org > Settings >'
 requests:
 - id: 4-gated-items-needed-to-boot-robin-optio-41e2b0
   ask: '4 gated items needed to boot Robin (options in spec): (1) LangSmith account + API key — agent loop + cloud
@@ -354,6 +358,18 @@ requests:
   - Hold — I'll do the account setup myself later
   suggested: Provide all 4 — I'll continue wiring
   answer: Provide all 4 — I'll continue wiring
+- id: stack-is-live-on-tony-dell-tailnet-3-rem-3dbf41
+  ask: 'Stack is LIVE on tony-dell (tailnet). 3 remaining gates, all yours: (1) LangSmith OAuth app — Chaba Lab
+    org > Settings > OAuth applications, create one, put client id+secret into ~/CascadeProjects/open-swe/.env as
+    LANGSMITH_OAUTH_CLIENT_ID/SECRET — without it dashboard login 401s. (2) Public edge: DNS A oswe.surf-thailand.com
+    -> 45.136.236.190 + CF Access app (CF token on tony-dell lacks DNS perms). (3) Optional: real Slack app + ngrok
+    domain only if you want Slack/GitHub-webhook entry. Meanwhile the Ada Test tab already iframes the tailnet surface.'
+  status: open
+  at: 2026-11-27 15:31
+  from: devin
+  options:
+  - proceed
+  - hold
 action:
   type: dispatch
   status: running
