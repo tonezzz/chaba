@@ -1,7 +1,7 @@
 id: yomi-line-session-expired-idc03
 title: 'idc03: yomi LINE session expired — update-conversations writes 0 chats'
 column: done
-updated: 2026-11-26 20:35
+updated: 2026-11-27 15:31
 priority: medium
 tags:
 - yomi
@@ -175,6 +175,17 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-27 15:31
+  from: tony
+  text: 'answered line-re-login-needs-your-phone-3min-wind-c11696: proceed — LINE re-login completed by Tony 2026-11-27;
+    creds refreshed 15:22:53 +07 and verified by a live yomi-update-all run that wrote rows.'
+- at: 2026-11-27 15:31
+  from: chaba
+  text: 'VERIFIED 2026-11-27 15:31 +07 — LINE re-login succeeded. Credentials file refreshed 15:22:53 with line_mid=ufdd2c3d...(33
+    chars), auth/refresh tokens and certificate all SET. Triggered yomi-update-all manually: session.restore.validated
+    profile="Tonezzz", [Yomi] session.resumed mid="ufdd2c3dfe084d111ed702c9c76bf6a21", job completed ExecMainStatus=0
+    at 15:30:55 and wrote 70 conversations + 15 message chats to Postgres. yomi-update-active.service also ran clean
+    (ExecMainStatus=0; ''No active Yomi c'
 action:
   type: dispatch
   status: done
@@ -196,10 +207,12 @@ requests:
     +66809006872 --region TH — it prints a PIN; enter it in the LINE app on your phone to approve. Plumbing is already
     fixed (HOME=/home/tony drop-ins live + ssot.jobs.yml), so once creds refresh the next hourly yomi-update-all
     writes rows. Full runbook: docs/ssot/jobs/infrastructure/2026-11-25-yomi-idc03-home-data-dir.yml'
-  status: open
+  status: answered
   at: 2026-11-25 16:09
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed — LINE re-login completed by Tony 2026-11-27; creds refreshed 15:22:53 +07 and verified by a live
+    yomi-update-all run that wrote rows.
 review_kind: verify
