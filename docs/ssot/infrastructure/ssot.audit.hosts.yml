@@ -292,6 +292,7 @@ hosts:
       - {name: tony-dell-wan-failover.timer, type: timer, scope: system, note: "Timer census 2026-11-27: ad-hoc fleet timer. Run tony-dell WAN failover check every 30 seconds"}
       - {name: chaba-postgres-16.service, type: service, scope: user, note: "podman quadlet active on dell again (Description: restored to live) — supersedes the OPS-0725 migration note; idc03 now uses chaba-postgres.service"}
       - {name: openchamber-update.service, type: oneshot, scope: user, note: "Monthly OpenChamber + @opencode/cli update — oneshot fired by its timer (unit file present, inactive between fires)"}
+      - {name: picker-server.service, scope: user, note: "Adobe Stock mask-picker HTTP server (chaba/scripts/adobe-stock/picker-server.py) on :8777; unitized 2026-11-27"}
 
     expected_absent:   # migrated/retired in OPS-0725 drain — must NOT run on dell
       # 2026-11-08 move to tony-omen (ssot.jobs.yml): collector + sentinel
@@ -2786,7 +2787,7 @@ hosts:
       - {name: chaba-repo-sync.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Hourly chaba checkout sync (installed 2026-10-09 \u2014 remote checkouts drift without it)"}
       - {name: device-telemetry.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:device-telemetry (canonical host tony_omen; multi-host copy). Device telemetry beacon (every 5min)"}
       - {name: doc-mirror.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:doc-mirror. Hourly doc-archive -> HA www mirror (runs on con01 since 2026-10-22) (job:doc-mirror, rendered from ssot.jobs.yml \u2014 do n..."}
-      - {name: jev-bench.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:jev-bench. Jev decision bench \u2014 hourly noul/choice accuracy vs jev-student (runs on con01, targets idc03) (job:jev-bench, rendered..."}
+      - {name: jev-bench.timer, type: timer, scope: user, note: "Timer census 2026-11-27 (repointed 2026-11-27): job:jev-bench. Jev decision bench — hourly noul/choice accuracy vs jev-student (runs on con01, targets tony-omen :8778) (job:jev-bench, rendered..."}
       - {name: log-shipper-severe.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:log-shipper-severe. Log shipper \u2014 severe kinds fast lane (job:log-shipper-severe, rendered from ssot.jobs.yml \u2014 do not edit)"}
       - {name: log-shipper.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:log-shipper. Log shipper (local journald -> MDDB host-logs) (job:log-shipper, rendered from ssot.jobs.yml \u2014 do not edit)"}
       - {name: mddb-vector-reindex.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:mddb-vector-reindex. MDDB vector reindex \u2014 daily re-embed sweep for dropped embeddings (job:mddb-vector-reindex, rendered from ssot.jobs.yml..."}
@@ -2828,9 +2829,6 @@ hosts:
       - name: doc-mirror.service
         reason: "Hourly doc-archive to HA www mirror fails with curl exit 28 (operation timeout, ~2-3 min CPU) on every 2026-11-27 run from con01. Timer is live on con01 (idc03 copy retired). Card fix-flagged-ops-health-services tracks it."
         action: raise mirror-to-ha-www.sh curl timeout / check HA www reachability from con01
-      - name: jev-bench.service
-        reason: "Hourly Jev bench targets jev-student on idc03:8778 -> HTTP 404 every run: that lane was parked after the 2026-11-08 dispatch gate and the capacity move to tony-omen. Finding-reporter exit, not a crash."
-        action: revive jev-student on idc03 or repoint bench at the live tony-omen endpoint
     oom_kills_tolerance: 0
   kk-mac:
     tailscale_ip: 100.108.217.17
