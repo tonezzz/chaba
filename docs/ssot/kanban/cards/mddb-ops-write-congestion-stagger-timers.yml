@@ -1,7 +1,7 @@
 id: mddb-ops-write-congestion-stagger-timers
 title: mddb-ops write congestion waves — investigate + stagger fleet shipper timers
 column: doing
-updated: 2026-11-27 13:45
+updated: 2026-11-27 13:56
 priority: medium
 tags:
 - ops
@@ -68,6 +68,10 @@ comms:
     add/ingest timeouts) but DISPROVEN as primary cause: dominant load is a deleteWhere storm from a manual drain
     loop on idc03 (pid 3862968 since 10:48) — 43 handlers at 4000-4955s elapsed, still running, every iteration
     deleted 0. (2) staggered all 14 shipper units to per-host O'
+- at: 2026-11-27 13:56
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-131736-follow-up-from-ops-1497-log-sh no longer active on idc02 but card
+    still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -76,6 +80,8 @@ action:
   executor_source: queue
   runner: idc02
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 13:56
 claim:
   since: 2026-11-27 13:16
 requests:

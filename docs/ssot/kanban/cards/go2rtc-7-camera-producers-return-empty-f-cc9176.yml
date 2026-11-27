@@ -313,6 +313,10 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261127-125944-fix-the-remaining-go2rtc-camer no longer active on tony-dell but
     card still says running — sweeping its branch'
+- at: 2026-11-27 13:56
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261127-125944-fix-the-remaining-go2rtc-camer on tony-dell still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 spec: Fix the remaining go2rtc camera producers on tony-omen that return empty 200/0B frames for ip_cam_65 and the
   xiaomi_c100/c201 variants. Inspect and correct the producer configurations located in ~/.config/go2rtc/*.sh on
   tony-omen and check xiaomi-token-refresh.py. The target host is tony-omen and the relevant repo/environment context
@@ -328,6 +332,7 @@ action:
   attempts: 1
   sweep:
     stale_running: 2026-11-27 13:56
+    dirty: 1
 claim:
   since: 2026-11-27 12:58
 requests:
