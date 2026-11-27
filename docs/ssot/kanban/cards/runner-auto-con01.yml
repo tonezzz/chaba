@@ -28,7 +28,7 @@ help: 'Per-check fixes:
   If the checkout matches the pin but the install does not, the sync was skipped — check the sync-runner-tools journal
   line (dirty source / no pin / never-downgrade). Do not edit the manifest on a host; bump it in the same commit
   as the tool.'
-updated: 2026-11-27 16:49
+updated: 2026-11-27 17:25
 comms:
 - at: 2026-11-26 13:30
   from: devin
@@ -71,5 +71,12 @@ comms:
     path) verified read-only separately: installed ~/.local/bin/runner-agent sha256 matches the controller source
     d0465bfe2a6e1ff241f253195ad83846f199f7cba7e66331cebb37b2b6c2c062. So all 8 runner hosts are in-sync; no apply/restart
     needed anywhere.'
+- at: 2026-11-27 17:25
+  from: chaba
+  text: 'FASTER-DRIFT-REACTION IMPLEMENTED 2026-11-27 ~17:45 +07 (no dispatch needed; small change landed directly).
+    Commits 45219a493cc + follow-ups: (1) runner-tools-converge.timer OnCalendar daily -> *:0/2:05 (every 2h) on
+    all 6 Linux runner hosts; (2) runner-tools-converge.sh now skips hosts with an active devin-task-* unit (local
+    self-check + tailnet SSH probe for remotes) so the deploy-runner-tools restart handler cannot kill a live dispatch;
+    (3) install-runner-tools-converge.yml also installs the '
 action:
   status: done
