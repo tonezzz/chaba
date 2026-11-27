@@ -2669,8 +2669,8 @@ hosts:
       - {name: jev-bench.timer, scope: user, note: "canonical con01 (active+enabled there); not-found on idc02"}
     known_failed:
       - name: runner-tools-converge.service
-        reason: "2026-11-27 19:50+ transient from concurrent uncommitted work, not host drift: scripts/board/dispatch_repos.py has an unstaged one-line JEVOS_URL change (127.0.0.1:8017 -> 100.123.163.11:8017) in ~/CascadeProjects/chaba; installed tool and source both hash c77eecb4… while the manifest pin and HEAD source both hash 02217656…, so deploy-runner-tools.yml 'Assert installed checksum matches the pin' fails after a 0-change apply. Re-running after the edit is committed WITH a manifest pin update should exit 0 — a failure after that is real."
-        action: update-runner-tooling-pin-when-dispatch-repos-edit-lands
+        reason: "2026-11-27 flap, not host drift: the staged, unpublished branch dispatch/20261126-213920-decision-2026-11-26-tony-adopt (13 files, including scripts/board/dispatch_repos.py and an updated runner-tooling.manifest.json pin) keeps syncing its pre-adoption dispatch_repos.py (JEVOS_URL 100.123.163.11:8017, hash c77eecb4…) into the exec checkout while master's pin and source stay 02217656…. The deployed tool alternates, so deploy-runner-tools.yml 'Assert installed checksum matches the pin' flips rc=0/rc=1 on successive converges. Tony decided 2026-11-27 to leave this whitelisted rather than publish or discard another agent's staged feature branch. Clear this entry only after that branch is published with its pin."
+        action: owner-publish-adoption-branch-then-clear
       - name: chaba-audit.service
         reason: "Pre-OPS-0581 finding-reporter (exited nonzero on error findings — findings tracked in card fix-idc02-audit-suite); since 2026-10-13 exits 0 on completed runs — findings via reports/audits/summary.* + focus-inbox (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"
         action: card-fix-idc02-audit-suite

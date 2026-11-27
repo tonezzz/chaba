@@ -78,6 +78,12 @@ verification:
     ansible-playbook playbooks/audit-fleet-services.yml (full fleet, read-only)
     reports 0 deltas on all 7 hosts after the fix and the related SSOT
     reconciliations; idc02 report mtime 2026-11-27T20:00+07, final pass clean.
+  decision_2026-11-27: >-
+    Tony chose to leave runner-tools-converge.service whitelisted rather than
+    publish or discard the staged adoption branch. Owner action: publish
+    dispatch/20261126-213920-decision-2026-11-26-tony-adopt (13 staged files,
+    including the updated runner-tooling.manifest.json pin), then clear the
+    known_failed entry and re-run the converge audit.
   concurrent_deltas: >-
     Three new idc03 deltas and one new idc02 delta appeared during this job from
     other live work (19:42-19:57) and were reconciled in ssot.audit.hosts.yml:
