@@ -8,12 +8,12 @@ generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: medium
-note: 'Auto-recovered 2026-11-27: all bootstrap checks pass.'
+note: 'Failing: probe failed: ssh: connect to host 100.77.76.112 port 22: Connection timed out.'
 help: 'Per-check fixes:
 
   - unreachable: ssh <host> fails — the runner can''t be probed, claimed, or salvaged. Check tailscale + sshd +
   the key on the host.'
-updated: '2026-11-27'
+updated: 2026-11-27 09:54
 action:
   status: done
 claim: {}
@@ -242,3 +242,10 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-27 09:54
+  from: tony
+  text: '[verify 2026-11-27] Host reachable again and all bootstrap checks pass with no host changes made by triage.
+    Auto-recovered; fleet health 0 failing / 8 ok.'
+- at: 2026-11-27 09:54
+  from: tony
+  text: closed by tony
