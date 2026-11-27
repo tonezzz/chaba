@@ -1,0 +1,97 @@
+title: go2rtc xiaomi cam IP resolver + token-refresh restart fix
+date: 2026-11-27
+card: go2rtc-7-camera-producers-return-empty-f-cc9176
+status: configs-fixed-cameras-offline-done-condition-unmet
+host_scope: tony-omen (diagnosis + changes); ssot.jobs.yml in chaba worktree
+
+finding:
+  - >-
+    CORRECTION to the 2026-11-25 diagnosis: the passToken in
+    ~/.config/go2rtc/go2rtc.yaml is VALID. go2rtc's cloud path
+    (LoginWithToken -> /v2/home/device_list_page) works —
+    GET /api/xiaomi?id=6891138643&region=sg returns both cameras with
+    cloud-reported localip + MAC. The xiaomi-token-refresh job failing on
+    missing Chrome cookies only means the REFRESH path is dead, not the
+    token. Chrome on omen has zero account.xiaomi.com cookies (only
+    profile: Default).
+  - >-
+    All three remaining cameras are OFF the network at L2, not a producer
+    bug: full ARP sweep of 192.168.2.0/24 (eno1) and 192.168.0.0/24 (wlo1)
+    from omen finds neither camera MAC — c100 b8:88:80:cb:7d:2c, c201
+    d8:3a:36:7d:10:0d — and ip_cam_65's reserved .71 is ARP INCOMPLETE.
+    Cloud device_list still lists both xiaomi cams with stale localip
+    (c100->.92 which is now a different device e0:73:e7:05:c5:16;
+    c201->.77 which is ARP-dead). The 2.x LAN has heavy DHCP/IP churn
+    (registry: c100 floated .72/.73/.74/.79/.81/.92; .79/.81 currently
+    share MAC 90:1b:0e:e4:e3:a5 = some other device).
+  - >-
+    go2rtc xiaomi producers dial the camera DIRECTLY over UDP
+    (tutk :32761 / cs2 :32108) — the IP in the xiaomi:// URL must be the
+    camera's current LAN IP. Hardcoded IPs + floating DHCP = recurring
+    200/0B. This is the root cause of the recurring breakage.
+
+action:
+  - >-
+    NEW job xiaomi-cam-resolve (ssot.jobs.yml, every 5min, host
+    tony_omen): ~/.config/go2rtc/xiaomi-cam-resolve.py parses
+    xiaomi://user:region@IP?did=... producers from go2rtc.yaml, queries
+    the running instance's /api/xiaomi device list for did->(ip,mac),
+    verifies the IP by ARP MAC match (throttled /24 ping-sweep fallback,
+    >=15min apart), rewrites the yaml and POSTs /api/restart on change.
+    Offline cameras keep their last IP — no churn. Units rendered via
+    scripts/render-jobs.py and installed on omen
+    (~/.config/systemd/user/xiaomi-cam-resolve.{service,timer}); first
+    timer run 13:39 +07 exit 0.
+  - >-
+    FIX xiaomi-token-refresh.py: it restarted `systemctl --user restart
+    go2rtc` — the degraded user unit that cannot bind :1984 — leaving the
+    live SYSTEM go2rtc-omen.service on the stale token. Now restarts
+    `sudo -n systemctl restart go2rtc-omen.service` (passwordless sudo
+    verified) then best-effort the user unit.
+  - >-
+    ssot.jobs.yml: xiaomi-token-refresh marked enabled:false with note —
+    units were deliberately retired on-host 2026-11-26 (masked, moved to
+    _retired-20261126/) and Chrome has no Xiaomi cookies so it can only
+    fail. Re-arm only after Tony re-logs into account.xiaomi.com in
+    omen Chrome.
+
+verified_state_after:
+  omen_cam: "200 + ~30KB JPEG (unchanged, healthy)"
+  ip_cam_65 / xiaomi_c100 / xiaomi_c201 (+variants): "200/0B — cameras
+    physically off-network; no config change can produce frames"
+  xiaomi-cam-resolve.service: "timer-fired run exit 0; correctly
+    reported both camera MACs absent after cloud-IP MAC-check + sweep"
+  cloud auth: "device_list API returns both cameras — passToken valid"
+
+blockers_for_done_condition:
+  - >-
+    Physical: ip_cam_65 (VStarcam .71), xiaomi_c100 (b8:88:80:cb:7d:2c),
+    xiaomi_c201 (d8:3a:36:7d:10:0d) all absent from L2 — likely power or
+    WiFi loss at the camera location. Three cameras down simultaneously
+    suggests a shared cause (power strip / AP). Needs hands-on check.
+  - >-
+    Optional durable fix: DHCP reservations on the ZTE F688 (192.168.2.1)
+    for the camera MACs would stop the float entirely; admin access not
+    exercised in this dispatch.
+
+verify:
+  - ssh tony-omen 'curl -s -o /tmp/x.jpg -w "%{size_download}\n"
+    "http://127.0.0.1:1984/api/frame.jpeg?src=omen_cam"'   # ~30000
+  - ssh tony-omen 'journalctl --user -u xiaomi-cam-resolve.service -n 20'
+  - ssh tony-omen 'curl -s "http://127.0.0.1:1984/api/xiaomi?id=6891138643&region=sg"'
+  - >-
+    arp proof: ping-sweep 192.168.2.0/24 on omen; grep camera MACs in
+    ip neigh output — absent = offline
+
+notes:
+  - >-
+    Stray duplicate user-unit go2rtc.service (pid 3036) still runs
+    degraded alongside system go2rtc-omen.service — already flagged in
+    2026-11-25-go2rtc-empty-frames diagnosis as park/disable candidate.
+  - >-
+    /bin/go2rtc container instance (pid 12911, parent=HA, tmp config)
+    listens 127.0.0.1:18554/18555 — orphan, unrelated to cam path.
+  - >-
+    ip_cam_65 has its own armed-then-expired credential rotator
+    (ipcam65-rotate-finisher) for card rotate-omen-rtsp-credential —
+    separate concern, camera still off-network.

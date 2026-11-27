@@ -9,6 +9,10 @@ jobs:
     schedule: "every 1h"
     dispatch: "systemd"
     persistent: true
+  - id: ansible-runner-tool-guard
+    schedule: "*-*-* 07:10:00"
+    dispatch: "systemd"
+    persistent: true
   - id: bank-inspect
     schedule: "*-*-* 05:40:00"
     dispatch: "systemd"
@@ -27,9 +31,16 @@ jobs:
     schedule: "every 15m"
     dispatch: "systemd"
     persistent: true
+  - id: jevnest-kk-llm-metrics
+    schedule: "every 15m"
+    dispatch: "systemd"
   - id: jevnest-kk-mac-capacity-producer
     schedule: "every 5m"
     dispatch: "systemd"
+  - id: job-health-sweep
+    schedule: "hourly"
+    dispatch: "systemd"
+    persistent: true
   - id: lesson-drift-check
     schedule: "every 1d"
     dispatch: "systemd"
@@ -64,6 +75,10 @@ jobs:
   - id: queue-mgr
     schedule: "every 5m"
     dispatch: "systemd"
+  - id: retry-storm-watch
+    schedule: "every 10min"
+    dispatch: "systemd"
+    persistent: true
   - id: system-report-watchdog
     schedule: "hourly"
     dispatch: "systemd"
