@@ -265,6 +265,7 @@ chrome.cookies.onChanged.addListener((changeInfo) => {
 // alarm tick — adding a page or changing the allowlist needs no Chrome reload.
 const DEFAULT_CONFIG = {
   allow_hosts: ["app.devin.ai", "aistudio.google.com", "console.cloud.google.com"],
+  render_delay_ms: 8000,
   recipes: [
     {
       key: "devin_usage_history",
@@ -417,7 +418,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     } catch (_) {
       // tab may have been closed — never let a capture break navigation
     }
-  }, CAPTURE_RENDER_DELAY_MS);
+  }, activeConfig.render_delay_ms || CAPTURE_RENDER_DELAY_MS);
 });
 
 // --- On-demand command channel -------------------------------------------
@@ -469,7 +470,7 @@ async function navigateAndCapture(url, slug) {
     tab = await chrome.tabs.create({ url, active: false });
   }
   await waitForComplete(tab.id);
-  await new Promise((r) => setTimeout(r, CAPTURE_RENDER_DELAY_MS));
+  await new Promise((r) => setTimeout(r, activeConfig.render_delay_ms || CAPTURE_RENDER_DELAY_MS));
   const res = await chrome.scripting.executeScript({
     target: { tabId: tab.id },
     func: extractPage,
