@@ -1,0 +1,64 @@
+title: 'mcp-health: 9 failing'
+subtitle: Focus inbox item
+icon: inbox
+focus:
+  label: 'mcp-health: 9 failing'
+  text: 'mcp-health snapshot: 9 service(s) not healthy
+
+    - web / Raceman Web: unknown - Command failed: curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://127.0.0.1:8083/apps/raceman/"
+
+    - apps / Nest Percussion: unknown
+
+    - api / NotebookLM REST Auth: unknown - Command failed: curl -s -o /dev/null -w "%{http_code}" --max-time 10
+    "http://127.0.0.1:3011/health/auth"
+
+    - queue / GPU Queue: unknown - Command failed: curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://127.0.0.1:3001/health"
+
+    - optional / Camera Panel: unknown - Command failed: curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://127.0.0.1:8091/"
+
+    - mcp / iCloud MCP: error - Container state: exited. Expected: running. Recovery: docker restart icloud-mcp
+
+    - tony-dell / Tony-Dell Tailscale Reachability: unknown - Command failed: curl -s -o /dev/null -w "%{http_code}"
+    --max-time 5 "http://127.0.0.1:3001/health"
+
+    - tailscale / Home Assistant Live (Gemini Live bridge): error - HTTP 502 (expected 200)
+
+    - tailscale / ada-ha tailnet edge (tony-omen serve :8125): unknown'
+  priority: high
+  status: draft
+  tags:
+  - health
+  - monitoring
+  - snapshot
+  - mcp-health
+  missing_info: []
+  safe_to_parallel:
+    value: false
+    reason: ''
+  subtasks:
+  - label: Investigate Raceman Web
+    status: not_started
+  - label: Investigate Nest Percussion
+    status: not_started
+  - label: Investigate NotebookLM REST Auth
+    status: not_started
+  - label: Investigate GPU Queue
+    status: not_started
+  - label: Investigate Camera Panel
+    status: not_started
+  - label: Investigate iCloud MCP
+    status: not_started
+  - label: Investigate Tony-Dell Tailscale Reachability
+    status: not_started
+  - label: Investigate Home Assistant Live (Gemini Live bridge)
+    status: not_started
+  - label: Investigate ada-ha tailnet edge (tony-omen serve :8125)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  session: mcp-health-snapshot
+  date: '2026-11-27'
