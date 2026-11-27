@@ -1,7 +1,7 @@
 id: focus-dispatcher-overnight-promise-code-fix
 title: focus-dispatcher-overnight fails with Promise passed as error code
-column: review
-updated: 2026-11-27 12:51
+column: done
+updated: 2026-11-27 12:54
 spec: 'focus-dispatcher-overnight.service on tony-omen ends with `[overnight] completed with errors` after `TypeError
   [ERR_INVALID_ARG_TYPE]: The "code" argument must be of type number. Received an instance of Promise`. The SSOT
   validation step reports Total errors: 0, so the TypeError is in the JavaScript/Node overnight focus workflow''s
@@ -123,6 +123,14 @@ comms:
 - at: 2026-11-27 12:51
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-27 12:54
+  from: tony
+  text: '[land 2026-11-27] merged past the trail-YAML conflict by taking master copy of the generated file; code
+    fix (ssot-optimize-to-inbox promise exit + overnight-focus-review) landed as 3db55635678. Verified ancestor
+    of origin/master; closing.'
+- at: 2026-11-27 12:54
+  from: tony
+  text: closed by tony
 claim:
   since: 2026-11-27 10:30
 requests:
@@ -147,4 +155,3 @@ requests:
   suggested: resolve — let devin resolve the conflict and land it ★
   answer: resolve — let devin resolve the conflict and land it ★
 review_kind: verify
-awaiting_action: true
