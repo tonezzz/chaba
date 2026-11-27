@@ -1,7 +1,7 @@
 id: mddb-vector-reindex-timeout-embed-failures
 title: 'con01 mddb-vector-reindex: 13 embed failures, then 45min timeout'
 column: doing
-updated: 2026-11-27 21:43
+updated: 2026-11-27 21:44
 brief: '2026-11-26 run: embedded=5 skipped=111688 failed=13 (ada-cms-pages:1, ada-ha-bank-devin-handoff:1, ada-ha-events-michael:1,
   ada-ha-scenario-reports:10). 2026-11-27 05:40 run hit TimeoutStartSec and was TERMed at 06:25.'
 priority: medium
@@ -72,6 +72,10 @@ comms:
     alone = 149,550/173,924 docs (86%) and the handler does one bolt View tx per doc for hash-skip — on OPS-1511-swapped
     idc03 that one collection can eat the whole budget; SIGTERM mid-sweep = zero telemetry (ops event only fires
     at end). errors[] per-doc detail is returned bu'
+- at: 2026-11-27 21:44
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-211929-bound-the-reindex-batches-and- no longer active on mn01 but card
+    still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -80,5 +84,7 @@ action:
   executor_source: queue
   runner: mn01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 21:44
 claim:
   since: 2026-11-27 21:18
