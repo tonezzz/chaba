@@ -1,6 +1,6 @@
 id: cms-publish-remote-end-closed-fix-unpinned
 title: idc03 CMS publish timers fail with 'Remote end closed connection'
-column: backlog
+column: doing
 updated: 2026-11-27 09:36
 spec: 'Journal on idc03 for chaba-starboard-tracker.service (08:47) and chaba-cached-videos.service (08:37) ends
   with `error: Remote end closed connection without response` and exit=1, although earlier runs of both published
@@ -16,7 +16,9 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: queued
+  status: running
+  runner: idc02
+  attempts: 1
 ref: KNB-1484
 comms:
 - at: 2026-11-27 09:36
@@ -34,3 +36,8 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 09:36
+  from: idc02
+  text: claimed
+claim:
+  since: 2026-11-27 09:36
