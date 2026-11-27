@@ -1,7 +1,7 @@
 id: ops-1025-remote-read-smoke-idc03
 title: 'OPS-1025 one-shot remote-read verification: idc02 to idc03'
-column: doing
-updated: 2026-11-27 09:08
+column: review
+updated: 2026-11-27 09:12
 brief: One supervised, read-only S3 verification of the merged remote-read gates.
 priority: medium
 program: OPS-1025
@@ -69,7 +69,7 @@ action:
       of guessing. Set services to the observed failed units (or []), and include a concrete failure_class plus
       the exact read-only output as evidence in findings. Emit only the JSON artifact required by the profile, with
       read_only=true and an ISO-8601 collected_at. No paid fallback; this is one attempt only.'
-  status: running
+  status: done
   attempts: 1
   last_failure: 'exit=2 ead-only profile. | devin-task-ops-1025-remote-read-smoke-idc03-1795696328.service: Main
     process exited, code=exited, status=2/INVALIDARGUMENT | devin-task-ops-1025-remote-read-smoke-idc03-1795696328.service:
@@ -80,6 +80,10 @@ action:
     dirty: 2
     stalled_claim: 2026-11-27 08:25
   runner: idc02
+  result: 'exit=0  install `mcp-debug` on idc03, fix the devin spawn durably, and journal-probe the 13 failed units.
+    | devin-task-20261127-084755-parent-ops-1025-perform-one-bo.service: Consumed 2min 22.398s CPU time, 474.2M
+    memory peak, 0B memory swap peak.'
+  verified: false
 ref: OPS-0245
 comms:
 - at: 2026-11-19 20:36
@@ -962,6 +966,29 @@ comms:
     13 failed user units (12 job .service + ada-bench-casting.timer masked). Artifact: evals/opencode-lane/out/ops-1025-remote-read-smoke-idc03.json
     (host=idc03, read_only=true, failure_class=unit_failed, collected_at=2026-11-27T02:03:56Z). Committed on dispatch
     branch: idc03 registered in ssot.mcp-debug.yml (approved option a) + jobs trail docs/ssot/jobs/infrastructure/2026-11-27-ops-1025-rem'
+- at: 2026-11-27 09:12
+  from: idc02
+  text: 'finished (ok): exit=0  install `mcp-debug` on idc03, fix the devin spawn durably, and journal-probe the
+    13 failed units. | devin-task-2'
+- at: 2026-11-27 09:12
+  from: chaba
+  text: ran under executor=devin provider=devin profile=ops-remote-read
+- at: 2026-11-27 09:12
+  from: chaba
+  text: 'session-end checkpoint ebbb1158: 2 leftover file(s) committed'
+- at: 2026-11-27 09:12
+  from: chaba
+  text: banked 875 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-27 09:12
+  from: chaba
+  text: pushed dispatch/20261127-084755-parent-ops-1025-perform-one-bo to origin
+- at: 2026-11-27 09:12
+  from: chaba
+  text: 'merge held — gitignored-dir shadow path(s): mcp_debug (symlink) — untrack/rename them or add the bare ignore
+    name (the 2026-10-10 .venv incident class)'
+- at: 2026-11-27 09:12
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 claim:
   since: 2026-11-26 23:44
 requests:
@@ -1023,3 +1050,4 @@ requests:
     action: hold
   answer: answer — Answer — reply in chat
   executed: 2026-11-27 none
+review_kind: verify
