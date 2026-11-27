@@ -13,6 +13,7 @@ inventory/group_vars/all.yml   # common_packages, unattended-upgrades policy
 inventory/host_vars/<host>.yml  # per-host opt-ins (e.g. docker_enabled)
 inventory/group_vars/ocb_pane.yml   # declared ada-ocb pane contract (pins, units, edge)
 playbooks/site.yml        # baseline: packages, security updates, docker check
+playbooks/fleet-repo-sync.yml    # orchestrate git-safe-pull.sh + tool self-heal fleet-wide
 playbooks/host-load-guard.yml    # CPU-job wrapper, slice, thermal gate, alarms, HA telemetry
 playbooks/ha-dashboard-deploy.yml  # idempotent chaba-admin Hosts view promotion
 playbooks/ada-ocb-audit.yml   # read-only pane surface probe + durable artifact
@@ -284,6 +285,28 @@ hosts, so a sleeping portable host can't fail the run. Ansible-less hosts
 (idc03, mn01, tony-omen, con01) are still repaired by that fleet pass and
 by `sync-runner-tools.sh` on every repo-sync tick; the read-only fleet
 drift view is the `ansible-runner-tool-guard` job (07:10 on tony-dell).
+
+### Fleet-wide checkout convergence
+
+`fleet-repo-sync.yml` runs each host's own `scripts/git-safe-pull.sh` — the
+script that resolves untracked blockers, autostashes local edits, handles
+generated-path conflicts, and refreshes `~/.local/bin` via
+`sync-runner-tools.sh` at its tail. The playbook adds fleet gates (`serial: 1`,
+`any_errors_fatal: false`, explicit `--limit`) and a real `--check` mode:
+
+```bash
+cd ansible
+ansible-playbook playbooks/fleet-repo-sync.yml --check --diff --limit idc03
+ansible-playbook playbooks/fleet-repo-sync.yml --limit idc03
+ansible-playbook playbooks/fleet-repo-sync.yml \
+  --extra-vars 'repo_sync_skip=[idc02]'   # preserve deliberate local work
+```
+
+The task is unchanged when the script reports `upstream already in HEAD`;
+a non-zero exit (fetch failure or manual merge needed) is reported per host
+without stopping the rest of the fleet. Nothing is reset and no local change
+is discarded — dirty checkouts fail visibly for a human to resolve. macOS
+hosts are excluded, and sleeping laptops simply converge on their next tick.
 
 ## HA temperature telemetry + dashboard (tony-omen)
 

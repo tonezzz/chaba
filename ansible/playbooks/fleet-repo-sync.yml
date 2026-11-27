@@ -1,0 +1,86 @@
+---
+# fleet-repo-sync.yml — orchestrate chaba checkout convergence across the fleet.
+#
+# Runs the hosts' own scripts/git-safe-pull.sh, which handles untracked
+# blockers, --rebase --autostash, generated-path conflicts, stash GC, and the
+# tail-step scripts/devin/sync-runner-tools.sh self-heal. This playbook adds
+# fleet-level gates: serial:1, any_errors_fatal:false, explicit --limit, and a
+# real --check mode that touches no host.
+#
+# Idempotency: the script prints "upstream already in HEAD" when it did no
+# pull; that line marks the task unchanged. A non-zero exit (manual merge
+# needed / fetch failed) is reported as a failed task but does not stop the
+# remaining hosts.
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/fleet-repo-sync.yml --check --diff --limit idc03
+#   ansible-playbook playbooks/fleet-repo-sync.yml --limit idc03
+#   ansible-playbook playbooks/fleet-repo-sync.yml
+#
+# Hosts with deliberate local work can be skipped without editing inventory:
+#   ansible-playbook playbooks/fleet-repo-sync.yml \
+#     --extra-vars 'repo_sync_skip=[idc02]'
+#
+# macOS hosts are excluded (kk-mac uses launchd + never-downgrade sync, not
+# systemd); sleeping laptops simply miss a run and converge on the next tick.
+# This play never resets a worktree or discards local changes — a host that
+# needs manual resolution fails visibly and is left for a human.
+- name: Converge chaba checkouts and runner tools across the fleet
+  hosts: all:!macos:!disabled
+  gather_facts: true
+  become: false
+  serial: 1
+  any_errors_fatal: false
+  tags: [repo_sync]
+
+  vars:
+    repo_dir: "{{ ansible_facts.user_dir }}/CascadeProjects/chaba"
+    safe_pull_script: "{{ repo_dir }}/scripts/git-safe-pull.sh"
+    repo_sync_skip: []
+
+  tasks:
+    - name: Check for git-safe-pull helper
+      ansible.builtin.stat:
+        path: "{{ safe_pull_script }}"
+      register: safe_pull_check
+      changed_when: false
+
+    - name: Report skipped hosts
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }}: skipped — in repo_sync_skip or no
+          git-safe-pull.sh helper present
+      when: not safe_pull_check.stat.exists or inventory_hostname in repo_sync_skip
+
+    - name: Preview convergence (check mode makes no host changes)
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }}: --check — git-safe-pull.sh not executed;
+          rerun without --check to converge
+      when:
+        - ansible_check_mode
+        - safe_pull_check.stat.exists
+        - inventory_hostname not in repo_sync_skip
+
+    - name: Converge checkout via git-safe-pull.sh
+      ansible.builtin.command:
+        cmd: "{{ safe_pull_script }} {{ repo_dir }}"
+      register: safe_pull_result
+      changed_when: >-
+        'upstream already in HEAD' not in (safe_pull_result.stdout | default(''))
+        and 'upstream already in HEAD' not in (safe_pull_result.stderr | default(''))
+      failed_when: safe_pull_result.rc != 0
+      when:
+        - not ansible_check_mode
+        - safe_pull_check.stat.exists
+        - inventory_hostname not in repo_sync_skip
+
+    - name: Report convergence result
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }}:
+          {{ 'converged' if (safe_pull_result.changed | default(false)) else 'in-sync' }}
+      when:
+        - not ansible_check_mode
+        - safe_pull_check.stat.exists
+        - inventory_hostname not in repo_sync_skip
