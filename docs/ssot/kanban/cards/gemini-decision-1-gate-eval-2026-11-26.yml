@@ -1,7 +1,7 @@
 id: gemini-decision-1-gate-eval-2026-11-26
 title: Evaluate gemini-decision-1 as a cheap dispatch-readiness gate
 column: done
-updated: 2026-11-27 09:57
+updated: 2026-11-27 10:13
 brief: Grade calibrated noul decisions on 10 real kanban briefs against a reproducible spec-present label, measure
   confidence and token use, decide whether to replace a full-model yes/no judgment.
 priority: medium
@@ -54,5 +54,12 @@ comms:
     0.32-9.61%, Brier 0.1248, 0 output tokens, 0.77s); a gemini-3.8-flash full-model stand-in approved 42/55 with
     0 false approvals (upper bound 6.53%, accuracy 88.18% vs 82.73%, Brier 0.087) but took 252s and 2,723 output
     plus 10,940 thought tokens. Agreement 98/110; full model right o
+- at: 2026-11-27 10:13
+  from: ada
+  text: 'Production rule-gate baseline complete (no API calls). Replayed ada_preflight on the same 110 cards: there
+    is no production LLM dispatch judge, and typed_dispatch_available is hardcoded False, so ready_for_dispatch
+    is always False and Approve dispatch is never offered. The preconditions are weak semantic classifiers: no_open_requests
+    precision 0.4526, safe_scope 0.2917, both together 0.25 precision / 0.29 recall; risk terms reject 34/55 genuinely
+    READY briefs. Model judgments add 46 approvals be'
 action:
   status: done
