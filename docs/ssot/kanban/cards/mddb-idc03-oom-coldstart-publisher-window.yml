@@ -1,0 +1,60 @@
+id: mddb-idc03-oom-coldstart-publisher-window
+title: MDDB idc03 OOM restarts + cold-start window break publishers
+column: doing
+updated: 2026-11-27 16:32
+brief: mddb.service on idc03 was OOM-killed 15:58:20 (NRestarts=7 today); ~104s cold start leaves /v1 routes 404
+  after health port opens. mddb-cms POST /v1/add write timeout 30s under embed congestion. Two timer publishers
+  exited 1 at 15:55 and 16:00; both self-healed next tick.
+priority: high
+tags:
+- mddb
+- idc03
+- reliability
+spec: 'Follow-up from triage of timer-alert-idc03-media-inbox-update-kk and timer-alert-idc03-ops-health-report
+  (both closed 2026-11-27 as transient). Evidence: (1) idc03 journal: mddb.service killed by OOM killer 2026-11-27
+  15:58:20, exit 137, restarted 15:58:53; health endpoint on 100.102.134.91:11023 opened 15:58:55 but ''mddb HTTP
+  listening'' (full routes) only 16:00:37 (~104s). ops-health-report tick started 16:00:00, POST /v1/add at 16:00:36
+  got HTTP 404 -> exit 1; next tick 16:15 exited 0. (2) mddb-cms[2068] 15:55:31-33 logged ollama embed failures
+  (context deadline / 504) plus ''response not delivered: handler finished after the HTTP write timeout'' POST /v1/add
+  elapsed 36.3s vs writeTimeout 30s; media-inbox-update-kk _post got RemoteDisconnected -> exit 1; next two ticks
+  16:10 and 16:25 exited 0. Done-condition: (a) identify/fix the OOM cause (7 restarts today; idc03 has 15Gi/4core
+  — see card idc03-structural-capacity-15gb-4core-per-2d787f) or bound memory; (b) do not expose the health endpoint
+  before /v1 write routes are live, or make dependent publishers gate on route readiness; (c) raise MDDB_HTTP_WRITE_TIMEOUT
+  and/or add bounded retries in scripts/ada/media-inbox-update.py and ada-voice/scripts/ops-health-report.py. Host/service
+  changes need Tony approval; read-only diagnosis first.'
+ref: MEM-1507
+comms:
+- at: 2026-11-27 16:30
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-27 16:30
+  from: chaba
+  text: 'CONFIRMED ONGOING 2026-11-27 16:26-16:28: mddb.service OOM-killed again at 16:26:41 (same signature as
+    15:58:20), restart #7 at 16:27:14, health port opened 16:27:15 but full /v1 listeners only 16:28:38 (~84s gap).
+    This is a repeating OOM/restart loop, not a one-off; any publisher firing inside that gap gets 404/RemoteDisconnected.
+    Memory at 15Gi box: 11Gi used / 3.8Gi available, two mddbd processes ~1.6Gi + 0.73Gi RSS. Raising priority signal:
+    this card is the systemic tracker for both closed t'
+- at: 2026-11-27 16:32
+  from: chaba
+  text: classified as devin (fallback conf 0.00)
+- at: 2026-11-27 16:32
+  from: chaba
+  text: queued for processing
+- at: 2026-11-27 16:32
+  from: con01
+  text: claimed
+- at: 2026-11-27 16:32
+  from: chaba
+  text: '[auto-dispatch] wave 31 (2026-11-27 16:32): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-27 16:32
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.24 > 0.7)'
+action:
+  type: dispatch
+  status: running
+  lane: devin
+  lane_source: fallback
+  runner: con01
+  attempts: 1
+claim:
+  since: 2026-11-27 16:32

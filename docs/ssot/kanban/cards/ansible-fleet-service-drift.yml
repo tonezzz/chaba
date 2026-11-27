@@ -1,11 +1,12 @@
 id: ansible-fleet-service-drift
 title: 'Ansible audit: fleet service drift detected'
-column: backlog
-updated: 2026-11-27 15:52
+column: done
+updated: 2026-11-27 16:20
 spec: 'Read-only ansible audit-fleet-services detected service/resource drift vs ssot.audit.hosts.yml. Hosts: con01,
   idc02, idc03, mn01, tony-dell, tony-omen. Report dir: reports/ansible-benchmark/services/. No remediation performed.'
 action:
   type: manual
+  status: done
 ref: OPS-1402
 comms:
 - at: 2026-11-25 15:47
@@ -113,3 +114,16 @@ comms:
     6, tony-omen 16. Still dominated by ssot.audit.hosts.yml census lag (expected/allowed lists predate OPS-0725);
     genuine residue includes stale failed cline-intake.service (unit not-found) + mddb-vector-reindex on con01,
     yomi-update-active on idc03, gemini-ollama-proxy on tony-dell. Need'
+- at: 2026-11-27 16:20
+  from: chaba
+  text: 'CENSUS REFRESH LANDED + VERIFIED 2026-11-27: committed 2a82e3058d2 (service census refresh + parity between
+    audit-hosts.py and ansible/audit-fleet-services.yml: OS_TIMER_RE, hash .timer units, oneshot unit-file checks,
+    foreign critical timers, masked failed units) then 58ef5368a53 (live-placement alignment: dell->omen moves,
+    retirements, known_failed) pushed to origin/master. Re-ran audit-fleet-services.yml from idc02: 0 unreachable
+    / 0 failed, 0 deltas on ALL 7 fleet hosts (con01, idc02, idc03,'
+- at: 2026-11-27 16:20
+  from: chaba
+  text: closed by chaba
+- at: 2026-11-27 16:20
+  from: chaba
+  text: closed by chaba

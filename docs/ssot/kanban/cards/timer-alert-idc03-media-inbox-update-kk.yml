@@ -1,7 +1,7 @@
 id: timer-alert-idc03-media-inbox-update-kk
 title: Timer media-inbox-update-kk on idc03 failing
-column: backlog
-updated: 2026-11-27 16:05
+column: done
+updated: 2026-11-27 16:29
 priority: high
 tags:
 - timer-alert
@@ -992,6 +992,26 @@ comms:
   from: devin
   text: '[reopened — condition recurred] Last run (11-27 15:55) of `media-inbox-update-kk.service` on `idc03` result=exit-code
     — investigate journal: `journalctl --user -u media-inbox-update-kk.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-27 16:15
+  from: devin
+  text: '[still suspicious] Last run (11-27 15:55) of `media-inbox-update-kk.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u media-inbox-update-kk.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-27 16:25
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-27 16:10 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-27 16:25
+  from: tony
+  text: closed by tony
+- at: 2026-11-27 16:29
+  from: chaba
+  text: 'TRIAGE 2026-11-27 ~16:30 (read-only: idc03 user journal + mddb-cms journal). Root cause = MDDB CMS HTTP
+    write-timeout under embedding congestion, not a media-inbox logic bug. At 15:55:31-33 mddb-cms[2068] logged
+    ollama embed failures (context deadline exceeded / HTTP 504) and ''response not delivered: handler finished
+    after the HTTP write timeout'', method POST path /v1/add, elapsed 36.3s vs writeTimeout 30s; the publisher''s
+    _post got http.client.RemoteDisconnected and the unit exited 1 at 15:55:3'
+- at: 2026-11-27 16:29
+  from: chaba
+  text: closed by chaba
 action:
   status: done
 spec: Investigate the recurring failure of `media-inbox-update-kk.service` on host idc03 by examining the systemd
