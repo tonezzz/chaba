@@ -1,7 +1,7 @@
 id: idc02-zram-swap-earlyoom-relief
 title: idc02 zram swap — disarm earlyoom permanently-true swap arm (root cause of 15 kills/14d)
 column: doing
-updated: 2026-11-27 22:15
+updated: 2026-11-27 22:29
 priority: medium
 tags:
 - infrastructure
@@ -62,6 +62,13 @@ comms:
   text: 'picked up. Verified on idc02: swap=0, earlyoom active, zram.ko missing (linux-modules-extra-6.8.0-151-generic
     not installed). Building fleet-standard zram-swap deploy playbook (8G zstd) in worktree, will --check then converge
     via ansible on idc02 controller.'
+- at: 2026-11-27 22:29
+  from: devin
+  text: 'DONE: zram swap live on idc02 — /dev/zram0 8G zstd prio100, zram-swap.service enabled+active (verified
+    via zramctl + service restart). earlyoom swap arm disarmed. New ansible/playbooks/zram-swap-deploy.yml (opt-in
+    via zram_size host var; idc02=8G) + hosts.yml var + audit census entry; job doc docs/ssot/jobs/infrastructure/2026-11-27-idc02-zram-swap.yml;
+    outcome dispatch-outcome-20261127-220401-*.md. Note: required linux-modules-extra-6.8.0-151-generic install
+    (zram.ko not in linux-modules). 7d e'
 action:
   type: dispatch
   status: running
