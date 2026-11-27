@@ -67,8 +67,11 @@
           # Managed by chaba/ansible (open-jev-guard.yml). Do not edit on host.
           # CPUQuota=200% allows 2 CPUs; cap the torch/OpenMP pool to match so
           # inference does not pay for ~43 threads against a 2-CPU quota.
+          # OPENJEV_MAX_INFLIGHT bounds concurrent scoring in openjev/server.py
+          # so a burst cannot exhaust Starlette's 40-token anyio threadpool.
           [Service]
           Environment=OMP_NUM_THREADS=2
+          Environment=OPENJEV_MAX_INFLIGHT=2
       notify: Restart open-jev for new environment
       tags: [omp]
 

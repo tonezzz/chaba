@@ -49,10 +49,11 @@ verification: |
   Converge: ok=11 changed=5 failed=0. Recheck (--check): changed=0.
   OMP_NUM_THREADS=2 present in /proc/<pid>/environ of both the uv parent and
   the openjev worker; torch.get_num_threads()=2 in a fresh worker process.
-  Note: `ps -o nlwp` showed 2 threads immediately after restart but ~40 once
-  a request arrived — those are Starlette/anyio's default 40-token pool
-  (every @app route is a sync `def`), not torch workers. The OMP cap binds
-  torch's intra-op pool only; it does not shrink the anyio pool.
+  Do NOT read thread count from MainPID: that is the 2-thread `uv` wrapper.
+  The real worker is the child `openjev serve` process, which carries the
+  Starlette/anyio default 40-token pool (every @app route is a sync `def`)
+  plus torch's intra-op threads. The OMP cap binds torch's intra-op pool
+  only; it does not shrink the anyio pool.
   MemorySwapCurrent 819 MiB -> 0 after restart.
   /health 200 in 88ms after model load; /metrics reachable.
   Live /score smoke test on the 2-thread cap: HTTP 200 with the correct best
@@ -68,6 +69,31 @@ verification: |
   mem.swapio.tony_openjev_swap_in (silent at ~1.7 MiB/s swap-in, correct).
   Note: /api/v1/alarms without ?all=true only lists non-CLEAR alarms, so an
   empty list means healthy, not missing config.
+
+follow_up_incident_20261127: |
+  The daily reclaim fired correctly at 04:00 +07 on 2026-11-27: swap was
+  5626 MiB > 4096 MiB, open-jev restarted, Result=success (next fire Sat 04:00).
+  But by 09:17 swap was back at 5.69 GiB and /health timed out; load average
+  39.18 / 20.40 / 20.88. py-spy showed 40/40 AnyIO worker threads active in
+  Gemma3 `Linear.forward`, 93 threads total, 185% CPU, no requests logged
+  (uvicorn only logs after a response, so the burst was never visible).
+  SIGTERM failed; SIGKILL was required. Same signature as the 2026-11-26
+  15:32 incident — this is a recurring availability failure, not swap alone.
+
+  Fix (user-approved 2026-11-27): bound in-flight inference in
+  openjev/server.py with a threading.Semaphore, default 2 via
+  OPENJEV_MAX_INFLIGHT, acquired in /score and /v1/systemone with
+  `acquire(blocking=False)`; excess requests get HTTP 429 + Retry-After: 60.
+  The systemd drop-in now sets Environment=OPENJEV_MAX_INFLIGHT=2 explicitly.
+  Both copies of the repo (idc02 and tony-omen) had pre-existing uncommitted
+  user changes (lane_metrics, bf16 CPU dtype); the guard was layered on top
+  and left uncommitted so that work is not overwritten.
+
+  Verified with a stubbed scorer + TestClient on tony-omen: three concurrent
+  /score calls produced statuses [200, 200, 429] and /health stayed 200
+  throughout. Live service restarted 09:24:44 and /health 200 in 138ms with
+  load_s=55.9. The reclaim timer alone is insufficient at daily cadence;
+  reassess after the concurrency bound has run for a full day.
 
 rollback: |
   Delete the 4 installed files and the alarm file, then:
@@ -85,6 +111,8 @@ lesson: |
   A fixed daily restart was replaced with a threshold check because the
   swap accumulation tracks request volume and plateaus; unnecessary restarts
   would interrupt in-flight /v1/systemone calls for no benefit.
-  Do not use `ps -o nlwp` right after restart to verify an OMP cap: sync
-  FastAPI endpoints lazily fill anyio's 40-thread pool on the first request.
-  Verify with torch.get_num_threads() in-process or /proc/<pid>/environ.
+  Do not use `ps -o nlwp` on MainPID to verify an OMP cap: MainPID is the uv
+  wrapper, not the worker, and sync FastAPI endpoints lazily fill anyio's
+  40-thread pool on first request. Verify with torch.get_num_threads()
+  in-process or /proc/<worker-pid>/environ. The anyio pool is NOT benign:
+  40 simultaneous multi-minute inferences exhaust it and take /health down.
