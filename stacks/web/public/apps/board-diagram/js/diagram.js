@@ -3,7 +3,7 @@
 // sit in a 'members' lane. Cards are nodes colored by kanban column.
 // Renders SVG into a container element; returns {height} for layout.
 import { DONE_RECENT_DAYS } from '../../board-gantt/js/config.js';
-import { groupOf, groupLabel } from '../../board-gantt/js/groups.js';
+import { groupIdOf, groupLabel } from '../../board-gantt/js/groups.js';
 
 const DAY = 86400000;
 const VIEW_W = 1040;
@@ -46,6 +46,16 @@ function truncate(s, n) {
   return s.length > n ? s.slice(0, n - 1) + '…' : s;
 }
 
+// card -> action dict (compact cards.json nests it under `raw` after
+// normalizeCard; tolerate either shape so the smoke test can pass raw rows)
+export function actOf(card) {
+  return (card && ((card.raw && card.raw.action) || card.action)) || {};
+}
+
+export function isQueued(card) {
+  return actOf(card).status === 'queued';
+}
+
 // cards -> ordered lanes: [{key,label,cards}] — 'members' lane first,
 // then sub-groups alpha. Only in-scope cards.
 export function buildLanes(cards, groupId, now = new Date()) {
@@ -55,7 +65,7 @@ export function buildLanes(cards, groupId, now = new Date()) {
     lanes.get(key).cards.push(card);
   };
   for (const c of cards) {
-    if (groupOf(c) !== groupId || !inScope(c, now)) continue;
+    if (groupIdOf(c) !== groupId || !inScope(c, now)) continue;
     const sub = subPath(c, groupId);
     add(sub || '', sub || 'members', c);
   }
@@ -83,7 +93,8 @@ const txt = (parent, x, y, s, attrs = {}) => {
 
 // Render one diagram spec into `host`. spec: {group, kind:'lanes'}
 // collapsed: Set of lane keys. onPick(card, evt): node click callback.
-export function renderDiagram(host, spec, cards, { collapsed = new Set(), onPick } = {}) {
+// onLaneAction(lane, ev): lane-level action (claim-queued button).
+export function renderDiagram(host, spec, cards, { collapsed = new Set(), onPick, onLaneAction } = {}) {
   host.innerHTML = '';
   const lanes = buildLanes(cards, spec.group);
   if (!lanes.length) {
@@ -124,6 +135,26 @@ export function renderDiagram(host, spec, cards, { collapsed = new Set(), onPick
     txt(head, PAD + 10, lane.y + 20, `${arrow} ${esc(lane.label)}`,
       { fill: 'var(--ink)', 'font-size': 12, 'font-weight': 600,
         'font-family': 'system-ui,sans-serif', 'letter-spacing': '0.04em' });
+    const queued = lane.cards.filter(isQueued).length;
+    if (queued > 0) {
+      // lane-level CONTROL: claim every queued card in this lane
+      const bw = 64, bh = 16;
+      const bx = VIEW_W - PAD - 10 - 44 - bw;
+      const by = lane.y + 6;
+      const bg = svgEl('g', { class: 'lane-act', 'data-lane': lane.key }, g);
+      svgEl('rect', {
+        x: bx, y: by, width: bw, height: bh, rx: 8,
+        fill: 'rgba(14,165,233,0.12)', stroke: '#0ea5e9', 'stroke-width': 0.8,
+      }, bg);
+      txt(bg, bx + bw / 2, by + 12, `claim ${queued}`, {
+        fill: '#7dd3fc', 'font-size': 9, 'text-anchor': 'middle',
+        'font-family': 'ui-monospace,monospace', 'pointer-events': 'none',
+      });
+      bg.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        onLaneAction && onLaneAction(lane, ev);
+      });
+    }
     txt(head, VIEW_W - PAD - 10, lane.y + 20, `${lane.cards.length}`,
       { fill: 'var(--muted)', 'font-size': 10, 'text-anchor': 'end',
         'font-family': 'ui-monospace,monospace' });
@@ -141,6 +172,8 @@ export function renderDiagram(host, spec, cards, { collapsed = new Set(), onPick
       const ng = svgEl('g', {
         class: `node col-${card.column || 'backlog'}`, transform: `translate(${nx},${ny})`,
       }, g);
+      svgEl('title', {}, ng).textContent =
+        `${card.title} — ${card.column || 'backlog'} (click for actions)`;
       svgEl('rect', { // opaque mask under accent bar
         x: 0, y: 0, width: NODE_W, height: NODE_H, rx: 6, fill: '#101a30',
       }, ng);
