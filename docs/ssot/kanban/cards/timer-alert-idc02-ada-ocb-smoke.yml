@@ -1,7 +1,7 @@
 id: timer-alert-idc02-ada-ocb-smoke
 title: Timer ada-ocb-smoke on idc02 failing
 column: done
-updated: 2026-11-27 11:00
+updated: 2026-11-27 11:04
 priority: high
 tags:
 - timer-alert
@@ -653,6 +653,13 @@ comms:
 - at: 2026-11-27 11:00
   from: tony
   text: closed by tony
+- at: 2026-11-27 11:04
+  from: devin
+  text: 'RESOLVED 2026-11-27 11:0x +07 (card ada-ocb-eval-smoke-harness-fix / ADA-1489). The 10:00 failure was a
+    different mode than the ADA-0172 fixture rot fixed at 08:50: find_card ADA-1110 took 10.6s during idc03 board-api
+    slowness, then ada_context_pack dropped its card leg — _context_card ran 3 sequential UNCACHED /cards fetches
+    (incl. an /cards?id= probe that can never match a ref) inside the shared 8s pack deadline while find_card/_pick_cards
+    had just warmed _snapshot_cache. Fix in ada-voice 912e'
 action:
   status: done
   type: dispatch

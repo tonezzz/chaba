@@ -1,7 +1,7 @@
 id: timer-alert-idc02-ada-ocb-eval
 title: Timer ada-ocb-eval on idc02 failing
 column: done
-updated: 2026-11-27 11:00
+updated: 2026-11-27 11:04
 priority: high
 tags:
 - timer-alert
@@ -212,6 +212,13 @@ comms:
 - at: 2026-11-27 11:00
   from: tony
   text: closed by tony
+- at: 2026-11-27 11:04
+  from: devin
+  text: 'RESOLVED 2026-11-27 11:0x +07 (card ada-ocb-eval-smoke-harness-fix / ADA-1489). Root cause: fixture rot,
+    not a gate or provider regression — tests/eval_ocb/cases.yml still probed ADA-0172 + ADA-0174, both archived
+    out of /cards by the archive-done cap sweep between Nov-26 18:20 and Nov-27 00:20, so find_card returned ok=false
+    on card-status-real-ref / card-context-pack / preflight-gates-readonly (score 7/10). Fix: repointed all three
+    cases to live fixture ADA-1110 (ada-voice commit 912e064, bran'
 requests:
 - id: multiple-runner-agents-across-fa4249
   ask: Multiple runner-agents across hosts (tony-dell, tony-omen, mn01) are deferring execution because the installed
