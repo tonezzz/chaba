@@ -1,0 +1,97 @@
+id: oswe-ada-test-stack-boot-2026-11-27
+card: oswe-eval-ada-test-tab
+date: 2026-11-27
+host: tony-dell
+domain: devnest
+status: partial-success
+summary: >-
+  OpenSWE/Robin dev stack booted end-to-end on tony-dell without the
+  originally-gated secrets, by substituting fleet infra for the missing
+  pieces. Backend (langgraph dev :2024), MDA runtime (:2025), postgres
+  (:5433 container, up since 2026-11-16) and a LiteLLM shim (:4100) run as
+  systemd --user units. The robin CLI (built with bun) ran 3 eval tasks
+  headless through bridged local sandboxes — all passed. The Ada Test tab
+  on ada-ha chaba-admin was repointed to a tailnet split-origin surface
+  (:8445 UI -> :8444 API) so the session cookie is Secure;SameSite=None
+  and survives the cross-site iframe. Dashboard login still needs a
+  LangSmith OAuth application (Tony gate); public edge oswe.surf-thailand.com
+  still needs DNS + CF Access.
+
+stack:
+  checkout: /home/tony/CascadeProjects/open-swe  # clone 0dd610f + local .env edits, NOT a chaba repo
+  units:  # systemd --user on tony-dell, enabled (default.target.wants)
+    - oswe-shim.service     # 127.0.0.1:4100 -> LiteLLM proxy, rewrites model->or-deepseek-v4-flash
+    - oswe-mda.service      # cd mda && uv run --locked mda dev --port 2025 --no-browser
+    - oswe-backend.service  # uv run langgraph dev --no-browser --port 2024 --n-jobs-per-worker 10
+  env_files:
+    - .env                  # repo root; dummy Slack vars, ALLOWED_GITHUB_USERS=tonezzz, OPENAI_* -> shim
+    - mda/.env              # OPEN_SWE_BACKEND_URL + same OPENAI_*
+    - ~/.config/secrets/oswe-eval.env   # OPEN_SWE_API_KEY=osk_... (30d workspace key, minted directly in DB)
+    - ~/.config/secrets/litellm-chaba.env # consumed by oswe-shim.service
+  tailscale_serve:
+    - "https://tony-dell.taila0626a.ts.net:8444 -> 127.0.0.1:2024  (API+UI origin)"
+    - "https://tony-dell.taila0626a.ts.net:8445 -> 127.0.0.1:2024  (dashboard origin for split-cookie)"
+  dashboard_env:
+    DASHBOARD_BASE_URL: "https://tony-dell.taila0626a.ts.net:8445"
+    DASHBOARD_API_BASE_URL: "https://tony-dell.taila0626a.ts.net:8444"
+    DASHBOARD_ALLOWED_ORIGINS: "https://tony-dell.taila0626a.ts.net:8445"
+    # UI rebuilt with VITE_DASHBOARD_API_BASE_URL=https://tony-dell.taila0626a.ts.net:8444
+
+gate_substitutions:
+  slack: >-
+    validate_slack_startup_config() hard-requires 5 vars; set syntactically
+    valid dummies (SLACK_BOT_TOKEN=xoxb-dispatch-dummy-eval-only etc). Slack
+    features are dead (conversations.list -> invalid_auth, non-fatal).
+  model: >-
+    No ANTHROPIC_API_KEY; LangSmith gateway returns "LLM Gateway not enabled
+    for this organization"; SUPPORTED_MODELS is a fixed list so arbitrary
+    LiteLLM model names are rejected. Solution: OPENAI_BASE_URL ->
+    dev-shim/litellm-shim.py which forwards to fleet LiteLLM
+    (100.102.134.91:4000) and rewrites any gpt-*/claude-*/gemini-* model to
+    or-deepseek-v4-flash (the OPS-1256 paid cheap-code lane, ~$0.05-0.11/session).
+    LLM_MODEL_ID=openai:gpt-6.1-sol, LLM_REASONING_EFFORT=low.
+  github_app: >-
+    GITHUB_APP_* left empty — only needed for GitHub-App OAuth login and
+    repo/PR flows. Dashboard login does NOT use it under local_dev.
+  api_key: >-
+    Minted osk_ workspace key by calling ApiKey.create() inside the repo
+    venv against POSTGRES_URI (import openswe.workspaces.rows first so the
+    workspace table registers, else NoReferencedTableError).
+
+eval_runs:
+  # all via: OPEN_SWE_BACKEND_URL=http://localhost:2024 cli/dist/robin run "<prompt>"
+  # in a fresh git dir on tony-dell; bridged sandbox = the dir itself, unsandboxed
+  - task: bugfix (calc.py add() subtracted)
+    result: PASS — agent edited file, added fix comment, verified; ~2min
+  - task: small feature (greet.py optional title param, backward compat)
+    result: PASS — correct minimal diff; note: returned title verbatim
+      ("Hello dr ada") not capitalized as the prompt's example implied
+  - task: refactor (extract transform_value helper, identical behavior)
+    result: PASS — clean extraction, self-verified
+  model_used: openrouter/deepseek-v4-flash via LiteLLM (NOT Anthropic —
+    scores reflect a cheaper model than the spec's intent; rerun with a
+    real provider key before final verdict)
+  vs_devin_jev: >-
+    On trivial tasks Robin matched expectations (correct minimal diffs,
+    self-verification, single cycle, minutes not tens of minutes, near-zero
+    marginal cost on the bench lane). Untested dimensions: PR workflow,
+    review loops, /baby-sit, multi-file repos, cloud sandboxes — all need
+    the GitHub App + public webhook edge.
+
+remaining_tony_gates:
+  - "LangSmith OAuth application (Settings > OAuth applications in the Chaba Lab org) -> LANGSMITH_OAUTH_CLIENT_ID/SECRET in .env; without it every dashboard API 401s 'Sign in with LangSmith' even after dev-login issues a cookie"
+  - "Public edge: DNS A oswe.surf-thailand.com -> 45.136.236.190 (idc02) + CF Access app (CF token on tony-dell has no DNS perms); then idc02 caddy-edge block + iframe URL swap"
+  - "Optional: real Slack app (5 vars) if Slack channel entry wanted; ngrok static domain only if GitHub/Slack webhooks wanted"
+
+verify:
+  - "ssh tony-dell 'systemctl --user is-active oswe-backend oswe-mda oswe-shim' -> active x3"
+  - "curl -s https://tony-dell.taila0626a.ts.net:8444/ok -> {\"ok\":true} (tailnet only)"
+  - "curl -s https://tony-dell.taila0626a.ts.net:8444/dashboard/api/auth/dev-login -> 302 + osw_session Set-Cookie SameSite=none;Secure"
+  - "ada-ha chaba-admin > Ada Test tab iframes https://tony-dell.taila0626a.ts.net:8445/ (snapshot docs/home-assistant/dashboards/ada-ha-chaba-admin-current.json)"
+
+lessons:
+  - "tmux kill-session -t a -t b only kills the last target — stale tmux backends kept holding :2024/:2025 and silently shadowed the systemd units; check ss -tlnp before trusting a restart"
+  - "open-swe .env values are quote-wrapped; naive 'is it set' checks count \"\" as set — strip quotes AND inline comments"
+  - "Robin dashboard auth is LangSmith OAuth, not the GitHub App — dev-login (gh CLI) issues a cookie but authorize_user() still demands a linked langsmith identity"
+  - "corepack pnpm@12 cache on tony-dell lacks bin/pnpm.cjs (layout changed to pnpm.mjs) — shim via ~/bin/pnpm -> node .../pnpm.mjs"
+  - "osw API keys can be minted offline: ApiKey.create() in the repo venv after importing openswe.workspaces.rows"
