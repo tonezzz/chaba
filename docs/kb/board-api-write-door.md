@@ -92,7 +92,17 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
   parks the card at `idle`/`failed` with `awaiting_action` plus a comms
   reason; `GET /queue` reports those separately under `human_waiting`
   (`kind: human|unserved`, `owner`, `next_action`) instead of mixing them
-  into claimable `queued` (KNB-0013).
+  into claimable `queued` (KNB-0013). The same guard covers the
+  `do=finish` failure auto-retry — a human-owned card is parked at
+  `idle`+`awaiting_action`, never re-armed. On the Board surfaces the
+  wait is labelled, not hidden: board2's Needs Tony band lists
+  `awaiting_action` cards with owner + reason + next action (and the
+  card-cycle pane's claim reason says `queued but <why>` for legacy
+  queued-but-unclaimable cards), while the classic board's needs-you row
+  shows the same reason via `waitReason()` and suppresses the queue
+  button. `board-invariants.py` Q1 flags any `status=queued` card that
+  can never be claimed — manual executor/lane/type, unknown executor,
+  unserved type — after the 24h grace window.
 - **`/action do:queue|retry|close|hold` — verify-or-loud** (card
   `board-api-queue-write-verify-lost-race-f85f2f`, 2026-11-24): the
   response no longer fires on write-and-hope. After the flock releases,

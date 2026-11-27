@@ -432,8 +432,8 @@ function renderBoard() {
   const visCols = COLS.filter(c => !hiddenCols.has(c.id));
   document.getElementById('board').innerHTML = visCols.map(colHtml).join('')
     || '<div class="text-slate-500 text-sm p-4 italic">all columns hidden — use the ▦ columns menu</div>';
-  // ny pill — total open decisions across all cards
-  let ny = 0; for (const c of (DATA ? DATA.cards : [])) ny += needYou(c);
+  // ny pill — open decisions + human-waiting rows across all cards
+  const ny = nyItems().filter(it => !nyFlash[nyItemKey(it)]).length;
   const el = document.getElementById('ny-pill');
   el.textContent = ny + ' need you';
   el.classList.toggle('hidden', !ny);
@@ -550,20 +550,71 @@ function askHtml(c) {
 // /respond, flashes "✓ answered", then the row drops (board-decisions-inbox).
 function nyItems() {
   const items = [];
+  const covered = new Set();
   for (const c of (DATA ? DATA.cards : [])) {
     for (const r of c.requests || [])
-      if (r.status !== 'answered' || nyFlash[c.id + '|' + r.id])
+      if (r.status !== 'answered' || nyFlash[c.id + '|' + r.id]) {
         items.push({c, r});
-    if (askOpen(c) || nyFlash[c.id + '|ask']) items.push({c, ask: true});
+        covered.add(c.id);
+      }
+    if (askOpen(c) || nyFlash[c.id + '|ask']) {
+      items.push({c, ask: true});
+      covered.add(c.id);
+    }
+    // queue-truth: the write door parks human-owned/unserved work at
+    // awaiting_action instead of action.status=queued — surface it here
+    // with owner + reason + next action, or the card is invisible on
+    // Board while GET /queue reports it under human_waiting.
+    const a = c.action || {};
+    const inflight = ['queued', 'running', 'claimed', 'starting',
+                      'verifying', 'stalled'].includes(a.status || '');
+    if (c.awaiting_action && (c.column || 'backlog') !== 'done'
+        && !inflight && !covered.has(c.id))
+      items.push({c, wait: true});
   }
   return items;
 }
 
+// wait reason/owner/next — mirrors board-api queue_wait_reason +
+// _wait_kind so Board labels human-waiting the same way GET /queue does.
+function waitInfoAct(a) {
+  a = a || {};
+  const ex = a.executor || '', ln = a.lane || '', t = a.type || 'dispatch';
+  if (ex === 'manual' || ln === 'manual' || t === 'manual') {
+    const reason = ex === 'manual' ? 'action.executor=manual'
+      : ln === 'manual' ? 'action.lane=manual' : 'action.type=manual';
+    return {kind: 'human', owner: 'tony',
+      reason: reason + ' — Tony\'s hands, not runner-dispatchable',
+      next: 'human decision — do it manually, then close or re-spec'};
+  }
+  if (!['dispatch', 'container', 'script'].includes(t))
+    return {kind: 'unserved', owner: 'chaba',
+      reason: 'action.type=' + t + ' has no unattended executor',
+      next: 'fix action.type/executor/lane or declare a served lane'};
+  return {kind: 'triage', owner: 'tony',
+    reason: 'flagged awaiting_action — needs triage',
+    next: 'queue it, spec+arm an action, or close'};
+}
+
+function waitInfo(c) { return waitInfoAct(c.action); }
+
+function nyItemKey(it) {
+  return it.c.id + '|' + (it.wait ? 'wait' : it.ask ? 'ask' : it.r.id);
+}
+
 function nyItemHtml(it) {
   const c = it.c;
-  const key = c.id + '|' + (it.ask ? 'ask' : it.r.id);
   const head = `<button class="ny-card text-xs font-medium text-sky-300 hover:text-sky-200 underline underline-offset-2" data-id="${esc(c.id)}">${esc(c.title || c.id)}</button>` +
     `<span class="text-[10px] text-slate-500">${esc(c.id)} · ${esc(c.column || 'backlog')}</span>`;
+  if (it.wait) {
+    const w = waitInfo(c);
+    return `<div class="border border-sky-700/40 rounded p-2 bg-sky-950/20">` +
+      `<div class="flex items-baseline gap-2 flex-wrap">${head}` +
+      `<span class="text-[10px] text-slate-400">owner: ${esc(w.owner)}</span></div>` +
+      `<div class="text-xs text-sky-200 mt-1">⏸ ${esc(w.reason)}</div>` +
+      `<div class="text-[11px] text-slate-400 mt-0.5">next: ${esc(w.next)}</div></div>`;
+  }
+  const key = nyItemKey(it);
   if (nyFlash[key])
     return `<div class="border border-emerald-700/50 rounded p-2 bg-emerald-950/30">` +
       `<div class="flex items-baseline gap-2 flex-wrap">${head}</div>` +
@@ -589,7 +640,7 @@ function renderNeedsYou() {
     el.innerHTML = '<div class="text-[11px] text-slate-600 italic pb-1">✓ no pending decisions</div>';
     return;
   }
-  const n = items.filter(it => !nyFlash[it.c.id + '|' + (it.ask ? 'ask' : it.r.id)]).length;
+  const n = items.filter(it => !nyFlash[nyItemKey(it)]).length;
   el.innerHTML =
     `<div class="bg-amber-900/40 border border-amber-600/60 rounded mb-1">` +
     `<button id="ny-toggle" class="w-full text-left px-2.5 py-1.5 text-amber-100 text-sm flex items-center gap-2">` +
@@ -676,9 +727,19 @@ function cpReason(c) {
   if (['done', 'archive'].includes(c.column)) return 'finished';
   const open = (c.requests || []).filter(r => !['answered', 'closed'].includes(r.status || ''));
   if (open.length) return 'open request ' + (open[0].id || '?');
+  if (a.status === 'queued') {
+    // queue-truth: a queued card no runner can claim (legacy/manual)
+    // must not read as ordinary queued work in the claim-reason pane
+    const w = waitInfoAct(a);
+    if (w.kind === 'human' || w.kind === 'unserved')
+      return 'queued but ' + w.reason;
+  }
   if (['claimed', 'running', 'queued', 'verifying', 'stalled'].includes(a.status || ''))
     return (a.status || '') + (a.target_host ? ' @ ' + a.target_host : '');
-  if (c.awaiting_action) return 'awaiting action';
+  if (c.awaiting_action) {
+    const w = waitInfoAct(a);
+    return w.kind !== 'triage' ? w.reason : 'awaiting action';
+  }
   return 'eligible';
 }
 
@@ -984,7 +1045,7 @@ function detailHtml(c) {
     <div class="text-xs text-slate-500 mt-0.5">${c.ref?`<span class="text-sky-400 font-semibold">${esc(c.ref)}</span> · `:''}${esc(c.id)} · ${esc(c.column||'backlog')} ${c.priority?'· '+esc(c.priority):''}</div>
     <div class="mt-1 flex gap-1 flex-wrap">${badgeHtml(c, c.column || 'backlog')}</div></div>
     <div class="flex flex-col gap-1 items-end shrink-0">
-      ${!['queued','running','done'].includes(a.status||'idle') && (a.type || !['doing','done','verified','review'].includes(c.column||'')) ? `<button class="act text-xs bg-sky-700 hover:bg-sky-600 rounded px-2.5 py-1" data-do="queue" title="queue for dispatch — repo defaults to chaba unless action.repo is set">▶ Start</button>`:''}
+      ${!['queued','running','done'].includes(a.status||'idle') && !['human','unserved'].includes(waitInfo(c).kind) && (a.type || !['doing','done','verified','review'].includes(c.column||'')) ? `<button class="act text-xs bg-sky-700 hover:bg-sky-600 rounded px-2.5 py-1" data-do="queue" title="queue for dispatch — repo defaults to chaba unless action.repo is set">▶ Start</button>`:''}
       ${c.column !== 'done' ? `<button class="act text-xs bg-emerald-800 hover:bg-emerald-700 rounded px-2.5 py-1" data-do="close">✓ close</button>`:''}
       <select class="mv text-xs bg-slate-800 border border-slate-700 rounded px-2 py-1">
         <option value="">move to…</option>

@@ -1993,6 +1993,16 @@ def do_finish(card: dict, body: dict) -> str:
     att = int(a.get("attempts") or 0)
     max_att = dr.dispatch_attempt_cap(card)
     if os.environ.get("KANBAN_AUTORETRY", "1") != "0" and att < max_att:
+        human = queue_wait_reason(card)
+        if human:
+            # never re-arm human-owned work for dispatch — park it the
+            # same way the write door does (kanban-queue-manual-handoff)
+            a["status"] = "idle"
+            card["awaiting_action"] = True
+            comms_add(card, host,
+                      f"finished (failed){tail} — auto-retry skipped: "
+                      f"{human}")
+            return "failed — " + human
         a["status"] = "queued"
         a.pop("runner", None)
         a.pop("task_id", None)

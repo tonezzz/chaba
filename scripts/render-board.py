@@ -958,6 +958,22 @@ function needsYou() {{
   return items;
 }}
 
+// queue-truth: awaiting_action cards the write door parked as
+// human-waiting/unserved — label them with owner + reason like
+// GET /queue's human_waiting rows instead of a generic triage note.
+function waitReason(c) {{
+  const a = c.action || {{}};
+  const ex = a.executor || '', ln = a.lane || '', ty = a.type || 'dispatch';
+  if (ex === 'manual' || ln === 'manual' || ty === 'manual') {{
+    const f = ex === 'manual' ? 'action.executor=manual'
+      : ln === 'manual' ? 'action.lane=manual' : 'action.type=manual';
+    return f + ' — human-owned (owner: tony), not runner-dispatchable';
+  }}
+  if (!['dispatch', 'container', 'script'].includes(ty))
+    return 'action.type=' + ty + ' — no unattended executor (owner: chaba)';
+  return '';
+}}
+
 function nyItemHtml(it) {{
   const c = it.c;
   const head = `<button class="ny-btn text-xs font-medium text-sky-300 hover:text-sky-200" data-id="${{esc(c.id)}}">${{esc(c.title || c.id)}}</button>` +
@@ -977,11 +993,12 @@ function nyItemHtml(it) {{
       `<span class="text-xs text-slate-300">claim ${{it.ageH}}h old — reclaimable per doing SLA</span></div></div>`;
   if (it.kind === 'answered') {{
     const a = c.action || {{}};
-    const queueBtn = a.type && a.status !== 'queued' && a.status !== 'running'
+    const wr = waitReason(c);
+    const queueBtn = !wr && a.type && a.status !== 'queued' && a.status !== 'running'
       ? `<button class="abtn text-xs bg-accent hover:opacity-90 text-white rounded px-2 py-0.5" data-id="${{esc(c.id)}}" data-do="queue">▶ queue it</button>`
-      : `<span class="text-[10px] text-slate-500">no action armed — spec one or triage manually</span>`;
+      : `<span class="text-[10px] text-slate-500">${{wr ? 'not runner-dispatchable' : 'no action armed — spec one or triage manually'}}</span>`;
     return `<div class="border border-sky-700/40 rounded p-2 bg-sky-950/20"><div class="flex items-center gap-2 flex-wrap">${{head}}` +
-      `<span class="text-xs text-sky-200">answer recorded — needs triage</span>${{queueBtn}}</div></div>`;
+      `<span class="text-xs text-sky-200">${{wr ? '⏸ ' + esc(wr) : 'answer recorded — needs triage'}}</span>${{queueBtn}}</div></div>`;
   }}
   const res = (c.action || {{}}).result;
   return `<div class="border border-red-700/40 rounded p-2 bg-red-950/20"><div class="flex items-center gap-2 flex-wrap">${{head}}` +
