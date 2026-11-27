@@ -1,7 +1,7 @@
 id: jevos-idc02-earlyoom-kill
 title: idc02 JevOS killed by earlyoom; clean SIGTERM bypassed Restart=on-failure
 column: backlog
-updated: 2026-11-27 21:06
+updated: 2026-11-27 21:17
 brief: '2026-11-27 20:47:40 +07: earlyoom on idc02 (0 swap, avail 9.92% < 10% threshold) sent SIGTERM to jev PID
   1233450 (RSS 1543 MiB) after killing three chrome processes. systemd saw Result=success, so Restart=on-failure
   did not restart it; lane stayed down ~17min (health=000). Restored 21:05, health 200 in 15s.'
@@ -13,3 +13,16 @@ comms:
 - at: 2026-11-27 21:06
   from: tony
   text: card captured via board-api
+- at: 2026-11-27 21:17
+  from: chaba
+  text: auto-routed to executor=claude (task_class=report_triage)
+- at: 2026-11-27 21:17
+  from: chaba
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  task_class: report_triage
+  executor: claude
+  executor_source: queue
+claim: {}
