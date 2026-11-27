@@ -1,7 +1,7 @@
 id: timer-alert-idc03-mddb-embed-probe
 title: Timer mddb-embed-probe on idc03 failing
 column: doing
-updated: 2026-11-27 08:35
+updated: 2026-11-27 08:59
 priority: high
 tags:
 - timer-alert
@@ -1582,6 +1582,13 @@ comms:
     [still suspicious] Last run (11-25 09:58) ; [timer-alert-idc03-chaba-lessons-audit] [reopened — condition recurred]
     Last run; [timer-alert-idc03-chaba-lessons-audit] [reopened — condition recurred] Last run; [timer-alert-idc03-chaba-lessons-audit]
     [still suspicious] La'
+- at: 2026-11-27 08:59
+  from: devin
+  text: 'ROOT CAUSE FOUND: not a probe bug — ansible-chaba site.yml run from idc02 at 11-26 19:50 redeployed stale
+    systemd_user_services host_vars over the 18:00 manual fix. Live units had ExecStart->nonexistent mddb-embed-probe.py
+    (203/EXEC) + OnCalendar=*/15 * * * * (cron syntax -> bad-setting, timer dead 13h). Same run left mddb-vector-reindex.service
+    crash-looping 203/EXEC every 10s since 17:30 (5.4k failures — probe''s reindex kick). Fixing live units + ansible
+    source now.'
 action:
   status: running
   type: dispatch
