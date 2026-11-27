@@ -1,13 +1,15 @@
 id: pin-a-free-openrouter-model-for-store-aw-ed0cc2
 title: Pin a free OpenRouter model for store-awareness A/B
-column: backlog
-updated: 2026-11-27 14:41
+column: doing
+updated: 2026-11-27 14:42
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: chaba
   executor: devin
   lane: paid_frontier
+  runner: tony-dell
+  attempts: 1
 ref: OPS-0827
 comms:
 - at: 2026-10-24 17:03
@@ -451,6 +453,9 @@ comms:
 - at: 2026-11-27 14:41
   from: chaba
   text: 'con01 defers: runner at local cap (1/1) — remote slots unaffected'
+- at: 2026-11-27 14:42
+  from: tony-dell
+  text: claimed
 requests:
 - id: pinned-nemotron-store-aware-treatment-hi-0672dc
   ask: Pinned Nemotron store-aware treatment hit OpenRouter free-tier HTTP 429 twice and was stopped. What should
@@ -467,3 +472,5 @@ requests:
 spec: Pin a free OpenRouter model in the configuration used for store-awareness A/B testing within the chaba repository.
   Ensure the selected model is explicitly set to avoid relying on dynamic or paid default routing. Verify the configuration
   change passes syntax checks and successfully loads the targeted A/B test pipeline.
+claim:
+  since: 2026-11-27 14:42
