@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-runner-tools-converge
 title: Timer runner-tools-converge on tony-dell failing
-column: backlog
-updated: 2026-11-27 09:14
+column: done
+updated: 2026-11-27 10:27
 priority: high
 tags:
 - timer-alert
@@ -43,6 +43,12 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-27 00:02) of `runner-tools-converge.service` on `tony-dell` result=exit-code
     — investigate journal: `journalctl --user -u runner-tools-converge.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-27 10:27
+  from: tony
+  text: '[cleanup 2026-11-27] Live verify: tony-dell-runner-tools-converge Result=success. Closing; condition healed.'
+- at: 2026-11-27 10:27
+  from: tony
+  text: closed by tony
 spec: Investigate the failure of `runner-tools-converge.service` on host `tony-dell` which resulted in an exit-code
   on 11-27 00:02. Inspect the systemd user journal using `journalctl --user -u runner-tools-converge.service` on
   `tony-dell` and reference the CMS card `timer-timeline-tony-dell`. Resolve the underlying error causing the non-zero
