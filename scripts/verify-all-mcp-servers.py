@@ -1,18 +1,26 @@
 #!/usr/bin/env python3
 """Verify all configured MCP servers by attempting a tools/list call."""
 import argparse
+import errno
 import json
 import os
+import socket
 import subprocess
 import sys
 import threading
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 CONFIG = Path(os.environ.get("MCP_CONFIG", Path.home() / ".config" / "devin" / "mcp_config.json"))
 TIMEOUT = 20
+# Transient connection failures happen during service restarts (e.g. mddb's
+# ~80s warmup). Retry a bounded number of times so a fleet audit does not
+# record a false negative, without hiding real outages or HTTP/parse errors.
+URL_ATTEMPTS = 3
+URL_RETRY_DELAYS = (10, 20)
 
 
 def _extract_sse_json(text):
@@ -117,39 +125,70 @@ def stdio_verify(name, cmd, args, env):
     return {"ok": True, "tool_count": len(tools), "tools": [t["name"] for t in tools[:10]]}
 
 
+def _is_transient_network_error(exc):
+    """Only connection-level errors a bounded retry can recover from."""
+    if isinstance(exc, urllib.error.HTTPError):
+        return False  # definitive HTTP status (401/404/500 ...)
+    if isinstance(exc, urllib.error.URLError):
+        exc = exc.reason
+    if isinstance(exc, socket.timeout):
+        return True
+    if isinstance(exc, OSError):
+        return exc.errno in (
+            errno.ECONNREFUSED,
+            errno.ECONNRESET,
+            errno.ECONNABORTED,
+            errno.ETIMEDOUT,
+            errno.EHOSTUNREACH,
+            errno.ENETUNREACH,
+        )
+    return False
+
+
+def _url_verify_once(url, extra_headers=None):
+    # Streamable-HTTP MCP servers require this Accept pair and reply in
+    # SSE format; Accept: */* gets a 406 from strict servers.
+    mcp_headers = {
+        "Content-Type": "application/json",
+        "User-Agent": "curl/8.0.0",
+        "Accept": "application/json, text/event-stream",
+    }
+    mcp_headers.update(extra_headers or {})
+    init = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "verify"}}}).encode()
+    req1 = urllib.request.Request(url, data=init, method="POST", headers=mcp_headers)
+    session_id = None
+    with urllib.request.urlopen(req1, timeout=TIMEOUT) as resp:
+        session_id = resp.headers.get("mcp-session-id")
+        resp.read()
+    list_ = json.dumps({"jsonrpc": "2.0", "id": 2, "method": "tools/list"}).encode()
+    headers = dict(mcp_headers)
+    if session_id:
+        headers["mcp-session-id"] = session_id
+    req2 = urllib.request.Request(url, data=list_, method="POST", headers=headers)
+    with urllib.request.urlopen(req2, timeout=TIMEOUT) as resp:
+        body = resp.read().decode()
+        if (resp.headers.get_content_type() or "") == "text/event-stream":
+            data = _extract_sse_json(body)
+        else:
+            data = json.loads(body)
+        if not isinstance(data, dict):
+            return {"ok": False, "error": "unparseable response body"}
+        tools = data.get("result", {}).get("tools", [])
+        return {"ok": True, "tool_count": len(tools)}
+
+
 def url_verify(name, url, extra_headers=None):
-    try:
-        # Streamable-HTTP MCP servers require this Accept pair and reply in
-        # SSE format; Accept: */* gets a 406 from strict servers.
-        mcp_headers = {
-            "Content-Type": "application/json",
-            "User-Agent": "curl/8.0.0",
-            "Accept": "application/json, text/event-stream",
-        }
-        mcp_headers.update(extra_headers or {})
-        init = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "verify"}}}).encode()
-        req1 = urllib.request.Request(url, data=init, method="POST", headers=mcp_headers)
-        session_id = None
-        with urllib.request.urlopen(req1, timeout=TIMEOUT) as resp:
-            session_id = resp.headers.get("mcp-session-id")
-            resp.read()
-        list_ = json.dumps({"jsonrpc": "2.0", "id": 2, "method": "tools/list"}).encode()
-        headers = dict(mcp_headers)
-        if session_id:
-            headers["mcp-session-id"] = session_id
-        req2 = urllib.request.Request(url, data=list_, method="POST", headers=headers)
-        with urllib.request.urlopen(req2, timeout=TIMEOUT) as resp:
-            body = resp.read().decode()
-            if (resp.headers.get_content_type() or "") == "text/event-stream":
-                data = _extract_sse_json(body)
-            else:
-                data = json.loads(body)
-            if not isinstance(data, dict):
-                return {"ok": False, "error": "unparseable response body"}
-            tools = data.get("result", {}).get("tools", [])
-            return {"ok": True, "tool_count": len(tools)}
-    except Exception as e:
-        return {"ok": False, "error": str(e)}
+    for attempt in range(1, URL_ATTEMPTS + 1):
+        try:
+            result = _url_verify_once(url, extra_headers)
+            result["attempts"] = attempt
+            return result
+        except Exception as e:
+            if attempt < URL_ATTEMPTS and _is_transient_network_error(e):
+                delay = URL_RETRY_DELAYS[min(attempt - 1, len(URL_RETRY_DELAYS) - 1)]
+                time.sleep(delay)
+                continue
+            return {"ok": False, "error": str(e), "attempts": attempt}
 
 
 def main():
