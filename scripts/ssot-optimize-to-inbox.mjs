@@ -12,7 +12,7 @@ import yaml from "js-yaml";
 
 // Resolve the checkout this script lives in (was hardcoded to the
 // chaba-tony-dell path — dead writes on hosts without that tree).
-const PROJECT_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const PROJECT_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const REPORTS_DIR = join(PROJECT_ROOT, "reports");
 const WARNINGS_FILE = join(REPORTS_DIR, "SSOT_OPTIMIZATION_WARNINGS.json");
 const INBOX_DIR = join(PROJECT_ROOT, "docs", "ssot", "focus-inbox");
@@ -185,4 +185,9 @@ async function main() {
   return 0;
 }
 
-process.exit(main());
+main()
+  .then((code) => process.exit(code))
+  .catch((err) => {
+    console.error(`[ssot-optimize-to-inbox] fatal: ${err && err.stack ? err.stack : err}`);
+    process.exit(1);
+  });
