@@ -1,0 +1,29 @@
+id: cms-publish-remote-end-closed-fix-unpinned
+title: idc03 CMS publish timers fail with 'Remote end closed connection'
+column: backlog
+updated: 2026-11-27 09:36
+spec: 'Journal on idc03 for chaba-starboard-tracker.service (08:47) and chaba-cached-videos.service (08:37) ends
+  with `error: Remote end closed connection without response` and exit=1, although earlier runs of both published
+  successfully. Root cause is an unhandled transient connection close during the CMS page publish step, not missing
+  content (cached-videos published 0/0/0 successfully many times; starboard also warns that the card starboard-windsurf-catalogs.yml
+  is unreadable in the tony-dell checkout — note that but do not conflate it with the exit code). Add bounded retry/backoff
+  for transient connection-close errors around the CMS publish HTTP calls shared by both jobs; keep non-retryable
+  errors loud and do not mask a real failure as ''published 0 items''. Verify by starting both oneshot services
+  on idc03 and confirming Result=success with the CMS pages still rendered (en+th). Then note the result on timer-alert-idc03-chaba-starboard-tracker
+  and timer-alert-idc03-chaba-cached-videos.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  lane: paid_frontier
+  status: queued
+ref: KNB-1484
+comms:
+- at: 2026-11-27 09:36
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-27 09:36
+  from: tony
+  text: '[reroute 2026-11-27] Unpinned replacement for cms-publish-remote-end-closed-fix — the target_host pin blocked
+    every eligible runner and the write door cannot clear that field. cms-publish-remote-end-closed-fix is closed
+    as superseded.'

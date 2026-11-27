@@ -1,7 +1,7 @@
 id: cms-publish-remote-end-closed-fix
 title: idc03 CMS publish timers fail with 'Remote end closed connection'
-column: backlog
-updated: 2026-11-27 09:33
+column: done
+updated: 2026-11-27 09:36
 spec: 'Journal on idc03 for chaba-starboard-tracker.service (08:47) and chaba-cached-videos.service (08:37) ends
   with `error: Remote end closed connection without response` and exit=1, although earlier runs of both published
   successfully. Root cause is an unhandled transient connection close during the CMS page publish step, not missing
@@ -17,7 +17,7 @@ action:
   executor: devin
   target_host: tony-dell
   lane: paid_frontier
-  status: queued
+  status: done
 ref: KNB-1481
 comms:
 - at: 2026-11-27 09:30
@@ -60,3 +60,10 @@ comms:
   from: tony
   text: '[reroute 2026-11-27] Removed action.target_host pin — it blocked every eligible runner. The affected host
     is documented in the spec; any push-capable chaba runner may claim.'
+- at: 2026-11-27 09:36
+  from: tony
+  text: '[superseded 2026-11-27] Closed: action.target_host made this card unclaimable and cannot be cleared through
+    the write door. Work continues on cms-publish-remote-end-closed-fix-unpinned.'
+- at: 2026-11-27 09:36
+  from: tony
+  text: closed by tony
