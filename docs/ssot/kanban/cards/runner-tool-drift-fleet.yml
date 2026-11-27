@@ -1,7 +1,7 @@
 id: runner-tool-drift-fleet
 title: Runner tool drift from audit-runner-tools.yml — re-arm convergence
 column: done
-updated: 2026-11-27 20:32
+updated: 2026-11-27 20:34
 brief: Runner tool drift from audit-runner-tools.yml — re-arm convergence
 priority: high
 program: chaba-ci
@@ -1603,6 +1603,13 @@ comms:
 - at: 2026-11-27 20:32
   from: devin
   text: closed by devin
+- at: 2026-11-27 20:34
+  from: devin
+  text: 'FINAL: fleet converged + verified. Root cause was NOT installed-copy drift — idc02 exec checkout had an
+    uncommitted JEVOS_URL edit to dispatch_repos.py; its converge timer (~2min) kept deploying the WIP bytes then
+    failing the pin assert, re-arming this card. Fix: stashed the single file on idc02 (OPS-1330 stash precedent,
+    reversible) — diff preserved at idc02:/tmp/dispatch_repos-jevowip-20261127.patch + stash@{0}. deploy-runner-tools
+    --limit idc02 applied pin bytes; full audit 0 findings; rearm '
 action:
   type: dispatch
   status: done
