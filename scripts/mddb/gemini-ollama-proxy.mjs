@@ -36,6 +36,19 @@ const OPENROUTER_PROVIDER = process.env.OPENROUTER_PROVIDER || "Google";
 // flip is index-safe. Gemini and Ollama embed in different vector spaces;
 // a silent fallback write would corrupt the index.
 const OPENROUTER_PRIMARY = (process.env.OPENROUTER_PRIMARY ?? "1") !== "0";
+// LiteLLM gateway embed leg (card or-direct-bypass-leak-audit, landed from
+// the live idc03 variant 2026-11-26): when EMBED_GATEWAY_BASE is set, the
+// OR backup leg rides the gateway's OpenAI-compatible /v1/embeddings
+// (model EMBED_GATEWAY_MODEL, default "embedding" ->
+// openrouter/google/gemini-embedding-2 upstream) instead of holding a raw
+// OR key — spend stays attributed inside LiteLLM. Gateway mode is
+// backup-only: OPENROUTER_PRIMARY never promotes it to primary (that path
+// still requires a raw OPENROUTER_API_KEY).
+const EMBED_GATEWAY_BASE = (process.env.EMBED_GATEWAY_BASE || "").replace(/\/$/, "");
+const EMBED_GATEWAY_KEY = process.env.EMBED_GATEWAY_KEY || process.env.LITELLM_KEY || "";
+const EMBED_GATEWAY_MODEL = process.env.EMBED_GATEWAY_MODEL || "embedding";
+const EMBED_VIA_GATEWAY = !!(EMBED_GATEWAY_BASE && EMBED_GATEWAY_KEY);
+const OR_LEG_CONFIGURED = EMBED_VIA_GATEWAY || !!OPENROUTER_API_KEY;
 const MAX_RPM = parseInt(process.env.GEMINI_PROXY_MAX_RPM || "100", 10);
 const BATCH_SIZE = parseInt(process.env.GEMINI_PROXY_BATCH_SIZE || "100", 10);
 const MAX_RETRIES = parseInt(process.env.GEMINI_PROXY_MAX_RETRIES || "5", 10);
@@ -104,9 +117,32 @@ function paidCallBilled() {
 // half-open probe — the next request retries free and re-opens on
 // failure. Paid legs are deliberately NOT routed through this wrapper.
 const FREE_GEMINI_CIRCUIT_MS = parseInt(process.env.FREE_GEMINI_CIRCUIT_MS || "600000", 10);
-let freeGeminiCircuitOpenUntil = 0;
+// Free-key ring (2026-11-18, landed from the live idc03 variant
+// 2026-11-26): GEMINI_API_KEY is the primary free leg; GEMINI_FREE_KEYS
+// adds comma-separated extra FREE-TIER keys plus GEMINI_FREE_KEYS_NN
+// env vars, each with its own ~1000/day embed quota and its own circuit
+// breaker. Keys are tried in order; a key whose circuit is open is
+// skipped until its cooldown expires (half-open probe). NEVER list
+// paid-tier keys here — they bill per call and would silently drain
+// that project's cap.
+const GEMINI_FREE_KEYS = [GEMINI_API_KEY,
+  ...(process.env.GEMINI_FREE_KEYS || "").split(","),
+  ...Object.keys(process.env)
+    .filter((k) => /^GEMINI_FREE_KEYS_\d+$/.test(k))
+    .sort()
+    .map((k) => process.env[k])]
+  .map((k) => (k || "").trim()).filter(Boolean);
+const freeGeminiCircuits = new Map(); // apiKey -> circuit-open-until ms
+function freeKeyCircuitOpen(key) {
+  return Date.now() < (freeGeminiCircuits.get(key) || 0);
+}
 function freeGeminiCircuitOpen() {
-  return Date.now() < freeGeminiCircuitOpenUntil;
+  // "open" means EVERY free key is circuit-broken — callers use this to
+  // decide whether the free leg is worth attempting at all.
+  return GEMINI_FREE_KEYS.every(freeKeyCircuitOpen);
+}
+function keyTag(key) {
+  return `...${String(key).slice(-4)}`;
 }
 // Free-lane pacing + bulk budget (2026-11-18, card
 // embed-free-lane-daily-budget). The free Gemini quota is per-day and a
@@ -361,14 +397,15 @@ async function fetchGeminiBatch(texts, geminiModel, outputDimensionality, fallba
   }
 }
 
-// Free-key leg with the quota breaker: instant-fail while the circuit is
-// open, open it (once per window) when the free leg exhausts its retries.
-// Also refuses (tagged freeBudget error) when the hourly pace or — for
-// bulk-marked requests — the bulk daily budget is spent; callers route
-// to the backup chain without tripping the provider circuit.
+// Free-key legs with per-key quota breakers + lane budgets: budget gates
+// refuse up front (tagged freeBudget — policy, not provider failure);
+// keys whose circuit is open are skipped, a key that exhausts its retries
+// opens ITS circuit for one window and the next key in the ring is tried.
+// Only when every key's circuit is open does the leg fail through to the
+// paid/OR chain.
 async function fetchFreeGeminiBatch(texts, geminiModel, outputDimensionality, fallbackModel = null, bulk = false) {
   if (freeGeminiCircuitOpen()) {
-    throw new Error("free Gemini circuit open (quota breaker)");
+    throw new Error("free Gemini circuits open (quota breaker)");
   }
   if (bulk && freeBulkBudgetHit()) {
     emitOpsEvent("embed_free_budget",
@@ -383,23 +420,33 @@ async function fetchFreeGeminiBatch(texts, geminiModel, outputDimensionality, fa
       `backup chain serving until the hour rolls`);
     throw freeBudgetError(`free Gemini hourly pace ${FREE_GEMINI_HOURLY_BUDGET}/h hit`);
   }
-  try {
-    const out = await fetchGeminiBatch(
-      texts, geminiModel, outputDimensionality, fallbackModel);
-    freeCallServed(bulk);
-    return out;
-  } catch (err) {
-    if (!freeGeminiCircuitOpen()) {
-      freeGeminiCircuitOpenUntil = Date.now() + FREE_GEMINI_CIRCUIT_MS;
-      console.log(
-        `free Gemini key failed (${String(err.message).slice(0, 80)}); ` +
-        `circuit open ${FREE_GEMINI_CIRCUIT_MS / 1000}s — paid leg serves directly`);
-      emitOpsEvent("embed_free_gemini_circuit",
-        `Free Gemini key circuit OPEN for ${FREE_GEMINI_CIRCUIT_MS / 1000}s — ` +
-        `${String(err.message).slice(0, 200)} — paid leg serving meanwhile`);
-    }
-    throw err;
+  const now = Date.now();
+  const candidates = GEMINI_FREE_KEYS.filter(
+    (k) => now >= (freeGeminiCircuits.get(k) || 0));
+  if (!candidates.length) {
+    throw new Error("free Gemini circuits open (quota breaker)");
   }
+  let lastErr = null;
+  for (const key of candidates) {
+    try {
+      const out = await fetchGeminiBatch(
+        texts, geminiModel, outputDimensionality, fallbackModel, key);
+      freeCallServed(bulk);
+      return out;
+    } catch (err) {
+      lastErr = err;
+      freeGeminiCircuits.set(key, Date.now() + FREE_GEMINI_CIRCUIT_MS);
+      console.log(
+        `free Gemini key ${keyTag(key)} failed ` +
+        `(${String(err.message).slice(0, 80)}); circuit open ` +
+        `${FREE_GEMINI_CIRCUIT_MS / 1000}s`);
+      emitOpsEvent("embed_free_gemini_circuit",
+        `Free Gemini key ${keyTag(key)} circuit OPEN for ` +
+        `${FREE_GEMINI_CIRCUIT_MS / 1000}s — ` +
+        `${String(err.message).slice(0, 200)} — next key / paid leg serving`);
+    }
+  }
+  throw lastErr;
 }
 
 // Paid-Gemini leg with the spend firewall: only successful (billed)
@@ -462,22 +509,50 @@ async function fetchOpenRouterBatch(texts, orModel, outputDimensionality) {
   return list.map((entry) => entry.embedding);
 }
 
+async function fetchGatewayEmbedBatch(texts, outputDimensionality) {
+  const resp = await fetch(`${EMBED_GATEWAY_BASE}/v1/embeddings`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${EMBED_GATEWAY_KEY}`,
+    },
+    body: JSON.stringify({
+      model: EMBED_GATEWAY_MODEL,
+      input: texts,
+      dimensions: outputDimensionality,
+    }),
+  });
+  if (!resp.ok) {
+    const t = await resp.text();
+    throw new Error(`Embed gateway error: ${resp.status} - ${t.slice(0, 200)}`);
+  }
+  const data = await resp.json();
+  const list = data.data || [];
+  if (list.length !== texts.length) {
+    throw new Error(`Embed gateway returned ${list.length}/${texts.length} embeddings`);
+  }
+  return list.map((entry) => entry.embedding);
+}
+
 async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGemini = false, bulk = false) {
-  // Order: OpenRouter (Vertex gemini space) -> direct Gemini -> Ollama.
+  // Order: OpenRouter/gateway (Vertex gemini space) -> direct Gemini -> Ollama.
   // When OR is primary this whole chain is the normal path.
-  if (OPENROUTER_API_KEY) {
+  if (OR_LEG_CONFIGURED) {
     const orModel = `${OPENROUTER_PREFIX}${geminiModel}`;
+    const orLabel = EMBED_VIA_GATEWAY ? `litellm:${EMBED_GATEWAY_MODEL}` : orModel;
     const orCircuitOpen = Date.now() < orCircuitOpenUntil;
     const orCapped = orDailyCapHit();
     if (!orCircuitOpen && !orCapped) {
-      console.log(`routing ${texts.length} input(s) via OpenRouter ${orModel}`);
+      console.log(`routing ${texts.length} input(s) via ${EMBED_VIA_GATEWAY ? "embed gateway" : "OpenRouter"} ${orLabel}`);
       try {
-        const out = await fetchOpenRouterBatch(texts, orModel, outputDimensionality);
+        const out = EMBED_VIA_GATEWAY
+          ? await fetchGatewayEmbedBatch(texts, outputDimensionality)
+          : await fetchOpenRouterBatch(texts, orModel, outputDimensionality);
         orCallsToday += 1;
-        lastBackupProvider = orModel;
+        lastBackupProvider = orLabel;
         return out;
       } catch (err) {
-        console.log(`OpenRouter failed (${String(err.message).slice(0, 80)})`);
+        console.log(`${EMBED_VIA_GATEWAY ? "Embed gateway" : "OpenRouter"} failed (${String(err.message).slice(0, 80)})`);
         orCircuitOpenUntil = Date.now() + OR_CIRCUIT_COOLDOWN_MS;
         // Circuit closed->open transition (inside !orCircuitOpen branch):
         // a key/spend-cap failure pages now, not at the next probe tick.
@@ -490,8 +565,8 @@ async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGe
     // Same-space fallback: embed-bench verified direct Gemini
     // gemini-embedding-2 is bit-identical (cosine 1.000) to the OR
     // Vertex route — safe to serve. Ollama stays refused (different
-    // space). If no GEMINI_API_KEY, fall through to hard-fail.
-    if (GEMINI_API_KEY) {
+    // space). If no free key, fall through to hard-fail.
+    if (GEMINI_FREE_KEYS.length) {
       try {
         const out = await fetchFreeGeminiBatch(
           texts, geminiModel, outputDimensionality, null, bulk);
@@ -526,7 +601,7 @@ async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGe
     const bulkState = bulk && !PAID_GEMINI_BULK_ALLOW ? " + paid skipped (bulk lane)" : "";
     throw new Error(`all same-space providers down (OR${orState} + Gemini failed${paidState}${bulkState})`);
   }
-  if (GEMINI_API_KEY && !skipGemini) {
+  if (GEMINI_FREE_KEYS.length && !skipGemini) {
     try {
       const out = await fetchFreeGeminiBatch(
         texts, geminiModel, outputDimensionality,
@@ -614,9 +689,9 @@ async function handleEmbed(req, res) {
     ? parseInt(outputDimensionality, 10)
     : DEFAULT_DIMENSIONS;
 
-  if (!OPENROUTER_API_KEY && !GEMINI_API_KEY && !GEMINI_API_KEY_PAID) {
+  if (!OR_LEG_CONFIGURED && !GEMINI_FREE_KEYS.length && !GEMINI_API_KEY_PAID) {
     return sendJson(res, 500, {
-      error: "no embedding provider configured (set OPENROUTER_API_KEY or GEMINI_API_KEY)",
+      error: "no embedding provider configured (set EMBED_GATEWAY_BASE, OPENROUTER_API_KEY or GEMINI_API_KEY)",
     });
   }
 
@@ -635,7 +710,7 @@ async function handleEmbed(req, res) {
       const chunk = inputs.slice(i, i + BATCH_SIZE);
       let chunkEmbeddings;
       const circuitOpen =
-        (OLLAMA_FALLBACK_BASE || OPENROUTER_API_KEY) &&
+        (OLLAMA_FALLBACK_BASE || OR_LEG_CONFIGURED) &&
         (Date.now() < geminiCircuitOpenUntil || freeGeminiCircuitOpen() ||
          freePaceHit() || (isBulk && freeBulkBudgetHit()));
       if (OPENROUTER_API_KEY && OPENROUTER_PRIMARY) {
@@ -659,7 +734,7 @@ async function handleEmbed(req, res) {
             isBulk
           );
         } catch (err) {
-          if (!OLLAMA_FALLBACK_BASE && !OPENROUTER_API_KEY) throw err;
+          if (!OLLAMA_FALLBACK_BASE && !OR_LEG_CONFIGURED) throw err;
           if (!err.freeBudget) {
             geminiCircuitOpenUntil = Date.now() + CIRCUIT_COOLDOWN_MS;
             console.log(
@@ -738,13 +813,15 @@ const server = createServer((req, res) => {
       gemini_model: GEMINI_EMBEDDING_MODEL,
       dimensions: DEFAULT_DIMENSIONS,
       ollama_fallback: OLLAMA_FALLBACK_BASE ? OLLAMA_FALLBACK_MODEL : null,
-      provider_mode: OPENROUTER_API_KEY
-        ? (OPENROUTER_PRIMARY ? "openrouter-primary" : "gemini-primary")
+      provider_mode: OR_LEG_CONFIGURED
+        ? (OPENROUTER_API_KEY && OPENROUTER_PRIMARY ? "openrouter-primary" : "gemini-primary")
         : "gemini-only",
+      embed_gateway: EMBED_VIA_GATEWAY ? EMBED_GATEWAY_MODEL : null,
       circuit: {
         or_open: Date.now() < orCircuitOpenUntil,
         gemini_open: Date.now() < geminiCircuitOpenUntil,
         free_gemini_open: freeGeminiCircuitOpen(),
+        free_keys: GEMINI_FREE_KEYS.length,
         or_daily_cap: OR_FALLBACK_DAILY_CAP || null,
         or_calls_today: orCallsToday,
         paid_daily_cap: PAID_GEMINI_DAILY_CAP || null,
