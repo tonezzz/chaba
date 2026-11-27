@@ -40,6 +40,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       .catch((err) => sendResponse({ ok: false, error: String(err.message || err) }));
     return true;
   }
+  if (request.cmd === "NAVIGATE_CAPTURE") {
+    navigateAndCapture(request.url, request.slug)
+      .then((r) => sendResponse(r))
+      .catch((err) => sendResponse({ ok: false, error: String(err.message || err) }));
+    return true;
+  }
   return false;
 });
 
@@ -249,9 +255,18 @@ chrome.cookies.onChanged.addListener((changeInfo) => {
 // Tracked pages are dumped to the local bridge automatically when they
 // finish loading, and on demand via CAPTURE_TRACKED from the sidepanel.
 // No cookies or auth headers are sent — only visible page contents.
+const DEVIN_BASE = "https://app.devin.ai/org/your-organization-d57d938b/settings";
+const DEVIN_USAGE_URL = `${DEVIN_BASE}/usage`;
+const DEVIN_USAGE_HISTORY_URL = `${DEVIN_BASE}/usage?tab=history`;
+
 const CAPTURE_RECIPES = [
-  { key: "devin_usage", match: /app\.devin\.ai\/settings\/usage/, slug: "devin_usage" },
-  { key: "devin_billing", match: /app\.devin\.ai\/settings\/plans/, slug: "devin_billing" },
+  {
+    key: "devin_usage_history",
+    match: /app\.devin\.ai\/.*\/settings\/usage\?tab=history/,
+    slug: "devin_usage_history",
+  },
+  { key: "devin_usage", match: /app\.devin\.ai\/.*\/settings\/usage/, slug: "devin_usage" },
+  { key: "devin_billing", match: /app\.devin\.ai\/.*\/settings\/plans/, slug: "devin_billing" },
   {
     key: "gcp_quotas",
     match: /console\.cloud\.google\.com\/iam-admin\/quotas/,
@@ -364,4 +379,106 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
       // tab may have been closed — never let a capture break navigation
     }
   }, CAPTURE_RENDER_DELAY_MS);
+});
+
+// --- On-demand command channel -------------------------------------------
+// The bridge holds a small commands.json queue; an alarm polls it once a
+// minute. This lets an agent ask the extension to open a tracked URL and
+// capture it without anyone touching the browser.
+function waitForComplete(tabId, timeoutMs = 30000) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      chrome.tabs.onUpdated.removeListener(listener);
+      reject(new Error("tab load timed out"));
+    }, timeoutMs);
+    const listener = (id, info) => {
+      if (id === tabId && info.status === "complete") {
+        clearTimeout(timer);
+        chrome.tabs.onUpdated.removeListener(listener);
+        resolve();
+      }
+    };
+    chrome.tabs.onUpdated.addListener(listener);
+  });
+}
+
+async function navigateAndCapture(url, slug) {
+  if (!/^https:\/\/app\.devin\.ai\//.test(url || "")) {
+    return { ok: false, error: "only app.devin.ai URLs are allowed" };
+  }
+  const wantsHistory = /tab=history/.test(url);
+  const all = await chrome.tabs.query({});
+  let tab = all.find(
+    (t) =>
+      t.url &&
+      t.url.includes("app.devin.ai/org/") &&
+      t.url.includes("/settings/usage") &&
+      /tab=history/.test(t.url) === wantsHistory
+  );
+  if (tab) {
+    await chrome.tabs.update(tab.id, { url, active: false });
+  } else {
+    tab = await chrome.tabs.create({ url, active: false });
+  }
+  await waitForComplete(tab.id);
+  await new Promise((r) => setTimeout(r, CAPTURE_RENDER_DELAY_MS));
+  const res = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: extractPage,
+  });
+  const page = res?.[0]?.result || {};
+  if (!page.text && !(page.rows || []).length) {
+    return { ok: false, error: "empty page after navigation" };
+  }
+  const payload = {
+    ...page,
+    title: slug || "devin_usage",
+    recipe: "command",
+    captured_at: new Date().toISOString(),
+  };
+  const resp = await fetch(`${await bridgeBase()}/page-dump`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const detail = await resp.text();
+  if (!resp.ok) return { ok: false, error: `${resp.status} ${detail.slice(0, 120)}` };
+  const out = { ok: true, slug: payload.title, url, detail: detail.slice(0, 200) };
+  await appendCaptureLog(out);
+  return out;
+}
+
+let commandBusy = false;
+async function pollCommands() {
+  if (commandBusy) return;
+  commandBusy = true;
+  try {
+    const base = await bridgeBase();
+    const resp = await fetch(`${base}/commands`);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    for (const cmd of data.commands || []) {
+      if (cmd.action !== "navigate_capture") continue;
+      await navigateAndCapture(cmd.url, cmd.slug);
+      await fetch(`${base}/commands/ack`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: cmd.id }),
+      });
+    }
+  } catch (_) {
+    // bridge down — keep the queue for the next tick
+  } finally {
+    commandBusy = false;
+  }
+}
+
+function ensureCommandAlarm() {
+  chrome.alarms.create("aiHubCommandTick", { periodInMinutes: 1 });
+}
+chrome.runtime.onInstalled.addListener(ensureCommandAlarm);
+chrome.runtime.onStartup.addListener(ensureCommandAlarm);
+ensureCommandAlarm();
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === "aiHubCommandTick") pollCommands();
 });

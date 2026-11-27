@@ -755,6 +755,25 @@ if (gcpQuickBtn) {
   });
 }
 
+// On-demand navigation + capture of the two Devin Console usage pages.
+const DEVIN_CAPTURE_BASE = "https://app.devin.ai/org/your-organization-d57d938b/settings";
+for (const [btnId, url, slug] of [
+  ["devinUsageBtn", `${DEVIN_CAPTURE_BASE}/usage`, "devin_usage"],
+  ["devinHistoryBtn", `${DEVIN_CAPTURE_BASE}/usage?tab=history`, "devin_usage_history"],
+]) {
+  const btn = document.getElementById(btnId);
+  if (!btn) continue;
+  btn.addEventListener("click", () => {
+    const status = document.getElementById("devinCaptureStatus");
+    status.textContent = `Opening ${slug}…`;
+    chrome.runtime.sendMessage({ cmd: "NAVIGATE_CAPTURE", url, slug }, (resp) => {
+      status.textContent = resp?.ok
+        ? `Dumped ${resp.slug}: ${resp.detail}`
+        : `Failed: ${resp?.error || "unknown"}`;
+    });
+  });
+}
+
 // Sweep every open tab, not just the active one — the pre-programmed bot
 // lives in background.js and knows the URL patterns for each dump slug.
 const captureTrackedBtn = document.getElementById("captureTrackedBtn");
