@@ -1,7 +1,7 @@
 id: go2rtc-7-camera-producers-return-empty-f-cc9176
 title: 'go2rtc: 7 camera producers return empty frames on omen'
-column: doing
-updated: 2026-11-27 15:16
+column: review
+updated: 2026-11-27 15:22
 program: infrastructure
 tags:
 - ops
@@ -381,6 +381,32 @@ comms:
     OK. NEW this attempt: (1) xiaomi-cam-resolve.py hardened — two-pass resolve, sweeps ALL local /24s on physical
     ifaces only (unfiltered would hit docker/libvirt/tailnet ~2000 pings >2m timeout); verified live via timer run
     15:15. (2) NEW ipcam65-ip.sh — runtime MAC resolver for ip_'
+- at: 2026-11-27 15:22
+  from: tony-dell
+  text: 'finished (ok): exit=0  user `go2rtc.service` left enabled as a possible failover. | devin-task-20261127-142701-fix-the-remaining-go2rtc'
+- at: 2026-11-27 15:22
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 15:22
+  from: chaba
+  text: banked 14 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-27 15:22
+  from: chaba
+  text: pushed dispatch/20261127-142701-fix-the-remaining-go2rtc-camer to origin
+- at: 2026-11-27 15:22
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_board_api_liveness.py tests/board/test_kanban_act.py
+    tests/board/test_wiki_extension.py tests/board/test_board_ap
+- at: 2026-11-27 15:22
+  from: chaba
+  text: auto-merged 1c2dd06e (dispatch/20261127-142701-fix-the-remaining-go2rtc-camer) → origin/master
+- at: 2026-11-27 15:22
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-142701-fix-the-remaining-go2rtc-camer,
+    branch dispatch/20261127-142701-fix-the-remaining-go2rtc-camer'
 spec: Fix the remaining go2rtc camera producers on tony-omen that return empty 200/0B frames for ip_cam_65 and the
   xiaomi_c100/c201 variants. Inspect and correct the producer configurations located in ~/.config/go2rtc/*.sh on
   tony-omen and check xiaomi-token-refresh.py. The target host is tony-omen and the relevant repo/environment context
@@ -389,7 +415,7 @@ spec: Fix the remaining go2rtc camera producers on tony-omen that return empty 2
   image payloads instead of 0B responses.
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   executor: devin
   attempts: 2
@@ -397,9 +423,10 @@ action:
     stale_running: 2026-11-27 13:56
     dirty: 1
     no_repo: 2026-11-27 13:59
-  result: 'exit=0 ional DHCP reservations on the ZTE would make this durable. | devin-task-20261127-125944-fix-the-remaining-go2rtc-camer.service:
-    Consumed 5min 19.101s CPU time over 49min 56.101s wall clock time, 951.2M memory peak, 475.3M memory swap peak.'
+  result: 'exit=0  user `go2rtc.service` left enabled as a possible failover. | devin-task-20261127-142701-fix-the-remaining-go2rtc-camer.service:
+    Consumed 3min 48.535s CPU time over 52min 46.523s wall clock time, 872.7M memory peak, 483.8M memory swap peak.'
   runner: tony-dell
+  verified: true
 claim:
   since: 2026-11-27 14:26
 requests:
