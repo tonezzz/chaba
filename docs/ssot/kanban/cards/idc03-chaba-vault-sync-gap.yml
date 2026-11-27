@@ -1,7 +1,7 @@
 id: idc03-chaba-vault-sync-gap
 title: idc03 chaba-vault checkout has no sync mechanism — 119k commits behind, caused 2 outages
 column: doing
-updated: 2026-11-27 11:21
+updated: 2026-11-27 11:29
 priority: high
 tags:
 - infra
@@ -64,6 +64,13 @@ comms:
   text: 'dispatch picked up. Verifying which units execute scripts from chaba-vault vs use --vault args, then implementing
     option (c): scripts from synced ~/CascadeProjects/chaba, vault data stays in chaba-vault. Will decide e1128f502
     fate in the job doc.'
+- at: 2026-11-27 11:29
+  from: devin
+  text: 'DECISION: option (c) implemented repo-side (commit fe6ccdca on dispatch branch). Verified on idc03: chaba-vault
+    HEAD e1128f502, 119,557 behind, 421 dirty paths (~9 tracked vault-data edits + surgical sync-script patch +
+    ~411 untracked inbox extracts); ~/CascadeProjects/chaba is synced/current; mn01 has no chaba-vault; idc01 offline
+    (its exec checkout IS chaba-vault per ssot.jobs.yml — flagged as open item). Changed: ada-memory-sync/drift/obsidian-vault
+    ExecStart repointed to chaba checkout (--va'
 action:
   type: dispatch
   status: running
