@@ -1,0 +1,75 @@
+title: CMS publish timers — bounded retry on transient MDDB connection-close
+subtitle: >-
+  scripts/lib/mddb_http.py shared POST helper retries transport-close
+  errors (RemoteDisconnected et al.) with 2/4/8/16/32s backoff; HTTPError
+  and non-network exceptions still raise immediately.
+icon: refresh
+job: cms-publish-remote-end-closed-fix
+card: cms-publish-remote-end-closed-fix-unpinned
+date: 2026-11-27
+host: idc03
+instance: >-
+  chaba-starboard-tracker.service + chaba-cached-videos.service
+  (oneshot, ~/.config/systemd/user, ExecStart python3
+  ~/CascadeProjects/chaba-tony-dell/scripts/ada/*-update.py)
+result: success (fix verified on idc03; lands via merge -> served-checkout pull)
+summary: >-
+  Both oneshots intermittently exited 1 with `error: Remote end closed
+  connection without response` during the CMS page publish step while
+  adjacent runs published fine. Root cause: mddb-cms (:11027) drops
+  connections during embedding-backlog congestion bursts — not missing
+  content. New shared lib scripts/lib/mddb_http.py wraps the MDDB POST
+  with bounded retry; both update scripts route _post() through it.
+verifier_goals:
+  unit_tests: pass (6/6 tests/ada/test_mddb_http_retry.py)
+  fault_injection: pass — fail-first-2-connection TCP proxy reproduced
+    RemoteDisconnected; search retried and succeeded, run published en+th
+  live_backend: pass — real mddb-cms congestion drops absorbed live;
+    starboard needed 5 attempts on one add (~30s window), cached-videos
+    needed 5 attempts on publish add; both EXIT=0, pages verified en+th
+  loud_failure: pass — with old 14s budget save_registry exhausted
+    retries and exited 1 (not masked); persistent failure still loud
+  real_units: pass — systemctl --user start of both oneshots on idc03
+    after congestion cleared: Result=success, published en+th 10:15 ICT
+commit: 8b653b0b62 (dispatch/20261127-093742-journal-on-idc03-for-chaba-sta)
+notes:
+  - >-
+    Backend context: drops come from mddb-cms container on idc03 itself
+    (100.102.134.91:11027, user unit, up since 2026-11-23, peak RSS 7.1G).
+    Journal shows continuous embedding-job failures (`ollama API error
+    504 no upstream answered in time`, requeue maxAttempts=50) — the
+    accept/worker path starves under embed backlog and closes client
+    connections. Retry rides out ~minute-scale bursts; a longer outage
+    still fails loudly and the next 30m timer tick recovers.
+  - >-
+    starboard-tracker-update.py also warns `card unreadable` for
+    docs/ssot/kanban/cards/starboard-windsurf-catalogs.yml in the
+    chaba-tony-dell checkout — the card file is NOT missing content
+    for the exit code (it renders `card=?`, 0 catalogs by design while
+    the project card sits archived). Separate hygiene item, not fixed
+    here.
+  - >-
+    Deploy: oneshot services pick up the code on the next
+    kanban-commit/git-safe-pull of the served checkout after merge —
+    no restart needed. Until then old code can still exit 1 during
+    congestion windows (observed again 10:06-10:07 ICT timer run).
+  - >-
+    scripts/ada has ~15 sibling scripts with the same unguarded _post;
+    only the two jobs in scope were switched. Adopting mddb_http.post
+    elsewhere is a trivial follow-up if the same alert pattern spreads.
+lessons:
+  - >-
+    `pkill -f <pattern>` inside an ssh one-liner self-matches the remote
+    shell command string — kills your own session mid-command. Use a
+    pidfile or pgrep-exclude-self.
+  - >-
+    python stdout is block-buffered over ssh pipes — stderr warn/error
+    lines interleave out of order vs the final `published` line;
+    reconstruct chronology before diagnosing which call failed.
+  - >-
+    MDDB /v1/search with limit=500 silently truncates — ada-cms-pages
+    has 1633 docs; page lookups must paginate (the scripts'
+    _search_all already does).
+  - >-
+    systemd-run is unnecessary for oneshot verify — `systemctl --user
+    start` + `systemctl --user show -p Result` is the direct check.
