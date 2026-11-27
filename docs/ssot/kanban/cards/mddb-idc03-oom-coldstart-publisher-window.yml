@@ -1,7 +1,7 @@
 id: mddb-idc03-oom-coldstart-publisher-window
 title: MDDB idc03 OOM restarts + cold-start window break publishers
 column: doing
-updated: 2026-11-27 16:37
+updated: 2026-11-27 16:46
 brief: mddb.service on idc03 was OOM-killed 15:58:20 (NRestarts=7 today); ~104s cold start leaves /v1 routes 404
   after health port opens. mddb-cms POST /v1/add write timeout 30s under embed congestion. Two timer publishers
   exited 1 at 15:55 and 16:00; both self-healed next tick.
@@ -66,6 +66,13 @@ comms:
     with oom=0, oom_kill=0 — no cgroup cap is being hit. 15Gi RAM + 4Gi swap with SwapFree=1.9Mi (swap fully exhausted),
     active+inactive anon ~15.5GB at the 16:33 OOM. All victims carry oom_score_adj=200 (container processes): mddbd
     killed 8x today (11:03, 13:57, 15:24, 15:38, 15:49, 15:58'
+- at: 2026-11-27 16:46
+  from: chaba
+  text: 'PREPARED ANSIBLE CHANGE (2026-11-27 ~16:45, NOT APPLIED). New gated playbook ansible/playbooks/idc03-memory-guard.yml
+    + prep/plan artifacts in reports/ansible-benchmark/idc03-memory-guard/20261127T164522/. ROOT-CAUSE DETAIL found
+    during prep: idc03 still carries the idc01 (31 GiB box) mddb drop-ins — mddb.service.d/mem.conf (GOMEMLIMIT=22000MiB,
+    MemoryHigh=16G, MemoryMax=20G) and memory.conf (MemoryHigh=24G, MemoryMax=28G, GOMEMLIMIT=12000MiB); the idc01->idc03
+    migration plan explicitly says ''re'
 action:
   type: dispatch
   status: running
