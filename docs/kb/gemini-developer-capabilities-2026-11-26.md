@@ -73,6 +73,28 @@ This supports a **high-precision approve pre-filter**, not hands-off dispatch:
 approval rate at 95% confidence. See
 `docs/ssot/jobs/devnest/2026-11-26-gemini-decision-1-approve-gate-expanded.yml`.
 
+**110-brief held-out comparison (2026-11-27):** a fresh, manually vetted
+55 READY / 55 NOT_READY set, disjoint from the training and earlier holdout
+sets, was judged by both arms with identical criteria.
+
+| Arm | Approvals / 55 READY | False approvals / 55 | Accuracy | Brier | Output tokens | Latency |
+|---|---|---|---|---|---|---|
+| `gemini-decision-1`, old calibrated threshold 0.5162 | 37 | 1 (Wilson 95% 0.32–9.61%) | 82.73% | 0.1248 | 0 | 0.77s |
+| `gemini-3.8-flash` boolean judgment | 42 | 0 (upper bound 6.53%) | 88.18% | 0.087 | 2,723 (+10,940 thought) | 252s |
+
+Agreement was 98/110 (89.09%); the full model was right on 9 of 12
+disagreements. Its 20,274 total tokens and ~5-minute latency make it a poor
+fit for a per-card gate, but the Decisions API's single false approval means
+the arms are still statistically compatible on precision — this does **not**
+clear the gate for hands-off dispatch. Thresholds tuned on this holdout
+(0.536574 for Decisions, 0.25 for the full model) are candidates only until
+validated on a fresh negative set, and the confidence ≥ 0.90 auto-reject
+shortcut regressed (one genuinely READY brief was confidently rejected).
+Note that production has no LLM dispatch judge at all — it uses deterministic
+`ada_preflight` gates plus human approval — so this is a full-model
+generative stand-in, not a production path being replaced. Evidence:
+`scripts/voice-bench/results/g4-decision-gate-heldout110-graded.json`.
+
 ### Managed Agents
 
 `client.agents` / `agent=...` with a sandboxed filesystem, code execution, web
@@ -167,9 +189,11 @@ be empty, so code must handle that. This is distinct from the separate
    production agent path without a paid-tier repeat.
 4. `gemini-decision-1` was evaluated: strong reject gate, then a 60-brief
    expansion gave 55/60 agreement with zero output tokens and zero false
-   approvals. Use it as a high-precision approve pre-filter; keep human
-   dispatch approval until a larger held-out set bounds the false-approval
-   rate.
+   approvals. A 110-brief disjoint holdout bounded the false-approval rate at
+   0.32–9.61% and placed a full-model stand-in ahead on accuracy (88.18% vs
+   82.73%) but far behind on cost and latency. Keep it as a high-precision
+   approve pre-filter with human dispatch approval; do not adopt the
+   holdout-tuned thresholds without an independent negative set.
 5. The official `gemini-api-dev` skill is installed and trialled (87.5% vs
    25% pass rate with vs without it); load it for any Gemini API code work.
 6. DONE: Managed Agents verified on the free tier and cost-compared on a
@@ -256,6 +280,12 @@ result. Keep 3.5 as the comparison baseline.
   `POST/GET/DELETE /v1beta/triggers` probes on 2026-11-27; one grounding call,
   16,794 total tokens; trigger created `active` with a far-future schedule and
   deleted in the same probe.
+- 110-brief held-out comparison: receipt
+  `docs/ssot/jobs/devnest/2026-11-26-gemini-decision-1-approve-gate-expanded.yml`
+  plus harnesses `scripts/voice-bench/g4-decision-gate-heldout110-{build,grade}.py`
+  and JSONs `g4-decision-gate-heldout110-*` under
+  `scripts/voice-bench/results/`. No wiki publish of these results without a
+  separate go-ahead.
 - Related prior pages: `Education:LLM Providers/Gemini API`,
   `Education:Ada-Developer-Paid-Model-Candidates`,
   `Education:Ada-Dev-Gap-Model-Vs-Harness`.

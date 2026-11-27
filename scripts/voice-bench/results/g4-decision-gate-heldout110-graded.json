@@ -1,0 +1,1378 @@
+{
+  "schema": "decision-gate-heldout-110-graded",
+  "date": "2026-11-27",
+  "dataset": {
+    "counts": {
+      "ready": 55,
+      "not_ready": 55
+    },
+    "disjoint_from": [
+      "60-brief train set",
+      "20-brief calibration holdout",
+      "41-brief earlier probe"
+    ],
+    "source": "origin/master docs/ssot/kanban/cards/*.yml + archive/*.yml, disjoint from 60-brief train and 41-brief earlier probe"
+  },
+  "arms": {
+    "decisions_api": {
+      "model": "gemini-decision-1",
+      "endpoint": "POST /v1beta/decisions (one batched call, 110 questions)",
+      "latency_s": 0.77,
+      "usage": {
+        "total_tokens": 16876,
+        "total_input_tokens": 16876,
+        "input_tokens_by_modality": [
+          {
+            "modality": "text",
+            "tokens": 16876
+          }
+        ],
+        "total_output_tokens": 0
+      },
+      "confusion_at_0.5": {
+        "tp": 39,
+        "fn": 16,
+        "tn": 54,
+        "fp": 1,
+        "n": 110,
+        "accuracy": 0.8455,
+        "approve_precision": 0.975,
+        "approve_recall": 0.7091,
+        "reject_precision": 0.7714
+      },
+      "confusion_at_calibrated_0.5162": {
+        "tp": 37,
+        "fn": 18,
+        "tn": 54,
+        "fp": 1,
+        "n": 110,
+        "accuracy": 0.8273,
+        "approve_precision": 0.9737,
+        "approve_recall": 0.6727,
+        "reject_precision": 0.75
+      },
+      "brier": 0.1248,
+      "mean_p_yes_ready": 0.577,
+      "mean_p_yes_not_ready": 0.1579,
+      "min_p_yes_ready": 0.078849,
+      "max_p_yes_not_ready": 0.533579,
+      "false_approval_rate_wilson95_at_calibrated": {
+        "low": 0.0032,
+        "high": 0.0961
+      },
+      "zero_false_approval_threshold_on_this_holdout": {
+        "threshold": 0.536574,
+        "confusion": {
+          "tp": 37,
+          "fn": 18,
+          "tn": 55,
+          "fp": 0,
+          "n": 110,
+          "accuracy": 0.8364,
+          "approve_precision": 1.0,
+          "approve_recall": 0.6727,
+          "reject_precision": 0.7534
+        },
+        "approve_recall": 0.6727
+      },
+      "high_confidence_reject_gate": {
+        "threshold": 0.9,
+        "n": 16,
+        "all_not_ready": false,
+        "coverage_of_not_ready": "15/55"
+      }
+    },
+    "full_model_generative": {
+      "model": "gemini-3.8-flash",
+      "endpoint": "POST /v1beta/models/gemini-3.8-flash:generateContent (one batched JSON-schema call)",
+      "latency_s": 252.04,
+      "finish_reason": "STOP",
+      "usage": {
+        "promptTokenCount": 6611,
+        "candidatesTokenCount": 2723,
+        "totalTokenCount": 20274,
+        "cachedContentTokenCount": 4628,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 6611
+          }
+        ],
+        "cacheTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 4628
+          }
+        ],
+        "thoughtsTokenCount": 10940,
+        "serviceTier": "standard"
+      },
+      "confusion_boolean": {
+        "tp": 42,
+        "fn": 13,
+        "tn": 55,
+        "fp": 0,
+        "n": 110,
+        "accuracy": 0.8818,
+        "approve_precision": 1.0,
+        "approve_recall": 0.7636,
+        "reject_precision": 0.8088
+      },
+      "confusion_at_p_yes_0.5": {
+        "tp": 42,
+        "fn": 13,
+        "tn": 55,
+        "fp": 0,
+        "n": 110,
+        "accuracy": 0.8818,
+        "approve_precision": 1.0,
+        "approve_recall": 0.7636,
+        "reject_precision": 0.8088
+      },
+      "brier": 0.087,
+      "mean_p_yes_ready": 0.7191,
+      "mean_p_yes_not_ready": 0.0536,
+      "false_approval_rate_wilson95_boolean": {
+        "low": 0,
+        "high": 0.0653
+      },
+      "zero_false_approval_threshold_on_this_holdout": {
+        "threshold": 0.25,
+        "confusion": {
+          "tp": 44,
+          "fn": 11,
+          "tn": 55,
+          "fp": 0,
+          "n": 110,
+          "accuracy": 0.9,
+          "approve_precision": 1.0,
+          "approve_recall": 0.8,
+          "reject_precision": 0.8333
+        },
+        "approve_recall": 0.8
+      }
+    }
+  },
+  "comparison": {
+    "decision_agreement_n": 98,
+    "decision_agreement_rate": 0.8909,
+    "d1_false_approvals_at_calibrated": 1,
+    "fm_false_approvals_boolean": 0,
+    "d1_output_tokens": 0,
+    "fm_output_tokens": 2723,
+    "d1_total_tokens": 16876,
+    "fm_total_tokens": 20274
+  },
+  "rows": [
+    {
+      "n": 1,
+      "id": "2026-11-12-155922-wiki-login-polish",
+      "label": true,
+      "source": "active",
+      "brief": "wiki-login-polish wiki polish leftovers from wiki-login-broken card (closed): (1) PluggableAuth Google button still renders label \"0\" on Special:UserLogin \u2014 give it a real label (e.g. \"Sign in with Google\") via $wgPluggableAuth_Config in LocalSettings.php, FTP path same as members edit, backup first",
+      "d1_p_yes": 0.8930941491063845,
+      "d1_confidence": 0.8930941491063845,
+      "fm_ready": true,
+      "fm_p_yes": 0.95
+    },
+    {
+      "n": 2,
+      "id": "ada-acl-explain",
+      "label": false,
+      "source": "archive",
+      "brief": "Three overlapping ACL systems answer differently: control_policies domain lists, ~/.config/ada/device-grants.json overlay, and per-bank allowed_tools. ada_device_acl patched one room's need; the unification is still ahead. Waiting in backlog.",
+      "d1_p_yes": 0.04557356723352485,
+      "d1_confidence": 0.9544264327664751,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 3,
+      "id": "ada-card-loop-tiers",
+      "label": true,
+      "source": "archive",
+      "brief": "Tony wants Ada inside the same loop we just found: inspect card \u2192 ask \u2192 educate each other. This card defines how far she may go on her own and how we measure readiness. Expected action: review the tier table below; T0\u2013T2 need no approval (mechanisms exist), T3+ gates on bench scores.",
+      "d1_p_yes": 0.45926045230175205,
+      "d1_confidence": 0.540739547698248,
+      "fm_ready": false,
+      "fm_p_yes": 0.15
+    },
+    {
+      "n": 4,
+      "id": "ada-dead-surface-metric",
+      "label": false,
+      "source": "archive",
+      "brief": "Shape is lint-verified (42 declared), usage is not. Some census names had zero calls in 7d \u2014 the surface may carry dead weight the merge program cannot see. Waiting in backlog.",
+      "d1_p_yes": 0.05772832470862234,
+      "d1_confidence": 0.9422716752913777,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 5,
+      "id": "ada-deploy-preflight-gate",
+      "label": true,
+      "source": "archive",
+      "brief": "Last missing piece of the Ada dev-control-plane loop. Cards currently merge to done with no production-deploy stage. Build the gate: card declares deploy target, system collects preflight evidence, Tony approves explicitly, deploy runs, post-deploy surface is verified.",
+      "d1_p_yes": 0.4704842119540818,
+      "d1_confidence": 0.5295157880459183,
+      "fm_ready": true,
+      "fm_p_yes": 0.85
+    },
+    {
+      "n": 6,
+      "id": "ada-dev-control-plane-envelope",
+      "label": true,
+      "source": "archive",
+      "brief": "Give Ada, Node-RED, OpenCode, Cline, and DevNest one durable task contract so intent becomes verified execution without losing project context.",
+      "d1_p_yes": 0.23799253538167395,
+      "d1_confidence": 0.762007464618326,
+      "fm_ready": false,
+      "fm_p_yes": 0.2
+    },
+    {
+      "n": 7,
+      "id": "ada-gemini-quota-breaker",
+      "label": true,
+      "source": "archive",
+      "brief": "Stop the 1008 reconnect-storm when Gemini Live hits quota (429/RESOURCE_EXHAUSTED). Evidence: jobs/ada/2026-10-10-audit-fail-cluster.yml \u2014 1389x429, 643x RESOURCE_EXHAUSTED, 198x quota_exhausted, ws close 1008 looping all evening on idc03 ada-ha-tony.",
+      "d1_p_yes": 0.4306646370803638,
+      "d1_confidence": 0.5693353629196363,
+      "fm_ready": true,
+      "fm_p_yes": 0.9
+    },
+    {
+      "n": 8,
+      "id": "ada-ha-dashboard-live-view-drift",
+      "label": true,
+      "source": "archive",
+      "brief": "The live Ada HA dashboard has Hosts/Services tabs but lacks Ada Control, unlike the pre-change repo snapshot; verify whether this drift is intentional before restoring anything.",
+      "d1_p_yes": 0.12938595470434228,
+      "d1_confidence": 0.8706140452956577,
+      "fm_ready": false,
+      "fm_p_yes": 0.2
+    },
+    {
+      "n": 9,
+      "id": "ada-ha-hardening",
+      "label": false,
+      "source": "archive",
+      "brief": "ada-ha stops being the disposable lab and becomes Tony's stable private HA. Dev work moves to ada-dev; ada-ha keeps running and gets backup/health coverage.",
+      "d1_p_yes": 0.5335789728782628,
+      "d1_confidence": 0.5335789728782628,
+      "fm_ready": false,
+      "fm_p_yes": 0.2
+    },
+    {
+      "n": 10,
+      "id": "ada-ha-kanban2-tab",
+      "label": true,
+      "source": "archive",
+      "brief": "Preserve the classic Board iframe in the existing Kanban tab; add the new Board2 layout immediately after it as a separate Kanban 2 tab.",
+      "d1_p_yes": 0.8540532801180539,
+      "d1_confidence": 0.8540532801180539,
+      "fm_ready": true,
+      "fm_p_yes": 0.95
+    },
+    {
+      "n": 11,
+      "id": "ada-nest-real-job-plan",
+      "label": true,
+      "source": "archive",
+      "brief": "Coordinate the next real Ada Nest jobs with explicit host/resource gates. Omen has 38G data free; T4 is for GPU-heavy image/voice/embedding work; JEV arena expands before autonomous routing.",
+      "d1_p_yes": 0.5365739450007158,
+      "d1_confidence": 0.5365739450007158,
+      "fm_ready": false,
+      "fm_p_yes": 0.2
+    },
+    {
+      "n": 12,
+      "id": "ada-nest-trivial-gate",
+      "label": true,
+      "source": "archive",
+      "brief": "Extend the relay gate cascade (silence->STT->trivial-filter) with one more rung: a tiny local specialist that answers trivial queries (greetings, time/date, acks) without burning an Ada/provider turn. NCM-inspired adaptive-depth pattern.",
+      "d1_p_yes": 0.6778082747557969,
+      "d1_confidence": 0.6778082747557969,
+      "fm_ready": true,
+      "fm_p_yes": 0.85
+    },
+    {
+      "n": 13,
+      "id": "ada-ocb-answer-eval",
+      "label": true,
+      "source": "archive",
+      "brief": "Tool-call benchmarks verify plumbing; nothing verifies the agent actually answers correctly. Build a small eval set that asserts answer quality end-to-end.",
+      "d1_p_yes": 0.2957897801067823,
+      "d1_confidence": 0.7042102198932176,
+      "fm_ready": true,
+      "fm_p_yes": 0.8
+    },
+    {
+      "n": 14,
+      "id": "ada-ocb-answer-eval-r2",
+      "label": true,
+      "source": "archive",
+      "brief": "Re-run of ADA-0175: r1 produced a good harness (ocb-eval.py, 10 cases, tools-mode 10/10) but the branch eval/ocb-answer-eval @442cfc7 lived in a scratch clone inside a GC'd worktree and is LOST. Rebuild it \u2014 the analysis is in ADA-0175 comms.",
+      "d1_p_yes": 0.7275381009724147,
+      "d1_confidence": 0.7275381009724147,
+      "fm_ready": false,
+      "fm_p_yes": 0.15
+    },
+    {
+      "n": 15,
+      "id": "ada-ocb-board-read-latency",
+      "label": true,
+      "source": "archive",
+      "brief": "ada_status/card_context/card_pick/next_card hit the 9MB /cards dump (13-16s) exceeding the OpenCode MCP timeout; calls completed server-side but agents saw timeouts. Route through compact index + projected snapshot + single-card hydration; guard string comms/requests/action rows.",
+      "d1_p_yes": 0.6874717067631378,
+      "d1_confidence": 0.6874717067631378,
+      "fm_ready": true,
+      "fm_p_yes": 0.9
+    },
+    {
+      "n": 16,
+      "id": "ada-ocb-bridge-version",
+      "label": true,
+      "source": "archive",
+      "brief": "We found Devin's ada-control MCP running a 23-tool stale bridge while OpenChamber had 25 \u2014 no way to tell which code a session is talking to. Add a version stamp.",
+      "d1_p_yes": 0.7116415795963185,
+      "d1_confidence": 0.7116415795963185,
+      "fm_ready": true,
+      "fm_p_yes": 0.9
+    },
+    {
+      "n": 17,
+      "id": "ada-ocb-kanban-sweep-report",
+      "label": true,
+      "source": "archive",
+      "brief": "The card-ops-sweep skill and card-status procedure already define evidence-first triage; add a callable Ada-OCB tool to produce one timestamped summary of stuck, failed, and misplaced work without dispatching or mutating cards.",
+      "d1_p_yes": 0.8133648672696735,
+      "d1_confidence": 0.8133648672696735,
+      "fm_ready": true,
+      "fm_p_yes": 0.9
+    },
+    {
+      "n": 18,
+      "id": "ada-ocb-manual-queue-semantics",
+      "label": true,
+      "source": "active",
+      "brief": "The Ada-OCB queue picker labels queued action.type=manual cards as queued for dispatch, while board runners reject them as unsupported. Make the response accurately identify human-only work without changing card state or inventing an executor.",
+      "d1_p_yes": 0.7717488121916144,
+      "d1_confidence": 0.7717488121916144,
+      "fm_ready": true,
+      "fm_p_yes": 0.85
+    },
+    {
+      "n": 19,
+      "id": "ada-ocb-regression-suite",
+      "label": true,
+      "source": "archive",
+      "brief": "Lock in this week's ada-ocb improvements (context_pack, ssot_get, windowed excerpts, MDDB lessons, vector-search, board snapshots, string-row guards) with regression coverage so they can't silently rot.",
+      "d1_p_yes": 0.6678150626460327,
+      "d1_confidence": 0.6678150626460327,
+      "fm_ready": true,
+      "fm_p_yes": 0.9
+    },
+    {
+      "n": 20,
+      "id": "ada-opencode-nl-card-resolve",
+      "label": true,
+      "source": "archive",
+      "brief": "Tony should be able to say things like \"hibiscus GS project status\" or \"the media pack card\" and have Ada/OpenCode resolve the right kanban card instead of failing with \"no board card matched\".",
+      "d1_p_yes": 0.6251051303015585,
+      "d1_confidence": 0.6251051303015585,
+      "fm_ready": true,
+      "fm_p_yes": 0.75
+    },
+    {
+      "n": 21,
+      "id": "ada-opencode-repair-menu-card",
+      "label": true,
+      "source": "archive",
+      "brief": "Phase 1/3 of OPS-1109 UI: Ada chat card shows candidate + Keep/Reject/Revise/Repair-region buttons; Repair opens mask-picker; picker POST /submit already lands in inbox + board comment. Remaining: card JS buttons, decision endpoint -> SESSION/QC, deploy idc03.",
+      "d1_p_yes": 0.6082750066484928,
+      "d1_confidence": 0.6082750066484928,
+      "fm_ready": true,
+      "fm_p_yes": 0.9
+    },
+    {
+      "n": 22,
+      "id": "ada-printer-diagnostics-safe-repair",
+      "label": true,
+      "source": "archive",
+      "brief": "Extend Ada's existing confirmed document-print tool with printer status, CUPS job diagnostics, and bounded repair actions.",
+      "d1_p_yes": 0.4814491063561385,
+      "d1_confidence": 0.5185508936438614,
+      "fm_ready": true,
+      "fm_p_yes": 0.85
+    },
+    {
+      "n": 23,
+      "id": "ada-session-audit-daily",
+      "label": true,
+      "source": "archive",
+      "brief": "The ada-transcript-audit skill only runs when Tony asks. Schedule it: daily audit of yesterday's sessions \u2014 phantom tool claims, failed calls Ada glossed, repeated asks, confirm-gate friction \u2014 published as a CMS page and filed to focus-inbox/cards when friction is found. Labels feed the Ada corpus.",
+      "d1_p_yes": 0.7120698079230815,
+      "d1_confidence": 0.7120698079230815,
+      "fm_ready": true,
+      "fm_p_yes": 0.85
+    },
+    {
+      "n": 24,
+      "id": "ada-track-lost-persist",
+      "label": false,
+      "source": "archive",
+      "brief": "ada_track_device action='lost' arms an in-process watcher that dies with the backend (volatile by design for v1). A lost-device watch should survive deploys and restarts \u2014 that is exactly when it matters. Waiting in backlog.",
+      "d1_p_yes": 0.09092052880740589,
+      "d1_confidence": 0.9090794711925941,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 25,
+      "id": "ada-wiki-extension-confirm-flag",
+      "label": true,
+      "source": "archive",
+      "brief": "Follow-up from wiki-extension-control-plane: board-api /wiki/extension now requires confirm=true on install|enable|disable; ada-voice backend/tools.d/wiki_extension.py does not send it, so Ada-side mutations will 400 once the hardened door deploys.",
+      "d1_p_yes": 0.6214325856686366,
+      "d1_confidence": 0.6214325856686366,
+      "fm_ready": true,
+      "fm_p_yes": 0.95
+    },
+    {
+      "n": 26,
+      "id": "adobe-stock-artifact-landing-service",
+      "label": true,
+      "source": "archive",
+      "brief": "Replace the ad-hoc decode/hash/rclone/session-update command chain with one typed landing call per render.",
+      "d1_p_yes": 0.6029818325841995,
+      "d1_confidence": 0.6029818325841995,
+      "fm_ready": true,
+      "fm_p_yes": 0.85
+    },
+    {
+      "n": 27,
+      "id": "adobe-stock-illustration-pivot-test",
+      "label": true,
+      "source": "active",
+      "brief": "Re-keyword the painterly comparison-c for Adobe Stock illustration/flat-design category.",
+      "d1_p_yes": 0.5839308958710905,
+      "d1_confidence": 0.5839308958710905,
+      "fm_ready": true,
+      "fm_p_yes": 0.9
+    },
+    {
+      "n": 28,
+      "id": "adobe-stock-upscaler-eval",
+      "label": true,
+      "source": "archive",
+      "brief": "Benchmark Real-ESRGAN, SwinIR, SeeSR/OSEDiff on campaign assets; pick pipeline upscaler.",
+      "d1_p_yes": 0.5584034194845829,
+      "d1_confidence": 0.5584034194845829,
+      "fm_ready": true,
+      "fm_p_yes": 0.9
+    },
+    {
+      "n": 29,
+      "id": "ai-workforce-eval",
+      "label": true,
+      "source": "archive",
+      "brief": "Eval which (surface \u00d7 brain \u00d7 task class) lane carries real work cheapest with gate-passing quality, so capped/expensive lanes re-route instead of stalling.",
+      "d1_p_yes": 0.22557105253567003,
+      "d1_confidence": 0.77442894746433,
+      "fm_ready": false,
+      "fm_p_yes": 0.25
+    },
+    {
+      "n": 30,
+      "id": "ansible-ada-ocb-tony-dell-fallback",
+      "label": true,
+      "source": "active",
+      "brief": "Follow-up from OPS-1424: tony-dell ocb_pane fallback probe incomplete in ada-ocb-verify; align pin/patch/service state or harden verify for missing fallback probe.",
+      "d1_p_yes": 0.31051596080891836,
+      "d1_confidence": 0.6894840391910817,
+      "fm_ready": true,
+      "fm_p_yes": 0.85
+    },
+    {
+      "n": 31,
+      "id": "ansible-disk-headroom-harden",
+      "label": true,
+      "source": "active",
+      "brief": "From idc02, ansible SSH to its own tailnet IP failed (publickey). Add controller auto-detect (ansible_connection: local), document --check --diff dry-run, feed samples into disk-trend jsonl history, seed IP host keys.",
+      "d1_p_yes": 0.8027841757558972,
+      "d1_confidence": 0.8027841757558972,
+      "fm_ready": true,
+      "fm_p_yes": 0.9
+    },
+    {
+      "n": 32,
+      "id": "ansible-prep-plan-apply-verify",
+      "label": true,
+      "source": "archive",
+      "brief": "Standardize Ansible for preparation/baselines, check-diff plan artifacts, gated apply, and verified closeout to increase fleet efficiency.",
+      "d1_p_yes": 0.49816822111611164,
+      "d1_confidence": 0.5018317788838884,
+      "fm_ready": false,
+      "fm_p_yes": 0.2
+    },
+    {
+      "n": 33,
+      "id": "ansible-vs-legacy-fleet-benchmark",
+      "label": true,
+      "source": "active",
+      "brief": "Side-by-side benchmark: ansible playbooks vs audit-hosts.py / sync-runner-tools.sh / guard scripts on service-audit, disk-guard, runner-tool-sync candidates. Read-only, report with verdicts.",
+      "d1_p_yes": 0.7264312034935513,
+      "d1_confidence": 0.7264312034935513,
+      "fm_ready": true,
+      "fm_p_yes": 0.85
+    },
+    {
+      "n": 34,
+      "id": "app-retirement-sweep",
+      "label": true,
+      "source": "active",
+      "brief": "Tony 2026-11-09 approved retiring likely-dead apps. Each gets docs/kb/retired-apps/<app>.md with restore steps + status:retired markers; cline and node-red confirmed first.",
+      "d1_p_yes": 0.5643165189227689,
+      "d1_confidence": 0.5643165189227689,
+      "fm_ready": true,
+      "fm_p_yes": 0.95
+    },
+    {
+      "n": 35,
+      "id": "audit-auto-macbook",
+      "label": true,
+      "source": "archive",
+      "brief": "Four post-change audit deltas; reconcile intended roles before enabling or stopping units.",
+      "d1_p_yes": 0.20645907521803872,
+      "d1_confidence": 0.7935409247819613,
+      "fm_ready": false,
+      "fm_p_yes": 0.2
+    },
+    {
+      "n": 36,
+      "id": "audit-degraded-cast-to-screen",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'degraded:cast_to_screen': cast_to_screen -> degraded \u2014 2x on 2026-10-14, seen on 4 day(s).",
+      "d1_p_yes": 0.1996538235805251,
+      "d1_confidence": 0.8003461764194749,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 37,
+      "id": "audit-fail-ada-camera-snapshot",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:ada_camera_snapshot': ada_camera_snapshot -> fail \u2014 27x on 2026-10-10, seen on 1 day(s).",
+      "d1_p_yes": 0.16350966832701275,
+      "d1_confidence": 0.8364903316729873,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 38,
+      "id": "audit-fail-ada-enroll-speaker",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:ada_enroll_speaker': ada_enroll_speaker -> fail \u2014 3x on 2026-10-10, seen on 1 day(s).",
+      "d1_p_yes": 0.1948235415487465,
+      "d1_confidence": 0.8051764584512535,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 39,
+      "id": "audit-fail-ada-member-keys",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:ada_member_keys': ada_member_keys -> fail (no transcript in window) \u2014 10x on 2026-10-11, seen on 2 day(s).",
+      "d1_p_yes": 0.23988061543419456,
+      "d1_confidence": 0.7601193845658054,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 40,
+      "id": "audit-fail-ada-memory-search",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:ada_memory_search': ada_memory_search -> fail \u2014 19x on 2026-10-10, seen on 1 day(s).",
+      "d1_p_yes": 0.15443145771724198,
+      "d1_confidence": 0.845568542282758,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 41,
+      "id": "audit-fail-ada-remember",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:ada_remember': ada_remember -> fail (no transcript in window) \u2014 3x on 2026-10-10, seen on 1 day(s).",
+      "d1_p_yes": 0.10485629188292626,
+      "d1_confidence": 0.8951437081170738,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 42,
+      "id": "audit-fail-calendar-read",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:calendar_read': calendar_read -> fail \u2014 4x on 2026-10-12, seen on 1 day(s).",
+      "d1_p_yes": 0.24487417512140594,
+      "d1_confidence": 0.755125824878594,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 43,
+      "id": "audit-fail-cast-to-screen",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:cast_to_screen': cast_to_screen -> fail (no transcript in window) \u2014 17x on 2026-10-10, seen on 1 day(s).",
+      "d1_p_yes": 0.18106767766782086,
+      "d1_confidence": 0.8189323223321792,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 44,
+      "id": "audit-fail-cctv-wall",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:cctv_wall': cctv_wall -> fail (no transcript in window) \u2014 19x on 2026-10-10, seen on 1 day(s).",
+      "d1_p_yes": 0.14858250884936988,
+      "d1_confidence": 0.8514174911506301,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 45,
+      "id": "audit-fail-chat-send",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:chat_send': chat_send -> fail (no transcript in window) \u2014 14x on 2026-10-10, seen on 1 day(s).",
+      "d1_p_yes": 0.13616611571540663,
+      "d1_confidence": 0.8638338842845934,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 46,
+      "id": "audit-fail-cms-edit",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:cms_edit': cms_edit -> fail \u2014 3x on 2026-10-10, seen on 1 day(s).",
+      "d1_p_yes": 0.21749592033129217,
+      "d1_confidence": 0.7825040796687078,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 47,
+      "id": "audit-fail-cms-publish-page",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:cms_publish_page': cms_publish_page -> fail (no transcript in window) \u2014 8x on 2026-10-10, seen on 1 day(s).",
+      "d1_p_yes": 0.15304222527007277,
+      "d1_confidence": 0.8469577747299273,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 48,
+      "id": "audit-fail-cms-read",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:cms_read': cms_read -> fail \u2014 36x on 2026-10-10, seen on 1 day(s).",
+      "d1_p_yes": 0.15742367999633605,
+      "d1_confidence": 0.842576320003664,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 49,
+      "id": "audit-fail-control-entity",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:control_entity': control_entity -> fail \u2014 3x on 2026-10-10, seen on 1 day(s).",
+      "d1_p_yes": 0.24725496733654584,
+      "d1_confidence": 0.7527450326634542,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 50,
+      "id": "audit-fail-devin-read",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:devin_read': devin_read -> fail (no transcript in window) \u2014 4x on 2026-10-12, seen on 3 day(s).",
+      "d1_p_yes": 0.21188651143005066,
+      "d1_confidence": 0.7881134885699493,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 51,
+      "id": "audit-fail-docs",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:docs': docs -> fail \u2014 9x on 2026-10-11, seen on 2 day(s).",
+      "d1_p_yes": 0.28382476247893246,
+      "d1_confidence": 0.7161752375210675,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 52,
+      "id": "audit-fail-drive",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:drive': drive -> fail (no transcript in window) \u2014 3x on 2026-10-10, seen on 1 day(s).",
+      "d1_p_yes": 0.44390954001267646,
+      "d1_confidence": 0.5560904599873235,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 53,
+      "id": "audit-fail-get-home-state",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:get_home_state': get_home_state -> fail \u2014 21x on 2026-10-10, seen on 1 day(s).",
+      "d1_p_yes": 0.1799720613898398,
+      "d1_confidence": 0.8200279386101602,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 54,
+      "id": "audit-fail-gev-command",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:gev_command': gev_command -> fail (no transcript in window) \u2014 72x on 2026-10-10, seen on 1 day(s).",
+      "d1_p_yes": 0.14647966662307324,
+      "d1_confidence": 0.8535203333769268,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 55,
+      "id": "audit-fail-home-status",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:home_status': home_status -> fail \u2014 33x on 2026-10-10, seen on 1 day(s).",
+      "d1_p_yes": 0.12161077406379532,
+      "d1_confidence": 0.8783892259362047,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 56,
+      "id": "audit-fail-kanban",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:kanban': kanban -> fail \u2014 21x on 2026-10-10, seen on 1 day(s).",
+      "d1_p_yes": 0.1782886281333869,
+      "d1_confidence": 0.8217113718666131,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 57,
+      "id": "audit-fail-percussion",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:percussion': percussion -> fail \u2014 16x on 2026-10-11, seen on 1 day(s).",
+      "d1_p_yes": 0.289426389299312,
+      "d1_confidence": 0.7105736107006879,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 58,
+      "id": "audit-fail-set-facial-expression",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:set_facial_expression': set_facial_expression -> fail \u2014 7x on 2026-10-10, seen on 1 day(s).",
+      "d1_p_yes": 0.3283206332501073,
+      "d1_confidence": 0.6716793667498927,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 59,
+      "id": "audit-fail-tv-action",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:tv_action': tv_action -> fail (no transcript in window) \u2014 20x on 2026-10-10, seen on 1 day(s).",
+      "d1_p_yes": 0.21271762798703842,
+      "d1_confidence": 0.7872823720129616,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 60,
+      "id": "audit-fail-vcast-snapshot",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:vcast_snapshot': vcast_snapshot -> fail (no transcript in window) \u2014 23x on 2026-10-10, seen on 1 day(s).",
+      "d1_p_yes": 0.15339539427835178,
+      "d1_confidence": 0.8466046057216482,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 61,
+      "id": "audit-fail-web-search",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'fail:web_search': web_search -> fail \u2014 14x on 2026-10-10, seen on 1 day(s).",
+      "d1_p_yes": 0.16155854287723406,
+      "d1_confidence": 0.838441457122766,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 62,
+      "id": "audit-no-result-ada-camera-snapshot",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'no_result:ada_camera_snapshot': ada_camera_snapshot call got no result in-window \u2014 1x on 2026-10-14, seen on 2 day(s).",
+      "d1_p_yes": 0.27826029026437843,
+      "d1_confidence": 0.7217397097356215,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 63,
+      "id": "audit-oc-lane-state-missing-lane",
+      "label": false,
+      "source": "archive",
+      "brief": "promotion reviews exist but evals/opencode-lane/state/ (stage.json + metrics.jsonl ledger) is absent \u2014 the verified-job aggregate cannot be re-derived",
+      "d1_p_yes": 0.186720839245898,
+      "d1_confidence": 0.813279160754102,
+      "fm_ready": false,
+      "fm_p_yes": 0.1
+    },
+    {
+      "n": 64,
+      "id": "audit-phantom-claim-no-call",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'phantom:claim-no-call': action claimed with no tool call in the window \u2014 17x on 2026-10-13, seen on 4 day(s).",
+      "d1_p_yes": 0.17842865585453185,
+      "d1_confidence": 0.8215713441454682,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 65,
+      "id": "audit-repeat-user-reask",
+      "label": false,
+      "source": "archive",
+      "brief": "Recurring session-audit signature 'repeat:user-reask': user repeated the same ask \u2014 7x on 2026-10-13, seen on 4 day(s).",
+      "d1_p_yes": 0.1660491182761443,
+      "d1_confidence": 0.8339508817238557,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 66,
+      "id": "automate-host-post-restart-verification-5ad4ac",
+      "label": true,
+      "source": "archive",
+      "brief": "Automate boot/post-restart verification via boot-id-change detection and check-only transition.post_restart pass.",
+      "d1_p_yes": 0.6014933734830655,
+      "d1_confidence": 0.6014933734830655,
+      "fm_ready": true,
+      "fm_p_yes": 0.85
+    },
+    {
+      "n": 67,
+      "id": "board-api-compact-cards",
+      "label": true,
+      "source": "archive",
+      "brief": "The bridge now works around the 9MB /cards dump, but every other consumer still pays 13-16s. Make the projection real server-side.",
+      "d1_p_yes": 0.5476628674011995,
+      "d1_confidence": 0.5476628674011995,
+      "fm_ready": true,
+      "fm_p_yes": 0.9
+    },
+    {
+      "n": 68,
+      "id": "board-api-exec-checkout-mismatch",
+      "label": true,
+      "source": "archive",
+      "brief": "New board-api cards/commits land in idc03 ~/CascadeProjects/chaba (exec) and stay unpushed, while kanban-commit sweeps ~/CascadeProjects/chaba-tony-dell (served). Result: cards exist via /cards but never appear on the static kanban page.",
+      "d1_p_yes": 0.4734756822032194,
+      "d1_confidence": 0.5265243177967807,
+      "fm_ready": true,
+      "fm_p_yes": 0.9
+    },
+    {
+      "n": 69,
+      "id": "board-api-lesson-delete-op",
+      "label": true,
+      "source": "archive",
+      "brief": "The /lesson door supports upsert/touch/list/get but NOT delete. Two junk probe lessons (id 2259, 2261) can't be removed via the door; direct WP DELETE is blocked by Cloudflare (403 code 1010).",
+      "d1_p_yes": 0.3379941698474364,
+      "d1_confidence": 0.6620058301525635,
+      "fm_ready": true,
+      "fm_p_yes": 0.9
+    },
+    {
+      "n": 70,
+      "id": "boards-public-origin-502",
+      "label": true,
+      "source": "archive",
+      "brief": "Public boards.surf-thailand.com is returning Cloudflare 502; origin boards.h3.gizmo-thailand.com also returns nginx 502. Diagnose the external Plesk/WP upstream and restore the public boards surface.",
+      "d1_p_yes": 0.5911971363801923,
+      "d1_confidence": 0.5911971363801923,
+      "fm_ready": true,
+      "fm_p_yes": 0.9
+    },
+    {
+      "n": 71,
+      "id": "cards-api-summary-gzip",
+      "label": true,
+      "source": "archive",
+      "brief": "GET /cards bare returns the full board (~15MB, ~2.6s) \u2014 card_query already supports id/column/action_status/since/offset/limit/fields but is undiscoverable and there is no compression. Fleet/agent callers keep fetching the whole board.",
+      "d1_p_yes": 0.5159411480070641,
+      "d1_confidence": 0.5159411480070641,
+      "fm_ready": true,
+      "fm_p_yes": 0.85
+    },
+    {
+      "n": 72,
+      "id": "chaba-merge-gate-ada-drops-rot-audit",
+      "label": true,
+      "source": "archive",
+      "brief": "After ADA-0080's cast-loop repair the gate now fails on test_correction_command; 12 patches diverged vs ada-voice 07119b1 \u2014 fix all rotted drops in one pass.",
+      "d1_p_yes": 0.7451629548787502,
+      "d1_confidence": 0.7451629548787502,
+      "fm_ready": true,
+      "fm_p_yes": 0.9
+    },
+    {
+      "n": 73,
+      "id": "cheap-agent-cascade",
+      "label": true,
+      "source": "archive",
+      "brief": "Extend pattern-match result (codemod 7/7) to a team: cheap specialized models do known work, JEV routes, big model last resort. Dev + chores + edu-agent (hermesbot/clawbot) families.",
+      "d1_p_yes": 0.39713241925093484,
+      "d1_confidence": 0.6028675807490651,
+      "fm_ready": false,
+      "fm_p_yes": 0.2
+    },
+    {
+      "n": 74,
+      "id": "chore-tony-dell-worktree-sprawl",
+      "label": true,
+      "source": "archive",
+      "brief": "CascadeProjects on tony-dell has ~24 linked worktrees and ~75 branches ahead of master (ssot.dev-system.assessment flags this high-severity). Triage each worktree against its owning kanban card, then remove verified-safe ones.",
+      "d1_p_yes": 0.5808884524437395,
+      "d1_confidence": 0.5808884524437395,
+      "fm_ready": true,
+      "fm_p_yes": 0.9
+    },
+    {
+      "n": 75,
+      "id": "ci-test-gate",
+      "label": true,
+      "source": "archive",
+      "brief": "Tests exist (tests/board, ada_memory, camwall, yt_dub) but nothing runs them automatically \u2014 a dispatch branch can auto-merge green without ever executing a test. Run the repo suite in the merge worktree before auto-merge and add a fast pre-commit check on served checkouts.",
+      "d1_p_yes": 0.7488066283450924,
+      "d1_confidence": 0.7488066283450924,
+      "fm_ready": true,
+      "fm_p_yes": 0.9
+    },
+    {
+      "n": 76,
+      "id": "classifier-readonly-audit-class-reroute",
+      "label": true,
+      "source": "archive",
+      "brief": "DEV-0044 lever 1 first pick: bounded read-only audit/assessment/review/investigate cards -> free_lane. 56.8M prompt/30d on idc02 alone; 'audit' is not a classifier keyword so these fall to jevos/devin.",
+      "d1_p_yes": 0.6229837081255019,
+      "d1_confidence": 0.6229837081255019,
+      "fm_ready": true,
+      "fm_p_yes": 0.9
+    },
+    {
+      "n": 77,
+      "id": "cline-kanban-offline-image-build",
+      "label": true,
+      "source": "archive",
+      "brief": "PR #52 is merged, but con01 cannot rebuild the Cline image with network disabled because kanban@0.1.70 is not cached. Find a safe, reproducible route and keep the current service untouched until approval.",
+      "d1_p_yes": 0.07884923410891737,
+      "d1_confidence": 0.9211507658910827,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 78,
+      "id": "cline-nest-failure-artifact-durability",
+      "label": true,
+      "source": "archive",
+      "brief": "A Cline task can fail after creating a task ID but before producing the expected file; nest-worker currently exits before uploading the adapter\u2019s failure evidence. Preserve only declared diagnostics without marking the pack done.",
+      "d1_p_yes": 0.6104580198311423,
+      "d1_confidence": 0.6104580198311423,
+      "fm_ready": true,
+      "fm_p_yes": 0.85
+    },
+    {
+      "n": 79,
+      "id": "cms-auto-docs-digest",
+      "label": false,
+      "source": "archive",
+      "brief": "A scheduled report-page job ('docs-digest') is error. Re-run it or check the generator \u2014 details in the note.",
+      "d1_p_yes": 0.07167398324603981,
+      "d1_confidence": 0.9283260167539602,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 80,
+      "id": "cms-auto-finance-digest",
+      "label": false,
+      "source": "archive",
+      "brief": "A scheduled report-page job ('finance-digest') is stale. Re-run it or check the generator \u2014 details in the note.",
+      "d1_p_yes": 0.06282377389030251,
+      "d1_confidence": 0.9371762261096975,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 81,
+      "id": "cms-auto-flood-alert",
+      "label": false,
+      "source": "archive",
+      "brief": "A scheduled report-page job ('flood-alert') is stale. Re-run it or check the generator \u2014 details in the note.",
+      "d1_p_yes": 0.050781894564144406,
+      "d1_confidence": 0.9492181054358556,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 82,
+      "id": "cms-auto-general-digest",
+      "label": false,
+      "source": "archive",
+      "brief": "A scheduled report-page job ('general-digest') is error. Re-run it or check the generator \u2014 details in the note.",
+      "d1_p_yes": 0.06531427402341967,
+      "d1_confidence": 0.9346857259765803,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 83,
+      "id": "cms-auto-health-digest",
+      "label": false,
+      "source": "archive",
+      "brief": "A scheduled report-page job ('health-digest') is error. Re-run it or check the generator \u2014 details in the note.",
+      "d1_p_yes": 0.047023815808653974,
+      "d1_confidence": 0.952976184191346,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 84,
+      "id": "cms-auto-home-digest",
+      "label": false,
+      "source": "archive",
+      "brief": "A scheduled report-page job ('home-digest') is error. Re-run it or check the generator \u2014 details in the note.",
+      "d1_p_yes": 0.038939977979508995,
+      "d1_confidence": 0.961060022020491,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 85,
+      "id": "cms-auto-infra-digest",
+      "label": false,
+      "source": "archive",
+      "brief": "A scheduled report-page job ('infra-digest') is error. Re-run it or check the generator \u2014 details in the note.",
+      "d1_p_yes": 0.028158440520437707,
+      "d1_confidence": 0.9718415594795623,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 86,
+      "id": "cms-auto-kanban-brief",
+      "label": false,
+      "source": "archive",
+      "brief": "A scheduled report-page job ('kanban-brief') is stale. Re-run it or check the generator \u2014 details in the note.",
+      "d1_p_yes": 0.03435984389437598,
+      "d1_confidence": 0.965640156105624,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 87,
+      "id": "cms-auto-kanban-digest",
+      "label": false,
+      "source": "archive",
+      "brief": "A scheduled report-page job ('kanban-digest') is stale. Re-run it or check the generator \u2014 details in the note.",
+      "d1_p_yes": 0.03465665783388299,
+      "d1_confidence": 0.9653433421661171,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 88,
+      "id": "cms-auto-lab-digest",
+      "label": false,
+      "source": "archive",
+      "brief": "A scheduled report-page job ('lab-digest') is stale. Re-run it or check the generator \u2014 details in the note.",
+      "d1_p_yes": 0.03311666423669875,
+      "d1_confidence": 0.9668833357633012,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 89,
+      "id": "cms-lab-eval",
+      "label": true,
+      "source": "archive",
+      "brief": "Four GitHub CMSs side-by-side in ~/cms-lab on idc02, tailnet-only :8301-8304. Eval rubric: author a Thai shop report in each UI, then create the same via API (agent path) \u2014 measures fit for the kk place_report flow. Teardown: docker compose down -v + rm -rf ~/cms-lab.",
+      "d1_p_yes": 0.7586937800158416,
+      "d1_confidence": 0.7586937800158416,
+      "fm_ready": true,
+      "fm_p_yes": 0.95
+    },
+    {
+      "n": 90,
+      "id": "comms-digest-builder",
+      "label": true,
+      "source": "archive",
+      "brief": "Extend scripts/report-daily-brief.py with the comms-digest sections defined in ssot.comms-digest.yml: asks_and_outcomes, decisions_made, open_loops, notable_replies \u2014 published to ada-cms-pages/tony-team-digest on the existing morning+evening cadence.",
+      "d1_p_yes": 0.8795494522505775,
+      "d1_confidence": 0.8795494522505775,
+      "fm_ready": true,
+      "fm_p_yes": 0.95
+    },
+    {
+      "n": 91,
+      "id": "con01-runner-pilot-smoke-runner-agent-di-a73b38",
+      "label": true,
+      "source": "archive",
+      "brief": "Low-risk con01 runner-agent dispatch pilot. Dispatch a tiny verification task on the chaba repo via devin-dispatch and confirm claim/start/close.",
+      "d1_p_yes": 0.8478524228214382,
+      "d1_confidence": 0.8478524228214382,
+      "fm_ready": true,
+      "fm_p_yes": 0.9
+    },
+    {
+      "n": 92,
+      "id": "con01-script-smoke",
+      "label": true,
+      "source": "archive",
+      "brief": "E2E: script lane on con01 (8c/23Gi, podman 4.9.3, push:chaba, cap 1) \u2014 proves heartbeat, claim, execute and finish.",
+      "d1_p_yes": 0.8461548296118474,
+      "d1_confidence": 0.8461548296118474,
+      "fm_ready": true,
+      "fm_p_yes": 0.9
+    },
+    {
+      "n": 93,
+      "id": "device-telemetry-prune",
+      "label": false,
+      "source": "archive",
+      "brief": "The beacon posts ~300 docs/day/device to MDDB device-telemetry with no retention \u2014 unbounded growth on a production collection. Waiting in backlog.",
+      "d1_p_yes": 0.12031673440276718,
+      "d1_confidence": 0.8796832655972329,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 94,
+      "id": "devin-autonomy-contract",
+      "label": true,
+      "source": "archive",
+      "brief": "Tony asked for hands-off kanban processing where he stays in control. Policy file ssot.devin-autonomy.yml is now the single lever: kill switch, quiet hours, daily session budget, per-card retry cap, autonomy ceiling. kanban-dispatch reads it every pass.",
+      "d1_p_yes": 0.5016490180133025,
+      "d1_confidence": 0.5016490180133025,
+      "fm_ready": false,
+      "fm_p_yes": 0.1
+    },
+    {
+      "n": 95,
+      "id": "devnest-capacity-aware-dispatch",
+      "label": true,
+      "source": "archive",
+      "brief": "Keep KK-Mac and Colab productive when eligible by converting real ready work into normalized lane packages before capacity appears.",
+      "d1_p_yes": 0.41239053336646175,
+      "d1_confidence": 0.5876094666335383,
+      "fm_ready": false,
+      "fm_p_yes": 0.2
+    },
+    {
+      "n": 96,
+      "id": "devnest-colab-release-pinning",
+      "label": true,
+      "source": "archive",
+      "brief": "Automatically publish and verify a complete Chaba/pack release before a Colab queue can run it.",
+      "d1_p_yes": 0.5710142197831313,
+      "d1_confidence": 0.5710142197831313,
+      "fm_ready": false,
+      "fm_p_yes": 0.25
+    },
+    {
+      "n": 97,
+      "id": "devnest-colab-t4-model-slot-adapter",
+      "label": true,
+      "source": "archive",
+      "brief": "Prepare a bounded local-model evaluation pack for the next Colab T4 window; keep it distinct from the worker/queue held-out battery and from the existing Mac local-LLM lane.",
+      "d1_p_yes": 0.5375577694726703,
+      "d1_confidence": 0.5375577694726703,
+      "fm_ready": true,
+      "fm_p_yes": 0.85
+    },
+    {
+      "n": 98,
+      "id": "devnest-devin-replay-benchmark",
+      "label": true,
+      "source": "archive",
+      "brief": "Use the 110-session Devin CLI archive to build a privacy-safe, held-out replay benchmark for DevNest/OpenCode/JEV/runner-agent against the work Devin actually handled.",
+      "d1_p_yes": 0.6889933665960676,
+      "d1_confidence": 0.6889933665960676,
+      "fm_ready": true,
+      "fm_p_yes": 0.85
+    },
+    {
+      "n": 99,
+      "id": "devnest-fl-pilot-code",
+      "label": true,
+      "source": "archive",
+      "brief": "Supervised pilot job \u2014 tiny pure helper + unit test on the free OpenCode lane; matched against devin-lane run devnest-free-pilot-code.",
+      "d1_p_yes": 0.7461928785776243,
+      "d1_confidence": 0.7461928785776243,
+      "fm_ready": true,
+      "fm_p_yes": 0.9
+    },
+    {
+      "n": 100,
+      "id": "devnest-fl-pilot-doc",
+      "label": true,
+      "source": "archive",
+      "brief": "Supervised pilot job \u2014 write a small deterministic docs artifact on the free OpenCode lane; matched against devin-lane run devnest-free-pilot-doc.",
+      "d1_p_yes": 0.6017402186764594,
+      "d1_confidence": 0.6017402186764594,
+      "fm_ready": true,
+      "fm_p_yes": 0.9
+    },
+    {
+      "n": 101,
+      "id": "disk-auto-idc01-root",
+      "label": false,
+      "source": "archive",
+      "brief": "Disk space on idc01 (/) is running low \u2014 check the note for the rate and top growers, then free space or close the card.",
+      "d1_p_yes": 0.18786147875924705,
+      "d1_confidence": 0.8121385212407529,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 102,
+      "id": "disk-auto-idc02-root",
+      "label": false,
+      "source": "archive",
+      "brief": "Disk space on idc02 (/) is running low \u2014 check the note for the rate and top growers, then free space or close the card.",
+      "d1_p_yes": 0.1545660309596455,
+      "d1_confidence": 0.8454339690403545,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 103,
+      "id": "disk-auto-kk-mac-System-Volumes-VM",
+      "label": false,
+      "source": "archive",
+      "brief": "Disk space on kk-mac (/System/Volumes/VM) is running low \u2014 check the note for the rate and top growers, then free space or close the card.",
+      "d1_p_yes": 0.1426031294063417,
+      "d1_confidence": 0.8573968705936583,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 104,
+      "id": "disk-auto-tony-omen-data",
+      "label": false,
+      "source": "archive",
+      "brief": "Disk space on tony-omen (/data) is running low \u2014 check the note for the rate and top growers, then free space or close the card.",
+      "d1_p_yes": 0.12782079972380966,
+      "d1_confidence": 0.8721792002761903,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 105,
+      "id": "disk-auto-tony-omen-home",
+      "label": false,
+      "source": "archive",
+      "brief": "Disk space on tony-omen (/home) is running low \u2014 check the note for the rate and top growers, then free space or close the card.",
+      "d1_p_yes": 0.16492234463278907,
+      "d1_confidence": 0.8350776553672109,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 106,
+      "id": "edge-ha-restructure-subdomain-cloudflare-4ff3ad",
+      "label": false,
+      "source": "archive",
+      "brief": "The public edge works but every box is a single point of failure and names are inconsistent across three places. It needs a decision \u2014 read the note and pick a direction.",
+      "d1_p_yes": 0.09010451074432127,
+      "d1_confidence": 0.9098954892556788,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 107,
+      "id": "flood-hub-integration",
+      "label": false,
+      "source": "archive",
+      "brief": "Waiting on Google's waitlist for the flood-forecast API, which reportedly takes months. Nothing to do until the approval email arrives.",
+      "d1_p_yes": 0.03432884385521781,
+      "d1_confidence": 0.9656711561447822,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 108,
+      "id": "gev-auto-api",
+      "label": false,
+      "source": "archive",
+      "brief": "An automated health check flagged: GEV api 127.0.0.1:4173 not answering. Read the note, fix it, then close the card.",
+      "d1_p_yes": 0.10126863490480414,
+      "d1_confidence": 0.8987313650951958,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 109,
+      "id": "gev-auto-api-service",
+      "label": false,
+      "source": "archive",
+      "brief": "An automated health check flagged: gods-eye-view-api service not active. Read the note, fix it, then close the card.",
+      "d1_p_yes": 0.16997829021625518,
+      "d1_confidence": 0.8300217097837448,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    },
+    {
+      "n": 110,
+      "id": "gev-auto-bridge",
+      "label": false,
+      "source": "archive",
+      "brief": "An automated health check flagged: gev-gemini service not active. Read the note, fix it, then close the card.",
+      "d1_p_yes": 0.1310642562371644,
+      "d1_confidence": 0.8689357437628356,
+      "fm_ready": false,
+      "fm_p_yes": 0.05
+    }
+  ]
+}
