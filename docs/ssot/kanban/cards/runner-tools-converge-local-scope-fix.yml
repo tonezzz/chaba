@@ -1,7 +1,7 @@
 id: runner-tools-converge-local-scope-fix
 title: Scope runner-tools-converge.timer to its local host and skip hosts without ansible
-column: backlog
-updated: 2026-11-27 09:16
+column: doing
+updated: 2026-11-27 09:17
 spec: 'The nightly runner-tools-converge.service invokes scripts/devin/runner-tools-converge.sh, which runs deploy-runner-tools.yml
   across the whole fleet from each host. Any off-net host (tony-macbook sleeps) makes the --check phase fail, and
   idc03/mn01/tony-omen have no ansible-playbook on PATH, so five false timer-alert cards were filed on 2026-11-27
@@ -13,7 +13,9 @@ action:
   type: dispatch
   repo: chaba
   lane: paid_frontier
-  status: queued
+  status: running
+  runner: tony-dell
+  attempts: 1
 ref: OPS-1478
 comms:
 - at: 2026-11-27 09:03
@@ -29,4 +31,11 @@ comms:
 - at: 2026-11-27 09:16
   from: chaba
   text: '[auto-dispatch] wave 27 (2026-11-27 09:16): queued by the overnight incremental dispatcher; all gates clear.'
-claim: {}
+- at: 2026-11-27 09:17
+  from: tony-dell
+  text: claimed
+- at: 2026-11-27 09:17
+  from: chaba
+  text: 'con01 defers: runner at local cap (1/1) — remote slots unaffected'
+claim:
+  since: 2026-11-27 09:17
