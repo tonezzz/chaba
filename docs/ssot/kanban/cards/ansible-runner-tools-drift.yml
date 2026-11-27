@@ -1,11 +1,12 @@
 id: ansible-runner-tools-drift
 title: 'Ansible audit: runner tool drift detected'
-column: backlog
-updated: 2026-11-27 13:36
+column: done
+updated: 2026-11-27 13:37
 spec: Read-only ansible audit-runner-tools detected drift/missing runner tools. Re-run playbooks/audit-runner-tools.yml;
   inspect reports or stdout; converge via approved sync flow.
 action:
   type: manual
+  status: done
 ref: OPS-1418
 comms:
 - at: 2026-11-26 06:31
@@ -92,3 +93,6 @@ comms:
     lag. Fresh audit vs current pin d0465bfe2a6e: ALL hosts OK on all 6 tools (con01,idc02,idc03,mn01,tony-dell,tony-macbook,tony-omen).
     Converged via approved flow (runner-tools-converge.sh / sync-runner-tools.sh / _self_update) — no ad-hoc scp
     needed. Residual: kk-mac MISSING-DEST '
+- at: 2026-11-27 13:37
+  from: devin
+  text: closed by devin
