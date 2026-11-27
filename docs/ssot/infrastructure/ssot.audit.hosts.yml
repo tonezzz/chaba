@@ -2294,9 +2294,6 @@ hosts:
       - {name: ada-ha-michael.service, scope: user, note: "renamed to ada-ai-kraut.service on idc03 (grand-rename KNB-1098); mn01 keeps its own standby copy"}
     oom_kills_tolerance: 0
     known_failed:
-      - name: kanban-commit.service
-        reason: "2026-11-27 19:57 transient: concurrent board-api/git writers collided on chaba-tony-dell/.git/index.lock ('Unable to create index.lock: File exists'), so the scoped kanban-persist oneshot exited 1. The 19:40 fire finished cleanly; a repeat failure after the lock clears is real and needs investigation."
-        action: monitor-next-fire
       - name: ada-memory-sync.service
         reason: "Hourly vault→MDDB sync exits 1 when it detects push conflicts (remote content preserved) — RESIDUAL finding-reporter under the 2026-10-13 exit-code contract (docs/kb/timer-expectations.md); migrate when next touched"
         action: review-sync-conflicts
@@ -2668,9 +2665,6 @@ hosts:
       - {name: mddb-gdrive-tier.timer, scope: user, note: "retired — migrated from tony-dell 2026-10-18/19; no active copy at 2026-11-27 census"}
       - {name: jev-bench.timer, scope: user, note: "canonical con01 (active+enabled there); not-found on idc02"}
     known_failed:
-      - name: runner-tools-converge.service
-        reason: "2026-11-27 flap, not host drift: the staged, unpublished branch dispatch/20261126-213920-decision-2026-11-26-tony-adopt (13 files, including scripts/board/dispatch_repos.py and an updated runner-tooling.manifest.json pin) keeps syncing its pre-adoption dispatch_repos.py (JEVOS_URL 100.123.163.11:8017, hash c77eecb4…) into the exec checkout while master's pin and source stay 02217656…. The deployed tool alternates, so deploy-runner-tools.yml 'Assert installed checksum matches the pin' flips rc=0/rc=1 on successive converges. Tony decided 2026-11-27 to leave this whitelisted rather than publish or discard another agent's staged feature branch. Clear this entry only after that branch is published with its pin."
-        action: owner-publish-adoption-branch-then-clear
       - name: chaba-audit.service
         reason: "Pre-OPS-0581 finding-reporter (exited nonzero on error findings — findings tracked in card fix-idc02-audit-suite); since 2026-10-13 exits 0 on completed runs — findings via reports/audits/summary.* + focus-inbox (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"
         action: card-fix-idc02-audit-suite

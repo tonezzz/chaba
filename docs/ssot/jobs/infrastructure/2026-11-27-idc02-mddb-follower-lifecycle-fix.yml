@@ -79,11 +79,25 @@ verification:
     reports 0 deltas on all 7 hosts after the fix and the related SSOT
     reconciliations; idc02 report mtime 2026-11-27T20:00+07, final pass clean.
   decision_2026-11-27: >-
-    Tony chose to leave runner-tools-converge.service whitelisted rather than
-    publish or discard the staged adoption branch. Owner action: publish
-    dispatch/20261126-213920-decision-2026-11-26-tony-adopt (13 staged files,
-    including the updated runner-tooling.manifest.json pin), then clear the
-    known_failed entry and re-run the converge audit.
+    Tony asked to process both remaining items. Publishing the adoption branch
+    was NOT safe: dispatch/20261126-213920-decision-2026-11-26-tony-adopt is
+    0 commits ahead and 1790 behind origin/master — all 13 files are staged,
+    uncommitted, and their lane-envelope feature already landed on master as
+    7c5c014a6b3. Verified present on master: dispatch_repos.py lane-envelope
+    staging, board-api.py lane_envelope handling, kanban-dispatch.py,
+    runner-agent.py, ops-readonly profile 'litellm/agent-local' allowlist,
+    tests/board/test_lane_envelope_staging.py and the devnest job SSOT.
+    Committing those staged files onto the stale base would have reverted
+    1790 commits. The branch was left untouched (not published, not discarded).
+    Converge-flap root cause refined: a JEVOS_URL WIP edit (tailnet IP
+    100.123.163.11:8017, hash c77eecb4…) in the exec checkout was being
+    resurrected by git-safe-pull's --autostash; a board action set it aside
+    into named stash stash@{0} with patch /tmp/dispatch_repos-jevowip-20261127.patch
+    (named stashes are never auto-popped). Exec, installed and master source
+    now all hash 02217656…; converge rc=0 on four consecutive fires
+    20:30-20:36+07. Both stale known_failed entries cleared:
+    runner-tools-converge.service (idc02) and kanban-commit.service (idc03),
+    the latter having recovered (success/inactive) after the git lock cleared.
   concurrent_deltas: >-
     Three new idc03 deltas and one new idc02 delta appeared during this job from
     other live work (19:42-19:57) and were reconciled in ssot.audit.hosts.yml:
@@ -93,6 +107,8 @@ verification:
     collision declared known_failed as transient, and runner-tools-converge.service
     declared known_failed pending an unstaged dispatch_repos.py edit being
     committed together with an updated runner-tooling.manifest.json pin.
+    Both transient whitelists were cleared later the same evening once the
+    issues resolved (see decision_2026-11-27).
 lessons:
   - >-
     Podman 4.9.3 quadlet always appends `--rm` to `podman run`; Restart=alone
