@@ -1,7 +1,7 @@
 id: focus-dispatcher-overnight-promise-code-fix
 title: focus-dispatcher-overnight fails with Promise passed as error code
 column: review
-updated: 2026-11-27 12:02
+updated: 2026-11-27 12:51
 spec: 'focus-dispatcher-overnight.service on tony-omen ends with `[overnight] completed with errors` after `TypeError
   [ERR_INVALID_ARG_TYPE]: The "code" argument must be of type number. Received an instance of Promise`. The SSOT
   validation step reports Total errors: 0, so the TypeError is in the JavaScript/Node overnight focus workflow''s
@@ -117,6 +117,12 @@ comms:
 - at: 2026-11-27 12:02
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-27 12:51
+  from: tony
+  text: 'answered merge-conflict: resolve — let devin resolve the conflict and land it ★'
+- at: 2026-11-27 12:51
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 claim:
   since: 2026-11-27 10:30
 requests:
@@ -125,7 +131,7 @@ requests:
     origin/master in chaba — conflicted paths: docs/ssot/jobs/infrastructure/2026-11-27-ada-review-refresh-prune-timeout.yml.
     Merge idc02:/home/tony/CascadeProjects/dispatch-wt-20261127-103140-focus-dispatcher-overnight-ser by hand, or
     retry/abandon the card.'
-  status: open
+  status: answered
   at: 2026-11-27 11:40
   from: chaba
   options:
@@ -139,4 +145,6 @@ requests:
     action: hold
     label: hold the card
   suggested: resolve — let devin resolve the conflict and land it ★
+  answer: resolve — let devin resolve the conflict and land it ★
 review_kind: verify
+awaiting_action: true
