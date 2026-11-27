@@ -98,6 +98,20 @@ Policy settled 2026-10-27 (`docs/ssot/jobs/infrastructure/2026-10-27-lan-class-f
 4. Record results on the relevant card + update `ssot.security.<host>.yml`
    when a real listener delta is found.
 
+### Gotcha — `net.ipv4.ip_forward` vs docker published ports (2026-11-27)
+
+Do NOT put `net.ipv4.ip_forward=0` in a host-hardening sysctl drop-in on any
+host that runs docker/podman with published ports. With forwarding off, DNAT
+in `nat/PREROUTING` still fires but packets never reach the filter `DOCKER`
+chain — every container-published port times out while host-native services
+stay up (looks like a firewall problem; tcpdump shows SYNs arriving on
+`tailscale0` and nothing leaving the bridge). tony-omen hit this via
+`99-chaba-hardening.conf` on 2026-11-26 — sensor-reader:8001 and
+netdata:19999 went dark until `sysctl -w net.ipv4.ip_forward=1` + removing
+the line. If "no forwarding" is desired, scope it per-interface
+(`net.ipv4.conf.<if>.forwarding`) and exempt the container bridges — never
+the global `ip_forward` on a container host.
+
 ## Related
 
 - `docs/kb/new-host-onboarding.md` — full provisioning flow (this doc is §1's
