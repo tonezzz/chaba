@@ -1,7 +1,7 @@
 id: kanban-queue-manual-handoff
 title: 'Kanban queue truth: separate human-owned cards from the dispatch queue'
-column: backlog
-updated: 2026-11-27 08:32
+column: doing
+updated: 2026-11-27 08:33
 priority: high
 tags:
 - kanban
@@ -207,6 +207,9 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 08:33
+  from: tony-dell
+  text: claimed
 requests:
 - id: queue-truth-sequencing
   ask: How should we sequence the queue-truth fix?
@@ -223,10 +226,13 @@ requests:
   suggested: write-door-first
   answer: write-door-first — implement the board-api write-door invariant first, then reconcile ADA-0783 and expose
     human-waiting in /queue
-awaiting_action: true
 action:
   type: dispatch
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: queued
+  status: running
+  runner: tony-dell
+  attempts: 1
+claim:
+  since: 2026-11-27 08:33

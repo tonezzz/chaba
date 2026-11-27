@@ -1,7 +1,7 @@
 id: timer-alert-idc02-ada-ocb-smoke
 title: Timer ada-ocb-smoke on idc02 failing
-column: backlog
-updated: 2026-11-27 08:32
+column: doing
+updated: 2026-11-27 08:33
 priority: high
 tags:
 - timer-alert
@@ -571,15 +571,21 @@ comms:
     (''card snapshot missing'') and ada_preflight. Fix: when the reference matches the strict ref pattern ^[A-Z]+-[0-9]+$
     and no exact id/ref/alias exists, fail fast with a precise ''no card with ref'' error (optionally search the
     archive) instead of broad token scoring. Keep fu'
+- at: 2026-11-27 08:33
+  from: idc02
+  text: claimed
 action:
-  status: queued
+  status: running
   type: dispatch
   repo: ada-voice
   executor: devin
   lane: paid_frontier
+  runner: idc02
+  attempts: 1
 spec: Investigate the failure of `ada-ocb-smoke.service` on host idc02 by checking the user journal via `journalctl
   --user -u ada-ocb-smoke.service`, and redeploy the runner-agent from the chaba repository to idc02 by copying
   scripts/board/runner-agent.py to ~/.local/bin/runner-agent. The target host is idc02 and the relevant repository
   is chaba. The done-condition is verified when the runner-agent is updated on idc02 and the service failure root
   cause is investigated and resolved.
-claim: {}
+claim:
+  since: 2026-11-27 08:33
