@@ -1,0 +1,43 @@
+{
+  "schema": "managed-agents-cost-comparison",
+  "date": "2026-11-27",
+  "host": "idc03",
+  "task": "Use Python to compute the 20th Fibonacci number. Reply with the number only.",
+  "key_env": "GEMINI_API_KEY_MICHAEL (free tier), value never printed",
+  "arms": {
+    "hand_built_interactions_lite_code_execution": {
+      "date": "2026-11-26",
+      "source": "scripts/voice-bench/results/g4-interactions-advanced-20261126.json",
+      "model": "gemini-3.5-flash-lite",
+      "tools": [
+        "code_execution"
+      ],
+      "answer": "6765",
+      "elapsed_s": 56.93,
+      "input_tokens": 19,
+      "output_tokens": 66,
+      "tool_use_tokens": 84,
+      "thought_tokens": 0,
+      "cached_tokens": 0,
+      "total_tokens": 169
+    },
+    "managed_agents_remote_sandbox": {
+      "date": "2026-11-27",
+      "source": "live POST /interactions with agent + environment=remote",
+      "agent": "antigravity-preview-09-2026",
+      "answer": "6765",
+      "elapsed_s": 31.07,
+      "input_tokens": 11189,
+      "output_tokens": 88,
+      "tool_use_tokens": 0,
+      "thought_tokens": 168,
+      "cached_tokens": 3415,
+      "total_tokens": 11445
+    }
+  },
+  "ratios_managed_over_hand_built": {
+    "total_tokens": 67.7,
+    "input_tokens": 588.9,
+    "elapsed_s": 0.55
+  }
+}

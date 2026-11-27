@@ -3,7 +3,7 @@ subtitle: >
   Interactions API agent=... with remote sandbox, code execution, sandbox reuse
   and repository source mount — all verified on the free-tier key, 2026-11-26.
 icon: education
-version: 1
+version: 2  # v2: task-matched cost comparison and rev-4 publication recorded
 
 card: gemini-dev-capabilities-research-2026-11-26  # ADA-1440
 date: 2026-11-26
@@ -62,10 +62,11 @@ findings:
   - "Repository mounting needs background mode: synchronous call timed out at 290s, background POST + GET polling completed in 288s."
   - "Free-tier generation quota remains exhausted (429, ~16h reset at probe time); the agent runs still succeeded, indicating a separate quota path from the lite-model generation bucket."
   - "batchGenerateContent returned 400 FAILED_PRECONDITION for two models on the free key. Not sufficient evidence to call the API paid-only; paid verification is still open."
+  - "Task-matched cost comparison (2026-11-27, free key, same Fibonacci(20) prompt): hand-built Interactions lite + code_execution used 19 in / 66 out / 84 tool-use tokens (169 total) in 56.9s; Managed Agents remote sandbox used 11,189 in / 88 out / 168 thought tokens (11,445 total, 3,415 cached) in 31.1s. Both returned 6765. Managed Agents cost ~68x total and ~589x input tokens for ~0.55x wall time (n=1). Evidence: scripts/voice-bench/results/g4-managed-agents-cost-comparison-20261127.json."
 
 guardrails:
   - "No key, billing, gateway, model-pin or production-path changes."
-  - "No wiki publish during the eval itself; Tony separately authorized revision 3 on 2026-11-26, which folded these findings into Education:Gemini-Developer-Capabilities-2026-11-26 via board-api /publish sink wiki-education (revid 798)."
+  - "No wiki publish during the eval itself; Tony separately authorized revision 3 on 2026-11-26 (revid 798), then authorized a further update on 2026-11-27 that folded the cost comparison into Education:Gemini-Developer-Capabilities-2026-11-26 via board-api /publish sink wiki-education (revid 808). No direct MediaWiki call."
   - "Synthetic file contents and a public GitHub repo only; no estate repo or host data mounted."
 
 activation_gate:
@@ -76,9 +77,10 @@ verify:
   - "DONE 2026-11-26: both file-task grades re-checked via stored GET /interactions/{id}; code_execution_result and model_output both contained the expected strings."
   - "DONE 2026-11-26: YAML receipts and result JSON parsed; JSONs force-added through a clean detached worktree push."
   - "DONE 2026-11-26: revision 3 of the Education page published via board-api /publish sink wiki-education, pageid 368 revid 798, re-read 14,109 chars with Managed Agents and batch-precondition markers present."
+  - "DONE 2026-11-27: task-matched cost comparison recorded in scripts/voice-bench/results/g4-managed-agents-cost-comparison-20261127.json and folded into Education revision 4 via board-api /publish sinks=[wiki-education] -> revid 808, re-read 17,114 chars."
 
 remaining:
-  - "Compare a real end-to-end task against our hand-built agent loop on token cost and wall time; this run only establishes capability, not an efficiency win."
+  - "DONE 2026-11-27: task-matched Fibonacci(20) comparison run; token overhead is structural (~11k per managed turn), wall-time win is n=1 and not generalisable. Capability proven, efficiency not."
   - "Verify triggers and web-search tools inside the managed environment; only filesystem, code execution and repo mount were exercised."
   - "Check batchGenerateContent on paid capacity, including 50% price claim and 24h SLO, when the shared project cap is resolved."
   - "Do not promote Managed Agents into any runtime path on this evidence alone."

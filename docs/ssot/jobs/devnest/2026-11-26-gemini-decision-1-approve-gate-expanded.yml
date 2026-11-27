@@ -4,7 +4,7 @@ subtitle: >
   review and a held-out threshold calibration. High precision, still not a
   hands-off approve gate.
 icon: education
-version: 1
+version: 2  # v2: rev-4 wiki publication recorded
 
 card: gemini-decision-1-gate-eval-2026-11-26  # ADA-1445
 date: 2026-11-26
@@ -57,7 +57,7 @@ findings:
 
 guardrails:
   - "No key, billing, gateway, model-pin or production-path changes."
-  - "No wiki publish in this track; the Education page remains at revid 798."
+  - "No wiki publish during the eval itself; Tony separately authorized revision 4 on 2026-11-27, which folded these results into Education:Gemini-Developer-Capabilities-2026-11-26 via board-api /publish sink wiki-education (revid 808, MediaWiki-assigned). No direct MediaWiki call."
   - "Read-only batch Decisions call; briefs came from repo cards, no card state changed."
 
 activation_gate:
@@ -68,8 +68,10 @@ verify:
   - "DONE 2026-11-26: response contained 60 answers and usage {total_input_tokens: 8826, total_output_tokens: 0}."
   - "DONE 2026-11-26: label overrides recorded in the dataset JSON; graded locally with a seeded stratified train/test split."
   - "DONE 2026-11-26: YAML receipt and all four JSON artifacts parsed before push."
+  - "DONE 2026-11-27: results published in Education revision 4 via board-api /publish sinks=[wiki-education] -> pageid 368 revid 808, re-read 17,114 chars with 55/60 and p_yes >= 0.5162 markers present."
 
 remaining:
+  - "DONE 2026-11-27: Tony said 'proceed with the Managed Agents cost comparison and publish a wiki revid 799 with these decision-1 results'; published, MediaWiki assigned revid 808."
   - "Expand to 100+ briefs with more diverse NOT_READY examples and a larger held-out negative set before treating the approve gate as hands-off."
   - "Compare the gate against the current full-model dispatch judgment path on the same briefs."
   - "Do not replace human dispatch approval on this evidence; use as a high-precision pre-filter that escalates low/medium-confidence cases."

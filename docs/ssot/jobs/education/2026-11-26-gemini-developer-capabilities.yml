@@ -4,7 +4,7 @@ subtitle: >
   research, then a card-gated /publish to the wiki-education sink; re-published
   on 2026-11-26 with the free-tier verification sweep and corrected claims.
 icon: education
-version: 3  # revision 3: Managed Agents verification, decision-1 label review, batch precondition
+version: 4  # revision 4: 60-brief decision-1 expansion + task-matched Managed Agents cost comparison
 
 card: gemini-dev-capabilities-research-2026-11-26  # ADA-1440
 date: 2026-11-26
@@ -34,6 +34,13 @@ delivered:
       sink: wiki-education
       reason: "After Tony's explicit go-ahead, fold in the verified Managed Agents surfaces, the completed decision-1 label review, and the free-tier Batch API precondition."
       body_chars: 14109
+    revision_4:
+      revid: 808
+      event_id: gemini-dev-capabilities-d1-expanded-and-ma-cost-2026-11-27
+      idempotency_key: pub-e635288d3e52496eace7ccef398804b6
+      sink: wiki-education
+      reason: "Tony authorized rev 799-targeted update; folded in the 60-brief decision-1 expansion and the task-matched Managed Agents cost comparison. MediaWiki assigned revid 808 because other publishes advanced the page in between."
+      body_chars: 17114
     topic: gemini-developer-capabilities
     level: working
     next_review: 2026-12-10
@@ -76,9 +83,11 @@ verify:
 
 remaining:
   - "DONE 2026-11-26: 20-fixture voice bench on gemini-3.8-live-extended-thinking returned zero tool calls; gemini-3.8-live stays sole voice pin."
-  - "DONE 2026-11-26: gemini-decision-1 evaluated as a reject gate; Tony confirmed both disputed READY labels on the ADA-1445 receipt, so 8/10 is a true accuracy figure. Approve gate still needs 30+ labeled briefs and a calibrated threshold."
+  - "DONE 2026-11-26: gemini-decision-1 evaluated as a reject gate; Tony confirmed both disputed READY labels on the ADA-1445 receipt, so 8/10 is a true accuracy figure."
+  - "DONE 2026-11-27: 60-brief expansion gave 55/60 agreement, zero false approvals and a held-out p_yes >= 0.5162 approve pre-filter; see the companion expanded receipt."
   - "DONE 2026-11-26: official gemini-api-dev skill installed and trialled."
   - "After the daily quota reset, complete the three unverified surfaces (thought summaries, inline-image generation, OpenAI compatibility) via the scheduled retry on ADA-1451."
   - "DONE 2026-11-26: revision 3 published with the Managed Agents, decision-1 label-review and batch-precondition findings; pageid 368 revid 798."
+  - "DONE 2026-11-27: revision 4 published via board-api /publish sinks=[wiki-education] -> pageid 368 revid 808 (MediaWiki-assigned, not the requested 799); re-read 17,114 chars with decision-1 expansion and cost-comparison markers present, no key names/project IDs in body."
   - "Gemini 4 text-agent eval still needs paid capacity; separate go-ahead tracks that."
   - "Re-check the catalog before reusing any model ID; this page is a dated snapshot."
