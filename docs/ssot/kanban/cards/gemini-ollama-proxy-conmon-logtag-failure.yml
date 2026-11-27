@@ -1,7 +1,7 @@
 id: gemini-ollama-proxy-conmon-logtag-failure
 title: 'tony-dell gemini-ollama-proxy: conmon rejects --log-tag, exit 126'
 column: doing
-updated: 2026-11-27 21:21
+updated: 2026-11-27 21:44
 brief: 'Persistent failure since 2026-11-26 11:56 +07: conmon says k8s-file doesn t support --log-tag; podman create/remove
   churn; ExecMainStatus=126; NRestarts=5 then start-rate limited. Unrelated to existing MEM-1464/MEM-1469 proxy
   cards.'
@@ -48,6 +48,13 @@ comms:
 - at: 2026-11-27 21:21
   from: devin
   text: dispatch picked up on con01; inspecting gemini-ollama-proxy quadlet + conmon/containers.conf state on tony-dell
+- at: 2026-11-27 21:44
+  from: devin
+  text: 'FIXED + verified on tony-dell. Two stacked blockers: (1) log_tag in containers.conf already commented out
+    11-26 19:35 (conmon 2.1.13 k8s-file DOES reject --log-tag — prior fix job exemption was wrong); (2) quadlet
+    envfile-drop installed EnvironmentFile=mddb-gemini.env but the file never existed on dell — provisioned it from
+    idc03 (key names identical, values never displayed). reset-failed + start -> active 21:36 +07; /health 200 (free_keys=6,
+    caps delivered); real /api/embed returned 768-dim gem'
 action:
   type: dispatch
   status: running
