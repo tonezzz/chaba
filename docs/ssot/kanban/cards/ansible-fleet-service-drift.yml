@@ -1,7 +1,7 @@
 id: ansible-fleet-service-drift
 title: 'Ansible audit: fleet service drift detected'
 column: backlog
-updated: 2026-11-27 13:36
+updated: 2026-11-27 15:52
 spec: 'Read-only ansible audit-fleet-services detected service/resource drift vs ssot.audit.hosts.yml. Hosts: con01,
   idc02, idc03, mn01, tony-dell, tony-omen. Report dir: reports/ansible-benchmark/services/. No remediation performed.'
 action:
@@ -106,3 +106,10 @@ comms:
     Composition: MAJORITY is ssot.audit.hosts.yml census lag (last_updated 2026-11-11, predates OPS-0725 migration
     + recent additions) — e.g. opencode-serve+sidecar-collector legitimately run fleet-wide undeclared; idc03 unit
     renames (chaba-postgres/chaba-redis vs expecte'
+- at: 2026-11-27 15:52
+  from: chaba
+  text: 'RE-AUDIT 2026-11-27 ~15:20 (idc02 controller, read-only): ansible-playbook audit-fleet-services.yml, 0
+    unreachable/0 failed. Deltas improved vs 13:10: con01 5, idc02 6, idc03 26, mn01 4, tony-dell 16, tony-macbook
+    6, tony-omen 16. Still dominated by ssot.audit.hosts.yml census lag (expected/allowed lists predate OPS-0725);
+    genuine residue includes stale failed cline-intake.service (unit not-found) + mddb-vector-reindex on con01,
+    yomi-update-active on idc03, gemini-ollama-proxy on tony-dell. Need'
