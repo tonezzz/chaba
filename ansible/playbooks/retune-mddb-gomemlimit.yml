@@ -1,0 +1,278 @@
+---
+# retune-mddb-gomemlimit.yml — align mddb's in-container Go GC limit with idc03's cgroup caps.
+#
+# 2026-11-27 incident (follow-up to idc03-memory-guard.yml and
+# bound-yomi-api-memory.yml):
+#   * idc03-memory-guard.yml set GOMEMLIMIT=3200MiB in mddb.service.d, but
+#     mddb.container (the quadlet) sets Environment=GOMEMLIMIT=8000MiB which
+#     wins *inside* the container. mddbd therefore grows its heap toward 8 GiB
+#     while the unit cgroup caps it at ~3.7 GiB, so it sits at MemoryHigh and
+#     its /mcp and /health endpoints stall.
+#   * This play collects a baseline, lowers the quadlet's GOMEMLIMIT to
+#     3000MiB (below MemoryHigh=3800M, leaving reclaim headroom), restarts
+#     mddb so the container is recreated, then verifies it settles and serves.
+#
+# Phases via tags (all run by default):
+#   --tags collect         read-only baseline, safe to run any time
+#   --tags fix,verify      full converge (requires approval flags)
+#
+# Usage (controller = tony-dell; ALWAYS --limit):
+#   ansible-playbook playbooks/retune-mddb-gomemlimit.yml --limit idc03 --tags collect
+#   ansible-playbook playbooks/retune-mddb-gomemlimit.yml --check --diff --limit idc03
+#   ansible-playbook playbooks/retune-mddb-gomemlimit.yml --limit idc03 \
+#     -e mddb_gomemlimit_approved=true -e card_id=mddb-idc03-oom-gomemlimit
+#
+# Disruption: mddb.service is restarted (~80s /v1 cold start). Fleet MCP probes
+# can show transient failures during that window. Rollback: restore the
+# timestamped mddb.container backup, daemon-reload, restart mddb.service.
+
+- name: Retune mddb GOMEMLIMIT on idc03 (collect, fix, verify)
+  hosts: idc03
+  gather_facts: false
+  become: false
+
+  vars:
+    mddb_gomemlimit_approved: false
+    mddb_unit_path: /home/tony/.config/containers/systemd/mddb.container
+    old_gomemlimit: 8000MiB
+    new_gomemlimit: 3000MiB
+    mddb_tailnet_ip: 100.102.134.91
+    # 3.6 GiB: below MemoryHigh (3.71 GiB) but above a healthy post-GC RSS.
+    mddb_settle_max_bytes: 3865470566
+
+  tasks:
+    # ---------------------------------------------------------------- collect
+    - name: Collect quadlet GOMEMLIMIT
+      ansible.builtin.slurp:
+        src: "{{ mddb_unit_path }}"
+      register: mddb_quadlet
+      tags: [collect]
+
+    - name: Collect mddb unit memory state and restart count
+      ansible.builtin.command:
+        argv:
+          - systemctl
+          - --user
+          - --machine=tony@.host
+          - show
+          - mddb.service
+          - -p
+          - MemoryCurrent
+          - -p
+          - MemoryHigh
+          - -p
+          - MemoryMax
+          - -p
+          - NRestarts
+          - -p
+          - ActiveState
+          - --value
+      register: mddb_state_before
+      changed_when: false
+      tags: [collect]
+
+    - name: Collect effective container config
+      ansible.builtin.command:
+        argv: [podman, inspect, mddb]
+      register: mddb_inspect_before
+      changed_when: false
+      tags: [collect]
+
+    - name: Collect mddb MCP endpoint status
+      ansible.builtin.command:
+        argv:
+          - curl
+          - -s
+          - -o
+          - /dev/null
+          - -w
+          - "%{http_code}"
+          - --max-time
+          - "10"
+          - "http://{{ mddb_tailnet_ip }}:9000/mcp"
+      register: mddb_mcp_before
+      changed_when: false
+      failed_when: false
+      tags: [collect]
+
+    - name: Collect host memory pressure
+      ansible.builtin.command:
+        argv: [free, -h]
+      register: mddb_free_before
+      changed_when: false
+      tags: [collect]
+
+    - name: Collect top memory consumers
+      ansible.builtin.shell: "ps -eo pid,rss,comm --sort=-rss | head -8"
+      register: mddb_top_before
+      changed_when: false
+      tags: [collect]
+
+    - name: Report collected baseline
+      ansible.builtin.debug:
+        msg: |-
+          quadlet GOMEMLIMIT={{ mddb_quadlet_text | regex_search('GOMEMLIMIT=\S+') | default('none') }}
+          container GOMEMLIMIT={{ mddb_container_limit_before }}
+          unit state (raw)={{ mddb_state_before.stdout_lines | default([]) | join(' ') }}
+          MCP HTTP before={{ mddb_mcp_before.stdout | default('n/a') }}
+          host memory={{ (mddb_free_before.stdout_lines | default([]))[1] | default('n/a') }}
+          top RSS={{ (mddb_top_before.stdout_lines | default([]))[1:] | join(' | ') }}
+      vars:
+        mddb_quadlet_text: "{{ mddb_quadlet.content | b64decode }}"
+        mddb_container_limit_before: >-
+          {{ ((mddb_inspect_before.stdout | default('[]', true)) | from_json)[0].Config.Env
+             | select('search', '^GOMEMLIMIT=') | list | first | default('none') }}
+      tags: [collect]
+
+    # ------------------------------------------------------------------- fix
+    - name: Require explicit approval and traceability for a real run
+      ansible.builtin.assert:
+        that:
+          - mddb_gomemlimit_approved | bool
+          - card_id is defined or card_ref is defined
+        fail_msg: >-
+          This is a PREP preview. Re-run with -e mddb_gomemlimit_approved=true
+          and -e card_id=<card>. Disruption: mddb.service is restarted (~80s cold start).
+      when: not ansible_check_mode
+      tags: [fix]
+
+    - name: Assert the quadlet carries the expected GOMEMLIMIT
+      ansible.builtin.assert:
+        that:
+          - "'GOMEMLIMIT=' ~ old_gomemlimit in quadlet_text or 'GOMEMLIMIT=' ~ new_gomemlimit in quadlet_text"
+        fail_msg: "Unexpected GOMEMLIMIT in {{ mddb_unit_path }}; inspect before retuning."
+      vars:
+        quadlet_text: "{{ mddb_quadlet.content | b64decode }}"
+      tags: [fix]
+
+    - name: Lower quadlet GOMEMLIMIT to {{ new_gomemlimit }} (with backup)
+      ansible.builtin.replace:
+        path: "{{ mddb_unit_path }}"
+        regexp: "^Environment=GOMEMLIMIT={{ old_gomemlimit }}$"
+        replace: "Environment=GOMEMLIMIT={{ new_gomemlimit }}"
+        backup: true
+      register: mddb_limit_change
+      tags: [fix]
+
+    - name: Reload user systemd manager
+      ansible.builtin.command:
+        argv: [systemctl, --machine=tony@.host, --user, daemon-reload]
+      become: true
+      changed_when: false
+      when:
+        - not ansible_check_mode
+        - mddb_limit_change.changed
+      tags: [fix]
+
+    - name: Restart mddb.service to recreate container under the new limit
+      ansible.builtin.command:
+        argv: [systemctl, --machine=tony@.host, --user, restart, mddb.service]
+      become: true
+      changed_when: false
+      when:
+        - not ansible_check_mode
+        - mddb_limit_change.changed
+      tags: [fix]
+
+    # ----------------------------------------------------------------- verify
+    - name: Wait for mddb MCP port to accept connections
+      ansible.builtin.wait_for:
+        host: "{{ mddb_tailnet_ip }}"
+        port: 9000
+        timeout: 180
+      when:
+        - not ansible_check_mode
+        - mddb_limit_change.changed
+      tags: [verify]
+
+    - name: Re-read quadlet after convergence
+      ansible.builtin.slurp:
+        src: "{{ mddb_unit_path }}"
+      register: mddb_quadlet_after
+      when: not ansible_check_mode
+      tags: [verify]
+
+    - name: Assert persistent GOMEMLIMIT is installed
+      ansible.builtin.assert:
+        that:
+          - "'GOMEMLIMIT=' ~ new_gomemlimit in quadlet_after_text"
+        fail_msg: "GOMEMLIMIT={{ new_gomemlimit }} missing from {{ mddb_unit_path }}"
+      vars:
+        quadlet_after_text: "{{ mddb_quadlet_after.content | b64decode }}"
+      when: not ansible_check_mode
+      tags: [verify]
+
+    - name: Collect effective container config after restart
+      ansible.builtin.command:
+        argv: [podman, inspect, mddb]
+      register: mddb_inspect_after
+      changed_when: false
+      when: not ansible_check_mode
+      tags: [verify]
+
+    - name: Assert container GOMEMLIMIT took effect
+      ansible.builtin.assert:
+        that:
+          - mddb_container_limit_after == 'GOMEMLIMIT=' ~ new_gomemlimit
+        fail_msg: "Container GOMEMLIMIT is {{ mddb_container_limit_after }}, expected {{ new_gomemlimit }}"
+      vars:
+        mddb_container_limit_after: >-
+          {{ (mddb_inspect_after.stdout | from_json)[0].Config.Env
+             | select('search', '^GOMEMLIMIT=') | list | first | default('none') }}
+      when: not ansible_check_mode
+      tags: [verify]
+
+    - name: Wait for mddb RSS to settle below the cgroup cap
+      ansible.builtin.command:
+        argv:
+          - systemctl
+          - --user
+          - --machine=tony@.host
+          - show
+          - mddb.service
+          - -p
+          - MemoryCurrent
+          - --value
+      register: mddb_settle
+      changed_when: false
+      until: mddb_settle.stdout | trim | int < mddb_settle_max_bytes | int
+      retries: 10
+      delay: 15
+      when: not ansible_check_mode
+      tags: [verify]
+
+    - name: Probe mddb MCP endpoint after restart
+      ansible.builtin.command:
+        argv:
+          - curl
+          - -s
+          - -o
+          - /dev/null
+          - -w
+          - "%{http_code}"
+          - --max-time
+          - "15"
+          - "http://{{ mddb_tailnet_ip }}:9000/mcp"
+      register: mddb_mcp_after
+      changed_when: false
+      failed_when: false
+      when: not ansible_check_mode
+      tags: [verify]
+
+    - name: Assert mddb MCP endpoint responds (401 = auth required)
+      ansible.builtin.assert:
+        that:
+          - mddb_mcp_after.stdout | trim == '401'
+        fail_msg: "mddb /mcp returned {{ mddb_mcp_after.stdout | default('n/a') }}, expected 401"
+      when: not ansible_check_mode
+      tags: [verify]
+
+    - name: Report convergence
+      ansible.builtin.debug:
+        msg: >-
+          GOMEMLIMIT={{ new_gomemlimit }} (was {{ old_gomemlimit }}),
+          RSS settled={{ mddb_settle.stdout | trim }} bytes,
+          MCP HTTP={{ mddb_mcp_after.stdout | trim }},
+          unit state={{ mddb_state_before.stdout_lines | join(' ') }} -> see fresh collect run
+      when: not ansible_check_mode
+      tags: [verify]
