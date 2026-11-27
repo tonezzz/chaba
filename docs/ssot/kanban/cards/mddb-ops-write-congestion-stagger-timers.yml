@@ -1,0 +1,23 @@
+id: mddb-ops-write-congestion-stagger-timers
+title: mddb-ops write congestion waves — investigate + stagger fleet shipper timers
+column: backlog
+updated: 2026-11-27 13:16
+priority: medium
+tags:
+- ops
+- mddb
+- log-shipper
+spec: 'Follow-up from OPS-1497 (log-shipper-mddb-heartbeat-timeout-fix). Evidence 2026-11-27: mddb-ops journal on
+  idc03 shows /v1/add + /v1/ingest handlers running 125-198s server-side vs writeTimeout=120s during congestion
+  windows (~11:03-11:04, ~12:0x +07), producing fleet-wide log-shipper failures. Hypothesis: all 6 hosts fire log-shipper+severe
+  timers within ~2min hourly (:50-:52), each draining backlog in 5-doc batches — a thundering herd on mddb-ops.
+  NOT proven: waves could also come from other writers (digests, ada-memory-sync, embed lanes). TASK: (1) correlate
+  mddb-ops slow-handler timestamps against fleet timer schedules to confirm/deny the herd theory; (2) if confirmed,
+  stagger OnCalendar per host (e.g. minute offset = host index) in ssot.jobs.yml + re-render; (3) consider whether
+  mddb-ops needs capacity relief (see idc03-structural-capacity history). Done when congestion windows stop producing
+  client timeouts or the herd theory is disproven with data.'
+ref: OPS-1502
+comms:
+- at: 2026-11-27 13:16
+  from: devin
+  text: card captured via board-api
