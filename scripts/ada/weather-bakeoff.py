@@ -38,10 +38,13 @@ Usage (on idc03, ada-voice venv for PIL):
 from __future__ import annotations
 
 import argparse
+import http.client
 import json
 import os
+import socket
 import ssl
 import sys
+import time
 import urllib.request
 import urllib.error
 import xml.etree.ElementTree as ET
@@ -85,13 +88,49 @@ def load_env(path: str) -> dict[str, str]:
     return env
 
 
+# Bounded retry for transient HA/API transport failures (card
+# weather-bakeoff-ha-config-bounded-retry): kraut-rain-watch runs died
+# on `ConnectionResetError [Errno 104]` reading {ha_url}/api/config.
+# <=3 total attempts, worst-case added sleep 1.5s; 4xx and non-transient
+# exceptions still raise on the first failure.
+_RETRY_ATTEMPTS = 3
+_RETRY_BACKOFF_S = (0.5, 1.0)
+_RETRYABLE = (
+    urllib.error.URLError,
+    socket.timeout,
+    TimeoutError,
+    ConnectionResetError,
+    ConnectionAbortedError,
+    http.client.RemoteDisconnected,
+    http.client.IncompleteRead,
+)
+
+
+def _urlopen(req, timeout: int):
+    last = None
+    for attempt in range(_RETRY_ATTEMPTS):
+        try:
+            return urllib.request.urlopen(
+                req, timeout=timeout,
+                context=ssl.create_default_context())
+        except urllib.error.HTTPError as e:
+            if e.code < 500:
+                raise
+            last = e
+        except _RETRYABLE as e:
+            last = e
+        if attempt >= _RETRY_ATTEMPTS - 1:
+            break
+        time.sleep(_RETRY_BACKOFF_S[attempt])
+    raise last
+
+
 def http_json(url: str, headers: dict | None = None,
               data: bytes | None = None, timeout: int = 20):
     req = urllib.request.Request(
         url, data=data, headers={"User-Agent": UA, **(headers or {})},
         method="POST" if data else "GET")
-    ctx = ssl.create_default_context()
-    with urllib.request.urlopen(req, timeout=timeout, context=ctx) as r:
+    with _urlopen(req, timeout) as r:
         return json.loads(r.read())
 
 
@@ -99,8 +138,7 @@ def http_bytes(url: str, headers: dict | None = None,
                timeout: int = 20) -> bytes:
     req = urllib.request.Request(url, headers={"User-Agent": UA,
                                                **(headers or {})})
-    with urllib.request.urlopen(req, timeout=timeout,
-                                context=ssl.create_default_context()) as r:
+    with _urlopen(req, timeout) as r:
         return r.read()
 
 
