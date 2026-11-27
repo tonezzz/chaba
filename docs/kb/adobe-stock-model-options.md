@@ -36,25 +36,30 @@ capture bot; raw dumps live in the infra session folder. Wiki companion:
 One bounded A/B (extended to three-way) on the frozen `comparison-b-sharp-leaves` source
 (1024x576), scored with `upscale-eval.py` (no manual image generation; the harness runs
 inference). Receipts in scratch `/tmp/opencode/ab-sr/`
-(`realesrgan-sharp60.json`, `resshift-v1-s15.json`, `swinir.json`).
+(`realesrgan-sharp60.json`, `resshift-v1-s15.json`, `swinir.json`, `swinir-gan.json`).
 
-| Metric | Incumbent (Real-ESRGAN x4plus, unsharp 60) | ResShift v1-s15 | SwinIR-M classical x4 |
-|---|---:|---:|---:|
-| laplacian_var output | 289.58 | 193.56 | 55.21 |
-| roundtrip PSNR (dB) | 30.28 | 35.60 | 46.87 |
-| roundtrip SSIM | 0.9613 | 0.9788 | 0.9981 |
-| flat_region_lap_gain | NaN | NaN | NaN |
-| wall_s (recorded) | 0.0 | 6483.0 | 442.3 (CPU fallback) |
+| Metric | Incumbent (Real-ESRGAN x4plus, unsharp 60) | ResShift v1-s15 | SwinIR-M classical x4 | SwinIR-M real-SR (GAN) x4 |
+|---|---:|---:|---:|---:|
+| laplacian_var output | 289.58 | 193.56 | 55.21 | 111.82 |
+| roundtrip PSNR (dB) | 30.28 | 35.60 | 46.87 | 32.66 |
+| roundtrip SSIM | 0.9613 | 0.9788 | 0.9981 | 0.9721 |
+| flat_region_lap_gain | NaN | NaN | NaN | NaN |
+| wall_s (recorded) | 0.0 | 6483.0 | 442.3 | 429.6 |
 
 - ResShift v1-s15 wins both roundtrip metrics but is smoother and ~200x slower than the incumbent.
 - SwinIR-M classical x4 posts the highest roundtrip PSNR/SSIM (46.87 / 0.9981) but the lowest
   laplacian (55.21) — i.e. it over-smooths. High roundtrip PSNR alone is misleading; it
   reflects near-bicubic smoothness, not retained texture. **Not a candidate for Adobe Stock
-  as-is** (classical, non-GAN variant); a GAN/real-SR SwinIR variant would be the real test.
-- `flat_region_lap_gain` is NaN in all three receipts, so the invented-texture guard is
+  as-is** (classical, non-GAN variant).
+- SwinIR-M real-SR (GAN) x4 lands in the middle on every metric (laplacian 111.82, PSNR 32.66,
+  SSIM 0.9721): more texture than classical but still less than ResShift (193.56) and the
+  incumbent (289.58). No arm dominates on texture + roundtrip together. The GAN variant is the
+  more honest SwinIR candidate but does not beat ResShift on texture or the incumbent on
+  sharpness.
+- `flat_region_lap_gain` is NaN in all four receipts, so the invented-texture guard is
   **unverified** for every arm.
-- Hardware note: SwinIR-M x4 on a 1024x576 source OOMs on the GTX 1650 (4 GB) and falls back
-  to CPU (~7.4 min). VRAM is a real constraint for larger sources.
+- Hardware note: both SwinIR variants OOM on the GTX 1650 (4 GB) for a 1024x576 source and fall
+  back to CPU (~7 min each). VRAM is a real constraint for larger sources.
 - Decision rule (advisory): challenger advances only if it wins both PSNR and SSIM, keeps
   `flat_region_lap_gain` near ~1.2, and the wall-time gap is explicitly accepted. None of
   the three arms clears all three today; Tony is the QC gate.

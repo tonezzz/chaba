@@ -433,18 +433,20 @@ jobs:
     env MDDB_CMS_URL added 2026-10-22 (cms-11023-parked-writers) — mixed producer — scenario-report docs stay on
     :11023 via --mddb, ada-cms-pages writes route to :11027 via ada-pi mddb_client cms-plane.
 - id: jev-bench
-  name: Jev decision bench — hourly noul/choice accuracy vs jev-student (runs on con01, targets idc03)
+  name: Jev decision bench — hourly noul/choice accuracy vs jev-student (runs on con01, targets tony-omen)
   host: con01
   dispatch: systemd
   on_calendar: hourly
   persistent: true
   timeout: 10m
-  exec: /usr/bin/python3 %h/CascadeProjects/ada-voice/tests/bench/jev-bench.py http://100.102.134.91:8778 --mddb http://100.102.134.91:11023/v1
+  exec: /usr/bin/python3 %h/CascadeProjects/ada-voice/tests/bench/jev-bench.py http://100.75.102.88:8778 --mddb http://100.102.134.91:11023/v1
     --report-cms
   env:
     MDDB_CMS_URL: http://100.102.134.91:11027/v1
-  note: retargeted idc01 -> idc03 2026-10-09 (card fix-jev-bench-target). jev-student confirm-gate serves /v1/systemone
-    on idc03 tailnet :8778; scenario-report writes stay on the idc03 leader :11023 (idc02 local :11023 is a read-only
+  note: retargeted idc01 -> idc03 2026-10-09 (card fix-jev-bench-target), then idc03 -> tony-omen 2026-11-27.
+    jev-student confirm-gate migrated from idc03 to tony-omen 2026-11-18 and now serves /v1/systemone on tailnet
+    :8778 (100.75.102.88); idc03's copy is disabled, which made the hourly bench fail with HTTP 404. scenario-report
+    writes stay on the idc03 leader :11023 (idc02 local :11023 is a read-only
     follower). Emits suite:jev-decision docs to ada-ha-scenario-reports + refreshes the bench-jev CMS page — consumed by
     nest-overview.py (chaba-nest L2). Bench script lives in the ada-voice checkout on idc02. Unit was hand-installed
     2026-10-01; now rendered from this manifest. MDDB_CMS_URL added 2026-10-22 (cms-11023-parked-writers) — mixed

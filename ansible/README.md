@@ -340,3 +340,34 @@ ansible-playbook playbooks/ha-dashboard-deploy.yml --limit tony-omen --tags ha
 - The HA token stays in a 0600 host-side secret file — never in play vars or
   command arguments. `promote-views.py` prints `already current` when the view
   matches, which keeps the promote task idempotent (`changed=0`).
+
+## Secrets slot compliance (read-only pilot)
+
+`playbooks/secrets-compliance.yml` checks the credential → slot → consumer map
+in `docs/ssot/infrastructure/ssot.secrets.yml` without reading any secret
+value. Slots are classified: raw secret files and `VAR=` env files require
+0600/0400; systemd unit overrides/quadlets expect 0600/0644 (deviation is INFO,
+key probed as `Environment=VAR=`); credential helper scripts expect 0700/0755.
+Only file/env slots can raise a bad-mode ERROR. Retired/archived/optional slots
+and hosts absent from inventory are skipped by default.
+
+```bash
+cd /home/tony/CascadeProjects/chaba   # pass -i: ansible.cfg lives in ansible/
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/secrets-compliance.yml --check --diff
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/secrets-compliance.yml -e '{"compliance_host_limit":["idc03"]}'
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/secrets-compliance.yml -e compliance_fail_on_drift=true
+```
+
+Report-only by default; `-e compliance_fail_on_drift=true` makes ERROR findings
+fail the play. Drift usually means the manifest is stale, not that a live secret
+is gone — verify on-host names/hashes before editing any credential. Rotation
+stays the Secrets Console's job.
+
+Approved write paths (both inert by default, both require an explicit flag):
+`remediate-secret-file-modes.yml` (`-e secret_mode_change_approved=true`,
+private timestamped content backups) and `remediate-secret-dir-modes.yml`
+(`-e secret_dir_mode_change_approved=true`, mode-only with recorded rollback).
+`remediate-secret-modes-batch.yml` (`-e secret_mode_batch_approved=true`) is the
+one-shot batch for multi-host approved findings, with per-host target maps and
+private backups. The rotator pin gate is `deploy-rotate-or-key.yml`. Evidence
+lives under `docs/ssot/jobs/security/2026-11-26-*`.

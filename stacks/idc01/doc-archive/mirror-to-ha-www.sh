@@ -22,37 +22,59 @@ trap 'rm -rf "$STAGE"' EXIT
 
 # Bound every curl so an unavailable/hung MDDB or doc-archive cannot stall the
 # hourly run forever (TimeoutStartSec in the unit is the outer backstop).
-CURL=(curl -sf --connect-timeout 10 --max-time 240)
+# Two budgets: search/manifest are small JSON (fail them fast and retry), but
+# a page is a full-size PDF streamed from Google Drive — 2010-sup-catalog/page/1
+# is 22MB and takes ~1 min even on idc03. A too-short page budget aborts the
+# transfer, leaves the server busy with the half-finished request, and the
+# following connects time out in a cascade (Nov 2026 curl exit 28). -S keeps
+# the actual curl error in the journal instead of a bare exit code.
+META_CURL=(curl -sfS --connect-timeout 10 --max-time 60 --retry 3 --retry-delay 2 --retry-connrefused)
+PAGE_CURL=(curl -sfS --connect-timeout 15 --max-time 300 --retry 2 --retry-delay 2 --retry-connrefused)
 
-slugs=$("${CURL[@]}" -X POST "$MDDB/v1/search" -H 'content-type: application/json' \
+slugs=$("${META_CURL[@]}" -X POST "$MDDB/v1/search" -H 'content-type: application/json' \
   -d '{"collection":"documents","query":"","limit":100}' \
   | python3 -c 'import json,sys
 d=json.load(sys.stdin)
 docs = d if isinstance(d, list) else d.get("docs", d.get("results", []))
 print(" ".join(x["key"] for x in docs if x.get("key")))')
 
+# Set if any page fetch fails after retries.  In that case keep the previous
+# mirror intact: rsync --delete against a partial stage would drop pages.
+FAILED=0
+
 for slug in $slugs; do
   mkdir -p "$STAGE/$slug"
   # abort the whole run if a manifest fetch fails — continuing with an
   # empty stage + rsync --delete would wipe the mirror (seen 2026-09-30
   # when Drive's oauth token was revoked: every manifest 502'd)
-  manifest=$("${CURL[@]}" -H "X-API-Key: $KEY" "http://$BIND:$PORT/v1/archive/$slug") || {
+  manifest=$("${META_CURL[@]}" -H "X-API-Key: $KEY" "http://$BIND:$PORT/v1/archive/$slug") || {
     echo "doc-mirror: manifest fetch failed for $slug — aborting" >&2
     exit 1
   }
-  pages=$(printf '%s' "$manifest" | python3 -c 'import json,sys
-print(len(json.load(sys.stdin)["manifest"]["pages"]))')
-  for n in $(seq 1 "$pages"); do
-    name=$(printf '%s' "$manifest" | python3 -c "import json,sys
-print(json.load(sys.stdin)['manifest']['pages'][$n-1]['name'])")
-    "${CURL[@]}" -H "X-API-Key: $KEY" \
-      -o "$STAGE/$slug/$name" "http://$BIND:$PORT/v1/archive/$slug/page/$n"
+  # Parse the manifest once per slug (the old loop re-ran python3 for every
+  # page, adding minutes of CPU to an already slow sweep).
+  mapfile -t names < <(printf '%s' "$manifest" | python3 -c 'import json,sys
+for p in json.load(sys.stdin)["manifest"]["pages"]: print(p["name"])')
+  pages=${#names[@]}
+  for ((n=1; n<=pages; n++)); do
+    name="${names[$((n-1))]}"
+    if ! "${PAGE_CURL[@]}" -H "X-API-Key: $KEY" \
+      -o "$STAGE/$slug/$name" "http://$BIND:$PORT/v1/archive/$slug/page/$n"; then
+      echo "doc-mirror: page fetch failed for $slug/$n ($name) — keeping previous mirror" >&2
+      FAILED=1
+    fi
   done
 done
 
 # second guard: never --delete an empty stage onto the target
 if [ -z "$(find "$STAGE" -type f -print -quit)" ]; then
   echo "doc-mirror: stage is empty — refusing to rsync --delete" >&2
+  exit 1
+fi
+
+# third guard: a partial stage must not delete good pages from the mirror
+if [ "$FAILED" -ne 0 ]; then
+  echo "doc-mirror: incomplete stage — skipping rsync --delete this run" >&2
   exit 1
 fi
 

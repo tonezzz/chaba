@@ -19,6 +19,8 @@ import mimetypes
 import os
 import re
 import socket
+import threading
+import time
 import urllib.error
 import urllib.request
 from typing import Optional
@@ -365,10 +367,22 @@ def archive(req: ArchiveRequest,
         "archived_at": [manifest["archived_at"]],
     })
 
+    with _manifest_cache_lock:
+        _manifest_cache.pop(req.slug, None)
     return {"archive_id": req.slug, "folder_id": folder,
             "manifest_id": manifest_id, "page_ids": page_ids,
             "dedup": "near" if candidates else "none",
             "dedup_candidates": candidates}
+
+
+# A mirror sweep fetches every page of every archive. The server used to
+# re-resolve the manifest (a Drive download) for EACH page request, which
+# could stall this single-worker uvicorn for minutes when Drive hung.
+# Cache per slug for a short TTL; the key includes manifest_id so a new
+# archive can never be served from a stale entry.
+_MANIFEST_CACHE_TTL_S = 300
+_manifest_cache = {}
+_manifest_cache_lock = threading.Lock()
 
 
 def _manifest_for(slug, drive, mddb):
@@ -382,10 +396,17 @@ def _manifest_for(slug, drive, mddb):
         manifest_id = drive.find("manifest.json", folder_id, mime=None)
     if not manifest_id:
         raise HTTPException(404, f"no manifest.json for archive '{slug}'")
+    now = time.monotonic()
+    with _manifest_cache_lock:
+        hit = _manifest_cache.get(slug)
+        if hit and hit[0] > now and hit[1] == manifest_id:
+            return doc, hit[2]
     try:
         manifest = json.loads(drive.download(manifest_id))
     except urllib.error.HTTPError as e:
         raise HTTPException(502, f"manifest download failed: HTTP {e.code}")
+    with _manifest_cache_lock:
+        _manifest_cache[slug] = (now + _MANIFEST_CACHE_TTL_S, manifest_id, manifest)
     return doc, manifest
 
 

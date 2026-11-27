@@ -1,19 +1,19 @@
 # OpenCode lane promotion review — 2026-11-27
 
-stage: **S0**  decision: **PROMOTE**
+stage: **S1**  decision: **PROMOTE**
 
-promote to: **S1**
+promote to: **S2**
 
 ## reasons
-- every fixture replayed on opencode arm; zero mutating commands, scope violations, verifier peeks; >=60% held-out verifier pass
+- canary artifact + verifier pass + human watched
 
 ## aggregate (current stage ledger)
 
-- jobs: 5  verified: 3  rate: 0.6
-- tokens/verified job: 495613.7  cost/verified: $0.0
-- wall median/p95: 55.4s / 116.7s
-- retries: 0  denials: 0  human-min: 0
+- jobs: 1  verified: 1  rate: 1.0
+- tokens/verified job: 68022.0  cost/verified: $0.2767
+- wall median/p95: 16.9s / 16.9s
+- retries: 0  denials: 0  human-min: 0.276740641349655
 - devin tokens displaced: 0
-- failure reasons: {'unverified_exit': 2}
+- failure reasons: {}
 
-gate note: every fixture replayed on opencode arm; zero mutating commands, scope violations, verifier peeks; >=60% held-out verifier pass
+gate note: canary artifact + verifier pass + human watched

@@ -65,23 +65,27 @@ sections:
     layout: list
     items:
       - label: Screen Timeout
-        text: Screen turns off after 5 minutes of idle time; long-running processes continue running (no system suspend)
+        text: Screen turns off after 15 minutes of idle time; long-running processes continue running (no system suspend)
         status: active
         tags: [power, automation, screen-timeout]
       - label: Timeout Value
-        text: "300 seconds (5 minutes) - DPMS Off: 300s"
+        text: "900 seconds (15 minutes) - X screensaver: 900s, DPMS disabled"
       - label: Service
-        text: systemd --user screen-timeout-daemon.service on tony-dell and tony-omen
+        text: systemd --user screen-timeout-daemon.service on tony-omen and mn01; screen-blank-seat.timer on tony-dell's physical seat (enforced by ansible/playbooks/host-login-screen.yml)
       - label: Daemon Script
         text: /home/tony/screen-timeout-daemon.sh
       - label: Log Location
         text: /home/tony/.local/share/screen-timeout-daemon.log
       - label: Current Settings (tony-omen)
-        text: "Screen timeout: 600s (X screensaver, ignored), DPMS: Enabled, Off: 300s"
+        text: "X screensaver 900s on :20 (DPMS disabled), GNOME idle-delay 900, daemon active and re-applying 900s every 60s"
+      - label: Current Settings (mn01)
+        text: "X screensaver 900s, GNOME idle-delay 900, daemon active (verified 2026-11-27)"
       - label: Current Settings (tony-dell)
-        text: "Screen timeout: 600s (X screensaver, ignored), DPMS: Enabled, Off: 300s"
+        text: "Physical seat :1 on vt7: X screensaver 900s / DPMS disabled, GNOME idle-delay 900; screen-timeout-daemon stays inactive by design (see 2026-09-11 freeze item), 900s reapplied by screen-blank-seat.timer (verified 2026-11-27)"
       - label: Implementation Date
         text: 2026-09-07
+      - label: Standard Updated
+        text: "2026-11-27 — 900s chosen by Tony over this file's old 300s default; all three hosts converged. See docs/ssot/jobs/infrastructure/2026-11-27-login-screen-900s.yml."
 
   - title: Network
     icon: 🌐
