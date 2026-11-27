@@ -1,0 +1,21 @@
+id: openjev-idc02-earlyoom-exposure
+title: idc02 openjev (~2.5 GiB RSS) remains earlyoom-exposed after jev exemption
+column: backlog
+updated: 2026-11-27 21:35
+brief: 'Found while applying OPS-1516 fix (card jevos-idc02-earlyoom-kill): earlyoom --avoid ''(^|/)(jev)$'' was
+  scoped to comm=jev only. The sibling openjev process (gemma-3-4b-it torch CPU lane on :8777, comm=openjev) is
+  the LARGEST process on idc02 (~2.5 GiB RSS vs jev''s ~1.7 GiB) and remains an earlyoom kill candidate — idc02
+  has 0 swap so earlyoom''s swap arm is permanently true and every mem<10% event kills the worst-badness process.'
+priority: medium
+tags:
+- infrastructure
+spec: 'Decide openjev''s protection on idc02: (a) extend the EARLYOOM_ARGS --avoid regex to cover comm=openjev via
+  ansible/playbooks/earlyoom-avoid-jev.yml (earlyoom_args var — regex would need alternation like ''(^|/)(jev|openjev)$''
+  or a second --avoid), (b) bound it with MemoryMax like idc03-memory-guard did for jevos, or (c) accept. Evidence:
+  docs/ssot/jobs/infrastructure/2026-11-27-idc02-jevos-earlyoom-avoid.yml and 2026-11-27-idc03-mddb-swap-reclaim-fleet-triage.yml.
+  Related: ansible/playbooks/open-jev-guard.yml already manages openjev OMP threads + swap reclaim on tony-omen.'
+ref: OPS-1517
+comms:
+- at: 2026-11-27 21:35
+  from: tony
+  text: card captured via board-api
