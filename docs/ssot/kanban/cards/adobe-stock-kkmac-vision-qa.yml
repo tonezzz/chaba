@@ -1,7 +1,7 @@
 id: adobe-stock-kkmac-vision-qa
 title: adobe-stock candidates — kk-mac qwen2.5vl visual QA pass
-column: review
-updated: 2026-11-27 15:11
+column: done
+updated: 2026-11-27 15:14
 spec: '3 adobe-stock cards sit in review (illustration-pivot-test, inpaint-defect-repair, upscaler-eval). Once kk-mac
   vision eval proves qwen2.5vl:7b usable, run a visual QA pass over the stock candidate images: defect detection,
   spec-match, artifact flagging. Depends on kk-mac-vision-lane-eval verdict.'
@@ -18,6 +18,7 @@ action:
     dirty: 6
   result: 'exit=0 ")\npaths=[f\"crops/{t}-mask3x.jpg\" for t in order]\nprint(ask(p,paths)[:3000])\nEOF"}}} | devin-task-20261127-144236-3-adobe-stock-cards-sit-in-rev.service:
     Consumed 39.932s CPU time over 26min 33.696s wall clock time, 955.6M memory peak.'
+  verified: true
 ref: OPS-0222
 comms:
 - at: 2026-11-19 08:58
@@ -265,6 +266,19 @@ comms:
 - at: 2026-11-27 15:11
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-27 15:14
+  from: chaba
+  text: 'merge-sweep: merged 437c9857 (dispatch/20261127-144236-3-adobe-stock-cards-sit-in-rev from mn01) -> origin/master
+    — marked verified (exit_code=0; 6 file(s) changed vs base) — auto-closed'
+- at: 2026-11-27 15:14
+  from: local
+  text: 'pub milestone: card verified: adobe-stock-kkmac-vision-qa on idc03 — merged 437c9857 (dispatch/20261127-144236-3-adobe-stock-cards-sit-in-rev
+    from mn01) -> origin/master — verified — auto-c — merged 437c9857 (dispatch/20261127-144236-3-adobe-stock-cards-sit-in-rev
+    from mn01) -> origin/master — verified — auto-closed [evt-dfedc3c36da81f4f]'
 claim:
   since: 2026-11-27 14:41
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 15:14
+  note: verified — exit_code=0; 6 file(s) changed vs base
