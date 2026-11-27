@@ -1,0 +1,23 @@
+id: runner-converge-dirty-pinned-source-guard
+title: 'runner-tools-converge: detect dirty pinned sources before deploy (fail-loop + drift churn)'
+column: backlog
+updated: 2026-11-27 20:34
+brief: 'idc02 exec checkout had an uncommitted edit to scripts/board/dispatch_repos.py (JEVOS_URL WIP). Its runner-tools-converge.timer
+  (~2min cadence) ran deploy-runner-tools.yml --limit idc02 from the dirty checkout: copy installed the WIP bytes,
+  post-copy pin assert failed, drifted file stayed -> audit DRIFT -> runner-tool-drift-fleet re-armed ~50x on 2026-11-27.
+  sync-runner-tools.sh already refuses mismatched sources; the ansible converge has no equivalent pre-check.'
+priority: medium
+program: chaba-ci
+tags:
+- ansible
+- runner-tools
+- hygiene
+spec: 'Add a pre-flight to scripts/devin/runner-tools-converge.sh (or deploy-runner-tools.yml): before apply, verify
+  each manifest source sha256 == pin in the checkout being deployed FROM; on mismatch, skip that host with a loud
+  warn naming the dirty file(s) instead of deploying bytes that cannot pass the assert. Alternative/complement:
+  have the converge failure mode post to the drift card with the dirty-file list. Evidence + resolution: docs/ssot/jobs/infrastructure/2026-11-27-runner-tool-drift-fleet-idc02-wip.yml'
+ref: OPS-1512
+comms:
+- at: 2026-11-27 20:34
+  from: tony
+  text: card captured via board-api
