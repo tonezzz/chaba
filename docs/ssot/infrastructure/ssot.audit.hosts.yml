@@ -2,7 +2,7 @@ title: Host Service & Resource Audit
 subtitle: Expected and observed state for tony-dell, tony-omen and tony-macbook (Linux since 2026-10-10)
 icon: server
 version: 1
-last_updated: "2026-11-11"
+last_updated: "2026-11-27"
 maintainer: tony
 overview:
   purpose: "Single source of truth for which services and resources each Chaba host
@@ -160,23 +160,11 @@ hosts:
           lesson-drift-check.timer is still unarmed (gap found 2026-11-08).
           Already disabled+retired on idc03 (see its census entry).
           History: found disabled 2026-10-13 with no audit trail (OPS-0531)"
-      - name: timer-timeline-update.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: true
-        note: "15min — fleet timer census -> JSONL ledger + CMS pages
-          (timer-timeline rollup, per-host leaves, qc). This is the shared
-          timer memory; a disabled unit here blinds the whole system"
-      - name: timer-sentinel.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: true
-        note: "10min — independent watchdog (NOT via chaba-jobs). Reads
-          timer-timeline state.json and fires timer-alert-* kanban cards
-          on disabled/missing/failing expected timers, unreachable hosts,
-          or a stale sweep"
+      # 2026-11-27: both timers moved to tony-omen on 2026-11-08
+      # (ssot.jobs.yml job:timer-timeline-update / job:timer-sentinel —
+      # dell ad-hoc units removed same day). Declared in tony-dell.expected_absent
+      # below so a resurrection trips a delta instead of reading a stale
+      # local state.json and filing phantom timer-alert cards.
       # --- census 2026-10-12 (drift-reconcile OPS-0521): active units that
       # were running but never declared ---
       - name: openchamber.service
@@ -289,7 +277,57 @@ hosts:
         expected_state: active
         critical: false
         note: "Local Ollama 127.0.0.1:11434 (qwen2.5:7b-instruct, nomic-embed-text) — chat-local/embedding backend consumed by idc03 LiteLLM via tonydell-ollama-tunnel.service (:11446 -> tony-dell:11434); SYS-1101"
+      # 2026-11-27 in-scope triage: 3 live+enabled units were undeclared;
+      # verified active+enabled with unit files present on dell the same day.
+      - {name: ai-hub-page-dump.service, type: service, scope: user, note: "AI Hub page-dump bridge"}
+      - {name: opencode-serve.service, type: service, scope: user, note: "OpenCode API server :4096"}
+      - {name: sidecar-collector.service, type: service, scope: user, note: "Ansible dispatch sidecar metrics collector"}
+      # OSWE/Robin eval stack — live+enabled on dell from 15:05/15:24 2026-11-27
+      # (surfaced by the post-reconciliation audit, not part of the earlier triage).
+      - {name: oswe-backend.service, type: service, scope: user, note: "OSWE/Robin LangGraph backend 127.0.0.1:2024"}
+      - {name: oswe-mda.service, type: service, scope: user, note: "OSWE/Robin MDA runtime 127.0.0.1:2025"}
+      - {name: oswe-shim.service, type: service, scope: user, note: "OSWE eval LiteLLM shim 127.0.0.1:4100"}
+      # 2026-11-27 timer-delta census: active fleet timers found undeclared
+      # by the read-only fleet snapshot (job-rendered + ad-hoc). Declared so
+      # a disabled/removed timer raises a delta. Distro/OS timers are filtered
+      # by OS_TIMER_RE in both audit engines instead of being declared.
+      - {name: ada-nest-heartbeat-tony-dell.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:ada-nest-heartbeat-tony-dell. Ada Nest heartbeat \u2014 tony-dell (job:ada-nest-heartbeat-tony-dell, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: ada-ocb-bridge-sync.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Sync ada-control bridge checkout to origin/main (15 min)"}
+      - {name: adobe-stock-reindex-sync.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:adobe-stock-reindex-sync. Adobe Stock index rebuild + idc02 workspace sync (job:adobe-stock-reindex-sync, rendered from ssot.jobs.yml \u2014 do not edi..."}
+      - {name: ansible-runner-tool-guard.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:ansible-runner-tool-guard. Ansible runner-tool drift guard (read-only fleet check) (job:ansible-runner-tool-guard, rendered from ssot.jobs.yml \u2014 do..."}
+      - {name: bank-inspect.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:bank-inspect. Memory-inspect pages \u2014 per-lane bank snapshots into CMS (daily) (job:bank-inspect, rendered from ssot.jobs.yml \u2014 do not..."}
+      - {name: board-statics-sync.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Pull rendered board statics from idc03 every 2 min (interim for OPS-0731)"}
+      - {name: chaba-render-memory.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Periodic Chaba memory context render"}
+      - {name: chaba-served-mirror-sync.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Hourly pull-only sync of frozen served checkout (installed 2026-10-17, OPS-0725 residual)"}
+      - {name: check-serve-config.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:check-serve-config. tailscale-serve watchdog (hourly) (job:check-serve-config, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: dell-restic-critical.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily critical-config restic backup (03:30)"}
+      - {name: dell-restic-home.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Weekly home restic backup (Sun 02:00)"}
+      - {name: dell-restic-offsite.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Weekly off-site restic copy"}
+      - {name: device-telemetry.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:device-telemetry (canonical host tony_omen; multi-host copy). Device telemetry beacon (every 5min)"}
+      - {name: devin-taskdir-prune.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer (unit still active; job no longer in ssot.jobs.yml). Devin dispatch task-dir GC (job:devin-taskdir-prune, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: devin-watchdog.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Devin desktop watchdog (every 10 minutes)"}
+      - {name: devnest-capacity-broker.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:devnest-capacity-broker. DevNest shared capacity broker (job:devnest-capacity-broker, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: devnest-report-feed.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:devnest-report-feed. DevNest durable report feed (job:devnest-report-feed, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: etc-snapshot.timer, type: timer, scope: system, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily /etc snapshot (03:15, before restic-critical 03:30)"}
+      - {name: jevnest-kk-llm-metrics.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:jevnest-kk-llm-metrics. JevNest KK-LLM lane metrics rollup (job:jevnest-kk-llm-metrics, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: jevnest-kk-mac-capacity-producer.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:jevnest-kk-mac-capacity-producer. JevNest KK-Mac capacity producer (job:jevnest-kk-mac-capacity-producer, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: kk-mac-model-status.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Refresh kk-mac model status annotation in OpenChamber picker"}
+      - {name: lesson-drift-check.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:lesson-drift-check. Lesson drift check \u2014 trade docs mtime vs lesson modified (job:lesson-drift-check, rendered from ssot.jobs.yml \u2014 do not e..."}
+      - {name: nest-queue-health.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:nest-queue-health. Nest queue health snapshot \u2014 ada-nest + kk-llm + video + KK worker (job:nest-queue-health, rendered from ssot.jobs.yml \u2014..."}
+      - {name: runner-agent-converge.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Nightly runner-agent convergence (checksum-gated ansible redeploy)"}
+      - {name: runner-agent.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Poll board-api for queued cards (runner-agent)"}
+      - {name: runner-tools-converge.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily convergence of pinned runner tools"}
+      - {name: screen-blank-seat.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Reapply 900s screen blank on physical seat :1"}
+      - {name: sync-to-hdd.timer, type: timer, scope: system, note: "Timer census 2026-11-27: ad-hoc fleet timer. Weekly clone of NVMe root to HDD backup"}
+      - {name: system-report-watchdog.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:system-report-watchdog. System-report freshness watchdog (stale-data / host-down alert) (job:system-report-watchdog, rendered from ssot.jobs.yml..."}
+      - {name: tony-dell-wan-failover.timer, type: timer, scope: system, note: "Timer census 2026-11-27: ad-hoc fleet timer. Run tony-dell WAN failover check every 30 seconds"}
+
     expected_absent:   # migrated/retired in OPS-0725 drain — must NOT run on dell
+      # 2026-11-08 move to tony-omen (ssot.jobs.yml): collector + sentinel
+      # were ad-hoc units here reading a stale local state.json; removed
+      # same day. A resurrection here is a real drift, not a fallback.
+      - {name: timer-timeline-update.timer, scope: user}
+      - {name: timer-sentinel.timer, scope: user}
       - {name: bserver.service, scope: user}
       - {name: chaba-board-api.service, scope: user}
       - {name: chaba-board-render.timer, scope: user}
@@ -990,6 +1028,64 @@ hosts:
       - {name: xiaomi-token-refresh.timer, type: timer, scope: user, expected_state: inactive, note: "Masked 2026-11-26 (user chose retire over interactive re-login): refresh script had no valid passToken cookie, failing daily with exit-1. Unit files backed up to ~/.config/systemd/user/_retired-20261126/ and both .timer/.service masked to /dev/null. Cameras keep streaming on the stored token until it expires. Unmask only after logging in to account.xiaomi.com in the browser and verifying a fresh token."}
       - {name: update-cam-frame.timer, type: timer, scope: user}
       - {name: ha-config-backup.timer, type: timer, scope: user}
+      # 2026-11-27 reconciliation: collector + sentinel moved dell -> omen on
+      # 2026-11-08 (ssot.jobs.yml). They MUST stay co-located — the sentinel
+      # reads the timeline state.json. The audit SSOT had declared them on
+      # dell since the move; live on omen (active, last fires 11-27 14:34/14:44).
+      - name: timer-timeline-update.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: true
+        note: "15min — fleet timer census -> JSONL ledger + CMS pages (timer-timeline rollup, per-host leaves, qc). Shared timer memory; a disabled unit here blinds the whole system"
+      - name: timer-sentinel.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: true
+        note: "10min — independent watchdog (NOT via chaba-jobs). Reads timer-timeline state.json and fires timer-alert-* kanban cards on disabled/missing/failing expected timers, unreachable hosts, or a stale sweep"
+      # 2026-11-27 in-scope triage (job 2026-11-27-in-scope-service-triage.yml):
+      # 9 live+enabled units were undeclared; verified active+enabled with
+      # unit files present on omen the same day.
+      - {name: ada-dev.service, type: service, scope: user, note: "Ada backend lab instance :8005 (migrated from idc03 2026-11-18)"}
+      - {name: ada-kk-dev.service, type: service, scope: user, note: "Ada backend Kaewta dev twin ADA-0480 :8009 (migrated from idc03 2026-11-18)"}
+      - {name: ada-whisper.service, type: service, scope: user, note: "Whisper STT endpoint (faster-whisper large-v3, GTX 1650)"}
+      - {name: jev-student.service, type: service, scope: user, note: ":8780 student lane — omen yolo-xiaomi copy retired 2026-11-18 to free this bind"}
+      - {name: openclaw-gateway.service, type: service, scope: user, note: "OpenClaw Gateway :18789"}
+      - {name: opencode-serve.service, type: service, scope: user, note: "OpenCode API server :4096"}
+      - {name: sidecar-collector.service, type: service, scope: user, note: "Ansible dispatch sidecar metrics collector"}
+      - {name: voice-miniapp.service, type: service, scope: user, note: "local STT+LLM+TTS mini-app"}
+      - {name: yolo-gesture.service, type: service, scope: user, note: "hand-pointer gesture uplink -> vcast screen 1 (moved from idc03 OPS-0753)"}
+      # 2026-11-27 timer-delta census: active fleet timers found undeclared
+      # by the read-only fleet snapshot (job-rendered + ad-hoc). Declared so
+      # a disabled/removed timer raises a delta. Distro/OS timers are filtered
+      # by OS_TIMER_RE in both audit engines instead of being declared.
+      - {name: ada-market-report.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily market snapshot at 06:45 ICT (before daily-brief 07:05)"}
+      - {name: ada-nest-heartbeat-tony-omen.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:ada-nest-heartbeat-tony-omen. Ada Nest heartbeat \u2014 tony-omen (job:ada-nest-heartbeat-tony-omen, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: arp-inventory-scan.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Run ARP inventory scan nightly"}
+      - {name: chaba-assessment.timer, type: timer, scope: system, note: "Timer census 2026-11-27: ad-hoc fleet timer. Chaba Overnight System Assessment"}
+      - {name: chaba-backup-monitor.timer, type: timer, scope: system, note: "Timer census 2026-11-27: ad-hoc fleet timer. Chaba Backup Monitoring Timer (Hourly)"}
+      - {name: chaba-backup.timer, type: timer, scope: system, note: "Timer census 2026-11-27: ad-hoc fleet timer. Chaba Infrastructure Backup Timer (Daily at 2 AM)"}
+      - {name: chaba-pytest-suite.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:chaba-pytest-suite. chaba full pytest suite (nightly) (job:chaba-pytest-suite, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: chaba-render-memory.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Periodic Chaba memory context render"}
+      - {name: chaba-repo-sync.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Hourly chaba checkout sync (installed 2026-10-09 \u2014 remote checkouts drift without it)"}
+      - {name: devin-session-prune.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:devin-session-prune. Devin Dispatch Session Prune (job:devin-session-prune, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: devin-summaries-sync.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:devin-summaries-sync. Devin Summaries Sync (job:devin-summaries-sync, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: devin-taskdir-prune.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer (unit still active; job no longer in ssot.jobs.yml). Devin dispatch task-dir GC (job:devin-taskdir-prune, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: devin-watchdog.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Devin desktop watchdog (every 10 minutes)"}
+      - {name: fleet-restic-backup.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily fleet restic backup"}
+      - {name: gh-radar.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily GH Radar digest (GitHub repo news -> report + iPhone + MDDB)"}
+      - {name: model-bench.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:model-bench. Model fleet speed bench (cheap tiers) (job:model-bench, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: open-jev-reclaim.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily open-jev swap reclaim check"}
+      - {name: overnight-assessment.timer, type: timer, scope: system, note: "Timer census 2026-11-27: job:overnight-assessment (canonical host idc03; multi-host copy). Run Chaba Overnight Assessment Daily at 2 AM"}
+      - {name: runner-tools-converge.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily convergence of pinned runner tools"}
+      - {name: session-audit.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:session-audit. Ada session audit (transcripts -> friction -> CMS/focus/corpus) (job:session-audit, rendered from ssot.jobs.yml \u2014 do not..."}
+      - {name: telemetry-ha-push-ada.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:telemetry-ha-push-ada. Device telemetry -> ada-ha sensor mirror (job:telemetry-ha-push-ada, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: telemetry-ha-push.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:telemetry-ha-push. Device telemetry -> tony-ha sensor mirror (job:telemetry-ha-push, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: xiaomi-cam-resolve.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer (unit still active; job no longer in ssot.jobs.yml). Xiaomi Cam IP Resolve (job:xiaomi-cam-resolve, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: yomi-fetch.timer, type: timer, scope: system, note: "Timer census 2026-11-27: ad-hoc fleet timer. Run Yomi fetch every 15 minutes"}
+      - {name: yomi-process.timer, type: timer, scope: system, note: "Timer census 2026-11-27: ad-hoc fleet timer. Run Yomi process from midnight to 7 AM"}
+
     expected_absent:
       - name: raceman-php.service
         scope: user
@@ -1068,6 +1164,9 @@ hosts:
       - name: focus-dispatcher-overnight.service
         reason: "03:00 run failed SSOT validation on a stale checkout — checkout pulled clean 2026-10-09; next scheduled run verifies"
         action: verify-next-run
+      - name: xiaomi-token-refresh.service
+        reason: "Masked 2026-11-26 by owner decision (no valid passToken cookie; refresh script could not re-login). A masked unit can still surface in list-units --failed, so this is not host drift. Cameras keep streaming on the stored token until expiry. Do NOT unmask without verifying a fresh token in account.xiaomi.com in the browser (see the .timer declaration above)."
+        action: ignore
     expected_resources:
       min_free_ram_mb: 1000
       max_swap_used_percent: 50
@@ -1387,6 +1486,19 @@ hosts:
       # user-service copy can't hold them; a polkit rule
       # (/etc/polkit-1/rules.d/50-macbook-day-awake.rules) would let
       # systemd/macbook-day-awake.service (repo) take over session-free.
+      # 2026-11-27 timer-delta census: active fleet timers found undeclared
+      # by the read-only fleet snapshot (job-rendered + ad-hoc). Declared so
+      # a disabled/removed timer raises a delta. Distro/OS timers are filtered
+      # by OS_TIMER_RE in both audit engines instead of being declared.
+      - {name: chaba-repo-sync.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Hourly chaba checkout sync (installed 2026-10-30 \u2014 remote checkouts drift without it; tony-macbook enrollment gap found..."}
+      - {name: devin-cleanup.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Run Devin sessions DB cleanup weekly"}
+      - {name: devin-dispatch-prune.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Devin dispatch prune"}
+      - {name: devin-dispatch-watch.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Devin dispatch watch"}
+      - {name: devin-session-prune.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:devin-session-prune (canonical host tony_omen; multi-host copy). Devin Dispatch Session Prune (job:devin-session-prune)"}
+      - {name: devin-taskdir-prune.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer (unit still active; job no longer in ssot.jobs.yml). Devin dispatch task-dir GC (job:devin-taskdir-prune, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: devin-watchdog.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Devin desktop watchdog (every 10 minutes)"}
+      - {name: runner-tools-converge.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily convergence of pinned runner tools"}
+
     expected_absent:
       # stick-announce.service — pre-rebuild ghost (macOS-era carryover /
       # early-Ubuntu leftover); not installed on the rebuilt host. Its
@@ -1490,6 +1602,14 @@ hosts:
          note: "real michael-dev HA instance — moved idc02 -> mn01 2026-11-25 (card michael-dev-migrate-mn01); quadlet-generated unit, serves :8124 + MCP tailnet"}
       - {name: mha-state-push.service, type: service, scope: user,
          note: "pushes live michael-ha states into mn-ha-dev /api/states — moved idc02 -> mn01 2026-11-25 with the instance it feeds; unit is disabled-but-running (started outside enablement)"}
+      # 2026-11-27 timer-delta census: active fleet timers found undeclared
+      # by the read-only fleet snapshot (job-rendered + ad-hoc). Declared so
+      # a disabled/removed timer raises a delta. Distro/OS timers are filtered
+      # by OS_TIMER_RE in both audit engines instead of being declared.
+      - {name: devin-taskdir-prune.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer (unit still active; job no longer in ssot.jobs.yml). Devin dispatch task-dir GC (job:devin-taskdir-prune, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: fleet-restic-backup.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily fleet restic backup"}
+      - {name: runner-tools-converge.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily convergence of pinned runner tools"}
+
     expected_absent:
       - name: vcast-real-macbook.service
         scope: user
@@ -1512,6 +1632,9 @@ hosts:
       - name: xfce4-notifyd.service
         reason: XFCE notification daemon; fails when no X session is active
         action: ignore-or-mask
+      - name: dailyaidecheck.service
+        reason: "Debian AIDE package unit (system, static, triggered by dailyaidecheck.timer) fails with 'not possible to use mail(1) unless aide is run as root or as non-root with added capabilities' — apt-package behaviour, not host drift (2026-11-27 02:42 exit 1)"
+        action: add-capabilities-or-run-as-root
     expected_resources:
       min_free_ram_mb: 500
       max_swap_used_percent: 80
@@ -2162,6 +2285,72 @@ hosts:
       - {name: yomi-mddb-digest.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: yomi-update-active.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: yomi-update-all.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      # 2026-11-27 timer-delta census: active fleet timers found undeclared
+      # by the read-only fleet snapshot (job-rendered + ad-hoc). Declared so
+      # a disabled/removed timer raises a delta. Distro/OS timers are filtered
+      # by OS_TIMER_RE in both audit engines instead of being declared.
+      - {name: activity-posts.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:activity-posts. Ada tool executions -> WP activity posts (job:activity-posts, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: ada-burn-watch.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Ada voice-burn watchdog (hourly)"}
+      - {name: ada-jobs-verify.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:ada-jobs-verify. Ada Jobs \u2014 verify lane (micro-entity ADA-1091) (job:ada-jobs-verify, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: ada-morning-brief.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:ada-morning-brief. Ada proactive morning brief -> Tony TG DM (job:ada-morning-brief, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: ada-nest-heartbeat-idc03.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:ada-nest-heartbeat-idc03. Ada Nest heartbeat \u2014 idc03 (job:ada-nest-heartbeat-idc03, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: ada-retention-dev.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:ada-retention-dev. Ada lane retention \u2014 dev lanes (job:ada-retention-dev, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: ada-retention-kk.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:ada-retention-kk. Ada lane retention \u2014 kk (job:ada-retention-kk, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: ada-retention-michael.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:ada-retention-michael. Ada lane retention \u2014 michael (job:ada-retention-michael, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: ada-retention-tony.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:ada-retention-tony. Ada lane retention \u2014 tony (+shared scopes) (job:ada-retention-tony, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: ada-spend-ledger.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily spend ledger (23:50 \u2014 near-midnight line plus post-smoke refreshes via ExecStopPost)"}
+      - {name: ada-tg-webhook-watch.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:ada-tg-webhook-watch. Ada Telegram webhook registration monitor (job:ada-tg-webhook-watch, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: ada-transcript-archive.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:ada-transcript-archive. Ada transcript deep-archive to NotebookLM (weekly) (job:ada-transcript-archive, rendered from ssot.jobs.yml \u2014 do not edi..."}
+      - {name: auto-dispatch.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Incremental Kanban dispatch top-up every 15 minutes"}
+      - {name: backlog-spec-enrich.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:backlog-spec-enrich. Backlog spec enrichment (thin cards -> drafted spec | owner ask) (job:backlog-spec-enrich, rendered from ssot.jobs.yml \u2014..."}
+      - {name: board-invariants.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:board-invariants. Board invariants scan (every 4h) (job:board-invariants, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: board-janitor.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:board-janitor. Board Janitor Tick (runs all kanban sweeps) (job:board-janitor, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: chaba-archive-digest.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Weekly kanban archive digest -> Education lesson"}
+      - {name: chaba-bge-education-shadow.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:chaba-bge-education-shadow. BGE education shadow refresh (lesson sync + snapshot + report) (job:chaba-bge-education-shadow, rendered from ssot.jobs...."}
+      - {name: chaba-education-report.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:chaba-education-report. Education consolidated maintenance report (audit+drift+due+trend) (job:chaba-education-report, rendered from ssot.jobs.y..."}
+      - {name: chaba-host-ready-check.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:chaba-host-ready-check. R7 host software readiness probe (job:chaba-host-ready-check, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: chaba-kanban-archive.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily kanban archive sweep (verified done cards >7d)"}
+      - {name: chaba-lessons-audit.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:chaba-lessons-audit. Education CPT policy audit (R1/R3/R4) -> report (job:chaba-lessons-audit, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: chaba-lessons-due.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:chaba-lessons-due. Education due-review queue + index -> wiki Education:Due/Index + WP page (job:chaba-lessons-due, rendered from ssot.jobs..."}
+      - {name: chaba-nag.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Chaba nag \u2014 repeat pending-decision pushes until Tony decides"}
+      - {name: chaba-render-memory.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Periodic Chaba memory context render"}
+      - {name: chaba-repeat-asks-sync.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Repeat-ask -> WP sync (15min)"}
+      - {name: chaba-report-watch.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Report-graph watcher (30 min \u2014 makes report deltas actionable)"}
+      - {name: chaba-unattended-report.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:chaba-unattended-report. Daily unattended-run digest -> reports/ + Telegram milestone (job:chaba-unattended-report, rendered from ssot.jobs.yml \u2014..."}
+      - {name: consumer-canary.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:consumer-canary. Consumer canary \u2014 retired-hostname audit of live surfaces (job:consumer-canary, rendered from ssot.jobs.yml \u2014 do not edi..."}
+      - {name: deploy-preflight.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:deploy-preflight. Deploy-preflight gate (merged cards -> Tony approval -> prod deploy) (job:deploy-preflight, rendered from ssot.jobs.yml..."}
+      - {name: device-telemetry-prune.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:device-telemetry-prune. Device telemetry retention prune (7d) (job:device-telemetry-prune, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: devin-taskdir-prune.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer (unit still active; job no longer in ssot.jobs.yml). Devin dispatch task-dir GC (job:devin-taskdir-prune, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: embed-lane-lessons.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:embed-lane-lessons. Embed lane \u2014 lesson CPT vectors (nomic) refresh (job:embed-lane-lessons, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: embed-lane-news.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:embed-lane-news. Embed lane \u2014 news title vectors (nomic) refresh (job:embed-lane-news, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: fleet-jobs-report.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:fleet-jobs-report. Fleet jobs deterministic aggregator (job:fleet-jobs-report, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: fleet-restic-backup.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily fleet restic backup"}
+      - {name: house-timeline.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:house-timeline. House timeline page family (rollup + leaves + qc) (job:house-timeline, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: kanban-notify.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:kanban-notify. Kanban watch \u2014 TG notify on card state changes (job:kanban-notify, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: kraut-rain-watch.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:kraut-rain-watch. Kraut rain-event watch (mn-ha) (job:kraut-rain-watch, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: line-chat-timeline.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. LINE chat -> WP timeline sync every 5 min"}
+      - {name: media-inbox-update-kk.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:media-inbox-update-kk. Media inbox page family (kk lane) (job:media-inbox-update-kk, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: media-inbox-update-tony.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:media-inbox-update-tony. Media inbox page family (tony lane) (job:media-inbox-update-tony, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: nest-queue-watch.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:nest-queue-watch. Nest queue watch \u2014 TG notify on pack claim/done/fail (job:nest-queue-watch, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: netdata-nodes-watch.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:netdata-nodes-watch. Netdata fleet nodes watchdog (streaming child drop-out) (job:netdata-nodes-watch, rendered from ssot.jobs.yml \u2014 do not e..."}
+      - {name: ops-error-posts.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:ops-error-posts. Ada tool/stream errors -> WP ops_error posts (job:ops-error-posts, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: or-credits-poll.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Hourly OpenRouter credits snapshot (pairs with spend-hook for leak detection)"}
+      - {name: or-key-watch.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Weekly OpenRouter key expiry watch"}
+      - {name: prune-old-docs.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily mddb retention sweep (idc03 \u2014 relocated from ada-review-refresh/omen, MEM-0871)"}
+      - {name: rika-hmi-watch.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. RK600 HMI reachability watch (every 2 min)"}
+      - {name: rika-wx-alert.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. RK600 weather alert poll (60s)"}
+      - {name: runner-tools-converge.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily convergence of pinned runner tools"}
+      - {name: served-checkout-watchdog.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:served-checkout-watchdog. Served-checkout divergence watchdog (idc03 writer health) (job:served-checkout-watchdog, rendered from ssot.jobs.yml \u2014 d..."}
+      - {name: usage-feed-push.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:usage-feed-push. Usage feed exporter -> idc02 edge (job:usage-feed-push, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: voice-burn-ledger.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:voice-burn-ledger. Voice burn ledger (all lanes) (job:voice-burn-ledger, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: weather-bakeoff-daily.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:weather-bakeoff-daily. Weather bake-off daily report + snapshot (mn-ha) (job:weather-bakeoff-daily, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: wp-comment-sync.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:wp-comment-sync. WP member comments -> suggestion lanes (job:wp-comment-sync, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: wp-heartbeat.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. WP ops heartbeat every 5 min"}
+      - {name: wp-lane-timeline.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:wp-lane-timeline. Ada lane transcripts -> WP timeline (mn-ha) (job:wp-lane-timeline, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: wp-news-digest.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Hourly WP news digest (20m after wp-news-fetch)"}
+      - {name: wp-news-fetch.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Hourly WP news fetch"}
+      - {name: wp-news-situation.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:wp-news-situation. News situation sweep + situations index refresh (job:wp-news-situation, rendered from ssot.jobs.yml \u2014 do not edit)"}
+
     expected_absent:
       - name: ada-pi-pwa.service
         scope: user
@@ -2323,6 +2512,12 @@ hosts:
       - {name: caddy-edge.service, type: service, scope: user, note: "michael-dev.surf-thailand.com + /apps/ha/mn-ha-dev* now upstream https://idc02...:8124 (local); http://:8124 tailnet-IP shadow block removed 2026-10-26 — tailscale serve owns :8124"}
       - {name: camwall-edge.service, type: service, scope: user}
       - {name: mddb-ops.service, type: service, scope: user}
+      # 2026-11-27: idc02 runs the ops-DB backup at 03:30, deliberately after
+      # idc03's 02:30 primary backup. Same unit name but a different role from
+      # the critical idc03 timer — declared so the cross-host critical-timer
+      # check does not misclassify it (surfaced by the timer blind-spot fix).
+      - {name: mddb-backup.timer, type: timer, scope: user,
+         note: "Daily mddb-ops backup 03:30, after idc03 02:30 (live unit description)"}
       # --- census 2026-11-25 (idc02-audit-census-reconcile): OPS-0725/0731
       #     migration adds + 2026-11-24 quadlet retirements, verified live ---
       - {name: gesture-relay.service, type: service, scope: user,
@@ -2424,6 +2619,27 @@ hosts:
       # 2026-11-24: nest-mgr fleet rollout (stacks/services/nest-mgr) was
       # never declared here — running+active in daily audits since install.
       - {name: nest-mgr.service, type: service, scope: user}
+      # 2026-11-27 timer-delta census: active fleet timers found undeclared
+      # by the read-only fleet snapshot (job-rendered + ad-hoc). Declared so
+      # a disabled/removed timer raises a delta. Distro/OS timers are filtered
+      # by OS_TIMER_RE in both audit engines instead of being declared.
+      - {name: ada-nest-heartbeat-idc02.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:ada-nest-heartbeat-idc02. Ada Nest heartbeat \u2014 idc02 (job:ada-nest-heartbeat-idc02, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: ada-ocb-bridge-sync.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Sync ada-control bridge checkout to origin/main (15 min)"}
+      - {name: ada-ocb-eval.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Ada OpenCode bridge answer-quality eval (6-hourly)"}
+      - {name: ansible-audit-board.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily Ansible read-only audits -> board-api"}
+      - {name: chaba-capture-harvest.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:chaba-capture-harvest. Capture ledger harvest + Phase D metrics refresh (daily) (job:chaba-capture-harvest, rendered from ssot.jobs.yml \u2014 do no..."}
+      - {name: chaba-host-loads.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:chaba-host-loads. Host-loads sampler (fleet load/mem/disk -> system-report monitor page) (job:chaba-host-loads, rendered from ssot.jobs.ym..."}
+      - {name: embed-lane-banks.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:embed-lane-banks. Embed lane \u2014 MDDB bank sync into mddb-embed (bge-m3) (job:embed-lane-banks, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: fleet-restic-backup.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily fleet restic backup"}
+      - {name: gdrive-backup.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily GDrive backup offload"}
+      - {name: job-health-sweep.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:job-health-sweep (canonical host tony_dell; multi-host copy). Declared-job health sweep (journal consecutive-failures + dead timers -> board card) (job:job-health-sweep, rendered fro..."}
+      - {name: kk-mac-model-status.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Refresh kk-mac model status annotation in OpenChamber picker"}
+      - {name: opencode-models-sync.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:opencode-models-sync (canonical host tony_dell; multi-host copy). OpenCode models sync \u2014 provider map + profile allowlist drift check (job:opencode-models-sync, rendered from ssot.jobs.y..."}
+      - {name: retry-storm-watch.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:retry-storm-watch (canonical host con01; multi-host copy). Retry-storm / hot-container watch (podman CPU + log sigs) (job:retry-storm-watch, rendered from ssot.jobs.yml \u2014 do not e..."}
+      - {name: runner-tools-converge.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily convergence of pinned runner tools"}
+      - {name: web-srv-sync.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Hourly web-srv content sync from idc03"}
+      - {name: wp-watch.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. WP watch every 5 min"}
+
     expected_absent:
       - name: chaba-audit.timer
         scope: user
@@ -2632,6 +2848,20 @@ hosts:
       # 2026-11-24: nest-mgr fleet rollout (stacks/services/nest-mgr) was
       # never declared here — running+active in daily audits since install.
       - {name: nest-mgr.service, type: service, scope: user}
+      # 2026-11-27 timer-delta census: active fleet timers found undeclared
+      # by the read-only fleet snapshot (job-rendered + ad-hoc). Declared so
+      # a disabled/removed timer raises a delta. Distro/OS timers are filtered
+      # by OS_TIMER_RE in both audit engines instead of being declared.
+      - {name: chaba-repo-sync.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Hourly chaba checkout sync (installed 2026-10-09 \u2014 remote checkouts drift without it)"}
+      - {name: device-telemetry.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:device-telemetry (canonical host tony_omen; multi-host copy). Device telemetry beacon (every 5min)"}
+      - {name: doc-mirror.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:doc-mirror. Hourly doc-archive -> HA www mirror (runs on con01 since 2026-10-22) (job:doc-mirror, rendered from ssot.jobs.yml \u2014 do n..."}
+      - {name: jev-bench.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:jev-bench. Jev decision bench \u2014 hourly noul/choice accuracy vs jev-student (runs on con01, targets idc03) (job:jev-bench, rendered..."}
+      - {name: log-shipper-severe.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:log-shipper-severe. Log shipper \u2014 severe kinds fast lane (job:log-shipper-severe, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: log-shipper.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:log-shipper. Log shipper (local journald -> MDDB host-logs) (job:log-shipper, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: mddb-vector-reindex.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:mddb-vector-reindex. MDDB vector reindex \u2014 daily re-embed sweep for dropped embeddings (job:mddb-vector-reindex, rendered from ssot.jobs.yml..."}
+      - {name: runner-agent.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Poll board-api for queued cards (runner-agent)"}
+      - {name: runner-tools-converge.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily convergence of pinned runner tools"}
+
     expected_absent:
       # 2026-11-26: Cline fully retired (Tony approval). con01 app/proxy/
       # network quadlets and cline-intake/board-mirror rendered timers removed;

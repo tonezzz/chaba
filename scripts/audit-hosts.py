@@ -33,8 +33,25 @@ USER_SESSION_NOISE = re.compile(
     r"[0-9a-f]{40,64}(-[0-9a-f]{8,20})?\.service)$")
 
 # Podman/systemd hash-named transient units — a 40-64 hex name is never a
-# declared fleet service (matches in either scope).
-HASH_UNIT_RE = re.compile(r"^[0-9a-f]{40,64}(-[0-9a-f]{8,20})?\.service$")
+# declared fleet service (matches in either scope). Covers .service and .timer.
+HASH_UNIT_RE = re.compile(
+    r"^[0-9a-f]{40,64}(-[0-9a-f]{8,20})?\.(service|timer)$")
+
+# Distro/OS-managed timers: apt, logrotate, sysstat, fstrim, snap, Ubuntu
+# insights, etc. They are host plumbing, not fleet placement contract units —
+# declaring them would create permanent "expected missing" noise on every
+# host. Keep this list in sync with os_timer_re in
+# ansible/playbooks/audit-fleet-services.yml (the Ansible engine mirrors it).
+OS_TIMER_RE = re.compile(
+    r"^(anacron|apport-autoreport|apt-daily|apt-daily-upgrade|"
+    r"dailyaidecheck|dpkg-db-backup|e2scrub_all|fstrim|fwupd-refresh|"
+    r"launchpadlib-cache-clean|logrotate|lynis|man-db|motd-news|"
+    r"phpsessionclean|plocate-updatedb|podman-auto-update|"
+    r"snap\.firmware-updater\.firmware-notifier|snapd\.snap-repair|"
+    r"sysstat-collect|sysstat-rotate|sysstat-summary|"
+    r"systemd-tmpfiles-clean|ua-timer|ubuntu-insights-collect|"
+    r"ubuntu-insights-upload|update-notifier-download|"
+    r"update-notifier-motd|xfs_scrub_all)\.timer$")
 
 # System-scope units are too numerous to whitelist — flag only units that
 # *look* fleet-managed (a stale fleet unit at system scope still surfaces).
@@ -582,6 +599,18 @@ def diff_against_ssot(host: str, observed: dict, ssot_path: Path) -> list[str]:
                     if s.get("state") == "active" and "unit" in s}
     running_sys = {s["unit"] for s in observed.get("active_system_services", [])
                    if s.get("state") == "active" and "unit" in s}
+    # Critical timers declared on OTHER hosts: a running copy here that this
+    # host does not declare is placement drift (the gap that let the two
+    # timeline timers run undeclared on omen). Host-local plumbing timers
+    # and ordinary undeclared timers are intentionally out of scope.
+    foreign_critical_timers = {
+        e["name"]
+        for other, cfg in ssot.get("hosts", {}).items()
+        if other != host
+        for e in (cfg.get("expected_services") or [])
+        if e.get("critical") and (e.get("type") == "timer" or
+                                  str(e.get("name", "")).endswith(".timer"))
+    }
     expected_names = set()
     for exp in expected:
         exp_name = exp["name"]
@@ -690,31 +719,63 @@ def diff_against_ssot(host: str, observed: dict, ssot_path: Path) -> list[str]:
     else:
         for s in observed.get("active_user_services", []):
             unit, state = s.get("unit"), s.get("state")
-            if not unit or not unit.endswith(".service") or state != "active":
+            if not unit or state != "active":
                 continue
-            if unit in expected_names or unit in absent_names or \
-                    allowed(unit) or USER_SESSION_NOISE.match(unit) or \
-                    HASH_UNIT_RE.match(unit):
+            if unit in expected_names or unit in absent_names or allowed(unit):
+                continue
+            if unit.endswith(".timer"):
+                if OS_TIMER_RE.match(unit) or HASH_UNIT_RE.match(unit):
+                    continue
+                msg = (f"Unexpected running user timer: {unit} "
+                       "(declare in expected_services, whitelist in "
+                       "allowed_running, or stop it)")
+                if unit in foreign_critical_timers:
+                    msg += " (critical on another host — declare here or retire)"
+                deltas.append(msg)
+                continue
+            if not unit.endswith(".service") or USER_SESSION_NOISE.match(unit) \
+                    or HASH_UNIT_RE.match(unit):
                 continue
             deltas.append(f"Unexpected running user service: {unit} "
                           "(declare in expected_services, whitelist in "
                           "allowed_running, or stop it)")
         for s in observed.get("active_system_services", []):
             unit, state = s.get("unit"), s.get("state")
-            if not unit or not unit.endswith(".service") or state != "active":
+            if not unit or state != "active":
                 continue
-            if unit in expected_names or unit in absent_names or allowed(unit) \
-                    or HASH_UNIT_RE.match(unit):
+            if unit in expected_names or unit in absent_names or allowed(unit):
+                continue
+            if unit.endswith(".timer"):
+                if OS_TIMER_RE.match(unit) or HASH_UNIT_RE.match(unit):
+                    continue
+                msg = (f"Unexpected fleet-looking system timer: {unit} "
+                       "(declare in expected_services, whitelist in "
+                       "allowed_running, or stop it)")
+                if unit in foreign_critical_timers:
+                    msg += " (critical on another host — declare here or retire)"
+                deltas.append(msg)
+                continue
+            if not unit.endswith(".service") or HASH_UNIT_RE.match(unit):
                 continue
             if FLEET_SYS_RE.search(unit):
                 deltas.append(f"Unexpected fleet-looking system service: {unit}")
 
+    uf_user = observed.get("unit_files_user") or {}
+    uf_system = observed.get("unit_files_system") or {}
     for fail in observed.get("failed_user_services", []):
+        # Transient hash units and deliberately masked units (unless the
+        # host SSOT still declares them) are not drift — mirror the ansible
+        # service-audit-deltas.j2 failed-units filters.
+        masked = str(uf_user.get(fail, "")).startswith("masked")
         if fail not in known_failed and not fail.startswith("session-") \
-                and not FAILED_NOISE.match(fail):
+                and not FAILED_NOISE.match(fail) and not HASH_UNIT_RE.match(fail) \
+                and not (masked and fail not in expected_names):
             deltas.append(f"Unexpected failed user service: {fail}")
     for fail in observed.get("failed_system_services", []):
-        if fail not in known_failed and not FAILED_NOISE.match(fail):
+        masked = str(uf_system.get(fail, "")).startswith("masked")
+        if fail not in known_failed and not FAILED_NOISE.match(fail) \
+                and not HASH_UNIT_RE.match(fail) \
+                and not (masked and fail not in expected_names):
             deltas.append(f"Unexpected failed system service: {fail}")
 
     oom = observed.get("oom_kills_24h") or {}

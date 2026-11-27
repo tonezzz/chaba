@@ -3,7 +3,7 @@
    same delta strings) so reports/ansible-benchmark/services/<host>.yml
    can be compared line-for-line with reports/audit-hosts/<host>-*.yml.
    Context: target (inventory_hostname), hostvars, audit_ssot,
-   ssot_key_map, noise_user_re, hash_unit_re, fleet_sys_re,
+   ssot_key_map, noise_user_re, hash_unit_re, os_timer_re, fleet_sys_re,
    failed_noise_re. #}
 {%- set hk = ssot_key_map.get(target, target) -%}
 {%- set hs = (audit_ssot['hosts'] | default({})).get(hk) or {} -%}
@@ -29,7 +29,22 @@
 {%-   set fs = snap.failed_sys -%}
 {%-   set expected = hs.get('expected_services') or [] -%}
 {%-   set expected_names = expected | map(attribute='name') | list -%}
+{# Critical timers declared on OTHER hosts: a running copy here that this
+   host does not declare is a placement drift (the gap that let the two
+   timeline timers run undeclared on omen). Host-local plumbing timers and
+   the 100+ ordinary undeclared timers are intentionally out of scope. #}
+{%-   set foreign_critical_timers = [] -%}
+{%-   for other_h, other in (audit_ssot['hosts'] | default({})).items() if other_h != hk -%}
+{%-     for e in (other.get('expected_services') or []) -%}
+{%-       if e.get('critical') and (e.get('type') == 'timer' or e['name'].endswith('.timer'))
+             and e['name'] not in expected_names and e['name'] not in foreign_critical_timers -%}
+{%-         set _ = foreign_critical_timers.append(e['name']) -%}
+{%-       endif -%}
+{%-     endfor -%}
+{%-   endfor -%}
 {%-   set known_failed = (hs.get('known_failed') or []) | map(attribute='name') | list -%}
+{%-   set uf_user = snap.unit_files_user | default({}) -%}
+{%-   set uf_sys = snap.unit_files_sys | default({}) -%}
 {# --- expected_resources: min_free_ram_mb (audit-hosts.py does NOT
        enforce max_root_disk_percent — parity means skipping it too) #}
 {%-   set res = hs.get('expected_resources') or {} -%}
@@ -59,7 +74,17 @@
           or (typ == 'scope' and (present_in | select('match', '^' ~ name ~ '-.*\.scope$') | list | length) > 0) -%}
 {%-     set running = (name in running_in)
           or (typ == 'scope' and (running_in | select('match', '^' ~ name ~ '-.*\.scope$') | list | length) > 0) -%}
-{%-     if running and want in ['inactive', 'absent'] -%}
+{%-     if typ == 'oneshot' and want == 'active' and (uf_sys if scope == 'system' else uf_user) -%}
+{# Timer/manual-triggered oneshots are legitimately unloaded between fires —
+   the contract is a non-masked unit file, not a running process (parity with
+   scripts/audit-hosts.py diff_against_ssot). #}
+{%-       set files = uf_sys if scope == 'system' else uf_user -%}
+{%-       if name in files and not ((files[name] | string).startswith('masked')) -%}
+{%-       elif name in known_failed or (exp.get('note') or '').startswith('Currently disabled') -%}
+{%-       else -%}
+{%-         set _ = ns.deltas.append("Expected oneshot unit missing: " ~ name) -%}
+{%-       endif -%}
+{%-     elif running and want in ['inactive', 'absent'] -%}
 {%-       set _ = ns.deltas.append("Declared-" ~ want ~ " service is running: " ~ name) -%}
 {%-     elif present
           or want in ['inactive', 'absent']
@@ -104,7 +129,20 @@
 {%-     for p in allow -%}
 {%-       if unit | regex_search(p) -%}{%- set allowed = true -%}{%- endif -%}
 {%-     endfor -%}
-{%-     if unit.endswith('.service') and not allowed
+{%-     if unit.endswith('.timer') -%}
+{%-       if not allowed and unit not in expected_names
+             and unit not in absent_names
+             and not (unit | regex_search(os_timer_re))
+             and not (unit | regex_search(hash_unit_re)) -%}
+{%-         set msg = "Unexpected running user timer: " ~ unit
+               ~ " (declare in expected_services, whitelist in "
+               ~ "allowed_running, or stop it)" -%}
+{%-         if unit in foreign_critical_timers -%}
+{%-           set msg = msg ~ " (critical on another host — declare here or retire)" -%}
+{%-         endif -%}
+{%-         set _ = ns.deltas.append(msg) -%}
+{%-       endif -%}
+{%-     elif unit.endswith('.service') and not allowed
           and unit not in expected_names and unit not in absent_names
           and not (unit | regex_search(noise_user_re))
           and not (unit | regex_search(hash_unit_re)) -%}
@@ -119,7 +157,20 @@
 {%-     for p in allow -%}
 {%-       if unit | regex_search(p) -%}{%- set allowed = true -%}{%- endif -%}
 {%-     endfor -%}
-{%-     if unit.endswith('.service') and not allowed
+{%-     if unit.endswith('.timer') -%}
+{%-       if not allowed and unit not in expected_names
+             and unit not in absent_names
+             and not (unit | regex_search(os_timer_re))
+             and not (unit | regex_search(hash_unit_re)) -%}
+{%-         set msg = "Unexpected fleet-looking system timer: " ~ unit
+               ~ " (declare in expected_services, whitelist in "
+               ~ "allowed_running, or stop it)" -%}
+{%-         if unit in foreign_critical_timers -%}
+{%-           set msg = msg ~ " (critical on another host — declare here or retire)" -%}
+{%-         endif -%}
+{%-         set _ = ns.deltas.append(msg) -%}
+{%-       endif -%}
+{%-     elif unit.endswith('.service') and not allowed
           and unit not in expected_names and unit not in absent_names
           and not (unit | regex_search(hash_unit_re))
           and (unit | regex_search(fleet_sys_re)) -%}
@@ -130,12 +181,16 @@
 {# --- failed units #}
 {%-   for f in fu -%}
 {%-     if f not in known_failed and not f.startswith('session-')
-          and not (f | regex_search(failed_noise_re)) -%}
+          and not (f | regex_search(failed_noise_re))
+          and not (f | regex_search(hash_unit_re))
+          and not (f not in expected_names and (uf_user.get(f, '') | string).startswith('masked')) -%}
 {%-       set _ = ns.deltas.append("Unexpected failed user service: " ~ f) -%}
 {%-     endif -%}
 {%-   endfor -%}
 {%-   for f in fs -%}
-{%-     if f not in known_failed and not (f | regex_search(failed_noise_re)) -%}
+{%-     if f not in known_failed and not (f | regex_search(failed_noise_re))
+          and not (f | regex_search(hash_unit_re))
+          and not (f not in expected_names and (uf_sys.get(f, '') | string).startswith('masked')) -%}
 {%-       set _ = ns.deltas.append("Unexpected failed system service: " ~ f) -%}
 {%-     endif -%}
 {%-   endfor -%}
