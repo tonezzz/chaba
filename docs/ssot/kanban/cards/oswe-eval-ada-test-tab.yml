@@ -1,7 +1,7 @@
 id: oswe-eval-ada-test-tab
 title: Self-deploy OpenSWE (Robin) on tony-dell + Ada Test tab on ada-ha
 column: review
-updated: 2026-11-27 15:44
+updated: 2026-11-27 16:40
 brief: Evaluate OpenSWE/Robin; self-deploy on tony-dell dev-mode, expose like ada-ocb, add 'Ada Test' sidebar tab
   (OSWE first) on ada-ha chaba-admin.
 priority: medium
@@ -384,6 +384,19 @@ comms:
 - at: 2026-11-27 15:44
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''stack-is-live-on-tony-dell-tai''] block close)'
+- at: 2026-11-27 16:40
+  from: tony
+  text: 'answered stack-is-live-on-tony-dell-tailnet-3-rem-3dbf41: proceed'
+- at: 2026-11-27 16:40
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-27 16:40
+  from: tony
+  text: 'DECISION 2026-11-27 (Tony): PROCEED — accept the current tailnet-live state. OSWE/Robin on tony-dell (:2024
+    backend / :2025 mda / :4100 LiteLLM shim) and the Ada Test tab iframes the tailnet surface; 3/3 eval tasks passed.
+    The three remaining gates (LangSmith OAuth app, public DNS A + CF Access for oswe.surf-thailand.com, optional
+    real Slack app/ngrok) are Tony-owned follow-ups and are explicitly NOT blockers for closing this evaluation
+    card. No paid sandbox tier or Anthropic spend approved; mod'
 requests:
 - id: 4-gated-items-needed-to-boot-robin-optio-41e2b0
   ask: '4 gated items needed to boot Robin (options in spec): (1) LangSmith account + API key — agent loop + cloud
@@ -408,12 +421,13 @@ requests:
     LANGSMITH_OAUTH_CLIENT_ID/SECRET — without it dashboard login 401s. (2) Public edge: DNS A oswe.surf-thailand.com
     -> 45.136.236.190 + CF Access app (CF token on tony-dell lacks DNS perms). (3) Optional: real Slack app + ngrok
     domain only if you want Slack/GitHub-webhook entry. Meanwhile the Ada Test tab already iframes the tailnet surface.'
-  status: open
+  status: answered
   at: 2026-11-27 15:31
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 action:
   type: dispatch
   status: done
