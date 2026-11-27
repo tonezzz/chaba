@@ -382,6 +382,12 @@ router_settings:
   # second, OpenRouter third, local ollama last for text-only classes.
   fallbacks:
     - gemini-2.5-flash: [or-gemini-2.5-flash]
+    # ADA_TEXT_MODEL trial 2026-11-27: or-free-nemotron-35 is a
+    # standalone $0 alias with no native chain. On OR :free cap/errors,
+    # fall back to the existing `summary` chain — local qwen2.5:32b
+    # (kkmac tunnel) then gemini-3.5-flash-lite free/paid legs — so
+    # text-relay turns degrade instead of failing hard.
+    - or-free-nemotron-35: [summary]
     - tool-call: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, ollama-llama32-3b-kkmac, colab-gemma3, ollama-llama3.2]
     # eval-judge: paid-first, local last, FAIL CLOSED — deliberately NO
     # :free / or-free-* / gemini-*-free legs (the OPS-1255 429 path this

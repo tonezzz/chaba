@@ -146,3 +146,49 @@ promotion_path: |
   4. Side-tools lanes (classify/summary/tool-call aliases) are separate
      promotions with their own chains; this bench only evidences the
      education-manager surface.
+
+promotion_2026_11_27:
+  approved_by: tony
+  approved_at: 2026-11-27
+  challenger: or-free-nemotron-35
+  original_gate_cleared: false  # draft-Q 4.55 < incumbent 5.0; relaxed operational gate passed
+  scope: |
+    idc03 ~/.config/secrets/tony-ha/backend.env ONLY — the live text-mode
+    session env for ada-ha-tony.service, ada-line-relay.service and
+    ada-tg-relay.service. Other Ada persona env files unchanged.
+  change: 'ADA_TEXT_MODEL gemini-3.5-flash-lite -> or-free-nemotron-35 (line 70)'
+  backup: /home/tony/.config/secrets/tony-ha/backend.env.bak-ada-text-model-promotion-20261127-103630
+  restart: 'systemctl --user restart ada-ha-tony.service ada-line-relay.service ada-tg-relay.service'
+  verify: |
+    All three user units active; MainPID environments all report
+    ADA_TEXT_MODEL=or-free-nemotron-35. Gateway /v1beta probe with the
+    production ADA key: HTTP 200; function-declaration probe returned
+    functionCall{name:calculator,args:{expr:2+2}}. No startup errors in
+    journalctl --user for any of the three units.
+  rollback: |
+    cp -p <backup> /home/tony/.config/secrets/tony-ha/backend.env &&
+    systemctl --user restart ada-ha-tony.service ada-line-relay.service ada-tg-relay.service
+  risks: |
+    or-free-nemotron-35 is a standalone $0 OpenRouter alias with no
+    fallback chain; the :free daily cap is account-wide and all or-free-*
+    aliases fail together until reset. draft-Q 4.55 is below the 5.0
+    original AQ / ~4.7 regression floor. Watch text-relay quality and
+    add a gateway fallback or roll back if the cap is exhausted.
+  fallback_added:
+    at: 2026-11-27 10:41 ICT
+    change: 'router_settings.fallbacks: or-free-nemotron-35 -> summary'
+    summary_target: |
+      The `summary` alias currently maps to local qwen2.5:32b (kkmac
+      tunnel :11447), then its own chain to gemini-3.5-flash-lite
+      free/paid legs. No paid-first assumption — corrected in the config
+      comment after verification.
+    repo: stacks/idc03/litellm/config.yaml (line ~390)
+    installed: idc03 ~/.config/litellm/config.yaml (same sha256 as repo)
+    backup: /home/tony/.config/litellm/config.yaml.bak-ada-fallback-20261127-104143
+    restart: 'systemctl --user restart litellm.service'
+    verify: |
+      Container /app/config.yaml contains the fallback line; gateway
+      /health/liveliness 200 after restart; primary /v1beta
+      or-free-nemotron-35 probe 200; forced-error /v1 probe
+      (temperature=5) returned HTTP 200 from model
+      ollama_chat/qwen2.5:32b — proving the fallback engaged.
