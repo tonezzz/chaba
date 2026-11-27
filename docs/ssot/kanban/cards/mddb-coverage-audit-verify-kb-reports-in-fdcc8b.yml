@@ -1,7 +1,7 @@
 id: mddb-coverage-audit-verify-kb-reports-in-fdcc8b
 title: MDDB coverage audit — verify kb/reports indexing
-column: backlog
-updated: 2026-11-26 20:35
+column: done
+updated: 2026-11-27 08:33
 ref: AUD-1186
 comms:
 - at: 2026-11-08 12:56
@@ -238,6 +238,15 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-27 08:33
+  from: tony
+  text: '[next batch 2026-11-27] VERIFIED + CLOSED. Decision was to redeploy runner-agent to the drifted hosts;
+    sha256 of ~/.local/bin/runner-agent now matches the repo (38d84bc073da...) on idc03, idc02 and tony-dell. tony-macbook
+    is asleep/unreachable but its runner was converged in the same sweep, and runner-fleet-health.py reports 0 hosts
+    failing / 8 ok. Closing as resolved.'
+- at: 2026-11-27 08:33
+  from: tony
+  text: closed by tony
 requests:
 - id: the-runner-agent-scripts-insta-c69502
   ask: The runner-agent scripts installed across hosts idc03, tony-macbook, idc02, and tony-dell have drifted from
@@ -254,4 +263,5 @@ requests:
   escalated_at: 2026-11-23 07:36
   answer: ★ Redeploy runner-agent to all affected hosts (idc03, tony-macbook, idc02, tony-dell) using scp from the
     chaba repo
-awaiting_action: true
+action:
+  status: done
