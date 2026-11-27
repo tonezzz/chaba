@@ -1,7 +1,7 @@
 id: weather-bakeoff-ha-config-bounded-retry
 title: Bounded retry for weather-bakeoff HA /api/config fetch (kraut-rain-watch repeat)
 column: done
-updated: 2026-11-27 18:45
+updated: 2026-11-27 18:47
 brief: Fix weather-bakeoff.py http_json transient HA reset with bounded retry + tests; code only, no deploy.
 priority: high
 tags:
@@ -117,6 +117,15 @@ comms:
   text: 'UPDATE 18:45: the HA relay is repaired independently of this code fix (scoped sshd Match User tony + PermitOpen
     on tony-omen, converged and verified; 18:41 rain-watch tick passed). Evidence: chaba master 3159073e17c. Review
     the branch/tests, then merge at discretion; no deploy to idc03 was performed.'
+- at: 2026-11-27 18:47
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash-medium
+- at: 2026-11-27 18:47
+  from: chaba
+  text: 'session-end checkpoint 5ac72e61: 1 leftover file(s) committed'
+- at: 2026-11-27 18:47
+  from: chaba
+  text: banked 1036 outcome lesson(s) → devin-handoff bank
 ref: HOM-1509
 claim:
   since: 2026-11-27 18:23
