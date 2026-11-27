@@ -168,7 +168,13 @@ publisher_hardening:
     integration patch (integrations/ada-voice/scripts.ops-health-report.mddb-gate.patch)
     no longer applies to ada-voice HEAD even without our change, which is
     the actual cause of the pre-commit hook failure. Host was redeployed
-    with the reconciled pins and both timer ticks re-verified.
+    18:29:38 with the reconciled pins (backup tag 20261127T182938,
+    ok=12 changed=3 failed=0): installed hashes match ca191168... and
+    b04d81ec..., both oneshot ticks finished ExecMainStatus=0 (media
+    published 28 leaves + rollup + qc, ops published
+    report/health-20261127-183000 with 7 pre-existing flags), and the
+    final --check --diff shows changed=0. Branch pushed with
+    --force-with-lease after the rebase.
   rollback: >-
     Restore from /home/tony/.local/share/chaba-backups/
     idc03-publisher-hardening/20261127T181047/, or from the copy module's
