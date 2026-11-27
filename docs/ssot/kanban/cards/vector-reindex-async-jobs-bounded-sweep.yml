@@ -1,7 +1,7 @@
 id: vector-reindex-async-jobs-bounded-sweep
 title: 'vector-reindex.py: async jobs + bounded sweep + per-collection failure isolation'
 column: backlog
-updated: 2026-11-27 21:41
+updated: 2026-11-27 21:47
 brief: 'Follow-up to OPS-1515 triage: the daily reindex sweep times out at 45min because it fires 64 sequential
   sync per-collection reindex calls with no global deadline; one collection has 149,550 docs (86% of corpus). Deployed
   mddb 2.18.10 supports async reindex jobs — switch the client to async+poll with a bounded sweep.'
@@ -27,3 +27,15 @@ comms:
 - at: 2026-11-27 21:41
   from: devin
   text: card captured via board-api
+- at: 2026-11-27 21:47
+  from: chaba
+  text: classified as devin (fallback conf 0.17)
+- at: 2026-11-27 21:47
+  from: chaba
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: devin
+  lane_source: fallback
+claim: {}
