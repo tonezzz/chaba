@@ -1,6 +1,6 @@
 id: mddb-ops-write-congestion-stagger-timers
 title: mddb-ops write congestion waves — investigate + stagger fleet shipper timers
-column: backlog
+column: doing
 updated: 2026-11-27 13:16
 priority: medium
 tags:
@@ -30,10 +30,19 @@ comms:
 - at: 2026-11-27 13:16
   from: chaba
   text: '[auto-dispatch] wave 30 (2026-11-27 13:16): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-27 13:16
+  from: idc02
+  text: claimed
+- at: 2026-11-27 13:16
+  from: chaba
+  text: claude auto-route not servable on this host — running the next lane
 action:
   type: dispatch
-  status: queued
+  status: running
   task_class: report_triage
   executor: claude
   executor_source: queue
-claim: {}
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-27 13:16
