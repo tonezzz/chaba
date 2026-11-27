@@ -1,6 +1,6 @@
 id: oswe-eval-ada-test-tab
 title: Self-deploy OpenSWE (Robin) on tony-dell + Ada Test tab on ada-ha
-column: doing
+column: review
 updated: 2026-11-27 15:40
 brief: Evaluate OpenSWE/Robin; self-deploy on tony-dell dev-mode, expose like ada-ocb, add 'Ada Test' sidebar tab
   (OSWE first) on ada-ha chaba-admin.
@@ -351,6 +351,16 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261127-142131-tony-decision-2026-11-12-evalu no longer active on con01 but card
     still says running — sweeping its branch'
+- at: 2026-11-27 15:40
+  from: chaba
+  text: 'merge-sweep: merged 1b973948 (dispatch/20261127-142131-tony-decision-2026-11-12-evalu from con01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261127-142131-tony-decision-2026-11-12-evalu.md)
+    — held in review (open request(s) [''stack-is-live-on-tony-dell-tai''] block close)'
+- at: 2026-11-27 15:40
+  from: local
+  text: 'pub milestone: card verified: oswe-eval-ada-test-tab on idc03 — merged 1b973948 (dispatch/20261127-142131-tony-decision-2026-11-12-evalu
+    from con01) -> origin/master — verified — held — merged 1b973948 (dispatch/20261127-142131-tony-decision-2026-11-12-evalu
+    from con01) -> origin/master — verified — held in review (open request(s) [''stack-is-li [evt-eef0c2bde9c50e9a]'
 requests:
 - id: 4-gated-items-needed-to-boot-robin-optio-41e2b0
   ask: '4 gated items needed to boot Robin (options in spec): (1) LangSmith account + API key — agent loop + cloud
@@ -383,13 +393,14 @@ requests:
   - hold
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   runner: con01
   attempts: 1
   sweep:
     stale_running: 2026-11-27 15:40
+  verified: true
 claim:
   since: 2026-11-27 14:19
 awaiting_action: true
