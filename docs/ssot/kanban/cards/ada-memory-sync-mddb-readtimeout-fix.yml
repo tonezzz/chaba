@@ -1,6 +1,6 @@
 id: ada-memory-sync-mddb-readtimeout-fix
 title: ada-memory-sync times out reading MDDB on idc03
-column: doing
+column: done
 updated: 2026-11-27 11:25
 spec: 'ada-memory-sync.service on idc03 fails with requests.exceptions.ReadTimeout: HTTPConnectionPool(host=''100.102.134.91'',
   port=11023): Read timed out (read timeout=20). This is the vault <-> MDDB sync (export voice inbox, push vault,
@@ -14,11 +14,12 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: running
+  status: done
   runner: idc02
   attempts: 1
   sweep:
     stale_running: 2026-11-27 11:25
+  verified: true
 ref: ADA-1490
 comms:
 - at: 2026-11-27 10:29
@@ -63,5 +64,19 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261127-103034-ada-memory-sync-service-on-idc no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-27 11:25
+  from: chaba
+  text: 'merge-sweep: merged c62f5989 (dispatch/20261127-103034-ada-memory-sync-service-on-idc from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261127-103034-ada-memory-sync-service-on-idc.md)
+    — auto-closed'
+- at: 2026-11-27 11:25
+  from: local
+  text: 'pub milestone: card verified: ada-memory-sync-mddb-readtimeout-fix on idc03 — merged c62f5989 (dispatch/20261127-103034-ada-memory-sync-service-on-idc
+    from idc02) -> origin/master — verified — auto- — merged c62f5989 (dispatch/20261127-103034-ada-memory-sync-service-on-idc
+    from idc02) -> origin/master — verified — auto-closed [evt-88bb7d1b4a9d9900]'
 claim:
   since: 2026-11-27 10:29
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 11:25
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261127-103034-ada-memory-sync-service-on-idc.md
