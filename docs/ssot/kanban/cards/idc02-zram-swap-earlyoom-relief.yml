@@ -1,7 +1,7 @@
 id: idc02-zram-swap-earlyoom-relief
 title: idc02 zram swap — disarm earlyoom permanently-true swap arm (root cause of 15 kills/14d)
 column: doing
-updated: 2026-11-27 22:05
+updated: 2026-11-27 22:15
 priority: medium
 tags:
 - infrastructure
@@ -57,6 +57,11 @@ comms:
     entries exist in ssot.audit.host; [ansible-mcp-verify-alert] TRIAGE 2026-11-27 13:11-13:14 re-run (idc02 controlle;
     [render-jobs-selective-install-ops0790-tonydell] 2026-11-07 tony-omen in-session; [runner-auto-con01] ANSIBLE
     SYSTEMWIDE VERIFY 2026-11-27 16:5'
+- at: 2026-11-27 22:15
+  from: devin
+  text: 'picked up. Verified on idc02: swap=0, earlyoom active, zram.ko missing (linux-modules-extra-6.8.0-151-generic
+    not installed). Building fleet-standard zram-swap deploy playbook (8G zstd) in worktree, will --check then converge
+    via ansible on idc02 controller.'
 action:
   type: dispatch
   status: running
