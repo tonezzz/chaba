@@ -1,0 +1,88 @@
+title: Scope runner-tools-converge.timer to local host; fleet pass stays on tony-dell
+subtitle: five false timer-alert cards on 2026-11-27 — per-host timers ran a
+  fleet-wide ansible converge; hosts without ansible-playbook exited 1 and
+  hosts with it failed --check on sleeping tony-macbook.
+icon: radar
+
+date: 2026-11-27
+card: runner-tools-converge-local-scope-fix
+ref: OPS-1478
+status: implemented-awaiting-merge
+
+context:
+  symptom: "Five timer-alert cards filed 2026-11-27 ~00:04-00:24
+    (timer-alert-{tony-dell,tony-omen,idc02,idc03,mn01}-runner-tools-converge)
+    after runner-tools-converge.service exited 1 on every host. Tony's
+    cleanup verified installed tool hashes all matched the pin — pure false
+    alerts."
+  root_cause: "PR #229 installed the same converge script + timer on all 7
+    managed hosts (all:!macos:!disabled), but the script ran
+    deploy-runner-tools.yml / audit-runner-tools.yml against the whole
+    fleet FROM EACH HOST. Two failure modes: (a) idc03/mn01/con01 have no
+    ansible-playbook -> instant exit 1 (tony-omen DOES have ansible via a
+    uv tool in ~/.local/bin — its 00:00 journal shows it reached check mode
+    and failed on the fleet --check instead); (b) ansible hosts
+    (tony-dell, idc02, tony-macbook) ran a fleet-wide --check that aborts
+    when any fleet member is unreachable — tony-macbook sleeps."
+  correction: "Tony's cleanup comment said idc03/mn01/tony-omen lack
+    ansible-playbook; verified live 2026-11-27 — tony-omen has
+    ~/.local/bin/ansible-playbook (uv ansible-core, symlinked 2026-11-20),
+    just not on the ssh non-interactive PATH. Its failure was the fleet
+    check, same as idc02/tony-dell."
+
+changes:
+  - "scripts/devin/runner-tools-converge.sh — rewritten: exit 0 with a
+    documented SKIP when ansible-playbook is absent; prepend
+    ~/.local/bin to PATH; resolve LOCAL_HOST via hostname -s and validate
+    against the inventory (ansible-inventory --host, fail loudly if
+    unknown); all deploy/audit calls carry --limit <scope>; new fleet pass
+    runs only on tony-dell (or RUNNER_CONVERGE_FLEET=1) over hosts that
+    answer `ANSIBLE_BECOME=false ansible -m ping`, self excluded; local
+    and fleet failures both propagate to the unit exit code."
+  - "ansible/README.md — runner-tool convergence section documents the
+    local+fleet split."
+  - "ansible/playbooks/install-runner-tools-converge.yml — header comment
+    corrected (portable hosts DO get the timer; that is now safe)."
+  - "tests/devin/test_runner_tools_converge.py — 7 stubbed-binary cases:
+    skip-without-ansible, --limit hostname scoping, controller fleet pass
+    over reachable-only hosts, self-exclusion, unknown-host fail, check
+    failure propagation, RUNNER_CONVERGE_FLEET override."
+
+decisions:
+  - "Fleet pass = full converge (check -> apply -> audit -> re-arm ->
+    re-audit), not check-only: ansible-less hosts (idc03, mn01, con01)
+    have no local ansible, so the controller's fleet apply is the only
+    nightly repair path for them besides sync-runner-tools.sh."
+  - "Reachability probe uses ansible -m ping (same transport/config as the
+    playbooks) with ANSIBLE_BECOME=false — ansible.cfg defaults
+    become=true which breaks ping on hosts without passwordless sudo
+    (seen on tony-macbook)."
+  - "hostname -s == inventory_hostname verified live on all 7 managed
+    hosts; unknown hostname exits 1 rather than silently no-oping."
+
+verification:
+  - "pytest tests/devin/test_runner_tools_converge.py — 7/7 pass."
+  - "Live overlay runs of the NEW script (worktree copy over symlinks into
+    each host's canonical checkout, live checkouts untouched):"
+  - "  tony-omen rc=0 — local (tony-omen) check/apply/audit/re-audit clean"
+  - "  idc02    rc=0 — local (idc02) clean"
+  - "  tony-macbook rc=0 — local (tony-macbook) clean (host was awake)"
+  - "  tony-dell rc=0 — local (tony-dell) + fleet pass over
+    con01:idc02:idc03:mn01:tony-macbook:tony-omen, audit no DRIFT"
+  - "Skip path (no ansible): idc03, mn01, con01 -> 'SKIP: ansible-playbook
+    not on PATH' rc=0 via ssh stdin."
+  - "Post-merge proof still owed: after chaba-repo-sync lands this on the
+    exec checkouts, `systemctl --user start runner-tools-converge.service`
+    on the five alert hosts must show Result=success; timer-sentinel then
+    auto-closes the five timer-alert cards on its next sweep."
+
+residuals:
+  - "runner-drift-rearm.py board writes fail silently from tony-dell:
+    its default --ssh-host idc03 resolves via ~/.ssh/config ProxyJump
+    tony-omen, which refuses forwarding ('channel 0: open failed:
+    administratively prohibited'). Non-fatal (|| true) but the re-arm card
+    path is dead on the controller — pre-existing, worth its own card."
+  - "con01 also carries the timer and has no ansible — it exits 0 now;
+    no timer-alert card was filed for it on 2026-11-27 (sweep coverage?)."
+  - "The five timer-alert cards stay open until the first post-merge
+    successful run flips systemd Result to success."
