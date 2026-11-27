@@ -7,8 +7,8 @@ tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-27 16:00) of `ops-health-report.service` on `idc03` result=exit-code — investigate journal:
-  `journalctl --user -u ops-health-report.service` on the host. See CMS `timer-timeline-idc03`.'
+note: 'Last run (11-27 16:00) of `ops-health-report.service` on `idc03` result=exit-code — investigate
+  journal: `journalctl --user -u ops-health-report.service` on the host. See CMS `timer-timeline-idc03`.'
 ref: KNB-1506
 comms:
 - at: 2026-11-27 16:05
@@ -16,8 +16,8 @@ comms:
   text: card captured via board-api
 - at: 2026-11-27 16:15
   from: devin
-  text: '[still suspicious] Last run (11-27 16:00) of `ops-health-report.service` on `idc03` result=exit-code —
-    investigate journal: `journalctl --user -u ops-health-report.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (11-27 16:00) of `ops-health-report.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ops-health-report.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-27 16:25
   from: devin
   text: '[auto-resolved] last run result=success at 11-27 16:15 — closing (timer-sentinel KNB-0577)'
@@ -26,11 +26,12 @@ comms:
   text: closed by tony
 - at: 2026-11-27 16:29
   from: chaba
-  text: 'TRIAGE 2026-11-27 ~16:30 (read-only: idc03 user journal + mddb.service journal). Root cause = MDDB primary
-    OOM-killed at 15:58:20 (exit 137), systemd restarted it 15:58:53, then cold start took ~104s: health endpoint
-    opened on 11023 at 15:58:55 but ''mddb HTTP listening'' (full /v1 routes) only at 16:00:37. The 16:00:00 ops-health-report
-    tick posted at 16:00:36 — one second before listeners came up — got HTTP 404 on POST /v1/add to 100.102.134.91:11023
-    and exited 1. Recovery verified: 16:15:00 tic'
+  text: 'TRIAGE 2026-11-27 ~16:30 (read-only: idc03 user journal + mddb.service journal). Root cause =
+    MDDB primary OOM-killed at 15:58:20 (exit 137), systemd restarted it 15:58:53, then cold start took
+    ~104s: health endpoint opened on 11023 at 15:58:55 but ''mddb HTTP listening'' (full /v1 routes) only
+    at 16:00:37. The 16:00:00 ops-health-report tick posted at 16:00:36 — one second before listeners
+    came up — got HTTP 404 on POST /v1/add to 100.102.134.91:11023 and exited 1. Recovery verified: 16:15:00
+    tic'
 - at: 2026-11-27 16:29
   from: chaba
   text: closed by chaba
@@ -39,12 +40,13 @@ comms:
   text: moved done -> backlog
 - at: 2026-11-27 22:25
   from: devin
-  text: '[reopened — condition recurred] Last run (11-27 22:02) of `ops-health-report.service` on `idc03` result=timeout
-    — investigate journal: `journalctl --user -u ops-health-report.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[reopened — condition recurred] Last run (11-27 22:02) of `ops-health-report.service` on `idc03`
+    result=timeout — investigate journal: `journalctl --user -u ops-health-report.service` on the host.
+    See CMS `timer-timeline-idc03`.'
 - at: 2026-11-27 22:35
   from: devin
-  text: '[still suspicious] Last run (11-27 22:17) of `ops-health-report.service` on `idc03` result=timeout — investigate
-    journal: `journalctl --user -u ops-health-report.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (11-27 22:17) of `ops-health-report.service` on `idc03` result=timeout
+    — investigate journal: `journalctl --user -u ops-health-report.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-27 22:45
   from: devin
   text: '[auto-resolved] last run result=success at 11-27 22:30 — closing (timer-sentinel KNB-0577)'
@@ -56,12 +58,13 @@ comms:
   text: moved done -> backlog
 - at: 2026-11-27 23:05
   from: devin
-  text: '[reopened — condition recurred] Last run (11-27 22:47) of `ops-health-report.service` on `idc03` result=timeout
-    — investigate journal: `journalctl --user -u ops-health-report.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[reopened — condition recurred] Last run (11-27 22:47) of `ops-health-report.service` on `idc03`
+    result=timeout — investigate journal: `journalctl --user -u ops-health-report.service` on the host.
+    See CMS `timer-timeline-idc03`.'
 - at: 2026-11-27 23:15
   from: devin
-  text: '[still suspicious] Last run (11-27 23:02) of `ops-health-report.service` on `idc03` result=timeout — investigate
-    journal: `journalctl --user -u ops-health-report.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (11-27 23:02) of `ops-health-report.service` on `idc03` result=timeout
+    — investigate journal: `journalctl --user -u ops-health-report.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-27 23:35
   from: devin
   text: '[auto-resolved] last run result=success at 11-27 23:15 — closing (timer-sentinel KNB-0577)'
@@ -73,11 +76,20 @@ comms:
   text: moved done -> backlog
 - at: 2026-11-28 01:05
   from: devin
-  text: '[reopened — condition recurred] Last run (11-28 00:47) of `ops-health-report.service` on `idc03` result=timeout
-    — investigate journal: `journalctl --user -u ops-health-report.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[reopened — condition recurred] Last run (11-28 00:47) of `ops-health-report.service` on `idc03`
+    result=timeout — investigate journal: `journalctl --user -u ops-health-report.service` on the host.
+    See CMS `timer-timeline-idc03`.'
 - at: 2026-11-28 01:15
   from: devin
-  text: '[still suspicious] Last run (11-28 01:02) of `ops-health-report.service` on `idc03` result=timeout — investigate
-    journal: `journalctl --user -u ops-health-report.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (11-28 01:02) of `ops-health-report.service` on `idc03` result=timeout
+    — investigate journal: `journalctl --user -u ops-health-report.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-28 01:23
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
 action:
   status: done
+spec: 'Investigate and resolve the recurring failure of `ops-health-report.service` on host idc03, which
+  most recently failed due to a timeout. Inspect the user journal using `journalctl --user -u ops-health-report.service`
+  on idc03 and cross-reference the CMS entry `timer-timeline-idc03`. Constraints: only operate on host
+  idc03 and do not invent unstated paths or configurations. The testable done-condition is that `ops-health-report.service`
+  completes successfully on idc03 without an exit-code failure or timeout on its next scheduled run.'
