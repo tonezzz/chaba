@@ -1,0 +1,28 @@
+id: idc03-swap-workload-placement
+title: 'MEM-1511: idc03 swap 4/4 GiB — workload placement triage'
+column: backlog
+updated: 2026-11-27 19:14
+brief: 'After MEM-1507/1510 fixes, idc03 still has 4.0/4.0 GiB swap used, 5.1 GiB RAM available, user cgroup 14.4
+  GiB RAM + 4.16 GiB swap. Top swap holders: jevos 761MiB, ada-dev 243MiB, ada-kk-dev 184MiB, ada-bankq-student
+  309MiB, ada-chaba 364MiB, ada-ha-ada 359MiB, mddb-cms 290MiB.'
+priority: high
+tags:
+- idc03
+- swap
+- capacity
+- placement
+spec: Rank candidates by reclaim vs risk, verify target host capacity (con01 18GiB free, idc02 6.7GiB free, omen
+  11GiB free), get owner decision on dev-twin bench lane and JevOS destination, then implement with gated Ansible
+  and re-measure swap.
+ref: OPS-1511
+comms:
+- at: 2026-11-27 19:14
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-27 19:14
+  from: chaba
+  text: 'READ-ONLY TRIAGE 2026-11-27 19:15 +07. Host: 15GiB RAM, 10GiB used, 5.1GiB available; swap 4.0/4.0GiB,
+    SwapCached 99MiB, Committed_AS 34.7GB. user@1000 cgroup: memory.current 14.4GB, memory.swap.current 4.16GB,
+    no cgroup MemoryMax. Top swap: jevos 760.6MiB swap + 938MiB RSS (cgroup 1.02GiB RAM); ada-chaba 364MiB swap/42MiB
+    RSS; ada-ha-ada 359/48; ada-bankq-student 309/14 (no logs 24h); mddb-cms 290/1439 (leader, followers idc02+con01);
+    kk-ha 262/52; ada-kk 262/112; ada-dev 243/139; ada-kk-dev 18'
