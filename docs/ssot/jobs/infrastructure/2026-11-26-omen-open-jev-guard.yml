@@ -85,6 +85,10 @@ follow_up_incident_20261127: |
   OPENJEV_MAX_INFLIGHT, acquired in /score and /v1/systemone with
   `acquire(blocking=False)`; excess requests get HTTP 429 + Retry-After: 60.
   The systemd drop-in now sets Environment=OPENJEV_MAX_INFLIGHT=2 explicitly.
+  Clean commit vs upstream main is open-jev branch ops/openjev-inflight-guard
+  @ 7c864c3; push to daseinlabs/open-jev was denied (403, no fork), so the
+  patch is archived at docs/kb/patches/open-jev-inflight-guard-20261127.patch
+  for a future PR by someone with upstream write access.
   Both copies of the repo (idc02 and tony-omen) had pre-existing uncommitted
   user changes (lane_metrics, bf16 CPU dtype); the guard was layered on top
   and left uncommitted so that work is not overwritten.
