@@ -1,7 +1,7 @@
 id: mddb-ops-write-congestion-stagger-timers
 title: mddb-ops write congestion waves — investigate + stagger fleet shipper timers
-column: review
-updated: 2026-11-27 14:20
+column: done
+updated: 2026-11-27 14:25
 priority: medium
 tags:
 - ops
@@ -124,6 +124,9 @@ comms:
   from: tony
   text: 'Tony re-approved: kill PID 3862968 immediately. Verified live it is still running (3h31m, PPID=1) with
     a child prune-old-docs.py. Please execute and report.'
+- at: 2026-11-27 14:25
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -159,3 +162,7 @@ requests:
     and still starving ops-DB writes. Verify /add latency recovers and log-shipper heartbeats succeed, then report
     here. Do not proceed to the offline compact until a separate window is approved.
 awaiting_action: true
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 14:25
+  note: verified — evidence checks green, closing itself

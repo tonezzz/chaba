@@ -1,7 +1,7 @@
 id: ansible-audit-alerts-triage-2026-11-27
 title: Triage 5 open Ansible audit alerts — stale vs real drift (approval-gated)
-column: review
-updated: 2026-11-27 14:21
+column: done
+updated: 2026-11-27 14:25
 brief: Next batch 2026-11-27 — 4 runner slots free.
 priority: high
 tags:
@@ -120,6 +120,9 @@ comms:
   from: tony
   text: Tony approved full remediation on the request, including podman system migration reset or reboot if needed.
     Proceed and report what changed; then close the stale audit cards after live verify.
+- at: 2026-11-27 14:25
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 claim:
   since: 2026-11-27 12:58
 requests:
@@ -140,3 +143,7 @@ requests:
   suggested: approve restart-only first (podman rm -f + unit restart, escalate if persists)
   answer: approve restart-only first (podman rm -f + unit restart, escalate if persists)
 awaiting_action: true
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 14:25
+  note: verified — evidence checks green, closing itself
