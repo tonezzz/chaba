@@ -1,7 +1,7 @@
 id: ada-review-refresh-prune-timeout-fix-unpinned
 title: ada-review-refresh times out in prune-old-docs.py on tony-omen
 column: doing
-updated: 2026-11-27 09:39
+updated: 2026-11-27 10:31
 spec: 'ada-review-refresh.service on tony-omen failed at 09:03 with subprocess.TimeoutExpired: export-transcripts.py
   calling prune-old-docs.py exceeded its 600s timeout (whole unit ran 18m52s wall, 51M swap used). Investigate why
   the prune step now takes >10 minutes and make it complete reliably within the job budget — batch/incremental traversal,
@@ -46,5 +46,11 @@ comms:
     [reopened — condition recurred] Last run; [timer-alert-idc03-chaba-lessons-audit] [still suspicious] Last run
     (11-14 07:50; [timer-alert-idc03-chaba-lessons-audit] [still suspicious] Last run (11-24 07:50; [timer-alert-tony-omen-chaba-pytest-suite]
     2026-11-25 22:45 ('
+- at: 2026-11-27 10:31
+  from: devin
+  text: 'fix landed: prune-old-docs.py now uses /v1/documents:deleteWhere (mddb>=2.18.8) cursor-paginated deletes
+    + --budget-seconds cap + 404 fallback to legacy search path; export-transcripts catches prune TimeoutExpired;
+    unit TimeoutStartSec 1200->2400. Deployed to tony-omen+idc03 exec checkouts; ada-review-refresh.service started
+    10:29 for verification; detached backlog drain running on idc03 (~390k expired host-logs docs).'
 claim:
   since: 2026-11-27 09:36
