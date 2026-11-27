@@ -1,7 +1,7 @@
 id: kanban-free-lane-routing-contract
 title: 'Kanban lane-routing contract: free-first dispatch, envelope, verify, escalate'
 column: done
-updated: '2026-11-27'
+updated: 2026-11-27 10:31
 brief: 'Codify the lane-routing and closeout contract proven by the ADA-0242 free-lane pilot and the ADA-0042 runner
   fixes: exhaust free/deterministic lanes before paid_frontier and Devin; every opencode dispatch carries a complete
   lane_envelope; verification is held-out and merge-gated; escalation is deliberate and recorded.'
@@ -321,6 +321,15 @@ comms:
 - at: 2026-11-26 23:44
   from: chaba
   text: 'worktree kept: dirty — 14 uncommitted file(s)'
+- at: 2026-11-27 10:31
+  from: tony
+  text: '[verify 2026-11-27] Recovered uncommitted idc02 worktree implementation, landed as 7c5c014a6b: board-api
+    stages action.lane_envelope for opencode free_lane cards at queue time (devin pin escape hatch intact), dispatch_repos.lane_envelope_plan
+    derives a full admission-valid envelope. Synced runner-agent LANE_MODELS to litellm/agent-local (OPS-1363) and
+    added it to ops-readonly allowlist. 276 feature/tooling tests pass; fleet converged 0 failing / 8 ok.'
+- at: 2026-11-27 10:31
+  from: tony
+  text: closed by tony
 claim:
   since: 2026-11-26 21:38
 review_kind: verify
