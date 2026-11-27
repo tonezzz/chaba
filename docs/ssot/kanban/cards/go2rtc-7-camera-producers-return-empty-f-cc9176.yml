@@ -1,7 +1,7 @@
 id: go2rtc-7-camera-producers-return-empty-f-cc9176
 title: 'go2rtc: 7 camera producers return empty frames on omen'
 column: doing
-updated: 2026-11-27 13:00
+updated: 2026-11-27 13:44
 program: infrastructure
 tags:
 - ops
@@ -291,6 +291,13 @@ comms:
 - at: 2026-11-27 13:00
   from: devin
   text: 'dispatch started: re-checking omen go2rtc producers + camera reachability before any config changes'
+- at: 2026-11-27 13:44
+  from: devin
+  text: 'dispatch done — configs fixed, done-condition blocked by hardware. FINDINGS: (1) passToken in go2rtc.yaml
+    is VALID — cloud device_list API returns both cams (corrects 11-25 diagnosis; Chrome-cookie refresh path is
+    dead but token works). (2) ALL 3 cams physically OFF-L2: full ARP sweep of 192.168.2.0/24 + 192.168.0.0/24 finds
+    neither cam MAC (c100 b8:88:80:cb:7d:2c, c201 d8:3a:36:7d:10:0d); ip_cam_65 .71 ARP-INCOMPLETE. (3) Root cause
+    of recurring 0B = DHCP IP churn vs hardcoded xiaomi:// IPs (ca'
 spec: Fix the remaining go2rtc camera producers on tony-omen that return empty 200/0B frames for ip_cam_65 and the
   xiaomi_c100/c201 variants. Inspect and correct the producer configurations located in ~/.config/go2rtc/*.sh on
   tony-omen and check xiaomi-token-refresh.py. The target host is tony-omen and the relevant repo/environment context
