@@ -1,7 +1,7 @@
 id: runner-converge-dirty-pinned-source-guard
 title: 'runner-tools-converge: detect dirty pinned sources before deploy (fail-loop + drift churn)'
 column: doing
-updated: 2026-11-27 20:55
+updated: 2026-11-27 20:59
 brief: 'idc02 exec checkout had an uncommitted edit to scripts/board/dispatch_repos.py (JEVOS_URL WIP). Its runner-tools-converge.timer
   (~2min cadence) ran deploy-runner-tools.yml --limit idc02 from the dirty checkout: copy installed the WIP bytes,
   post-copy pin assert failed, drifted file stayed -> audit DRIFT -> runner-tool-drift-fleet re-armed ~50x on 2026-11-27.
@@ -61,6 +61,10 @@ comms:
     now sha256-checks every manifest source vs its pin before check/apply on both local+fleet passes; mismatch logs
     DIRTY_PINNED_SOURCES with checkout-vs-pin hashes and skips rc=0. Tests: 9/9 pass via stdlib harness (no pytest
     on host). Complement (post dirty list to drift card) '
+- at: 2026-11-27 20:59
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-204825-add-a-pre-flight-to-scripts-de no longer active on mn01 but card
+    still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -68,5 +72,7 @@ action:
   lane_source: kw
   runner: mn01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 20:59
 claim:
   since: 2026-11-27 20:47
