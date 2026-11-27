@@ -45,6 +45,9 @@ if ! command -v ansible >/dev/null 2>&1 || ! command -v ansible-inventory >/dev/
 fi
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# Tests and manual dry-runs can point at a scratch checkout; production
+# always derives ROOT from this script's location.
+ROOT="${RUNNER_CONVERGE_ROOT:-$ROOT}"
 ANS="$ROOT/ansible"
 WORK="${TMPDIR:-/tmp}/runner-converge-$$"
 mkdir -p "$WORK" || exit 1
@@ -62,6 +65,44 @@ if ! ansible-inventory --host "$LOCAL_HOST" >/dev/null 2>&1; then
   say "FAIL: hostname '$LOCAL_HOST' is not in the ansible inventory — cannot scope convergence to self"
   exit 1
 fi
+
+# A pinned tool must never be deployed from a dirty checkout: copy would
+# install bytes that the post-copy hash assert cannot accept, leaving the
+# installed tool drifted while the timer reports exit-code only. Verify every
+# manifest source against its pin BEFORE running check/apply, and skip loudly
+# with the offending path list. Check mode cannot catch this because the
+# assert task is deliberately skipped under --check.
+checkout_sources_clean() {
+  python3 - "$ROOT" <<'PY'
+import hashlib
+import json
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+manifest_path = root / "scripts" / "devin" / "runner-tooling.manifest.json"
+try:
+    manifest = json.loads(manifest_path.read_text())
+except Exception as exc:
+    print(f"cannot read {manifest_path}: {exc}")
+    sys.exit(2)
+
+dirty = []
+for item in (manifest.get("tools") or {}).values():
+    src = root / item["source"]
+    if not src.is_file():
+        dirty.append(f"{item['source']} (missing)")
+        continue
+    actual = hashlib.sha256(src.read_bytes()).hexdigest()
+    if actual != item["sha256"]:
+        dirty.append(
+            f"{item['source']} (checkout {actual[:12]} != pin {item['sha256'][:12]})")
+if dirty:
+    print("DIRTY_PINNED_SOURCES=" + "|".join(dirty))
+    sys.exit(1)
+print("PINNED_SOURCES_OK")
+PY
+}
 
 # Never restart runner-agent underneath a live dispatch: a drift apply fires
 # the restart handler in deploy-runner-tools.yml, which would kill an in-flight
@@ -83,6 +124,14 @@ host_has_active_dispatch() {
 # check -> apply -> audit -> board re-arm -> re-audit, scoped by --limit.
 converge() {
   local limit="$1" tag="$2"
+
+  local source_check
+  source_check="$(checkout_sources_clean 2>&1)" || {
+    say "$tag: $source_check"
+    say "$tag: skip this pass — refusing to deploy unpinned sources from $ROOT"
+    return 0
+  }
+  say "$tag: $source_check"
 
   local -a targets=() busy=()
   IFS=: read -ra targets <<< "$limit"

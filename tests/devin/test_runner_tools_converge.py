@@ -15,7 +15,10 @@ in /usr/bin must stay unreachable or the skip path can never trigger).
 """
 from __future__ import annotations
 
+import hashlib
+import json
 import os
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -166,3 +169,47 @@ def test_fleet_env_override_from_non_controller(tmp_path):
                        extra_env={"RUNNER_CONVERGE_FLEET": "1"})
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert any("--limit idc03" in c for c in calls)
+
+
+def _scratch_repo(tmp_path: Path, dirty: bool) -> Path:
+    """Minimal checkout with one pinned source, optionally locally edited."""
+    repo = tmp_path / "scratch-repo"
+    (repo / "scripts" / "devin").mkdir(parents=True)
+    (repo / "ansible").mkdir()
+    shutil.copy2(SCRIPT, repo / "scripts" / "devin" / "runner-tools-converge.sh")
+    good = "#!/bin/sh\necho fixture\n"
+    source = repo / "scripts" / "devin" / "manifest-fixture.sh"
+    source.write_text(good + "# uncommitted WIP\n" if dirty else good)
+    manifest = {
+        "schemaVersion": 1,
+        "tools": {
+            "fixture": {
+                "source": "scripts/devin/manifest-fixture.sh",
+                "dest": "manifest-fixture",
+                "sha256": hashlib.sha256(good.encode()).hexdigest(),
+            }
+        },
+    }
+    (repo / "scripts" / "devin" / "runner-tooling.manifest.json").write_text(
+        json.dumps(manifest))
+    return repo
+
+
+def test_dirty_pinned_source_skips_all_playbooks(tmp_path):
+    repo = _scratch_repo(tmp_path, dirty=True)
+    proc, calls = _run(tmp_path, "idc02", INVENTORY, ping_hosts=[],
+                       extra_env={"RUNNER_CONVERGE_ROOT": str(repo)})
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "DIRTY_PINNED_SOURCES" in proc.stdout
+    assert "manifest-fixture.sh" in proc.stdout
+    assert "skip this pass" in proc.stdout
+    assert calls == [], "a dirty checkout must not deploy unpinned bytes"
+
+
+def test_clean_pinned_source_proceeds(tmp_path):
+    repo = _scratch_repo(tmp_path, dirty=False)
+    proc, calls = _run(tmp_path, "idc02", INVENTORY, ping_hosts=[],
+                       extra_env={"RUNNER_CONVERGE_ROOT": str(repo)})
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "PINNED_SOURCES_OK" in proc.stdout
+    assert calls and all("--limit idc02" in c for c in calls)
