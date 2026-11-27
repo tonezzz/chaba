@@ -754,3 +754,29 @@ if (gcpQuickBtn) {
     await captureGcpQuotas(status, gcpQuickBtn);
   });
 }
+
+// Sweep every open tab, not just the active one — the pre-programmed bot
+// lives in background.js and knows the URL patterns for each dump slug.
+const captureTrackedBtn = document.getElementById("captureTrackedBtn");
+if (captureTrackedBtn) {
+  captureTrackedBtn.addEventListener("click", () => {
+    const status = document.getElementById("captureSweepStatus");
+    status.textContent = "Scanning open tabs…";
+    chrome.runtime.sendMessage({ cmd: "CAPTURE_TRACKED" }, (resp) => {
+      if (chrome.runtime.lastError) {
+        status.textContent = `Sweep error: ${chrome.runtime.lastError.message}`;
+        return;
+      }
+      if (!resp?.ok) {
+        status.textContent = `Sweep failed: ${resp?.error || "unknown"}`;
+        return;
+      }
+      const lines = (resp.results || []).map(
+        (r) => `${r.recipe}: ${r.ok ? `dumped ${r.slug}` : r.skipped || r.error}`
+      );
+      status.textContent = lines.length
+        ? lines.join(" | ")
+        : "No tracked tabs open (Devin usage, Devin plans, GCP quotas).";
+    });
+  });
+}

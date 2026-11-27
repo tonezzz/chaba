@@ -34,6 +34,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     });
     return false;
   }
+  if (request.cmd === "CAPTURE_TRACKED") {
+    captureTrackedTabs()
+      .then((results) => sendResponse({ ok: true, results }))
+      .catch((err) => sendResponse({ ok: false, error: String(err.message || err) }));
+    return true;
+  }
   return false;
 });
 
@@ -237,4 +243,125 @@ chrome.cookies.onChanged.addListener((changeInfo) => {
   if (now - lastCookieSend < COOKIE_SEND_COOLDOWN) return;
   lastCookieSend = now;
   captureAndSendCookies();
+});
+
+// --- Pre-programmed page capture bot -------------------------------------
+// Tracked pages are dumped to the local bridge automatically when they
+// finish loading, and on demand via CAPTURE_TRACKED from the sidepanel.
+// No cookies or auth headers are sent — only visible page contents.
+const CAPTURE_RECIPES = [
+  { key: "devin_usage", match: /app\.devin\.ai\/settings\/usage/, slug: "devin_usage" },
+  { key: "devin_billing", match: /app\.devin\.ai\/settings\/plans/, slug: "devin_billing" },
+  {
+    key: "gcp_quotas",
+    match: /console\.cloud\.google\.com\/iam-admin\/quotas/,
+    slug: "gcp_quotas",
+  },
+];
+const CAPTURE_COOLDOWN_MS = 30 * 60 * 1000;
+const CAPTURE_RENDER_DELAY_MS = 3000;
+const lastCapture = {};
+
+function recipeForUrl(url) {
+  return CAPTURE_RECIPES.find((r) => r.match.test(url || "")) || null;
+}
+
+// Injected verbatim — must be self-contained (no closure references).
+function extractPage() {
+  const clean = (s) => (s || "").replace(/\s+/g, " ").trim();
+  const rows = [];
+  const seen = new Set();
+  for (const sel of ["table tbody tr", '[role="row"]', ".mat-row", "tr"]) {
+    for (const el of document.querySelectorAll(sel)) {
+      const cells = Array.from(
+        el.querySelectorAll("th,td,[role='cell'],[role='columnheader']")
+      ).map((c) => clean(c.innerText));
+      const text = cells.length ? cells.join(" | ") : clean(el.innerText);
+      if (!text || seen.has(text)) continue;
+      seen.add(text);
+      rows.push(text);
+      if (rows.length >= 400) break;
+    }
+    if (rows.length >= 400) break;
+  }
+  return {
+    url: location.href,
+    text: clean(document.body ? document.body.innerText : "").slice(0, 200000),
+    rows,
+  };
+}
+
+async function bridgeBase() {
+  const r = await chrome.storage.local.get("bridgeUrl");
+  return (r.bridgeUrl || "http://127.0.0.1:9876").replace(/\/+$/, "");
+}
+
+async function appendCaptureLog(entry) {
+  const r = await chrome.storage.local.get("captureLog");
+  const list = Array.isArray(r.captureLog) ? r.captureLog : [];
+  list.unshift({ ...entry, at: Date.now() });
+  await chrome.storage.local.set({ captureLog: list.slice(0, 20) });
+}
+
+async function captureTab(tab, recipe, force = false) {
+  const key = recipe.key + "|" + tab.id;
+  const now = Date.now();
+  if (!force && now - (lastCapture[key] || 0) < CAPTURE_COOLDOWN_MS) {
+    return { ok: false, recipe: recipe.key, skipped: "cooldown" };
+  }
+  lastCapture[key] = now;
+  try {
+    const res = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: extractPage,
+    });
+    const page = res?.[0]?.result || {};
+    if (!page.text && !(page.rows || []).length) throw new Error("empty page");
+    const payload = {
+      ...page,
+      title: recipe.slug,
+      recipe: recipe.key,
+      captured_at: new Date().toISOString(),
+    };
+    const resp = await fetch(`${await bridgeBase()}/page-dump`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const text = await resp.text();
+    if (!resp.ok) throw new Error(`${resp.status} ${text.slice(0, 120)}`);
+    const out = { ok: true, recipe: recipe.key, slug: recipe.slug, detail: text.slice(0, 200) };
+    await appendCaptureLog(out);
+    return out;
+  } catch (err) {
+    const out = { ok: false, recipe: recipe.key, error: String(err.message || err).slice(0, 200) };
+    await appendCaptureLog(out);
+    return out;
+  }
+}
+
+async function captureTrackedTabs(force = false) {
+  const tabs = await chrome.tabs.query({});
+  const results = [];
+  for (const tab of tabs) {
+    const recipe = recipeForUrl(tab.url);
+    if (!recipe) continue;
+    results.push(await captureTab(tab, recipe, force));
+  }
+  return results;
+}
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status !== "complete") return;
+  const recipe = recipeForUrl(tab.url);
+  if (!recipe) return;
+  setTimeout(async () => {
+    try {
+      const fresh = await chrome.tabs.get(tabId);
+      if (recipeForUrl(fresh.url)?.key !== recipe.key) return;
+      await captureTab(fresh, recipe);
+    } catch (_) {
+      // tab may have been closed — never let a capture break navigation
+    }
+  }, CAPTURE_RENDER_DELAY_MS);
 });
