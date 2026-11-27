@@ -8,7 +8,12 @@ generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: medium
-note: 'Auto-recovered 2026-11-27: all bootstrap checks pass.'
+note: 'Failing: runner-agent: checkout sha 38d84bc073da382f != pin 4ed3afdb49f55cb0 — chaba clone is stale/divergent;
+  ~/.local/bin/runner-agent sha 38d84bc073da382f != pin 4ed3afdb49f55cb0 — installed build is stale. Info: chaba
+  origin is fetch-only (no push creds on this clone); no sunsynk-card checkout — host can''t take action.repo=sunsynk-card
+  cards; no mddb-fork checkout — host can''t take action.repo=mddb-fork cards; no gods-eye-view checkout — host
+  can''t take action.repo=gods-eye-view cards; ada-voice: push probe ok — declare push:ada-voice in RUNNER_LABELS
+  for the fast path (live probe still gates); devin: /home/tony/.local/bin/devin (devin 3000.11.92 (7f4e64980e22)).'
 help: 'Per-check fixes:
 
   - tool-pin: A deployed tool''s sha differs from the pin read from origin/master (scripts/devin/runner-tooling.manifest.json).
@@ -22,7 +27,7 @@ help: 'Per-check fixes:
   If the checkout matches the pin but the install does not, the sync was skipped — check the sync-runner-tools journal
   line (dirty source / no pin / never-downgrade). Do not edit the manifest on a host; bump it in the same commit
   as the tool.'
-updated: '2026-11-27'
+updated: 2026-11-27 09:01
 comms:
 - at: 2026-11-24 00:00
   from: chaba
@@ -142,5 +147,15 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-27 09:01
+  from: tony
+  text: '[resolver 2026-11-27] Root cause: runner-tooling.manifest.json pinned runner_agent to the PREVIOUS build
+    (4ed3afdb, 2026-11-26) while source/scripts/board/runner-agent.py already held the newer 38d84bc build (per-park
+    request ids + answer freshness gates, commit 5df508399d). Hosts were running the newer build, so both the checkout
+    and installed sha were falsely reported as stale. Fix: bumped the pin to 38d84bc in commit ed66bfb178 and verified
+    43 pin-contract tests pass. Ansible deploy-runner-to'
+- at: 2026-11-27 09:01
+  from: tony
+  text: closed by tony
 action:
   status: done
