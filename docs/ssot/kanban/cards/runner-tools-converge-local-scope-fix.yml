@@ -1,7 +1,7 @@
 id: runner-tools-converge-local-scope-fix
 title: Scope runner-tools-converge.timer to its local host and skip hosts without ansible
 column: doing
-updated: 2026-11-27 09:17
+updated: 2026-11-27 09:44
 spec: 'The nightly runner-tools-converge.service invokes scripts/devin/runner-tools-converge.sh, which runs deploy-runner-tools.yml
   across the whole fleet from each host. Any off-net host (tony-macbook sleeps) makes the --check phase fail, and
   idc03/mn01/tony-omen have no ansible-playbook on PATH, so five false timer-alert cards were filed on 2026-11-27
@@ -47,5 +47,10 @@ comms:
     ada-ha-michael standby — "the lane moved t; [ansible-chaba-stale-quadlet-inventory] primer injected 8 lesson(s):
     [ansible-ve; [camwall-retire-to-wiki] primer injected 8 lesson(s): no chaba-audit.service/cha; [camwall-retire-to-wiki]
     primer injected 8 lesson(s): no chab'
+- at: 2026-11-27 09:44
+  from: devin
+  text: 'Fix written: runner-tools-converge.sh now skips exit-0 without ansible-playbook, scopes all playbook calls
+    to --limit <hostname> (verified hostname==inventory name on all 7 hosts), and runs the fleet pass only on tony-dell
+    over ansible-ping-reachable hosts. 7 stubbed-binary pytest cases pass. Live verification running next.'
 claim:
   since: 2026-11-27 09:17
