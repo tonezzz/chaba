@@ -1,10 +1,10 @@
 title: Expand decision-1 gate evaluation to an approve-gate threshold
 subtitle: >
-  One batched Decisions API call over 60 real kanban briefs, with Tony's label
-  review and a held-out threshold calibration. High precision, still not a
-  hands-off approve gate.
+  Batched Decisions API calls over real kanban briefs: held-out threshold
+  calibration, 110/130-brief comparisons, a rubric probe, and a diverse-negative
+  third set that broke the earlier high-precision result. Not an approve gate.
 icon: education
-version: 6  # v6: Decisions score/choice rubric probe on both holdouts
+version: 7  # v7: diverse-negative third set (60 briefs, seven negative families)
 
 card: gemini-decision-1-gate-eval-2026-11-26  # ADA-1445
 date: 2026-11-26
@@ -186,6 +186,43 @@ delivered:
       - scripts/voice-bench/results/g4-decision-gate-rubric110-response.json
       - scripts/voice-bench/results/g4-decision-gate-rubric110-graded.json
 
+  diverse_negative_third_set:
+    date: 2026-11-27
+    purpose: "Third disjoint set with varied negative families, chosen by Tony, to test whether the high-precision gate generalizes beyond the note-deferral template family."
+    dataset:
+      counts: {ready: 20, not_ready: 40}
+      source: "origin/master card snapshot; disjoint by card ID and normalized brief from the 60/41/110/130-brief prior sets"
+      labeling: "Hand audited against the brief alone; READY = concrete action/deliverable + target with no external gate; NOT_READY = explicit approval/human gate, deferral, smoke/fixture, umbrella/tracker, informational, or descriptive only. Ambiguous cards dropped, not relabeled to fit a quota."
+      negative_families: {approval_gated: 5, deferred_or_parked: 8, human_eyeball: 1, fixture_or_test: 1, noop_or_informational: 6, umbrella_or_parent: 7, descriptive_only: 12}
+      note_template_family_excluded: true
+    method: "One batched POST /v1beta/decisions with 60 noul questions on the free-tier key; no card, config, billing, gateway or production-path changes."
+    decisions_api:
+      usage: {total_input_tokens: 9597, total_output_tokens: 0, total_tokens: 9597}
+      brier: 0.204
+      at_0.5: {tp: 8, fn: 12, tn: 28, fp: 12, accuracy: 0.6, approve_precision: 0.4, approve_recall: 0.4, false_approval_rate_wilson95: {low: 0.1807, high: 0.4543}}
+      at_0.5162: {tp: 8, fn: 12, tn: 30, fp: 10, accuracy: 0.6333, approve_precision: 0.4444, approve_recall: 0.4}
+      at_0.536574: {tp: 8, fn: 12, tn: 31, fp: 9, accuracy: 0.65, approve_precision: 0.4706, approve_recall: 0.4}
+      zero_fp_threshold_on_diverse60: {threshold: 0.754134, tp: 4, fn: 16, tn: 40, fp: 0, approve_recall: 0.2}
+      false_approvals_by_family_at_0.5: {approval_gated: 1, deferred_or_parked: 0, human_eyeball: 1, fixture_or_test: 1, noop_or_informational: 5, umbrella_or_parent: 0, descriptive_only: 4}
+      false_approvals_at_0.5: [chaba-exec-checkout-idc02-dirty-files, ada-chat-ux-verify, kk-mac-script-smoke, keywatch-or-idc03, keywatch-or-tony-dell, keywatch-or-tony-omen, mddb-ops-30g-analyze-compact-via-mddbd-r-eed976, prune-old-docs-sweep-exits-in-223ms-veri-6e0db7, cast-loop-breaker-test-failure, devin-taskdir-gc-dispatch-hosts, idc02-mddb-cors-wildcard-sec-008-set-mdd-1b41a4, mddb-storage-reduction-retention-relocation]
+      false_rejects_at_0.5: [ssh-access-ansible-standard, audit-auto-idc02, opencode-ada-ha-tab-standard, video-history-data-management, jevnest-kk-mac-capacity-loop, board-diagram-lanes-view, mcp-dell-alphavantage-llama-decision, job-health-sweep-consecutive-failure-alerts, unified-media-pack-layout, runner-auto-queue, adobe-stock-render-preview-wiring, jack-shared-workspace-repo-promotion]
+      label_ambiguity_sensitivity:
+        description: "Six NOT_READY briefs could reasonably be read as dispatchable from the brief alone (smoke E2E, failing test, three dead-credential alerts, one audit finding with a named lever). Primary labels unchanged; sensitivity only."
+        at_0.5: {tp: 14, fn: 12, tn: 28, fp: 6, accuracy: 0.7, approve_precision: 0.7, approve_recall: 0.5385}
+        at_0.536574: {tp: 13, fn: 13, tn: 30, fp: 4, accuracy: 0.7167, approve_precision: 0.7647, approve_recall: 0.5}
+      high_confidence_reject_gate: {threshold: 0.90, n: 1, all_correct: true, coverage_of_not_ready: "1/40"}
+      directional_confident_no: {rule: "p_yes <= 0.10 and confidence >= 0.90", n: 1, false_rejects: 0, coverage_of_not_ready: "1/40", verdict: "unvalidated, too little coverage"}
+    conclusion: "The earlier high-precision result does not generalize to varied negative families from brief-only text. Binary noul at 0.5 is not a safe general auto-approve signal; keeping human dispatch approval and preflight preconditions remains mandatory. A zero-FP threshold here costs 80% of READY recall."
+    artifacts:
+      - scripts/voice-bench/g4-decision-gate-diverse60-build.py
+      - scripts/voice-bench/g4-decision-gate-diverse60-call.py
+      - scripts/voice-bench/g4-decision-gate-diverse60-grade.py
+      - scripts/voice-bench/results/g4-decision-gate-diverse60-dataset.json
+      - scripts/voice-bench/results/g4-decision-gate-diverse60-review.txt
+      - scripts/voice-bench/results/g4-decision-gate-diverse60-payload.json
+      - scripts/voice-bench/results/g4-decision-gate-diverse60-response.json
+      - scripts/voice-bench/results/g4-decision-gate-diverse60-graded.json
+
 findings:
   - "The 60-brief set lifted accuracy from 0.80 to 0.9167 with zero false approvals at the default 0.5 threshold; 25/30 READY approved and 30/30 NOT_READY rejected."
   - "Tony reviewed the two borderline labels: nest-lane-metrics changed NOT_READY -> READY because it explicitly asks for dispatch, and devnest-news-promote-wp4010 changed READY -> NOT_READY because the action is gated on Ada/Tony approval. Rule refined: 'nothing needed from you' alone does not mean NOT_READY when dispatch is explicitly requested; idc02-runner-smoke stays NOT_READY because it says the worker drains itself."
@@ -207,6 +244,9 @@ findings:
   - "Rubric probe did not dethrone binary noul. On the 130 set the choice P(ready) at fixed 0.5 looked better (53/62 READY, 0 FP, Brier 0.0525 vs noul 0.0767), but on the independent 110 set choice and noul were effectively tied (one FP each, Brier 0.1245 vs 0.1248). Do not adopt the choice arm on this evidence."
   - "Score questions are useful as a triage rubric but not as an approve signal: probability-weighted expected level puts 'partial' above a 0.5 threshold (63 false approvals on 130), while P(level 3) is conservative (recall 0.56). Composing choice and score never beat choice alone."
   - "The broad confidence >= 0.90 auto-reject shortcut stays rejected. A directional version (confident NO only) is clean on 130 but still falsely rejects one genuinely READY brief on 110, so neither version is safe for automation."
+  - "The diverse-negative third set broke the high-precision result: at 0.5 the Decisions API approved 12/40 negatives (precision 0.40, recall 0.40, Brier 0.204, Wilson 95% FAR 18.07%-45.43%) and rejected 12/20 READY. It was clean only on deferred/backlog (0/8) and umbrella (0/7) negatives; noop/informational alerts were 5/6 false approvals."
+  - "Label ambiguity explains part but not all of the gap: reclassifying six arguably dispatchable negatives raises precision only to 0.70 at 0.5 and still leaves six false approvals. A zero-FP threshold on this set is 0.754134, which approves only 4/20 READY."
+  - "The directional confident-NO shortcut fired once on the diverse set with no false reject, but covers only 1/40 negatives; it remains unvalidated, not adopted."
 
 guardrails:
   - "No key, billing, gateway, model-pin or production-path changes."
@@ -214,6 +254,7 @@ guardrails:
   - "Read-only batch Decisions call; briefs came from repo cards, no card state changed."
   - "The validation set is 130 new disjoint briefs; primary metrics keep the deterministic labels even where a marker misfired. Corrected-label results are a sensitivity read only, not a retuned gate."
   - "Rubric probe used the free key on idc03 with two batched Decisions calls (260 and 220 questions); no paid key, billing, gateway, model-pin or production-path change. Docs fetched before writing code per the gemini-api-dev skill."
+  - "Diverse third set used one batched Decisions call on the free tier after the saved Michael key returned API_KEY_INVALID; a fresh free-tier key was supplied on a private secret card and its value was never printed or written to the repo."
 
 activation_gate:
   - "DONE 2026-11-26: Tony said 'please proceed' after the open-items review."
@@ -228,6 +269,7 @@ verify:
   - "DONE 2026-11-27: production preflight gates replayed locally against the same 110 card YAMLs; two more artifacts parsed, no API calls."
   - "DONE 2026-11-27: 130-brief independent validation built (60/70, disjoint from all three prior sets) and manually audited; Decisions call returned 130 answers with zero output tokens; graded locally with a label-noise sensitivity read and eight artifacts parsed."
   - "DONE 2026-11-27: score/choice rubric probe run on both 130 and 110 briefs (260 and 220 answers, zero output tokens), graded locally, ten artifacts parsed."
+  - "DONE 2026-11-27: diverse-negative third set built (20/40, seven negative families, disjoint from four prior sets), one batched Decisions call returned 60 answers with 9,597 input tokens and zero output tokens; graded locally including family breakdown, label-ambiguity sensitivity and shortcut checks; eight artifacts parsed."
 
 remaining:
   - "DONE 2026-11-27: Tony said 'proceed with the Managed Agents cost comparison and publish a wiki revid 799 with these decision-1 results'; published, MediaWiki assigned revid 808."
@@ -236,7 +278,8 @@ remaining:
   - "Do not wire any model approval into dispatch while typed_dispatch_available is false; keep the preflight preconditions and the native approval menu in front."
   - "DONE 2026-11-27: Decisions threshold 0.536574 validated on the fresh 130-brief set; zero genuine false approvals after label audit (raw labels show one marker misfire). The confidence >= 0.90 shortcut was re-validated and rejected."
   - "DONE 2026-11-27: score/choice rubric probe completed on both sets; choice arm not adopted because the 130-set gain did not replicate on 110. Binary noul at 0.5 remains the recommended pre-filter, with human approval."
+  - "Do not treat binary noul as a general auto-approve pre-filter: the diverse-negative set produced 12/40 false approvals at 0.5. Any revival needs a redesigned prompt or card text that includes the spec, plus a fresh independent validation set; no threshold tuning on this set."
   - "The full-model 0.25 threshold still needs an independent negative set once gemini-3.8-flash or an alternate generateContent model is available again; this run was 503/429 across all candidates."
-  - "If a third disjoint set is ever built, test the directional confident-NO shortcut there with both noul and choice arms before revisiting automation; the 110 false reject is unresolved."
+  - "DONE 2026-11-27: third disjoint set built and noul tested; directional confident-NO fired once with no false reject but remains unvalidated at 1/40 coverage. The choice arm was not run on this set (one batched call authorized), so the earlier 110 false reject is still unresolved."
   - "Do not retry any paid key until the cap situation is explicitly resolved by Tony."
   - "Do not publish these 110-brief results to the wiki without a separate go-ahead from Tony."

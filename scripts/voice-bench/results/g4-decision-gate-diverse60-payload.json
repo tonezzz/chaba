@@ -1,0 +1,246 @@
+{
+  "model": "gemini-decision-1",
+  "input": "Kanban card briefs to triage:\n1. [ada-alias-telemetry] 91 retired tool names still route via _ALIASES. conversation.log_event already records the emitted name (alias included) \u2014 the data exists, nothing aggregates it. Without a deprecation signal the compat layer is permanent and the model never converges on canonical names. Waiting in backlog.\n2. [ada-chat-ux-verify] The chat card was rebuilt 2026-10-09: bubbles + timestamps, typing indicator, auto-connect, sticky scroll, status dot. Deployed to ada-ha (?v=6). Needs a human eyeball before we call it done \u2014 the open request below is what chaba-nag will keep surfacing until answered.\n3. [ada-deploy-gate-tests] Deploy gate should refuse to restart on a broken tree. Today deploy-ada.sh ff-merges and restarts blind \u2014 a rebase resolution that silently dropped a 958-line tools.d rewrite only surfaced because its unit test happened to fail locally afterward (2026-10-08 incident). Waiting in backlog.\n4. [ada-ocb-skills-edu-postmerge-recheck] Post-merge verification for the ADA-0031 wiki education work: clear the two source-gone flags on lesson-d8b6938588d3.\n5. [ada-pi-ci] ada-pi has zero CI. tool-lint and the growing tests/ suite only run when someone remembers; gh-runs-watch already exists in chaba for failure alerts. Waiting in backlog.\n6. [ada-toolsd-runner-facade] Drop-ins get `runner` but hand-roll httpx against env URLs \u2014 they bypass runner.mddb's leader/follower read-routing (built in mddb_client for 88f22e3-era resilience) and reach runner.context.ha_client informally. Waiting in backlog.\n7. [ada-trace-full-result] ws tool_result events run through _safe_args \u2014 nested values truncated to 300 chars \u2014 so the trace shows a stump while the model saw the full result. A track_device scenario failed on assertions against names that were genuinely in the result (2026-10-07). Waiting in backlog.\n8. [ada-voice-host-status-drop-19-pr] Branch feat/host-status-drop-19 (commit 3411665, off ada-voice origin/main 7048cba) is pushed and tested but has no PR: the host has no gh CLI and no GitHub token. Human-owned step.\n9. [adobe-stock-render-preview-wiring] Real campaigns need assets.json entries carrying preview_url/thumbnail_url so ada_adobe_stock_reuse renders real thumbnails. Today only the fixture has them.\n10. [audit-auto-idc02] Daily audit-hosts diff found service/placement drift on this host. Deltas become work: fix the drift, or fix the SSOT declaration (expected_services, expected_absent, allowed_running, known_failed).\n11. [board-diagram-lanes-view] Lane/sub lane diagram of kanban cards per project, starting with Adobe Stock; Tony wants a mental image of project flow and manual control (claim/move/finish) without n8n.\n12. [board-tests-control-pane-lane-failures] Six tests/board failures reproduce at base commit and current master (3 control-pane projection, 3 ClaimPassLaneTest). Find the real cause; do not weaken asserts.\n13. [budget-watch-ada-dev-2] LiteLLM virtual key ada-dev-2 hit its budget cap: ada-dev-2: $10.004/$10 (100%), reset 2026-12-01 00:00:00 \u2014 AT/OVER cap, calls are being 422'd\n14. [capture-harvester-apply-gate-1426cfed] The capture router/harvester stay read-only until Tony explicitly approves sink writes. Decide whether to ever enable --apply.\n15. [cast-loop-breaker-test-failure] Current master fast pytest gate (python3 -m pytest tests -x -q) fails on tests/ada/test_cast_loop_breaker.py::test_patches_apply_clean \u2014 one patch reports diverged.\n16. [chaba-exec-checkout-idc02-dirty-files] idc02's exec checkout carries long-lived uncommitted edits re-applied by every hourly repo-sync autostash; pull phase 160s holding the board lock; owner unknown. Needs a per-group commit/move/discard decision.\n17. [colab-runtime-identity-and-duplicate-ses-11a426] A second Colab session is possible without the current notebook/MCP knowing. The `colab` MCP controls one attached notebook; `mcp-colab` reports Drive pack state, not account-wide runtime sessions. This risks paying for an idle/duplicate T4 or starting a queue on a CPU runtime.\n18. [devin-lane-cheap-ops-reroute] 2026-11-23 devin-lane audit: 36 devin-lane cards seen; explicit=16, kw=7, fallback=9 (conf 0.00). High-confidence devin keyword hits: kw:host (ansible-disk-headure/disk-guard/storage-rebalance/report-graph/render-job-writer) and kw:diagnos (ada-printer-diagnostics).\n19. [devin-session-audit-2026-10-29] 304 prior session histories were scanned; external CMS/Drive artifact verification remains. The audit marker is intentionally unchanged.\n20. [devin-taskdir-gc-dispatch-hosts] DEV-0044 lever 5. Verified on idc02 2026-11-24: 917 task dirs, no prune timer installed \u2014 devin-cleanup declared only for tony-dell/tony-omen, session-prune covers omen sessions.db only.\n21. [devnest-ada-mcp-bridge-sync] DevNest local ada-control bridge has the context-pack port plus a large diff vs its old HEAD; canonical ada-voice opencode/ada_mcp.py is the deployed source of truth.\n22. [gemini-38-live-extended-thinking-bench-2026-11-26] Run the 20-fixture voice bench plus barge-in and soak probes on the extended-thinking Live variant; compare to the promoted 3.8-live baseline before any pin decision.\n23. [idc02-mddb-cors-wildcard-sec-008-set-mdd-1b41a4] Follower logs CORS wildcard at startup; any website can read it from a browser. Low risk on tailnet but should be allowlisted before the port ever escapes.\n24. [jack-shared-workspace-repo-promotion] Use the shared Jack OpenCode instance for Tony/Jack collaboration with organized repo workspaces and a gated commit/push/PR flow.\n25. [jevnest-kk-mac-capacity-loop] Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner load, disk, and fallback gates.\n26. [job-health-sweep-consecutive-failure-alerts] Found 2026-10-30 (KNB-1008 deploy catchup): chaba-audit, mddb-vector-reindex, devin-bank-distill all had ZERO successful finishes in 30d on con01 \u2014 nobody knew until a human read journalctl. Dead jobs must surface themselves.\n27. [keywatch-or-idc03] Credential monitor flagged or-idc03: OR key sk-or-\u2026735b limit_remaining=0 \u2014 bridge dead (the 2026-10-12 failure mode)\n28. [keywatch-or-tony-dell] Credential monitor flagged or-tony-dell: OR key sk-or-\u2026735b limit_remaining=0 \u2014 bridge dead (the 2026-10-12 failure mode)\n29. [keywatch-or-tony-omen] Credential monitor flagged or-tony-omen: OR key sk-or-\u20265528 rejected (HTTP 401) \u2014 fleet inference dies\n30. [kk-mac-disk-headroom] KK-Mac has ~20 GB free while 27 GB of duplicated Qwen HF staging occupies the Nest worker cache. Review and reclaim only with Tony approval.\n31. [kk-mac-script-smoke] E2E: script executor syncs chaba and runs a bounded repo command on kk-mac under launchd \u2014 proves the provisioned runner claims+executes a real kanban card (card kk-mac-launchd-runner-followthrough).\n32. [lab-cf-kv-claw-channel] Prove a credential-free edge channel: one KV namespace + one Worker serving claw commands (GET) and ingesting reports (POST w/ thin ingest secret). First real content: a sanitized public board digest readable off-tailnet. Lab \u2014 no standard adoption until proven.\n33. [lab-gold-thb-causality] An experiment collecting gold, baht, and dollar prices to see which moves first. Data is still gathering \u2014 a keep-or-close decision is due 2026-10-18.\n34. [lab-meshtastic-th] An experiment listening to the Thai Meshtastic radio mesh and mapping what it hears. Keep-or-close decision due 2026-10-18.\n35. [m1-behavioral-fixture-activation-and-skips] OPS-1254 closed with a qualified candidate verdict, not a full frozen-verifier claim. Canonical M1 task still skips its fourth required idle-follower case.\n36. [mcp-dell-alphavantage-llama-decision] Two operational declarations absent from tony-dell config; resolve the AUD-0886 allowlist/retire verdict.\n37. [mddb-2-15-4-v2-18-10-upgrade-custom-lsn-aa896c] All 5 instances report update available. They run localhost/mddb:*-lsn and *-breaker images \u2014 upgrade means rebasing local patches onto 2.18.x and rebuilding, not a pull.\n38. [mddb-embed-stale-freebytes-metric-20g-vs-1b600f] /v1/health freeBytes on :11028 is cached from a much earlier disk state; other instances report live values. Minor but could mask a real full-disk.\n39. [mddb-ops-30g-analyze-compact-via-mddbd-r-eed976] Native backup copied ~29.7G of 30G file. If most is live docs (host-logs/telemetry) retention pruning is the lever; if freelist, offline -repair-db compaction reclaims it.\n40. [mddb-storage-reduction-retention-relocation] idc03 mddb banks total 28G; ops bank alone is 17G because the retention sweep is chained to ada-review-refresh on tony-omen (down for maintenance). Leader host-logs swept (12.8k docs). Ops collection too big to enumerate through live API \u2014 backup\u2192scratch-mddb\u2192delete-batch\u2192compact pipeline in flight.\n41. [omen-maintenance-preflight-back-up-ha-st-b3738f] Read-only scan 2026-10-25. Omen online, 8 key endpoints HTTP 200; 81GB /home free. Report: gdrive:ada-nest/queue/omen-maintenance-preflight-2026-10-25.md; host audit: reports/audit-hosts/tony-omen-20261025-085345.yml.\n42. [opencode-ada-ha-tab-standard] Define and add a protected OpenCode/Ada surface immediately after Board in the Ada HA chaba-admin dashboard, using the same app-tab contract as Board/Cline and a clear Node-RED exception or migration path.\n43. [ops-mn01-restore-sshd-shell-script-20261126] Global ForceCommand internal-sftp on mn01 blocks shell SSH and Ansible module execution. Restore the standard host behavior locally.\n44. [ops-tony-dell-ssh-restore-diag] Diagnostic follow-up: the first bootstrap run exited 2 in ~4s. Re-run verbosely with all output redirected to /home/tony/ssh-restore-diag.txt so it can be read over SFTP while shell access is still blocked. Exit 0 by design.\n45. [ops-tony-dell-ssh-restore-fix] Diagnostic follow-up: the first bootstrap run exited 2 in ~4s. Re-run verbosely with all output redirected to /home/tony/ssh-restore-fix.txt so it can be read over SFTP while shell access is still blocked. Exit 0 by design.\n46. [oswe-eval-ada-test-tab] Evaluate OpenSWE/Robin; self-deploy on tony-dell dev-mode, expose like ada-ocb, add 'Ada Test' sidebar tab (OSWE first) on ada-ha chaba-admin.\n47. [prune-old-docs-sweep-exits-in-223ms-veri-6e0db7] Timer ran 09:35 status=0 in 223ms \u2014 too fast to page 100k+ docs. Ops still holds host-logs docs older than the 3d policy. Either sweep silently no-ops or listing is failing.\n48. [release-lifecycle-standard] ssot.release-lifecycle.yml defines the six stages and bars; this card wires enforcement so a release can't skip a gate silently. Umbrella sits under ha-lanes but applies to ada-pi/scripts too.\n49. [report-loop-ada-opinion] Part 5 of the report\u2192session loop (umbrella: report-session-loop). Tony asks Ada aloud what she thinks of a report; she reads it, forms a view, and posts it to the card as a from=ada [opinion] comment a running session will see. Queued when Tony presses Start.\n50. [report-loop-bench] Part 6 of the report\u2192session loop (umbrella: report-session-loop). Installs the live scenario that catches regressions in Ada's read-report\u2192post-[opinion] loop, and points the nest bench domain at the accruing corpus. Queued when Tony presses Start.\n51. [report-loop-comment-delivery] Part 4 of the report\u2192session loop (umbrella: report-session-loop). Today only /respond answers reach a running session; this makes Ada's and Tony's mid-run comments land in the same answers.jsonl \u2014 one thread, both voices. Queued when Tony presses Start.\n52. [report-loop-session-rails] Part 3 of the report\u2192session loop (umbrella: report-session-loop). When a card carries report:<slug>, its dispatched session gets extra rails: read the report first, mirror progress into the report's session-log, leave it updated. Queued when Tony presses Start.\n53. [report-loop-spawn-api] Part 1 of the report\u2192session loop (umbrella: report-session-loop). Makes POST /card able to file an ARMED dispatch card \u2014 today it only takes title/note/help, so a CMS \"start session\" button can't spawn work. Queued when Tony presses Start.\n54. [report-loop-spawn-ui] Part 2 of the report\u2192session loop (umbrella: report-session-loop). Adds the visible affordance: a button on Ada's CMS report pages that files an armed kanban card \u2014 same effect as asking Ada to dispatch a session. Queued when Tony presses Start.\n55. [request-lifecycle] Makes sure your requests don't die inside a chat \u2014 they get captured, turned into cards, built, and verified. Waiting in the backlog \u2014 no action needed.\n56. [runner-auto-queue] action.labels/action.host are hard requirements \u2014 a queued card nothing satisfies starves silently. Fix the card's requirements or teach a host the label (RUNNER_LABELS in runner-agent.service + mirror in ssot.kanban.yml runner_fleet).\n57. [ssh-access-ansible-standard] Inventory is the declared SSH contract, but ~/.ssh/config and known_hosts are still hand-maintained per controller and push creds are discovered at claim time. Layered fix: declare -> generate -> verify -> bootstrap, with read-only verification first.\n58. [unified-media-pack-layout] Generalize the Nest artifact structure so Gaussian, image, video, audio, and document jobs share one Drive dataset/job/pack contract with local scratch processing and immutable manifests.\n59. [video-history-data-management] Create one lineage/retention procedure for PDF-to-video sources, plans, derived renders, reviews, final cuts, logs, and model caches.\n60. [video-history-opencode-doc] Have Ada/OpenCode independently review and verify the video history data-management procedure.",
+  "questions": {
+    "ready_1": {
+      "type": "noul",
+      "instructions": "Is brief 1 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_2": {
+      "type": "noul",
+      "instructions": "Is brief 2 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_3": {
+      "type": "noul",
+      "instructions": "Is brief 3 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_4": {
+      "type": "noul",
+      "instructions": "Is brief 4 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_5": {
+      "type": "noul",
+      "instructions": "Is brief 5 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_6": {
+      "type": "noul",
+      "instructions": "Is brief 6 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_7": {
+      "type": "noul",
+      "instructions": "Is brief 7 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_8": {
+      "type": "noul",
+      "instructions": "Is brief 8 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_9": {
+      "type": "noul",
+      "instructions": "Is brief 9 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_10": {
+      "type": "noul",
+      "instructions": "Is brief 10 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_11": {
+      "type": "noul",
+      "instructions": "Is brief 11 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_12": {
+      "type": "noul",
+      "instructions": "Is brief 12 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_13": {
+      "type": "noul",
+      "instructions": "Is brief 13 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_14": {
+      "type": "noul",
+      "instructions": "Is brief 14 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_15": {
+      "type": "noul",
+      "instructions": "Is brief 15 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_16": {
+      "type": "noul",
+      "instructions": "Is brief 16 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_17": {
+      "type": "noul",
+      "instructions": "Is brief 17 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_18": {
+      "type": "noul",
+      "instructions": "Is brief 18 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_19": {
+      "type": "noul",
+      "instructions": "Is brief 19 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_20": {
+      "type": "noul",
+      "instructions": "Is brief 20 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_21": {
+      "type": "noul",
+      "instructions": "Is brief 21 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_22": {
+      "type": "noul",
+      "instructions": "Is brief 22 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_23": {
+      "type": "noul",
+      "instructions": "Is brief 23 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_24": {
+      "type": "noul",
+      "instructions": "Is brief 24 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_25": {
+      "type": "noul",
+      "instructions": "Is brief 25 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_26": {
+      "type": "noul",
+      "instructions": "Is brief 26 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_27": {
+      "type": "noul",
+      "instructions": "Is brief 27 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_28": {
+      "type": "noul",
+      "instructions": "Is brief 28 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_29": {
+      "type": "noul",
+      "instructions": "Is brief 29 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_30": {
+      "type": "noul",
+      "instructions": "Is brief 30 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_31": {
+      "type": "noul",
+      "instructions": "Is brief 31 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_32": {
+      "type": "noul",
+      "instructions": "Is brief 32 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_33": {
+      "type": "noul",
+      "instructions": "Is brief 33 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_34": {
+      "type": "noul",
+      "instructions": "Is brief 34 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_35": {
+      "type": "noul",
+      "instructions": "Is brief 35 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_36": {
+      "type": "noul",
+      "instructions": "Is brief 36 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_37": {
+      "type": "noul",
+      "instructions": "Is brief 37 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_38": {
+      "type": "noul",
+      "instructions": "Is brief 38 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_39": {
+      "type": "noul",
+      "instructions": "Is brief 39 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_40": {
+      "type": "noul",
+      "instructions": "Is brief 40 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_41": {
+      "type": "noul",
+      "instructions": "Is brief 41 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_42": {
+      "type": "noul",
+      "instructions": "Is brief 42 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_43": {
+      "type": "noul",
+      "instructions": "Is brief 43 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_44": {
+      "type": "noul",
+      "instructions": "Is brief 44 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_45": {
+      "type": "noul",
+      "instructions": "Is brief 45 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_46": {
+      "type": "noul",
+      "instructions": "Is brief 46 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_47": {
+      "type": "noul",
+      "instructions": "Is brief 47 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_48": {
+      "type": "noul",
+      "instructions": "Is brief 48 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_49": {
+      "type": "noul",
+      "instructions": "Is brief 49 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_50": {
+      "type": "noul",
+      "instructions": "Is brief 50 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_51": {
+      "type": "noul",
+      "instructions": "Is brief 51 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_52": {
+      "type": "noul",
+      "instructions": "Is brief 52 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_53": {
+      "type": "noul",
+      "instructions": "Is brief 53 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_54": {
+      "type": "noul",
+      "instructions": "Is brief 54 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_55": {
+      "type": "noul",
+      "instructions": "Is brief 55 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_56": {
+      "type": "noul",
+      "instructions": "Is brief 56 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_57": {
+      "type": "noul",
+      "instructions": "Is brief 57 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_58": {
+      "type": "noul",
+      "instructions": "Is brief 58 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_59": {
+      "type": "noul",
+      "instructions": "Is brief 59 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    },
+    "ready_60": {
+      "type": "noul",
+      "instructions": "Is brief 60 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it is gated on approval, deferred, a fixture, an umbrella/tracker, informational, or descriptive only."
+    }
+  }
+}

@@ -1,0 +1,1019 @@
+{
+  "schema": "decision-gate-diverse60-graded",
+  "date": "2026-11-27",
+  "dataset": {
+    "counts": {
+      "ready": 20,
+      "not_ready": 40
+    },
+    "negative_families": {
+      "deferred_or_parked": 8,
+      "human_eyeball": 1,
+      "approval_gated": 5,
+      "noop_or_informational": 6,
+      "descriptive_only": 12,
+      "fixture_or_test": 1,
+      "umbrella_or_parent": 7
+    },
+    "label_rule": "Hand audited against the brief alone (the model never sees spec): READY = concrete action/deliverable and target with no external gate; NOT_READY = explicit approval/human gate, deferral, smoke/fixture, umbrella/tracker, informational, or descriptive only. Ambiguous cards were dropped, not relabeled to fit a quota.",
+    "disjoint_from": [
+      "60-brief train",
+      "41-brief probe",
+      "110-brief holdout",
+      "130-brief validation"
+    ]
+  },
+  "decisions_api": {
+    "model": "gemini-decision-1",
+    "usage": {
+      "total_tokens": 9597,
+      "total_input_tokens": 9597,
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 9597
+        }
+      ],
+      "total_output_tokens": 0
+    },
+    "brier": 0.204,
+    "thresholds": {
+      "default": {
+        "threshold": 0.5,
+        "confusion": {
+          "tp": 8,
+          "fn": 12,
+          "tn": 28,
+          "fp": 12,
+          "n": 60,
+          "accuracy": 0.6,
+          "approve_precision": 0.4,
+          "approve_recall": 0.4
+        },
+        "false_approval_rate_wilson95": {
+          "low": 0.1807,
+          "high": 0.4543
+        }
+      },
+      "train_calibrated": {
+        "threshold": 0.5161926625710843,
+        "confusion": {
+          "tp": 8,
+          "fn": 12,
+          "tn": 30,
+          "fp": 10,
+          "n": 60,
+          "accuracy": 0.6333,
+          "approve_precision": 0.4444,
+          "approve_recall": 0.4
+        },
+        "false_approval_rate_wilson95": {
+          "low": 0.1419,
+          "high": 0.4019
+        }
+      },
+      "holdout_zero_fp": {
+        "threshold": 0.536574,
+        "confusion": {
+          "tp": 8,
+          "fn": 12,
+          "tn": 31,
+          "fp": 9,
+          "n": 60,
+          "accuracy": 0.65,
+          "approve_precision": 0.4706,
+          "approve_recall": 0.4
+        },
+        "false_approval_rate_wilson95": {
+          "low": 0.1232,
+          "high": 0.375
+        }
+      }
+    },
+    "zero_fp_threshold_on_diverse60": {
+      "threshold": 0.754134,
+      "confusion": {
+        "tp": 4,
+        "fn": 16,
+        "tn": 40,
+        "fp": 0,
+        "n": 60,
+        "accuracy": 0.7333,
+        "approve_precision": 1.0,
+        "approve_recall": 0.2
+      }
+    },
+    "mean_p_yes_ready": 0.5353,
+    "mean_p_yes_not_ready": 0.3967,
+    "false_approvals_at_0.5": [
+      {
+        "n": 2,
+        "id": "ada-chat-ux-verify",
+        "family": "human_eyeball",
+        "p_yes": 0.5057,
+        "brief": "The chat card was rebuilt 2026-10-09: bubbles + timestamps, typing indicator, auto-connect, sticky scroll, status dot. Deployed to ada-ha (?v=6). Needs a human eyeball before we call it done \u2014 the open request below is w"
+      },
+      {
+        "n": 15,
+        "id": "cast-loop-breaker-test-failure",
+        "family": "descriptive_only",
+        "p_yes": 0.6875,
+        "brief": "Current master fast pytest gate (python3 -m pytest tests -x -q) fails on tests/ada/test_cast_loop_breaker.py::test_patches_apply_clean \u2014 one patch reports diverged."
+      },
+      {
+        "n": 16,
+        "id": "chaba-exec-checkout-idc02-dirty-files",
+        "family": "approval_gated",
+        "p_yes": 0.5298,
+        "brief": "idc02's exec checkout carries long-lived uncommitted edits re-applied by every hourly repo-sync autostash; pull phase 160s holding the board lock; owner unknown. Needs a per-group commit/move/discard decision."
+      },
+      {
+        "n": 20,
+        "id": "devin-taskdir-gc-dispatch-hosts",
+        "family": "descriptive_only",
+        "p_yes": 0.5139,
+        "brief": "DEV-0044 lever 5. Verified on idc02 2026-11-24: 917 task dirs, no prune timer installed \u2014 devin-cleanup declared only for tony-dell/tony-omen, session-prune covers omen sessions.db only."
+      },
+      {
+        "n": 23,
+        "id": "idc02-mddb-cors-wildcard-sec-008-set-mdd-1b41a4",
+        "family": "descriptive_only",
+        "p_yes": 0.5415,
+        "brief": "Follower logs CORS wildcard at startup; any website can read it from a browser. Low risk on tailnet but should be allowlisted before the port ever escapes."
+      },
+      {
+        "n": 27,
+        "id": "keywatch-or-idc03",
+        "family": "noop_or_informational",
+        "p_yes": 0.6475,
+        "brief": "Credential monitor flagged or-idc03: OR key sk-or-\u2026735b limit_remaining=0 \u2014 bridge dead (the 2026-10-12 failure mode)"
+      },
+      {
+        "n": 28,
+        "id": "keywatch-or-tony-dell",
+        "family": "noop_or_informational",
+        "p_yes": 0.6354,
+        "brief": "Credential monitor flagged or-tony-dell: OR key sk-or-\u2026735b limit_remaining=0 \u2014 bridge dead (the 2026-10-12 failure mode)"
+      },
+      {
+        "n": 29,
+        "id": "keywatch-or-tony-omen",
+        "family": "noop_or_informational",
+        "p_yes": 0.543,
+        "brief": "Credential monitor flagged or-tony-omen: OR key sk-or-\u20265528 rejected (HTTP 401) \u2014 fleet inference dies"
+      },
+      {
+        "n": 31,
+        "id": "kk-mac-script-smoke",
+        "family": "fixture_or_test",
+        "p_yes": 0.717,
+        "brief": "E2E: script executor syncs chaba and runs a bounded repo command on kk-mac under launchd \u2014 proves the provisioned runner claims+executes a real kanban card (card kk-mac-launchd-runner-followthrough)."
+      },
+      {
+        "n": 39,
+        "id": "mddb-ops-30g-analyze-compact-via-mddbd-r-eed976",
+        "family": "noop_or_informational",
+        "p_yes": 0.5603,
+        "brief": "Native backup copied ~29.7G of 30G file. If most is live docs (host-logs/telemetry) retention pruning is the lever; if freelist, offline -repair-db compaction reclaims it."
+      },
+      {
+        "n": 40,
+        "id": "mddb-storage-reduction-retention-relocation",
+        "family": "descriptive_only",
+        "p_yes": 0.5434,
+        "brief": "idc03 mddb banks total 28G; ops bank alone is 17G because the retention sweep is chained to ada-review-refresh on tony-omen (down for maintenance). Leader host-logs swept (12.8k docs). Ops collection too big to enumerate"
+      },
+      {
+        "n": 47,
+        "id": "prune-old-docs-sweep-exits-in-223ms-veri-6e0db7",
+        "family": "noop_or_informational",
+        "p_yes": 0.5434,
+        "brief": "Timer ran 09:35 status=0 in 223ms \u2014 too fast to page 100k+ docs. Ops still holds host-logs docs older than the 3d policy. Either sweep silently no-ops or listing is failing."
+      }
+    ],
+    "false_rejects_at_0.5": [
+      {
+        "n": 9,
+        "id": "adobe-stock-render-preview-wiring",
+        "p_yes": 0.3099,
+        "brief": "Real campaigns need assets.json entries carrying preview_url/thumbnail_url so ada_adobe_stock_reuse renders real thumbnails. Today only the fixture has them."
+      },
+      {
+        "n": 10,
+        "id": "audit-auto-idc02",
+        "p_yes": 0.4953,
+        "brief": "Daily audit-hosts diff found service/placement drift on this host. Deltas become work: fix the drift, or fix the SSOT declaration (expected_services, expected_absent, allowed_running, known_failed)."
+      },
+      {
+        "n": 11,
+        "id": "board-diagram-lanes-view",
+        "p_yes": 0.3889,
+        "brief": "Lane/sub lane diagram of kanban cards per project, starting with Adobe Stock; Tony wants a mental image of project flow and manual control (claim/move/finish) without n8n."
+      },
+      {
+        "n": 24,
+        "id": "jack-shared-workspace-repo-promotion",
+        "p_yes": 0.303,
+        "brief": "Use the shared Jack OpenCode instance for Tony/Jack collaboration with organized repo workspaces and a gated commit/push/PR flow."
+      },
+      {
+        "n": 25,
+        "id": "jevnest-kk-mac-capacity-loop",
+        "p_yes": 0.4311,
+        "brief": "Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner load, disk, and fallback gates."
+      },
+      {
+        "n": 26,
+        "id": "job-health-sweep-consecutive-failure-alerts",
+        "p_yes": 0.3607,
+        "brief": "Found 2026-10-30 (KNB-1008 deploy catchup): chaba-audit, mddb-vector-reindex, devin-bank-distill all had ZERO successful finishes in 30d on con01 \u2014 nobody knew until a human read journalctl. Dead jobs must surface themse"
+      },
+      {
+        "n": 36,
+        "id": "mcp-dell-alphavantage-llama-decision",
+        "p_yes": 0.3765,
+        "brief": "Two operational declarations absent from tony-dell config; resolve the AUD-0886 allowlist/retire verdict."
+      },
+      {
+        "n": 42,
+        "id": "opencode-ada-ha-tab-standard",
+        "p_yes": 0.4742,
+        "brief": "Define and add a protected OpenCode/Ada surface immediately after Board in the Ada HA chaba-admin dashboard, using the same app-tab contract as Board/Cline and a clear Node-RED exception or migration path."
+      },
+      {
+        "n": 56,
+        "id": "runner-auto-queue",
+        "p_yes": 0.3212,
+        "brief": "action.labels/action.host are hard requirements \u2014 a queued card nothing satisfies starves silently. Fix the card's requirements or teach a host the label (RUNNER_LABELS in runner-agent.service + mirror in ssot.kanban.yml"
+      },
+      {
+        "n": 57,
+        "id": "ssh-access-ansible-standard",
+        "p_yes": 0.4996,
+        "brief": "Inventory is the declared SSH contract, but ~/.ssh/config and known_hosts are still hand-maintained per controller and push creds are discovered at claim time. Layered fix: declare -> generate -> verify -> bootstrap, wit"
+      },
+      {
+        "n": 58,
+        "id": "unified-media-pack-layout",
+        "p_yes": 0.3577,
+        "brief": "Generalize the Nest artifact structure so Gaussian, image, video, audio, and document jobs share one Drive dataset/job/pack contract with local scratch processing and immutable manifests."
+      },
+      {
+        "n": 59,
+        "id": "video-history-data-management",
+        "p_yes": 0.4491,
+        "brief": "Create one lineage/retention procedure for PDF-to-video sources, plans, derived renders, reviews, final cuts, logs, and model caches."
+      }
+    ],
+    "high_confidence_reject_gate": {
+      "threshold": 0.9,
+      "n": 1,
+      "all_not_ready": true,
+      "false_rejects": [],
+      "coverage_of_not_ready": "1/40"
+    },
+    "directional_confident_no": {
+      "rule": "reject when p_yes <= 0.10 and confidence >= 0.90",
+      "n": 1,
+      "ids": [
+        "request-lifecycle"
+      ],
+      "false_rejects": [],
+      "coverage_of_not_ready": "1/40"
+    }
+  },
+  "label_ambiguity_sensitivity": {
+    "description": "Primary labels unchanged. Sensitivity only: reclassify six briefs a human could reasonably call dispatchable (smoke E2E, failing test, three dead-credential alerts, one audit finding with a named lever) as READY.",
+    "reclassified_ids": [
+      "cast-loop-breaker-test-failure",
+      "devin-taskdir-gc-dispatch-hosts",
+      "keywatch-or-idc03",
+      "keywatch-or-tony-dell",
+      "keywatch-or-tony-omen",
+      "kk-mac-script-smoke"
+    ],
+    "confusions": {
+      "default": {
+        "threshold": 0.5,
+        "confusion": {
+          "tp": 14,
+          "fn": 12,
+          "tn": 28,
+          "fp": 6,
+          "n": 60,
+          "accuracy": 0.7,
+          "approve_precision": 0.7,
+          "approve_recall": 0.5385
+        }
+      },
+      "train_calibrated": {
+        "threshold": 0.5161926625710843,
+        "confusion": {
+          "tp": 13,
+          "fn": 13,
+          "tn": 29,
+          "fp": 5,
+          "n": 60,
+          "accuracy": 0.7,
+          "approve_precision": 0.7222,
+          "approve_recall": 0.5
+        }
+      },
+      "holdout_zero_fp": {
+        "threshold": 0.536574,
+        "confusion": {
+          "tp": 13,
+          "fn": 13,
+          "tn": 30,
+          "fp": 4,
+          "n": 60,
+          "accuracy": 0.7167,
+          "approve_precision": 0.7647,
+          "approve_recall": 0.5
+        }
+      }
+    }
+  },
+  "negative_family_breakdown": {
+    "approval_gated": {
+      "n": 5,
+      "false_approvals_at_0.5": [
+        "chaba-exec-checkout-idc02-dirty-files"
+      ],
+      "false_approvals_at_0.536574": [],
+      "mean_p_yes": 0.3173,
+      "max_p_yes": 0.5298
+    },
+    "deferred_or_parked": {
+      "n": 8,
+      "false_approvals_at_0.5": [],
+      "false_approvals_at_0.536574": [],
+      "mean_p_yes": 0.2654,
+      "max_p_yes": 0.3626
+    },
+    "descriptive_only": {
+      "n": 12,
+      "false_approvals_at_0.5": [
+        "cast-loop-breaker-test-failure",
+        "devin-taskdir-gc-dispatch-hosts",
+        "idc02-mddb-cors-wildcard-sec-008-set-mdd-1b41a4",
+        "mddb-storage-reduction-retention-relocation"
+      ],
+      "false_approvals_at_0.536574": [
+        "cast-loop-breaker-test-failure",
+        "idc02-mddb-cors-wildcard-sec-008-set-mdd-1b41a4",
+        "mddb-storage-reduction-retention-relocation"
+      ],
+      "mean_p_yes": 0.4154,
+      "max_p_yes": 0.6875
+    },
+    "fixture_or_test": {
+      "n": 1,
+      "false_approvals_at_0.5": [
+        "kk-mac-script-smoke"
+      ],
+      "false_approvals_at_0.536574": [
+        "kk-mac-script-smoke"
+      ],
+      "mean_p_yes": 0.717,
+      "max_p_yes": 0.717
+    },
+    "human_eyeball": {
+      "n": 1,
+      "false_approvals_at_0.5": [
+        "ada-chat-ux-verify"
+      ],
+      "false_approvals_at_0.536574": [],
+      "mean_p_yes": 0.5057,
+      "max_p_yes": 0.5057
+    },
+    "noop_or_informational": {
+      "n": 6,
+      "false_approvals_at_0.5": [
+        "keywatch-or-idc03",
+        "keywatch-or-tony-dell",
+        "keywatch-or-tony-omen",
+        "mddb-ops-30g-analyze-compact-via-mddbd-r-eed976",
+        "prune-old-docs-sweep-exits-in-223ms-veri-6e0db7"
+      ],
+      "false_approvals_at_0.536574": [
+        "keywatch-or-idc03",
+        "keywatch-or-tony-dell",
+        "keywatch-or-tony-omen",
+        "mddb-ops-30g-analyze-compact-via-mddbd-r-eed976",
+        "prune-old-docs-sweep-exits-in-223ms-veri-6e0db7"
+      ],
+      "mean_p_yes": 0.5543,
+      "max_p_yes": 0.6475
+    },
+    "umbrella_or_parent": {
+      "n": 7,
+      "false_approvals_at_0.5": [],
+      "false_approvals_at_0.536574": [],
+      "mean_p_yes": 0.3751,
+      "max_p_yes": 0.4012
+    }
+  },
+  "rows": [
+    {
+      "n": 1,
+      "id": "ada-alias-telemetry",
+      "brief": "91 retired tool names still route via _ALIASES. conversation.log_event already records the emitted name (alias included) \u2014 the data exists, nothing aggregates it. Without a deprecation signal the compat layer is permanent and the model never converges on canonical names. Waiting in backlog.",
+      "label": false,
+      "kind": "deferred_or_parked",
+      "label_reason": "waiting in backlog",
+      "p_yes": 0.2564227745885833,
+      "confidence": 0.7435772254114167
+    },
+    {
+      "n": 2,
+      "id": "ada-chat-ux-verify",
+      "brief": "The chat card was rebuilt 2026-10-09: bubbles + timestamps, typing indicator, auto-connect, sticky scroll, status dot. Deployed to ada-ha (?v=6). Needs a human eyeball before we call it done \u2014 the open request below is what chaba-nag will keep surfacing until answered.",
+      "label": false,
+      "kind": "human_eyeball",
+      "label_reason": "needs a human eyeball before it is done",
+      "p_yes": 0.5056813047571409,
+      "confidence": 0.5056813047571409
+    },
+    {
+      "n": 3,
+      "id": "ada-deploy-gate-tests",
+      "brief": "Deploy gate should refuse to restart on a broken tree. Today deploy-ada.sh ff-merges and restarts blind \u2014 a rebase resolution that silently dropped a 958-line tools.d rewrite only surfaced because its unit test happened to fail locally afterward (2026-10-08 incident). Waiting in backlog.",
+      "label": false,
+      "kind": "deferred_or_parked",
+      "label_reason": "waiting in backlog",
+      "p_yes": 0.36256365624902515,
+      "confidence": 0.6374363437509749
+    },
+    {
+      "n": 4,
+      "id": "ada-ocb-skills-edu-postmerge-recheck",
+      "brief": "Post-merge verification for the ADA-0031 wiki education work: clear the two source-gone flags on lesson-d8b6938588d3.",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "clear the two source-gone flags on a named lesson",
+      "p_yes": 0.7541344008208976,
+      "confidence": 0.7541344008208976
+    },
+    {
+      "n": 5,
+      "id": "ada-pi-ci",
+      "brief": "ada-pi has zero CI. tool-lint and the growing tests/ suite only run when someone remembers; gh-runs-watch already exists in chaba for failure alerts. Waiting in backlog.",
+      "label": false,
+      "kind": "deferred_or_parked",
+      "label_reason": "waiting in backlog",
+      "p_yes": 0.21569503616806396,
+      "confidence": 0.784304963831936
+    },
+    {
+      "n": 6,
+      "id": "ada-toolsd-runner-facade",
+      "brief": "Drop-ins get `runner` but hand-roll httpx against env URLs \u2014 they bypass runner.mddb's leader/follower read-routing (built in mddb_client for 88f22e3-era resilience) and reach runner.context.ha_client informally. Waiting in backlog.",
+      "label": false,
+      "kind": "deferred_or_parked",
+      "label_reason": "waiting in backlog",
+      "p_yes": 0.361794480490391,
+      "confidence": 0.638205519509609
+    },
+    {
+      "n": 7,
+      "id": "ada-trace-full-result",
+      "brief": "ws tool_result events run through _safe_args \u2014 nested values truncated to 300 chars \u2014 so the trace shows a stump while the model saw the full result. A track_device scenario failed on assertions against names that were genuinely in the result (2026-10-07). Waiting in backlog.",
+      "label": false,
+      "kind": "deferred_or_parked",
+      "label_reason": "waiting in backlog",
+      "p_yes": 0.35383870597265804,
+      "confidence": 0.646161294027342
+    },
+    {
+      "n": 8,
+      "id": "ada-voice-host-status-drop-19-pr",
+      "brief": "Branch feat/host-status-drop-19 (commit 3411665, off ada-voice origin/main 7048cba) is pushed and tested but has no PR: the host has no gh CLI and no GitHub token. Human-owned step.",
+      "label": false,
+      "kind": "approval_gated",
+      "label_reason": "human-owned step: no gh CLI or token on the host",
+      "p_yes": 0.35010925085926003,
+      "confidence": 0.64989074914074
+    },
+    {
+      "n": 9,
+      "id": "adobe-stock-render-preview-wiring",
+      "brief": "Real campaigns need assets.json entries carrying preview_url/thumbnail_url so ada_adobe_stock_reuse renders real thumbnails. Today only the fixture has them.",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "needs assets.json entries with preview/thumbnail URLs; fixture mention is context, not a gate",
+      "p_yes": 0.3099391674757806,
+      "confidence": 0.6900608325242195
+    },
+    {
+      "n": 10,
+      "id": "audit-auto-idc02",
+      "brief": "Daily audit-hosts diff found service/placement drift on this host. Deltas become work: fix the drift, or fix the SSOT declaration (expected_services, expected_absent, allowed_running, known_failed).",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "fix the drift or the SSOT declaration on this host",
+      "p_yes": 0.49527940164263723,
+      "confidence": 0.5047205983573628
+    },
+    {
+      "n": 11,
+      "id": "board-diagram-lanes-view",
+      "brief": "Lane/sub lane diagram of kanban cards per project, starting with Adobe Stock; Tony wants a mental image of project flow and manual control (claim/move/finish) without n8n.",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "build a lane/sub-lane diagram starting with Adobe Stock",
+      "p_yes": 0.38887272794276956,
+      "confidence": 0.6111272720572305
+    },
+    {
+      "n": 12,
+      "id": "board-tests-control-pane-lane-failures",
+      "brief": "Six tests/board failures reproduce at base commit and current master (3 control-pane projection, 3 ClaimPassLaneTest). Find the real cause; do not weaken asserts.",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "find the real cause in named failing tests; do not weaken asserts",
+      "p_yes": 0.6950873120013125,
+      "confidence": 0.6950873120013125
+    },
+    {
+      "n": 13,
+      "id": "budget-watch-ada-dev-2",
+      "brief": "LiteLLM virtual key ada-dev-2 hit its budget cap: ada-dev-2: $10.004/$10 (100%), reset 2026-12-01 00:00:00 \u2014 AT/OVER cap, calls are being 422'd",
+      "label": false,
+      "kind": "noop_or_informational",
+      "label_reason": "budget-cap alert with no action in the brief",
+      "p_yes": 0.3964928011310081,
+      "confidence": 0.603507198868992
+    },
+    {
+      "n": 14,
+      "id": "capture-harvester-apply-gate-1426cfed",
+      "brief": "The capture router/harvester stay read-only until Tony explicitly approves sink writes. Decide whether to ever enable --apply.",
+      "label": false,
+      "kind": "approval_gated",
+      "label_reason": "stay read-only until Tony explicitly approves sink writes",
+      "p_yes": 0.1530341218675312,
+      "confidence": 0.8469658781324688
+    },
+    {
+      "n": 15,
+      "id": "cast-loop-breaker-test-failure",
+      "brief": "Current master fast pytest gate (python3 -m pytest tests -x -q) fails on tests/ada/test_cast_loop_breaker.py::test_patches_apply_clean \u2014 one patch reports diverged.",
+      "label": false,
+      "kind": "descriptive_only",
+      "label_reason": "failing-test report; fix lives only in spec",
+      "p_yes": 0.6875493180553148,
+      "confidence": 0.6875493180553148
+    },
+    {
+      "n": 16,
+      "id": "chaba-exec-checkout-idc02-dirty-files",
+      "brief": "idc02's exec checkout carries long-lived uncommitted edits re-applied by every hourly repo-sync autostash; pull phase 160s holding the board lock; owner unknown. Needs a per-group commit/move/discard decision.",
+      "label": false,
+      "kind": "approval_gated",
+      "label_reason": "needs a per-group human commit/move/discard decision; spec says NOT for dispatch",
+      "p_yes": 0.529759066992733,
+      "confidence": 0.529759066992733
+    },
+    {
+      "n": 17,
+      "id": "colab-runtime-identity-and-duplicate-ses-11a426",
+      "brief": "A second Colab session is possible without the current notebook/MCP knowing. The `colab` MCP controls one attached notebook; `mcp-colab` reports Drive pack state, not account-wide runtime sessions. This risks paying for an idle/duplicate T4 or starting a queue on a CPU runtime.",
+      "label": false,
+      "kind": "descriptive_only",
+      "label_reason": "risk description, no action in brief",
+      "p_yes": 0.24679025081522457,
+      "confidence": 0.7532097491847755
+    },
+    {
+      "n": 18,
+      "id": "devin-lane-cheap-ops-reroute",
+      "brief": "2026-11-23 devin-lane audit: 36 devin-lane cards seen; explicit=16, kw=7, fallback=9 (conf 0.00). High-confidence devin keyword hits: kw:host (ansible-disk-headure/disk-guard/storage-rebalance/report-graph/render-job-writer) and kw:diagnos (ada-printer-diagnostics).",
+      "label": false,
+      "kind": "descriptive_only",
+      "label_reason": "audit findings only, no imperative",
+      "p_yes": 0.4504651959860557,
+      "confidence": 0.5495348040139443
+    },
+    {
+      "n": 19,
+      "id": "devin-session-audit-2026-10-29",
+      "brief": "304 prior session histories were scanned; external CMS/Drive artifact verification remains. The audit marker is intentionally unchanged.",
+      "label": false,
+      "kind": "descriptive_only",
+      "label_reason": "scan summary; 'verification remains' is not a concrete action",
+      "p_yes": 0.16774035000824813,
+      "confidence": 0.8322596499917518
+    },
+    {
+      "n": 20,
+      "id": "devin-taskdir-gc-dispatch-hosts",
+      "brief": "DEV-0044 lever 5. Verified on idc02 2026-11-24: 917 task dirs, no prune timer installed \u2014 devin-cleanup declared only for tony-dell/tony-omen, session-prune covers omen sessions.db only.",
+      "label": false,
+      "kind": "descriptive_only",
+      "label_reason": "verified findings only, no imperative",
+      "p_yes": 0.5139406066545268,
+      "confidence": 0.5139406066545268
+    },
+    {
+      "n": 21,
+      "id": "devnest-ada-mcp-bridge-sync",
+      "brief": "DevNest local ada-control bridge has the context-pack port plus a large diff vs its old HEAD; canonical ada-voice opencode/ada_mcp.py is the deployed source of truth.",
+      "label": false,
+      "kind": "descriptive_only",
+      "label_reason": "state description; comparison action lives only in spec",
+      "p_yes": 0.34269159553786877,
+      "confidence": 0.6573084044621312
+    },
+    {
+      "n": 22,
+      "id": "gemini-38-live-extended-thinking-bench-2026-11-26",
+      "brief": "Run the 20-fixture voice bench plus barge-in and soak probes on the extended-thinking Live variant; compare to the promoted 3.8-live baseline before any pin decision.",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "run the bench and compare to baseline; '20-fixture' is test fixtures, not a scratch card",
+      "p_yes": 0.6547631955360728,
+      "confidence": 0.6547631955360728
+    },
+    {
+      "n": 23,
+      "id": "idc02-mddb-cors-wildcard-sec-008-set-mdd-1b41a4",
+      "brief": "Follower logs CORS wildcard at startup; any website can read it from a browser. Low risk on tailnet but should be allowlisted before the port ever escapes.",
+      "label": false,
+      "kind": "descriptive_only",
+      "label_reason": "conditional 'should be allowlisted before', no present action",
+      "p_yes": 0.5414576342865322,
+      "confidence": 0.5414576342865322
+    },
+    {
+      "n": 24,
+      "id": "jack-shared-workspace-repo-promotion",
+      "brief": "Use the shared Jack OpenCode instance for Tony/Jack collaboration with organized repo workspaces and a gated commit/push/PR flow.",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "use the shared instance with organized workspaces and a gated commit flow",
+      "p_yes": 0.3030383509333359,
+      "confidence": 0.6969616490666641
+    },
+    {
+      "n": 25,
+      "id": "jevnest-kk-mac-capacity-loop",
+      "brief": "Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner load, disk, and fallback gates.",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "feed the KK-Mac with bounded work under named runtime capacity gates",
+      "p_yes": 0.4311166245080591,
+      "confidence": 0.5688833754919409
+    },
+    {
+      "n": 26,
+      "id": "job-health-sweep-consecutive-failure-alerts",
+      "brief": "Found 2026-10-30 (KNB-1008 deploy catchup): chaba-audit, mddb-vector-reindex, devin-bank-distill all had ZERO successful finishes in 30d on con01 \u2014 nobody knew until a human read journalctl. Dead jobs must surface themselves.",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "dead jobs must surface themselves; named hosts and jobs",
+      "p_yes": 0.36065625750502117,
+      "confidence": 0.6393437424949788
+    },
+    {
+      "n": 27,
+      "id": "keywatch-or-idc03",
+      "brief": "Credential monitor flagged or-idc03: OR key sk-or-\u2026735b limit_remaining=0 \u2014 bridge dead (the 2026-10-12 failure mode)",
+      "label": false,
+      "kind": "noop_or_informational",
+      "label_reason": "credential-monitor alert with no action in the brief",
+      "p_yes": 0.6475477603096821,
+      "confidence": 0.6475477603096821
+    },
+    {
+      "n": 28,
+      "id": "keywatch-or-tony-dell",
+      "brief": "Credential monitor flagged or-tony-dell: OR key sk-or-\u2026735b limit_remaining=0 \u2014 bridge dead (the 2026-10-12 failure mode)",
+      "label": false,
+      "kind": "noop_or_informational",
+      "label_reason": "credential-monitor alert with no action in the brief",
+      "p_yes": 0.6353536150507845,
+      "confidence": 0.6353536150507845
+    },
+    {
+      "n": 29,
+      "id": "keywatch-or-tony-omen",
+      "brief": "Credential monitor flagged or-tony-omen: OR key sk-or-\u20265528 rejected (HTTP 401) \u2014 fleet inference dies",
+      "label": false,
+      "kind": "noop_or_informational",
+      "label_reason": "credential-monitor alert with no action in the brief",
+      "p_yes": 0.5429837905516539,
+      "confidence": 0.5429837905516539
+    },
+    {
+      "n": 30,
+      "id": "kk-mac-disk-headroom",
+      "brief": "KK-Mac has ~20 GB free while 27 GB of duplicated Qwen HF staging occupies the Nest worker cache. Review and reclaim only with Tony approval.",
+      "label": false,
+      "kind": "approval_gated",
+      "label_reason": "review and reclaim only with Tony approval",
+      "p_yes": 0.1935180128071102,
+      "confidence": 0.8064819871928898
+    },
+    {
+      "n": 31,
+      "id": "kk-mac-script-smoke",
+      "brief": "E2E: script executor syncs chaba and runs a bounded repo command on kk-mac under launchd \u2014 proves the provisioned runner claims+executes a real kanban card (card kk-mac-launchd-runner-followthrough).",
+      "label": false,
+      "kind": "fixture_or_test",
+      "label_reason": "smoke card proving the runner claims+executes a card",
+      "p_yes": 0.7169615394154601,
+      "confidence": 0.7169615394154601
+    },
+    {
+      "n": 32,
+      "id": "lab-cf-kv-claw-channel",
+      "brief": "Prove a credential-free edge channel: one KV namespace + one Worker serving claw commands (GET) and ingesting reports (POST w/ thin ingest secret). First real content: a sanitized public board digest readable off-tailnet. Lab \u2014 no standard adoption until proven.",
+      "label": false,
+      "kind": "approval_gated",
+      "label_reason": "pre-req: Tony must add token scopes before the card is dispatchable",
+      "p_yes": 0.35986563763773405,
+      "confidence": 0.640134362362266
+    },
+    {
+      "n": 33,
+      "id": "lab-gold-thb-causality",
+      "brief": "An experiment collecting gold, baht, and dollar prices to see which moves first. Data is still gathering \u2014 a keep-or-close decision is due 2026-10-18.",
+      "label": false,
+      "kind": "deferred_or_parked",
+      "label_reason": "data still gathering; keep-or-close decision due",
+      "p_yes": 0.200025271062262,
+      "confidence": 0.799974728937738
+    },
+    {
+      "n": 34,
+      "id": "lab-meshtastic-th",
+      "brief": "An experiment listening to the Thai Meshtastic radio mesh and mapping what it hears. Keep-or-close decision due 2026-10-18.",
+      "label": false,
+      "kind": "deferred_or_parked",
+      "label_reason": "keep-or-close decision due; experiment still gathering",
+      "p_yes": 0.3250183380700307,
+      "confidence": 0.6749816619299693
+    },
+    {
+      "n": 35,
+      "id": "m1-behavioral-fixture-activation-and-skips",
+      "brief": "OPS-1254 closed with a qualified candidate verdict, not a full frozen-verifier claim. Canonical M1 task still skips its fourth required idle-follower case.",
+      "label": false,
+      "kind": "descriptive_only",
+      "label_reason": "status report on a closed verdict",
+      "p_yes": 0.2990688061225357,
+      "confidence": 0.7009311938774643
+    },
+    {
+      "n": 36,
+      "id": "mcp-dell-alphavantage-llama-decision",
+      "brief": "Two operational declarations absent from tony-dell config; resolve the AUD-0886 allowlist/retire verdict.",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "resolve the named allowlist/retire verdict",
+      "p_yes": 0.37652040202996445,
+      "confidence": 0.6234795979700356
+    },
+    {
+      "n": 37,
+      "id": "mddb-2-15-4-v2-18-10-upgrade-custom-lsn-aa896c",
+      "brief": "All 5 instances report update available. They run localhost/mddb:*-lsn and *-breaker images \u2014 upgrade means rebasing local patches onto 2.18.x and rebuilding, not a pull.",
+      "label": false,
+      "kind": "descriptive_only",
+      "label_reason": "status report; upgrade implications only",
+      "p_yes": 0.485530879849488,
+      "confidence": 0.514469120150512
+    },
+    {
+      "n": 38,
+      "id": "mddb-embed-stale-freebytes-metric-20g-vs-1b600f",
+      "brief": "/v1/health freeBytes on :11028 is cached from a much earlier disk state; other instances report live values. Minor but could mask a real full-disk.",
+      "label": false,
+      "kind": "descriptive_only",
+      "label_reason": "bug observation, no action in brief",
+      "p_yes": 0.4493747573678339,
+      "confidence": 0.5506252426321661
+    },
+    {
+      "n": 39,
+      "id": "mddb-ops-30g-analyze-compact-via-mddbd-r-eed976",
+      "brief": "Native backup copied ~29.7G of 30G file. If most is live docs (host-logs/telemetry) retention pruning is the lever; if freelist, offline -repair-db compaction reclaims it.",
+      "label": false,
+      "kind": "noop_or_informational",
+      "label_reason": "conditional analysis only; no imperative",
+      "p_yes": 0.5602514300980698,
+      "confidence": 0.5602514300980698
+    },
+    {
+      "n": 40,
+      "id": "mddb-storage-reduction-retention-relocation",
+      "brief": "idc03 mddb banks total 28G; ops bank alone is 17G because the retention sweep is chained to ada-review-refresh on tony-omen (down for maintenance). Leader host-logs swept (12.8k docs). Ops collection too big to enumerate through live API \u2014 backup\u2192scratch-mddb\u2192delete-batch\u2192compact pipeline in flight.",
+      "label": false,
+      "kind": "descriptive_only",
+      "label_reason": "in-flight pipeline, no imperative in brief",
+      "p_yes": 0.5434021226591753,
+      "confidence": 0.5434021226591753
+    },
+    {
+      "n": 41,
+      "id": "omen-maintenance-preflight-back-up-ha-st-b3738f",
+      "brief": "Read-only scan 2026-10-25. Omen online, 8 key endpoints HTTP 200; 81GB /home free. Report: gdrive:ada-nest/queue/omen-maintenance-preflight-2026-10-25.md; host audit: reports/audit-hosts/tony-omen-20261025-085345.yml.",
+      "label": false,
+      "kind": "descriptive_only",
+      "label_reason": "read-only scan report",
+      "p_yes": 0.25677555091245674,
+      "confidence": 0.7432244490875433
+    },
+    {
+      "n": 42,
+      "id": "opencode-ada-ha-tab-standard",
+      "brief": "Define and add a protected OpenCode/Ada surface immediately after Board in the Ada HA chaba-admin dashboard, using the same app-tab contract as Board/Cline and a clear Node-RED exception or migration path.",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "define and add the protected tab after Board",
+      "p_yes": 0.4742165701080358,
+      "confidence": 0.5257834298919641
+    },
+    {
+      "n": 43,
+      "id": "ops-mn01-restore-sshd-shell-script-20261126",
+      "brief": "Global ForceCommand internal-sftp on mn01 blocks shell SSH and Ansible module execution. Restore the standard host behavior locally.",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "restore standard host behavior locally on a named host",
+      "p_yes": 0.8300085913459851,
+      "confidence": 0.8300085913459851
+    },
+    {
+      "n": 44,
+      "id": "ops-tony-dell-ssh-restore-diag",
+      "brief": "Diagnostic follow-up: the first bootstrap run exited 2 in ~4s. Re-run verbosely with all output redirected to /home/tony/ssh-restore-diag.txt so it can be read over SFTP while shell access is still blocked. Exit 0 by design.",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "re-run verbosely to a named output file; exit 0 by design",
+      "p_yes": 0.8941734296217921,
+      "confidence": 0.8941734296217921
+    },
+    {
+      "n": 45,
+      "id": "ops-tony-dell-ssh-restore-fix",
+      "brief": "Diagnostic follow-up: the first bootstrap run exited 2 in ~4s. Re-run verbosely with all output redirected to /home/tony/ssh-restore-fix.txt so it can be read over SFTP while shell access is still blocked. Exit 0 by design.",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "re-run verbosely to a named output file; exit 0 by design",
+      "p_yes": 0.854271418271354,
+      "confidence": 0.854271418271354
+    },
+    {
+      "n": 46,
+      "id": "oswe-eval-ada-test-tab",
+      "brief": "Evaluate OpenSWE/Robin; self-deploy on tony-dell dev-mode, expose like ada-ocb, add 'Ada Test' sidebar tab (OSWE first) on ada-ha chaba-admin.",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "evaluate, self-deploy, and add the named sidebar tab",
+      "p_yes": 0.6655115633254219,
+      "confidence": 0.6655115633254219
+    },
+    {
+      "n": 47,
+      "id": "prune-old-docs-sweep-exits-in-223ms-veri-6e0db7",
+      "brief": "Timer ran 09:35 status=0 in 223ms \u2014 too fast to page 100k+ docs. Ops still holds host-logs docs older than the 3d policy. Either sweep silently no-ops or listing is failing.",
+      "label": false,
+      "kind": "noop_or_informational",
+      "label_reason": "either/or diagnostic question, no chosen action",
+      "p_yes": 0.5434439802291686,
+      "confidence": 0.5434439802291686
+    },
+    {
+      "n": 48,
+      "id": "release-lifecycle-standard",
+      "brief": "ssot.release-lifecycle.yml defines the six stages and bars; this card wires enforcement so a release can't skip a gate silently. Umbrella sits under ha-lanes but applies to ada-pi/scripts too.",
+      "label": false,
+      "kind": "umbrella_or_parent",
+      "label_reason": "explicit umbrella card spanning multiple lanes",
+      "p_yes": 0.35569198976248106,
+      "confidence": 0.6443080102375189
+    },
+    {
+      "n": 49,
+      "id": "report-loop-ada-opinion",
+      "brief": "Part 5 of the report\u2192session loop (umbrella: report-session-loop). Tony asks Ada aloud what she thinks of a report; she reads it, forms a view, and posts it to the card as a from=ada [opinion] comment a running session will see. Queued when Tony presses Start.",
+      "label": false,
+      "kind": "umbrella_or_parent",
+      "label_reason": "part 5 of an umbrella loop; queued when Tony presses Start",
+      "p_yes": 0.3874192167884609,
+      "confidence": 0.6125807832115391
+    },
+    {
+      "n": 50,
+      "id": "report-loop-bench",
+      "brief": "Part 6 of the report\u2192session loop (umbrella: report-session-loop). Installs the live scenario that catches regressions in Ada's read-report\u2192post-[opinion] loop, and points the nest bench domain at the accruing corpus. Queued when Tony presses Start.",
+      "label": false,
+      "kind": "umbrella_or_parent",
+      "label_reason": "part 6 of an umbrella loop; queued when Tony presses Start",
+      "p_yes": 0.357101992399708,
+      "confidence": 0.6428980076002919
+    },
+    {
+      "n": 51,
+      "id": "report-loop-comment-delivery",
+      "brief": "Part 4 of the report\u2192session loop (umbrella: report-session-loop). Today only /respond answers reach a running session; this makes Ada's and Tony's mid-run comments land in the same answers.jsonl \u2014 one thread, both voices. Queued when Tony presses Start.",
+      "label": false,
+      "kind": "umbrella_or_parent",
+      "label_reason": "part 4 of an umbrella loop; queued when Tony presses Start",
+      "p_yes": 0.37577959461686533,
+      "confidence": 0.6242204053831346
+    },
+    {
+      "n": 52,
+      "id": "report-loop-session-rails",
+      "brief": "Part 3 of the report\u2192session loop (umbrella: report-session-loop). When a card carries report:<slug>, its dispatched session gets extra rails: read the report first, mirror progress into the report's session-log, leave it updated. Queued when Tony presses Start.",
+      "label": false,
+      "kind": "umbrella_or_parent",
+      "label_reason": "part 3 of an umbrella loop; queued when Tony presses Start",
+      "p_yes": 0.35375295859426514,
+      "confidence": 0.6462470414057349
+    },
+    {
+      "n": 53,
+      "id": "report-loop-spawn-api",
+      "brief": "Part 1 of the report\u2192session loop (umbrella: report-session-loop). Makes POST /card able to file an ARMED dispatch card \u2014 today it only takes title/note/help, so a CMS \"start session\" button can't spawn work. Queued when Tony presses Start.",
+      "label": false,
+      "kind": "umbrella_or_parent",
+      "label_reason": "part 1 of an umbrella loop; queued when Tony presses Start",
+      "p_yes": 0.3951194980135297,
+      "confidence": 0.6048805019864703
+    },
+    {
+      "n": 54,
+      "id": "report-loop-spawn-ui",
+      "brief": "Part 2 of the report\u2192session loop (umbrella: report-session-loop). Adds the visible affordance: a button on Ada's CMS report pages that files an armed kanban card \u2014 same effect as asking Ada to dispatch a session. Queued when Tony presses Start.",
+      "label": false,
+      "kind": "umbrella_or_parent",
+      "label_reason": "part 2 of an umbrella loop; queued when Tony presses Start",
+      "p_yes": 0.40116767200688314,
+      "confidence": 0.5988323279931169
+    },
+    {
+      "n": 55,
+      "id": "request-lifecycle",
+      "brief": "Makes sure your requests don't die inside a chat \u2014 they get captured, turned into cards, built, and verified. Waiting in the backlog \u2014 no action needed.",
+      "label": false,
+      "kind": "deferred_or_parked",
+      "label_reason": "waiting in backlog \u2014 no action needed",
+      "p_yes": 0.04797308880487018,
+      "confidence": 0.9520269111951298
+    },
+    {
+      "n": 56,
+      "id": "runner-auto-queue",
+      "brief": "action.labels/action.host are hard requirements \u2014 a queued card nothing satisfies starves silently. Fix the card's requirements or teach a host the label (RUNNER_LABELS in runner-agent.service + mirror in ssot.kanban.yml runner_fleet).",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "fix the card requirements or teach a host the label",
+      "p_yes": 0.3212129489964945,
+      "confidence": 0.6787870510035054
+    },
+    {
+      "n": 57,
+      "id": "ssh-access-ansible-standard",
+      "brief": "Inventory is the declared SSH contract, but ~/.ssh/config and known_hosts are still hand-maintained per controller and push creds are discovered at claim time. Layered fix: declare -> generate -> verify -> bootstrap, with read-only verification first.",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "layered fix: declare -> generate -> verify the SSH contract",
+      "p_yes": 0.499583429025795,
+      "confidence": 0.500416570974205
+    },
+    {
+      "n": 58,
+      "id": "unified-media-pack-layout",
+      "brief": "Generalize the Nest artifact structure so Gaussian, image, video, audio, and document jobs share one Drive dataset/job/pack contract with local scratch processing and immutable manifests.",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "generalize the Nest artifact structure with a named pack contract",
+      "p_yes": 0.3577334910926293,
+      "confidence": 0.6422665089073707
+    },
+    {
+      "n": 59,
+      "id": "video-history-data-management",
+      "brief": "Create one lineage/retention procedure for PDF-to-video sources, plans, derived renders, reviews, final cuts, logs, and model caches.",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "create one lineage/retention procedure for named artifact classes",
+      "p_yes": 0.4490644088981747,
+      "confidence": 0.5509355911018252
+    },
+    {
+      "n": 60,
+      "id": "video-history-opencode-doc",
+      "brief": "Have Ada/OpenCode independently review and verify the video history data-management procedure.",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "independently review and verify the video history procedure",
+      "p_yes": 0.5898217214316563,
+      "confidence": 0.5898217214316563
+    }
+  ]
+}

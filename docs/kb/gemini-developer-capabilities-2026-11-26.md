@@ -156,6 +156,32 @@ directional auto-reject shortcut is safe. Binary `noul` at 0.5 remains the
 recommended high-precision pre-filter with human approval. Evidence:
 `scripts/voice-bench/results/g4-decision-gate-rubric{130,110}-graded.json`.
 
+**Diverse-negative third set (2026-11-27): the pre-filter does not generalize.**
+Tony chose a third disjoint set of 60 briefs (20 READY / 40 NOT_READY) with
+hand-audited negative families other than the note-deferral templates: explicit
+approval/human gates (5), deferred/keep-or-close (8), smoke/fixture (1),
+noop/informational alerts (6), umbrella/tracker (7), and descriptive-only
+observations (12). One batched Decisions call returned 60 `noul` answers in
+9,597 input tokens with zero output tokens. At the default 0.5 threshold it
+approved **12/40 negatives** (precision 0.40, recall 0.40, Brier 0.204,
+Wilson 95% false-approval rate 18.1–45.4%) and rejected 12/20 READY. The
+previous tuned thresholds only reduced false approvals to 10 and 9; a zero-FP
+threshold on this set is 0.754134, approving just 4/20 READY. The model was
+clean only on deferred (0/8) and umbrella (0/7) negatives; noop/informational
+alerts were 5/6 false approvals, and a human-eyeball gate plus a human-owned
+decision card were both approved.
+
+Brief-only label ambiguity explains part of the gap: six of the false approvals
+are arguably dispatchable from the brief alone (a failing test, three dead-credential
+alerts, a smoke E2E, an audit finding with a named lever). Reclassifying those
+six as READY raises precision only to 0.70 at 0.5 (still six false approvals)
+and 0.765 at 0.536574 (four false approvals). The directional confident-NO
+shortcut fired once with no false reject but covers only 1/40 negatives, so it
+remains unvalidated. Conclusion: binary `noul` at 0.5 is **not** a safe general
+auto-approve signal beyond the note-deferral family; keep preflight preconditions
+and human dispatch approval, and do not tune a threshold on this set. Evidence:
+`scripts/voice-bench/results/g4-decision-gate-diverse60-graded.json`.
+
 ### Managed Agents
 
 `client.agents` / `agent=...` with a sandboxed filesystem, code execution, web
@@ -258,9 +284,11 @@ be empty, so code must handle that. This is distinct from the separate
    (one raw-label "false approval" was a note-marker misfire), but the
    confidence >= 0.90 auto-reject shortcut is rejected, a score/choice rubric
    probe found no reliable gain over binary noul, and the full-model threshold
-   is still unvalidated. Production has no model judge and preflight cannot
-   approve at all today, so a model gate must sit after those preconditions,
-   never bypass them.
+   is still unvalidated. A later diverse-negative third set broke that result:
+   12/40 false approvals at 0.5 (precision 0.40), so the gate is not a general
+   readiness classifier — keep it behind preflight and human approval, if used
+   at all. Production has no model judge and preflight cannot approve at all
+   today, so a model gate must sit after those preconditions, never bypass them.
 5. The official `gemini-api-dev` skill is installed and trialled (87.5% vs
    25% pass rate with vs without it); load it for any Gemini API code work.
 6. DONE: Managed Agents verified on the free tier and cost-compared on a
@@ -364,6 +392,9 @@ result. Keep 3.5 as the comparison baseline.
 - Decisions rubric probe: harnesses `scripts/voice-bench/g4-decision-gate-rubric{130,110}-{build,grade}.py`
   and JSONs `g4-decision-gate-rubric{130,110}-*` under
   `scripts/voice-bench/results/`.
+- Diverse-negative third set: harnesses
+  `scripts/voice-bench/g4-decision-gate-diverse60-{build,call,grade}.py` and
+  JSONs `g4-decision-gate-diverse60-*` under `scripts/voice-bench/results/`.
 - Related prior pages: `Education:LLM Providers/Gemini API`,
   `Education:Ada-Developer-Paid-Model-Candidates`,
   `Education:Ada-Dev-Gap-Model-Vs-Harness`.
