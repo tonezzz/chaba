@@ -1,7 +1,7 @@
 id: runner-tools-converge-timer-2min-bug
 title: runner-tools-converge.timer fires every 2 minutes, not 2 hours
 column: doing
-updated: 2026-11-27 21:17
+updated: 2026-11-27 21:18
 brief: ansible/systemd/runner-tools-converge.timer uses OnCalendar=*:0/2:05 (hour=*, minute=0/2, second=05) = every
   2 minutes fleet-wide. Description and commit 45219a493cc claim every 2 hours. tony-omen journal shows full check/apply/audit/re-audit
   at 20:52, 20:54, 20:56 with repeated runner-agent restarts.
@@ -32,6 +32,16 @@ comms:
 - at: 2026-11-27 21:17
   from: tony-dell
   text: claimed
+- at: 2026-11-27 21:18
+  from: chaba
+  text: started devin-task-20261127-211839-change-oncalendar-to-0-2-05-00 on tony-dell (dispatch)
+- at: 2026-11-27 21:18
+  from: chaba
+  text: 'primer injected 8 lesson(s): Duplicate systemd units survive job migrations: ssot.jobs.yml said con01 but
+    ome; [idle-qa-and-backups-idc] primer injected 8 lesson(s): no chaba-audit.service/ch; [camwall-retire-to-wiki]
+    primer injected 8 lesson(s): no chaba-audit.service/cha; [camwall-retire-to-wiki] primer injected 8 lesson(s):
+    no chaba-audit.service/cha; [publish-promote-knowledge-capture-ssot-w-d34a39] [2026-11-21 devin] Phase B+ dr;
+    [runner-auto-con01] ANSIBLE SYSTEMWIDE VERIFY 2026-11-27 16:5'
 action:
   type: dispatch
   status: running
