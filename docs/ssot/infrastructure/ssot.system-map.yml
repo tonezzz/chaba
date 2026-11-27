@@ -100,6 +100,9 @@ personas:
     tailnet: https://idc03.taila0626a.ts.net/apps/ha/ada-tony
     home: tony-ha
     keys: [gemini-tony-paid, litellm-vkey-chaba, ha-tony-token-svc-ada, ada-device-keys]
+    standby: "con01 masked warm-standby units (ada-ha-tony + ada-line-relay,
+      staged 2026-11-26) — inert; failover runbook
+      docs/kb/con01-ada-lane-warm-standby.md"
   - id: kraut-ai
     label: Kraut — Michael's household persona (confirmed 2026-10-16 — Kraut = sauerkraut, Michael likes it)
     unit: ada-ai-kraut.service       # renamed from ada-ha-michael.service 2026-10-16 — first lane of grand-rename
@@ -149,6 +152,9 @@ edges:
     unit: ada-line-relay.service
     host: idc03
     keys: [line-relay-channel]
+    standby: "con01 masked warm-standby unit (staged 2026-11-26) — caddy-edge
+      on con01 already routes /webhook/line + /relay-img/* to :8912;
+      failover runbook docs/kb/con01-ada-lane-warm-standby.md"
   - id: ada-tg-relay
     role: Telegram relay — tony lane (@ChabaClawBot; display name ADA)
     unit: ada-tg-relay.service
