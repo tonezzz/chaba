@@ -1,7 +1,7 @@
 id: mddb-idc03-oom-coldstart-publisher-window
 title: MDDB idc03 OOM restarts + cold-start window break publishers
 column: done
-updated: 2026-11-27 18:10
+updated: 2026-11-27 18:14
 brief: mddb.service on idc03 was OOM-killed 15:58:20 (NRestarts=7 today); ~104s cold start leaves /v1 routes 404
   after health port opens. mddb-cms POST /v1/add write timeout 30s under embed congestion. Two timer publishers
   exited 1 at 15:55 and 16:00; both self-healed next tick.
@@ -172,6 +172,16 @@ comms:
     exited 1 with HTTP 404. Added to scripts/ada/media-inbox-update.py (chaba branch ops/idc03-memory-guard, commit
     fe6b3a3661c) and ada-voice/scripts/ops-health-report.py (commit 04aa253, pushed): gate POST on GET /v1/stats
     (MDDB_ROUTE_WAIT_S=120), retry 404/429/5xx + disconnects up'
+- at: 2026-11-27 18:14
+  from: chaba
+  text: 'MEM-1507 RESOLVED — publisher hardening DEPLOYED + VERIFIED 2026-11-27 18:10-18:13. Playbook ok=12 changed=3
+    failed=0; backups in /home/tony/.local/share/chaba-backups/idc03-publisher-hardening/20261127T181047. Installed
+    hashes matched pins; py_compile passed with both interpreters; /v1/stats 200 on :11023 and :11027. Fresh oneshot
+    ticks started after deploy (the 18:10 media tick had started before it) both finished ExecMainStatus=0: media-inbox[kk]
+    published 28 leaves + rollup + qc, ops-health '
+- at: 2026-11-27 18:14
+  from: chaba
+  text: closed by chaba
 action:
   type: dispatch
   status: done
