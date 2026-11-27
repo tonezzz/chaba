@@ -1,7 +1,7 @@
 id: omen-lan-reservation
 title: tony-omen LAN IP needs DHCP reservation (or dynamic refs)
-column: review
-updated: 2026-11-27 15:06
+column: backlog
+updated: 2026-11-27 15:25
 brief: 'Omen DHCP drifted 192.168.2.86->.84 on 2026-10-12 and silently broke every hardcoded LAN reference (cast-browser-proxy
   target, cast-shots-http bind, MEDIA_BASE, barrier scripts). Proxy+shots now DHCP-proof, but MEDIA_BASE=http://192.168.2.84:8090
   must stay a LAN IP (Chromecast cannot reach tailnet) — it will break again on the next renumber. Fix: pin a DHCP
@@ -312,6 +312,9 @@ comms:
 - at: 2026-11-27 15:06
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-27 15:25
+  from: tony
+  text: queued for processing
 requests:
 - id: the-card-notes-that-the-tony-o-1dbcf8
   ask: The card notes that the tony-omen LAN IP needs a DHCP reservation or dynamic refs, but does not specify the
@@ -345,8 +348,7 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: done
-  runner: idc02
+  status: queued
   attempts: 1
   sweep:
     stale_running: 2026-11-27 14:55
@@ -356,5 +358,4 @@ action:
     peak, 0B memory swap peak.'
 claim:
   since: 2026-11-27 14:19
-awaiting_action: true
 review_kind: verify
