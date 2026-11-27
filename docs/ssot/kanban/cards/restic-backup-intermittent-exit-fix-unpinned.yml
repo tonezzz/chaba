@@ -1,7 +1,7 @@
 id: restic-backup-intermittent-exit-fix-unpinned
 title: fleet-restic-backup on tony-macbook intermittently exits 1
 column: doing
-updated: 2026-11-27 09:57
+updated: 2026-11-27 09:59
 spec: fleet-restic-backup.service on tony-macbook alternates between Result=success (1.8-4.9s) and status=1/FAILURE
   on consecutive runs (including 09:06). Read the full journal around the failed runs to identify the actual restic
   error (repository lock, target tony-dell:/mnt/sdb unavailable, or a transient network drop), then add a bounded
@@ -16,6 +16,8 @@ action:
   status: running
   runner: tony-dell
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 09:59
 ref: OPS-1486
 comms:
 - at: 2026-11-27 09:36
@@ -60,5 +62,9 @@ comms:
     Network is unreachable to 100.68.142.13. Fix deployed on tony-macbook ~/.local/bin/fleet-restic-backup.sh: bounded
     preflight waits <=180s for the sftp repo host (10s polls, DIAGNOSIS line on exhaustion), each restic call retries
     4x with 15s doubling backoff (cap 120s), diagnose() classi'
+- at: 2026-11-27 09:59
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-093800-fleet-restic-backup-service-on no longer active on tony-dell but
+    card still says running — sweeping its branch'
 claim:
   since: 2026-11-27 09:37
