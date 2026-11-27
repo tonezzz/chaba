@@ -1,7 +1,7 @@
 id: mddb-ops-write-latency-triage
 title: 'mddb-ops: diagnose /add + /ingest ~125s congestion waves (read-only, approval-gated)'
 column: doing
-updated: 2026-11-27 13:03
+updated: 2026-11-27 13:30
 brief: Next batch 2026-11-27 — 4 runner slots free.
 priority: high
 tags:
@@ -55,5 +55,17 @@ comms:
 - at: 2026-11-27 13:03
   from: devin
   text: dispatch started on idc02 — probing mddb-ops read-only (health/stats/latency) now
+- at: 2026-11-27 13:30
+  from: devin
+  text: 'DIAGNOSIS (read-only probes + idc03 journal/systemd):
+
+
+    ROOT CAUSE — a detached drain loop on idc03 (PID 3862968, PPID=1, started 10:48 ICT by the ada-review-refresh-prune-timeout-fix
+    dispatch) runs `prune-old-docs.py --only host-logs --budget-seconds 1800` in `while true` + 90s sleep, logging
+    to /tmp/prune-drain.log.
+
+
+    Chain: host-logs has 592,247 docs of which 387,737 are expired (>3d) — backlog from weeks of broken retention
+    sweep (MEM-0871 paging-limit + ADA-1485 timeouts). Each loop iteration'
 claim:
   since: 2026-11-27 12:58
