@@ -1,7 +1,7 @@
 id: weather-bakeoff-ha-config-bounded-retry
 title: Bounded retry for weather-bakeoff HA /api/config fetch (kraut-rain-watch repeat)
 column: doing
-updated: 2026-11-27 18:32
+updated: 2026-11-27 18:40
 brief: Fix weather-bakeoff.py http_json transient HA reset with bounded retry + tests; code only, no deploy.
 priority: high
 tags:
@@ -37,6 +37,8 @@ action:
   executor: devin
   runner: con01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 18:40
 comms:
 - at: 2026-11-27 18:22
   from: chaba
@@ -86,6 +88,10 @@ comms:
     prohibited: open failed; curl to 127.0.0.1:18123/api/config resets 3/3, while the upstream HA on tony-omen answers
     401 (alive). Effective sshd policy on tony-omen is allowtcpforwarding no (global, set 2026-11-26 by the fleet
     SFTP hardening; canonical source roles/'
+- at: 2026-11-27 18:40
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-182454-root-cause-scripts-ada-weather no longer active on con01 but card
+    still says running — sweeping its branch'
 ref: HOM-1509
 claim:
   since: 2026-11-27 18:23
