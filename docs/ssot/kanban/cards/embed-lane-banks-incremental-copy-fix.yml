@@ -1,7 +1,7 @@
 id: embed-lane-banks-incremental-copy-fix
 title: 'embed-lane-banks: 112k-doc one-shot copy exceeds 15min timer — make resumable'
 column: doing
-updated: 2026-11-27 12:45
+updated: 2026-11-27 13:16
 brief: Systemic fix from live triage 2026-11-27; two runner slots free.
 priority: high
 tags:
@@ -71,5 +71,12 @@ comms:
     exit 1 on a transient src scan drop (Remote end closed). Added scan_failures threshold (rc=1 only after 3 consecutive)
     + redeployed. Run 2 in progress: resumed devin-handoff at offset 35000, +1000 copied by row 36000, synced banks
     skipping cleanly.'
+- at: 2026-11-27 13:16
+  from: devin
+  text: 'DONE + verified on idc02: 3 consecutive Result=success runs (12:52/13:03/13:13 +07), each exiting 0 at
+    the 10min budget with cursors persisted. devin-handoff cursor advanced 35000->37278/112386 (copied_total 4582),
+    22/24 banks synced-clean, scan_failures=0. Hourly timer live (next 14:03). timer-alert-idc02-embed-lane-banks
+    already in done — sentinel keeps it green. Deliverables: scripts/embed/embed-lane.py resumable banks, ssot.jobs.yml
+    hourly/15m/--budget 600, re-rendered units, +4 unit tests. '
 claim:
   since: 2026-11-27 11:33
