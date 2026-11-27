@@ -1,7 +1,7 @@
 id: log-shipper-mddb-heartbeat-timeout-fix
 title: 'Log shipper: heartbeat /add 10s timeout < observed 13-20s (fleet-wide false failures)'
-column: backlog
-updated: 2026-11-27 11:33
+column: doing
+updated: 2026-11-27 11:34
 brief: Systemic fix from live triage 2026-11-27; two runner slots free.
 priority: high
 tags:
@@ -29,7 +29,9 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: queued
+  status: running
+  runner: tony-dell
+  attempts: 1
 ref: OPS-1497
 comms:
 - at: 2026-11-27 11:32
@@ -46,3 +48,8 @@ comms:
   from: chaba
   text: 'kk-mac defers: executor=devin declared but this runner is launchd — devin-dispatch drives systemd-run internally;
     the card stays queued for a Linux runner (executor=opencode/script serve here)'
+- at: 2026-11-27 11:34
+  from: tony-dell
+  text: claimed
+claim:
+  since: 2026-11-27 11:34
