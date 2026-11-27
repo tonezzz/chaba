@@ -1,7 +1,7 @@
 id: restic-backup-intermittent-exit-fix
 title: fleet-restic-backup on tony-macbook intermittently exits 1
 column: backlog
-updated: 2026-11-27 09:30
+updated: 2026-11-27 09:31
 spec: fleet-restic-backup.service on tony-macbook alternates between Result=success (1.8-4.9s) and status=1/FAILURE
   on consecutive runs (including 09:06). Read the full journal around the failed runs to identify the actual restic
   error (repository lock, target tony-dell:/mnt/sdb unavailable, or a transient network drop), then add a bounded
@@ -24,3 +24,7 @@ comms:
   from: tony
   text: '[timer-fix batch 2026-11-27] Approved after triage: intermittent exit-1 on tony-macbook, not a hard constant
     failure — find the specific restic error before changing the script.'
+- at: 2026-11-27 09:31
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
