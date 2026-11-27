@@ -1,6 +1,6 @@
 id: vector-reindex-async-jobs-bounded-sweep
 title: 'vector-reindex.py: async jobs + bounded sweep + per-collection failure isolation'
-column: backlog
+column: doing
 updated: 2026-11-27 21:47
 brief: 'Follow-up to OPS-1515 triage: the daily reindex sweep times out at 45min because it fires 64 sequential
   sync per-collection reindex calls with no global deadline; one collection has 149,550 docs (86% of corpus). Deployed
@@ -43,9 +43,15 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 21:47
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
-claim: {}
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-27 21:47
