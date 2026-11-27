@@ -1,7 +1,7 @@
 id: fix-gev-shortcut-on-screen-6-472f86
 title: Fix GEV Shortcut on Screen 6
 column: doing
-updated: 2026-11-27 08:40
+updated: 2026-11-27 09:05
 priority: medium
 note: God's Eye View shortcut fails with 404 on screen 6.
 ref: MED-0049
@@ -169,6 +169,11 @@ comms:
 - at: 2026-11-27 08:35
   from: chaba
   text: 'con01 defers: runner at local cap (1/1) — remote slots unaffected'
+- at: 2026-11-27 09:05
+  from: devin
+  text: 'investigating: screen 6 = vcast-real-6; GEV shortcut navs to /apps/gev/ (200) but every /apps/gev/api/*
+    call 404s — edge proxies full path to :4173 which mounts routes at /api/*. Fixing prefix rewrite in gods-eye-view
+    server.'
 requests:
 - id: all-registered-runner-agents-c-eba883
   ask: All registered runner agents (con01, tony-dell, mn01, tony-omen) are currently deferring tasks because the
