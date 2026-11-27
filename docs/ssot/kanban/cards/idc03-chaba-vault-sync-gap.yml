@@ -1,7 +1,7 @@
 id: idc03-chaba-vault-sync-gap
 title: idc03 chaba-vault checkout has no sync mechanism — 119k commits behind, caused 2 outages
 column: doing
-updated: 2026-11-27 11:19
+updated: 2026-11-27 11:21
 priority: high
 tags:
 - infra
@@ -59,6 +59,11 @@ comms:
     chaba-repo-sync updates the checkout copy, and unt; idc03 deploy-ada.sh fetches `origin` = tony-dell''s LOCAL
     checkout path, not GitH; [chaba-exec-checkout-idc02-dirty-files] DECISION 2026-11-24: all 7 code/WIP file; [idc02-exec-checkout-117-staged-files-of-70de51]
     auto-merge n'
+- at: 2026-11-27 11:21
+  from: devin
+  text: 'dispatch picked up. Verifying which units execute scripts from chaba-vault vs use --vault args, then implementing
+    option (c): scripts from synced ~/CascadeProjects/chaba, vault data stays in chaba-vault. Will decide e1128f502
+    fate in the job doc.'
 action:
   type: dispatch
   status: running
