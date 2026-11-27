@@ -182,6 +182,17 @@ auto-approve signal beyond the note-deferral family; keep preflight precondition
 and human dispatch approval, and do not tune a threshold on this set. Evidence:
 `scripts/voice-bench/results/g4-decision-gate-diverse60-graded.json`.
 
+A **paired `choice` arm** was then run on the same shared input (60 answers,
+13,317 input tokens, zero output tokens). It improved recall (16/20 READY vs
+8/20) and Brier (0.1859 vs 0.204), but made 13 false approvals against noul's
+12 at 0.5, and 11 vs 9 at the tuned 0.536574 threshold. Of 60 paired decisions,
+choice fixed six noul false approvals and introduced seven new ones — including
+two deferred and three umbrella cards where noul was clean. The top-option rule
+was worst (22 false approvals), and the confident-not-ready shortcut never fired
+(0/40 coverage). This confirms the earlier decision not to adopt `choice`:
+better discrimination does not clear the zero-FP bar. Evidence:
+`scripts/voice-bench/results/g4-decision-gate-diverse60-choice-graded.json`.
+
 ### Managed Agents
 
 `client.agents` / `agent=...` with a sandboxed filesystem, code execution, web
@@ -413,6 +424,9 @@ result. Keep 3.5 as the comparison baseline.
 - Diverse-negative third set: harnesses
   `scripts/voice-bench/g4-decision-gate-diverse60-{build,call,grade}.py` and
   JSONs `g4-decision-gate-diverse60-*` under `scripts/voice-bench/results/`.
+  Paired choice arm: harnesses
+  `scripts/voice-bench/g4-decision-gate-diverse60-choice-{build,call,grade}.py`
+  and JSONs `g4-decision-gate-diverse60-choice-*` in the same results directory.
 - Related prior pages: `Education:LLM Providers/Gemini API`,
   `Education:Ada-Developer-Paid-Model-Candidates`,
   `Education:Ada-Dev-Gap-Model-Vs-Harness`.
