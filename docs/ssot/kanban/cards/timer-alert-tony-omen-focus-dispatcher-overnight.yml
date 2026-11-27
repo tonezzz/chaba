@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-focus-dispatcher-overnight
 title: Timer focus-dispatcher-overnight on tony-omen failing
 column: backlog
-updated: 2026-11-27 09:14
+updated: 2026-11-27 11:15
 priority: high
 tags:
 - timer-alert
@@ -1760,6 +1760,25 @@ comms:
 - at: 2026-11-27 09:14
   from: devin
   text: '[still suspicious] Last run (11-27 03:07) of `focus-dispatcher-overnight.service` on `tony-omen` result=exit-code
+    — investigate journal: `journalctl --user -u focus-dispatcher-overnight.service` on the host. See CMS `timer-timeline-tony-omen`.'
+- at: 2026-11-27 10:57
+  from: tony
+  text: '[cleanup 2026-11-27] Live verify: tony-omen-focus-dispatcher-overnight.service Result=success. Condition
+    healed; closing.'
+- at: 2026-11-27 10:57
+  from: tony
+  text: closed by tony
+- at: 2026-11-27 11:05
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-27 11:05
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-27 10:57) of `focus-dispatcher-overnight.service` on `tony-omen`
+    result=exit-code — investigate journal: `journalctl --user -u focus-dispatcher-overnight.service` on the host.
+    See CMS `timer-timeline-tony-omen`.'
+- at: 2026-11-27 11:15
+  from: devin
+  text: '[still suspicious] Last run (11-27 10:57) of `focus-dispatcher-overnight.service` on `tony-omen` result=exit-code
     — investigate journal: `journalctl --user -u focus-dispatcher-overnight.service` on the host. See CMS `timer-timeline-tony-omen`.'
 action:
   status: done

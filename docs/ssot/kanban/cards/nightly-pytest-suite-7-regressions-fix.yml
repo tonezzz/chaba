@@ -1,7 +1,7 @@
 id: nightly-pytest-suite-7-regressions-fix
 title: 'Nightly chaba pytest suite: 7 regressions still failing on master'
-column: doing
-updated: 2026-11-27 10:53
+column: done
+updated: 2026-11-27 11:10
 spec: 'chaba-pytest-suite.service on tony-omen reports 10 failed / 2815 passed. Verified against current origin/master:
   3 were fixed by recent merges, but these 7 still fail and must be fixed at source (not skipped, not xfail):
 
@@ -26,9 +26,15 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: running
+  status: done
   runner: tony-dell
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 10:57
+    dirty: 8
+  result: 'exit=0 =github-mcp-server, org.opencontainers.image.version=1.11.0) | devin-task-20261127-103236-chaba-pytest-suite-service-on-.service:
+    Consumed 6min 2.160s CPU time over 21min 37.513s wall clock time, 939.9M memory peak, 685.9M memory swap peak.'
+  verified: true
 ref: OPS-1488
 comms:
 - at: 2026-11-27 10:29
@@ -84,5 +90,63 @@ comms:
     Side observation (not mine, already on master): docs/ssot/jobs/cms/2026-11-27-cms-publish-remote-close-retry.yml
     has a YAML plain-scalar colon error at line 33 — ssot-validate-all reports it as the only invalid file; owner
     dispatch may want to fix.'
+- at: 2026-11-27 10:57
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-103236-chaba-pytest-suite-service-on- no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-27 10:57
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261127-103236-chaba-pytest-suite-service-on- on tony-dell still dirty
+    — 8 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-27 10:58
+  from: tony-dell
+  text: 'finished (ok): exit=0 =github-mcp-server, org.opencontainers.image.version=1.11.0) | devin-task-20261127-103236-chaba-pytest-suite-serv'
+- at: 2026-11-27 10:58
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 10:58
+  from: chaba
+  text: banked 84 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-27 10:58
+  from: chaba
+  text: pushed dispatch/20261127-103236-chaba-pytest-suite-service-on- to origin
+- at: 2026-11-27 10:58
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-27 10:58
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-27 10:59
+  from: chaba
+  text: 'merge-sweep: merged 2574b2c8 (dispatch/20261127-103236-chaba-pytest-suite-service-on- from tony-dell) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261127-103236-chaba-pytest-suite-service-on-.md)
+    — auto-closed'
+- at: 2026-11-27 10:59
+  from: local
+  text: 'pub milestone: card verified: nightly-pytest-suite-7-regressions-fix on idc03 — merged 2574b2c8 (dispatch/20261127-103236-chaba-pytest-suite-service-on-
+    from tony-dell) -> origin/master — verified — a — merged 2574b2c8 (dispatch/20261127-103236-chaba-pytest-suite-service-on-
+    from tony-dell) -> origin/master — verified — auto-closed [evt-90b10bcd8eccac55]'
+- at: 2026-11-27 10:59
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-103236-chaba-pytest-suite-service-on-,
+    branch dispatch/20261127-103236-chaba-pytest-suite-service-on- on tony-dell'
+- at: 2026-11-27 10:59
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261127-103236-chaba-pytest-suite-serv on tony-dell
+    — if the work was never pushed it may be gone'
+- at: 2026-11-27 11:10
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-103236-chaba-pytest-suite-service-on- no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-27 11:10
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261127-103236-chaba-pytest-suite-service-on- on
+    tony-dell — if the work was never pushed it may be gone'
 claim:
   since: 2026-11-27 10:31
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 10:58
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261127-103236-chaba-pytest-suite-service-on-.md

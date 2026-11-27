@@ -1,0 +1,57 @@
+title: overnight-assessment 2-step fix — service-logs-sweep dict() + tony-omen ip_forward outage
+subtitle: >
+  Card overnight-assessment-two-step-fix (OPS-1493). overnight-assessment.service
+  on idc03 was failing 3 of 4 recent runs with 3/6 workflow steps ok. One step
+  (ssot_validate) was a transient malformed YAML already fixed in 3219cd79f40;
+  two real failures remained and are resolved here.
+icon: workflow
+date: 2026-11-27
+slug: overnight-assessment-two-step-fix
+card: overnight-assessment-two-step-fix
+ref: OPS-1493
+kind: bugfix + host-restore
+dispatch: dispatch-wt-20261127-104422-overnight-assessment-service-o (mn01)
+
+root_causes:
+  service_log_sweep: >
+    scripts/overnight/service-logs-sweep.py built
+    `"top_error_patterns": [dict(p) for p in top_errors]` where top_errors is
+    Counter.most_common() — a list of (pattern_str, count) tuples. dict() on a
+    2-tuple iterates it as key/value pairs, so element #0 is the pattern
+    STRING itself; any pattern longer than 2 chars raised
+    `ValueError: dictionary update sequence element #0 has length N`.
+    (Card spec guessed "sqlite rows of 70 columns" — there is no sqlite in
+    this script; the 70 was the length of the error-pattern string.)
+  health_snapshot: >
+    NOT a stale health entry and NOT a dead container. tony-omen's
+    /etc/sysctl.d/99-chaba-hardening.conf (written 2026-11-26 12:38 by the
+    fleet hardening pass) set net.ipv4.ip_forward=0. With forwarding off,
+    docker-published ports silently drop: DNAT in nat/PREROUTING still
+    fired (counter +4 per probe) but packets never reached the filter
+    DOCKER chain (counter +0) and no bridge egress appeared on tcpdump.
+    Host-native services (ssh:22, :8090, :8799) kept working, which is why
+    only docker-backed endpoints (sensor-reader:8001, netdata:19999) timed
+    out. ip_forward was restored with sysctl -w and the conflicting line
+    commented out in the conf (backup: .bak-20261127).
+
+changes:
+  - "scripts/overnight/service-logs-sweep.py: top_error_patterns now emits
+    [{pattern, count}] dicts — the shape scripts/overnight/promote-reports.py
+    already consumes via p.get('pattern')/p.get('count')."
+  - "tony-omen /etc/sysctl.d/99-chaba-hardening.conf: commented out
+    net.ipv4.ip_forward=0 with reason (docker published ports require
+    forwarding). Other hardening directives untouched. Applied live via
+    sysctl -w net.ipv4.ip_forward=1."
+
+verification: >
+  sensor-reader /health returns 200 from mn01 and idc03 (was connect-timeout).
+  overnight-assessment.service run on idc03 via systemctl --user start —
+  see card comms for run results.
+
+followups:
+  - "The hardening baseline (docs/kb/host-hardening-baseline.md) should note
+    that net.ipv4.ip_forward=0 is incompatible with hosts running docker
+    published ports — worth a line so the next fleet pass doesn't re-add it."
+  - "ssot_validate failed once at 10:37 with 1/7818 files invalid but passes
+    clean now (0 errors, 7825 files) — likely a transient partially-written
+    file during kanban-commit; keep an eye if it recurs."

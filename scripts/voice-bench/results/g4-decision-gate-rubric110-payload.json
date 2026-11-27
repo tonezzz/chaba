@@ -1,0 +1,2206 @@
+{
+  "model": "gemini-decision-1",
+  "input": "Kanban card briefs to triage:\n1. [2026-11-12-155922-wiki-login-polish] wiki-login-polish wiki polish leftovers from wiki-login-broken card (closed): (1) PluggableAuth Google button still renders label \"0\" on Special:UserLogin \u2014 give it a real label (e.g. \"Sign in with Google\") via $wgPluggableAuth_Config in LocalSettings.php, FTP path same as members edit, backup first\n2. [ada-acl-explain] Three overlapping ACL systems answer differently: control_policies domain lists, ~/.config/ada/device-grants.json overlay, and per-bank allowed_tools. ada_device_acl patched one room's need; the unification is still ahead. Waiting in backlog.\n3. [ada-card-loop-tiers] Tony wants Ada inside the same loop we just found: inspect card \u2192 ask \u2192 educate each other. This card defines how far she may go on her own and how we measure readiness. Expected action: review the tier table below; T0\u2013T2 need no approval (mechanisms exist), T3+ gates on bench scores.\n4. [ada-dead-surface-metric] Shape is lint-verified (42 declared), usage is not. Some census names had zero calls in 7d \u2014 the surface may carry dead weight the merge program cannot see. Waiting in backlog.\n5. [ada-deploy-preflight-gate] Last missing piece of the Ada dev-control-plane loop. Cards currently merge to done with no production-deploy stage. Build the gate: card declares deploy target, system collects preflight evidence, Tony approves explicitly, deploy runs, post-deploy surface is verified.\n6. [ada-dev-control-plane-envelope] Give Ada, Node-RED, OpenCode, Cline, and DevNest one durable task contract so intent becomes verified execution without losing project context.\n7. [ada-gemini-quota-breaker] Stop the 1008 reconnect-storm when Gemini Live hits quota (429/RESOURCE_EXHAUSTED). Evidence: jobs/ada/2026-10-10-audit-fail-cluster.yml \u2014 1389x429, 643x RESOURCE_EXHAUSTED, 198x quota_exhausted, ws close 1008 looping all evening on idc03 ada-ha-tony.\n8. [ada-ha-dashboard-live-view-drift] The live Ada HA dashboard has Hosts/Services tabs but lacks Ada Control, unlike the pre-change repo snapshot; verify whether this drift is intentional before restoring anything.\n9. [ada-ha-hardening] ada-ha stops being the disposable lab and becomes Tony's stable private HA. Dev work moves to ada-dev; ada-ha keeps running and gets backup/health coverage.\n10. [ada-ha-kanban2-tab] Preserve the classic Board iframe in the existing Kanban tab; add the new Board2 layout immediately after it as a separate Kanban 2 tab.\n11. [ada-nest-real-job-plan] Coordinate the next real Ada Nest jobs with explicit host/resource gates. Omen has 38G data free; T4 is for GPU-heavy image/voice/embedding work; JEV arena expands before autonomous routing.\n12. [ada-nest-trivial-gate] Extend the relay gate cascade (silence->STT->trivial-filter) with one more rung: a tiny local specialist that answers trivial queries (greetings, time/date, acks) without burning an Ada/provider turn. NCM-inspired adaptive-depth pattern.\n13. [ada-ocb-answer-eval] Tool-call benchmarks verify plumbing; nothing verifies the agent actually answers correctly. Build a small eval set that asserts answer quality end-to-end.\n14. [ada-ocb-answer-eval-r2] Re-run of ADA-0175: r1 produced a good harness (ocb-eval.py, 10 cases, tools-mode 10/10) but the branch eval/ocb-answer-eval @442cfc7 lived in a scratch clone inside a GC'd worktree and is LOST. Rebuild it \u2014 the analysis is in ADA-0175 comms.\n15. [ada-ocb-board-read-latency] ada_status/card_context/card_pick/next_card hit the 9MB /cards dump (13-16s) exceeding the OpenCode MCP timeout; calls completed server-side but agents saw timeouts. Route through compact index + projected snapshot + single-card hydration; guard string comms/requests/action rows.\n16. [ada-ocb-bridge-version] We found Devin's ada-control MCP running a 23-tool stale bridge while OpenChamber had 25 \u2014 no way to tell which code a session is talking to. Add a version stamp.\n17. [ada-ocb-kanban-sweep-report] The card-ops-sweep skill and card-status procedure already define evidence-first triage; add a callable Ada-OCB tool to produce one timestamped summary of stuck, failed, and misplaced work without dispatching or mutating cards.\n18. [ada-ocb-manual-queue-semantics] The Ada-OCB queue picker labels queued action.type=manual cards as queued for dispatch, while board runners reject them as unsupported. Make the response accurately identify human-only work without changing card state or inventing an executor.\n19. [ada-ocb-regression-suite] Lock in this week's ada-ocb improvements (context_pack, ssot_get, windowed excerpts, MDDB lessons, vector-search, board snapshots, string-row guards) with regression coverage so they can't silently rot.\n20. [ada-opencode-nl-card-resolve] Tony should be able to say things like \"hibiscus GS project status\" or \"the media pack card\" and have Ada/OpenCode resolve the right kanban card instead of failing with \"no board card matched\".\n21. [ada-opencode-repair-menu-card] Phase 1/3 of OPS-1109 UI: Ada chat card shows candidate + Keep/Reject/Revise/Repair-region buttons; Repair opens mask-picker; picker POST /submit already lands in inbox + board comment. Remaining: card JS buttons, decision endpoint -> SESSION/QC, deploy idc03.\n22. [ada-printer-diagnostics-safe-repair] Extend Ada's existing confirmed document-print tool with printer status, CUPS job diagnostics, and bounded repair actions.\n23. [ada-session-audit-daily] The ada-transcript-audit skill only runs when Tony asks. Schedule it: daily audit of yesterday's sessions \u2014 phantom tool claims, failed calls Ada glossed, repeated asks, confirm-gate friction \u2014 published as a CMS page and filed to focus-inbox/cards when friction is found. Labels feed the Ada corpus.\n24. [ada-track-lost-persist] ada_track_device action='lost' arms an in-process watcher that dies with the backend (volatile by design for v1). A lost-device watch should survive deploys and restarts \u2014 that is exactly when it matters. Waiting in backlog.\n25. [ada-wiki-extension-confirm-flag] Follow-up from wiki-extension-control-plane: board-api /wiki/extension now requires confirm=true on install|enable|disable; ada-voice backend/tools.d/wiki_extension.py does not send it, so Ada-side mutations will 400 once the hardened door deploys.\n26. [adobe-stock-artifact-landing-service] Replace the ad-hoc decode/hash/rclone/session-update command chain with one typed landing call per render.\n27. [adobe-stock-illustration-pivot-test] Re-keyword the painterly comparison-c for Adobe Stock illustration/flat-design category.\n28. [adobe-stock-upscaler-eval] Benchmark Real-ESRGAN, SwinIR, SeeSR/OSEDiff on campaign assets; pick pipeline upscaler.\n29. [ai-workforce-eval] Eval which (surface \u00d7 brain \u00d7 task class) lane carries real work cheapest with gate-passing quality, so capped/expensive lanes re-route instead of stalling.\n30. [ansible-ada-ocb-tony-dell-fallback] Follow-up from OPS-1424: tony-dell ocb_pane fallback probe incomplete in ada-ocb-verify; align pin/patch/service state or harden verify for missing fallback probe.\n31. [ansible-disk-headroom-harden] From idc02, ansible SSH to its own tailnet IP failed (publickey). Add controller auto-detect (ansible_connection: local), document --check --diff dry-run, feed samples into disk-trend jsonl history, seed IP host keys.\n32. [ansible-prep-plan-apply-verify] Standardize Ansible for preparation/baselines, check-diff plan artifacts, gated apply, and verified closeout to increase fleet efficiency.\n33. [ansible-vs-legacy-fleet-benchmark] Side-by-side benchmark: ansible playbooks vs audit-hosts.py / sync-runner-tools.sh / guard scripts on service-audit, disk-guard, runner-tool-sync candidates. Read-only, report with verdicts.\n34. [app-retirement-sweep] Tony 2026-11-09 approved retiring likely-dead apps. Each gets docs/kb/retired-apps/<app>.md with restore steps + status:retired markers; cline and node-red confirmed first.\n35. [audit-auto-macbook] Four post-change audit deltas; reconcile intended roles before enabling or stopping units.\n36. [audit-degraded-cast-to-screen] Recurring session-audit signature 'degraded:cast_to_screen': cast_to_screen -> degraded \u2014 2x on 2026-10-14, seen on 4 day(s).\n37. [audit-fail-ada-camera-snapshot] Recurring session-audit signature 'fail:ada_camera_snapshot': ada_camera_snapshot -> fail \u2014 27x on 2026-10-10, seen on 1 day(s).\n38. [audit-fail-ada-enroll-speaker] Recurring session-audit signature 'fail:ada_enroll_speaker': ada_enroll_speaker -> fail \u2014 3x on 2026-10-10, seen on 1 day(s).\n39. [audit-fail-ada-member-keys] Recurring session-audit signature 'fail:ada_member_keys': ada_member_keys -> fail (no transcript in window) \u2014 10x on 2026-10-11, seen on 2 day(s).\n40. [audit-fail-ada-memory-search] Recurring session-audit signature 'fail:ada_memory_search': ada_memory_search -> fail \u2014 19x on 2026-10-10, seen on 1 day(s).\n41. [audit-fail-ada-remember] Recurring session-audit signature 'fail:ada_remember': ada_remember -> fail (no transcript in window) \u2014 3x on 2026-10-10, seen on 1 day(s).\n42. [audit-fail-calendar-read] Recurring session-audit signature 'fail:calendar_read': calendar_read -> fail \u2014 4x on 2026-10-12, seen on 1 day(s).\n43. [audit-fail-cast-to-screen] Recurring session-audit signature 'fail:cast_to_screen': cast_to_screen -> fail (no transcript in window) \u2014 17x on 2026-10-10, seen on 1 day(s).\n44. [audit-fail-cctv-wall] Recurring session-audit signature 'fail:cctv_wall': cctv_wall -> fail (no transcript in window) \u2014 19x on 2026-10-10, seen on 1 day(s).\n45. [audit-fail-chat-send] Recurring session-audit signature 'fail:chat_send': chat_send -> fail (no transcript in window) \u2014 14x on 2026-10-10, seen on 1 day(s).\n46. [audit-fail-cms-edit] Recurring session-audit signature 'fail:cms_edit': cms_edit -> fail \u2014 3x on 2026-10-10, seen on 1 day(s).\n47. [audit-fail-cms-publish-page] Recurring session-audit signature 'fail:cms_publish_page': cms_publish_page -> fail (no transcript in window) \u2014 8x on 2026-10-10, seen on 1 day(s).\n48. [audit-fail-cms-read] Recurring session-audit signature 'fail:cms_read': cms_read -> fail \u2014 36x on 2026-10-10, seen on 1 day(s).\n49. [audit-fail-control-entity] Recurring session-audit signature 'fail:control_entity': control_entity -> fail \u2014 3x on 2026-10-10, seen on 1 day(s).\n50. [audit-fail-devin-read] Recurring session-audit signature 'fail:devin_read': devin_read -> fail (no transcript in window) \u2014 4x on 2026-10-12, seen on 3 day(s).\n51. [audit-fail-docs] Recurring session-audit signature 'fail:docs': docs -> fail \u2014 9x on 2026-10-11, seen on 2 day(s).\n52. [audit-fail-drive] Recurring session-audit signature 'fail:drive': drive -> fail (no transcript in window) \u2014 3x on 2026-10-10, seen on 1 day(s).\n53. [audit-fail-get-home-state] Recurring session-audit signature 'fail:get_home_state': get_home_state -> fail \u2014 21x on 2026-10-10, seen on 1 day(s).\n54. [audit-fail-gev-command] Recurring session-audit signature 'fail:gev_command': gev_command -> fail (no transcript in window) \u2014 72x on 2026-10-10, seen on 1 day(s).\n55. [audit-fail-home-status] Recurring session-audit signature 'fail:home_status': home_status -> fail \u2014 33x on 2026-10-10, seen on 1 day(s).\n56. [audit-fail-kanban] Recurring session-audit signature 'fail:kanban': kanban -> fail \u2014 21x on 2026-10-10, seen on 1 day(s).\n57. [audit-fail-percussion] Recurring session-audit signature 'fail:percussion': percussion -> fail \u2014 16x on 2026-10-11, seen on 1 day(s).\n58. [audit-fail-set-facial-expression] Recurring session-audit signature 'fail:set_facial_expression': set_facial_expression -> fail \u2014 7x on 2026-10-10, seen on 1 day(s).\n59. [audit-fail-tv-action] Recurring session-audit signature 'fail:tv_action': tv_action -> fail (no transcript in window) \u2014 20x on 2026-10-10, seen on 1 day(s).\n60. [audit-fail-vcast-snapshot] Recurring session-audit signature 'fail:vcast_snapshot': vcast_snapshot -> fail (no transcript in window) \u2014 23x on 2026-10-10, seen on 1 day(s).\n61. [audit-fail-web-search] Recurring session-audit signature 'fail:web_search': web_search -> fail \u2014 14x on 2026-10-10, seen on 1 day(s).\n62. [audit-no-result-ada-camera-snapshot] Recurring session-audit signature 'no_result:ada_camera_snapshot': ada_camera_snapshot call got no result in-window \u2014 1x on 2026-10-14, seen on 2 day(s).\n63. [audit-oc-lane-state-missing-lane] promotion reviews exist but evals/opencode-lane/state/ (stage.json + metrics.jsonl ledger) is absent \u2014 the verified-job aggregate cannot be re-derived\n64. [audit-phantom-claim-no-call] Recurring session-audit signature 'phantom:claim-no-call': action claimed with no tool call in the window \u2014 17x on 2026-10-13, seen on 4 day(s).\n65. [audit-repeat-user-reask] Recurring session-audit signature 'repeat:user-reask': user repeated the same ask \u2014 7x on 2026-10-13, seen on 4 day(s).\n66. [automate-host-post-restart-verification-5ad4ac] Automate boot/post-restart verification via boot-id-change detection and check-only transition.post_restart pass.\n67. [board-api-compact-cards] The bridge now works around the 9MB /cards dump, but every other consumer still pays 13-16s. Make the projection real server-side.\n68. [board-api-exec-checkout-mismatch] New board-api cards/commits land in idc03 ~/CascadeProjects/chaba (exec) and stay unpushed, while kanban-commit sweeps ~/CascadeProjects/chaba-tony-dell (served). Result: cards exist via /cards but never appear on the static kanban page.\n69. [board-api-lesson-delete-op] The /lesson door supports upsert/touch/list/get but NOT delete. Two junk probe lessons (id 2259, 2261) can't be removed via the door; direct WP DELETE is blocked by Cloudflare (403 code 1010).\n70. [boards-public-origin-502] Public boards.surf-thailand.com is returning Cloudflare 502; origin boards.h3.gizmo-thailand.com also returns nginx 502. Diagnose the external Plesk/WP upstream and restore the public boards surface.\n71. [cards-api-summary-gzip] GET /cards bare returns the full board (~15MB, ~2.6s) \u2014 card_query already supports id/column/action_status/since/offset/limit/fields but is undiscoverable and there is no compression. Fleet/agent callers keep fetching the whole board.\n72. [chaba-merge-gate-ada-drops-rot-audit] After ADA-0080's cast-loop repair the gate now fails on test_correction_command; 12 patches diverged vs ada-voice 07119b1 \u2014 fix all rotted drops in one pass.\n73. [cheap-agent-cascade] Extend pattern-match result (codemod 7/7) to a team: cheap specialized models do known work, JEV routes, big model last resort. Dev + chores + edu-agent (hermesbot/clawbot) families.\n74. [chore-tony-dell-worktree-sprawl] CascadeProjects on tony-dell has ~24 linked worktrees and ~75 branches ahead of master (ssot.dev-system.assessment flags this high-severity). Triage each worktree against its owning kanban card, then remove verified-safe ones.\n75. [ci-test-gate] Tests exist (tests/board, ada_memory, camwall, yt_dub) but nothing runs them automatically \u2014 a dispatch branch can auto-merge green without ever executing a test. Run the repo suite in the merge worktree before auto-merge and add a fast pre-commit check on served checkouts.\n76. [classifier-readonly-audit-class-reroute] DEV-0044 lever 1 first pick: bounded read-only audit/assessment/review/investigate cards -> free_lane. 56.8M prompt/30d on idc02 alone; 'audit' is not a classifier keyword so these fall to jevos/devin.\n77. [cline-kanban-offline-image-build] PR #52 is merged, but con01 cannot rebuild the Cline image with network disabled because kanban@0.1.70 is not cached. Find a safe, reproducible route and keep the current service untouched until approval.\n78. [cline-nest-failure-artifact-durability] A Cline task can fail after creating a task ID but before producing the expected file; nest-worker currently exits before uploading the adapter\u2019s failure evidence. Preserve only declared diagnostics without marking the pack done.\n79. [cms-auto-docs-digest] A scheduled report-page job ('docs-digest') is error. Re-run it or check the generator \u2014 details in the note.\n80. [cms-auto-finance-digest] A scheduled report-page job ('finance-digest') is stale. Re-run it or check the generator \u2014 details in the note.\n81. [cms-auto-flood-alert] A scheduled report-page job ('flood-alert') is stale. Re-run it or check the generator \u2014 details in the note.\n82. [cms-auto-general-digest] A scheduled report-page job ('general-digest') is error. Re-run it or check the generator \u2014 details in the note.\n83. [cms-auto-health-digest] A scheduled report-page job ('health-digest') is error. Re-run it or check the generator \u2014 details in the note.\n84. [cms-auto-home-digest] A scheduled report-page job ('home-digest') is error. Re-run it or check the generator \u2014 details in the note.\n85. [cms-auto-infra-digest] A scheduled report-page job ('infra-digest') is error. Re-run it or check the generator \u2014 details in the note.\n86. [cms-auto-kanban-brief] A scheduled report-page job ('kanban-brief') is stale. Re-run it or check the generator \u2014 details in the note.\n87. [cms-auto-kanban-digest] A scheduled report-page job ('kanban-digest') is stale. Re-run it or check the generator \u2014 details in the note.\n88. [cms-auto-lab-digest] A scheduled report-page job ('lab-digest') is stale. Re-run it or check the generator \u2014 details in the note.\n89. [cms-lab-eval] Four GitHub CMSs side-by-side in ~/cms-lab on idc02, tailnet-only :8301-8304. Eval rubric: author a Thai shop report in each UI, then create the same via API (agent path) \u2014 measures fit for the kk place_report flow. Teardown: docker compose down -v + rm -rf ~/cms-lab.\n90. [comms-digest-builder] Extend scripts/report-daily-brief.py with the comms-digest sections defined in ssot.comms-digest.yml: asks_and_outcomes, decisions_made, open_loops, notable_replies \u2014 published to ada-cms-pages/tony-team-digest on the existing morning+evening cadence.\n91. [con01-runner-pilot-smoke-runner-agent-di-a73b38] Low-risk con01 runner-agent dispatch pilot. Dispatch a tiny verification task on the chaba repo via devin-dispatch and confirm claim/start/close.\n92. [con01-script-smoke] E2E: script lane on con01 (8c/23Gi, podman 4.9.3, push:chaba, cap 1) \u2014 proves heartbeat, claim, execute and finish.\n93. [device-telemetry-prune] The beacon posts ~300 docs/day/device to MDDB device-telemetry with no retention \u2014 unbounded growth on a production collection. Waiting in backlog.\n94. [devin-autonomy-contract] Tony asked for hands-off kanban processing where he stays in control. Policy file ssot.devin-autonomy.yml is now the single lever: kill switch, quiet hours, daily session budget, per-card retry cap, autonomy ceiling. kanban-dispatch reads it every pass.\n95. [devnest-capacity-aware-dispatch] Keep KK-Mac and Colab productive when eligible by converting real ready work into normalized lane packages before capacity appears.\n96. [devnest-colab-release-pinning] Automatically publish and verify a complete Chaba/pack release before a Colab queue can run it.\n97. [devnest-colab-t4-model-slot-adapter] Prepare a bounded local-model evaluation pack for the next Colab T4 window; keep it distinct from the worker/queue held-out battery and from the existing Mac local-LLM lane.\n98. [devnest-devin-replay-benchmark] Use the 110-session Devin CLI archive to build a privacy-safe, held-out replay benchmark for DevNest/OpenCode/JEV/runner-agent against the work Devin actually handled.\n99. [devnest-fl-pilot-code] Supervised pilot job \u2014 tiny pure helper + unit test on the free OpenCode lane; matched against devin-lane run devnest-free-pilot-code.\n100. [devnest-fl-pilot-doc] Supervised pilot job \u2014 write a small deterministic docs artifact on the free OpenCode lane; matched against devin-lane run devnest-free-pilot-doc.\n101. [disk-auto-idc01-root] Disk space on idc01 (/) is running low \u2014 check the note for the rate and top growers, then free space or close the card.\n102. [disk-auto-idc02-root] Disk space on idc02 (/) is running low \u2014 check the note for the rate and top growers, then free space or close the card.\n103. [disk-auto-kk-mac-System-Volumes-VM] Disk space on kk-mac (/System/Volumes/VM) is running low \u2014 check the note for the rate and top growers, then free space or close the card.\n104. [disk-auto-tony-omen-data] Disk space on tony-omen (/data) is running low \u2014 check the note for the rate and top growers, then free space or close the card.\n105. [disk-auto-tony-omen-home] Disk space on tony-omen (/home) is running low \u2014 check the note for the rate and top growers, then free space or close the card.\n106. [edge-ha-restructure-subdomain-cloudflare-4ff3ad] The public edge works but every box is a single point of failure and names are inconsistent across three places. It needs a decision \u2014 read the note and pick a direction.\n107. [flood-hub-integration] Waiting on Google's waitlist for the flood-forecast API, which reportedly takes months. Nothing to do until the approval email arrives.\n108. [gev-auto-api] An automated health check flagged: GEV api 127.0.0.1:4173 not answering. Read the note, fix it, then close the card.\n109. [gev-auto-api-service] An automated health check flagged: gods-eye-view-api service not active. Read the note, fix it, then close the card.\n110. [gev-auto-bridge] An automated health check flagged: gev-gemini service not active. Read the note, fix it, then close the card.",
+  "questions": {
+    "score_1": {
+      "type": "score",
+      "instructions": "Brief 1: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_1": {
+      "type": "choice",
+      "instructions": "Brief 1: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_2": {
+      "type": "score",
+      "instructions": "Brief 2: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_2": {
+      "type": "choice",
+      "instructions": "Brief 2: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_3": {
+      "type": "score",
+      "instructions": "Brief 3: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_3": {
+      "type": "choice",
+      "instructions": "Brief 3: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_4": {
+      "type": "score",
+      "instructions": "Brief 4: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_4": {
+      "type": "choice",
+      "instructions": "Brief 4: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_5": {
+      "type": "score",
+      "instructions": "Brief 5: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_5": {
+      "type": "choice",
+      "instructions": "Brief 5: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_6": {
+      "type": "score",
+      "instructions": "Brief 6: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_6": {
+      "type": "choice",
+      "instructions": "Brief 6: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_7": {
+      "type": "score",
+      "instructions": "Brief 7: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_7": {
+      "type": "choice",
+      "instructions": "Brief 7: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_8": {
+      "type": "score",
+      "instructions": "Brief 8: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_8": {
+      "type": "choice",
+      "instructions": "Brief 8: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_9": {
+      "type": "score",
+      "instructions": "Brief 9: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_9": {
+      "type": "choice",
+      "instructions": "Brief 9: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_10": {
+      "type": "score",
+      "instructions": "Brief 10: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_10": {
+      "type": "choice",
+      "instructions": "Brief 10: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_11": {
+      "type": "score",
+      "instructions": "Brief 11: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_11": {
+      "type": "choice",
+      "instructions": "Brief 11: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_12": {
+      "type": "score",
+      "instructions": "Brief 12: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_12": {
+      "type": "choice",
+      "instructions": "Brief 12: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_13": {
+      "type": "score",
+      "instructions": "Brief 13: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_13": {
+      "type": "choice",
+      "instructions": "Brief 13: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_14": {
+      "type": "score",
+      "instructions": "Brief 14: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_14": {
+      "type": "choice",
+      "instructions": "Brief 14: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_15": {
+      "type": "score",
+      "instructions": "Brief 15: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_15": {
+      "type": "choice",
+      "instructions": "Brief 15: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_16": {
+      "type": "score",
+      "instructions": "Brief 16: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_16": {
+      "type": "choice",
+      "instructions": "Brief 16: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_17": {
+      "type": "score",
+      "instructions": "Brief 17: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_17": {
+      "type": "choice",
+      "instructions": "Brief 17: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_18": {
+      "type": "score",
+      "instructions": "Brief 18: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_18": {
+      "type": "choice",
+      "instructions": "Brief 18: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_19": {
+      "type": "score",
+      "instructions": "Brief 19: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_19": {
+      "type": "choice",
+      "instructions": "Brief 19: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_20": {
+      "type": "score",
+      "instructions": "Brief 20: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_20": {
+      "type": "choice",
+      "instructions": "Brief 20: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_21": {
+      "type": "score",
+      "instructions": "Brief 21: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_21": {
+      "type": "choice",
+      "instructions": "Brief 21: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_22": {
+      "type": "score",
+      "instructions": "Brief 22: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_22": {
+      "type": "choice",
+      "instructions": "Brief 22: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_23": {
+      "type": "score",
+      "instructions": "Brief 23: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_23": {
+      "type": "choice",
+      "instructions": "Brief 23: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_24": {
+      "type": "score",
+      "instructions": "Brief 24: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_24": {
+      "type": "choice",
+      "instructions": "Brief 24: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_25": {
+      "type": "score",
+      "instructions": "Brief 25: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_25": {
+      "type": "choice",
+      "instructions": "Brief 25: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_26": {
+      "type": "score",
+      "instructions": "Brief 26: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_26": {
+      "type": "choice",
+      "instructions": "Brief 26: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_27": {
+      "type": "score",
+      "instructions": "Brief 27: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_27": {
+      "type": "choice",
+      "instructions": "Brief 27: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_28": {
+      "type": "score",
+      "instructions": "Brief 28: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_28": {
+      "type": "choice",
+      "instructions": "Brief 28: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_29": {
+      "type": "score",
+      "instructions": "Brief 29: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_29": {
+      "type": "choice",
+      "instructions": "Brief 29: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_30": {
+      "type": "score",
+      "instructions": "Brief 30: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_30": {
+      "type": "choice",
+      "instructions": "Brief 30: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_31": {
+      "type": "score",
+      "instructions": "Brief 31: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_31": {
+      "type": "choice",
+      "instructions": "Brief 31: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_32": {
+      "type": "score",
+      "instructions": "Brief 32: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_32": {
+      "type": "choice",
+      "instructions": "Brief 32: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_33": {
+      "type": "score",
+      "instructions": "Brief 33: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_33": {
+      "type": "choice",
+      "instructions": "Brief 33: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_34": {
+      "type": "score",
+      "instructions": "Brief 34: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_34": {
+      "type": "choice",
+      "instructions": "Brief 34: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_35": {
+      "type": "score",
+      "instructions": "Brief 35: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_35": {
+      "type": "choice",
+      "instructions": "Brief 35: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_36": {
+      "type": "score",
+      "instructions": "Brief 36: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_36": {
+      "type": "choice",
+      "instructions": "Brief 36: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_37": {
+      "type": "score",
+      "instructions": "Brief 37: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_37": {
+      "type": "choice",
+      "instructions": "Brief 37: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_38": {
+      "type": "score",
+      "instructions": "Brief 38: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_38": {
+      "type": "choice",
+      "instructions": "Brief 38: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_39": {
+      "type": "score",
+      "instructions": "Brief 39: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_39": {
+      "type": "choice",
+      "instructions": "Brief 39: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_40": {
+      "type": "score",
+      "instructions": "Brief 40: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_40": {
+      "type": "choice",
+      "instructions": "Brief 40: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_41": {
+      "type": "score",
+      "instructions": "Brief 41: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_41": {
+      "type": "choice",
+      "instructions": "Brief 41: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_42": {
+      "type": "score",
+      "instructions": "Brief 42: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_42": {
+      "type": "choice",
+      "instructions": "Brief 42: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_43": {
+      "type": "score",
+      "instructions": "Brief 43: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_43": {
+      "type": "choice",
+      "instructions": "Brief 43: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_44": {
+      "type": "score",
+      "instructions": "Brief 44: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_44": {
+      "type": "choice",
+      "instructions": "Brief 44: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_45": {
+      "type": "score",
+      "instructions": "Brief 45: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_45": {
+      "type": "choice",
+      "instructions": "Brief 45: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_46": {
+      "type": "score",
+      "instructions": "Brief 46: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_46": {
+      "type": "choice",
+      "instructions": "Brief 46: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_47": {
+      "type": "score",
+      "instructions": "Brief 47: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_47": {
+      "type": "choice",
+      "instructions": "Brief 47: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_48": {
+      "type": "score",
+      "instructions": "Brief 48: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_48": {
+      "type": "choice",
+      "instructions": "Brief 48: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_49": {
+      "type": "score",
+      "instructions": "Brief 49: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_49": {
+      "type": "choice",
+      "instructions": "Brief 49: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_50": {
+      "type": "score",
+      "instructions": "Brief 50: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_50": {
+      "type": "choice",
+      "instructions": "Brief 50: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_51": {
+      "type": "score",
+      "instructions": "Brief 51: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_51": {
+      "type": "choice",
+      "instructions": "Brief 51: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_52": {
+      "type": "score",
+      "instructions": "Brief 52: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_52": {
+      "type": "choice",
+      "instructions": "Brief 52: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_53": {
+      "type": "score",
+      "instructions": "Brief 53: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_53": {
+      "type": "choice",
+      "instructions": "Brief 53: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_54": {
+      "type": "score",
+      "instructions": "Brief 54: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_54": {
+      "type": "choice",
+      "instructions": "Brief 54: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_55": {
+      "type": "score",
+      "instructions": "Brief 55: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_55": {
+      "type": "choice",
+      "instructions": "Brief 55: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_56": {
+      "type": "score",
+      "instructions": "Brief 56: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_56": {
+      "type": "choice",
+      "instructions": "Brief 56: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_57": {
+      "type": "score",
+      "instructions": "Brief 57: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_57": {
+      "type": "choice",
+      "instructions": "Brief 57: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_58": {
+      "type": "score",
+      "instructions": "Brief 58: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_58": {
+      "type": "choice",
+      "instructions": "Brief 58: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_59": {
+      "type": "score",
+      "instructions": "Brief 59: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_59": {
+      "type": "choice",
+      "instructions": "Brief 59: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_60": {
+      "type": "score",
+      "instructions": "Brief 60: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_60": {
+      "type": "choice",
+      "instructions": "Brief 60: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_61": {
+      "type": "score",
+      "instructions": "Brief 61: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_61": {
+      "type": "choice",
+      "instructions": "Brief 61: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_62": {
+      "type": "score",
+      "instructions": "Brief 62: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_62": {
+      "type": "choice",
+      "instructions": "Brief 62: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_63": {
+      "type": "score",
+      "instructions": "Brief 63: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_63": {
+      "type": "choice",
+      "instructions": "Brief 63: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_64": {
+      "type": "score",
+      "instructions": "Brief 64: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_64": {
+      "type": "choice",
+      "instructions": "Brief 64: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_65": {
+      "type": "score",
+      "instructions": "Brief 65: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_65": {
+      "type": "choice",
+      "instructions": "Brief 65: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_66": {
+      "type": "score",
+      "instructions": "Brief 66: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_66": {
+      "type": "choice",
+      "instructions": "Brief 66: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_67": {
+      "type": "score",
+      "instructions": "Brief 67: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_67": {
+      "type": "choice",
+      "instructions": "Brief 67: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_68": {
+      "type": "score",
+      "instructions": "Brief 68: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_68": {
+      "type": "choice",
+      "instructions": "Brief 68: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_69": {
+      "type": "score",
+      "instructions": "Brief 69: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_69": {
+      "type": "choice",
+      "instructions": "Brief 69: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_70": {
+      "type": "score",
+      "instructions": "Brief 70: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_70": {
+      "type": "choice",
+      "instructions": "Brief 70: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_71": {
+      "type": "score",
+      "instructions": "Brief 71: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_71": {
+      "type": "choice",
+      "instructions": "Brief 71: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_72": {
+      "type": "score",
+      "instructions": "Brief 72: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_72": {
+      "type": "choice",
+      "instructions": "Brief 72: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_73": {
+      "type": "score",
+      "instructions": "Brief 73: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_73": {
+      "type": "choice",
+      "instructions": "Brief 73: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_74": {
+      "type": "score",
+      "instructions": "Brief 74: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_74": {
+      "type": "choice",
+      "instructions": "Brief 74: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_75": {
+      "type": "score",
+      "instructions": "Brief 75: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_75": {
+      "type": "choice",
+      "instructions": "Brief 75: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_76": {
+      "type": "score",
+      "instructions": "Brief 76: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_76": {
+      "type": "choice",
+      "instructions": "Brief 76: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_77": {
+      "type": "score",
+      "instructions": "Brief 77: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_77": {
+      "type": "choice",
+      "instructions": "Brief 77: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_78": {
+      "type": "score",
+      "instructions": "Brief 78: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_78": {
+      "type": "choice",
+      "instructions": "Brief 78: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_79": {
+      "type": "score",
+      "instructions": "Brief 79: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_79": {
+      "type": "choice",
+      "instructions": "Brief 79: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_80": {
+      "type": "score",
+      "instructions": "Brief 80: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_80": {
+      "type": "choice",
+      "instructions": "Brief 80: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_81": {
+      "type": "score",
+      "instructions": "Brief 81: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_81": {
+      "type": "choice",
+      "instructions": "Brief 81: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_82": {
+      "type": "score",
+      "instructions": "Brief 82: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_82": {
+      "type": "choice",
+      "instructions": "Brief 82: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_83": {
+      "type": "score",
+      "instructions": "Brief 83: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_83": {
+      "type": "choice",
+      "instructions": "Brief 83: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_84": {
+      "type": "score",
+      "instructions": "Brief 84: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_84": {
+      "type": "choice",
+      "instructions": "Brief 84: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_85": {
+      "type": "score",
+      "instructions": "Brief 85: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_85": {
+      "type": "choice",
+      "instructions": "Brief 85: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_86": {
+      "type": "score",
+      "instructions": "Brief 86: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_86": {
+      "type": "choice",
+      "instructions": "Brief 86: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_87": {
+      "type": "score",
+      "instructions": "Brief 87: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_87": {
+      "type": "choice",
+      "instructions": "Brief 87: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_88": {
+      "type": "score",
+      "instructions": "Brief 88: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_88": {
+      "type": "choice",
+      "instructions": "Brief 88: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_89": {
+      "type": "score",
+      "instructions": "Brief 89: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_89": {
+      "type": "choice",
+      "instructions": "Brief 89: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_90": {
+      "type": "score",
+      "instructions": "Brief 90: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_90": {
+      "type": "choice",
+      "instructions": "Brief 90: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_91": {
+      "type": "score",
+      "instructions": "Brief 91: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_91": {
+      "type": "choice",
+      "instructions": "Brief 91: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_92": {
+      "type": "score",
+      "instructions": "Brief 92: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_92": {
+      "type": "choice",
+      "instructions": "Brief 92: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_93": {
+      "type": "score",
+      "instructions": "Brief 93: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_93": {
+      "type": "choice",
+      "instructions": "Brief 93: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_94": {
+      "type": "score",
+      "instructions": "Brief 94: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_94": {
+      "type": "choice",
+      "instructions": "Brief 94: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_95": {
+      "type": "score",
+      "instructions": "Brief 95: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_95": {
+      "type": "choice",
+      "instructions": "Brief 95: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_96": {
+      "type": "score",
+      "instructions": "Brief 96: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_96": {
+      "type": "choice",
+      "instructions": "Brief 96: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_97": {
+      "type": "score",
+      "instructions": "Brief 97: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_97": {
+      "type": "choice",
+      "instructions": "Brief 97: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_98": {
+      "type": "score",
+      "instructions": "Brief 98: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_98": {
+      "type": "choice",
+      "instructions": "Brief 98: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_99": {
+      "type": "score",
+      "instructions": "Brief 99: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_99": {
+      "type": "choice",
+      "instructions": "Brief 99: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_100": {
+      "type": "score",
+      "instructions": "Brief 100: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_100": {
+      "type": "choice",
+      "instructions": "Brief 100: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_101": {
+      "type": "score",
+      "instructions": "Brief 101: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_101": {
+      "type": "choice",
+      "instructions": "Brief 101: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_102": {
+      "type": "score",
+      "instructions": "Brief 102: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_102": {
+      "type": "choice",
+      "instructions": "Brief 102: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_103": {
+      "type": "score",
+      "instructions": "Brief 103: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_103": {
+      "type": "choice",
+      "instructions": "Brief 103: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_104": {
+      "type": "score",
+      "instructions": "Brief 104: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_104": {
+      "type": "choice",
+      "instructions": "Brief 104: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_105": {
+      "type": "score",
+      "instructions": "Brief 105: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_105": {
+      "type": "choice",
+      "instructions": "Brief 105: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_106": {
+      "type": "score",
+      "instructions": "Brief 106: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_106": {
+      "type": "choice",
+      "instructions": "Brief 106: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_107": {
+      "type": "score",
+      "instructions": "Brief 107: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_107": {
+      "type": "choice",
+      "instructions": "Brief 107: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_108": {
+      "type": "score",
+      "instructions": "Brief 108: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_108": {
+      "type": "choice",
+      "instructions": "Brief 108: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_109": {
+      "type": "score",
+      "instructions": "Brief 109: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_109": {
+      "type": "choice",
+      "instructions": "Brief 109: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    },
+    "score_110": {
+      "type": "score",
+      "instructions": "Brief 110: rate how ready this kanban brief is for immediate dispatch. Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": [
+        "Not dispatchable: the brief explicitly defers to a note or another source, says no action is needed, or is only a fixture or umbrella card.",
+        "Gated: a concrete action exists, but the brief defers to human approval or a later decision before work can start.",
+        "Partial: a concrete action and target are named, but a key detail depends on another source (for example 'details in the note').",
+        "Fully ready: a concrete action and target are stated in the brief with enough detail to dispatch now, without consulting another source."
+      ]
+    },
+    "choice_110": {
+      "type": "choice",
+      "instructions": "Brief 110: which single disposition best describes this kanban brief? Judge only what the brief itself says, not any card metadata or notes.",
+      "criteria": {
+        "ready": "A concrete action and target are stated with enough detail to dispatch now.",
+        "deferral": "The brief defers the actual action to a note or another source, or says no action is needed.",
+        "approval_gated": "A concrete action exists but is gated on a person's approval or a later decision.",
+        "fixture_or_status": "A test fixture, umbrella card, or descriptive status with no dispatchable task."
+      }
+    }
+  }
+}

@@ -1,7 +1,7 @@
 id: ada-review-refresh-prune-timeout-fix-unpinned
 title: ada-review-refresh times out in prune-old-docs.py on tony-omen
-column: doing
-updated: 2026-11-27 10:49
+column: done
+updated: 2026-11-27 10:59
 spec: 'ada-review-refresh.service on tony-omen failed at 09:03 with subprocess.TimeoutExpired: export-transcripts.py
   calling prune-old-docs.py exceeded its 600s timeout (whole unit ran 18m52s wall, 51M swap used). Investigate why
   the prune step now takes >10 minutes and make it complete reliably within the job budget — batch/incremental traversal,
@@ -13,9 +13,12 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: running
+  status: done
   runner: con01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 10:56
+  verified: true
 ref: ADA-1485
 comms:
 - at: 2026-11-27 09:36
@@ -59,5 +62,44 @@ comms:
     (4x) for timed-out deleteWhere calls — orphaned server batches make retries safe. Caveat: ops host-logs backlog
     ~390k docs drains slowly (~9/min observed) while mddb-ops freelist is poisoned — recommend Procedure-B rebuild
     of ops DB as follow-up; drain loop running on idc03 meanwhil'
+- at: 2026-11-27 10:56
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-093753-ada-review-refresh-service-on- no longer active on con01 but card
+    still says running — sweeping its branch'
+- at: 2026-11-27 10:57
+  from: chaba
+  text: 'merge-sweep: merged 4a222419 (dispatch/20261127-093753-ada-review-refresh-service-on- from con01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261127-093753-ada-review-refresh-service-on-.md)
+    — auto-closed'
+- at: 2026-11-27 10:57
+  from: local
+  text: 'pub milestone: card verified: ada-review-refresh-prune-timeout-fix-unpinned on idc03 — merged 4a222419
+    (dispatch/20261127-093753-ada-review-refresh-service-on- from con01) -> origin/master — verified — auto- — merged
+    4a222419 (dispatch/20261127-093753-ada-review-refresh-service-on- from con01) -> origin/master — verified —
+    auto-closed [evt-dfa0a967e3f293b2]'
+- at: 2026-11-27 10:57
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-093753-ada-review-refresh-service-on-,
+    branch dispatch/20261127-093753-ada-review-refresh-service-on- on con01'
+- at: 2026-11-27 10:58
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 10:59
+  from: chaba
+  text: 'session-end checkpoint 56c6003f: 1 leftover file(s) committed'
+- at: 2026-11-27 10:59
+  from: chaba
+  text: banked 290 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-27 10:59
+  from: chaba
+  text: pushed dispatch/20261127-093753-ada-review-refresh-service-on- to origin
+- at: 2026-11-27 10:59
+  from: chaba
+  text: 'auto-merge not done: merge: merge: dispatch/20261127-093753-ada-review-refresh-service-on- - not something
+    we can merge — close will block until merged'
 claim:
   since: 2026-11-27 09:36
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 10:57
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261127-093753-ada-review-refresh-service-on-.md

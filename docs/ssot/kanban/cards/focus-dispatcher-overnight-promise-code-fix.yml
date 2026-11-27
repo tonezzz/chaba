@@ -1,7 +1,7 @@
 id: focus-dispatcher-overnight-promise-code-fix
 title: focus-dispatcher-overnight fails with Promise passed as error code
 column: doing
-updated: 2026-11-27 10:45
+updated: 2026-11-27 11:07
 spec: 'focus-dispatcher-overnight.service on tony-omen ends with `[overnight] completed with errors` after `TypeError
   [ERR_INVALID_ARG_TYPE]: The "code" argument must be of type number. Received an instance of Promise`. The SSOT
   validation step reports Total errors: 0, so the TypeError is in the JavaScript/Node overnight focus workflow''s
@@ -62,5 +62,12 @@ comms:
     — passes a Promise to process.exit -> TypeError ERR_INVALID_ARG_TYPE on every run (it is the step right after
     ssot-validate-all/ssot-optimize in overnight-focus-review.py). Fix applied in worktree: await main() and process.exit(resolved
     code), catch->exit 1. Verifying locally then on tony-omen.'
+- at: 2026-11-27 11:07
+  from: devin
+  text: 'Verification run 1 on omen: TypeError gone (ssot-optimize-to-inbox posted 140 inbox drafts via /inbox,
+    exit 0) BUT service still failed — second contributor found: focus-dispatcher.py --advance exits 1 on non-writer
+    checkouts since 857612a507 forces --dry-run and dry-run advance prints "requires a real run" -> sys.exit(1).
+    overnight-focus-review.py now skips --advance when chaba-role is stamped non-served (served checkout owns advancing).
+    Deployed both fixes to omen, verification run 2 in progre'
 claim:
   since: 2026-11-27 10:30

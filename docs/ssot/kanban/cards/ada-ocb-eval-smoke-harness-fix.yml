@@ -1,7 +1,7 @@
 id: ada-ocb-eval-smoke-harness-fix
 title: ada-ocb-eval and ada-ocb-smoke harness failures on idc02
-column: doing
-updated: 2026-11-27 10:53
+column: review
+updated: 2026-11-27 11:13
 spec: 'Two nightly Ada bridge benchmark services on idc02 both fail:
 
   - ada-ocb-eval.service: gate `preflight-gates-readonly` FAIL — its answer is missing required fields ''start_check'',
@@ -20,9 +20,16 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: running
+  status: done
   runner: tony-dell
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 11:10
+    dirty: 1
+    conflict_sig: b7610a309457|docs/ssot/ssot.dev-system.assessment.yml
+    session_gone: 2026-11-27 11:13
+  result: 'exit=0 -outcome-20261127-103128-two-nightly-ada-bridge-benchma.md`. | devin-task-20261127-103128-two-nightly-ada-bridge-benchma.service:
+    Consumed 3min 35.536s CPU time over 34min 4.538s wall clock time, 863.7M memory peak, 668.1M memory swap peak.'
 ref: ADA-1489
 comms:
 - at: 2026-11-27 10:29
@@ -67,5 +74,70 @@ comms:
     class as this morning''s smoke fixture). smoke 10:00 flake: _context_card did 3 uncached board fetches inside
     the 8s pack deadline during idc03 overload -> card leg dropped. fix: repoint eval fixtures to ADA-1110 + route
     _context_card through the shared snapshot cache with deadline-bounded timeouts. applying on idc02 now.'
+- at: 2026-11-27 11:05
+  from: devin
+  text: 'DONE. Root causes (neither was a gate-contract/provider regression): (1) eval 7/10 = fixture rot — cases.yml
+    probed archived ADA-0172/ADA-0174, same class as this morning''s smoke repoint; repointed all 3 card cases to
+    ADA-1110. (2) smoke 10:00 flake = _context_card ran 3 uncached /cards fetches inside the 8s pack deadline during
+    idc03 board-api slowness; now resolves via _compact_cards/_fetch_card_full with deadline timeouts + skips the
+    guaranteed-miss id= probe for refs. Fix: ada-voice 912e064 '
+- at: 2026-11-27 11:10
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-103128-two-nightly-ada-bridge-benchma no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-27 11:10
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261127-103128-two-nightly-ada-bridge-benchma on tony-dell still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-27 11:12
+  from: chaba
+  text: 'merge-sweep: dispatch/20261127-103128-two-nightly-ada-bridge-benchma conflicts with origin/master: docs/ssot/ssot.dev-system.assessment.yml
+    — merge aborted, card stays for human resolution'
+- at: 2026-11-27 11:12
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261127-103128-two-nightly-ada-bridge-benchma:
+    2 commit(s) conflict with origin/master '
+- at: 2026-11-27 11:12
+  from: tony-dell
+  text: 'finished (ok): exit=0 -outcome-20261127-103128-two-nightly-ada-bridge-benchma.md`. | devin-task-20261127-103128-two-nightly-ada-bridge-'
+- at: 2026-11-27 11:12
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 11:12
+  from: chaba
+  text: banked 947 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-27 11:12
+  from: chaba
+  text: pushed dispatch/20261127-103128-two-nightly-ada-bridge-benchma to origin
+- at: 2026-11-27 11:12
+  from: chaba
+  text: 'auto-merge not done: merge: commit after conflict resolution failed — close will block until merged'
+- at: 2026-11-27 11:12
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-27 11:13
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261127-103128-two-nightly-ada-bridge- on tony-dell
+    — if the work was never pushed it may be gone'
 claim:
   since: 2026-11-27 10:30
+requests:
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261127-103128-two-nightly-ada-bridge-benchma: 2 commit(s) conflict with
+    origin/master in chaba — conflicted paths: docs/ssot/ssot.dev-system.assessment.yml. Merge tony-dell:/home/tony/CascadeProjects/dispatch-wt-20261127-103128-two-nightly-ada-bridge-benchma
+    by hand, or retry/abandon the card.'
+  status: open
+  at: 2026-11-27 11:12
+  from: chaba
+  options:
+  - id: resolve
+    action: queue
+    label: let devin resolve the conflict and land it ★
+  - id: drop
+    action: retry
+    label: drop this dispatch — re-dispatch fresh from current main
+  - id: hold
+    action: hold
+    label: hold the card
+  suggested: resolve — let devin resolve the conflict and land it ★
+review_kind: verify

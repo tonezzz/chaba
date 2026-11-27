@@ -4,7 +4,7 @@ subtitle: >
   review and a held-out threshold calibration. High precision, still not a
   hands-off approve gate.
 icon: education
-version: 5  # v5: independent 130-brief validation of the tuned thresholds
+version: 6  # v6: Decisions score/choice rubric probe on both holdouts
 
 card: gemini-decision-1-gate-eval-2026-11-26  # ADA-1445
 date: 2026-11-26
@@ -147,6 +147,45 @@ delivered:
       - scripts/voice-bench/results/g4-decision-gate-validation130-fullmodel-payload.json
       - scripts/voice-bench/results/g4-decision-gate-validation130-graded.json
 
+  decisions_rubric_probe:
+    date: 2026-11-27
+    purpose: "Test whether Decisions score (ordered rubric) or choice (disposition) beats binary noul at zero false approvals. Docs fetched before coding: Decisions API guide and gemini-decision-1 model page."
+    method: "Same shared input as each prior call; 2 questions per brief (score level 0-3 and choice among ready/deferral/approval_gated/fixture_or_status). Two batched calls on the free key, zero output tokens, no card or config changes."
+    validation_130:
+      usage: {total_tokens: 51773, total_input_tokens: 51773, total_output_tokens: 0}
+      latency_s: 1.21
+      corrected_labels:
+        noul_at_0.5: {tp: 50, fn: 12, tn: 68, fp: 0, accuracy: 0.9077, approve_recall: 0.8065, brier: 0.0767}
+        choice_p_ready_at_0.5: {tp: 53, fn: 9, tn: 68, fp: 0, accuracy: 0.9308, approve_recall: 0.8548, brier: 0.0525}
+        choice_p_ready_zero_fp_sweep: {threshold: 0.494452, tp: 55, fn: 7, tn: 68, fp: 0, approve_recall: 0.8871, false_approval_wilson95: {low: 0.0, high: 0.0535}}
+        score_norm_at_0.5: {tp: 56, fn: 6, tn: 5, fp: 63, accuracy: 0.4692, approve_precision: 0.4706}
+        score_p_level3_at_0.5: {tp: 35, fn: 27, tn: 68, fp: 0, approve_recall: 0.5645}
+        choice_top_is_ready: {tp: 61, fn: 1, tn: 67, fp: 1, accuracy: 0.9846, approve_precision: 0.9839, approve_recall: 0.9839}
+      note: "Score expected value puts 'partial' (level 2 = 0.667) above a 0.5 threshold; P(level 3) is conservative but loses recall. Composed p_ready AND score_norm grid never beat choice alone (best zero-FP recall 0.8065)."
+    cross_check_110:
+      usage: {total_tokens: 44158, total_input_tokens: 44158, total_output_tokens: 0}
+      latency_s: 1.42
+      labels: "Tony-reviewed 110-holdout labels from the graded artifact"
+      noul: {at_0.5: {tp: 39, fn: 16, tn: 54, fp: 1, approve_recall: 0.7091, brier: 0.1248}, at_0.536574: {tp: 36, fn: 19, tn: 55, fp: 0, approve_recall: 0.6545}}
+      choice_p_ready: {at_0.5: {tp: 38, fn: 17, tn: 54, fp: 1, approve_recall: 0.6909, brier: 0.1245}, zero_fp_sweep: {threshold: 0.53583, tp: 37, fn: 18, tn: 55, fp: 0, approve_recall: 0.6727}}
+      choice_top_is_ready: {tp: 42, fn: 13, tn: 54, fp: 1, accuracy: 0.8727, approve_recall: 0.7636}
+      conclusion: "The 130-brief choice advantage did not replicate: on 110 the choice arm is statistically indistinguishable from noul (one FP each, Brier 0.1245 vs 0.1248)."
+    shortcuts_revisited:
+      noul_confident_no: {rule: "reject when p_yes <= 0.10 and confidence >= 0.90", validation_130: {rejected: 63, false_rejected_ready: 0}, holdout_110: {rejected: 16, false_rejected_ready: 1, id: cline-kanban-offline-image-build}, verdict: "still unsafe; one known READY false reject"}
+      choice_confident_not_ready: {rule: "reject when P(ready) <= 0.10 and confidence >= 0.90", validation_130: {rejected: 32, false_rejected_ready: 0}, holdout_110: {rejected: 0, coverage: 0}, verdict: "unvalidated on the earlier holdout, not adoptable"}
+      note: "The broad 'confidence >= 0.90 regardless of direction' shortcut remains rejected. Restricting to confident NO removes the validation-set failures but does not remove the 110-holdout failure."
+    artifacts:
+      - scripts/voice-bench/g4-decision-gate-rubric130-build.py
+      - scripts/voice-bench/g4-decision-gate-rubric130-grade.py
+      - scripts/voice-bench/g4-decision-gate-rubric110-build.py
+      - scripts/voice-bench/g4-decision-gate-rubric110-grade.py
+      - scripts/voice-bench/results/g4-decision-gate-rubric130-payload.json
+      - scripts/voice-bench/results/g4-decision-gate-rubric130-response.json
+      - scripts/voice-bench/results/g4-decision-gate-rubric130-graded.json
+      - scripts/voice-bench/results/g4-decision-gate-rubric110-payload.json
+      - scripts/voice-bench/results/g4-decision-gate-rubric110-response.json
+      - scripts/voice-bench/results/g4-decision-gate-rubric110-graded.json
+
 findings:
   - "The 60-brief set lifted accuracy from 0.80 to 0.9167 with zero false approvals at the default 0.5 threshold; 25/30 READY approved and 30/30 NOT_READY rejected."
   - "Tony reviewed the two borderline labels: nest-lane-metrics changed NOT_READY -> READY because it explicitly asks for dispatch, and devnest-news-promote-wp4010 changed READY -> NOT_READY because the action is gated on Ada/Tony approval. Rule refined: 'nothing needed from you' alone does not mean NOT_READY when dispatch is explicitly requested; idc02-runner-smoke stays NOT_READY because it says the worker drains itself."
@@ -165,12 +204,16 @@ findings:
   - "The holdout-tuned 0.536574 threshold did not clear the raw-label zero-FP bar (1 false approval), but the one remaining approval is a deterministic label misfire: the brief had a spec and was dispatched. With those two labels corrected all three thresholds have zero false approvals, so the threshold generalizes on genuine negatives while recall drops to 0.71."
   - "The confidence >= 0.90 auto-reject shortcut is dead: 67 cases crossed it on the validation set and four genuinely READY briefs were high-confidence-ready (p_yes 0.92-0.93). It fails under raw and corrected labels and must not be adopted."
   - "The full-model arm could not be re-run on the validation set: gemini-3.8-flash remained 503 across three attempts and every alternate free model was 503/429/404. The holdout's 0.25 full-model threshold stays unvalidated; no conclusion about parity on the new negatives."
+  - "Rubric probe did not dethrone binary noul. On the 130 set the choice P(ready) at fixed 0.5 looked better (53/62 READY, 0 FP, Brier 0.0525 vs noul 0.0767), but on the independent 110 set choice and noul were effectively tied (one FP each, Brier 0.1245 vs 0.1248). Do not adopt the choice arm on this evidence."
+  - "Score questions are useful as a triage rubric but not as an approve signal: probability-weighted expected level puts 'partial' above a 0.5 threshold (63 false approvals on 130), while P(level 3) is conservative (recall 0.56). Composing choice and score never beat choice alone."
+  - "The broad confidence >= 0.90 auto-reject shortcut stays rejected. A directional version (confident NO only) is clean on 130 but still falsely rejects one genuinely READY brief on 110, so neither version is safe for automation."
 
 guardrails:
   - "No key, billing, gateway, model-pin or production-path changes."
   - "No wiki publish during the eval itself; Tony separately authorized revision 4 on 2026-11-27, which folded these results into Education:Gemini-Developer-Capabilities-2026-11-26 via board-api /publish sink wiki-education (revid 808, MediaWiki-assigned). No direct MediaWiki call."
   - "Read-only batch Decisions call; briefs came from repo cards, no card state changed."
   - "The validation set is 130 new disjoint briefs; primary metrics keep the deterministic labels even where a marker misfired. Corrected-label results are a sensitivity read only, not a retuned gate."
+  - "Rubric probe used the free key on idc03 with two batched Decisions calls (260 and 220 questions); no paid key, billing, gateway, model-pin or production-path change. Docs fetched before writing code per the gemini-api-dev skill."
 
 activation_gate:
   - "DONE 2026-11-26: Tony said 'please proceed' after the open-items review."
@@ -184,6 +227,7 @@ verify:
   - "DONE 2026-11-27: 110-brief holdout built and manually vetted (55/55, disjoint), both arms called, graded locally, and all eight artifacts parsed."
   - "DONE 2026-11-27: production preflight gates replayed locally against the same 110 card YAMLs; two more artifacts parsed, no API calls."
   - "DONE 2026-11-27: 130-brief independent validation built (60/70, disjoint from all three prior sets) and manually audited; Decisions call returned 130 answers with zero output tokens; graded locally with a label-noise sensitivity read and eight artifacts parsed."
+  - "DONE 2026-11-27: score/choice rubric probe run on both 130 and 110 briefs (260 and 220 answers, zero output tokens), graded locally, ten artifacts parsed."
 
 remaining:
   - "DONE 2026-11-27: Tony said 'proceed with the Managed Agents cost comparison and publish a wiki revid 799 with these decision-1 results'; published, MediaWiki assigned revid 808."
@@ -191,6 +235,8 @@ remaining:
   - "Do not replace human dispatch approval on this evidence; use as a high-precision pre-filter that escalates low/medium-confidence cases."
   - "Do not wire any model approval into dispatch while typed_dispatch_available is false; keep the preflight preconditions and the native approval menu in front."
   - "DONE 2026-11-27: Decisions threshold 0.536574 validated on the fresh 130-brief set; zero genuine false approvals after label audit (raw labels show one marker misfire). The confidence >= 0.90 shortcut was re-validated and rejected."
+  - "DONE 2026-11-27: score/choice rubric probe completed on both sets; choice arm not adopted because the 130-set gain did not replicate on 110. Binary noul at 0.5 remains the recommended pre-filter, with human approval."
   - "The full-model 0.25 threshold still needs an independent negative set once gemini-3.8-flash or an alternate generateContent model is available again; this run was 503/429 across all candidates."
+  - "If a third disjoint set is ever built, test the directional confident-NO shortcut there with both noul and choice arms before revisiting automation; the 110 false reject is unresolved."
   - "Do not retry any paid key until the cap situation is explicitly resolved by Tony."
   - "Do not publish these 110-brief results to the wiki without a separate go-ahead from Tony."

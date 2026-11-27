@@ -88,7 +88,7 @@ def main():
         "services_checked": len(units),
         "services_with_errors": len(errored),
         "total_error_occurrences": total_errors,
-        "top_error_patterns": [dict(p) for p in top_errors],
+        "top_error_patterns": [{"pattern": p, "count": c} for p, c in top_errors],
         "results": results,
     }
     with open(json_path, "w", encoding="utf-8") as f:

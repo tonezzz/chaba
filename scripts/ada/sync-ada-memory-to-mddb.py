@@ -29,6 +29,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import random
 import re
 import sys
 import time
@@ -138,6 +139,13 @@ def build_meta(fm: dict, bank: str, scope: str, today: str) -> dict:
     return meta
 
 
+# Retry backoff: linear 30s/60s base with ±25% jitter (capped at 90s) so
+# callers that all hit the same outage don't re-collide in lockstep.
+_RETRY_BASE_S = 30
+_RETRY_CAP_S = 90
+_JITTER = 0.25
+
+
 class Mddb:
     def __init__(self, base: str, timeout: int = 60,
                  max_attempts: int = 3) -> None:
@@ -153,7 +161,9 @@ class Mddb:
         # run with exit 1. All three callers are idempotent (search reads,
         # add upserts by key, delete is key-scoped). Deterministic HTTP
         # errors (4xx) still fail fast; a real outage still exits nonzero
-        # after the retries are exhausted.
+        # after the retries are exhausted — with a greppable diagnostic so
+        # a genuinely-down endpoint is distinguishable from a transient
+        # blip in the journal.
         last = self.max_attempts - 1
         for attempt in range(self.max_attempts):
             try:
@@ -163,17 +173,28 @@ class Mddb:
                 return r.json()
             except requests.HTTPError as exc:
                 code = exc.response.status_code if exc.response is not None else 0
-                if not (code == 429 or code >= 500) or attempt == last:
+                if not (code == 429 or code >= 500):
                     raise
                 reason = f"HTTP {code}"
-            except (requests.ConnectionError, requests.Timeout) as exc:
                 if attempt == last:
+                    self._report_exhausted(path, reason)
                     raise
+            except (requests.ConnectionError, requests.Timeout) as exc:
                 reason = str(exc)
-            wait = 30 * (attempt + 1)
-            print(f"  mddb{path} failed ({reason}) — retrying in {wait}s",
+                if attempt == last:
+                    self._report_exhausted(path, reason)
+                    raise
+            wait = min(_RETRY_CAP_S, _RETRY_BASE_S * (attempt + 1))
+            wait *= random.uniform(1 - _JITTER, 1 + _JITTER)
+            print(f"  mddb{path} failed ({reason}) — retrying in {wait:.0f}s",
                   file=sys.stderr)
             time.sleep(wait)
+
+    def _report_exhausted(self, path: str, reason: str) -> None:
+        print(f"mddb{path} FAILED after {self.max_attempts} attempts "
+              f"({reason}) — endpoint {self.base} unreachable or unhealthy; "
+              "aborting sync (not skipped — next timer run retries)",
+              file=sys.stderr)
 
     def list_docs(self, collection: str) -> list[dict]:
         # Banks with >1000 docs (devin-tony is ~2000) silently truncated —
@@ -187,7 +208,17 @@ class Mddb:
                             "lang": "en", "contentMd": content, "meta": meta})
 
     def delete(self, collection: str, key: str) -> None:
-        self._post("/delete", {"collection": collection, "key": key, "lang": "en"})
+        try:
+            self._post("/delete", {"collection": collection, "key": key,
+                                   "lang": "en"})
+        except requests.HTTPError as exc:
+            # 404 = already gone — the desired end state. /search reads a
+            # lagging index, so a doc deleted moments ago (by an earlier
+            # pass, a concurrent writer, or ada_forget) still lists here;
+            # treating that as failure crashes the whole sync.
+            if exc.response is not None and exc.response.status_code == 404:
+                return
+            raise
 
 
 def _managed_meta(meta: dict) -> dict:
@@ -236,11 +267,21 @@ def sync(mddb: Mddb, mapping: list[dict], dry: bool, delete_remote: bool,
          take_remote: bool, take_vault: bool, resolve_voice: bool = False) -> int:
     today = date.today().isoformat()
     conflicts = 0
+    # Two registry entries can share one collection (personal/tony and
+    # personal-tony both -> ada-ha-bank-personal-tony). Diffing them as
+    # independent passes makes each one delete the other's vault docs —
+    # merge notes per collection so the diff sees the union of all dirs.
+    groups: dict[str, list[dict]] = {}
     for m in mapping:
-        vdir = VAULT / m["dir"]
+        groups.setdefault(m["collection"], []).append(m)
+    for coll, ms in groups.items():
         notes = {}
         paths = {}
-        if vdir.is_dir():
+        note_map = {}
+        for m in ms:
+            vdir = VAULT / m["dir"]
+            if not vdir.is_dir():
+                continue
             for f in sorted(vdir.glob("*.md")):
                 if f.name.startswith(("_", ".")) or f.name == "README.md":
                     continue
@@ -249,14 +290,20 @@ def sync(mddb: Mddb, mapping: list[dict], dry: bool, delete_remote: bool,
                     print(f"  skip (no frontmatter): {m['dir']}/{f.name}")
                     continue
                 key = note["frontmatter"].get("key") or f"{m['bank']}/{f.stem}"
+                if key in notes:
+                    print(f"  ! {key} in both {paths[key]} and {f} "
+                          f"({m['dir']}) — keeping {f}", file=sys.stderr)
                 notes[key] = note
                 paths[key] = f
+                note_map[key] = m
 
-        remote = {d.get("key"): d for d in mddb.list_docs(m["collection"])}
-        label = f"{m['dir']:<20} -> {m['collection']}"
+        remote = {d.get("key"): d for d in mddb.list_docs(coll)}
+        dirs = "+".join(m["dir"] for m in ms)
+        label = f"{dirs:<20} -> {coll}"
         print(f"\n{label}  (vault: {len(notes)}, remote: {len(remote)})")
 
         for key, note in notes.items():
+            m = note_map[key]
             meta = build_meta(note["frontmatter"], m["bank"], m["scope"], today)
             body = note["body"]
             old = remote.get(key)
@@ -291,7 +338,7 @@ def sync(mddb: Mddb, mapping: list[dict], dry: bool, delete_remote: bool,
             verb = "update" if old is not None else "create"
             print(f"  {'~' if old else '+'} {key} ({verb})")
             if not dry:
-                mddb.add(m["collection"], key, body, meta)
+                mddb.add(coll, key, body, meta)
 
         for key, doc in remote.items():
             if key in notes:
@@ -300,7 +347,7 @@ def sync(mddb: Mddb, mapping: list[dict], dry: bool, delete_remote: bool,
             if (delete_remote or _writer(doc) == VAULT_WRITER) and src != "voice":
                 print(f"  - {key} (gone from vault / remote-only, deleted)")
                 if not dry:
-                    mddb.delete(m["collection"], key)
+                    mddb.delete(coll, key)
             else:
                 tag = "voice" if src == "voice" else "remote-only"
                 print(f"  ? {key} ({tag}, kept)")

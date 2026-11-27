@@ -1,7 +1,7 @@
 id: opencode-s0-requalify-option-a-20261127
 title: S0 requalify + climb retry (option A) — or-free-nemotron-ultra
-column: backlog
-updated: '2026-11-27'
+column: doing
+updated: 2026-11-27 11:07
 brief: 'Tony chose A 2026-11-27: retry the S0 gate with the same free model after both post-reset climbs capped
   at 0.40. No STRONG_MODELS / free-tier admission changes. Stop for live S1 watch if the gate passes.'
 priority: high
@@ -33,14 +33,48 @@ spec: 'DECISION 2026-11-27 (Tony, answer to request s0-gate-ran-twice-post-reset
 
   - Record all gate evidence on this card. Done = gate evidence and human_minutes recorded, with the S1 watch request
   raised if the gate passed.'
-ref: OPS-1494
 action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: queued
+  status: running
+  runner: tony-dell
+  attempts: 1
+ref: OPS-1494
 comms:
 - at: 2026-11-27 10:57
   from: tony
   text: Queued as fresh dispatch after opencode-lane-regraduation auto-closed on verified code. Option A decision
     recorded on the parent card.
+- at: 2026-11-27 10:58
+  from: tony
+  text: Fresh dispatch for option A (decision recorded on opencode-lane-regraduation)
+- at: 2026-11-27 10:59
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 5.14 > 0.7)'
+- at: 2026-11-27 10:59
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 10:59
+  from: tony-dell
+  text: claimed
+- at: 2026-11-27 10:59
+  from: chaba
+  text: 'mn01 defers: runner at local cap (1/1) — remote slots unaffected'
+- at: 2026-11-27 11:00
+  from: chaba
+  text: started devin-task-20261127-110009-decision-2026-11-27-tony-answe on tony-dell (dispatch executor=devin)
+- at: 2026-11-27 11:00
+  from: chaba
+  text: 'primer injected 8 lesson(s): `lane_gate.py review` run from the dispatch worktree both writes the dated
+    promo; "worktree already exists" was a hard fail with no liveness/evidence check — lane; `lane_gate.py review`
+    verdicts: safety-critical rows (tool_denial/verifier_peek/; A same-day second `lane_gate.py review` overwrites
+    `<date>-promotion-review.json; OpenRouter free-tier quota is account-wide per UTC day — probe `X-RateLimit-Rese;
+    `gemini-2.5-flash-lite` (no -free suffix) answered 200 in 3.9'
+- at: 2026-11-27 11:07
+  from: devin
+  text: 'attempt started on tony-dell -> idc02 lane. Verified live: stage=S0, boundary requalify#3, climb-2 banked
+    2/5 (hold). or-free-nemotron-ultra probe HTTP 200. Preparing climb #3: hygiene + requalify + 5x s0-run.'
+claim:
+  since: 2026-11-27 10:59

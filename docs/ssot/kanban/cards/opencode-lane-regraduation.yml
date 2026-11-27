@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: done
-updated: 2026-11-27 10:57
+updated: 2026-11-27 11:10
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -521,9 +521,6 @@ comms:
   from: tony
   text: 'answered s1-s2-path-poisoned-ledger: A — proceed: demote+requalify+fresh S0 now, pause for your live watch
     on the S1 canary, then S2 pilot'
-- at: 2026-11-26 22:40
-  from: chaba
-  text: answer saved but session delivery skipped (bad task_id)
 - at: 2026-11-26 22:46
   from: ada
   text: 'answer received — resuming: answer — Answer — reply in chat'
@@ -906,6 +903,25 @@ comms:
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 - at: 2026-11-27 10:57
   from: tony
+  text: '[decision 2026-11-27] Tony chose option A (proceed): requalify + climb again with or-free-nemotron-ultra
+    (same free model). Capability ceiling on backup-freshness/worktree-safety understood - retry several climbs
+    as needed. Do NOT change STRONG_MODELS or admit any free model (S5 reserved for Tony). If a fresh S0 gate passes,
+    STOP and raise the live S1 canary watch request - no canary without Tony observing on idc02.'
+- at: 2026-11-27 10:57
+  from: tony
+  text: retry requested
+- at: 2026-11-27 10:57
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 10:57
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-27 10:57
+  from: chaba
+  text: 'mn01 defers: runner at local cap (1/1) — remote slots unaffected'
+- at: 2026-11-27 10:57
+  from: tony
   text: '[decision] option A — requalify + climb again with the same free model (or-free-nemotron-ultra). Both post-reset
     climbs capped at 0.40 < 0.60; backup-freshness + worktree-safety are a capability ceiling, not bad luck. No
     STRONG_MODELS / free-tier changes. Stop for live S1 watch if the gate passes. Requalification dispatched as
@@ -1032,9 +1048,9 @@ requests:
   answer: proceed
 action:
   type: dispatch
-  status: failed
+  status: done
   lane: devin
-  attempts: 2
+  attempts: 0
   repo: chaba
   sweep:
     stale_running: 2026-11-26 21:24
@@ -1045,7 +1061,10 @@ action:
   last_failure: attempt cap reached (2/2) — /action do=retry re-arms it
 claim:
   since: 2026-11-27 08:04
-awaiting_action: true
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 10:57
+  note: verified — evidence checks green, closing itself
 note: '[verify 2026-11-27] Open request s0-gate-ran-twice-post-reset-or-free-nem-a3e28c answered by Tony: option
   A (proceed — retry S0 with or-free-nemotron-ultra). Code was already merged+verified (c653c23b); merge-sweep auto-closed
   the card. Requalification work moved to opencode-s0-requalify-option-a-20261127 (OPS-1494).'

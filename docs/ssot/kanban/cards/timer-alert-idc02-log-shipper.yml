@@ -1,7 +1,7 @@
 id: timer-alert-idc02-log-shipper
 title: Timer log-shipper on idc02 failing
 column: backlog
-updated: 2026-11-27 10:45
+updated: 2026-11-27 11:15
 priority: high
 tags:
 - timer-alert
@@ -1424,6 +1424,26 @@ comms:
 - at: 2026-11-27 10:45
   from: devin
   text: '[still suspicious] Last run (11-27 10:03) of `log-shipper.service` on `idc02` result=exit-code — investigate
+    journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-27 10:56
+  from: tony
+  text: '[cleanup 2026-11-27] Live verify: idc02-log-shipper.service Result=success. Condition healed; closing.'
+- at: 2026-11-27 10:56
+  from: tony
+  text: closed by tony
+- at: 2026-11-27 10:56
+  from: tony
+  text: closed by tony
+- at: 2026-11-27 11:05
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-27 11:05
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-27 10:56) of `log-shipper.service` on `idc02` result=exit-code
+    — investigate journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-27 11:15
+  from: devin
+  text: '[still suspicious] Last run (11-27 10:56) of `log-shipper.service` on `idc02` result=exit-code — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc02`.'
 action:
   status: done
