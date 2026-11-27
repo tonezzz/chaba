@@ -1,7 +1,7 @@
 id: mddb-idc03-oom-coldstart-publisher-window
 title: MDDB idc03 OOM restarts + cold-start window break publishers
-column: doing
-updated: 2026-11-27 17:11
+column: review
+updated: 2026-11-27 17:13
 brief: mddb.service on idc03 was OOM-killed 15:58:20 (NRestarts=7 today); ~104s cold start leaves /v1 routes 404
   after health port opens. mddb-cms POST /v1/add write timeout 30s under embed congestion. Two timer publishers
   exited 1 at 15:55 and 16:00; both self-healed next tick.
@@ -125,9 +125,16 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261127-163402-follow-up-from-triage-of-timer on
     con01 — if the work was never pushed it may be gone'
+- at: 2026-11-27 17:13
+  from: con01
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261127-163402-follow-up-from-triage-of-timer.service:
+    Failed to ope'
+- at: 2026-11-27 17:13
+  from: chaba
+  text: ran under executor=devin provider=devin
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: con01
@@ -135,6 +142,9 @@ action:
   sweep:
     stale_running: 2026-11-27 17:11
     session_gone: 2026-11-27 17:11
+  result: 'exit=0 ice: No such file or directory | devin-task-20261127-163402-follow-up-from-triage-of-timer.service:
+    Failed to open /run/user/1001/systemd/transient/devin-task-20261127-163402-follow-up-from-triage-of-timer.service:
+    No such file or directory'
 claim:
   since: 2026-11-27 16:32
 requests:
@@ -158,3 +168,4 @@ requests:
   options:
   - proceed
   - hold
+review_kind: verify
