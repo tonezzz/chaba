@@ -1,0 +1,156 @@
+---
+title: OPS-1517 — openjev earlyoom exposure on idc02 decided: ACCEPT (no exemption, no new bound)
+subtitle: >-
+  Option (c) of three. openjev stays earlyoom-eligible by design — it is the
+  ideal pressure valve (largest reclaim, stateless, Restart=always self-heals
+  in ~24s, redundant with tony-omen:8777, graceful devin-lane fallback).
+  Root cause is idc02's zero-swap chronic pressure; zram swap carded as the
+  real fix per the mn01 earlyoom-kills precedent.
+icon: shield
+date: 2026-11-27
+card: openjev-idc02-earlyoom-exposure
+ref: OPS-1517
+status: decided-no-change
+
+context:
+  trigger: >-
+    Card openjev-idc02-earlyoom-exposure (auto-captured during OPS-1516)
+    noted that earlyoom --avoid '(^|/)(jev)$' exempts comm=jev only, while the
+    sibling openjev process (gemma-3-4b-it torch CPU lane on tailnet :8777,
+    comm=openjev) is the LARGEST process on idc02 and remains a kill
+    candidate. Delegated choice: (a) extend the --avoid regex, (b) bound with
+    MemoryMax like idc03-memory-guard did for jevos, or (c) accept.
+  live_state_verified_2026_11_27_~2200:
+    - "idc02 open-jev.service (user unit, ~/.config/systemd/user/open-jev.service,
+      no drop-ins): ExecStart=.venv/bin/openjev serve --backend torch --device
+      cpu --host 100.123.163.11 --port 8777 --model models/gemma-3-4b-it;
+      Restart=always RestartSec=10; MemoryMax=12G MemorySwapMax=2G
+      OOMScoreAdjust=200 — the bound in option (b) ALREADY EXISTS in the unit."
+    - "Process table: openjev PID 836465 RSS ~2.95 GiB oom_score=920
+      (adj=200) = TOP badness on the host; jev PID 1353079 RSS ~1.65 GiB
+      oom_score=868; next candidates mddbd ~2.3/1.5/1.1 GiB x3, opencode,
+      python. Host: 15,993 MiB total, ~11.8 GiB used, MemAvailable ~4.2 GiB
+      (26%), Swap: 0/0."
+    - "earlyoom journal 14d: 15 SIGTERMs. openjev killed twice — Nov 25
+      14:38 (badness 880, RSS 1914 MiB) and Nov 27 17:59:15 (badness 902,
+      RSS 2437 MiB, 'kill failed: Timer expired' = SIGTERM timeout during
+      torch compute, escalated). Unit ActiveEnterTimestamp 17:59:39 —
+      Restart=always recovered it ~24s after the kill; NRestarts=2 matches
+      both journal kills. Self-healing is EMPIRICAL, not theoretical."
+    - "Nov 27 20:34-20:49 storm: 7 low-memory events in ~15min, earlyoom
+      killed mddbd x4 (badness ~891-896), chrome x4, jev x1 (the OPS-1516
+      incident), plus Nov 26 two python procs at badness ~980 RSS ~4.3 GiB.
+      openjev was NOT killed in the storm — bigger residents took the hits."
+    - "/etc/default/earlyoom live: EARLYOOM_ARGS=\"-r 3600 --avoid
+      '(^|/)(jev)$\"" — only comm=jev exempt, as designed.
+    - "Consumer proof: curl http://100.123.163.11:8777/health -> 200 in 7ms."
+
+decision:
+  chosen: "(c) accept — leave openjev earlyoom-eligible; no playbook change, no unit change"
+  rejected_a_extend_avoid: >-
+    --avoid '(^|/)(jev|openjev)$' was rejected on the mn01 precedent
+    (2026-11-25-mn01-mn-ha-dev-earlyoom-kills.yml, do_not list): on a
+    zero-swap host earlyoom's swap arm is permanently true, so EVERY
+    mem<10% excursion kills until memory recovers — --avoid does not reduce
+    pressure, it relocates kills. openjev is the single biggest process
+    (~3 GiB RSS, top badness): exempting it forces earlyoom to kill MORE,
+    SMALLER victims per event to reclaim the same ~3 GiB — mddbd (the
+    idc02 MDDB follower, already killed 4x in today's storm), chrome, or
+    runner pythons holding real work product. One 3 GiB kill is the most
+    efficient reclaim available; protecting it maximizes collateral damage.
+    The OPS-1516 rationale for exempting jev also does not transfer: jev
+    died SILENTLY (Restart=on-failure cannot see a SIGTERM clean exit ->
+    17 min outage). openjev has Restart=always — proven today: SIGTERM at
+    17:59:15, unit active again 17:59:39.
+  rejected_b_memorymax: >-
+    Already satisfied — the unit file itself carries MemoryMax=12G +
+    MemorySwapMax=2G (verified live; no drop-ins). Cgroup caps do not
+    influence earlyoom's userspace victim selection anyway (it reads
+    /proc/*/oom_score; MemoryMax affects only the separate cgroup/kernel
+    OOM path). Tightening toward the ~3 GiB steady RSS would only convert
+    future pressure into cgroup-OOM SIGKILLs — per the mn01 precedent that
+    manufactures hard kills for no availability gain on a stateless scorer.
+    MemorySwapMax=2G is inert on a host with zero swap.
+  why_accept_is_safe:
+    - "Self-healing proven: Restart=always restarts on the SIGTERM clean
+      exit AND on the SIGKILL escalation ('kill failed: Timer expired'
+      at 17:59:25); ~24s to ActiveEnter, ~80-140s to model-loaded /health.
+      Observed cost per kill: a ~2 min gap in the :8777 lane."
+    - "Redundant lane: tony-omen serves the identical gemma-3-4b-it
+      /v1/systemone on :8777 (ssot.audit.hosts idc02 note: 'Second
+      /v1/systemone decision service'); idc02's copy is the standby, not
+      the only instance."
+    - "Graceful degradation: JEV_LANE claim-time classify falls back to
+      the devin lane when jevos is unreachable (ssot.devnest-lanes.yml
+      escalation) — a kill costs fallback tokens/latency, not correctness."
+    - "Ideal victim profile: stateless scorer (no writes to corrupt),
+      largest single-process reclaim on the box, auto-restarts. Better
+      earlyoom victim than mddbd (infra, resync cost) or runner pythons
+      (in-flight dispatch work)."
+
+root_cause_and_followup:
+  actual_problem: >-
+    idc02 is chronically oversubscribed: ~11.8/16 GiB used steady-state,
+    ZERO swap -> earlyoom's swap arm permanently true -> every mem<10%
+    excursion (15 kills in 14 days, storms on Nov 26-27) kills the
+    worst-badness process. openjev's exposure is the pressure valve working
+    as designed, not a defect.
+  recommended_fix: >-
+    zram swap on idc02, mirroring the mn01 recommendation and the
+    fleet-standard /etc/systemd/system/zram-swap.service pattern
+    (ansible/playbooks/zram-swap.yml exists but is hosts: tony-omen
+    hardcoded — needs an idc02-sized variant, ~8 GiB device for a 16 GiB
+    host). This disarms earlyoom's permanently-true swap arm AND absorbs
+    dispatch/job spikes for EVERY service on the box — strictly better
+    than any per-process exemption. Filed as follow-up card
+    idc02-zram-swap-earlyoom-relief.
+  secondary_observations:
+    - >-
+      open-jev.service on idc02 has no entry in ssot.health.home.system.yml
+      (only tony-omen's open-jev-scorer is registered); audit-fleet-services
+      covers expected_state=active daily but a ~2 min earlyoom blip is
+      invisible between audits. Optional: register an idc02 health check
+      or accept — the lane self-heals faster than any monitor cadence.
+    - >-
+      If Tony still wants the lane protected after reading this, option (a)
+      is a one-line change: earlyoom_args '(^|/)(jev|openjev)$' in
+      ansible/playbooks/earlyoom-avoid-jev.yml + rerun — but expect the
+      kills to move to mddbd/chrome/runner pythons, not disappear.
+
+changes: []
+
+verification:
+  checks:
+    - "ansible idc02 show open-jev.service: Restart=always, MemoryMax=12G,
+      MemorySwapMax=2G, OOMScoreAdjust=200, NRestarts=2 — bound already present"
+    - "journalctl -u earlyoom 14d: openjev SIGTERMed Nov 25 + Nov 27 17:59;
+      unit ActiveEnter 17:59:39 same day — self-heal proven"
+    - "ps: openjev comm=exactly 'openjev' (comm match for any future regex);
+      oom_score=920 top of host"
+    - "curl :8777/health -> 200; /etc/default/earlyoom unchanged"
+  caveat: >-
+    Decision is evidence-based; no config was changed so there is nothing
+    to roll back. If earlyoom kill frequency on idc02 worsens, revisit —
+    the zram follow-up is the durable lever.
+
+rollback: "n/a — no changes applied"
+
+lessons:
+  - >-
+    On zero-swap hosts, earlyoom --avoid 'just relocates the kills' (mn01
+    precedent, now confirmed on idc02): exempting the LARGEST process
+    maximizes collateral — one big kill reclaims more than several small
+    ones. Protect via swap/headroom (zram), not via victim lists.
+  - >-
+    Restart=always is the real differentiator vs OPS-1516's jev case:
+    SIGTERM exits look 'clean' to systemd but Restart=always still
+    restarts — check the unit's Restart policy BEFORE assuming an
+    earlyoom kill means a silent outage.
+  - >-
+    ansible ad-hoc `command` does not interpret pipes/semicolons — use
+    `-m shell` for compound probes; `systemctl cat` does not work via
+    --machine=, read the unit file + drop-in dirs directly instead.
+  - >-
+    earlyoom victim selection reads /proc/*/oom_score — cgroup
+    MemoryMax/MemoryHigh caps do NOT protect a process from earlyoom;
+    they only bound the separate kernel/cgroup OOM path.
