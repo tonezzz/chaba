@@ -1,7 +1,7 @@
 id: embed-lane-banks-incremental-copy-fix
 title: 'embed-lane-banks: 112k-doc one-shot copy exceeds 15min timer — make resumable'
 column: doing
-updated: 2026-11-27 11:52
+updated: 2026-11-27 12:27
 brief: Systemic fix from live triage 2026-11-27; two runner slots free.
 priority: high
 tags:
@@ -60,5 +60,10 @@ comms:
   from: devin
   text: 'investigating: live idc02 unit is stale (ExecStart lacks --budget; repo checkout HAS the budget code but
     rendered unit was never installed). Redesigning banks as cursor-resumable per-bank slices; will verify on idc02.'
+- at: 2026-11-27 12:27
+  from: devin
+  text: 'cmd_banks rewritten: per-bank cursor (banks-state.json offset/pass) + persisted have-set (banks-have/*.keys),
+    bounded slices via --budget/--max-docs, synced-skip + rescan, exit 0 on budget / non-zero on real errors. ssot.jobs.yml
+    now hourly/15m/--budget 600, units re-rendered, 15 tests pass. Deploying to idc02 for live verification next.'
 claim:
   since: 2026-11-27 11:33
