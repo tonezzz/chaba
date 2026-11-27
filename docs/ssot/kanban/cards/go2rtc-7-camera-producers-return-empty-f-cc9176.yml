@@ -1,7 +1,7 @@
 id: go2rtc-7-camera-producers-return-empty-f-cc9176
 title: 'go2rtc: 7 camera producers return empty frames on omen'
 column: doing
-updated: 2026-11-27 13:44
+updated: 2026-11-27 13:45
 program: infrastructure
 tags:
 - ops
@@ -298,6 +298,10 @@ comms:
     dead but token works). (2) ALL 3 cams physically OFF-L2: full ARP sweep of 192.168.2.0/24 + 192.168.0.0/24 finds
     neither cam MAC (c100 b8:88:80:cb:7d:2c, c201 d8:3a:36:7d:10:0d); ip_cam_65 .71 ARP-INCOMPLETE. (3) Root cause
     of recurring 0B = DHCP IP churn vs hardcoded xiaomi:// IPs (ca'
+- at: 2026-11-27 13:45
+  from: devin
+  text: 'raised request physical-check-needed-ip-cam-65-vstarcam-f8a32c: Physical check needed: ip_cam_65 (VStarcam),
+    xiaomi_c100 and xiaomi_c201 are all off the network (MACs absent from ARP o'
 spec: Fix the remaining go2rtc camera producers on tony-omen that return empty 200/0B frames for ip_cam_65 and the
   xiaomi_c100/c201 variants. Inspect and correct the producer configurations located in ~/.config/go2rtc/*.sh on
   tony-omen and check xiaomi-token-refresh.py. The target host is tony-omen and the relevant repo/environment context
@@ -313,3 +317,15 @@ action:
   attempts: 1
 claim:
   since: 2026-11-27 12:58
+requests:
+- id: physical-check-needed-ip-cam-65-vstarcam-f8a32c
+  ask: 'Physical check needed: ip_cam_65 (VStarcam), xiaomi_c100 and xiaomi_c201 are all off the network (MACs absent
+    from ARP on both omen subnets). All three down at once suggests power or AP issue at the camera location. Once
+    powered back, the new xiaomi-cam-resolve job should self-heal the xiaomi IPs within ~5min. Optional: add DHCP
+    reservations on the ZTE for the camera MACs.'
+  status: open
+  at: 2026-11-27 13:45
+  from: devin
+  options:
+  - proceed
+  - hold
