@@ -1,7 +1,7 @@
 id: ada-ocb-eval-smoke-harness-fix
 title: ada-ocb-eval and ada-ocb-smoke harness failures on idc02
 column: doing
-updated: 2026-11-27 10:31
+updated: 2026-11-27 10:53
 spec: 'Two nightly Ada bridge benchmark services on idc02 both fail:
 
   - ada-ocb-eval.service: gate `preflight-gates-readonly` FAIL — its answer is missing required fields ''start_check'',
@@ -61,5 +61,11 @@ comms:
     root cause found via nest-mgr-v2 soak re; Benchmark scenario "fail" lines in the unit journal are normal output
     — the wrap; Benchmark/oneshot services that exit nonzero on FAIL (ada-ocb-eval/smoke) belong; The card''s declared
     artifact path must be committed, not just'
+- at: 2026-11-27 10:53
+  from: devin
+  text: 'diagnosed: eval fails are stale fixtures — cases.yml still probes archived ADA-0172/ADA-0174 (same rot
+    class as this morning''s smoke fixture). smoke 10:00 flake: _context_card did 3 uncached board fetches inside
+    the 8s pack deadline during idc03 overload -> card leg dropped. fix: repoint eval fixtures to ADA-1110 + route
+    _context_card through the shared snapshot cache with deadline-bounded timeouts. applying on idc02 now.'
 claim:
   since: 2026-11-27 10:30
