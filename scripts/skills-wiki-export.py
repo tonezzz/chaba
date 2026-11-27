@@ -67,7 +67,19 @@ REPOS = [
         "role": "Anthropic's official Claude Code plugin marketplace (plugins/, external_plugins/)",
         "use": "Installed skill-creator from plugins/skill-creator/skills/ into ~/.claude/skills with an OpenCode adaptation note; reference for portable skills/commands/agents. Apache-2.0, per-plugin LICENSE",
     },
+    {
+        "name": "ansible-community/ai-forge",
+        "ref": "https://github.com/ansible-community/ai-forge @ 28a9a58",
+        "role": "Ansible community 'Lola' skills marketplace — 40 SKILL.md across 7 modules (collection SDLC, standards, content dev, docs, cloud, network, role scaffolding)",
+        "use": "Evaluated 2026-11-27 for ada-ocb (card ai-forge-skills-wiki-education-2026-11-27): GPL-3.0; collection-SDLC skills (release/changelog/sonarcloud/antsibull) are N/A to chaba. Candidates: write-content (CoP playbook/role authoring) and ansible-markdown-docs (docs.ansible.com as markdown). Verdict: reference only — do not install wholesale or copy skill text verbatim (GPL).",
+    },
 ]
+
+AIFORGE_EVAL = {
+    "name": "ai-forge skill evaluation",
+    "ref": "ansible-community/ai-forge @ 28a9a58 — card ai-forge-skills-wiki-education-2026-11-27",
+    "result": "40 skills in 7 modules, all Ansible-content-scoped. Adopted as pointer/reference, not installed: write-content and ansible-markdown-docs are the only ada-ocb-relevant candidates; pr-review/pr-new help only on upstream ansible-collections work. GPL-3.0 licence means ideas/patterns may inform chaba skills but skill text must not be copied verbatim. Revisit if chaba takes on Ansible collection authoring.",
+}
 
 BENCHMARK = {
     "name": "info-find efficiency A/B",
@@ -264,6 +276,11 @@ def render_page(skills: list[dict], today: str, next_review: str,
         "*",
         f"* '''{_cell(FINDABILITY['name'])}''' — {_cell(FINDABILITY['ref'])}: "
         f"{_cell(FINDABILITY['result'])}",
+        "",
+        "== External evaluation ==",
+        "",
+        f"* '''{_cell(AIFORGE_EVAL['name'])}''' — {_cell(AIFORGE_EVAL['ref'])}: "
+        f"{_cell(AIFORGE_EVAL['result'])}",
         "",
         "== Operations ==",
         "",
