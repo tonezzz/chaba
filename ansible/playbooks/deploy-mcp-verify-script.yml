@@ -1,0 +1,55 @@
+---
+# deploy-mcp-verify-script.yml — converge scripts/verify-all-mcp-servers.py
+# into every existing chaba checkout on the fleet.
+#
+# Source: this checkout's scripts/verify-all-mcp-servers.py (origin/master).
+# ansible.builtin.copy is checksum-gated: hosts already in sync are a no-op.
+# backup: true leaves a timestamped sibling copy before replacing a file.
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/deploy-mcp-verify-script.yml --check --diff --limit tony-dell
+#   ansible-playbook playbooks/deploy-mcp-verify-script.yml --limit tony-dell
+
+- name: Deploy MCP verification script to fleet checkouts
+  hosts: all:!disabled
+  gather_facts: true
+  become: false
+  serial: 1
+  any_errors_fatal: false
+
+  vars:
+    source_script: "{{ playbook_dir }}/../../scripts/verify-all-mcp-servers.py"
+    checkout_roots:
+      - "{{ ansible_facts.user_dir }}/CascadeProjects/chaba"
+      - "{{ ansible_facts.user_dir }}/CascadeProjects/chaba-tony-dell"
+
+  tasks:
+    - name: Discover existing chaba checkouts
+      ansible.builtin.stat:
+        path: "{{ item }}/.git"
+      loop: "{{ checkout_roots }}"
+      loop_control:
+        label: "{{ item }}"
+      register: checkout_stat
+
+    - name: Deploy verifier into each checkout (with backup)
+      ansible.builtin.copy:
+        src: "{{ source_script }}"
+        dest: "{{ item.item }}/scripts/verify-all-mcp-servers.py"
+        backup: true
+        mode: preserve
+      loop: "{{ checkout_stat.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      when: item.stat.exists
+      register: verifier_deploy
+
+    - name: Report per-checkout result
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }}:
+          {{ 'deployed' if item.changed else 'in sync' }}
+          {{ item.item }}/scripts/verify-all-mcp-servers.py
+      loop: "{{ verifier_deploy.results | default([]) }}"
+      loop_control:
+        label: "{{ item.item }}"
