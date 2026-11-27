@@ -1,7 +1,7 @@
 id: ada-review-refresh-prune-timeout-fix
 title: ada-review-refresh times out in prune-old-docs.py on tony-omen
-column: backlog
-updated: 2026-11-27 09:33
+column: done
+updated: 2026-11-27 09:36
 spec: 'ada-review-refresh.service on tony-omen failed at 09:03 with subprocess.TimeoutExpired: export-transcripts.py
   calling prune-old-docs.py exceeded its 600s timeout (whole unit ran 18m52s wall, 51M swap used). Investigate why
   the prune step now takes >10 minutes and make it complete reliably within the job budget — batch/incremental traversal,
@@ -14,7 +14,7 @@ action:
   executor: devin
   target_host: tony-omen
   lane: paid_frontier
-  status: queued
+  status: done
 ref: ADA-1482
 comms:
 - at: 2026-11-27 09:30
@@ -38,3 +38,10 @@ comms:
   from: tony
   text: '[reroute 2026-11-27] Removed action.target_host pin — it blocked every eligible runner. The affected host
     is documented in the spec; any push-capable chaba runner may claim.'
+- at: 2026-11-27 09:36
+  from: tony
+  text: '[superseded 2026-11-27] Closed: action.target_host made this card unclaimable and cannot be cleared through
+    the write door. Work continues on ada-review-refresh-prune-timeout-fix-unpinned.'
+- at: 2026-11-27 09:36
+  from: tony
+  text: closed by tony
