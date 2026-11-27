@@ -1,7 +1,7 @@
 id: lesson-polish-run
 title: 'lesson-polish: Fable pass on audit-flagged lessons (auto-queued)'
-column: doing
-updated: 2026-11-27 07:59
+column: review
+updated: 2026-11-27 08:09
 brief: Auto-queued by chaba-lessons-audit when R1/R3/R4 flags > 0 — the Fable polish pass; standing card, re-armed
   each audit run (AUD-0831 loop).
 priority: medium
@@ -36,12 +36,16 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
+  status: done
   runner: con01
   attempts: 1
   sweep:
     stale_running: 2026-11-27 07:59
     dirty: 5
+  result: 'exit=0 2026-11-27.json`, full writeup in `dispatch-outcome-20261127-074247-recurring-lesson-polish-pass-q.md`.
+    | devin-task-20261127-074247-recurring-lesson-polish-pass-q.service: Consumed 24.318s CPU time, 317.6M memory
+    peak, 0B memory swap peak.'
+  verified: false
 ref: OPS-1477
 comms:
 - at: 2026-11-27 07:41
@@ -96,5 +100,13 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261127-074247-recurring-lesson-polish-pass-q on con01 still dirty —
     5 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-27 08:09
+  from: con01
+  text: 'finished (ok): exit=0 2026-11-27.json`, full writeup in `dispatch-outcome-20261127-074247-recurring-lesson-polish-pass-q.md`.
+    | devin-t'
+- at: 2026-11-27 08:09
+  from: chaba
+  text: ran under executor=devin provider=devin
 claim:
   since: 2026-11-27 07:41
+review_kind: verify
