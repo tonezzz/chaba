@@ -1,20 +1,20 @@
 {
  "schema": 1,
- "generated_at": "2026-11-23T00:38:41+00:00",
+ "generated_at": "2026-11-27T03:36:26+00:00",
  "source": {
   "repo": "ada-voice",
-  "path": "/home/tony/CascadeProjects/ada-voice",
-  "head": "6a39e3a",
-  "head_date": "2026-11-19",
-  "behind": "7"
+  "path": "/home/ubuntu/repos/ada-voice",
+  "head": "c9a2f01",
+  "head_date": "2026-11-27",
+  "behind": "?"
  },
  "counts": {
-  "builtin": 37,
-  "dropin": 31,
+  "builtin": 38,
+  "dropin": 40,
   "guest": 3,
-  "aliases": 92,
-  "families": 29,
-  "count_cap": 112,
+  "aliases": 96,
+  "families": 30,
+  "count_cap": 116,
   "target_count": 38
  },
  "tools": [
@@ -31,7 +31,7 @@
    "schema": "",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-11-08",
+   "last_changed": "2026-11-24",
    "family": "",
    "source_file": "backend/tools.d/ada_adobe_stock.py"
   },
@@ -52,9 +52,43 @@
     "And how about the tennis court \u2014 does it look wet there?",
     "Take a look at the tennis court camera and tell me what you see \u2014 and if it's not live, say how old the image is."
    ],
-   "last_changed": "2026-10-12",
+   "last_changed": "2026-11-17",
    "family": "camera",
    "source_file": "backend/realtime_provider.py"
+  },
+  {
+   "name": "ada_capabilities",
+   "layer": "dropin",
+   "purpose": "What Ada can do \u2014 capability list, tools and triggers, answered from the deploy-time tools snapshot.",
+   "description": "What Ada can do \u2014 capability list, tools and triggers, answered from the deploy-time tools snapshot. Use for 'what can you do', 'list your tools', 'what commands', 'help', or pass topic=<tool|family|group> for detail on one area.",
+   "backend": "exec",
+   "registry": "",
+   "policy": "read",
+   "timeout_s": 5,
+   "secondary": true,
+   "schema": "",
+   "guide": true,
+   "triggers": [],
+   "last_changed": "2026-11-26",
+   "family": "",
+   "source_file": "backend/tools.d/ada_capabilities.py"
+  },
+  {
+   "name": "ada_consult",
+   "layer": "dropin",
+   "purpose": "Consult an expert model for a second opinion on a hard or ambiguous problem.",
+   "description": "Consult an expert model for a second opinion on a hard or ambiguous problem. Returns a structured answer. The expert only sees the bounded question and context provided here; it has no access to the live conversation, memory, or tools. This is a read-only request for advice, not an action.",
+   "backend": "exec",
+   "registry": "",
+   "policy": "read",
+   "timeout_s": 180,
+   "secondary": false,
+   "schema": "",
+   "guide": true,
+   "triggers": [],
+   "last_changed": "2026-11-24",
+   "family": "",
+   "source_file": "backend/tools.d/ada_consult.py"
   },
   {
    "name": "ada_device_acl",
@@ -69,7 +103,7 @@
    "schema": "",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-12",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/ada_device_acl.py"
   },
@@ -90,7 +124,7 @@
     "Actually, enroll my voice again but as guard-tester-two this time.",
     "Yes please \u2014 enroll my voice as Guest Tester."
    ],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "meta_voice_enroll",
    "source_file": "backend/realtime_provider.py"
   },
@@ -111,9 +145,26 @@
     "Actually, enroll my voice again but as guard-tester-two this time.",
     "Yes please \u2014 enroll my voice as Guest Tester."
    ],
-   "last_changed": "2026-10-12",
+   "last_changed": "2026-11-17",
    "family": "meta_voice_enroll",
    "source_file": "backend/realtime_provider.py"
+  },
+  {
+   "name": "ada_fleet_jobs",
+   "layer": "dropin",
+   "purpose": "Fleet jobs/fleet status \u2014 'how are jobs', 'job status', 'what is the fleet doing', timer failures, lanes, dispatch queue, 24h spend.",
+   "description": "Fleet jobs/fleet status \u2014 'how are jobs', 'job status', 'what is the fleet doing', timer failures, lanes, dispatch queue, 24h spend. Reads the rendered fleet-jobs-report page; pass focus=spend|timers|lanes|queue|hosts for one section.",
+   "backend": "exec",
+   "registry": "",
+   "policy": "read",
+   "timeout_s": 10,
+   "secondary": true,
+   "schema": "",
+   "guide": true,
+   "triggers": [],
+   "last_changed": "2026-11-26",
+   "family": "",
+   "source_file": "backend/tools.d/ada_fleet_jobs.py"
   },
   {
    "name": "ada_forget",
@@ -128,7 +179,7 @@
    "schema": "lazy",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/realtime_provider.py"
   },
@@ -145,7 +196,7 @@
    "schema": "",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-11-07",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/ada_lesson.py"
   },
@@ -162,7 +213,7 @@
    "schema": "",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-12",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/eye.py"
   },
@@ -179,7 +230,7 @@
    "schema": "",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-12",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/ada_market_quote.py"
   },
@@ -196,7 +247,7 @@
    "schema": "",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-12",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/ada_member_keys.py"
   },
@@ -215,7 +266,7 @@
    "triggers": [
     "Research additional ideas for my lab stack plan. Search the tony-projects and general memory banks for related lessons, and use your own knowledge of Home Assistant and container testing. Then write your review into the tony-projects bank with ada_remember, using subject lab-stack-ideas-ada, covering your pros, cons, and any new ideas."
    ],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "memory_search",
    "source_file": "backend/realtime_provider.py"
   },
@@ -234,7 +285,7 @@
    "triggers": [
     "Research additional ideas for my lab stack plan. Search the tony-projects and general memory banks for related lessons, and use your own knowledge of Home Assistant and container testing. Then write your review into the tony-projects bank with ada_remember, using subject lab-stack-ideas-ada, covering your pros, cons, and any new ideas."
    ],
-   "last_changed": "2026-10-12",
+   "last_changed": "2026-11-17",
    "family": "memory_search",
    "source_file": "backend/realtime_provider.py"
   },
@@ -253,7 +304,7 @@
    "triggers": [
     "Ada, preflight the OpenCode work for card ADA-1010 without dispatching it."
    ],
-   "last_changed": "2026-11-08",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/ada_opencode.py"
   },
@@ -272,15 +323,15 @@
    "triggers": [
     "Ada, dispatch the approved OpenCode job for card ada-opencode-nonexistent."
    ],
-   "last_changed": "2026-11-08",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/ada_opencode_dispatch.py"
   },
   {
    "name": "ada_ops",
    "layer": "builtin",
-   "purpose": "Ops/meta \u2014 outcome|usage|health|check|research|report|acl_explain \u2014 see tool_guide;",
-   "description": "Ops/meta \u2014 outcome|usage|health|check|research|report|acl_explain \u2014 see tool_guide; 'report' returns report freshness and starts a background refresh (answer cached numbers now, fresh lands next).",
+   "purpose": "Ops/meta \u2014 outcome|usage|budget|health|check|research|report|acl_explain \u2014 see tool_guide;",
+   "description": "Ops/meta \u2014 outcome|usage|budget|health|check|research|report|acl_explain \u2014 see tool_guide; 'report' returns report freshness and starts a background refresh (answer cached numbers now, fresh lands next).",
    "backend": "exec",
    "registry": "agent.ops",
    "policy": "confirmed",
@@ -289,7 +340,7 @@
    "schema": "lazy",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-25",
    "family": "meta_voice_ops",
    "source_file": "backend/realtime_provider.py"
   },
@@ -308,7 +359,7 @@
    "triggers": [
     "Ada, from now on talk to me more formally \u2014 polite and concise, please."
    ],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "meta_voice_persona",
    "source_file": "backend/realtime_provider.py"
   },
@@ -329,7 +380,7 @@
     "Remember that my coffee machine plug is called coffee plug.",
     "Remember that my wifi password hint is the street name."
    ],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "memory_remember",
    "source_file": "backend/realtime_provider.py"
   },
@@ -350,7 +401,7 @@
     "Remember that my coffee machine plug is called coffee plug.",
     "Remember that my wifi password hint is the street name."
    ],
-   "last_changed": "2026-10-12",
+   "last_changed": "2026-11-17",
    "family": "memory_remember",
    "source_file": "backend/realtime_provider.py"
   },
@@ -367,7 +418,7 @@
    "schema": "",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-15",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/ada_render_image.py"
   },
@@ -384,7 +435,7 @@
    "schema": "",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-15",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/ada_render_video.py"
   },
@@ -401,7 +452,7 @@
    "schema": "lazy",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/realtime_provider.py"
   },
@@ -418,7 +469,7 @@
    "schema": "lazy",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "memory_recall",
    "source_file": "backend/realtime_provider.py"
   },
@@ -435,7 +486,7 @@
    "schema": "",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-11-07",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/ada_sweep.py"
   },
@@ -452,7 +503,7 @@
    "schema": "",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-12",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/ada_track_device.py"
   },
@@ -469,7 +520,7 @@
    "schema": "full",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "calendar_read",
    "source_file": "backend/realtime_provider.py"
   },
@@ -486,7 +537,7 @@
    "schema": "lazy",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "calendar_write",
    "source_file": "backend/realtime_provider.py"
   },
@@ -507,7 +558,7 @@
     "Play the dub test mp4 on screen {real_screen} \u2014 slash apps slash yt-live slash dub-v2-male dot mp4 on tony-dell.",
     "Put the vcast app icon on screen {real_screen} \u2014 slash apps slash vcast slash icon-192 dot png on tony-dell."
    ],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "cast_to_screen",
    "source_file": "backend/realtime_provider.py"
   },
@@ -524,7 +575,7 @@
    "schema": "full",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/realtime_provider.py"
   },
@@ -541,7 +592,7 @@
    "schema": "full",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-14",
+   "last_changed": "2026-11-17",
    "family": "chat_send",
    "source_file": "backend/realtime_provider.py"
   },
@@ -558,7 +609,7 @@
    "schema": "lazy",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-26",
    "family": "cms_edit",
    "source_file": "backend/realtime_provider.py"
   },
@@ -579,7 +630,7 @@
     "Good \u2014 publish that as a page titled Hosting Provider Assessment with slug hosting-provider-assessment.",
     "Yes, publish it."
    ],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-26",
    "family": "",
    "source_file": "backend/realtime_provider.py"
   },
@@ -596,7 +647,7 @@
    "schema": "full",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-26",
    "family": "cms_read",
    "source_file": "backend/realtime_provider.py"
   },
@@ -613,7 +664,7 @@
    "schema": "full",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "ha_control",
    "source_file": "backend/realtime_provider.py"
   },
@@ -630,7 +681,7 @@
    "schema": "",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-12",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/conv_journal.py"
   },
@@ -642,12 +693,12 @@
    "backend": "wp-boards",
    "registry": "cms.cpt_post",
    "policy": "read",
-   "timeout_s": 60,
-   "secondary": true,
+   "timeout_s": null,
+   "secondary": false,
    "schema": "",
-   "guide": true,
+   "guide": false,
    "triggers": [],
-   "last_changed": "2026-10-16",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/cpt_post.py"
   },
@@ -664,7 +715,7 @@
    "schema": "lazy",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-14",
+   "last_changed": "2026-11-17",
    "family": "devin",
    "source_file": "backend/realtime_provider.py"
   },
@@ -683,7 +734,7 @@
    "triggers": [
     "I'd like a new tool that tells me how many Devin sessions ran today and whether any are still waiting for answers. Have the dev team review the design first \u2014 don't build it yet."
    ],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "devin_read",
    "source_file": "backend/realtime_provider.py"
   },
@@ -700,7 +751,7 @@
    "schema": "",
    "guide": false,
    "triggers": [],
-   "last_changed": "2026-11-06",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/devnest_news.py"
   },
@@ -717,7 +768,7 @@
    "schema": "",
    "guide": false,
    "triggers": [],
-   "last_changed": "2026-11-06",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/devnest_news_diagnose.py"
   },
@@ -734,7 +785,7 @@
    "schema": "",
    "guide": false,
    "triggers": [],
-   "last_changed": "2026-11-06",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/devnest_news_review.py"
   },
@@ -751,7 +802,7 @@
    "schema": "",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/doc_read.py"
   },
@@ -768,7 +819,7 @@
    "schema": "full",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "docs",
    "source_file": "backend/realtime_provider.py"
   },
@@ -785,9 +836,26 @@
    "schema": "lazy",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-23",
    "family": "drive",
    "source_file": "backend/realtime_provider.py"
+  },
+  {
+   "name": "gesture_controls",
+   "layer": "dropin",
+   "purpose": "Desk-companion gesture controls (YOLO pose \u2014 wave arms, swipe navigates panels, palm-hold opens settings, drop dismisses).",
+   "description": "Desk-companion gesture controls (YOLO pose \u2014 wave arms, swipe navigates panels, palm-hold opens settings, drop dismisses). op='status'|'enable'|'disable'.",
+   "backend": "exec",
+   "registry": "",
+   "policy": "read",
+   "timeout_s": 15,
+   "secondary": true,
+   "schema": "",
+   "guide": true,
+   "triggers": [],
+   "last_changed": "2026-11-23",
+   "family": "",
+   "source_file": "backend/tools.d/gesture_controls.py"
   },
   {
    "name": "get_home_state",
@@ -802,7 +870,7 @@
    "schema": "lazy",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "ha_state",
    "source_file": "backend/realtime_provider.py"
   },
@@ -819,7 +887,7 @@
    "schema": "lazy",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/realtime_provider.py"
   },
@@ -836,7 +904,7 @@
    "schema": "lazy",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "gev",
    "source_file": "backend/realtime_provider.py"
   },
@@ -853,7 +921,7 @@
    "schema": "",
    "guide": false,
    "triggers": [],
-   "last_changed": "2026-11-07",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/gs_capture_eval.py"
   },
@@ -870,7 +938,7 @@
    "schema": "lazy",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "ha_confidence",
    "source_file": "backend/realtime_provider.py"
   },
@@ -887,7 +955,7 @@
    "schema": "lazy",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "ha_history",
    "source_file": "backend/realtime_provider.py"
   },
@@ -904,7 +972,7 @@
    "schema": "lazy",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "ha_search",
    "source_file": "backend/realtime_provider.py"
   },
@@ -921,15 +989,32 @@
    "schema": "lazy",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "home_status",
    "source_file": "backend/realtime_provider.py"
   },
   {
+   "name": "host_status",
+   "layer": "dropin",
+   "purpose": "Live status of one fleet host (kk-mac, tony-omen, idc03, ...): online, disk free, what it is processing.",
+   "description": "Live status of one fleet host (kk-mac, tony-omen, idc03, ...): online, disk free, what it is processing. Live first; see guide.",
+   "backend": "exec",
+   "registry": "",
+   "policy": "read",
+   "timeout_s": 45,
+   "secondary": true,
+   "schema": "",
+   "guide": true,
+   "triggers": [],
+   "last_changed": "2026-11-23",
+   "family": "",
+   "source_file": "backend/tools.d/host_status.py"
+  },
+  {
    "name": "kanban",
    "layer": "dropin",
-   "purpose": "Kanban board \u2014 action='next'|'next_choice'|'list'|'read'|'comment'|'move'|'queue'|'ask'|'file'|'respond'.",
-   "description": "Kanban board \u2014 action='next'|'next_choice'|'list'|'read'|'comment'|'move'|'queue'|'ask'|'file'|'respond'. next/next_choice are read-only menus; moves need triage authority or Tony's confirm.",
+   "purpose": "Kanban board \u2014 action='next'|'next_choice'|'list'|'read'|'comment'|'move'|'queue'|'ask'|'file'|'draft'|'respond'.",
+   "description": "Kanban board \u2014 action='next'|'next_choice'|'list'|'read'|'comment'|'move'|'queue'|'ask'|'file'|'draft'|'respond'. draft shapes a dictated request into a card spec (no write); file lands it. Moves need triage authority or Tony's confirm.",
    "backend": "board-api",
    "registry": "board.kanban",
    "policy": "read",
@@ -938,15 +1023,32 @@
    "schema": "full",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-11-07",
+   "last_changed": "2026-11-25",
    "family": "kanban",
    "source_file": "backend/tools.d/kanban.py"
   },
   {
+   "name": "map_embed",
+   "layer": "dropin",
+   "purpose": "Build a map with POI pins and/or a route \u2014 returns an interactive embed iframe or a frozen static map image, an open-in-Maps link, and a ready mark...",
+   "description": "Build a map with POI pins and/or a route \u2014 returns an interactive embed iframe or a frozen static map image, an open-in-Maps link, and a ready markdown snippet for cms_publish_page/cms_edit.",
+   "backend": "exec",
+   "registry": "",
+   "policy": "read",
+   "timeout_s": 60,
+   "secondary": true,
+   "schema": "",
+   "guide": true,
+   "triggers": [],
+   "last_changed": "2026-11-26",
+   "family": "",
+   "source_file": "backend/tools.d/map_embed.py"
+  },
+  {
    "name": "nest_status",
    "layer": "dropin",
-   "purpose": "Live DevNest queue + KK-Mac worker status: per-lane verdicts, heartbeat, pack counts.",
-   "description": "Live DevNest queue + KK-Mac worker status: per-lane verdicts, heartbeat, pack counts. Read-only; ~2 min old.",
+   "purpose": "DevNest queue overview (~2 min old snapshot): per-lane verdicts, KK-Mac worker heartbeat, pack counts.",
+   "description": "DevNest queue overview (~2 min old snapshot): per-lane verdicts, KK-Mac worker heartbeat, pack counts. For ONE named host's live health/disk/workload use host_status instead. Read-only.",
    "backend": "nest-queue-health",
    "registry": "devnest.status",
    "policy": "read",
@@ -955,7 +1057,7 @@
    "schema": "",
    "guide": false,
    "triggers": [],
-   "last_changed": "2026-11-09",
+   "last_changed": "2026-11-23",
    "family": "",
    "source_file": "backend/tools.d/nest_status.py"
   },
@@ -972,7 +1074,7 @@
    "schema": "",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-12",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/page_snapshot.py"
   },
@@ -989,7 +1091,7 @@
    "schema": "",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-12",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/percussion.py"
   },
@@ -1001,12 +1103,12 @@
    "backend": "wp-boards",
    "registry": "cms.place_report",
    "policy": "read",
-   "timeout_s": 60,
-   "secondary": true,
+   "timeout_s": null,
+   "secondary": false,
    "schema": "",
-   "guide": true,
+   "guide": false,
    "triggers": [],
-   "last_changed": "2026-10-14",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/place_report.py"
   },
@@ -1023,8 +1125,25 @@
    "schema": "lazy",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "plan_day",
+   "source_file": "backend/realtime_provider.py"
+  },
+  {
+   "name": "printer",
+   "layer": "builtin",
+   "purpose": "Printer/CUPS diagnostics and safe repair \u2014 action='status'|'jobs'|'verify' are read-only;",
+   "description": "Printer/CUPS diagnostics and safe repair \u2014 action='status'|'jobs'|'verify' are read-only; 'repair' releases|retries|cancels ONE queued job and is confirmed-gated.",
+   "backend": "exec",
+   "registry": "",
+   "policy": "",
+   "timeout_s": null,
+   "secondary": false,
+   "schema": "lazy",
+   "guide": true,
+   "triggers": [],
+   "last_changed": "2026-11-23",
+   "family": "",
    "source_file": "backend/realtime_provider.py"
   },
   {
@@ -1040,7 +1159,7 @@
    "schema": "full",
    "guide": false,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/realtime_provider.py"
   },
@@ -1057,7 +1176,7 @@
    "schema": "",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/speaker_profiles.py"
   },
@@ -1074,7 +1193,7 @@
    "schema": "lazy",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "tasks",
    "source_file": "backend/realtime_provider.py"
   },
@@ -1091,7 +1210,7 @@
    "schema": "",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/trip_calendar.py"
   },
@@ -1112,15 +1231,15 @@
     "Scroll down on the TV.",
     "Press the escape key on the TV."
    ],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/realtime_provider.py"
   },
   {
    "name": "vcast_gesture",
    "layer": "builtin",
-   "purpose": "Enable/disable gesture control on a vcast display \u2014 mode='room' (wake-on-motion), 'hand' (hand tracking), 'off'.",
-   "description": "Enable/disable gesture control on a vcast display \u2014 mode='room' (wake-on-motion), 'hand' (hand tracking), 'off'.",
+   "purpose": "Enable/disable gesture control on a vcast display \u2014 mode='room' (wake-on-motion), 'hand' (YOLO hand-pointer: the display uplinks camera frames and ...",
+   "description": "Enable/disable gesture control on a vcast display \u2014 mode='room' (wake-on-motion), 'hand' (YOLO hand-pointer: the display uplinks camera frames and a server-side hand detector drives the cursor; the result reports detector health), 'off'.",
    "backend": "vcast",
    "registry": "media.vcast_gesture",
    "policy": "read",
@@ -1129,7 +1248,7 @@
    "schema": "lazy",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-27",
    "family": "",
    "source_file": "backend/realtime_provider.py"
   },
@@ -1146,7 +1265,7 @@
    "schema": "lazy",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "vcast_snapshot",
    "source_file": "backend/realtime_provider.py"
   },
@@ -1163,7 +1282,7 @@
    "schema": "",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-12",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/voice_fx.py"
   },
@@ -1180,7 +1299,7 @@
    "schema": "",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-19",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/weather_station.py"
   },
@@ -1201,7 +1320,7 @@
     "Search DuckDuckGo for the latest Bangkok flood news.",
     "What's the latest Thailand news? Just tell me, don't cast it."
    ],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/realtime_provider.py"
   },
@@ -1218,9 +1337,60 @@
    "schema": "",
    "guide": false,
    "triggers": [],
-   "last_changed": "2026-11-04",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/wiki_extension.py"
+  },
+  {
+   "name": "wiki_read",
+   "layer": "dropin",
+   "purpose": "Read a wiki page by exact title (Education: lessons, PrivateNews: drafts today).",
+   "description": "Read a wiki page by exact title (Education: lessons, PrivateNews: drafts today). Unknown title? wiki_search first.",
+   "backend": "board-api",
+   "registry": "",
+   "policy": "read",
+   "timeout_s": 60,
+   "secondary": false,
+   "schema": "",
+   "guide": true,
+   "triggers": [],
+   "last_changed": "2026-11-20",
+   "family": "",
+   "source_file": "backend/tools.d/wiki_read.py"
+  },
+  {
+   "name": "wiki_search",
+   "layer": "dropin",
+   "purpose": "Search the member wiki + report dossiers by meaning or title.",
+   "description": "Search the member wiki + report dossiers by meaning or title. Returns titles + urls \u2014 feed one to wiki_read to read the page.",
+   "backend": "board-api",
+   "registry": "",
+   "policy": "read",
+   "timeout_s": 90,
+   "secondary": false,
+   "schema": "",
+   "guide": true,
+   "triggers": [],
+   "last_changed": "2026-11-20",
+   "family": "",
+   "source_file": "backend/tools.d/wiki_search.py"
+  },
+  {
+   "name": "wp",
+   "layer": "dropin",
+   "purpose": "Boards WordPress writer (boards.surf-thailand.com) \u2014 action='post' member post, 'record' expense/contact/reminder/asset (kind=), 'place' maps-link ...",
+   "description": "Boards WordPress writer (boards.surf-thailand.com) \u2014 action='post' member post, 'record' expense/contact/reminder/asset (kind=), 'place' maps-link report, 'chat_page' webchat page. Miniapp CMS pages go to cms_publish_page/cms_edit.",
+   "backend": "exec",
+   "registry": "",
+   "policy": "read",
+   "timeout_s": 60,
+   "secondary": true,
+   "schema": "",
+   "guide": true,
+   "triggers": [],
+   "last_changed": "2026-11-24",
+   "family": "wp",
+   "source_file": "backend/tools.d/wp.py"
   },
   {
    "name": "wp_chat_page",
@@ -1230,12 +1400,12 @@
    "backend": "wp-boards",
    "registry": "cms.chat_page",
    "policy": "read",
-   "timeout_s": 60,
-   "secondary": true,
+   "timeout_s": null,
+   "secondary": false,
    "schema": "",
    "guide": false,
    "triggers": [],
-   "last_changed": "2026-10-14",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/wp_chat_page.py"
   },
@@ -1247,12 +1417,12 @@
    "backend": "wp-boards",
    "registry": "cms.wp_post",
    "policy": "read",
-   "timeout_s": 60,
-   "secondary": true,
+   "timeout_s": null,
+   "secondary": false,
    "schema": "",
-   "guide": true,
+   "guide": false,
    "triggers": [],
-   "last_changed": "2026-10-16",
+   "last_changed": "2026-11-17",
    "family": "",
    "source_file": "backend/tools.d/wp_post.py"
   },
@@ -1269,7 +1439,7 @@
    "schema": "lazy",
    "guide": true,
    "triggers": [],
-   "last_changed": "2026-10-13",
+   "last_changed": "2026-11-17",
    "family": "yt",
    "source_file": "backend/realtime_provider.py"
   }
@@ -1366,7 +1536,11 @@
   "devin_pending": "devin_read",
   "devin_job_report": "devin_read",
   "ada_devteam_review": "devin_read",
-  "ada_board_write": "kanban"
+  "ada_board_write": "kanban",
+  "wp_post": "wp",
+  "cpt_post": "wp",
+  "place_report": "wp",
+  "wp_chat_page": "wp"
  },
  "families": {
   "camera": {
@@ -1684,6 +1858,18 @@
    "scenario": "tool_merge_yt",
    "status": "merged"
   },
+  "wp": {
+   "canonical": "wp",
+   "absorbed": [
+    "wp_post",
+    "cpt_post",
+    "place_report",
+    "wp_chat_page"
+   ],
+   "merge_card": "ada-tool-consolidation-merge-overlapping-615ba9",
+   "scenario": "tool_merge_wp",
+   "status": "pending"
+  },
   "kanban": {
    "canonical": "kanban",
    "absorbed": [
@@ -1695,9 +1881,22 @@
   }
  },
  "drift": {
-  "unregistered_tools": [],
+  "unregistered_tools": [
+   "ada_capabilities",
+   "ada_consult",
+   "ada_fleet_jobs",
+   "gesture_controls",
+   "host_status",
+   "map_embed",
+   "printer",
+   "wiki_read",
+   "wiki_search",
+   "wp"
+  ],
   "stale_registry_surfaces": [
-   "host_status (staged drop integrations/ada-voice)"
+   "asset_save",
+   "host_status (staged drop integrations/ada-voice)",
+   "kk_places"
   ],
   "coverage_debt": [
    "voice_fx",
@@ -1725,8 +1924,6 @@
    "press_button",
    "tasks_move",
    "yt_cast_status",
-   "place_report",
-   "cpt_post",
    "weather_station",
    "ada_sweep",
    "ada_lesson",
