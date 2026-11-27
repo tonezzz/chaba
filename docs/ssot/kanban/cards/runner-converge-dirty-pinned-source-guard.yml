@@ -1,7 +1,7 @@
 id: runner-converge-dirty-pinned-source-guard
 title: 'runner-tools-converge: detect dirty pinned sources before deploy (fail-loop + drift churn)'
 column: doing
-updated: 2026-11-27 20:47
+updated: 2026-11-27 20:48
 brief: 'idc02 exec checkout had an uncommitted edit to scripts/board/dispatch_repos.py (JEVOS_URL WIP). Its runner-tools-converge.timer
   (~2min cadence) ran deploy-runner-tools.yml --limit idc02 from the dirty checkout: copy installed the WIP bytes,
   post-copy pin assert failed, drifted file stayed -> audit DRIFT -> runner-tool-drift-fleet re-armed ~50x on 2026-11-27.
@@ -40,6 +40,16 @@ comms:
 - at: 2026-11-27 20:47
   from: mn01
   text: claimed
+- at: 2026-11-27 20:48
+  from: chaba
+  text: started devin-task-20261127-204825-add-a-pre-flight-to-scripts-de on mn01 (dispatch)
+- at: 2026-11-27 20:48
+  from: chaba
+  text: 'primer injected 8 lesson(s): Check `sha256sum` of BOTH `~/.local/bin/runner-agent` and `<exec checkout>/scrip;
+    [chaba-exec-checkout-idc02-dirty-files] DECISION 2026-11-24: all 7 code/WIP file; [con01-runner-pilot-smoke-2]
+    primer injected 8 lesson(s): [chaba-exec-checkout-i; `_self_stale_check`/`_claimable` gate every claim on installed==checkout-ref
+    byt; `docs/ssot/infrastructure/ssot.home-assistant.tony.yml` is stale (still says hos; runner-tooling.manifest.json
+    pins sha256 of runner-agent.py a'
 action:
   type: dispatch
   status: running
