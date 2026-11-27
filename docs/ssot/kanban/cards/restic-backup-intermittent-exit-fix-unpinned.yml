@@ -1,0 +1,26 @@
+id: restic-backup-intermittent-exit-fix-unpinned
+title: fleet-restic-backup on tony-macbook intermittently exits 1
+column: backlog
+updated: 2026-11-27 09:36
+spec: fleet-restic-backup.service on tony-macbook alternates between Result=success (1.8-4.9s) and status=1/FAILURE
+  on consecutive runs (including 09:06). Read the full journal around the failed runs to identify the actual restic
+  error (repository lock, target tony-dell:/mnt/sdb unavailable, or a transient network drop), then add a bounded
+  retry/backoff and a clear diagnostic for the specific case. Do not disable the backup. Verify with several consecutive
+  manual runs on tony-macbook showing Result=success and a restic snapshot present on the target, then note the
+  result on timer-alert-tony-macbook-fleet-restic-backup.
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  lane: paid_frontier
+  status: queued
+ref: OPS-1486
+comms:
+- at: 2026-11-27 09:36
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-27 09:36
+  from: tony
+  text: '[reroute 2026-11-27] Unpinned replacement for restic-backup-intermittent-exit-fix — the target_host pin
+    blocked every eligible runner and the write door cannot clear that field. restic-backup-intermittent-exit-fix
+    is closed as superseded.'
