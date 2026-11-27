@@ -1,7 +1,7 @@
 id: mddb-ops-write-latency-triage
 title: 'mddb-ops: diagnose /add + /ingest ~125s congestion waves (read-only, approval-gated)'
 column: done
-updated: 2026-11-27 13:57
+updated: 2026-11-27 14:51
 brief: Next batch 2026-11-27 — 4 runner slots free.
 priority: high
 tags:
@@ -142,6 +142,10 @@ comms:
 - at: 2026-11-27 13:56
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-27 14:51
+  from: tony
+  text: 'raised request approval-needed-step-b-of-ops-1500-a-b-t-887257: APPROVAL NEEDED — step B of OPS-1500 A+B
+    (Tony approved A+B 2026-11-27). Step A is complete and verified: detached drain'
 claim:
   since: 2026-11-27 12:58
 requests:
@@ -168,6 +172,23 @@ requests:
     succeed. (B) Then schedule Procedure-C offline bbolt compact of mddb-ops per docs/kb/mddb-prune-compact.md (26.85GB
     -> ~3GB, ~15-30min downtime, .pre-compact rollback). Coordinate the downtime window on this card before touching
     the service; do not compact without announcing '
+- id: approval-needed-step-b-of-ops-1500-a-b-t-887257
+  ask: 'APPROVAL NEEDED — step B of OPS-1500 A+B (Tony approved A+B 2026-11-27). Step A is complete and verified:
+    detached drain loop PID 3862968 killed on idc03, /add latency recovered 3.00s / 3.39s / 3.26s from idc02 (was
+    13-20s, 125s congestion waves), log shipping healthy. Step B is Procedure-C offline bbolt compact of mddb-ops
+    per docs/kb/mddb-prune-compact.md (26.85GB -> ~3GB, ~15-30min full outage of mddb-ops, .pre-compact rollback
+    retained until verified). The A+B approval explicitly requires a SEPARATE downtime window on this card before
+    touching the service. Pick a window; no service change will happen until you answer.'
+  status: open
+  at: 2026-11-27 14:51
+  from: tony
+  options:
+  - id: window-tonight-2200
+    label: Tonight 2026-11-27 22:00 +07 (recommended)
+  - id: window-tomorrow-0300
+    label: Tomorrow 2026-11-28 03:00 +07 (lowest traffic)
+  - id: hold-compact
+    label: Hold — defer compact, keep the 26.85GB file for now
 review_kind: verify
 auto_close:
   by: merge-sweep
