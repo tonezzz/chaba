@@ -1,7 +1,7 @@
 id: go2rtc-7-camera-producers-return-empty-f-cc9176
 title: 'go2rtc: 7 camera producers return empty frames on omen'
-column: review
-updated: 2026-11-27 15:22
+column: done
+updated: 2026-11-27 15:25
 program: infrastructure
 tags:
 - ops
@@ -407,6 +407,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-142701-fix-the-remaining-go2rtc-camer,
     branch dispatch/20261127-142701-fix-the-remaining-go2rtc-camer'
+- at: 2026-11-27 15:25
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 spec: Fix the remaining go2rtc camera producers on tony-omen that return empty 200/0B frames for ip_cam_65 and the
   xiaomi_c100/c201 variants. Inspect and correct the producer configurations located in ~/.config/go2rtc/*.sh on
   tony-omen and check xiaomi-token-refresh.py. The target host is tony-omen and the relevant repo/environment context
@@ -444,3 +447,7 @@ requests:
   answer: proceed
   executed: 2026-11-27 queue
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 15:25
+  note: verified — evidence checks green, closing itself
