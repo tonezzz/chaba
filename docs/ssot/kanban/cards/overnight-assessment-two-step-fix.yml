@@ -1,6 +1,6 @@
 id: overnight-assessment-two-step-fix
 title: 'overnight-assessment: log-sweep row conversion + stale sensor health'
-column: backlog
+column: doing
 updated: 2026-11-27 10:43
 spec: 'overnight-assessment.service on idc03 fails 3 of 4 recent runs. reports/ORCHESTRATION.json shows 3/6 steps
   ok; the ssot_validate failure from a malformed YAML trail doc was already fixed and pushed (3219cd79f40). Two
@@ -24,7 +24,9 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: queued
+  status: running
+  runner: mn01
+  attempts: 1
 ref: OPS-1493
 comms:
 - at: 2026-11-27 10:42
@@ -45,3 +47,11 @@ comms:
   from: chaba
   text: 'kk-mac defers: executor=devin declared but this runner is launchd — devin-dispatch drives systemd-run internally;
     the card stays queued for a Linux runner (executor=opencode/script serve here)'
+- at: 2026-11-27 10:43
+  from: mn01
+  text: claimed
+- at: 2026-11-27 10:43
+  from: chaba
+  text: 'idc02 defers: runner at local cap (3/3) — remote slots unaffected'
+claim:
+  since: 2026-11-27 10:43
