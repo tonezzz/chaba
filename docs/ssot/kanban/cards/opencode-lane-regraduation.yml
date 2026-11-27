@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: doing
-updated: 2026-11-27 08:07
+updated: 2026-11-27 08:20
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -826,6 +826,12 @@ comms:
   from: devin
   text: 'attempt 14 (080530, mn01): quota reset window reached (~07:00-08:00 +07). Verifying live lane state + provider
     quota on idc02, then fresh S0 climb -> S1 watch -> S2 pilot per DECISION 2026-11-26.'
+- at: 2026-11-27 08:20
+  from: devin
+  text: 'attempt 14 (080530, mn01->idc02): quota VERIFIED RESET — or-free-nemotron-ultra probe HTTP 200/1.25s at
+    08:12 +07 (OpenRouter free daily cap lifted at 07:00 +07 as predicted). Executing the documented runbook: requalify
+    #2 (provider-outage banked fails, same S1-rollback incident review bd2725f4) -> fresh S0 climb -> review/promote
+    -> stage S1 canary for Tony live watch -> S2 only if S1 gate passes. STOP before S3; STRONG_MODELS untouched.'
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
@@ -941,3 +947,4 @@ action:
   runner: mn01
 claim:
   since: 2026-11-27 08:04
+awaiting_action: true
