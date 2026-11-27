@@ -99,17 +99,28 @@ def unsharp(img: np.ndarray, percent: int, radius: float = 2.0) -> np.ndarray:
 
 
 def flat_region_lap_gain(src: np.ndarray, rt: np.ndarray) -> float:
-    """Laplacian-var ratio (roundtripped output vs source) inside flat
-    source regions — invented texture / noise amplification proxy."""
+    """Mean-abs-Laplacian ratio (roundtripped output vs source) in near-flat
+    source regions — invented texture / noise amplification proxy.
+
+    Perfectly flat pixels (laplacian == 0) are excluded; near-flat pixels
+    (0 < |lap| < 25th pct of nonzero values) are used instead. An epsilon
+    floor prevents division by zero.
+    """
     g = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY)
     lap = cv2.Laplacian(g, cv2.CV_64F)
-    flat = np.abs(lap) < np.percentile(np.abs(lap), 25)
+    abs_lap = np.abs(lap)
+    nz = abs_lap[abs_lap > 0]
+    if nz.size < 100:
+        return float("nan")
+    thr = np.percentile(nz, 25)
+    flat = (abs_lap > 0) & (abs_lap < thr)
     if flat.sum() < 100:
         return float("nan")
-    l_src = lap[flat].var()
-    l_rt = cv2.Laplacian(
-        cv2.cvtColor(rt, cv2.COLOR_BGR2GRAY), cv2.CV_64F)[flat].var()
-    return float(l_rt / l_src) if l_src > 1e-6 else float("nan")
+    l_src = np.abs(lap[flat]).mean()
+    rt_lap = cv2.Laplacian(
+        cv2.cvtColor(rt, cv2.COLOR_BGR2GRAY), cv2.CV_64F)
+    l_rt = np.abs(rt_lap[flat]).mean()
+    return float(l_rt / max(l_src, 1e-6))
 
 
 def dn_blend(src: np.ndarray, sr: np.ndarray, dn: float) -> np.ndarray:
