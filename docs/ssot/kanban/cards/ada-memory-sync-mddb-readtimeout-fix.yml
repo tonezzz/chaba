@@ -1,6 +1,6 @@
 id: ada-memory-sync-mddb-readtimeout-fix
 title: ada-memory-sync times out reading MDDB on idc03
-column: backlog
+column: doing
 updated: 2026-11-27 10:29
 spec: 'ada-memory-sync.service on idc03 fails with requests.exceptions.ReadTimeout: HTTPConnectionPool(host=''100.102.134.91'',
   port=11023): Read timed out (read timeout=20). This is the vault <-> MDDB sync (export voice inbox, push vault,
@@ -14,7 +14,9 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: queued
+  status: running
+  runner: idc02
+  attempts: 1
 ref: ADA-1490
 comms:
 - at: 2026-11-27 10:29
@@ -23,3 +25,8 @@ comms:
 - at: 2026-11-27 10:29
   from: tony
   text: '[next batch 2026-11-27] ReadTimeout against the MDDB endpoint — retry transients, keep real outages loud.'
+- at: 2026-11-27 10:29
+  from: idc02
+  text: claimed
+claim:
+  since: 2026-11-27 10:29
