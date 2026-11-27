@@ -1,7 +1,7 @@
 id: ncm-code-blocks-detail-composer
 title: NCM code-block composer — detail by layer (Variant B, review)
 column: review
-updated: 2026-11-27 14:27
+updated: 2026-11-27 14:57
 brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
   by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
   for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
@@ -364,3 +364,27 @@ comms:
     (tau=0.1) and pre-registered gates: role CE < 4.0 by step 400, early stop if CE > 4.5 at step 100, pad-excluded
     recon >= 0.50, codebook usage >= 5 mean unique / >= 6 multi-code levels. Result: CE moved only 4.8504 -> 4.7422
     by step 100, above the 4.5 early-stop floor, so trainin'
+- at: 2026-11-27 14:57
+  from: tony
+  text: 'raised request review-decision-ncm-variant-b-research-l-448a63: REVIEW DECISION — NCM Variant B research
+    lane concluded; P3 (shadow/promotion) needs your call. Results: VQ tokenizer su'
+requests:
+- id: review-decision-ncm-variant-b-research-l-448a63
+  ask: 'REVIEW DECISION — NCM Variant B research lane concluded; P3 (shadow/promotion) needs your call. Results:
+    VQ tokenizer sub-lane is a dead end (Sudoku + pack tokenizers collapse; anti-collapse v1/v2 and supervised block-identity
+    tokenizer v1/v2 all FAILED their pre-registered gates, verdict stop). Dropping the tokenizer entirely and conditioning
+    a supervised MLP on block role passed: end-to-end 12-task lane 0.8333 vs LLM glue 0.5000 (advantage +0.3333);
+    KK-Mac 12x3 cross-check lane 0.8333 vs glue 0.0000 (+0.8333, caveat: qwen3:8b baseline omits produce tokens);
+    SCALED 30 real packs x 3 paired reps lane 0.6333 vs glue 0.10-0.1333 — median advantage +0.5333, guard 0, gate
+    PASS. Spec says ''shadow then promotion only behind pre-registered floor'' and ''reject absent verifier-backed
+    gain'' — the gain is verifier-backed and stable at scale. Choose next step.'
+  status: open
+  at: 2026-11-27 14:57
+  from: tony
+  options:
+  - id: p3-shadow
+    label: 'A: Queue P3 shadow rollout of the role-conditioned Variant B lane (recommended)'
+  - id: close-research
+    label: 'B: Close as research-complete — document tokenizer dead-end, no promotion'
+  - id: hold-ncm
+    label: 'C: Hold in review — want another cross-check or a different baseline first'
