@@ -1,7 +1,7 @@
 id: log-shipper-mddb-heartbeat-timeout-fix
 title: 'Log shipper: heartbeat /add 10s timeout < observed 13-20s (fleet-wide false failures)'
 column: done
-updated: 2026-11-27 13:19
+updated: 2026-11-27 13:33
 brief: Systemic fix from live triage 2026-11-27; two runner slots free.
 priority: high
 tags:
@@ -93,5 +93,12 @@ comms:
 - at: 2026-11-27 13:19
   from: chaba
   text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-27 13:33
+  from: devin
+  text: 'FINAL: fix verified live fleet-wide. All 14 lanes re-run on v2 (130s write budgets): 13 green Result=success
+    incl. BOTH required hosts — idc02 full 235/0 @12:20 + fresh ship/idc02 doc; tony-omen full 790/0 @12:50 + fresh
+    ship/tony-omen doc. mn01 full lane hit honest TimeoutStartSec draining backlog (1360/1846 shipped, 0 failed,
+    cursor held) — re-run in flight. Closed 9/10 timer-alert cards green; timer-alert-mn01-log-shipper stays open
+    until its drain run finishes. Deviation documented: heartbea'
 claim:
   since: 2026-11-27 11:34
