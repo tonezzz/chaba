@@ -1,7 +1,7 @@
 id: mddb-ops-write-congestion-stagger-timers
 title: mddb-ops write congestion waves — investigate + stagger fleet shipper timers
 column: doing
-updated: 2026-11-27 13:18
+updated: 2026-11-27 13:43
 priority: medium
 tags:
 - ops
@@ -50,6 +50,13 @@ comms:
   from: devin
   text: 'picked up on idc02: pulling mddb-ops journal on idc03 for slow-handler timestamps, then correlating vs
     fleet shipper timer schedules'
+- at: 2026-11-27 13:43
+  from: devin
+  text: 'CORRELATION DONE: herd theory confirmed as contributor but DISPROVEN as primary cause. Shipper timers ARE
+    synchronized (OnUnitActiveSec=60min anchored to same fleet activation -> all fire :50:4x within ~10s; 10:50
+    wave matches 11:03-11:04 add/ingest timeouts). BUT dominant congestion = deleteWhere storm: 43 warnings today,
+    handlers 4000-4955s elapsed, ongoing since 10:21. Source = manual drain loop on idc03 (pid 3862968, since 10:48)
+    running prune-old-docs.py --only host-logs in a while-true loo'
 action:
   type: dispatch
   status: running
