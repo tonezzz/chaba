@@ -1,7 +1,7 @@
 id: embed-lane-banks-incremental-copy-fix
 title: 'embed-lane-banks: 112k-doc one-shot copy exceeds 15min timer — make resumable'
 column: doing
-updated: 2026-11-27 12:27
+updated: 2026-11-27 12:45
 brief: Systemic fix from live triage 2026-11-27; two runner slots free.
 priority: high
 tags:
@@ -65,5 +65,11 @@ comms:
   text: 'cmd_banks rewritten: per-bank cursor (banks-state.json offset/pass) + persisted have-set (banks-have/*.keys),
     bounded slices via --budget/--max-docs, synced-skip + rescan, exit 0 on budget / non-zero on real errors. ssot.jobs.yml
     now hourly/15m/--budget 600, units re-rendered, 15 tests pass. Deploying to idc02 for live verification next.'
+- at: 2026-11-27 12:45
+  from: devin
+  text: 'Live on idc02: timer fired run 1 at 12:27 — 3164 docs delivered in 10min budget, cursors persisted, but
+    exit 1 on a transient src scan drop (Remote end closed). Added scan_failures threshold (rc=1 only after 3 consecutive)
+    + redeployed. Run 2 in progress: resumed devin-handoff at offset 35000, +1000 copied by row 36000, synced banks
+    skipping cleanly.'
 claim:
   since: 2026-11-27 11:33
