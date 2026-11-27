@@ -306,12 +306,22 @@ instances:
       URL could only log in when the dashboard itself was opened via
       tailnet. tailscale serve :8443 remains as a private backup path.
       Ada Test (added 2026-11-26 via push-dashboard.py --mutate +
-      mutate-ada-ha-ada-test-tab.py) is a full-page panel iframe to
-      https://oswe.surf-thailand.com/?v=1 with OSWE/Robin as its first (only)
-      tab; placed directly after OpenChamber. The iframe target is not yet
-      publicly exposed — backend boot is gated on unfilled credentials and the
-      oswe.surf-thailand.com edge is not provisioned, so the tab is staged
-      pending those items (see card oswe-eval-ada-test-tab).
+      mutate-ada-ha-ada-test-tab.py) is a full-page panel iframe with
+      OSWE/Robin as its first (only) tab; placed directly after
+      OpenChamber. 2026-11-27: the OSWE/Robin dev stack booted on tony-dell
+      (systemd --user units oswe-backend :2024, oswe-mda :2025, oswe-shim
+      :4100; model via fleet LiteLLM or-deepseek-v4-flash since no
+      Anthropic key and the LangSmith gateway is off for the org;
+      Slack/GitHub-App vars are dummies — Slack features dead, dashboard
+      login needs a LangSmith OAuth app Tony has not created yet). The
+      iframe was repointed to the tailnet split-origin surface
+      https://tony-dell.taila0626a.ts.net:8445/ (UI) -> API :8444 so the
+      session cookie is Secure;SameSite=None and works inside the
+      cross-site iframe for tailnet users; dev-login via the host's `gh`
+      CLI issues the session but every dashboard API still 401s until a
+      LangSmith identity is linked (Sign in with LangSmith). Public edge
+      oswe.surf-thailand.com still needs DNS + CF Access (the CF token on
+      tony-dell lacks DNS perms) — see card oswe-eval-ada-test-tab.
       Cline panel retired 2026-11-26 (Tony-approved full Cline retirement):
       the full-page iframe to https://cline.surf-thailand.com/?v=1 was removed
       from the live 18→17 view set; edge route, con01 containers/timers and
@@ -590,5 +600,5 @@ conventions:
 
 status:
   last_updated: "2026-10-29"
-  last_verified: '2026-11-26'
+  last_verified: '2026-11-27'
   health: active; G1 on both hosts (dev v171 / ha v161, same md5 b404aab0) — surface3d PV chart on sensor.inverters_1_pv_power, vendored echarts libs in /local; Cast tab removed from live michael-ha tony-test on 2026-09-14; PF3/PF4/PFG/PFG1/PFG2 removed
