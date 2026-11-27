@@ -12,7 +12,6 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -45,10 +44,14 @@ def parse_audit(text: str) -> dict[str, list[str]]:
 def board_call(method: str, path: str, payload: dict, ssh_host: str) -> dict:
     envelope = json.dumps({"method": method, "path": path,
                            "payload": payload}).encode()
-    result = subprocess.run(
-        ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15", ssh_host,
-         "python3", "~/CascadeProjects/chaba/scripts/board/board-cli.py", "__api"],
-        input=envelope, capture_output=True, timeout=180)
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
+    from ssh_route import ssh_run
+    result = ssh_run(
+        ssh_host,
+        ["python3",
+         "~/CascadeProjects/chaba/scripts/board/board-cli.py", "__api"],
+        opts=["-o", "BatchMode=yes", "-o", "ConnectTimeout=15"],
+        input=envelope, timeout=180)
     if result.returncode:
         raise RuntimeError(result.stderr.decode()[:200] or "board-cli failed")
     return json.loads(result.stdout.decode() or "{}")

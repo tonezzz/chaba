@@ -34,6 +34,18 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 REPO = Path(os.environ.get("REPO") or Path(__file__).resolve().parents[2])
+sys.path.insert(0, str(REPO / "scripts" / "lib"))
+try:
+    from ssh_route import ssh_run
+except ImportError:
+    # stale checkout mid-sync — plain ssh, no ProxyJump fallback
+    def ssh_run(target, remote, *, opts=None, input=None,
+                capture_output=True, text=False, timeout=60):
+        remote = [remote] if isinstance(remote, str) else list(remote)
+        return subprocess.run(
+            ["ssh", *(opts or ["-o", "BatchMode=yes"]), target, *remote],
+            input=input, capture_output=capture_output, text=text,
+            timeout=timeout)
 MDDB = os.environ.get(
     "MDDB_BASE_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 COLLECTION = "ada-cms-pages"
@@ -133,9 +145,9 @@ def collect_host(host, local=False):
         out, err = r.stdout, r.stderr
     else:
         try:
-            r = subprocess.run(
-                ["ssh", "-o", "ConnectTimeout=8", "-o", "BatchMode=yes",
-                 host, "bash -s"],
+            r = ssh_run(
+                host, "bash -s",
+                opts=["-o", "ConnectTimeout=8", "-o", "BatchMode=yes"],
                 input=COLLECT_SH, capture_output=True, text=True,
                 timeout=120)
             out, err = r.stdout, r.stderr
