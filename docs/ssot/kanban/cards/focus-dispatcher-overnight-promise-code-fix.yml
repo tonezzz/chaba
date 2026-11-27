@@ -1,7 +1,7 @@
 id: focus-dispatcher-overnight-promise-code-fix
 title: focus-dispatcher-overnight fails with Promise passed as error code
 column: doing
-updated: 2026-11-27 11:32
+updated: 2026-11-27 11:40
 spec: 'focus-dispatcher-overnight.service on tony-omen ends with `[overnight] completed with errors` after `TypeError
   [ERR_INVALID_ARG_TYPE]: The "code" argument must be of type number. Received an instance of Promise`. The SSOT
   validation step reports Total errors: 0, so the TypeError is in the JavaScript/Node overnight focus workflow''s
@@ -17,6 +17,8 @@ action:
   status: running
   runner: idc02
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 11:40
 ref: OPS-1492
 comms:
 - at: 2026-11-27 10:29
@@ -76,5 +78,9 @@ comms:
     broke PROJECT_ROOT (one level too high -> silent no-op + git fatal) and made focus-dispatcher --advance exit
     1 on non-writer checkouts; overnight-focus-review.py now skips --advance when chaba-role is stamped non-served.
     Also repaired a malformed jobs yml (ad5e9f0e4b) that was failing'
+- at: 2026-11-27 11:40
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-103140-focus-dispatcher-overnight-ser no longer active on idc02 but card
+    still says running — sweeping its branch'
 claim:
   since: 2026-11-27 10:30
