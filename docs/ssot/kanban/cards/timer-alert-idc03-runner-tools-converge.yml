@@ -1,7 +1,7 @@
 id: timer-alert-idc03-runner-tools-converge
 title: Timer runner-tools-converge on idc03 failing
-column: backlog
-updated: 2026-11-27 09:15
+column: done
+updated: 2026-11-27 10:27
 priority: high
 tags:
 - timer-alert
@@ -42,6 +42,12 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-27 00:00) of `runner-tools-converge.service` on `idc03` result=exit-code
     — investigate journal: `journalctl --user -u runner-tools-converge.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-27 10:27
+  from: tony
+  text: '[cleanup 2026-11-27] Live verify: idc03-runner-tools-converge Result=success. Closing; condition healed.'
+- at: 2026-11-27 10:27
+  from: tony
+  text: closed by tony
 spec: Goal is to investigate the failure of the `runner-tools-converge.service` timer on host idc03 which exited
   with an error code on 2026-11-27 00:00. The runner must inspect the systemd user journal via `journalctl --user
   -u runner-tools-converge.service` on idc03 and cross-reference CMS `timer-timeline-idc03` to identify the root
