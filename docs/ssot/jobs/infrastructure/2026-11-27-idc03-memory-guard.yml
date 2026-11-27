@@ -109,6 +109,50 @@ applied_followups:
       Effective properties read back as 1258291200 / 1677721600 bytes with
       OOMScoreAdjust=500. Idempotency changed=0.
 
+publisher_hardening:
+  status: "prepared, tested, NOT DEPLOYED — awaiting approval"
+  symptom: >-
+    Both timer publishers POST /v1/add immediately after a TCP/health probe.
+    An OOM restart leaves /health open ~84-104s before /v1 routes are live
+    (15:58:55 vs 16:00:37), so a tick starting in that window gets HTTP 404
+    and exits 1; embed congestion adds a second transient failure mode.
+  changes:
+    - "scripts/ada/media-inbox-update.py: gate _post() on GET /v1/stats,
+       retry 404/429/5xx and disconnects at most 3x with 2/4s backoff;
+       MDDB_HTTP_WRITE_TIMEOUT default 120 (was a hardcoded 120 at one call
+       site), MDDB_ROUTE_WAIT_S default 120."
+    - "../ada-voice/scripts/ops-health-report.py: same gate + bounded retry
+       in post(); MDDB now honours MDDB_BASE_URL (unit already sets it),
+       MDDB_CMS_URL and the two timeout knobs are env-overridable."
+    - "Keyed /v1/add makes a retry an upsert, not a duplicate document."
+  pins_sha256:
+    media-inbox-update.py: 03c905bf06ebad0fe563a153163971ad36af67afbc3b9c6a3445bd1cf07d09d9
+    ops-health-report.py: b04d81ecf329655a12cbc02f749642d4f89e14ae224f4c8cf163e9aa57e5c4d3
+  tests:
+    file: tests/test_publisher_mddb_retry.py
+    result: "10 passed (5 cases x 2 scripts): readiness 404/503 -> POST,
+      disconnect retried, 3-attempt ceiling, routes-never-ready refuses POST,
+      non-retryable 400 fails immediately"
+    run: "python3 -m pytest tests/test_publisher_mddb_retry.py -q (system python; httpx stubbed)"
+  playbook: ansible/playbooks/idc03-publisher-hardening.yml
+  preflight: "--check --diff --limit idc03: ok=5 changed=1 unreachable=0
+    failed=0 (the one change is the check-mode diff of the backup directory)"
+  deploy: >-
+    From the controller (tony-dell) in the chaba worktree ansible/ dir:
+    ansible-playbook playbooks/idc03-publisher-hardening.yml --limit idc03
+    -e idc03_publisher_hardening_approved=true
+    -e card_id=mddb-idc03-oom-coldstart-publisher-window
+  verify: >-
+    After deploy: installed sha256 matches both pins; py_compile passes with
+    each script's own interpreter; GET /v1/stats is 200 on :11023 and :11027;
+    next media-inbox-update-kk and ops-health-report timer ticks exit 0;
+    re-run --check --diff shows changed=0. No service restart: both are
+    oneshot timers, so no in-flight pass is killed.
+  rollback: >-
+    Restore from /home/tony/.local/share/chaba-backups/
+    idc03-publisher-hardening/<timestamp>/, or from the copy module's sibling
+    .bak files. No rollback was needed.
+
 rollback: >-
   Restore both .conf files from the timestamped backup directory, delete the
   six 60-idc03-memory.conf files, systemctl --user daemon-reload, and re-apply
