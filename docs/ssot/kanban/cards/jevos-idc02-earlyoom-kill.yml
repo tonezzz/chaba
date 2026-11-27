@@ -1,7 +1,7 @@
 id: jevos-idc02-earlyoom-kill
 title: idc02 JevOS killed by earlyoom; clean SIGTERM bypassed Restart=on-failure
 column: doing
-updated: 2026-11-27 21:26
+updated: 2026-11-27 21:36
 brief: '2026-11-27 20:47:40 +07: earlyoom on idc02 (0 swap, avail 9.92% < 10% threshold) sent SIGTERM to jev PID
   1233450 (RSS 1543 MiB) after killing three chrome processes. systemd saw Result=success, so Restart=on-failure
   did not restart it; lane stayed down ~17min (health=000). Restored 21:05, health 200 in 15s.'
@@ -45,6 +45,13 @@ comms:
     surgical exemption preserving earlyoom for everything else; (b) risks kill/restart loops under sustained pressure
     and breaks manual stop; (c) leaves lane exposed. Writing ansible/playbooks/earlyoom-avoid-jev.yml, will --check
     then converge idc02.'
+- at: 2026-11-27 21:36
+  from: devin
+  text: 'DONE — chose option (a), applied+verified. New playbook ansible/playbooks/earlyoom-avoid-jev.yml set EARLYOOM_ARGS="-r
+    3600 --avoid (^(|/)(jev)$"... correction: --avoid ''(^|/)(jev)$'' in /etc/default/earlyoom on idc02 and restarted
+    earlyoom.service. Live proof: pgrep shows /usr/bin/earlyoom -r 3600 --avoid (^|/)(jev)$, is-active=active, jev
+    /health=200, second --check changed=0. Backup /etc/default/earlyoom.1398770.2026-11-27@21:32:57~. Quoting proven
+    via systemd-run transient unit first. Chose ('
 action:
   type: dispatch
   status: running
