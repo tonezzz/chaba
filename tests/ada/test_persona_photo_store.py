@@ -51,7 +51,7 @@ from typing import Any
 import pytest
 import yaml
 
-from tests.ada._checkout import materialize_head
+from tests.ada._checkout import materialize_main
 from tests.ada._drops import apply_patch, check_patch, drop_guard_ok
 
 REPO = Path(__file__).resolve().parents[2]
@@ -123,7 +123,7 @@ def test_patch_states_healthy(tmp_path):
     upstream; divergence only fails when nothing in the drop landed
     (pending drop on a rotted base — tests/ada/_drops.py)."""
     dst = tmp_path / "ada-voice"
-    materialize_head(dst, ADA_PI)
+    materialize_main(dst, ADA_PI)
     states = {rel: check_patch(patch, dst)
               for rel, patch in PATCHES.items()}
     assert drop_guard_ok(states.values()), (

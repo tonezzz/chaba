@@ -1,0 +1,60 @@
+job: chaba-pytest-suite-7-regressions-20261127
+title: Nightly chaba pytest suite — 7 regressions fixed at source
+date: 2026-11-27
+domain: ops
+card: nightly-pytest-suite-7-regressions-fix
+summary: >-
+  chaba-pytest-suite.service on tony-omen reported 10 failed / 2815
+  passed; 3 had already been fixed by recent merges, 7 still failed.
+  All 7 root-caused and fixed at source (no skips/xfails); targeted
+  rerun of the five affected test files is green (122 passed).
+changes:
+  - tests/ada/test_persona_photo_store.py — test_patch_states_healthy
+    now materializes origin/main (materialize_main) instead of the
+    checkout's HEAD. The suite host's ada-voice checkout sits on a
+    stale feature branch, so HEAD-based patch guards rot on branch
+    drift; drops target upstream main (same fix pattern as
+    test_cast_loop_breaker.py, commit 61e21717ab0).
+  - integrations/ada-voice/backend/tool_guide.persona-photo-store.patch
+    + ssot.tool-surface.persona-photo-store.patch — regenerated against
+    ada-voice origin/main c9a2f01. The old hunks anchored on
+    tool_guide.yml EOF-after-weather_station (~line 764) and the old
+    coverage_debt ordering; upstream grew to 931 lines (ends
+    ada_fleet_jobs) and the debt list gained ada_sweep/ada_lesson/
+    ada_adobe_stock. Verified `git apply --check` clean on both
+    origin/main c9a2f01 (dell) and tony-omen's local origin/main
+    0a5dbd8 — all 6 drop patches apply on omen.
+  - scripts/colab/packs/kk-mac-image-render-poc/inputs/render-request.json
+    — restored the DISABLED TEMPLATE (blob aed64103deb, pre-OPS-0037).
+    Commit d2d648c2569 (WIP rescue from idc02 exec checkout) had
+    committed the ARMED one-shot request — status=approved, Tony-
+    approved 2026-11-20, window 11-20..11-21 (lapsed), and a truncated
+    model revision (...a7 vs pinned ...a7b). The armed variant remains
+    in git history at d2d648c2569 if the render record is needed.
+  - fixtures/consultant-tasks.jsonl — repointed 10 `source:` card
+    citations from docs/ssot/kanban/cards/<id>.yml to
+    docs/ssot/kanban/cards/archive/<id>.yml (cards were archived, not
+    deleted; `source` is provenance-only — consultant-bench.py never
+    reads it).
+  - tests/test_litellm_consult_routes.py — fallback-target scan now
+    unwraps dict legs ({model=x, disable_fallbacks=true}) to their
+    model name. The eval-judge lane (gemini-eval-judge-lane) pins dict
+    legs to block litellm's recursive fallback expansion — real schema,
+    test predated it. Assertion unchanged — consult-* aliases must not
+    appear as fallback source or target.
+verified:
+  - python3 -m pytest tests/ada/test_persona_photo_store.py
+    tests/colab/test_kk_mac_image_render_poc.py
+    tests/test_consultant_fixture.py tests/test_litellm_consult_routes.py
+    tests/devnest/test_opencode_profiles.py -q → 122 passed, 0 failed
+    (test_opencode_profiles JobLibrary was already green).
+  - test_patch_states_healthy PASSED (not skipped) on tony-dell;
+    all 6 persona-photo-store patches verified `git apply --check`
+    against tony-omen's ada-voice origin/main tree.
+notes:
+  - tony-omen ada-voice checkout is on feat/ada-ocb-ssot-search
+    (efad065, upstream gone) with stale origin/main 0a5dbd8 vs remote
+    c9a2f01 — checkout drift, but materialize_main makes the guard
+    immune to which branch is checked out.
+  - Next chaba-pytest-suite.service run on tony-omen is the consumer
+    proof; result noted on timer-alert-tony-omen-chaba-pytest-suite.
