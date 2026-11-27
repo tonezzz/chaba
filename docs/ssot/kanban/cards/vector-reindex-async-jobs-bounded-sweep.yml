@@ -1,7 +1,7 @@
 id: vector-reindex-async-jobs-bounded-sweep
 title: 'vector-reindex.py: async jobs + bounded sweep + per-collection failure isolation'
 column: doing
-updated: 2026-11-27 21:48
+updated: 2026-11-27 22:18
 brief: 'Follow-up to OPS-1515 triage: the daily reindex sweep times out at 45min because it fires 64 sequential
   sync per-collection reindex calls with no global deadline; one collection has 149,550 docs (86% of corpus). Deployed
   mddb 2.18.10 supports async reindex jobs — switch the client to async+poll with a bounded sweep.'
@@ -56,6 +56,13 @@ comms:
     progress: vector-stats recheck; [mddb-cms-11027-embed-coverage-gap-250-do-e35321] update: reindex results —
     the ; [mddb-ops-regrowth-watch] analysis done: freelist is 6.6MB/8.1G (non-issue); rea; [mddb-ops-write-latency-triage]
     primer injected 8 lesson(s): '
+- at: 2026-11-27 22:18
+  from: devin
+  text: 'DONE — phase-1 implemented + live-verified (branch dispatch/20261127-214836-implement-the-phase-1-fix-from,
+    commit bf2e7a6a594). scripts/mddb/vector-reindex.py now drives async jobs (POST {async:true} -> poll jobs/{id}):
+    docCount-ASC ordering (153k-doc ada-ha-bank-devin-handoff last), SWEEP_BUDGET=2400s + LAUNCH_MARGIN=300s (stop
+    launching in last ~5min, in-flight continue server-side), JOB_TIMEOUT=900s->deferred, per-collection vector_reindex_failed
+    events with errors[] sample emitted immediate'
 action:
   type: dispatch
   status: running
