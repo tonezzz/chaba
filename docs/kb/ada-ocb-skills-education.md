@@ -6,7 +6,7 @@ title: Ada-OCB — Agent Skills Inventory and How to Use Them
 description: The eleven skills discovered in the ada-ocb worktree (.agents/skills and .opencode/skills), the offline contract test that pins them, and how each one is used in ada-ocb. Recorded from session history 2026-11-24.
 tags: [ada, ada-ocb, skills, education, ssot, wiki, testing, session-history, chaba]
 created: 2026-11-24
-updated: 2026-11-24
+updated: 2026-11-27
 related:
   - tests/test_agents_skills_explored.py
   - scripts/skills-wiki-export.py
@@ -66,6 +66,7 @@ Recorded alongside the skills in the same session history; the wiki page carries
 | `tonezzz/chaba` (ada-ocb worktree, https://github.com/tonezzz/chaba) | Ada-OCB control plane: SSOT, kanban, skills, board-api, wiki-education door | Holds the 11 `SKILL.md` files, inventory test, `scripts/skills-wiki-export.py`, this entry and the job trail; source of `Education:Ada-Ocb-Skills`. |
 | `tonezzz/mddb` (mddb-fork, https://github.com/tonezzz/mddb) | Markdown database with full-text/vector/hybrid search over MCP | The `mddb` agent skill (search-tool choice, chunk projections, `memory_*`); `chaba-lessons` / KB indexing. Local lag snapshots: `~/var/tmp/mddb-lag-base` and `-fix`. |
 | `anthropics/claude-plugins-official` (https://github.com/anthropics/claude-plugins-official) | Anthropic's official Claude Code plugin marketplace (`plugins/`, `external_plugins/`) | Installed `skill-creator` from `plugins/skill-creator/skills/` into `~/.claude/skills/skill-creator` with an OpenCode adaptation note; reference for portable skills/commands/agents. Apache-2.0, per-plugin `LICENSE`. |
+| `ansible-community/ai-forge` (https://github.com/ansible-community/ai-forge @ `28a9a58`) | Ansible community "Lola" skills marketplace — 40 `SKILL.md` across 7 modules (collection SDLC, standards, content development, documentation, cloud, network, role scaffolding) | Evaluated 2026-11-27 for ada-ocb (card `ai-forge-skills-wiki-education-2026-11-27`); see "External evaluation" below. GPL-3.0 — reference only, no verbatim skill-text port. |
 
 ## Benchmarks
 
@@ -78,6 +79,15 @@ PR #229 added `ansible/playbooks/deploy-runner-tools.yml`, the check→apply wra
 ### MDDB findability eval (2026-11-26)
 
 Added three eval queries to `chaba-lessons` and ran `mddb.run_eval`: **recall@5 / nDCG / MRR = 1.0** for all three configs. `fts/bm25` was fastest (~5 ms p50) versus hybrid/vector (~1.6 s), so the saved lessons are retrievable and keyword search is the cheap path. Evidence: MDDB collection `chaba-lessons`, eval IDs `ocb-efficiency-1..3`.
+
+### External evaluation — ansible-community/ai-forge (2026-11-27)
+
+Card `ai-forge-skills-wiki-education-2026-11-27` (DEV-1499): evaluated the repo at `28a9a58` for ada-ocb adoption.
+
+- **What it is**: the Ansible community "Lola" skills marketplace (`lola-market.yml`), 40 `SKILL.md` files in 7 modules — `ansible-collection-sdlc` (commit, changelog-fragment, create-pr, release/stable-release, sonarcloud-*, run-tests, sanity, tox-lint, security-scan, docs-generate …), `ansible-collection-standards` (`ansible-zen`), `ansible-content-development` (`write-content`, `write-module`, `write-content-tests`, `write-module-tests`), `ansible-documentation` (`ansible-markdown-docs`), `cloud_content` (aws-terminator-*), `network_content` (network-collection-triage), plus the repo's own `.agents/skills` (`pr-new`, `pr-contributor-review`, `check-skill-spec`). License: **GPL-3.0**.
+- **Fit for ada-ocb**: nearly all skills assume Ansible *collection* authoring — `galaxy.yml`, changelog fragments, antsibull releases, stable-X branches, SonarCloud, `ansible-test`/`tox`. Chaba is not a collection, so the SDLC/release/CI half is N/A.
+- **Candidates kept as reference** (not installed): `write-content` (CoP playbook/role/handler/template/argument-spec authoring — patterns transfer to chaba `ansible/` playbooks) and `ansible-markdown-docs` (fetch docs.ansible.com as Markdown — trivially adoptable for `ansible-first` lookups). `pr-review`/`pr-new`/`pr-contributor-review` matter only when contributing to upstream ansible-collections.
+- **Verdict**: pointer-first — record the repo and verdict here and on `Education:Ada-Ocb-Skills`; do not install the marketplace into ada-ocb and do not copy skill text verbatim (GPL-3.0). Revisit if chaba starts authoring Ansible collections; at that point evaluate per-skill ports written fresh against chaba conventions.
 
 ## Operational rules
 
