@@ -1,7 +1,7 @@
 id: idc03-swap-workload-placement
 title: 'MEM-1511: idc03 swap 4/4 GiB — workload placement triage'
-column: doing
-updated: 2026-11-27 19:30
+column: review
+updated: 2026-11-27 20:05
 brief: 'After MEM-1507/1510 fixes, idc03 still has 4.0/4.0 GiB swap used, 5.1 GiB RAM available, user cgroup 14.4
   GiB RAM + 4.16 GiB swap. Top swap holders: jevos 761MiB, ada-dev 243MiB, ada-kk-dev 184MiB, ada-bankq-student
   309MiB, ada-chaba 364MiB, ada-ha-ada 359MiB, mddb-cms 290MiB.'
@@ -62,14 +62,57 @@ comms:
   from: devin
   text: 'raised request idc03-swap-placement-two-owner-decisions-c55571: idc03 swap placement — two owner decisions
     (live numbers 19:20 +07; capacity verified: con01 18GiB avail but load~10, id'
+- at: 2026-11-27 19:53
+  from: devin
+  text: 'APPLIED (gated ansible/playbooks/idc03-swap-placement.yml, preflight ok=11 changed=4 failed=0): (1) ada-dev+ada-kk-dev
+    idc03 twins stopped+verified inactive/disabled — bench lane has been on omen since 11-25, zero consumers; durable
+    fix still needs ada-voice deploy-ada.sh SERVICES cleanup (outside chaba repo — flagged). (2) bankq-student restarted
+    (idle shadow). (3) cold lanes ada-ha-ada/kk-ha/ada-kk/ada-chaba staggered-restarted, all health-verified. (4)
+    jevos-swap-reclaim timer installed (dail'
+- at: 2026-11-27 19:59
+  from: devin
+  text: 'FINAL: dispatch complete on branch dispatch/20261127-191831-rank-candidates-by-reclaim-vs- (2 commits).
+    Deliverables: ansible/playbooks/idc03-swap-placement.yml (applied+verified), ansible/playbooks/jevos-migrate.yml
+    (staged for owner destination pick), scripts/deploy-ada.sh twins removal, job record docs/ssot/jobs/infrastructure/2026-11-27-idc03-swap-workload-placement.yml,
+    outcome doc in worktree. Card stays open on request idc03-swap-placement-two-owner-decisions-c55571 — needs
+    Tony: (1) conf'
+- at: 2026-11-27 20:05
+  from: tony-dell
+  text: 'finished (ok): exit=0 out with the final state and the open request blocking close. | devin-task-20261127-191831-rank-candidates-by-rec'
+- at: 2026-11-27 20:05
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 20:05
+  from: chaba
+  text: banked 1041 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-27 20:05
+  from: chaba
+  text: pushed dispatch/20261127-191831-rank-candidates-by-reclaim-vs- to origin
+- at: 2026-11-27 20:05
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_board_api_liveness.py tests/board/test_kanban_act.py
+    tests/board/test_wiki_extension.py tests/board/test_board_ap
+- at: 2026-11-27 20:05
+  from: chaba
+  text: auto-merged 6c828e01 (dispatch/20261127-191831-rank-candidates-by-reclaim-vs-) → origin/master
+- at: 2026-11-27 20:05
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-191831-rank-candidates-by-reclaim-vs-,
+    branch dispatch/20261127-191831-rank-candidates-by-reclaim-vs-'
 action:
   type: dispatch
-  status: running
+  status: done
   task_class: report_triage
   executor: claude
   executor_source: queue
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 out with the final state and the open request blocking close. | devin-task-20261127-191831-rank-candidates-by-reclaim-vs-.service:
+    Consumed 1min 30.529s CPU time over 41min 41.838s wall clock time, 1.2G memory peak, 575.9M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-27 19:17
 requests:
@@ -100,3 +143,4 @@ requests:
   options:
   - proceed
   - hold
+review_kind: verify

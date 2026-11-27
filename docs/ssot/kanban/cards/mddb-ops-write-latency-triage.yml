@@ -1,7 +1,7 @@
 id: mddb-ops-write-latency-triage
 title: 'mddb-ops: diagnose /add + /ingest ~125s congestion waves (read-only, approval-gated)'
 column: done
-updated: 2026-11-27 16:38
+updated: 2026-11-27 19:52
 brief: Next batch 2026-11-27 — 4 runner slots free.
 priority: high
 tags:
@@ -164,6 +164,13 @@ comms:
     trap: mddb-ops binds ONLY to 100.102.134.91:11026, so http://127.0.0.1:11026/health returns http=000 while http://100.102.134.91:11026/health
     returns 200 ''status: healthy''. The 22:00 scheduled task prompt now pins the explicit tailnet base URL for
     /health, /v1/stats a'
+- at: 2026-11-27 19:52
+  from: chaba
+  text: 'PREFLIGHT REFRESH 2026-11-27 19:52 +07 (read-only, 2h08m before the approved 22:00 window): mddb-ops.service
+    active/running, NRestarts=0, ExecMainStatus=0; db now 30G (was 26G at 16:35 — normal growth, no compaction yet);
+    no stray mddb-compact.db or .pre-compact in ~/.config/containers/mddb-ops/data; docker.io/golang:1.23-bookworm
+    present; http://100.102.134.91:11026/health returns 200 status healthy. idc03 load 10.64/9.83/7.38. All green
+    — no service or data change made. The approved 22:00 sche'
 claim:
   since: 2026-11-27 12:58
 requests:
