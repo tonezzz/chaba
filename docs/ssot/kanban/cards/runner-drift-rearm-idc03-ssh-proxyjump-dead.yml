@@ -1,7 +1,7 @@
 id: runner-drift-rearm-idc03-ssh-proxyjump-dead
 title: runner-drift-rearm board writes silently dead on tony-dell (ssh idc03 ProxyJump refused)
 column: doing
-updated: 2026-11-27 10:20
+updated: 2026-11-27 10:30
 priority: medium
 tags:
 - infra
@@ -52,6 +52,13 @@ comms:
     omen/mn01/idc02 configs clean — sentinel+timeline co-located on omen are NOT affected today, but same latent
     fragility. Plan: shared scripts/lib/ssh_route.py (direct-first, config fallback — mcp-health pattern) wired
     into board-cli --ssh, runner-drift-rearm, timer-sentinel _live_veri'
+- at: 2026-11-27 10:30
+  from: devin
+  text: 'DONE (commit 2e53e08368 on dispatch branch). Root cause repaired live: removed stale ProxyJump tony-omen
+    from tony-dell ~/.ssh/config Host idc03 (backup ~/.ssh/config.bak-20261127-sshproxyjump) — ssh idc03 + full
+    board-cli __api path verified rc=0. Code fix: new scripts/lib/ssh_route.py (direct-tailnet-first, config fallback
+    — mcp-health pattern) wired into board-cli --ssh, runner-drift-rearm board_call, timer-sentinel _live_verify,
+    timer-timeline-update collect_host; 8 new unit tests pass. Corr'
 action:
   type: dispatch
   status: running
