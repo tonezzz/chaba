@@ -1,7 +1,7 @@
 id: timer-alert-idc03-chaba-kanban-brief
 title: Timer chaba-kanban-brief on idc03 failing
-column: backlog
-updated: 2026-11-27 18:15
+column: done
+updated: 2026-11-27 18:22
 priority: high
 tags:
 - timer-alert
@@ -262,5 +262,14 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-27 17:56) of `chaba-kanban-brief.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u chaba-kanban-brief.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-27 18:22
+  from: chaba
+  text: 'SELF-HEALED 2026-11-27 18:19 tick: Result=success / ExecMainStatus=0 at 18:21:02 — published 11 cards,
+    0 T2 candidates, nest-overview 6/6 lanes up. The 17:56 timeout was a one-off MDDB stall in the bench section;
+    the 18:19 run completed the same bench step cleanly. Card closing; a follow-on 18:21:29 run was still in flight
+    at check time — if it fails, the timer sentinel will reopen and escalate.'
+- at: 2026-11-27 18:22
+  from: tony
+  text: closed by tony
 action:
   status: done
