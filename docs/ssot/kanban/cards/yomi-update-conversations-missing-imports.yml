@@ -1,7 +1,7 @@
 id: yomi-update-conversations-missing-imports
 title: Yomi summaries fail — missing summary-utils imports in update-conversations.mjs
 column: doing
-updated: 2026-11-27 15:37
+updated: 2026-11-27 15:38
 brief: yomi-update-all writes conversations but every summary fails with "validateAndTruncateContext is not defined".
   Three symbols used but not imported in update-conversations.mjs; all exported by summary-utils.mjs. Import-only
   fix.
@@ -76,6 +76,13 @@ comms:
     to the summary-utils.mjs named import in scripts/yomi/update-conversations.mjs (matches process-conversations.mjs).
     Verified: node --check OK; all three symbols confirmed exported by summary-utils.mjs. Committed on dispatch
     branch — needs merge + idc03 served-checkout pull before the next yomi-update-all picks it up.'
+- at: 2026-11-27 15:38
+  from: devin
+  text: 'DONE (worktree side). Commit 5b03c5b82ed on dispatch/20261127-153434-found-2026-11-27-during-line-r adds
+    the 3 missing summary-utils imports to update-conversations.mjs. Verified: node --check OK, all usages resolve,
+    exports confirmed in summary-utils.mjs. Outcome doc: dispatch-outcome-20261127-153434-found-2026-11-27-during-line-r.md.
+    Remaining: merge this branch, then idc03 served checkout (chaba-tony-dell) must pull before next yomi-update-all
+    run picks up the fix — live verification of a pro'
 ref: OPS-1505
 claim:
   since: 2026-11-27 15:33
