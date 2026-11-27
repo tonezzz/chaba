@@ -1,7 +1,7 @@
 id: gemini-decision-1-gate-eval-2026-11-26
 title: Evaluate gemini-decision-1 as a cheap dispatch-readiness gate
 column: done
-updated: 2026-11-27 11:06
+updated: 2026-11-27 17:43
 brief: Grade calibrated noul decisions on 10 real kanban briefs against a reproducible spec-present label, measure
   confidence and token use, decide whether to replace a full-model yes/no judgment.
 priority: medium
@@ -75,5 +75,12 @@ comms:
     95,931 input tokens total, zero output tokens. No reliable gain over binary noul: choice P(ready) at fixed 0.5
     looked better on 130 (53/62 READY, 0 FP, Brier 0.0525 vs 0.0767) but was tied on 110 (one FP each, Brier 0.1245
     vs 0.1248), so NOT adopted. Score expected value mis'
+- at: 2026-11-27 17:43
+  from: chaba
+  text: Paired choice arm on the diverse-negative 60-brief set is done and pushed (4dba22fab6f, receipt v8). Same
+    shared input as the noul arm; 60 choice answers, 13,317 input tokens, 0 output tokens. Choice improved recall
+    (16/20 vs 8/20 READY) and Brier (0.1859 vs 0.204) but made 13 false approvals vs noul 12 at 0.5, and 11 vs 9
+    at 0.536574. It fixed six noul false approvals and introduced seven (2 deferred, 3 umbrella). Top-choice rule
+    worst (22 FP); confident-not-ready never fired (0/40). Not adopte
 action:
   status: done
