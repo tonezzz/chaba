@@ -57,6 +57,10 @@ comms:
     wave matches 11:03-11:04 add/ingest timeouts). BUT dominant congestion = deleteWhere storm: 43 warnings today,
     handlers 4000-4955s elapsed, ongoing since 10:21. Source = manual drain loop on idc03 (pid 3862968, since 10:48)
     running prune-old-docs.py --only host-logs in a while-true loo'
+- at: 2026-11-27 13:43
+  from: devin
+  text: 'raised request mddb-ops-deletewhere-drain-loop-on-idc03-acf48f: mddb-ops deleteWhere drain loop on idc03
+    (pid 3862968, started 10:48 by ADA-1485 session) is still running and still inj'
 action:
   type: dispatch
   status: running
@@ -67,3 +71,19 @@ action:
   attempts: 1
 claim:
   since: 2026-11-27 13:16
+requests:
+- id: mddb-ops-deletewhere-drain-loop-on-idc03-acf48f
+  ask: 'mddb-ops deleteWhere drain loop on idc03 (pid 3862968, started 10:48 by ADA-1485 session) is still running
+    and still injecting ~4 orphaned server-side handlers per ~10min — 50+ concurrent deleteWhere handlers at 4000-4900s
+    elapsed are starving all ops-DB writes (shippers now survive on 130s budgets, but latency is degraded and the
+    loop shows deleted 0 every iteration). Options: (A) SIGSTOP the loop now — reversible, existing orphans drain
+    in ~70min, backlog cleanup pauses; (B) let it run to completion — unknown duration, continued degradation; (C)
+    kill it, wait for this branch merge, redeploy backoff-fixed prune-old-docs.py to idc03 exec checkout, restart
+    drain bounded (e.g. budget 1800 + longer sleep, or only in low-traffic window). Recommend C with A as immediate
+    relief if you want the storm stopped now. Which do you want?'
+  status: open
+  at: 2026-11-27 13:43
+  from: devin
+  options:
+  - proceed
+  - hold
