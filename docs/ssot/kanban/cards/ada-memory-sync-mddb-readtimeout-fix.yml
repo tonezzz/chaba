@@ -1,7 +1,7 @@
 id: ada-memory-sync-mddb-readtimeout-fix
 title: ada-memory-sync times out reading MDDB on idc03
-column: doing
-updated: 2026-11-27 11:18
+column: done
+updated: 2026-11-27 11:58
 spec: 'ada-memory-sync.service on idc03 fails with requests.exceptions.ReadTimeout: HTTPConnectionPool(host=''100.102.134.91'',
   port=11023): Read timed out (read timeout=20). This is the vault <-> MDDB sync (export voice inbox, push vault,
   voice conflicts auto-resolve). Check whether the MDDB endpoint at 100.102.134.91:11023 is healthy and whether
@@ -14,9 +14,12 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: running
+  status: done
   runner: idc02
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 11:25
+  verified: true
 ref: ADA-1490
 comms:
 - at: 2026-11-27 10:29
@@ -57,5 +60,34 @@ comms:
     :11023 is healthy when up (search ~40-60ms); it did OOM-kill at 11:03 (5.5G peak) during vector-reindex — episodic,
     not the client bug. Fix in scripts/ada/sync-ada-memory-to-mddb.py: jittered backoff (30s*n ±25%, cap 90s), greppable
     FAILED-after-N diagnostic on exhaustion, delete-'
+- at: 2026-11-27 11:25
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-103034-ada-memory-sync-service-on-idc no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-27 11:25
+  from: chaba
+  text: 'merge-sweep: merged c62f5989 (dispatch/20261127-103034-ada-memory-sync-service-on-idc from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261127-103034-ada-memory-sync-service-on-idc.md)
+    — auto-closed'
+- at: 2026-11-27 11:25
+  from: local
+  text: 'pub milestone: card verified: ada-memory-sync-mddb-readtimeout-fix on idc03 — merged c62f5989 (dispatch/20261127-103034-ada-memory-sync-service-on-idc
+    from idc02) -> origin/master — verified — auto- — merged c62f5989 (dispatch/20261127-103034-ada-memory-sync-service-on-idc
+    from idc02) -> origin/master — verified — auto-closed [evt-88bb7d1b4a9d9900]'
+- at: 2026-11-27 11:25
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-103034-ada-memory-sync-service-on-idc,
+    branch dispatch/20261127-103034-ada-memory-sync-service-on-idc on idc02'
+- at: 2026-11-27 11:58
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 11:58
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261127-103034-ada-memory-sync-service-on-idc — close will block
+    until merged'
 claim:
   since: 2026-11-27 10:29
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 11:25
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261127-103034-ada-memory-sync-service-on-idc.md

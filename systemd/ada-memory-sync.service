@@ -1,8 +1,11 @@
 [Unit]
 Description=Ada memory vault <-> MDDB sync (export voice inbox, push vault, voice conflicts auto-resolve)
-# Runs on idc03 (and mn01) against the runtime vault copy (chaba-vault checkout).
+# Runs on idc03 (and mn01). Script executes from the synced ~/CascadeProjects/chaba
+# checkout (chaba-repo-sync keeps it current); --vault still points at the live
+# chaba-vault/docs/ada-memory data dir — code and vault data are split on purpose
+# (2026-11-27 vault-sync-gap: chaba-vault git clone is NOT synced and drifts).
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-vault/scripts/ada/sync-ada-memory-to-mddb.py --vault %h/CascadeProjects/chaba-vault/docs/ada-memory --export-inbox
-ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-vault/scripts/ada/sync-ada-memory-to-mddb.py --vault %h/CascadeProjects/chaba-vault/docs/ada-memory --resolve-voice
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/sync-ada-memory-to-mddb.py --vault %h/CascadeProjects/chaba-vault/docs/ada-memory --export-inbox
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/sync-ada-memory-to-mddb.py --vault %h/CascadeProjects/chaba-vault/docs/ada-memory --resolve-voice

@@ -1,0 +1,108 @@
+title: runner-agent-converge NOPERMISSION — portable hosts split out with
+  ignore_unreachable; ansible exit 4 was HOST_UNREACHABLE, not permissions
+subtitle: tony-dell's nightly runner-agent-converge.service alternated clean
+  runs and status=4/NOPERMISSION; the 11-27 03:30 run converged 6 hosts and
+  lost the unit only because tony-macbook (portable, asleep) timed out on ssh.
+icon: radar
+
+date: 2026-11-27
+card: runner-agent-converge-nopermission-fix
+related_cards:
+  - timer-alert-tony-dell-runner-agent-converge
+  - runner-tools-converge-local-scope-fix
+status: implemented-awaiting-merge
+
+context:
+  symptom: "runner-agent-converge.service on tony-dell failed 2026-11-27
+    03:30:56 with 'Main process exited, code=exited, status=4/NOPERMISSION'
+    after a ~35s run. Earlier runs (11-25 11:07, 11-26 03:34) finished clean;
+    the pattern alternates with whether portable laptops are on-net."
+  root_cause: "ansible-playbook exit code 4 is ExitCode.HOST_UNREACHABLE in
+    ansible-core 2.20 (ansible/errors.py ExitCode enum) — systemd's
+    status=4/NOPERMISSION label is just the sysexits name for exit 4 and was
+    a red herring; no become/become_user or file-mode step was at fault.
+    deploy-runner-agent.yml targeted all:!macos:!disabled, which INCLUDES
+    the portable group (tony-macbook, mn01 — inventory comments say sleep/
+    off-net is normal). One ssh connect timeout to 100.77.76.112 at
+    gather_facts made ansible exit 4 even though all 6 reachable hosts
+    redeployed and reported in-sync/REDEPLOYED in the appended log."
+  log_evidence: "logs/runner-agent-converge.log (mtime 2026-11-27 03:30:56)
+    last PLAY RECAP: 6 hosts ok=5 changed=2, tony-macbook
+    unreachable=1 failed=0 — tasks all succeeded; only reachability failed."
+
+changes:
+  - "ansible/playbooks/deploy-runner-agent.yml — split into two plays.
+    Portable play FIRST (hosts: portable:!disabled, ignore_unreachable:
+    true): a sleeping laptop is counted ok+ignored, not unreachable, so it
+    cannot fail the unit. Always-on play LAST (hosts:
+    all:!macos:!disabled:!portable): keeps hard-fail semantics — ansible's
+    process exit code is the LAST play's result (PlaybookExecutor.run
+    returns the final `result`), so an unreachable idc0x/con01 still exits
+    4 and keeps alerting. Both plays share identical checksum-gated copy
+    tasks + no_block restart handler; runner_dest/file path switched from
+    ansible_facts.user_dir to '~/.local/bin' (remote $HOME) — a host
+    unreachable at gather_facts has no facts, and fact-based paths turned
+    the ignored unreachable into a real task FAILURE on the next task
+    (caught by ghost-host testing)."
+
+procedure:
+  - "Step 1 locate: unit ExecStart = ansible-playbook
+    playbooks/deploy-runner-agent.yml from ~/CascadeProjects/chaba/ansible
+    on tony-dell; output appended to logs/runner-agent-converge.log."
+  - "Step 3 diagnose: journalctl --user -u runner-agent-converge.service +
+    log tail; ansible ExitCode enum on tony-dell (core 2.20.1) maps 4 ->
+    HOST_UNREACHABLE; PlaybookExecutor/strategy source confirmed exit code
+    = last play's result and ignore_unreachable accounting."
+  - "Step 4 preflight: --syntax-check + --list-hosts (5 always-on + 2
+    portable); --check --diff on real inventory -> all 7 in-sync changed=0"
+  - "Ghost-inventory proof (/tmp/ra-ghost/hosts.yml, dead 192.0.2.x hosts +
+    real idc02/mn01): portable unreachable -> ok=4 ignored=3 failed=0;
+    always-on unreachable -> RC=4 preserved; '~' path expansion verified on
+    real hosts"
+  - "Step 7-8 converge + verify: fixed playbook staged at the unit's real
+    path on tony-dell (backup /tmp/deploy-runner-agent.yml.bak-20261127),
+    3 consecutive `systemctl --user start runner-agent-converge.service`
+    -> Result=success ExecMainStatus=0 each; sha256 sweep of
+    ~/.local/bin/runner-agent on all 7 hosts == manifest pin
+    d0465bfe2a6e1ff241f253195ad83846f199f7cba7e66331cebb37b2b6c2c062"
+  - "Step 9 evidence: this job file + card comms; original playbook
+    restored on tony-dell after verification (exec checkout clean; the fix
+    lands via normal merge + chaba-repo-sync, next timer 2026-11-28 03:34)."
+
+verification:
+  - "3x consecutive unit runs on tony-dell: ActiveState=inactive
+    Result=success ExecMainStatus=0 (oneshot units always return to
+    inactive; Result is the verdict)."
+  - "Unit log after fix: both plays ran, all 7 hosts 'in-sync',
+    changed=0, unreachable=0, failed=0."
+  - "Hash sweep 2026-11-27 ~10:45 (+07): installed runner-agent sha256 =
+    pin d0465bfe2a6e1ff241f253195ad83846f199f7cba7e66331cebb37b2b6c2c062
+    on tony-dell, idc02, idc03, con01, tony-omen, mn01, tony-macbook —
+    all currently reachable."
+  - "Counterfactual preserved: ghost always-on unreachable still exits 4;
+    ghost portable unreachable exits ignored (ok+ignored stats)."
+
+rollback:
+  - "Playbook-only change; revert the commit. Installed runner-agent
+    copies were untouched (changed=0 on every verified run) — no host
+    state to roll back. tony-dell staging backup:
+    /tmp/deploy-runner-agent.yml.bak-20261127 (already restored post-verify)."
+
+residuals:
+  - "tonight's 03:34 timer run uses master's playbook until this branch
+    merges + chaba-repo-sync pulls it to tony-dell's exec checkout
+    (~15-min cadence on dell). If tony-macbook is asleep AND the merge is
+    still pending, one more exit-4 run is possible — it self-heals on
+    merge; do not be alarmed by a single recurrence before then."
+  - "deploy-runner-tools.yml has the same latent shape (all:!macos:!disabled
+    fleet-wide) but its only fleet caller, runner-tools-converge.sh, already
+    pre-pings and --limits to reachable hosts (OPS-1478); a manual
+    fleet-wide run of that playbook could still exit 4 on a sleeping
+    laptop — same two-play pattern applies if it ever bites."
+  - "A genuine task FAILURE (not unreachable) on a portable host is masked
+    when the always-on play succeeds — exit code is last-play-wins. Acceptable
+    for best-effort portables; drift is independently audited by
+    audit-hosts/runner-fleet-health hash comparisons (same backstop as the
+    OPS-1478 reachable-only fleet pass)."
+  - "Portable play retries each task against a sleeping host (~3 ssh
+    timeouts per run) — adds tens of seconds to the nightly pass; harmless."

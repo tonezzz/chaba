@@ -1,7 +1,7 @@
 id: overnight-assessment-two-step-fix
 title: 'overnight-assessment: log-sweep row conversion + stale sensor health'
-column: doing
-updated: 2026-11-27 11:16
+column: done
+updated: 2026-11-27 11:34
 spec: 'overnight-assessment.service on idc03 fails 3 of 4 recent runs. reports/ORCHESTRATION.json shows 3/6 steps
   ok; the ssot_validate failure from a malformed YAML trail doc was already fixed and pushed (3219cd79f40). Two
   real failures remain:
@@ -24,9 +24,12 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: running
+  status: done
   runner: mn01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 11:29
+  verified: true
 ref: OPS-1493
 comms:
 - at: 2026-11-27 10:42
@@ -76,5 +79,60 @@ comms:
     beyond sensor-reader: mddb-mcp/mddb-api on idc03 were transient flaps (now 401-exp/200), and con01 mddb-follower
     + ada-stt were genuinely down since 11-26 ~23:21 (clean stops, likely maintenance collateral — both are declared
     active+critical in ssot.audit.hosts.yml). '
+- at: 2026-11-27 11:25
+  from: devin
+  text: '[dispatch] DONE — verified green. overnight-assessment.service on idc03: Result=success with reports/ORCHESTRATION.json
+    6/6 steps ok on THREE consecutive runs (04:22, 04:23, 04:23 UTC). Fixes: (1) service-logs-sweep dict(p)->[{pattern,count}]
+    (master already had identical line-91 fix via 1ac983ba66; my branch adds the latent chars:0 KeyError fix behind
+    it). (2) health_snapshot root cause = tony-omen net.ipv4.ip_forward=0 from 99-chaba-hardening.conf (11-26) silently
+    dropping ALL docker published'
+- at: 2026-11-27 11:29
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-104422-overnight-assessment-service-o no longer active on mn01 but card
+    still says running — sweeping its branch'
+- at: 2026-11-27 11:29
+  from: chaba
+  text: 'merge-sweep: merged dca50a4c (dispatch/20261127-104422-overnight-assessment-service-o from mn01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261127-104422-overnight-assessment-service-o.md)
+    — auto-closed'
+- at: 2026-11-27 11:29
+  from: local
+  text: 'pub milestone: card verified: overnight-assessment-two-step-fix on idc03 — merged dca50a4c (dispatch/20261127-104422-overnight-assessment-service-o
+    from mn01) -> origin/master — verified — auto-c — merged dca50a4c (dispatch/20261127-104422-overnight-assessment-service-o
+    from mn01) -> origin/master — verified — auto-closed [evt-e38277bb34d3e38a]'
+- at: 2026-11-27 11:29
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-104422-overnight-assessment-service-o,
+    branch dispatch/20261127-104422-overnight-assessment-service-o on mn01'
+- at: 2026-11-27 11:34
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 11:34
+  from: chaba
+  text: banked 962 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-27 11:34
+  from: chaba
+  text: 'branch push failed: fatal: cannot change to ''/home/tony/CascadeProjects/dispatch-wt-20261127-104422-overnight-assessment-service-o'':
+    No such file or directory'
+- at: 2026-11-27 11:34
+  from: chaba
+  text: 'push failed AND patch-relay failed: bundle: cannot pin session head to a ref — rescue the branch by hand'
+- at: 2026-11-27 11:34
+  from: chaba
+  text: 'auto-merge not done: worktree add: Preparing worktree (detached HEAD dca50a4c3a)
+
+    Updating files:  45% (8168/17938)
+
+    Updating files:  46% (8252/17938)
+
+    Updating files:  47% (8431/17938)
+
+    Updating files:  48% (8611/17938)
+
+    Updating files:  4 — close will block until merged'
 claim:
   since: 2026-11-27 10:43
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 11:29
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261127-104422-overnight-assessment-service-o.md

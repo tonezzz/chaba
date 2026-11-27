@@ -9,7 +9,10 @@ Environment=ADA_MEMORY_VAULT=%h/CascadeProjects/chaba-vault/docs/ada-memory
 Environment=ADA_VAULT_REPO=%h/CascadeProjects/chaba-vault
 Environment=ADA_MEMORY_MDDB_URL=http://100.102.134.91:11023/v1
 EnvironmentFile=-%h/.config/secrets/ada-vault.env
-ExecStart=%h/CascadeProjects/ada-voice/.venv/bin/python %h/CascadeProjects/chaba-vault/apps/obsidian/server.py
+# Server code runs from the synced ~/CascadeProjects/chaba checkout; ADA_* env
+# vars still point at the chaba-vault data dir (2026-11-27 vault-sync-gap).
+# NB live unit on idc03 uses %h/jobenv/bin/python + obsidian.env EnvironmentFile.
+ExecStart=%h/CascadeProjects/ada-voice/.venv/bin/python %h/CascadeProjects/chaba/apps/obsidian/server.py
 Restart=on-failure
 RestartSec=5
 

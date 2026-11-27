@@ -102,6 +102,8 @@ def test_wiki_export_shape_with_fixtures():
     for token in ("MDDB findability eval", "build-mcp-server", "acfd73e3-04e7-43f9-82e5-bdc5635e3358"):
         assert token in page, token
     assert "== Related tooling ==" in page and "ansible-first" in page
+    assert "== External skill packs evaluated ==" in page
+    assert "ansible-community/ai-forge" in page and "DEV-1499" in page
     assert page.count("\n|-") == len(fixtures) + len(export.REPOS)
     for repo in export.REPOS:
         assert repo["name"] in page, repo["name"]

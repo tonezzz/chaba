@@ -13,6 +13,15 @@ NODE = os.environ.get('NODE_BIN') or shutil.which('node') or str(Path.home() / '
 STATUS_FILE = Path("/home/tony/var/chaba/overnight-status.json")
 
 
+def _checkout_role():
+    try:
+        sys.path.insert(0, str(REPO / "scripts" / "lib"))
+        from checkout_role import checkout_role
+        return checkout_role(REPO)
+    except Exception:
+        return ""
+
+
 def _truncate(text, limit=2000):
     if not text:
         return ""
@@ -76,7 +85,22 @@ def main():
         _write_status(started, rc | val_rc, steps)
         return rc | val_rc
     rc |= run(["scripts/focus-dispatcher.py", "--sub-agent"], steps)
-    rc |= run(["scripts/focus-dispatcher.py", "--advance"], steps)
+    role = _checkout_role()
+    if role and role != "served":
+        # Non-writer checkouts force --dry-run inside focus-dispatcher, and
+        # --advance exits 1 on dry-run ("requires a real run") — the served
+        # checkout's own overnight run owns advancing. Skip it here or the
+        # pipeline can never go green on exec/readonly/job hosts.
+        print(f"[overnight] skip focus-dispatcher --advance: chaba-role={role} (non-writer checkout)")
+        steps.append({
+            "label": "scripts/focus-dispatcher.py",
+            "command": ["scripts/focus-dispatcher.py", "--advance"],
+            "returncode": 0,
+            "stdout": "",
+            "stderr": f"skipped: chaba-role={role} non-writer checkout",
+        })
+    else:
+        rc |= run(["scripts/focus-dispatcher.py", "--advance"], steps)
     if os.environ.get("OVERNIGHT_PROCESS_READY") == "1":
         # Generate subagent contracts for Ready (Safe) items without committing/pushing.
         # The actual run_subagent calls are still manual; this just prepares contracts.

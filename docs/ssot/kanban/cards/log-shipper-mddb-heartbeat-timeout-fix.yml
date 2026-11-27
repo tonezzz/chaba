@@ -1,0 +1,84 @@
+id: log-shipper-mddb-heartbeat-timeout-fix
+title: 'Log shipper: heartbeat /add 10s timeout < observed 13-20s (fleet-wide false failures)'
+column: doing
+updated: 2026-11-27 12:27
+brief: Systemic fix from live triage 2026-11-27; two runner slots free.
+priority: high
+tags:
+- ops
+- mddb
+spec: 'Fleet-wide log-shipper false failures: all 10 timer-alert-*-log-shipper* cards trace to one root cause.
+
+  Journal evidence (idc02/mn01/tony-dell/tony-omen, 11:00-11:02 runs): ''0 host-log add failure(s), 1 heartbeat
+  write failure(s) — cursor held at last confirmed line''; tony-dell/tony-omen also show ''mddb add failed - stopping''
+  for the host-log leg.
+
+  Measured from idc02 against mddb-ops (http://100.102.134.91:11026/v1): POST /add takes 12.96s and 12.7s on two
+  tries, then 20.02s timeout on the third. scripts/ada/log-shipper.py post_state() hardcodes timeout=10 for the
+  heartbeat /add, so the write always times out under current load even when every journal line shipped successfully.
+
+  Fix post_state() (and the host-log _post path if it shares the same too-short budget): raise the heartbeat write
+  timeout to ~45s with a bounded retry (2 attempts), keep the cursor held and the exit non-zero on a genuine MDDB
+  outage. Do NOT just silence the heartbeat failure or raise the global timeout to hide an outage; the judge must
+  still see silent/unreachable hosts.
+
+  Verify by triggering log-shipper.service on idc02 and tony-omen, confirming Result=success and a fresh host-logs-state/ship/<host>
+  doc, then close the green timer-alert cards after live verification.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  lane: paid_frontier
+  status: running
+  runner: tony-dell
+  attempts: 1
+ref: OPS-1497
+comms:
+- at: 2026-11-27 11:32
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-27 11:33
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.44 > 0.7)'
+- at: 2026-11-27 11:33
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 11:33
+  from: chaba
+  text: 'kk-mac defers: executor=devin declared but this runner is launchd — devin-dispatch drives systemd-run internally;
+    the card stays queued for a Linux runner (executor=opencode/script serve here)'
+- at: 2026-11-27 11:34
+  from: tony-dell
+  text: claimed
+- at: 2026-11-27 11:35
+  from: chaba
+  text: started devin-task-20261127-113503-fleet-wide-log-shipper-false-f on tony-dell (dispatch executor=devin)
+- at: 2026-11-27 11:35
+  from: chaba
+  text: 'primer injected 8 lesson(s): [logs-auto-idc02-add-failed] [triage 2026-11-26] Still active: another ''mddb
+    add; [logs-auto-con01-add-failed] [triage 2026-11-26] Still active: another ''mddb add; [logs-auto-idc02-severe-add-failed]
+    [triage 2026-11-26] Still active: another ''m; [logs-auto-idc03-add-failed] [triage 2026-11-26] Still active:
+    another ''mddb add; [logs-auto-mn01-severe-add-failed] [triage 2026-11-26] Still active: another ''md; [runner-fleet-health-host-regex-gap]
+    [triage] Live evidence 2'
+- at: 2026-11-27 11:39
+  from: devin
+  text: 'picked up: root cause confirmed in scripts/ada/log-shipper.py — post_state() hardcodes timeout=10 on heartbeat
+    /add while mddb-ops /add measures ~13-20s. Plan: bounded retry (2 attempts) + ~45s timeout on heartbeat and
+    the per-doc /add fallback; deploy via ansible/playbooks/log-shipper.yml; verify on idc02 + tony-omen.'
+- at: 2026-11-27 11:59
+  from: devin
+  text: 'fix committed (354d127 + playbook hardening): _post() gains bounded attempts; heartbeat + per-doc /add
+    fallback now 45s x2 (was 10s/15s). Fleet converge via ansible/playbooks/log-shipper.py DONE on all 6 hosts (script+units
+    checksum-deployed; mn01 stale TimeoutStartSec=600 units also refreshed to 2700). Triggered log-shipper+severe
+    on idc02 and tony-omen — polling for Result=success + fresh ship/<host> docs. Note: mddb-ops server logs show
+    congestion-window handlers at 127-198s — those remain ho'
+- at: 2026-11-27 12:27
+  from: devin
+  text: 'update: first verify round showed 45s heartbeat STILL fails during mddb-ops congestion waves — server logs
+    show /add//ingest handlers at 125-198s vs its own 120s write deadline, and _ingest 60s client timeout was below
+    that. Raised all write budgets to 130s (above server deadline; >deadline still fails = honest distress), redeployed
+    fleet-wide, retriggered all 14 lanes on 6 hosts. idc02 full lane already green (235 shipped, 0 failed). omen-severe
+    v1 run confirmed the 45s gap (heartbeat fail at 4'
+claim:
+  since: 2026-11-27 11:34

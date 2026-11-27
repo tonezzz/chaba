@@ -106,6 +106,12 @@ TOOLING2 = {
     "note": "Apache-2.0 LICENSE retained; OpenCode adaptation note covers Context7 fallback, board-api door for chaba mutations and {env:...} secrets in opencode.json.",
 }
 
+AI_FORGE = {
+    "name": "ansible-community/ai-forge skills (external, evaluated)",
+    "ref": "https://github.com/ansible-community/ai-forge/ @ 28a9a58 — 7 Lola modules, 37 skills",
+    "result": "Reference only, no wholesale install or port. Use ansible-cop-review, write-content and security-scan as checklists for chaba's ansible/ work; ansible-first stays the entry gate. Collection release/Sonar/PR skills, cloud/network modules and docs lookup have no current Ada-OCB workflow. Caveats: Lola is not installed here; several skills use Claude-specific tools; SKILLS.md is stale (35 vs 37 skills); CI is lint-only; GPL-3.0-or-later makes verbatim copying a license decision.",
+}
+
 TOOLING = {
     "name": "ansible-first",
     "ref": ".agents/skills/ansible-first/SKILL.md (repo-canonical; ~/.claude/skills/ansible-first is a symlink on OpenCode hosts)",
@@ -274,6 +280,13 @@ def render_page(skills: list[dict], today: str, next_review: str,
         "*",
         f"* '''{_cell(TOOLING2['name'])}''' — {_cell(TOOLING2['ref'])}: "
         f"{_cell(TOOLING2['role'])}. {_cell(TOOLING2['note'])}",
+        "",
+        "== External skill packs evaluated ==",
+        "",
+        f"* '''{_cell(AI_FORGE['name'])}''' — {_cell(AI_FORGE['ref'])}: "
+        f"{_cell(AI_FORGE['result'])}",
+        "*",
+        "* Decision 2026-11-27 (card DEV-1499): borrow the CoP review and Ansible authoring checklists as guidance; do not install Lola modules or copy GPL-3.0-or-later skill text into this repo.",
         "",
         "[[Category:Education]]",
         "[[Category:Education/Level/intro]]",

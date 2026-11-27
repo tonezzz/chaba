@@ -1,7 +1,7 @@
 id: go2rtc-7-camera-producers-return-empty-f-cc9176
 title: 'go2rtc: 7 camera producers return empty frames on omen'
-column: backlog
-updated: 2026-11-26 21:00
+column: doing
+updated: 2026-11-27 13:00
 program: infrastructure
 tags:
 - ops
@@ -248,6 +248,49 @@ comms:
 - at: 2026-11-26 21:00
   from: chaba
   text: 'HUMAN CALL 2026-11-26: hold until tony-omen shell access is confirmed. No dispatch.'
+- at: 2026-11-27 12:57
+  from: tony
+  text: '[next batch 2026-11-27] Re-arm: fix the 7 empty-frame producers on tony-omen (ip_cam_65 + xiaomi c100/c201
+    variants). Verify frame.jpeg returns non-zero bytes for each.'
+- at: 2026-11-27 12:57
+  from: chaba
+  text: classified as manual (kw:camera conf 1.00)
+- at: 2026-11-27 12:57
+  from: chaba
+  text: classified as manual (kw:camera conf 1.00)
+- at: 2026-11-27 12:57
+  from: tony
+  text: 'routing edited: lane=paid_frontier, executor=devin by tony: re-arm for next batch 2026-11-27: manual lane
+    blocked dispatch; promote to paid_frontier/devin'
+- at: 2026-11-27 12:57
+  from: tony
+  text: queued for processing
+- at: 2026-11-27 12:58
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.92 > 0.7)'
+- at: 2026-11-27 12:58
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 12:58
+  from: tony-dell
+  text: claimed
+- at: 2026-11-27 12:59
+  from: chaba
+  text: started devin-task-20261127-125944-fix-the-remaining-go2rtc-camer on tony-dell (dispatch executor=devin)
+- at: 2026-11-27 12:59
+  from: chaba
+  text: 'primer injected 8 lesson(s): [go2rtc-7-camera-producers-return-empty-f-cc9176] Cross-post from go2rtc-empty-f;
+    [go2rtc-7-camera-producers-return-empty-f-cc9176] [corroboration 2026-11-25] Sti; Check `sha256sum` of BOTH
+    `~/.local/bin/runner-agent` and `<exec checkout>/scrip; When a card says "fix X in repo Y" and chaba already
+    holds a staged drop patch f; [ansible-verify-host-software-r7] Full-fleet run 2026-11-23 (controller tony-ome;
+    [devin-session-audit-2026-10-29] AUD-0973 independent re-chec'
+- at: 2026-11-27 13:00
+  from: chaba
+  text: 'con01 defers: runner at local cap (1/1) — remote slots unaffected'
+- at: 2026-11-27 13:00
+  from: devin
+  text: 'dispatch started: re-checking omen go2rtc producers + camera reachability before any config changes'
 spec: Fix the remaining go2rtc camera producers on tony-omen that return empty 200/0B frames for ip_cam_65 and the
   xiaomi_c100/c201 variants. Inspect and correct the producer configurations located in ~/.config/go2rtc/*.sh on
   tony-omen and check xiaomi-token-refresh.py. The target host is tony-omen and the relevant repo/environment context
@@ -256,7 +299,10 @@ spec: Fix the remaining go2rtc camera producers on tony-omen that return empty 2
   image payloads instead of 0B responses.
 action:
   type: dispatch
-  status: idle
-  lane: manual
-  lane_source: kw
-claim: {}
+  status: running
+  lane: paid_frontier
+  executor: devin
+  runner: tony-dell
+  attempts: 1
+claim:
+  since: 2026-11-27 12:58

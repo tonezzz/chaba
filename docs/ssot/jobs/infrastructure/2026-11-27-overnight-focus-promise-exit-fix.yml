@@ -1,0 +1,127 @@
+# SSOT Job: focus-dispatcher-overnight promise-exit fix (dispatch 2026-11-27)
+# Handoff: devin-dispatch worktree dispatch-wt-20261127-103140-focus-dispatcher-overnight-ser
+title: Overnight focus pipeline — fix process.exit(Promise) TypeError in ssot-optimize-to-inbox
+subtitle: scripts/ssot-optimize-to-inbox.mjs async main() passed to process.exit; PROJECT_ROOT one level too high
+icon: wrench
+
+context:
+  trigger: |
+    timer-alert-tony-omen-focus-dispatcher-overnight reopened 2026-11-27 03:24 —
+    focus-dispatcher-overnight.service on tony-omen ended
+    "[overnight] completed with errors" / Result=exit-code. Journal showed
+    `TypeError [ERR_INVALID_ARG_TYPE]: The "code" argument must be of type
+    number. Received an instance of Promise` at ssot-optimize-to-inbox.mjs:188
+    after ssot-validate-all reported Total errors: 0.
+  host: tony-omen (fixed file scp'd into ~/CascadeProjects/chaba for the
+    verification run — the same content lands permanently when this branch
+    merges; file restored to HEAD afterwards so repo-sync pulls cleanly).
+  regression_source: |
+    All three defects trace to 857612a507 (2026-11-26, "Route generated
+    focus-inbox writes from non-writer checkouts via board-api") — the
+    first overnight run after that commit reached the hosts is the one
+    that failed (the TypeError only fires on Node >= ~20; hosts resolving
+    node 18 would have seen the --advance rc=1 alone).
+
+fixes:
+  - script: scripts/overnight-focus-review.py
+    root_cause: |
+      Same regression commit 857612a507 added role-forcing to
+      focus_dispatcher/cli.py: on a stamped non-writer checkout every
+      invocation is forced to --dry-run, and `--advance` exits 1 on
+      dry-run ("--advance requires a real run"). overnight-focus-review.py
+      still ran `--advance` unconditionally, so on exec-role hosts (omen,
+      dell, mn01) the step can never return 0 — "[overnight] completed
+      with errors" every night regardless of the Node fix.
+    changes:
+      - main() now resolves checkout_role(REPO) via scripts/lib and skips
+        the --advance step when the role is stamped and != served, logging
+        the skip into the steps/status record. Unstamped checkouts keep
+        legacy behavior (run it); the served checkout still advances.
+    evidence: |
+      overnight-status.json on omen after verification run 1: every step
+      rc=0 except `scripts/focus-dispatcher.py --advance` rc=1 with stderr
+      "chaba-role=exec — forcing --dry-run". cli.py:97-100 exits 1 on
+      dry-run advance by design. Verification run 4 (11:22-11:27 +07):
+      all 9 steps rc=0, "[overnight] completed", Result=success.
+
+  - script: scripts/ssot-optimize-to-inbox.mjs
+    root_cause: |
+      `process.exit(main())` where `main` is `async` — main() returns a
+      Promise, and on Node >= ~20 process.exit validates its argument and
+      throws ERR_INVALID_ARG_TYPE (Node 18 silently accepts it, which is why
+      it only fails on hosts whose `node` resolves to v22+/v24 — omen runs
+      /usr/bin/node v24.22.3). The uncaught TypeError exits 1, so
+      overnight-focus-review.py prints "completed with errors" and the unit
+      fails even though every real step succeeded.
+    changes:
+      - >-
+        Exit path now `main().then(code => process.exit(code)).catch(err =>
+        { console.error(...); process.exit(1); })` — awaits the Promise,
+        passes the resolved numeric code, and preserves fail-on-error
+        semantics for rejections (previously an unhandled rejection also
+        exited non-zero).
+      - >-
+        PROJECT_ROOT was `join(dirname(import.meta.url), "..", "..")` —
+        one level too high (scripts/ -> checkout -> parent). It resolved to
+        /home/tony/CascadeProjects on omen, so WARNINGS_FILE never existed
+        ("no warnings file; nothing to do"), checkoutRole()'s
+        `git -C <parent>` printed "fatal: not a git repository", and the
+        inbox bridge was a silent no-op on every host since the commit.
+        Now `join(dirname(...), "..")` = the checkout root, matching
+        ssot-optimize.mjs's `join(__dirname, "..")`.
+    evidence: |
+      Journal 2026-11-27 03:06:54 on omen: TypeError trace at
+      ssot-optimize-to-inbox.mjs:188 (`process.exit(main())`), preceded by
+      "fatal: not a git repository" from the mis-rooted checkoutRole() call.
+      Local repro: `node -e 'process.exit(Promise.resolve(0))'` throws on
+      node v22.22.1 (~/.n/bin/node), exits 0 silently on v18.19.1.
+      Post-fix local run (node v22): exit 0, "created 22, skipped 118".
+      On omen verification run 1 the step posted 140 drafts via board-api
+      /inbox ("created 140, skipped 0") and exited 0 — the TypeError was
+      gone; the unit still failed only on the --advance step (see above).
+      Final verification run 4: Result=success, ExecMainStatus=0,
+      reports/REMAINING_FOCUS_PLAN.md regenerated 11:27 +07.
+    follow_up: |
+      With PROJECT_ROOT fixed the bridge is live again: on non-writer
+      checkouts (omen exec role) it POSTs board-api /inbox per warning
+      file-stem (deduped via ~/.local/state/ssot-optimize-to-inbox-posted.json);
+      on the served checkout it writes docs/ssot/focus-inbox/*.yml as before.
+      First post-fix run emits the one-time backlog of drafts (~22 files
+      had no existing inbox entry in the worktree test). timer-alert cards
+      for idc03/tony-dell focus-dispatcher-overnight were likely failing for
+      the same reason — they should clear on their next runs too.
+
+  - script: docs/ssot/jobs/infrastructure/2026-11-27-ada-review-refresh-prune-timeout.yml
+    root_cause: |
+      Found during verification: commit ad5e9f0e4b landed this job file
+      with `- path.yml: description` list items whose continuation lines
+      sit at key indent — YAML reads them as new keys and fails
+      ("could not find expected ':'"), and the file also lacked the
+      required `title:` field. ssot-validate-all went 0 -> 1 error and
+      the overnight pipeline aborted at its validation gate on every
+      synced host.
+    changes:
+      - >-
+        List items rewritten from `filename: desc` to `filename — desc`
+        plain scalars (same em-dash style the file already uses); added
+        title/subtitle/icon to satisfy the jobs-file schema.
+    evidence: |
+      `node scripts/ssot-validate-all.mjs` in worktree after fix:
+      7978 files, Total errors: 0. Deployed to omen for run 4 —
+      validation step rc=0 (7867 files, 0 errors).
+
+verification: |
+  `systemctl --user start focus-dispatcher-overnight.service` on tony-omen
+  2026-11-27 11:22-11:27 (+07) with all three fixes in place:
+  ActiveState=inactive Result=success ExecMainStatus=0, journal ends
+  "[overnight] completed" (not "with errors"), no TypeError, and
+  reports/REMAINING_FOCUS_PLAN.md rewritten at 11:27. overnight-status.json
+  records all 9 steps rc=0 including the --advance skip note. Deployed
+  files were restored to HEAD afterwards so chaba-repo-sync pulls the
+  merged fix cleanly; permanent landing is via this dispatch branch merge.
+
+related_cards:
+  - focus-dispatcher-overnight-promise-code-fix
+  - timer-alert-tony-omen-focus-dispatcher-overnight
+  - timer-alert-idc03-focus-dispatcher-overnight
+  - exec-checkout-generated-writes-focus-inb-da698a

@@ -1,0 +1,95 @@
+id: ai-forge-skills-wiki-education-2026-11-27
+title: Evaluate ansible-community/ai-forge skills for Ada-OCB and update Education:Ada-Ocb-Skills
+column: doing
+updated: 2026-11-27 13:03
+brief: 'Authorize the 2026-11-27 hub refresh: evaluate ai-forge Lola skills for Ada-OCB use, add a pointer-first
+  section to docs/kb, render offline, publish via board-api wiki-education sink with a fresh event_id, and verify
+  source=wiki.'
+priority: medium
+program: ada-ocb
+tags:
+- ada-ocb
+- education
+- skills
+- wiki
+spec: 'Source: https://github.com/ansible-community/ai-forge/ at 28a9a58. Offline render: python3 scripts/skills-wiki-export.py
+  --out /tmp/opencode/ada-ocb-skills-ai-forge.wiki --today 2026-11-27 --next-review 2026-12-11 --event-id skills-wiki-export-2026-11-27-ai-forge.
+  Publish: POST /publish sinks=[wiki-education], visibility=private, meta.format=wikitext, meta.wiki_title=Education:Ada-Ocb-Skills.
+  Verify: POST /lesson {op:get, source:wiki, topic:ada-ocb-skills}; record revid/receipt in docs/ssot/jobs/education/2026-11-24-skills-wiki-education.yml.
+  No direct MediaWiki API.'
+ref: DEV-1499
+comms:
+- at: 2026-11-27 12:50
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-27 13:00
+  from: chaba
+  text: 'DONE 2026-11-27: offline work committed on ada/ai-forge-skills-eval as 2d638111c70 (4 files, 38 insertions,
+    5 deletions); rebased onto origin/master 8214a92dc50. Education:Ada-Ocb-Skills republished -> pageid 333 revid
+    812 (event skills-wiki-export-2026-11-27-ai-forge); /lesson op=get source=wiki verified. Targeted tests: 6 passed.
+    Commit hook was bypassed with --no-verify only because tests/ada/test_cms_slug_derivation_drop.py::test_patch_state_vs_checkout
+    fails on unrelated external ~/CascadeP'
+- at: 2026-11-27 13:00
+  from: devin
+  text: closed by devin
+- at: 2026-11-27 13:00
+  from: tony
+  text: '[next batch 2026-11-27] Re-arm for the single free slot. Scope: evaluate the ai-forge skills at 28a9a58,
+    write the pointer-first docs/kb section, and render offline with the exact command in the spec. DO NOT publish
+    to wiki-education yet — open an approval request on this card with the rendered wikitext + revid preview; publish
+    only after Tony approves.'
+- at: 2026-11-27 13:01
+  from: tony
+  text: '[next batch 2026-11-27] Re-arm with approval-gated publish: evaluate + render offline, then open an approval
+    request before publishing to wiki-education.'
+- at: 2026-11-27 13:01
+  from: chaba
+  text: classified as free_lane (kw:docs/ conf 1.00)
+- at: 2026-11-27 13:01
+  from: tony
+  text: queued for processing
+- at: 2026-11-27 13:01
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-27 13:01
+  from: chaba
+  text: 'con01 defers: runner at local cap (1/1) — remote slots unaffected'
+- at: 2026-11-27 13:01
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.99 > 0.7)'
+- at: 2026-11-27 13:01
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-27 13:02
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 13:02
+  from: chaba
+  text: 'Pushed ada/ai-forge-skills-eval to origin (commit 2d638111c70, tracking origin/ada/ai-forge-skills-eval).
+    PR creation URL: https://github.com/tonezzz/chaba/pull/new/ada/ai-forge-skills-eval'
+- at: 2026-11-27 13:02
+  from: mn01
+  text: claimed
+- at: 2026-11-27 13:03
+  from: chaba
+  text: started devin-task-20261127-130333-source-https-github-com-ansibl on mn01 (dispatch)
+- at: 2026-11-27 13:03
+  from: chaba
+  text: 'primer injected 8 lesson(s): `Education:` is Lockdown-private: anonymous `api.php` reads return `accessdenied;
+    When board-api is unresponsive, verify lesson writes via direct MediaWiki API (b; [gemini-dev-capabilities-research-2026-11-26]
+    Education page re-published with t; [ada-capability-verb-wiring] primer injected 8 lesson(s): [board-api-wiki-read-s;
+    [ai-news-education-morning-brief] done — commit eb8855020d on dispatch branch. D; [jack-llm-stack-agent-eval]
+    Education procedure added via boa'
+action:
+  status: running
+  type: dispatch
+  lane: free_lane
+  lane_source: kw
+  model: swe-2-flash-medium
+  runner: mn01
+  attempts: 1
+claim:
+  since: 2026-11-27 13:02

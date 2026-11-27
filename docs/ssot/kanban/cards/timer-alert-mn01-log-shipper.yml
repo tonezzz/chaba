@@ -1,7 +1,7 @@
 id: timer-alert-mn01-log-shipper
 title: Timer log-shipper on mn01 failing
 column: done
-updated: 2026-11-27 10:56
+updated: 2026-11-27 12:35
 priority: high
 tags:
 - timer-alert
@@ -368,6 +368,36 @@ comms:
   from: tony
   text: '[cleanup 2026-11-27] Live verify: mn01-log-shipper.service Result=success. Condition healed; closing.'
 - at: 2026-11-27 10:56
+  from: tony
+  text: closed by tony
+- at: 2026-11-27 11:25
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-27 11:25
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-27 11:01) of `log-shipper.service` on `mn01` result=timeout
+    — investigate journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-mn01`.'
+- at: 2026-11-27 11:35
+  from: devin
+  text: '[still suspicious] Last run (11-27 11:01) of `log-shipper.service` on `mn01` result=timeout — investigate
+    journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-mn01`.'
+- at: 2026-11-27 12:05
+  from: devin
+  text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-27 12:05
+  from: tony
+  text: closed by tony
+- at: 2026-11-27 12:25
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-27 12:25
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-27 12:03) of `log-shipper.service` on `mn01` result=exit-code
+    — investigate journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-mn01`.'
+- at: 2026-11-27 12:35
+  from: devin
+  text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-27 12:35
   from: tony
   text: closed by tony
 action:

@@ -1,7 +1,7 @@
 id: timer-alert-idc03-log-shipper
 title: Timer log-shipper on idc03 failing
 column: done
-updated: 2026-11-27 11:09
+updated: 2026-11-27 12:25
 priority: high
 tags:
 - timer-alert
@@ -3865,6 +3865,23 @@ comms:
   from: tony
   text: '[cleanup 2026-11-27] Live verify: idc03-log-shipper.service Result=success. Closing.'
 - at: 2026-11-27 11:09
+  from: tony
+  text: closed by tony
+- at: 2026-11-27 11:55
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-27 11:55
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-27 11:31) of `log-shipper.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-27 12:05
+  from: devin
+  text: '[still suspicious] Last run (11-27 11:31) of `log-shipper.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-27 12:25
+  from: devin
+  text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-27 12:25
   from: tony
   text: closed by tony
 action:

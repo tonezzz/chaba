@@ -1,0 +1,123 @@
+id: 2026-11-27-chaba-vault-sync-gap-code-data-split
+title: idc03 chaba-vault sync gap — split code from data (option c)
+date: "2026-11-27"
+domain: infrastructure
+card: idc03-chaba-vault-sync-gap
+ref: SYS-1496
+actor: devin (dispatch worktree dispatch/20261127-111946-second-outage-from-this-root-c)
+status: repo-change-ready
+
+decision: |
+  Option (c) — split code from data. Units execute scripts from the synced
+  ~/CascadeProjects/chaba checkout (chaba-repo-sync.timer, hourly) while
+  --vault / ADA_* env keep pointing at ~/CascadeProjects/chaba-vault/docs/ada-memory
+  as pure data. The chaba-vault git clone stops mattering for code freshness:
+  it can stay 119k+ commits behind forever without breaking anything, which
+  dissolves the "live dirty checkout vs blind git pull" dilemma entirely.
+
+  Rejected:
+    (a) extend chaba-repo-sync to safe-pull chaba-vault — autostash pop across
+        119k commits of divergence on a checkout with 421 dirty/untracked
+        paths (tracked vault edits under docs/ada-memory/personal-kk,
+        tony-projects + the surgical sync-script patch) is exactly the
+        Oct-07 failure mode; also chaba-vault is a *data* replica, not an
+        exec checkout, so pulling code into it buys nothing under (c).
+    (b) dedicated chaba-vault-sync.timer — same pull risk as (a), plus a new
+        unit to babysit; solves a problem (c) makes moot.
+    (d) surgical scp + document — already proven insufficient: it is how the
+        pre-11-18 script ran for 5 weeks and caused this second outage.
+
+verified_state_2026-11-27:
+  chaba-vault_on_idc03:
+    head: 'e1128f5022 (2026-10-04, "chore(ada): inbox triage round 2")'
+    behind_origin_master: 119557
+    ahead: 1   # only e1128f502 — the other local commits from Oct-07 converged
+    dirty_paths: 421
+    dirty_breakdown: |
+      ~9 tracked vault-data edits (docs/ada-memory/personal-kk/*,
+      tony-projects/marker.md — live vault edits, MUST keep),
+      1 tracked script edit (scripts/ada/sync-ada-memory-to-mddb.py — the
+      2026-11-27 surgical scp fix, now an uncommitted dirty file),
+      ~411 untracked vault data (inbox/devin-handoff extracts etc.)
+  chaba_on_idc03: exec checkout, synced hourly by chaba-repo-sync, HEAD
+    f472bf13 (2026-11-27) — scripts current.
+  mn01: has NO chaba-vault checkout; ~/CascadeProjects/chaba is the exec
+    checkout — chaba-path ExecStarts work there unchanged.
+  idc01: OFFLINE (ssh timeout). NOTE; ssot.jobs.yml config.repo.idc01 =
+    chaba-vault and flood-hub-poll exec references
+    %h/CascadeProjects/chaba-vault/scripts/ada/flood-hub-poll.py — when idc01
+    returns, its chaba-vault has the same drift question; likely needs the
+    same code/data split (or confirm its chaba-repo-sync pulls chaba-vault).
+
+compatibility_check:
+  - "sync-ada-memory-to-mddb.py: --vault arg overrides VAULT global (line
+    ~364); REPO/SSOT/SCHEMA_SSOT resolve via __file__ -> running from chaba
+    reads CURRENT bank/schema SSOT (desired), vault arg keeps data dir.
+    --export-inbox writes under args.vault -> chaba-vault. py_compile OK."
+  - "memory-distill.py: imports sibling sync script via __file__.with_name()
+    -> chaba checkout uses chaba's copy (consistent). Writes MDDB draft docs
+    only; vault inbox fill happens via sync --export-inbox. STATE in
+    ~/.cache. py_compile OK."
+  - "memory-gap-report.py: SSOT banks yml via parents[2] -> chaba = current.
+    Writes MDDB drafts only. py_compile OK."
+  - "recall-drift-report.py: journal parse + chaba-event emit; no vault dep.
+    py_compile OK."
+  - "apps/obsidian/server.py: VAULT/REPO fully env-driven (ADA_MEMORY_VAULT,
+    ADA_VAULT_REPO) -> running from chaba checkout serves the same vault.
+    py_compile OK."
+
+changed:
+  - "systemd/ada-memory-sync.service — ExecStart script path
+    chaba-vault -> chaba; --vault arg unchanged"
+  - "systemd/ada-memory-drift.service — same repoint"
+  - "systemd/obsidian-vault.service — ExecStart script path repoint (env
+    vars unchanged; NB live idc03 unit uses jobenv python + obsidian.env
+    EnvironmentFile — differs from repo copy, pre-existing drift)"
+  - "systemd/ada-memory-gaps.{service,timer} — NEW canonical copies of the
+    hand-installed idc03 units (repo had none), script path = chaba"
+  - "systemd/ada-memory-distill.{service,timer} — same"
+
+deploy: |
+  Units are NOT auto-installed by checkout sync — after merge, on idc03:
+    for u in ada-memory-sync ada-memory-drift ada-memory-gaps \
+             ada-memory-distill obsidian-vault; do
+      cp ~/.config/systemd/user/$u.service ~/.config/systemd/user/$u.service.bak-vaultsplit-20261127
+    done
+    # sed 's|CascadeProjects/chaba-vault/scripts|CascadeProjects/chaba/scripts|'
+    #   and 's|CascadeProjects/chaba-vault/apps|CascadeProjects/chaba/apps|'
+    #   on the 5 .service files (obsidian: script path only, keep jobenv
+    #   interpreter + obsidian.env EnvironmentFile)
+    systemctl --user daemon-reload
+    systemctl --user restart obsidian-vault   # only long-running unit;
+    # oneshots pick up the new ExecStart on next timer tick
+  Verify:
+    systemctl --user start ada-memory-sync.service && systemctl --user \
+      show ada-memory-sync -p Result --value   # expect success
+    journalctl --user -u obsidian-vault -n 20  # clean startup, vault listed
+  Rollback: restore the .bak-vaultsplit files + daemon-reload.
+  mn01: no chaba-vault — if its installed units still say chaba-vault they
+    were already broken; repoint to chaba paths per repo files.
+
+commit_e1128f502_fate: |
+  KEEP the commit, do NOT push, do NOT drop.
+  - Push: would require merging a vault-data commit (inbox file moves/
+    deletions under docs/ada-memory/) across 119k commits of upstream
+    divergence — high conflict risk for zero benefit; vault data reaches
+    canonical stores via MDDB sync + pull-vault/push rsync, not git push
+    from the replica (same conclusion as the Oct-07 leftovers note).
+  - Drop (reset): the commit is the only anchor tying the live working
+    tree's triage state to a known revision; under option (c) git metadata
+    no longer gates code freshness, so it is harmless to keep and useful
+    as a checkpoint if the vault dir is ever rebuilt.
+  - The ~9 dirty tracked vault files + untracked inbox extracts are live
+    vault data — untouched by this change either way.
+
+open:
+  - Apply the deploy steps above on idc03 (needs a session allowed to touch
+    the host; this dispatch stayed repo-side per dispatch rules).
+  - idc01 chaba-vault drift — reassess when idc01 is back online.
+  - chaba-vault remains a full stale clone forever under (c); a future
+    cleanup could replace it with a plain data dir (rsync target) + fresh
+    git init for the obsidian dirty-view, but that is a separate card.
+  - systemd/obsidian-vault.service repo copy still diverges from the live
+    idc03 unit (interpreter + EnvironmentFile) — reconcile when convenient.

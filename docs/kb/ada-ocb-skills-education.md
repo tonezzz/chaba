@@ -3,16 +3,16 @@ category: operations
 type: education
 status: defined
 title: Ada-OCB — Agent Skills Inventory and How to Use Them
-description: The eleven skills discovered in the ada-ocb worktree (.agents/skills and .opencode/skills), the offline contract test that pins them, and how each one is used in ada-ocb. Recorded from session history 2026-11-24.
-tags: [ada, ada-ocb, skills, education, ssot, wiki, testing, session-history, chaba]
+description: The skills discovered in the ada-ocb worktree (.agents/skills and .opencode/skills), the offline contract test that pins them, how each one is used in ada-ocb, and the 2026-11-27 evaluation of the external ansible-community/ai-forge skill pack.
+tags: [ada, ada-ocb, skills, education, ssot, wiki, testing, session-history, chaba, ansible, ai-forge]
 created: 2026-11-24
-updated: 2026-11-24
+updated: 2026-11-27
 related:
   - tests/test_agents_skills_explored.py
   - scripts/skills-wiki-export.py
   - docs/ssot/jobs/education/2026-11-24-skills-wiki-education.yml
   - ada-ocb-tools-mcp-workflow-education.md
-search_keywords: [ada-ocb, skills, SKILL.md, agents/skills, opencode/skills, session-capture, info-find, ssot-search, ssot-validate, auto-kb, wiki education, Education:Ada-Ocb-Skills, test contract, inventory]
+search_keywords: [ada-ocb, skills, SKILL.md, agents/skills, opencode/skills, session-capture, info-find, ssot-search, ssot-validate, auto-kb, wiki education, Education:Ada-Ocb-Skills, test contract, inventory, ai-forge, ansible-community, Lola, CoP review]
 ---
 
 # Ada-OCB — Agent Skills Inventory and How to Use Them
@@ -89,9 +89,23 @@ Added three eval queries to `chaba-lessons` and ran `mddb.run_eval`: **recall@5 
 - **`ansible-first`** (`.agents/skills/ansible-first/SKILL.md`, repo-canonical; `~/.claude/skills/ansible-first` is a symlink on OpenCode hosts): global OpenCode skill, advertised before each model step. 30-second triage — skip for local/repo work, use the board-api write door for kanban/wiki/SSOT mutations, and for remote/fleet/repeatable config check chaba's `ansible/` playbooks (and `~/ansible`) before ad-hoc SSH. Preflight with `--check --diff --limit`, keep secrets in vault files, require approval for disruptive plays, record where filed.
 - **`build-mcp-server`** (`~/.claude/skills/build-mcp-server/`): second plugin skill ported from `anthropics/claude-plugins-official` (Apache-2.0, `LICENSE` retained). MCP server design workflow with 8 bundled reference docs; OpenCode adaptation note covers Context7 fallback, board-api door for chaba mutations, and `{env:...}` secrets in `opencode.json`. Verified loadable.
 
+## External skill packs evaluated (2026-11-27)
+
+`ansible-community/ai-forge` was reviewed as a possible addition to the local skill surface (commit `28a9a58`; 7 Lola modules, 37 skills; GPL-3.0-or-later). Decision: **reference only — no wholesale install or verbatim port**. Lola is not installed here, and `ansible-first` remains the entry gate for host/fleet work.
+
+| ai-forge module / skill | Fit for Ada-OCB | Decision |
+| ----------------------- | --------------- | -------- |
+| `ansible-collection-standards` — `ansible-cop-review`, `ansible-zen`, inclusion review | High for reviewing `ansible/playbooks` and roles | Borrow the Red Hat CoP checklist and severity scheme as guidance; keep the existing Ansible-lint and board write gates. |
+| `ansible-content-development` — `write-content`, `write-module`, test skills | Medium | Use the YAML authoring checklist when writing playbooks/tasks; module-development skills only apply if we start maintaining a Python-module collection. |
+| `ansible-collection-sdlc` — `security-scan`, `commit`, `pr-review`, `run-tests` | Mixed | Secret/CI checks and conventional-commit structure are transferable; release, SonarCloud, Zuul and changelog skills assume an Ansible collection with `galaxy.yml` and `ansible-test`. |
+| `ansible-role` scaffolding command | Medium | Useful only when creating a new standalone role; `ansible-creator` is not installed locally, so the manual fallback would apply. |
+| `cloud_content`, `network_content`, `ansible-documentation` | Low today | AWS-terminator, network-collection triage and docs.ansible.com fetching do not map to a current Ada-OCB workflow. |
+
+Why not install: the skills assume collection layout and Claude-specific tools (`AskUserQuestion`, the Bash tool) despite the universal-Lola claim; `SKILLS.md` is stale (35 listed vs 37 present); CI checks structure/formatting but has no behavioral tests; and GPL-3.0-or-later makes copied skill text a license decision. The pack's own README warns that human review is required. Card `DEV-1499` records the evaluation and the wiki-hub refresh.
+
 ## Wiki education record
 
-The generated page is `Education:Ada-Ocb-Skills` (`pub.lesson_wiki_title("ada-ocb-skills")`), carrying the standard `แม่แบบ:Education` call with `topic=ada-ocb-skills`, `source=session-history`, `learned_at=2026-11-24`, `next_review=2026-12-08`, and `[[Category:Education]]`. Publish is a separate, card-gated step:
+The generated page is `Education:Ada-Ocb-Skills` (`pub.lesson_wiki_title("ada-ocb-skills")`), carrying the standard `แม่แบบ:Education` call with `topic=ada-ocb-skills`, `source=session-history`, `learned_at=2026-11-27`, `next_review=2026-12-11`, and `[[Category:Education]]` (revid 812; event `skills-wiki-export-2026-11-27-ai-forge`, card `DEV-1499`). Publish is a separate, card-gated step:
 
 ```bash
 python3 scripts/skills-wiki-export.py --out /tmp/ada-ocb-skills.wiki

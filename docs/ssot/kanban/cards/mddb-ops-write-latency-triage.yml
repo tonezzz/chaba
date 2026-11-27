@@ -1,0 +1,59 @@
+id: mddb-ops-write-latency-triage
+title: 'mddb-ops: diagnose /add + /ingest ~125s congestion waves (read-only, approval-gated)'
+column: doing
+updated: 2026-11-27 13:03
+brief: Next batch 2026-11-27 — 4 runner slots free.
+priority: high
+tags:
+- ops
+- mddb
+- latency
+spec: 'Diagnose (read-only first) the current mddb-ops write-latency congestion that is breaking fleet log shipping.
+
+  Evidence: POST http://100.102.134.91:11026/v1/add measured 12.96s / 12.7s / >20s from idc02; the in-flight log-shipper
+  fix found /add and /ingest handlers at ~125s during congestion waves. Earlier context: ~590k host-logs docs, 2.7M
+  meta-index entries, ~23.6GB freelist pressure, mddb-ops on idc03 under high load.
+
+  Tasks: (1) inspect mddb-ops health/metrics, collection sizes, index/freelist stats, replication lag and systemd/journal
+  warnings; (2) identify the dominant cause of slow /add and /ingest; (3) propose a concrete, safe remediation (e.g.
+  compaction/GC window, index tuning, batch-size or retention adjustment, replica catch-up) with expected impact
+  and rollback. DO NOT apply any change to the production MDDB service or data without an explicit human approval
+  request on this card. File the diagnosis and proposal as a comment and open an approval request for the recommended
+  change if one is warranted.
+
+  Verify only with read-only probes; report p50/p95 /add latency and whether the congestion correlates with a specific
+  collection or time window.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  lane: paid_frontier
+  status: running
+  runner: idc02
+  attempts: 1
+ref: OPS-1500
+comms:
+- at: 2026-11-27 12:58
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-27 12:58
+  from: idc02
+  text: claimed
+- at: 2026-11-27 12:59
+  from: chaba
+  text: started devin-task-20261127-125922-diagnose-read-only-first-the-c on idc02 (dispatch executor=devin)
+- at: 2026-11-27 12:59
+  from: chaba
+  text: 'primer injected 8 lesson(s): [log-shipper-mddb-heartbeat-timeout-fix] update: first verify round showed
+    45s h; idc02''s kanban-dispatch.service was a linked unit running a stale scripts/-only ; systemd user journal
+    ''No entries'' for never-run-this-boot units is expected — ve; [timer-alert-idc02-ada-ocb-agent-runner-converge]
+    root cause (found during idc02; [unattended-pilot-health-probe] first live gate run: claimed on idc03 12:45
+    once; runbook docs/kb/mddb-future-priority-1.md: Priority 1: Monito'
+- at: 2026-11-27 13:00
+  from: chaba
+  text: 'con01 defers: runner at local cap (1/1) — remote slots unaffected'
+- at: 2026-11-27 13:03
+  from: devin
+  text: dispatch started on idc02 — probing mddb-ops read-only (health/stats/latency) now
+claim:
+  since: 2026-11-27 12:58

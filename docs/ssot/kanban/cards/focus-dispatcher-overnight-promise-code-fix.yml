@@ -1,7 +1,7 @@
 id: focus-dispatcher-overnight-promise-code-fix
 title: focus-dispatcher-overnight fails with Promise passed as error code
-column: doing
-updated: 2026-11-27 11:07
+column: done
+updated: 2026-11-27 12:54
 spec: 'focus-dispatcher-overnight.service on tony-omen ends with `[overnight] completed with errors` after `TypeError
   [ERR_INVALID_ARG_TYPE]: The "code" argument must be of type number. Received an instance of Promise`. The SSOT
   validation step reports Total errors: 0, so the TypeError is in the JavaScript/Node overnight focus workflow''s
@@ -14,9 +14,15 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: running
+  status: done
   runner: idc02
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 11:40
+    conflict_sig: 3fca42a295a7|docs/ssot/jobs/infrastructure/2026-11-27-ada-review-refresh-prune-timeout.yml
+  result: 'exit=0 ; deployed verification copies on omen were restored to HEAD so repo-sync lands the merge cleanly.
+    | devin-task-20261127-103140-focus-dispatcher-overnight-ser.service: Consumed 3min 43.643s CPU time, 493.3M
+    memory peak, 0B memory swap peak.'
 ref: OPS-1492
 comms:
 - at: 2026-11-27 10:29
@@ -69,5 +75,83 @@ comms:
     checkouts since 857612a507 forces --dry-run and dry-run advance prints "requires a real run" -> sys.exit(1).
     overnight-focus-review.py now skips --advance when chaba-role is stamped non-served (served checkout owns advancing).
     Deployed both fixes to omen, verification run 2 in progre'
+- at: 2026-11-27 11:32
+  from: devin
+  text: 'DONE + verified on tony-omen. Root cause: ssot-optimize-to-inbox.mjs ended with process.exit(main()) where
+    main is async -> TypeError ERR_INVALID_ARG_TYPE on Node >=20 (omen runs v24). Same commit (857612a507) also
+    broke PROJECT_ROOT (one level too high -> silent no-op + git fatal) and made focus-dispatcher --advance exit
+    1 on non-writer checkouts; overnight-focus-review.py now skips --advance when chaba-role is stamped non-served.
+    Also repaired a malformed jobs yml (ad5e9f0e4b) that was failing'
+- at: 2026-11-27 11:40
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-103140-focus-dispatcher-overnight-ser no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-27 11:40
+  from: chaba
+  text: 'merge-sweep: dispatch/20261127-103140-focus-dispatcher-overnight-ser conflicts with origin/master: docs/ssot/jobs/infrastructure/2026-11-27-ada-review-refresh-prune-timeout.yml
+    — merge aborted, card stays for human resolution'
+- at: 2026-11-27 11:40
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261127-103140-focus-dispatcher-overnight-ser:
+    1 commit(s) conflict with origin/master '
+- at: 2026-11-27 11:55
+  from: chaba
+  text: 'merge-sweep: dispatch/20261127-103140-focus-dispatcher-overnight-ser conflicts with origin/master: docs/ssot/jobs/infrastructure/2026-11-27-ada-review-refresh-prune-timeout.yml
+    — merge aborted, card stays for human resolution'
+- at: 2026-11-27 12:02
+  from: idc02
+  text: 'finished (ok): exit=0 ; deployed verification copies on omen were restored to HEAD so repo-sync lands the
+    merge cleanly. | devin-task-2'
+- at: 2026-11-27 12:02
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 12:02
+  from: chaba
+  text: banked 376 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-27 12:02
+  from: chaba
+  text: pushed dispatch/20261127-103140-focus-dispatcher-overnight-ser to origin
+- at: 2026-11-27 12:02
+  from: chaba
+  text: 'auto-merge not done: merge: commit after conflict resolution failed — close will block until merged'
+- at: 2026-11-27 12:02
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-27 12:51
+  from: tony
+  text: 'answered merge-conflict: resolve — let devin resolve the conflict and land it ★'
+- at: 2026-11-27 12:51
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-27 12:54
+  from: tony
+  text: '[land 2026-11-27] merged past the trail-YAML conflict by taking master copy of the generated file; code
+    fix (ssot-optimize-to-inbox promise exit + overnight-focus-review) landed as 3db55635678. Verified ancestor
+    of origin/master; closing.'
+- at: 2026-11-27 12:54
+  from: tony
+  text: closed by tony
 claim:
   since: 2026-11-27 10:30
+requests:
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261127-103140-focus-dispatcher-overnight-ser: 1 commit(s) conflict with
+    origin/master in chaba — conflicted paths: docs/ssot/jobs/infrastructure/2026-11-27-ada-review-refresh-prune-timeout.yml.
+    Merge idc02:/home/tony/CascadeProjects/dispatch-wt-20261127-103140-focus-dispatcher-overnight-ser by hand, or
+    retry/abandon the card.'
+  status: answered
+  at: 2026-11-27 11:40
+  from: chaba
+  options:
+  - id: resolve
+    action: queue
+    label: let devin resolve the conflict and land it ★
+  - id: drop
+    action: retry
+    label: drop this dispatch — re-dispatch fresh from current main
+  - id: hold
+    action: hold
+    label: hold the card
+  suggested: resolve — let devin resolve the conflict and land it ★
+  answer: resolve — let devin resolve the conflict and land it ★
+review_kind: verify

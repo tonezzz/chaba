@@ -1,0 +1,75 @@
+id: embed-lane-banks-incremental-copy-fix
+title: 'embed-lane-banks: 112k-doc one-shot copy exceeds 15min timer — make resumable'
+column: doing
+updated: 2026-11-27 12:45
+brief: Systemic fix from live triage 2026-11-27; two runner slots free.
+priority: high
+tags:
+- ops
+- mddb
+spec: 'embed-lane-banks.service on idc02 times out every run: journal shows steady progress (''ada-ha-bank-devin-handoff:
+  18050/112386 copied'' ~50 docs/s) when systemd kills it at 15min (start operation timed out, status=15/TERM).
+  This is a one-shot 112k-doc MDDB bank sync that cannot finish inside one timer window; raising TimeoutStartSec
+  would just move the problem.
+
+  Make scripts/embed/embed-lane.py banks resumable/incremental: persist a per-bank cursor/budget so each hourly
+  run copies a bounded slice (e.g. 5k docs or <=10min wall) and the next run resumes from the last confirmed doc;
+  report progress clearly and exit 0 when the run''s budget completes, non-zero on real copy errors. Ensure no duplicate/overwritten
+  docs on resume.
+
+  Verify several consecutive runs on idc02 complete Result=success within budget and the copied count advances toward
+  112386; then live-verify and close timer-alert-idc02-embed-lane-banks.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  lane: paid_frontier
+  status: running
+  runner: tony-dell
+  attempts: 1
+ref: OPS-1498
+comms:
+- at: 2026-11-27 11:32
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-27 11:33
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 3.44 > 0.7)'
+- at: 2026-11-27 11:33
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 11:33
+  from: tony-dell
+  text: claimed
+- at: 2026-11-27 11:33
+  from: chaba
+  text: 'kk-mac defers: executor=devin declared but this runner is launchd — devin-dispatch drives systemd-run internally;
+    the card stays queued for a Linux runner (executor=opencode/script serve here)'
+- at: 2026-11-27 11:34
+  from: chaba
+  text: started devin-task-20261127-113424-embed-lane-banks-service-on-id on tony-dell (dispatch executor=devin)
+- at: 2026-11-27 11:34
+  from: chaba
+  text: 'primer injected 8 lesson(s): [timer-alert-cards-auto-close-on-next-gre-723ebc] Problem observed in 2026-10-13;
+    [timer-alert-idc02-embed-lane-banks] [batch B 19:30 +07] Alert loop explained an; [embed-lane-banks-bounded-run]
+    attempt 2 (con01): prior branch never merged — re; [timer-alert-idc02-mddb-backup] 2026-11-25 14:2x (+07): TRIAGE:
+    part of the MDDB; Drift flags flap transiently: chaba-repo-sync updates the checkout copy, and unt; [embed-lane-banks-bounded-run]
+    primer injected 8 lesson(s): ['
+- at: 2026-11-27 11:52
+  from: devin
+  text: 'investigating: live idc02 unit is stale (ExecStart lacks --budget; repo checkout HAS the budget code but
+    rendered unit was never installed). Redesigning banks as cursor-resumable per-bank slices; will verify on idc02.'
+- at: 2026-11-27 12:27
+  from: devin
+  text: 'cmd_banks rewritten: per-bank cursor (banks-state.json offset/pass) + persisted have-set (banks-have/*.keys),
+    bounded slices via --budget/--max-docs, synced-skip + rescan, exit 0 on budget / non-zero on real errors. ssot.jobs.yml
+    now hourly/15m/--budget 600, units re-rendered, 15 tests pass. Deploying to idc02 for live verification next.'
+- at: 2026-11-27 12:45
+  from: devin
+  text: 'Live on idc02: timer fired run 1 at 12:27 — 3164 docs delivered in 10min budget, cursors persisted, but
+    exit 1 on a transient src scan drop (Remote end closed). Added scan_failures threshold (rc=1 only after 3 consecutive)
+    + redeployed. Run 2 in progress: resumed devin-handoff at offset 35000, +1000 copied by row 36000, synced banks
+    skipping cleanly.'
+claim:
+  since: 2026-11-27 11:33
