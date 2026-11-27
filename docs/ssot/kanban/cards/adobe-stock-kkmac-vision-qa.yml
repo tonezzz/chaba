@@ -1,7 +1,7 @@
 id: adobe-stock-kkmac-vision-qa
 title: adobe-stock candidates — kk-mac qwen2.5vl visual QA pass
 column: doing
-updated: 2026-11-27 14:47
+updated: 2026-11-27 15:10
 spec: '3 adobe-stock cards sit in review (illustration-pivot-test, inpaint-defect-repair, upscaler-eval). Once kk-mac
   vision eval proves qwen2.5vl:7b usable, run a visual QA pass over the stock candidate images: defect detection,
   spec-match, artifact flagging. Depends on kk-mac-vision-lane-eval verdict.'
@@ -13,6 +13,8 @@ action:
   status: running
   runner: mn01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 15:10
 ref: OPS-0222
 comms:
 - at: 2026-11-19 08:58
@@ -220,5 +222,9 @@ comms:
     was built-not-run (kk-mac offline 11-19; auto-closed on harness verify). All 3 stock cards now column=done.
     kk-mac is AWAKE now and ollama :11434 reachable over tailnet with qwen2.5vl:7b pulled (vision cap). Running
     the missing vision-qa bench first to get the real verdict, then the candidate-image QA pass.'
+- at: 2026-11-27 15:10
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-144236-3-adobe-stock-cards-sit-in-rev no longer active on mn01 but card
+    still says running — sweeping its branch'
 claim:
   since: 2026-11-27 14:41
