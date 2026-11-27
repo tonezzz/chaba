@@ -1,6 +1,6 @@
 id: go2rtc-7-camera-producers-return-empty-f-cc9176
 title: 'go2rtc: 7 camera producers return empty frames on omen'
-column: backlog
+column: doing
 updated: 2026-11-27 12:58
 program: infrastructure
 tags:
@@ -272,6 +272,9 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 12:58
+  from: tony-dell
+  text: claimed
 spec: Fix the remaining go2rtc camera producers on tony-omen that return empty 200/0B frames for ip_cam_65 and the
   xiaomi_c100/c201 variants. Inspect and correct the producer configurations located in ~/.config/go2rtc/*.sh on
   tony-omen and check xiaomi-token-refresh.py. The target host is tony-omen and the relevant repo/environment context
@@ -280,7 +283,10 @@ spec: Fix the remaining go2rtc camera producers on tony-omen that return empty 2
   image payloads instead of 0B responses.
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: paid_frontier
   executor: devin
-claim: {}
+  runner: tony-dell
+  attempts: 1
+claim:
+  since: 2026-11-27 12:58
