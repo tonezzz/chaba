@@ -1,7 +1,7 @@
 id: timer-alert-idc02-log-shipper-severe
 title: Timer log-shipper-severe on idc02 failing
 column: done
-updated: 2026-11-27 12:25
+updated: 2026-11-27 12:44
 priority: high
 tags:
 - timer-alert
@@ -1251,6 +1251,13 @@ comms:
   from: devin
   text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
 - at: 2026-11-27 12:25
+  from: tony
+  text: closed by tony
+- at: 2026-11-27 12:44
+  from: devin
+  text: 'GREEN after OPS-1497 fix (log-shipper write budgets 10-60s -> 130s aligned to mddb-ops 120s server deadline):
+    log-shipper-severe.service Result=success 12:31 (240 shipped, 0 failed); ship-severe/idc02 fresh. Closing.'
+- at: 2026-11-27 12:44
   from: tony
   text: closed by tony
 spec: Investigate the failing `log-shipper-severe.service` systemd timer on host idc02, which resulted in a timeout
