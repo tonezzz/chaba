@@ -1,7 +1,7 @@
 id: kanban-queue-manual-handoff
 title: 'Kanban queue truth: separate human-owned cards from the dispatch queue'
 column: backlog
-updated: 2026-11-26 20:31
+updated: 2026-11-27 08:32
 priority: high
 tags:
 - kanban
@@ -195,6 +195,18 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-27 08:32
+  from: tony
+  text: re-spawned from report page
+- at: 2026-11-27 08:32
+  from: tony
+  text: '[next batch 2026-11-27] Decision: write-door-first. Implement the board-api invariant that only runner-claimable
+    cards may carry action.status=queued / appear in GET /queue; then reconcile ADA-0783 and expose human-waiting
+    in /queue. Add regression tests for the manual-card case.'
+- at: 2026-11-27 08:32
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 requests:
 - id: queue-truth-sequencing
   ask: How should we sequence the queue-truth fix?
@@ -212,3 +224,9 @@ requests:
   answer: write-door-first — implement the board-api write-door invariant first, then reconcile ADA-0783 and expose
     human-waiting in /queue
 awaiting_action: true
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  lane: paid_frontier
+  status: queued

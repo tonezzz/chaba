@@ -1,7 +1,7 @@
 id: timer-alert-idc03-mddb-embed-probe
 title: Timer mddb-embed-probe on idc03 failing
 column: backlog
-updated: 2026-11-26 21:04
+updated: 2026-11-27 08:32
 priority: high
 tags:
 - timer-alert
@@ -1552,17 +1552,32 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-26 19:50) of `mddb-embed-probe.service` on `idc03` result=exit-code — investigate
     journal: `journalctl --user -u mddb-embed-probe.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-27 08:32
+  from: tony
+  text: re-spawned from report page
+- at: 2026-11-27 08:32
+  from: tony
+  text: '[next batch 2026-11-27] ROOT CAUSE of the 203/EXEC: the ansible-managed unit ExecStart points at /home/tony/CascadeProjects/chaba/scripts/ada/mddb-embed-probe.py,
+    which does not exist anywhere in the repo or on idc03 (the earlier successful runs were from a script since
+    removed). Also the oneshot service has Restart=on-failure, which systemd rejects with ''bad unit file setting''
+    via the timer. Decide and implement: restore/reconstruct the probe script to the journal''s output contract
+    (vector-sear'
+- at: 2026-11-27 08:32
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 action:
-  status: done
+  status: queued
   type: dispatch
-  lane: devin
-  runner: idc02
+  lane: paid_frontier
   result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093237-timer-mddb-embed-probe-on-idc0.service:
     Failed with result ''exit-code''. | devin-task-20261109-093237-timer-mddb-embed-probe-on-idc0.service: Consumed
     3.716s CPU time.'
   sweep:
     failed_noted: 2026-11-09 09:36
     session_gone: 2026-11-26 17:40
+  repo: chaba
+  executor: devin
 spec: Investigate the recurring failure of mddb-embed-probe.service on host idc03, where the last run at 11-13 19:00
   resulted in an exit-code. Check the journal using `journalctl --user -u mddb-embed-probe.service` on idc03 and
   reference CMS `timer-timeline-idc03` for context. The done-condition is verified when the root cause of the exit-code

@@ -1,7 +1,7 @@
 id: timer-alert-idc02-ada-ocb-smoke
 title: Timer ada-ocb-smoke on idc02 failing
 column: backlog
-updated: 2026-11-26 22:14
+updated: 2026-11-27 08:32
 priority: high
 tags:
 - timer-alert
@@ -561,8 +561,22 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-26 22:00) of `ada-ocb-smoke.service` on `idc02` result=exit-code — investigate
     journal: `journalctl --user -u ada-ocb-smoke.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-27 08:32
+  from: tony
+  text: re-spawned from report page
+- at: 2026-11-27 08:32
+  from: tony
+  text: '[next batch 2026-11-27] ROOT CAUSE: find_card(''ADA-0172'') in opencode/ada_mcp.py no longer finds an exact
+    ref card (it was archived), then falls through to token scoring and matches 159 cards. That cascades into ada_context_pack
+    (''card snapshot missing'') and ada_preflight. Fix: when the reference matches the strict ref pattern ^[A-Z]+-[0-9]+$
+    and no exact id/ref/alias exists, fail fast with a precise ''no card with ref'' error (optionally search the
+    archive) instead of broad token scoring. Keep fu'
 action:
-  status: done
+  status: queued
+  type: dispatch
+  repo: ada-voice
+  executor: devin
+  lane: paid_frontier
 spec: Investigate the failure of `ada-ocb-smoke.service` on host idc02 by checking the user journal via `journalctl
   --user -u ada-ocb-smoke.service`, and redeploy the runner-agent from the chaba repository to idc02 by copying
   scripts/board/runner-agent.py to ~/.local/bin/runner-agent. The target host is idc02 and the relevant repository
