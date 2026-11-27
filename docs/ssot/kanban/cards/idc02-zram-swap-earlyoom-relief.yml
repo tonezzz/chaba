@@ -1,7 +1,7 @@
 id: idc02-zram-swap-earlyoom-relief
 title: idc02 zram swap — disarm earlyoom permanently-true swap arm (root cause of 15 kills/14d)
 column: review
-updated: 2026-11-27 22:32
+updated: 2026-11-27 22:40
 priority: medium
 tags:
 - infrastructure
@@ -88,6 +88,10 @@ comms:
 - at: 2026-11-27 22:32
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-27 22:40
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261127-220401-idc02-16-gib-zero-swap-hits-me on mn01 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: done
@@ -99,6 +103,8 @@ action:
   result: 'exit=0 this week; rollback is `swapoff /dev/zram0 && systemctl disable --now zram-swap.service`. | devin-task-20261127-220401-idc02-16-gib-zero-swap-hits-me.service:
     Consumed 40.441s CPU time over 25min 55.916s wall clock time, 475.7M memory peak.'
   verified: false
+  sweep:
+    dirty: 1
 claim:
   since: 2026-11-27 22:03
 review_kind: verify
