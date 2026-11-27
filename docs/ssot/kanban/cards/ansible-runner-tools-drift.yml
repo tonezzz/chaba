@@ -1,7 +1,7 @@
 id: ansible-runner-tools-drift
 title: 'Ansible audit: runner tool drift detected'
 column: backlog
-updated: 2026-11-27 06:33
+updated: 2026-11-27 13:36
 spec: Read-only ansible audit-runner-tools detected drift/missing runner tools. Re-run playbooks/audit-runner-tools.yml;
   inspect reports or stdout; converge via approved sync flow.
 action:
@@ -85,3 +85,10 @@ comms:
     "issues": ["DRIFT  runner-agent pin=4ed3afdb49f5 inst=38d84bc073da"]}, {"host": "idc03", "issues": ["DRIFT  runner-agent
     pin=4ed3afdb49f5 inst=38d84bc073da"]}, {"host": "mn01", "issues": ["DRIFT  runner-agent pin=4ed3afdb49f5 inst=38d84bc073da"]},
     {"host": "tony-dell",'
+- at: 2026-11-27 13:36
+  from: devin
+  text: 'TRIAGE 2026-11-27 13:10 re-run (idc02 controller, read-only): LIVE-STALE — healed. The 06:33 alert (6 hosts
+    DRIFT runner-agent pin=4ed3afdb49f5 inst=38d84bc073da) was the transient manifest-pin-bump -> _self_update/sync
+    lag. Fresh audit vs current pin d0465bfe2a6e: ALL hosts OK on all 6 tools (con01,idc02,idc03,mn01,tony-dell,tony-macbook,tony-omen).
+    Converged via approved flow (runner-tools-converge.sh / sync-runner-tools.sh / _self_update) — no ad-hoc scp
+    needed. Residual: kk-mac MISSING-DEST '
