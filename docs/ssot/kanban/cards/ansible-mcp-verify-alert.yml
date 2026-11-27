@@ -1,11 +1,12 @@
 id: ansible-mcp-verify-alert
 title: 'Ansible audit: MCP verification drift/fail'
-column: backlog
-updated: 2026-11-27 13:36
+column: done
+updated: 2026-11-27 15:50
 spec: 'Read-only ansible audit-mcp-verify detected fail/error/unreachable hosts. Hosts: kk-mac, tony-dell, tony-macbook,
   tony-omen. Report dir: reports/ansible-benchmark/mcp/. No remediation performed.'
 action:
   type: manual
+  status: done
 ref: OPS-1475
 comms:
 - at: 2026-11-27 06:36
@@ -24,3 +25,12 @@ comms:
     MCP endpoint (mn01:9585, also probed as michael-dev) connection refused — tony-dell 16/17, tony-omen 21/22,
     tony-macbook 16/17, canonical-ha 2/3. Live verify on mn01: mn-ha-dev.service crash-looping since ~09:16 today
     (1474 failed starts today, NRestarts=1618) — podman conmon e'
+- at: 2026-11-27 15:50
+  from: chaba
+  text: 'LIVE VERIFY 2026-11-27 ~15:20 (idc02 controller): re-ran ansible/playbooks/audit-mcp-verify.yml — 0 unreachable,
+    0 failed on all 9 inventory targets; reports show kk-mac ok 0/0, tony-dell 17/17, tony-macbook 17/17, tony-omen
+    22/22, canonical-ha 3/3. mn01 mn-ha-dev + xmeye-vms are active again (mn-ha-dev NRestarts=8, xmeye 0) after
+    the approved remediation. The 06:36 alert is resolved; closing.'
+- at: 2026-11-27 15:50
+  from: chaba
+  text: closed by chaba
