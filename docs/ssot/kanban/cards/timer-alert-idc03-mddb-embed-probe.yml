@@ -1,7 +1,7 @@
 id: timer-alert-idc03-mddb-embed-probe
 title: Timer mddb-embed-probe on idc03 failing
-column: doing
-updated: 2026-11-27 08:59
+column: done
+updated: 2026-11-27 09:04
 priority: high
 tags:
 - timer-alert
@@ -1589,8 +1589,14 @@ comms:
     (203/EXEC) + OnCalendar=*/15 * * * * (cron syntax -> bad-setting, timer dead 13h). Same run left mddb-vector-reindex.service
     crash-looping 203/EXEC every 10s since 17:30 (5.4k failures — probe''s reindex kick). Fixing live units + ansible
     source now.'
+- at: 2026-11-27 09:04
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-27 09:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-27 09:04
+  from: tony
+  text: closed by tony
 action:
-  status: running
+  status: done
   type: dispatch
   lane: paid_frontier
   result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093237-timer-mddb-embed-probe-on-idc0.service:
