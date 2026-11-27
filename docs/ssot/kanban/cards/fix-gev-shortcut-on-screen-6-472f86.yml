@@ -1,7 +1,7 @@
 id: fix-gev-shortcut-on-screen-6-472f86
 title: Fix GEV Shortcut on Screen 6
-column: backlog
-updated: 2026-11-27 08:33
+column: doing
+updated: 2026-11-27 08:34
 priority: medium
 note: God's Eye View shortcut fails with 404 on screen 6.
 ref: MED-0049
@@ -149,6 +149,13 @@ comms:
   from: chaba
   text: 'mn01 defers: push guard: no push:gods-eye-view label and `git push --dry-run` fails in /home/tony/gods-eye-view
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 08:34
+  from: tony-dell
+  text: claimed
+- at: 2026-11-27 08:34
+  from: chaba
+  text: 'idc02 defers: push guard: no push:gods-eye-view label and `git push --dry-run` fails in /home/tony/gods-eye-view
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 requests:
 - id: all-registered-runner-agents-c-eba883
   ask: All registered runner agents (con01, tony-dell, mn01, tony-omen) are currently deferring tasks because the
@@ -165,7 +172,6 @@ requests:
   from: backlog-spec-enrich
   answer: ★ Fix runner-agent drift first by redeploying runner-agent to all hosts, then investigate the GEV shortcut
     in the gods-eye-view repo
-awaiting_action: true
 spec: 'Goal: Fix the God''s Eye View shortcut failing with a 404 error on screen 6. Host: con01. Repo: gods-eye-view.
   Constraints: Modify only the necessary routing or shortcut configuration for screen 6 without affecting other
   screens. Testable done-condition: A curl request or automated test simulating the screen 6 GEV shortcut returns
@@ -175,4 +181,8 @@ action:
   repo: gods-eye-view
   executor: devin
   lane: paid_frontier
-  status: queued
+  status: running
+  runner: tony-dell
+  attempts: 1
+claim:
+  since: 2026-11-27 08:34

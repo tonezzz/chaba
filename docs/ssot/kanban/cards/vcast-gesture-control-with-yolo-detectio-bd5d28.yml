@@ -1,7 +1,7 @@
 id: vcast-gesture-control-with-yolo-detectio-bd5d28
 title: Vcast gesture control with YOLO detection
-column: backlog
-updated: 2026-11-27 08:32
+column: doing
+updated: 2026-11-27 08:34
 priority: medium
 note: Use YOLO instead of MediaPipe for hand-gesture tracking on vcast displays to keep device load low
 ref: MED-1064
@@ -257,6 +257,13 @@ comms:
     has no ''ada-pi'' key (GitHub rename-redirect -> ada-voice), so repo=ada-voice is the equivalent pin. Replaced
     MediaPipe with YOLO for hand tracking to keep device load low. idc02 runner-agent.timer was restarted before
     queueing.'
+- at: 2026-11-27 08:33
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 08:34
+  from: idc02
+  text: claimed
 requests:
 - id: the-vcast-gesture-control-task-e92e2b
   ask: The vcast gesture control task requires deploying YOLO instead of MediaPipe for hand-gesture tracking to
@@ -285,10 +292,13 @@ requests:
   escalated_at: 2026-11-22 07:33
   answer: ★ Use the ada-pi repository targeting the idc02 display node
 action:
-  status: queued
+  status: running
   type: dispatch
   repo: ada-voice
   executor: devin
   target_host: idc02
   lane: paid_frontier
-awaiting_action: true
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-27 08:34
