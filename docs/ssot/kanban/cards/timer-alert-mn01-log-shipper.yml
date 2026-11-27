@@ -1,7 +1,7 @@
 id: timer-alert-mn01-log-shipper
 title: Timer log-shipper on mn01 failing
 column: done
-updated: 2026-11-27 12:35
+updated: 2026-11-27 13:14
 priority: high
 tags:
 - timer-alert
@@ -400,6 +400,12 @@ comms:
 - at: 2026-11-27 12:35
   from: tony
   text: closed by tony
+- at: 2026-11-27 13:14
+  from: devin
+  text: 'STATUS after OPS-1497 fix: heartbeat bug fixed fleet-wide — severe lane green (193/0 @12:34). Full lane
+    is NOT the heartbeat bug: it hit TimeoutStartSec=45min draining a backlog (1846 matched, shipped 1360, 0 failed
+    — cursor checkpointed, ship/mn01 fresh 06:11Z failed:0). Re-triggered to drain remainder (~500 docs); will close
+    if it finishes green, otherwise next hourly run completes it. Leaving open — honest timeout, not false failure.'
 action:
   status: done
 spec: Investigate the timeout failure of `log-shipper.service` on host mn01 by checking the systemd journal via
