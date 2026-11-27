@@ -1,7 +1,7 @@
 id: yomi-update-conversations-missing-imports
 title: Yomi summaries fail — missing summary-utils imports in update-conversations.mjs
 column: done
-updated: 2026-11-27 16:06
+updated: 2026-11-27 15:47
 brief: yomi-update-all writes conversations but every summary fails with "validateAndTruncateContext is not defined".
   Three symbols used but not imported in update-conversations.mjs; all exported by summary-utils.mjs. Import-only
   fix.
@@ -131,15 +131,6 @@ comms:
     so the truncation the code already performs is actually the value being guarded and sent. Backup: update-conversations.mjs.pre-guardfix-20261127-154413.
     node --check rc=0. Re-ran yomi-update-all from 15:44:19 to 15:46:07, ExecMainStatus=0, wrote 70 conversations;
     counts since the '
-- at: 2026-11-27 16:06
-  from: chaba
-  text: 'BACKEND + TIMEOUT HOTFIXES APPLIED AND VERIFIED (Tony 2026-11-27 16:06 +07). Four runtime changes on idc03,
-    all with timestamped backups (*.pre-llama-backend-20261127-154903):
-
-    1. Hardcoded model Phi-3-mini-4k-instruct-q4 -> qwen2.5:7b-instruct (3 occurrences in update-conversations.mjs,
-    4 in gpu-queue-integration.mjs). Phi-3 was not present on any reachable ollama.
-
-    2. yomi-update-all.service.d/home.conf ExecStart: added --network host and -e LLAMA_URL=http://127.0.0.1:11446/v1/chat/completions. '
 ref: OPS-1505
 claim:
   since: 2026-11-27 15:33

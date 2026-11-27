@@ -1,7 +1,7 @@
 id: ansible-worktree-audit-alert
 title: 'Ansible audit: worktree hygiene drift/fail'
 column: backlog
-updated: 2026-11-27 16:06
+updated: 2026-11-27 15:52
 spec: 'Read-only ansible audit-worktrees detected fail/drift/unreachable hosts. Hosts: con01, idc02, idc03, mn01,
   tony-dell, tony-omen. Report dir: reports/ansible-benchmark/worktrees/. No remediation performed.'
 action:
@@ -32,10 +32,3 @@ comms:
     triage: wt_policy hardcodes role:readonly for the chaba-tony-dell checkout, which is the served writer on idc03
     — false-positive needs per-host role fix in the audit policy. Remaining real hygiene: dirty served/mirror checkouts
     and stale dispatch-wt-* worktrees. Card stays ope'
-- at: 2026-11-27 16:06
-  from: chaba
-  text: 'POLICY FIX LANDED 2026-11-27 16:05: audit-worktrees.yml now takes per-host wt_role_overrides (idc03 chaba-tony-dell
-    expects marker=served, tony-dell stays readonly); ansible --syntax-check passes and re-audit from idc02 shows
-    idc03 role: served / declared_role: served — the role-marker false positive is gone. Committed e70c424b433 and
-    pushed to origin/master. idc03 still summary=fail for a genuine reason: served/live-deploy checkout dirty with
-    42 uncommitted paths (plus 2 unpushed commits, no co'

@@ -148,25 +148,6 @@ hosts:
           OnFailure ->
           chaba-services-regen-fail.service posts comms on the
           cms-services-weekly-regen card (focus-inbox fallback)"
-      - name: chaba-jobs.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: true
-        note: "1min — legacy job-dispatcher tick, RETIRED by OPS-0790
-          (2026-10-29): zero dispatch:dispatcher jobs remain in ssot.jobs.yml
-          so each tick is a no-op. Still expected active on dell per rollout
-          plan — disable only after all 8 migrated timers verified; dell's
-          lesson-drift-check.timer is still unarmed (gap found 2026-11-08).
-          Already disabled+retired on idc03 (see its census entry).
-          History: found disabled 2026-10-13 with no audit trail (OPS-0531)"
-      # 2026-11-27: both timers moved to tony-omen on 2026-11-08
-      # (ssot.jobs.yml job:timer-timeline-update / job:timer-sentinel —
-      # dell ad-hoc units removed same day). Declared in tony-dell.expected_absent
-      # below so a resurrection trips a delta instead of reading a stale
-      # local state.json and filing phantom timer-alert cards.
-      # --- census 2026-10-12 (drift-reconcile OPS-0521): active units that
-      # were running but never declared ---
       - name: openchamber.service
         type: service
         scope: user
@@ -217,29 +198,19 @@ hosts:
           openchamber-migrate-tony-dell-to-idc02) — edge now proxies to
           idc02 local :3000; this unit stays active 24-48h as soak
           fallback, retire-vs-local-only is Tony's close-out decision."
-      - {name: openchamber-update.service, type: service, scope: user,
-         note: "oneshot — npm i -g @openchamber/web @opencode/cli (node24
-           npm) then restarts openchamber.service; fired by
-           openchamber-update.timer"}
       - {name: openchamber-update.timer, type: timer, scope: user,
          note: "monthly 1st 06:30 — OpenChamber+opencode update cadence;
            added 2026-11-12 (card openchamber-hardening)"}
       - {name: chaba-tunnel.service, type: service, scope: user}
       - {name: dnsmasq-postgre.service, type: service, scope: user}
-      - {name: gesture-relay.service, type: service, scope: user}
       - {name: ms-playwright-mcp-ram-cache.service, type: service, scope: user}
       - {name: ms-playwright-ram-cache.service, type: service, scope: user}
       - {name: npm-cache-ram-cache.service, type: service, scope: user}
       - {name: raceman-php.service, type: service, scope: user, note: "php-fpm :9001 — canonical raceman course API backend; consumed by omen raceman-web nginx via fastcgi 100.68.142.13:9001 (placement decided 2026-11-25)"}
       - {name: rclone-gdrive.service, type: service, scope: user}
-      - {name: weaviate.service, type: service, scope: user}
       - {name: web.service, type: service, scope: user}
       - {name: xvfb-99.service, type: service, scope: user}
       # --- timer census 2026-10-13 (OPS-0531 sweep): live fleet timers declared so drift-reconcile flags disabled/missing ticks ---
-      - {name: ada-flood-news.timer, type: timer, scope: user}
-      - {name: ada-market-report.timer, type: timer, scope: user}
-      - {name: cam-frame-refresh.timer, type: timer, scope: user}
-      - {name: cam-wall-cms.timer, type: timer, scope: user}
       - {name: chaba-cms-reflect.timer, type: timer, scope: user}
       - {name: chaba-dell-health-agent.timer, type: timer, scope: user}
       - {name: chaba-nag.timer, type: timer, scope: user}
@@ -252,7 +223,6 @@ hosts:
       - {name: chaba-system-report.timer, type: timer, scope: user}
       - {name: devin-dispatch-prune.timer, type: timer, scope: user}
       - {name: devin-dispatch-watch.timer, type: timer, scope: user}
-      - {name: devin-session-prune.timer, type: timer, scope: user}
       - {name: devin-summaries-sync.timer, type: timer, scope: user}
       - {name: dispatch-wt-clean.timer, type: timer, scope: user, note: "weekly worktree GC (~/bin/git-worktree-gc.sh, retain 7d, salvage dirty) — armed fleet-wide 2026-11-13"}
       - {name: flood-alert.timer, type: timer, scope: user}
@@ -266,7 +236,6 @@ hosts:
          note: "15min — publishes meta.public CMS pages + status JSON to chaba.h3 branch -> Plesk"}
       - {name: network-scan-tony.timer, type: timer, scope: user}
       - {name: ops-percussion.timer, type: timer, scope: user}
-      - {name: session-audit.timer, type: timer, scope: user}
       - {name: staleness-sentinel.timer, type: timer, scope: user}
       - {name: tony-dell-health-snapshot.timer, type: timer, scope: user}
       - {name: tony-dell-mcp-health.timer, type: timer, scope: user}
@@ -321,6 +290,8 @@ hosts:
       - {name: sync-to-hdd.timer, type: timer, scope: system, note: "Timer census 2026-11-27: ad-hoc fleet timer. Weekly clone of NVMe root to HDD backup"}
       - {name: system-report-watchdog.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:system-report-watchdog. System-report freshness watchdog (stale-data / host-down alert) (job:system-report-watchdog, rendered from ssot.jobs.yml..."}
       - {name: tony-dell-wan-failover.timer, type: timer, scope: system, note: "Timer census 2026-11-27: ad-hoc fleet timer. Run tony-dell WAN failover check every 30 seconds"}
+      - {name: chaba-postgres-16.service, type: service, scope: user, note: "podman quadlet active on dell again (Description: restored to live) — supersedes the OPS-0725 migration note; idc03 now uses chaba-postgres.service"}
+      - {name: openchamber-update.service, type: oneshot, scope: user, note: "Monthly OpenChamber + @opencode/cli update — oneshot fired by its timer (unit file present, inactive between fires)"}
 
     expected_absent:   # migrated/retired in OPS-0725 drain — must NOT run on dell
       # 2026-11-08 move to tony-omen (ssot.jobs.yml): collector + sentinel
@@ -337,7 +308,6 @@ hosts:
       - {name: chaba-kanban-brief.timer, scope: user}
       - {name: chaba-lab-sweep.timer, scope: user}
       - {name: chaba-monitoring-dashboard.service, scope: user}
-      - {name: chaba-postgres-16.service, scope: user}
       - {name: chaba-report-api.service, scope: user}
       - {name: chaba-review-digest.timer, scope: user}
       - {name: chaba-standard-drift.timer, scope: user}
@@ -389,7 +359,6 @@ hosts:
       - {name: chaba-guest.service, scope: user}
       - {name: chaba-guest-lan.service, scope: user, note: "binds 192.168.2.67 — revives only after omen takes the IP"}
       - {name: ha-guest-lan.service, scope: user}
-      - {name: gemini-ollama-proxy.service, scope: user}
       - {name: raceman-web.service, scope: user}
       - {name: workflows-mcp.service, scope: user, note: "pre-existing breakage — image missing on dell before migration"}
       - {name: playlived.service, scope: user}
@@ -411,6 +380,15 @@ hosts:
       - {name: cast-browser-proxy.service, scope: user, note: "retired — already proxied to omen"}
       - {name: clip-sync-omen.service, scope: user, note: "retired — targets dell's X display"}
       - {name: playlive-omen-cdp-tunnel.service, scope: user, note: "retired — pointless on omen"}
+      - {name: session-audit.timer, scope: user, note: "active on tony-omen; not-found on dell"}
+      - {name: devin-session-prune.timer, scope: user, note: "active on tony-omen + tony-macbook; not-found on dell"}
+      - {name: cam-wall-cms.timer, scope: user, note: "VPS-lane retired after MDDB write failures (job 2026-11-26-cctv-roster-parked.yml followup)"}
+      - {name: cam-frame-refresh.timer, scope: user, note: "VPS lane retired — not-found on dell; only a disabled unit file remains on omen"}
+      - {name: ada-market-report.timer, scope: user, note: "moved to tony-omen (active 06:45 ICT); not-found on dell"}
+      - {name: ada-flood-news.timer, scope: user, note: "canonical con01 (active there); delisted from dell 2026-11-27"}
+      - {name: weaviate.service, scope: user, note: "moved to idc02 (active there); not-found on dell"}
+      - {name: gesture-relay.service, scope: user, note: "moved to idc02 (active+enabled there); not-found on dell"}
+      - {name: chaba-jobs.timer, scope: user, note: "RETIRED fleet-wide by OPS-0790 (2026-10-29) — zero dispatch:dispatcher jobs remain"}
     allowed_running:
       - devin-task-*.service   # ephemeral dispatch session units
     known_failed:
@@ -505,6 +483,7 @@ hosts:
         reason: Devin desktop runs as a background nohup job, not via the
           autostart unit — same rationale as the app-devin-desktop entry.
         action: restart-devin-desktop
+      - {name: gemini-ollama-proxy.service, note: "failed podman quadlet (exit-code) on dell; broken envfile — card gemini-proxy-quadlet-envfile-drop tracks the fix"}
     expected_resources:
       min_free_ram_mb: 500
       max_swap_used_percent: 80
@@ -923,30 +902,12 @@ hosts:
         expected_state: active
         critical: false
         note: Hourly — renders /local/chaba-report.json (focus SSOT + ada-review) and scp's to tony-dell HA www; units chaba/systemd/chaba-report-feed.{service,timer}
-      - name: devin-bank-distill.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-        note: Weekly Sun 10:15 — distills completed ISO-week raw session docs into devin/weekly-* rollups and supersedes sources (scripts/ada/distill-devin-bank.py)
-      - name: clip-sync-dell.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: Polls tony-dell clipboard (text + image/*) every 1s into :0 —
-          independent of Barrier KVM. Runs ~/.local/bin/clip-sync tony-dell
-      # --- census 2026-10-12 (drift-reconcile OPS-0521): active units that
-      # were running but never declared ---
       - {name: cast-browser.service, type: service, scope: user}
       - {name: cast-shots-http.service, type: service, scope: user}
       - {name: cast-stream-http.service, type: service, scope: user}
-      - {name: chaba-watch.service, type: service, scope: user}
       - {name: cookie-bridge.service, type: service, scope: user}
       - {name: gev-workspace.service, type: service, scope: user}
-      - {name: ghostroute-watcher.service, type: service, scope: user}
       - {name: mcp-debug-cors.service, type: service, scope: user}
-      - {name: mddb-tunnel.service, type: service, scope: user}
       - {name: ms-playwright-ram-cache.service, type: service, scope: user}
       - {name: nest-mgr.service, type: service, scope: user}
       - {name: ollama.service, type: service, scope: user, critical: true,
@@ -985,12 +946,6 @@ hosts:
       - {name: mn-ha-dev-parity.timer, type: timer, scope: user}
       - {name: notebooklm-kb-sync.timer, type: timer, scope: user}
       - {name: report-ai-edge.timer, type: timer, scope: user}
-      - {name: runner-agent.timer, type: timer, scope: user}
-      - {name: runner-agent.service, type: service, scope: user,
-         note: "oneshot claim+execute, cap 3, labels gpu,desktop,cpu (no push:* — live probe at claim). Drop-ins: api.conf (tailnet board-api), claude.conf (CLAUDE_LANES=1), jev-lane.conf (JEV_LANE=1; OPENCODE_LANES commented out 2026-11-09 — intentionally OFF pending fleet lane enablement per ssot.devnest-lanes), kk-mac.conf, nlm.conf. opencode v2.4.1 installed ~/.npm-global/bin/opencode 2026-11-24 (npm i -g @opencode/cli) — binary present, lane flag stays off until the savings-pilot gate opens; drift now probed via ssot.host-software opencode capability"}
-      # 2026-11-12 audit: vcast headed-display service is intentional
-      # (enabled + running); telemetry service verified posting OK.
-      - {name: vcast-real-macbook.service, type: service, scope: user}
       - {name: device-telemetry.timer, type: timer, scope: user}
       - {name: secrets-collect.timer, type: timer, scope: user}
       - {name: ssh-canary.timer, type: timer, scope: user}
@@ -1024,7 +979,6 @@ hosts:
       - {name: yolo-detect.service, type: service, scope: user}
       - {name: cast-ha-panel.timer, type: timer, scope: user}
       - {name: audit-cast.timer, type: timer, scope: user}
-      - {name: wp-cam-snapshot.timer, type: timer, scope: user, note: "rendered from ssot.jobs — host now tony_omen"}
       - {name: xiaomi-token-refresh.timer, type: timer, scope: user, expected_state: inactive, note: "Masked 2026-11-26 (user chose retire over interactive re-login): refresh script had no valid passToken cookie, failing daily with exit-1. Unit files backed up to ~/.config/systemd/user/_retired-20261126/ and both .timer/.service masked to /dev/null. Cameras keep streaming on the stored token until it expires. Unmask only after logging in to account.xiaomi.com in the browser and verifying a fresh token."}
       - {name: update-cam-frame.timer, type: timer, scope: user}
       - {name: ha-config-backup.timer, type: timer, scope: user}
@@ -1085,6 +1039,9 @@ hosts:
       - {name: xiaomi-cam-resolve.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer (unit still active; job no longer in ssot.jobs.yml). Xiaomi Cam IP Resolve (job:xiaomi-cam-resolve, rendered from ssot.jobs.yml \u2014 do not edit)"}
       - {name: yomi-fetch.timer, type: timer, scope: system, note: "Timer census 2026-11-27: ad-hoc fleet timer. Run Yomi fetch every 15 minutes"}
       - {name: yomi-process.timer, type: timer, scope: system, note: "Timer census 2026-11-27: ad-hoc fleet timer. Run Yomi process from midnight to 7 AM"}
+      - {name: runner-agent.service, type: service, scope: user, expected_state: inactive, note: "static unit fired by runner-agent.timer; parked with the disabled timer"}
+      - {name: runner-agent.timer, type: timer, scope: user, expected_state: inactive, note: "disabled on omen; card timer-alert-tony-omen-runner-agent tracks the revival decision"}
+      - {name: ghostroute-watcher.service, type: service, scope: user, expected_state: inactive, note: "stopped + disabled 2026-11-26 (job 2026-11-26-openclaw-tg-error-loop.yml); re-enable only with owner approval"}
 
     expected_absent:
       - name: raceman-php.service
@@ -1115,6 +1072,12 @@ hosts:
           detector is redundant. Also cannot bind: 0.0.0.0:8780 collides
           with jev-student.service on 100.75.102.88:8780 (migrated
           2026-11-18). Unit left installed+disabled on omen."
+      - {name: wp-cam-snapshot.timer, scope: user, note: "masked fleet-wide 2026-11-24 after 8/8 FAIL; no host runs it (job go2rtc-empty-frames-dell-omen-diagnosis)"}
+      - {name: vcast-real-macbook.service, scope: user, note: "retired — superseded by vcast-real@6/@7 (idc02 audit census 2026-11-25)"}
+      - {name: mddb-tunnel.service, scope: user, note: "no unit file on omen (not-found); retired"}
+      - {name: chaba-watch.service, scope: user, note: "no unit file on omen (not-found); retired, never re-deployed after census"}
+      - {name: clip-sync-dell.service, scope: user, note: "no unit file on omen (not-found) — barrier clipboard sync retired after 2026-10-04 migration"}
+      - {name: devin-bank-distill.timer, scope: user, note: "removed 2026-11-25 from omen as a stale duplicate (job 2026-11-25-devin-bank-distill-omen-stale-dup-cleanup.yml); canonical host con01"}
     known_failed:
       - name: arp-inventory-scan.service
         reason: "Pre-OPS-0581 finding-reporter (exited 1/2 on findings); since 2026-10-13 exits 0 on completed scans — findings via report + focus-inbox (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"
@@ -1167,6 +1130,7 @@ hosts:
       - name: xiaomi-token-refresh.service
         reason: "Masked 2026-11-26 by owner decision (no valid passToken cookie; refresh script could not re-login). A masked unit can still surface in list-units --failed, so this is not host drift. Cameras keep streaming on the stored token until expiry. Do NOT unmask without verifying a fresh token in account.xiaomi.com in the browser (see the .timer declaration above)."
         action: ignore
+      - {name: yomi-process.service, note: "system service fails with start-limit-hit at 2026-11-27 census; card tracks whether to revive or retire (triage group C)"}
     expected_resources:
       min_free_ram_mb: 1000
       max_swap_used_percent: 50
@@ -1455,9 +1419,6 @@ hosts:
         critical: false
       # --- census 2026-10-12 (drift-reconcile OPS-0521) ---
       - {name: lid-blank-watch.service, type: service, scope: user}
-      - {name: runner-agent.timer, type: timer, scope: user}
-      # 2026-11-12 audit: vcast headed-display service is intentional
-      # (enabled + running); telemetry service verified posting OK.
       - {name: vcast-real-macbook.service, type: service, scope: user}
       - {name: device-telemetry.timer, type: timer, scope: user}
       # --- 2026-10-13: fleet-standard zram swap (same zram-swap.service as
@@ -1477,19 +1438,6 @@ hosts:
       # fleet-restic-retry.yml). Persistent timer catch-up after boot was
       # the intermittent-exit cause.
       - {name: fleet-restic-backup.timer, type: timer, scope: user}
-      - {name: fleet-restic-backup.service, type: service, scope: user}
-      # 2026-11-25 (tony-macbook-daytime-runner): daytime sleep inhibitor is
-      # NOT a systemd unit — it runs inside the XFCE session via
-      # ~/.config/autostart/macbook-day-awake.desktop ->
-      # ~/.local/bin/macbook-day-awake.sh (repo: scripts/ops/). Block-mode
-      # logind inhibitors need an active/inactive session subject, so a
-      # user-service copy can't hold them; a polkit rule
-      # (/etc/polkit-1/rules.d/50-macbook-day-awake.rules) would let
-      # systemd/macbook-day-awake.service (repo) take over session-free.
-      # 2026-11-27 timer-delta census: active fleet timers found undeclared
-      # by the read-only fleet snapshot (job-rendered + ad-hoc). Declared so
-      # a disabled/removed timer raises a delta. Distro/OS timers are filtered
-      # by OS_TIMER_RE in both audit engines instead of being declared.
       - {name: chaba-repo-sync.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Hourly chaba checkout sync (installed 2026-10-30 \u2014 remote checkouts drift without it; tony-macbook enrollment gap found..."}
       - {name: devin-cleanup.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Run Devin sessions DB cleanup weekly"}
       - {name: devin-dispatch-prune.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Devin dispatch prune"}
@@ -1498,6 +1446,11 @@ hosts:
       - {name: devin-taskdir-prune.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer (unit still active; job no longer in ssot.jobs.yml). Devin dispatch task-dir GC (job:devin-taskdir-prune, rendered from ssot.jobs.yml \u2014 do not edit)"}
       - {name: devin-watchdog.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Devin desktop watchdog (every 10 minutes)"}
       - {name: runner-tools-converge.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily convergence of pinned runner tools"}
+      - {name: sidecar-collector.service, type: service, scope: user, note: "Sidecar Metrics Collector for Ansible Dispatch"}
+      - {name: opencode-serve.service, type: service, scope: user, note: "OpenCode API server on macbook"}
+      - {name: ollama.service, type: service, scope: user, note: "Ollama local inference lane"}
+      - {name: fleet-restic-backup.service, type: oneshot, scope: user, note: "Fleet restic backup to tony-dell sdb — oneshot fired by fleet-restic-backup.timer (unit file static)"}
+      - {name: runner-agent.timer, type: timer, scope: user, expected_state: inactive, note: "disabled on tony-macbook; card audit-auto-macbook tracks the revival decision"}
 
     expected_absent:
       # stick-announce.service — pre-rebuild ghost (macOS-era carryover /
@@ -1509,7 +1462,8 @@ hosts:
       - {name: stick-announce.service, scope: system}
     allowed_running:
       - devin-task-*.service    # ephemeral dispatch session units
-    known_failed: []
+    known_failed:
+      - {name: zram-swap.service, note: "8G zstd zram swap unit fails with exit-code on macbook; card audit-auto-macbook tracks the fix"}
     expected_resources:
       min_free_ram_mb: 500
       max_swap_used_percent: 80
@@ -1563,26 +1517,11 @@ hosts:
         scope: system
         expected_state: active
         critical: true
-      - name: yolo-xiaomi.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: YOLOv8 person detection on :8780 — moved from tony-omen 2026-09-27
-      # ada-memory-* timers moved to idc01 2026-09-24 (consolidation step 6,
-      # jobs/infrastructure/2026-09-24-idc01-consolidation.yml), then to idc03
-      # with the 2026-10-05/06 migration — unit files remain on mn01 disabled
-      # as standby.
-      # --- census 2026-10-12 (drift-reconcile OPS-0521) ---
       - {name: google-home-mcp.service, type: service, scope: user}
       - {name: mcp-link-monitor-mn.service, type: service, scope: user}
       - {name: notebooklm-mcp.service, type: service, scope: user}
       - {name: playwright-server.service, type: service, scope: user}
-      - {name: vms-snap.service, type: service, scope: user}
       - {name: xmeye-vms.service, type: service, scope: user}
-      - {name: yolo-ipad-1.service, type: service, scope: user}
-      - {name: yolo-ipad-2.service, type: service, scope: user}
-      # --- timer census 2026-10-13 (OPS-0531 sweep): live fleet timers declared so drift-reconcile flags disabled/missing ticks ---
       - {name: ada-standby-sync.timer, type: timer, scope: user}
       - {name: chaba-repo-sync.timer, type: timer, scope: user}
       - {name: devin-dispatch-watch.timer, type: timer, scope: user}
@@ -1609,6 +1548,10 @@ hosts:
       - {name: devin-taskdir-prune.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer (unit still active; job no longer in ssot.jobs.yml). Devin dispatch task-dir GC (job:devin-taskdir-prune, rendered from ssot.jobs.yml \u2014 do not edit)"}
       - {name: fleet-restic-backup.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily fleet restic backup"}
       - {name: runner-tools-converge.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily convergence of pinned runner tools"}
+      - {name: yolo-ipad-2.service, type: service, scope: user, expected_state: inactive, note: "enabled but inactive(dead) after a clean stop (capacity)"}
+      - {name: yolo-ipad-1.service, type: service, scope: user, expected_state: inactive, note: "enabled but inactive(dead) after a clean stop (capacity)"}
+      - {name: vms-snap.service, type: service, scope: user, expected_state: inactive, note: "enabled but inactive(dead) after a clean stop; camwall snapshot shim still cited for Ada snapshots"}
+      - {name: yolo-xiaomi.service, type: service, scope: user, expected_state: inactive, note: "enabled but clean-stopped for capacity; card AUD-1399 + job 2026-11-25-mn01-yolo-xiaomi-restart.yml — restart when mn-ha-dev is stable"}
 
     expected_absent:
       - name: vcast-real-macbook.service
@@ -1933,12 +1876,6 @@ hosts:
         expected_state: active
         critical: true
         note: Ada HA Tony on 127.0.0.1:8002 — serve path /apps/ha/ada-tony
-      - name: ada-ha-michael.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: true
-        note: Ada HA Michael on 127.0.0.1:8003 — serve path /apps/ha/ada-michael
       - name: ada-line-relay.service
         type: service
         scope: user
@@ -1998,12 +1935,6 @@ hosts:
         expected_state: active
         critical: false
         note: Document archive API on tailnet :11025
-      - name: jev-student.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: DistilBERT confirm-gate on tailnet :8778
       - name: openjev-student.service
         type: service
         scope: user
@@ -2127,12 +2058,6 @@ hosts:
           deduped board-api /inbox alerts (card
           scenario-runner-deployed-drift-check, rendered from
           ssot.jobs.yml 2026-11-25)"
-      - name: jev-bench.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-        note: Hourly :47 — Jev decision bench, no scenario lock
       - name: mddb-embed-probe.timer
         type: timer
         scope: user
@@ -2147,14 +2072,6 @@ hosts:
           ~/.local/share/ada-live-canary.jsonl; maps free-tier ceiling
           for the scenario-budget ramp (2026-10-12). Unit files:
           stacks/services/ada-live-canary/"
-      - name: ada-live-canary-paid.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-        note: "Daily 06:12 — 1 minimal Live connect on PAID key
-          (bench-off-paid-lanes: exactly 1 connect/day detects dunning;
-          ledger ~/.local/share/ada-live-canary-paid.jsonl)"
       - name: gemini-wallet-watch.timer
         type: timer
         scope: user
@@ -2177,11 +2094,6 @@ hosts:
           + keywatch-* board card; ops-event doc per run. Declared
           2026-10-22 — arm after install (unit lands with the merge)."
       - name: ops-health-report.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-      - name: doc-mirror.timer
         type: timer
         scope: user
         expected_state: active
@@ -2253,16 +2165,13 @@ hosts:
       - {name: litellm-budget-watch.timer, type: timer, scope: user, note: "hourly — LiteLLM VerificationToken near-cap warn/alert (job litellm-budget-watch in ssot.jobs.yml; card litellm-budget-watch-enable, enabled 2026-11-25)"}
       # 2026-11-12 audit: vcast headed-display service is intentional
       # (enabled + running); telemetry service verified posting OK.
-      - {name: vcast-real-macbook.service, type: service, scope: user}
       - {name: device-telemetry.timer, type: timer, scope: user}
-      - {name: ada-line-digest.timer, type: timer, scope: user, note: "weekly Mon 09:00 per-member LINE digest push via relay /send (card cmssurface-render-digest); members=tony until rollout approved"}
       - {name: chaba-board-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: chaba-board-render.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: chaba-cached-videos.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: chaba-cms-regen.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: chaba-kanban-brief.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: chaba-lab-sweep.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
-      - {name: chaba-postgres-16.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: chaba-review-digest.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: chaba-standard-drift.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: chaba-starboard-tracker.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
@@ -2271,14 +2180,12 @@ hosts:
       - {name: dispatch-wt-clean.timer, type: timer, scope: user, note: "weekly worktree GC (~/bin/git-worktree-gc.sh, retain 7d, salvage dirty) — armed fleet-wide 2026-11-13"}
       - {name: focus-dispatcher-overnight.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: kanban-commit.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
-      - {name: kanban-dispatch.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: kanban-sync.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: merge-sweep.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: mha-state-push.service, type: service, scope: user, expected_state: inactive,
          note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b); moved idc03 -> idc02 2026-10-26 with mn-ha-dev (follows the dev instance it feeds); disabled on idc03"}
       - {name: overnight-assessment.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: qc-scoreboard.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
-      - {name: redis.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: trade-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: yomi-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: yomi-backup.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
@@ -2350,11 +2257,36 @@ hosts:
       - {name: wp-news-digest.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Hourly WP news digest (20m after wp-news-fetch)"}
       - {name: wp-news-fetch.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Hourly WP news fetch"}
       - {name: wp-news-situation.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:wp-news-situation. News situation sweep + situations index refresh (job:wp-news-situation, rendered from ssot.jobs.yml \u2014 do not edit)"}
+      - {name: tonydell-ollama-tunnel.service, type: service, scope: user, note: "tony-dell ollama tunnel — idc03:11446 -> tony-dell:11434"}
+      - {name: tony-ha.service, type: service, scope: user, note: "podman quadlet tony-ha container"}
+      - {name: sidecar-collector.service, type: service, scope: user, note: "Sidecar Metrics Collector for Ansible Dispatch"}
+      - {name: opencode-serve.service, type: service, scope: user, note: "OpenCode API server on idc03"}
+      - {name: michael-ha-via-omen-tunnel.service, type: service, scope: user, note: "SSH relay to michael-ha through tony-omen (:18123)"}
+      - {name: litellm-spend-hook.service, type: service, scope: user, note: "LiteLLM spend webhook receiver + OR panel JSON API"}
+      - {name: jevos.service, type: service, scope: user, note: "JevOS v5 /v1/systemone decision lane — supervised by ansible/playbooks/jevos-service.yml"}
+      - {name: devnest-tg-relay.service, type: service, scope: user, note: "DevNest Telegram relay (capture + card commands)"}
+      - {name: chaba-redis.service, type: service, scope: user, note: "podman quadlet chaba-redis active on idc03 (supersedes redis.service)"}
+      - {name: chaba-postgres.service, type: service, scope: user, note: "podman quadlet chaba-postgres-16 active on idc03 (supersedes chaba-postgres-16.service)"}
+      - {name: ada-tg-relay-mn.service, type: service, scope: user, note: "Ada Telegram two-way relay — mn-ha lane (KrautMNBot)"}
+      - {name: ada-stt.service, type: service, scope: user, note: "Ada local STT — audio.cpp Qwen3-ASR-0.6B (CPU)"}
+      - {name: ada-ha-ada.service, type: service, scope: user, note: "Ada backend — lab instance, :8006"}
+      - {name: ada-chaba.service, type: service, scope: user, note: "Ada backend — house/ops-brain persona, :8008"}
+      - {name: ada-ai-kraut.service, type: service, scope: user, note: "Ada backend — kraut lane (renamed from ada-ha-michael.service on idc03)"}
+      - {name: kanban-dispatch.timer, type: timer, scope: user, expected_state: inactive, note: "stopped + disabled by the 2026-11-08 dispatch gate after the duplicate-session incident; revival needs owner approval"}
+      - {name: ada-line-digest.timer, type: timer, scope: user, expected_state: inactive, note: "weekly LINE digest still in dry-run (members=tony); enable only after rollout approval"}
+      - {name: jev-student.service, type: service, scope: user, expected_state: inactive, note: "loaded/disabled — parked after the capacity move to tony-omen (openjev-student.service :8779)"}
 
     expected_absent:
       - name: ada-pi-pwa.service
         scope: user
         note: "Retired 2026-11-17; PWA root and public API are served by ada-ha-tony on :8002. Preserve its legacy env file for scripts; no unit or listener on :8001."
+      - {name: redis.service, scope: user, note: "superseded by the chaba-redis.service podman quadlet on idc03"}
+      - {name: chaba-postgres-16.service, scope: user, note: "superseded by the chaba-postgres.service podman quadlet on idc03"}
+      - {name: vcast-real-macbook.service, scope: user, note: "retired — superseded by vcast-real@6/@7"}
+      - {name: doc-mirror.timer, scope: user, note: "runs on con01 since 2026-10 (census); not-found on idc03"}
+      - {name: ada-live-canary-paid.timer, scope: user, note: "paid lanes benched 2026-10-14 (job bench-off-paid-lanes) — timer retired"}
+      - {name: jev-bench.timer, scope: user, note: "canonical con01 (active+enabled there); not-found on idc03"}
+      - {name: ada-ha-michael.service, scope: user, note: "renamed to ada-ai-kraut.service on idc03 (grand-rename KNB-1098); mn01 keeps its own standby copy"}
     oom_kills_tolerance: 0
     known_failed:
       - name: ada-memory-sync.service
@@ -2408,6 +2340,10 @@ hosts:
       - name: fwupd-refresh.service
         reason: "Firmware metadata refresh on a VPS — no firmware to manage; fails harmlessly"
         action: ignore
+      - {name: yomi-update-active.service, note: "timer-triggered job exits nonzero; card timer-alert-idc03-yomi-update-active tracks the journal"}
+      - name: ops-health-report.service
+        reason: "Ops-health probe suite exits 1 on HTTP 404 from at least one probe target on every 2026-11-27 hourly run. Finding-reporter behavior (docs/kb/timer-expectations.md), not a service crash."
+        action: identify the failing probe URL in scripts/ops-health-report.py
   idc02:
     tailscale_ip: 100.123.163.11
     description: Public VPS — onboarded 2026-09-30; lab/offload node —
@@ -2540,7 +2476,6 @@ hosts:
       - {name: cam-wall-pull-vps.timer, type: timer, scope: user}
       - {name: cms-publish-site.timer, type: timer, scope: user}
       - {name: dispatch-wt-clean.timer, type: timer, scope: user, note: "weekly worktree GC (~/bin/git-worktree-gc.sh, retain 7d, salvage dirty) — armed fleet-wide 2026-11-13"}
-      - {name: jev-bench.timer, type: timer, scope: user}
       - {name: jev-retrain.timer, type: timer, scope: user}
       - {name: log-shipper.timer, type: timer, scope: user}
       - {name: log-shipper-severe.timer, type: timer, scope: user}
@@ -2603,7 +2538,6 @@ hosts:
       - {name: chaba-monitoring-dashboard.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: chaba-report-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: mcp-link-monitor.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
-      - {name: mddb-gdrive-tier.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: notebooklm-mcp.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: notebooklm-rest.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: secrets-console.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
@@ -2639,6 +2573,10 @@ hosts:
       - {name: runner-tools-converge.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily convergence of pinned runner tools"}
       - {name: web-srv-sync.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Hourly web-srv content sync from idc03"}
       - {name: wp-watch.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. WP watch every 5 min"}
+      - {name: redis-server.service, type: service, scope: system, note: "system redis-server active+enabled — backing store for the dispatch queue"}
+      - {name: sidecar-collector.service, type: service, scope: user, note: "active+enabled — Sidecar Metrics Collector for Ansible Dispatch"}
+      - {name: gpu-dispatch-webui.service, type: service, scope: user, note: "active+enabled — GPU dispatch web UI (job 2026-11-25-gpu-dispatch-webui.yml)"}
+      - {name: dispatch-scheduler.service, type: service, scope: user, note: "active+enabled — Ansible dispatch scheduler (jobs 2026-11-25/26)"}
 
     expected_absent:
       - name: chaba-audit.timer
@@ -2711,6 +2649,8 @@ hosts:
         note: "masked 2026-11-24 during mddb-lab-pull wind-down ('Unit to
           trigger vanished' — job removed from ssot.jobs.yml render); lab
           replica container still running under masked mddb-lab.service"
+      - {name: mddb-gdrive-tier.timer, scope: user, note: "retired — migrated from tony-dell 2026-10-18/19; no active copy at 2026-11-27 census"}
+      - {name: jev-bench.timer, scope: user, note: "canonical con01 (active+enabled there); not-found on idc02"}
     known_failed:
       - name: chaba-audit.service
         reason: "Pre-OPS-0581 finding-reporter (exited nonzero on error findings — findings tracked in card fix-idc02-audit-suite); since 2026-10-13 exits 0 on completed runs — findings via reports/audits/summary.* + focus-inbox (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"
@@ -2799,15 +2739,6 @@ hosts:
           2026-10-25, MEM-0805) — binds 100.72.146.39:11434. Marginal racer:
           ~10s/embed while colibri img-gen + mddbd follower contend — wins
           only when those pause."
-      - name: caddy-edge.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: "Standby public edge (quadlet stacks/con01/caddy-edge) — serves
-          api.surf-thailand.com :443 with cert pushed by idc03 cert-sync
-          (retargeted 2026-10-22); local-upstream 502s are normal until the
-          warm stack is promoted. Needs ip_unprivileged_port_start=80."
       - name: mddb-follower.service
         type: service
         scope: user
@@ -2861,6 +2792,9 @@ hosts:
       - {name: mddb-vector-reindex.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:mddb-vector-reindex. MDDB vector reindex \u2014 daily re-embed sweep for dropped embeddings (job:mddb-vector-reindex, rendered from ssot.jobs.yml..."}
       - {name: runner-agent.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Poll board-api for queued cards (runner-agent)"}
       - {name: runner-tools-converge.timer, type: timer, scope: user, note: "Timer census 2026-11-27: ad-hoc fleet timer. Daily convergence of pinned runner tools"}
+      - {name: sidecar-collector.service, type: service, scope: user, note: "Sidecar Metrics Collector for Ansible Dispatch"}
+      - {name: opencode-serve.service, type: service, scope: user, note: "OpenCode API server on con01"}
+      - {name: caddy-edge.service, type: service, scope: user, expected_state: inactive, note: "warm standby — stopped 2026-11-25; start gated on Tony (job 2026-11-26-con01-ada-lane-warm-standby.yml)"}
 
     expected_absent:
       # 2026-11-26: Cline fully retired (Tony approval). con01 app/proxy/
@@ -2889,6 +2823,14 @@ hosts:
         reason: "Boot timeout — eth0 is cloud-init/netplan managed, not
           networkd; stock cosmetic failure, reset-failed applied"
         action: none
+      - {name: mddb-vector-reindex.service, note: "daily re-embed sweep times out against mddb :11026; card ansible-fleet-service-drift tracks it"}
+      - {name: cline-intake.service, note: "retired with cline (job 2026-11-26-cline-full-retirement.yml); stale failed unit, file not-found"}
+      - name: doc-mirror.service
+        reason: "Hourly doc-archive to HA www mirror fails with curl exit 28 (operation timeout, ~2-3 min CPU) on every 2026-11-27 run from con01. Timer is live on con01 (idc03 copy retired). Card fix-flagged-ops-health-services tracks it."
+        action: raise mirror-to-ha-www.sh curl timeout / check HA www reachability from con01
+      - name: jev-bench.service
+        reason: "Hourly Jev bench targets jev-student on idc03:8778 -> HTTP 404 every run: that lane was parked after the 2026-11-08 dispatch gate and the capacity move to tony-omen. Finding-reporter exit, not a crash."
+        action: revive jev-student on idc03 or repoint bench at the live tony-omen endpoint
     oom_kills_tolerance: 0
   kk-mac:
     tailscale_ip: 100.108.217.17

@@ -1,7 +1,7 @@
 id: omen-lan-reservation
 title: tony-omen LAN IP needs DHCP reservation (or dynamic refs)
 column: done
-updated: 2026-11-27 15:56
+updated: 2026-11-27 15:51
 brief: 'Omen DHCP drifted 192.168.2.86->.84 on 2026-10-12 and silently broke every hardcoded LAN reference (cast-browser-proxy
   target, cast-shots-http bind, MEDIA_BASE, barrier scripts). Proxy+shots now DHCP-proof, but MEDIA_BASE=http://192.168.2.84:8090
   must stay a LAN IP (Chromecast cannot reach tailnet) — it will break again on the next renumber. Fix: pin a DHCP
@@ -379,10 +379,6 @@ comms:
 - at: 2026-11-27 15:51
   from: chaba
   text: closed by chaba
-- at: 2026-11-27 15:56
-  from: chaba
-  text: 'merge-sweep: no session/worktree found for devin-task-20261127-152620-configure-a-static-dhcp-reserv on
-    idc02 — if the work was never pushed it may be gone'
 requests:
 - id: the-card-notes-that-the-tony-o-1dbcf8
   ask: The card notes that the tony-omen LAN IP needs a DHCP reservation or dynamic refs, but does not specify the
