@@ -2348,6 +2348,9 @@ hosts:
       - name: ops-health-report.service
         reason: "Ops-health probe suite exits 1 on HTTP 404 from at least one probe target on every 2026-11-27 hourly run. Finding-reporter behavior (docs/kb/timer-expectations.md), not a service crash."
         action: identify the failing probe URL in scripts/ops-health-report.py
+      - name: chaba-render-memory.service
+        reason: "Finding-reporter: scripts/chaba/render-memory.py --if-stale returns 1 whenever any configured source is missing (2026-11-27 19:16 run: 9 missing ~/.local/share/{chaba,devin,ada-review} recent-events/session-memory/digest files). The report is still rendered; exit 1 is the signal, not a service crash (docs/kb/timer-expectations.md)."
+        action: restore the missing memory source files or prune the stale source config
   idc02:
     tailscale_ip: 100.123.163.11
     description: Public VPS — onboarded 2026-09-30; lab/offload node —
