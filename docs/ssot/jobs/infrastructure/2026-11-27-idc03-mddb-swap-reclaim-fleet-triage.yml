@@ -56,6 +56,27 @@ changes:
       Caveat: the 2026-11-27 19:44 placement job already observed that freed
       pages were reclaimed by mddb within ~3 min (whack-a-mole); a later recheck
       is required to call this durable.
+  - id: jevos_earlyoom_incident
+    verdict: restored live; durable protection awaits owner choice
+    finding: >-
+      Final verification caught jevos.service inactive on idc02 with
+      ExecMainStatus=15 and Result=success. System journal proved earlyoom
+      (PID 821) sent SIGTERM at 20:47:40 +07 to jev PID 1233450
+      ("badness 864, VmRSS 1543 MiB") after three chrome kills, with mem avail
+      9.92% of 15,993 MiB against earlyoom's default 10% SIGTERM threshold and
+      swap free 0/0 MiB on this host. Because SIGTERM is a clean exit, the
+      unit's `Restart=on-failure` did NOT restart it, so the relocated
+      decision lane stayed down ~17 min unnoticed (health=000).
+    action: >-
+      Restored with
+      `ansible idc02 -b -m command -a 'systemctl --machine=tony@.host --user
+      enable --now jevos.service'`; /health=200 after 15s, PID 1353079,
+      MemoryCurrent 1.4 GiB, NRestarts=0, listener back on
+      100.123.163.11:8017. No unit/config change applied.
+    proposed_fixes_pending_choice:
+      - "Add `--avoid '(^|/)(jev)$'` to EARLYOOM_ARGS in /etc/default/earlyoom on idc02 via an Ansible play, then restart earlyoom.service — protects the lane but keeps the default 10% threshold for everyone else."
+      - "Change the jevos unit to `Restart=always` so an earlyoom SIGTERM is followed by an automatic restart — simpler, but a manual stop must then be paired with a disable/mask and a pressure loop is possible."
+      - "Accept the risk and monitor; add an alert on jevos inactive instead of changing host policy."
   - id: failed_services_triage
     verdict: read-only classification — no fixes applied
     benign:
@@ -126,3 +147,8 @@ lessons:
     "Description says every 2h" is not evidence — verify OnCalendar semantics
     (`*:0/2:05` is every 2 minutes). A misread timer multiplies every converge
     and service restart by 60x.
+  - >-
+    earlyoom kills arrive as SIGTERM, which systemd records as Result=success;
+    `Restart=on-failure` therefore leaves a vital service down. A relocation
+    target with zero swap needs either an earlyoom exemption or
+    `Restart=always`, plus an inactive-unit alert.
