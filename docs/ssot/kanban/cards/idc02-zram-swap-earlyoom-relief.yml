@@ -1,0 +1,22 @@
+id: idc02-zram-swap-earlyoom-relief
+title: idc02 zram swap — disarm earlyoom permanently-true swap arm (root cause of 15 kills/14d)
+column: backlog
+updated: 2026-11-27 22:01
+priority: medium
+tags:
+- infrastructure
+spec: 'idc02 (16 GiB, ZERO swap) hits mem<10% excursions chronically — earlyoom journal shows 15 SIGTERMs in 14
+  days incl. a 7-event storm 2026-11-27 20:34-20:49 that killed mddbd x4, chrome x4, jev, and two ~4.3 GiB python
+  procs; openjev killed twice (Nov 25, Nov 27 17:59). With swap=0 earlyooms swap arm is permanently true so every
+  excursion kills the worst-badness process. Per-process exemptions just relocate kills (mn01 precedent, docs/ssot/jobs/infrastructure/2026-11-25-mn01-mn-ha-dev-earlyoom-kills.yml;
+  idc02 openjev decision docs/ssot/jobs/infrastructure/2026-11-27-idc02-openjev-earlyoom-decision.yml). FIX: install
+  fleet-standard zram swap on idc02 — /etc/systemd/system/zram-swap.service pattern already exists (ansible/playbooks/zram-swap.yml
+  is hosts:tony-omen hardcoded, needs an idc02-sized variant ~8 GiB device for 16 GiB host, zstd). This disarms
+  the permanently-true swap arm AND absorbs job/dispatch spikes for ALL services. Verify: swapon --show, free -m,
+  earlyoom journal quiet over 7d, audit-hosts compliance. Alternative if zram rejected: earlyoom -m 5 in /etc/default/earlyoom
+  (halves kill frequency, does not fix pressure) or workload reduction/migration off idc02.'
+ref: OPS-1519
+comms:
+- at: 2026-11-27 22:01
+  from: tony
+  text: card captured via board-api
