@@ -1,7 +1,7 @@
 id: ansible-worktree-audit-alert
 title: 'Ansible audit: worktree hygiene drift/fail'
 column: backlog
-updated: 2026-11-27 06:36
+updated: 2026-11-27 13:36
 spec: 'Read-only ansible audit-worktrees detected fail/drift/unreachable hosts. Hosts: con01, idc02, idc03, mn01,
   tony-dell, tony-omen. Report dir: reports/ansible-benchmark/worktrees/. No remediation performed.'
 action:
@@ -18,3 +18,10 @@ comms:
     {"host": "idc03", "kind": "fail", "summary": "fail"}, {"host": "mn01", "kind": "drift", "summary": "drift"},
     {"host": "tony-dell", "kind": "fail", "summary": "fail"}, {"host": "tony-omen", "kind": "drift", "summary":
     "drift"}]'
+- at: 2026-11-27 13:36
+  from: devin
+  text: 'TRIAGE 2026-11-27 13:14 re-run (idc02 controller, read-only): REAL persistent findings + one POLICY BUG.
+    Verdicts unchanged: con01/idc02/mn01/tony-macbook/tony-omen drift; idc03/tony-dell fail. (1) idc03 [fail] role-marker-served!=readonly
+    is a FALSE POSITIVE — audit-worktrees.yml wt_policy hardcodes role:readonly for ~/CascadeProjects/chaba-tony-dell,
+    but on idc03 that checkout IS the served writer (on tony-dell the same path is the readonly mirror; the policy
+    cannot express per-host roles). (2'
