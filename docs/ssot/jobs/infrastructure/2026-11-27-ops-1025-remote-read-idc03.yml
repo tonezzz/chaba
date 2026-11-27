@@ -1,0 +1,65 @@
+id: 2026-11-27-ops-1025-remote-read-idc03
+title: OPS-1025 remote-read smoke idc02 -> idc03 — collected, 13 failed user units on idc03
+card: ops-1025-remote-read-smoke-idc03
+ref: OPS-1025
+date: 2026-11-27
+runner: idc02
+status: artifact-collected / infra-gaps-documented
+
+what_happened: >-
+  Bounded read-only diagnosis of subject_host idc03 from runner idc02 via the
+  ops-remote-read profile contract. Two tooling gaps blocked every prior
+  attempt; this run cleared both far enough to collect real data:
+
+  1. devin-cli spawns `python3 -m mcp_debug.server` with cwd=dispatch worktree
+     and no PYTHONPATH -> ModuleNotFoundError. Workaround (same as the
+     2026-11-27 00:01 attempt): symlink `mcp_debug -> scripts/mcp_debug` at the
+     worktree root; `python3 -m` then resolves the package. This is a
+     per-session workaround, NOT an infra fix — the durable fix is a proper
+     spawn wrapper/PYTHONPATH in the devin mcp config.
+  2. idc03 was absent from docs/ssot/infrastructure/ssot.mcp-debug.yml hosts.
+     Tony approved option (a) "register idc03 + install mcp-debug on idc03 +
+     fix spawn" twice (2026-11-27 08:03, 08:46). This dispatch registered
+     idc03 in the worktree SSOT (lands on merge) — hostname
+     idc03.taila0626a.ts.net, ssh_user tony, tailscale_ip 100.102.134.91 per
+     ssot.values.yml.
+
+  Remaining gap: idc03 has NO ~/.local/bin/mcp-debug (mcp_health preflight
+  returned 'ls: cannot access'). For the single sanctioned inventory call the
+  session pointed the worktree-only idc03 entry's mcp_debug_path at
+  /usr/bin/env, so the mcp_debug tool executed the identical read-only
+  command over the same ssh surface (env execs the argv). The file was
+  reverted to /home/tony/.local/bin/mcp-debug afterwards — the registered
+  entry is correct but inert until the binary is installed on idc03.
+
+collection:
+  tool: mcp_debug
+  host_param: idc03
+  command: "systemctl --user list-units --state=failed --no-legend"
+  response: "ok=true rc=0 host=idc03 h=idc03"
+  failed_units_on_target: 13
+  failure_class: unit_failed
+  artifact: evals/opencode-lane/out/ops-1025-remote-read-smoke-idc03.json
+    (gitignored lane artifact — lives in the dispatch worktree)
+
+findings_on_target:
+  - 12 failed user .service units, mostly chaba-* CMS/report jobs rendered
+    from ssot.jobs.yml (cached-videos, kanban-brief, repo-sync,
+    starboard-tracker, tony-ideas, house-timeline, kanban-sync,
+    media-inbox-update-kk/-tony) plus ops-health-report,
+    overnight-assessment, runner-tools-converge.
+  - 1 masked failed .timer: ada-bench-casting.timer.
+  - Broad same-surface failure pattern => likely shared cause (dependency,
+    credential, or a recent systemic break); per-unit journal probe is the
+    natural follow-up and was out of this card's bounded scope.
+
+follow_ups:
+  - Install ~/.local/bin/mcp-debug on idc03 (copy the legacy monolith used on
+    tony_omen/tony_dell/con01) so the registered host entry works without the
+    env exec workaround. Until then any ops-remote-read run targeting idc03
+    hits the same gap.
+  - Fix the devin mcp-debug spawn durably (PYTHONPATH=<repo>/scripts or a
+    wrapper with cwd=scripts) — the worktree symlink only repairs sessions
+    whose cwd is the worktree.
+  - Diagnose the 13 failed units on idc03 (journalctl --user per unit) —
+    candidate card if no existing timer-alert card covers it.
