@@ -1,0 +1,50 @@
+icon: shield
+title: GEV live websocket restored by converging tony-dell Caddy config
+date: 2026-11-27
+card: gev-auto-ws
+ref: GEV-WS-CADDY
+context: >-
+  The automated health check reported ws upgrade ws://tony-dell.taila0626a.ts.net/apps/gev-live/ws?remote=1
+  returning HTTP/1.1 502 instead of 101. Read-only triage found gev-gemini on
+  idc02 active/running and answering a local websocket upgrade with 101 plus a
+  Gemini Live session; the bridge listens on 100.123.163.11:8789. tony-dell's
+  live /etc/caddy/Caddyfile was dated 2026-10-07 and still proxied
+  /apps/gev-live/ws to 127.0.0.1:8789, so Caddy had no live upstream. The
+  canonical repo file stacks/web/Caddyfile already had the correct tailnet
+  upstream and had drifted from the live edge config.
+changes:
+  - "Backed up the live edge config on tony-dell to
+    /tmp/opencode/Caddyfile.live-20261127-2017.bak before any change."
+  - "Validated /home/tony/CascadeProjects/chaba/stacks/web/Caddyfile with
+    caddy validate --adapter caddyfile (Valid configuration), then installed
+    it as /etc/caddy/Caddyfile with sudo -n install -m 0644 and ran
+    caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile."
+  - "No gev-gemini unit, port binding or application code changed."
+verification:
+  - "Pre-change: curl from tony-dell to http://100.123.163.11:8789/ returned
+    HTTP 426 (expected for a non-upgrade request), proving the tailnet
+    upstream was reachable; ws upgrade directly to idc02 returned 101."
+  - "Post-change: /etc/caddy/Caddyfile line 157 shows reverse_proxy
+    100.123.163.11:8789 for the @ws matcher under handle_path /apps/gev-live/*"
+  - "Post-change local probe: curl -i with Connection/Upgrade headers to
+    http://127.0.0.1/apps/gev-live/ws?remote=1 returned HTTP/1.1 101."
+  - "Post-change consumer probe: curl --http1.1 -i with upgrade headers to
+    https://tony-dell.taila0626a.ts.net/apps/gev-live/ws?remote=1 returned
+    HTTP/1.1 101 Switching Protocols; the static page returned 200."
+  - "A plain HTTP/2 curl without --http1.1 returns 426 from the websocket
+    server; that is a curl/protocol limitation, not a bridge fault."
+rollback: >-
+  Restore /tmp/opencode/Caddyfile.live-20261127-2017.bak to /etc/caddy/Caddyfile
+  on tony-dell with sudo install and run caddy reload. That returns the edge to
+  the broken 127.0.0.1:8789 upstream, so only roll back if the canonical repo
+  Caddyfile is found to break another route.
+residual: >-
+  This was a one-off edge convergence because no Caddy deploy playbook exists
+  in ansible/playbooks. Future Caddyfile edits should land a playbook or a
+  config-sync timer so /etc/caddy/Caddyfile cannot drift from the canonical
+  repo for weeks again.
+lesson: >-
+  A healthy websocket backend behind a 502 usually means the edge upstream is
+  stale. Compare the live config with the canonical repo before restarting the
+  application, and verify with an HTTP/1.1 upgrade request because HTTP/2
+  upgrade probes produce a misleading 426.

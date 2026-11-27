@@ -1,0 +1,53 @@
+icon: shield
+title: idc02 runner-tools converge failure from uncommitted local edit
+date: 2026-11-27
+card: timer-alert-idc02-runner-tools-converge
+ref: OPS-RUNNER-CONVERGE
+context: >-
+  runner-tools-converge.service on idc02 failed repeatedly with exit code 1
+  (19:42, 20:04 and earlier on 2026-11-27). Check mode passed but apply mode
+  failed. Direct apply captured the real error: assert 'dispatch_repos.py hash
+  drift after deploy'. The idc02 chaba checkout had a single uncommitted edit
+  to scripts/board/dispatch_repos.py changing the JEVOS default from
+  http://127.0.0.1:8017 to http://100.123.163.11:8017 (mtime 20:00). The
+  manifest pin scripts/devin/runner-tooling.manifest.json still expects sha256
+  022176564c2684a2d22672b5224906a5a423b17de9d600ac98517945c91694bf. The
+  playbook copied the edited source over the installed tool and then asserted
+  against the unchanged pin, so every apply failed and restarted runner-agent.
+  JEVOS actually listens on 127.0.0.1:8017 on idc03, so the edit was both
+  unpinned and pointed at the wrong host.
+changes:
+  - "Backed up the edited checkout file to
+    /tmp/opencode/dispatch_repos.py.idc02-local-edit-20261127 on idc02."
+  - "Restored the single edited file with git checkout --
+    scripts/board/dispatch_repos.py in the idc02 chaba checkout; no other
+    local work in that checkout was touched."
+  - "Re-ran systemctl --user start runner-tools-converge.service on idc02 so
+    the installed ~/.local/bin/dispatch_repos.py was redeployed from the
+    canonical source."
+verification:
+  - "After restore, checkout source and installed tool both hash to
+    022176564c2684a2d22672b5224906a5a423b17de9d600ac98517945c91694bf."
+  - "runner-tools-converge.service finished Result=success, ExecMainStatus=0,
+    ActiveState=inactive; no active devin-task-* unit was present when the
+    apply restarted runner-agent."
+  - "The audit-derived card runner-tool-drift-fleet auto-closed on re-audit
+    with no DRIFT or MISSING-DEST findings for idc02."
+  - "The 2-hour timer (*:0/2:05) and the active-dispatch guard in
+    scripts/devin/runner-tools-converge.sh remain in place."
+rollback: >-
+  Restore /tmp/opencode/dispatch_repos.py.idc02-local-edit-20261127 over
+  ~/CascadeProjects/chaba/scripts/board/dispatch_repos.py on idc02 only if the
+  JEVOS_URL override is intentionally needed; note that doing so will re-arm
+  the converge failure until the manifest pin is updated and the change is
+  committed on all hosts.
+residual: >-
+  idc02's chaba checkout still has other unrelated local modifications and
+  untracked artifacts; they were deliberately left untouched. No fleet-wide
+  pin change was made because the canonical tony-dell checkout is clean and
+  JEVOS is local to idc03.
+lesson: >-
+  A manifest-pinned tool must never be edited in only one checkout. Check mode
+  skips the post-copy hash assertion, so a converge alert with a clean --check
+  but failing apply should lead directly to compare the checkout source hash
+  with the manifest pin and look for local edits.
