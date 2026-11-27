@@ -1,7 +1,7 @@
 id: openjev-idc02-earlyoom-exposure
 title: idc02 openjev (~2.5 GiB RSS) remains earlyoom-exposed after jev exemption
 column: doing
-updated: 2026-11-27 21:48
+updated: 2026-11-27 22:00
 brief: 'Found while applying OPS-1516 fix (card jevos-idc02-earlyoom-kill): earlyoom --avoid ''(^|/)(jev)$'' was
   scoped to comm=jev only. The sibling openjev process (gemma-3-4b-it torch CPU lane on :8777, comm=openjev) is
   the LARGEST process on idc02 (~2.5 GiB RSS vs jev''s ~1.7 GiB) and remains an earlyoom kill candidate — idc02
@@ -51,6 +51,13 @@ comms:
     tony and currently refuses tony-dell''s IP on :22; om; idc02''s kanban-dispatch.service was a linked unit running
     a stale scripts/-only ; ops-remote-read artifact contract needs all 8 fields incl. failure_class; lane a; [ansible-worktree-audit-alert]
     RE-AUDIT 2026-11-27 ~15:20 (id'
+- at: 2026-11-27 22:00
+  from: devin
+  text: 'DECISION: (c) accept — no change. Live-verified on idc02: open-jev.service already carries MemoryMax=12G+MemorySwapMax=2G
+    (option b satisfied; cgroup caps dont affect earlyoom victim selection anyway). openjev is the ideal earlyoom
+    victim: top badness (~3GiB RSS, oom_score 920), stateless, Restart=always self-heals — killed 17:59 today, active
+    again 17:59:39 (~24s). Redundant with tony-omen:8777 + devin-lane fallback. Rejecting (a): --avoid just relocates
+    kills (mn01 precedent) — exempting the b'
 action:
   type: dispatch
   status: running
