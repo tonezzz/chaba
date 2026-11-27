@@ -1,7 +1,7 @@
 id: runner-tools-converge-timer-2min-bug
 title: runner-tools-converge.timer fires every 2 minutes, not 2 hours
-column: doing
-updated: 2026-11-27 21:33
+column: review
+updated: 2026-11-27 21:38
 brief: ansible/systemd/runner-tools-converge.timer uses OnCalendar=*:0/2:05 (hour=*, minute=0/2, second=05) = every
   2 minutes fleet-wide. Description and commit 45219a493cc claim every 2 hours. tony-omen journal shows full check/apply/audit/re-audit
   at 20:52, 20:54, 20:56 with repeated runner-agent restarts.
@@ -54,12 +54,42 @@ comms:
     con01, tony-macbook, mn01): 0 unreachable/0 failed; idempotency re-check changed=0. systemctl --machine=tony@.host
     --user list-timers on every host: NEXT=2026-11-27 22:05:00 +07 (2h cadence restored; daemon-reload rescheduled
     live timers, no restart needed). con01 al'
+- at: 2026-11-27 21:38
+  from: tony-dell
+  text: 'finished (ok): exit=0 ers.image.source=https://github.com/github/github-mcp-server) | devin-task-20261127-211839-change-oncalendar-to-0'
+- at: 2026-11-27 21:38
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 21:38
+  from: chaba
+  text: banked 1045 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-27 21:38
+  from: chaba
+  text: pushed dispatch/20261127-211839-change-oncalendar-to-0-2-05-00 to origin
+- at: 2026-11-27 21:38
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_board_api_liveness.py tests/board/test_kanban_act.py
+    tests/board/test_wiki_extension.py tests/board/test_board_ap
+- at: 2026-11-27 21:38
+  from: chaba
+  text: auto-merged fab88aa1 (dispatch/20261127-211839-change-oncalendar-to-0-2-05-00) → origin/master
+- at: 2026-11-27 21:38
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-211839-change-oncalendar-to-0-2-05-00,
+    branch dispatch/20261127-211839-change-oncalendar-to-0-2-05-00'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 ers.image.source=https://github.com/github/github-mcp-server) | devin-task-20261127-211839-change-oncalendar-to-0-2-05-00.service:
+    Consumed 1min 20.411s CPU time over 15min 41.126s wall clock time, 1.2G memory peak, 472.7M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-27 21:17
+review_kind: verify
