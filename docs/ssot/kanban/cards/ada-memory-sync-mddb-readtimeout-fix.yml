@@ -1,7 +1,7 @@
 id: ada-memory-sync-mddb-readtimeout-fix
 title: ada-memory-sync times out reading MDDB on idc03
 column: doing
-updated: 2026-11-27 11:18
+updated: 2026-11-27 11:25
 spec: 'ada-memory-sync.service on idc03 fails with requests.exceptions.ReadTimeout: HTTPConnectionPool(host=''100.102.134.91'',
   port=11023): Read timed out (read timeout=20). This is the vault <-> MDDB sync (export voice inbox, push vault,
   voice conflicts auto-resolve). Check whether the MDDB endpoint at 100.102.134.91:11023 is healthy and whether
@@ -17,6 +17,8 @@ action:
   status: running
   runner: idc02
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 11:25
 ref: ADA-1490
 comms:
 - at: 2026-11-27 10:29
@@ -57,5 +59,9 @@ comms:
     :11023 is healthy when up (search ~40-60ms); it did OOM-kill at 11:03 (5.5G peak) during vector-reindex — episodic,
     not the client bug. Fix in scripts/ada/sync-ada-memory-to-mddb.py: jittered backoff (30s*n ±25%, cap 90s), greppable
     FAILED-after-N diagnostic on exhaustion, delete-'
+- at: 2026-11-27 11:25
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-103034-ada-memory-sync-service-on-idc no longer active on idc02 but card
+    still says running — sweeping its branch'
 claim:
   since: 2026-11-27 10:29
