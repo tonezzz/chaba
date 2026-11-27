@@ -1,7 +1,7 @@
 id: gemini-ollama-proxy-conmon-logtag-failure
 title: 'tony-dell gemini-ollama-proxy: conmon rejects --log-tag, exit 126'
 column: backlog
-updated: 2026-11-27 21:03
+updated: 2026-11-27 21:17
 brief: 'Persistent failure since 2026-11-26 11:56 +07: conmon says k8s-file doesn t support --log-tag; podman create/remove
   churn; ExecMainStatus=126; NRestarts=5 then start-rate limited. Unrelated to existing MEM-1464/MEM-1469 proxy
   cards.'
@@ -13,3 +13,16 @@ comms:
 - at: 2026-11-27 21:03
   from: tony
   text: card captured via board-api
+- at: 2026-11-27 21:17
+  from: chaba
+  text: auto-routed to executor=claude (task_class=report_triage)
+- at: 2026-11-27 21:17
+  from: chaba
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  task_class: report_triage
+  executor: claude
+  executor_source: queue
+claim: {}
