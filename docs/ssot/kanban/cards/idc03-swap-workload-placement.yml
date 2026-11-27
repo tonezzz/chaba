@@ -1,7 +1,7 @@
 id: idc03-swap-workload-placement
 title: 'MEM-1511: idc03 swap 4/4 GiB — workload placement triage'
 column: review
-updated: 2026-11-27 20:10
+updated: 2026-11-27 20:28
 brief: 'After MEM-1507/1510 fixes, idc03 still has 4.0/4.0 GiB swap used, 5.1 GiB RAM available, user cgroup 14.4
   GiB RAM + 4.16 GiB swap. Top swap holders: jevos 761MiB, ada-dev 243MiB, ada-kk-dev 184MiB, ada-bankq-student
   309MiB, ada-chaba 364MiB, ada-ha-ada 359MiB, mddb-cms 290MiB.'
@@ -105,6 +105,13 @@ comms:
 - at: 2026-11-27 20:10
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''idc03-swap-placement-two-owner''] block close)'
+- at: 2026-11-27 20:28
+  from: chaba
+  text: APPLIED+VERIFIED 2026-11-27 20:24 +07. Moved JevOS to idc02 (100.123.163.11:8017, MemoryMax=2G, PID 1233450,
+    RSS 1.37GiB, NRestarts=0, /health=200); stopped+disabled idc03 jevos, ada-dev, ada-kk-dev, ada-bankq-student;
+    removed ada-kk-dev from deploy-ada.sh SERVICES on canon+installed (sha256 83b5f2e2...); bench_profiles.kk-cms-only
+    host -> tony-omen; JEVOS_URL defaults -> tailnet. idc03 swap 4.0/4.0GiB -> 2.9GiB used / 1.1GiB free; user cgroup
+    swap 4.16 -> 2.93GiB. Idempotency recheck changed=0.
 action:
   type: dispatch
   status: done
