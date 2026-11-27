@@ -1,0 +1,167 @@
+---
+# idc03-publisher-hardening.yml — deploy the MEM-1507 publisher fixes to idc03.
+#
+# media-inbox-update.py and ops-health-report.py used to POST straight to
+# /v1/add after only a TCP/health probe. On an OOM restart mddb opens /health
+# ~84-104s before /v1 routes are live, so the write got a 404 and the timer
+# tick exited 1. Both scripts now gate on GET /v1/stats and retry transient
+# write failures (404/429/5xx, disconnects) at most 3 times with backoff.
+#
+# This play installs the two pinned scripts with a timestamped backup and no
+# service restart: both publishers are oneshot timers, so the next tick picks
+# up the new code. Defaults MDDB_HTTP_WRITE_TIMEOUT=120 and MDDB_ROUTE_WAIT_S=120
+# are built into the scripts; no unit/SSOT job edit is needed.
+#
+# Usage (controller = tony-dell; ALWAYS --limit):
+#   ansible-playbook playbooks/idc03-publisher-hardening.yml \
+#     --check --diff --limit idc03
+#   ansible-playbook playbooks/idc03-publisher-hardening.yml --limit idc03 \
+#     -e idc03_publisher_hardening_approved=true \
+#     -e card_id=mddb-idc03-oom-coldstart-publisher-window
+#
+# Disruption: none (no restart). Rollback: copy the timestamped backups back
+# from backup_root/<tag>/, or `cp <file>.bak <file>` for the copy module's
+# automatic sibling backups.
+
+- name: Harden idc03 MDDB publishers against cold-start writes
+  hosts: idc03
+  gather_facts: false
+  become: false
+
+  vars:
+    idc03_publisher_hardening_approved: false
+    backup_root: /home/tony/.local/share/chaba-backups/idc03-publisher-hardening
+    scripts:
+      - name: media-inbox-update.py
+        src: "{{ playbook_dir }}/../../scripts/ada/media-inbox-update.py"
+        dest: /home/tony/CascadeProjects/chaba/scripts/ada/media-inbox-update.py
+        sha256: ca19116810cba172296dd968f8595e21377e9b5e54075ec3c0560d8769336168
+        python: /usr/bin/python3
+      - name: ops-health-report.py
+        src: "{{ playbook_dir }}/../../../ada-voice/scripts/ops-health-report.py"
+        dest: /home/tony/CascadeProjects/ada-voice/scripts/ops-health-report.py
+        sha256: b04d81ecf329655a12cbc02f749642d4f89e14ae224f4c8cf163e9aa57e5c4d3
+        python: /home/tony/CascadeProjects/ada-voice/.venv/bin/python
+
+  tasks:
+    - name: Require explicit approval and traceability for a real run
+      ansible.builtin.assert:
+        that:
+          - idc03_publisher_hardening_approved | bool
+          - card_id is defined and card_id | length > 0
+        fail_msg: >-
+          Pass -e idc03_publisher_hardening_approved=true and
+          -e card_id=<card> to deploy publisher changes to idc03.
+      when: not ansible_check_mode
+
+    - name: Compute one backup tag for this run
+      ansible.builtin.set_fact:
+        backup_tag: "{{ lookup('pipe', 'date +%Y%m%dT%H%M%S') }}"
+      run_once: true
+      delegate_to: localhost
+
+    - name: Verify controller sources match their pins
+      ansible.builtin.stat:
+        path: "{{ item.src }}"
+        get_checksum: true
+        checksum_algorithm: sha256
+      register: source_stat
+      loop: "{{ scripts }}"
+      run_once: true
+      delegate_to: localhost
+
+    - name: Fail on a source/pin mismatch
+      ansible.builtin.assert:
+        that: item.stat.checksum == item.item.sha256
+        fail_msg: >-
+          {{ item.item.src }} is {{ item.stat.checksum }}, expected
+          {{ item.item.sha256 }} — update the pin in the same commit
+      loop: "{{ source_stat.results }}"
+      loop_control:
+        label: "{{ item.item.name }}"
+      run_once: true
+      delegate_to: localhost
+
+    - name: Create the timestamped backup directory
+      ansible.builtin.file:
+        path: "{{ backup_root }}/{{ backup_tag }}"
+        state: directory
+        mode: "0755"
+      # A fresh tag would otherwise show changed=1 on every --check,
+      # hiding real configuration drift.
+      when: not ansible_check_mode
+
+    - name: Back up the installed publishers before replacing them
+      ansible.builtin.copy:
+        src: "{{ item.dest }}"
+        dest: "{{ backup_root }}/{{ backup_tag }}/{{ item.name }}"
+        remote_src: true
+        mode: preserve
+        force: true
+      loop: "{{ scripts }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: not ansible_check_mode
+
+    - name: Install pinned publisher scripts
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: preserve
+        backup: true
+      loop: "{{ scripts }}"
+      loop_control:
+        label: "{{ item.name }}"
+      register: deployed
+      when: not ansible_check_mode
+
+    - name: Verify installed hashes match the pins
+      ansible.builtin.stat:
+        path: "{{ item.dest }}"
+        get_checksum: true
+        checksum_algorithm: sha256
+      register: installed_stat
+      loop: "{{ scripts }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: not ansible_check_mode
+
+    - name: Fail if any installed hash drifted
+      ansible.builtin.assert:
+        that: item.stat.checksum == item.item.sha256
+        fail_msg: >-
+          {{ inventory_hostname }}: {{ item.item.dest }} is
+          {{ item.stat.checksum }}, expected {{ item.item.sha256 }}
+      loop: "{{ installed_stat.results }}"
+      loop_control:
+        label: "{{ item.item.name }}"
+      when: not ansible_check_mode
+
+    - name: Syntax-check both installed scripts with their own interpreters
+      ansible.builtin.command:
+        cmd: "{{ item.python }} -m py_compile {{ item.dest }}"
+      loop: "{{ scripts }}"
+      loop_control:
+        label: "{{ item.name }}"
+      changed_when: false
+      when: not ansible_check_mode
+
+    - name: Confirm /v1/stats is live on both MDDB planes
+      ansible.builtin.uri:
+        url: "{{ item }}"
+        method: GET
+        status_code: 200
+        timeout: 8
+      loop:
+        - http://100.102.134.91:11023/v1/stats
+        - http://100.102.134.91:11027/v1/stats
+      loop_control:
+        label: "{{ item }}"
+      changed_when: false
+
+    - name: Report convergence
+      ansible.builtin.debug:
+        msg: >-
+          backups in {{ backup_root }}/{{ backup_tag }};
+          {{ 'CHECK MODE - no files installed' if ansible_check_mode else
+             ('REDEPLOYED' if (deployed.results | selectattr('changed', 'equalto', true) | list | length) > 0 else 'in-sync') }}

@@ -1,0 +1,200 @@
+---
+title: idc03 memory guard — replace idc01-era mddb drop-ins, bound co-tenants
+subtitle: 2026-11-27 MDDB OOM loop (8 mddbd + 7 node kills); global OOM became a contained cgroup kill
+icon: shield
+date: 2026-11-27
+card: mddb-idc03-oom-coldstart-publisher-window
+ref: MEM-1507
+status: applied-verified
+
+context:
+  symptom: >-
+    media-inbox-update-kk and ops-health-report timer alerts traced to mddb
+    restart windows; kernel OOM killed mddbd 8x and node runner jobs 7x on
+    2026-11-27. Swap was 4/4 GiB exhausted; OOM was global_oom /
+    CONSTRAINT_NONE, so any oom_score_adj=200 container process could be reaped.
+  root_cause: >-
+    idc03 (15 GiB / 4 core) still carried idc01's 31 GiB tuning in two
+    mddb.service.d drop-ins: mem.conf (MemoryHigh=16G, MemoryMax=20G,
+    GOMEMLIMIT=22000MiB) and memory.conf (MemoryHigh=24G, MemoryMax=28G,
+    GOMEMLIMIT=12000MiB). The idc01→idc03 migration plan says "retune for
+    idc03" — never done. Effective MemoryMax=28G on a 15 GiB host.
+    mddb-cms/ops, litellm and jevos had no cgroup caps (cms peak 7.6 GiB).
+
+changes:
+  - "ansible/playbooks/idc03-memory-guard.yml — new idc03-only gated play."
+  - "6 managed 60-idc03-memory.conf drop-ins (mddb, mddb-cms, mddb-ops,
+    litellm, jevos, runner-agent) with MemoryHigh/MemoryMax and OOMScoreAdjust.
+    mddb: 3800M/4500M, GOMEMLIMIT=3200MiB, -500; cms 2048M/2500M -400;
+    ops 1536M/2048M -400; litellm 900M/1200M +500; jevos 1200M/1600M +500;
+    runner-agent 400M/600M +500. Restart policy and embedding-proxy env
+    preserved."
+  - "Stale mem.conf and memory.conf removed after timestamped backup."
+  - "Runtime MemoryHigh/MemoryMax applied via systemctl set-property — no
+    service restarts. OOMScoreAdjust/GOMEMLIMIT are exec-time and take effect
+    at each unit's next natural restart."
+  - "docs/ssot/infrastructure/ssot.services.yml — drop_in path and tuning
+    updated to the managed values."
+
+evidence:
+  artifacts:
+    - reports/ansible-benchmark/idc03-memory-guard/20261127T164522/ (plan)
+    - reports/ansible-benchmark/idc03-memory-guard/20261127T164754/ (re-plan)
+    - /tmp/opencode/idc03-memory-guard-idempotency.log
+  apply_recap: "ok=18 changed=10 unreachable=0 failed=0"
+  idempotency: "--check --diff after apply: ok=10 changed=0 unreachable=0 failed=0"
+  backup: "~/.local/share/chaba-backups/idc03-memory-guard/20261127T165726/{mem.conf,memory.conf}"
+  backup_sha1:
+    mem.conf: f5595dcfb1cd596bfb3e0984d5e847714fa41178
+    memory.conf: fdf34405b24f368dec7b95a8482682d504ce76da
+  effective_properties_bytes:
+    mddb.service: [3984588800, 4718592000, -500]
+    mddb-cms.service: [2147483648, 2621440000, -400]
+    mddb-ops.service: [1610612736, 2147483648, -400]
+    litellm.service: [943718400, 1258291200, 500]
+    jevos.service: [1258291200, 1677721600, 500]
+    runner-agent.service: [419430400, 629145600, 500]
+  consumer_proof:
+    - "mddb /health 200; /v1/stats mode=wr; last mddb OOM 16:54:52 (pre-apply);
+      no mddb OOM after apply; NRestarts stable at 10."
+    - "Post-apply OOM at 16:57:46 was CONSTRAINT_MEMCG on litellm.service only —
+      the guard contained the kill instead of letting the kernel reap MDDB.
+      litellm restarted once at 16:58:01, active with 170 MB cgroup usage."
+    - "media-inbox-update-kk 16:54:52 tick ExecMainStatus=0;
+      ops-health-report 16:45 tick ExecMainStatus=0, report published."
+  residual_risk_at_first_apply: >-
+    The guard bounded failure but did not free RAM: immediately after the first
+    apply, free showed 14 GiB used, 649 MiB available, 4/4 GiB swap. The
+    follow-ups below freed ~1.8 GiB; swap is still nearly full and a 3.2 GiB
+    node job remains. Moving that workload off idc03 or adding RAM is still
+    needed to end oversubscription entirely.
+
+applied_followups:
+  status: "applied and verified 2026-11-27 ~17:25"
+  branch: ops/idc03-memory-guard
+  commits: [fa66afb1b5d, 263c7734b0f, b5990cf1b6c]
+  embed_offload:
+    playbook: ansible/playbooks/idc03-embed-offload.yml
+    finding: >-
+      The 1.8 GiB local llama-server is bge-m3, not idle: mddb-cms embeds via
+      the shim, and the shim races every primary. Health stats showed remote
+      100.75.102.88 winning 1239 races at ~136ms (warm probe 0.07s) while local
+      100.102.134.91 had 17 consecutive failures and ~4.7s last call (direct
+      probe 16.4s).
+    result: >-
+      Shim now has only 100.75.102.88 as primary; 100.72.146.39 and kk-mac
+      11447 are deferred. `ollama ps` is empty (bge-m3 unloaded). Embed probe
+      through the shim returned 200 in 0.12s; mddb /health 200. Memory improved
+      to 11 GiB used / 4.3 GiB available, swap 3.9/4 GiB. No kernel OOM since
+      17:22. Apply: ok=10 changed=3 failed=0; idempotency changed=0.
+    first_apply_failure: >-
+      The initial drop-in was named 60-idc03-remote-upstreams.conf, but
+      zzzz-drop-local-idc03.conf (added 11-26 when remote was off-net) sorted
+      later and restored local as a racing primary. The verify task caught it
+      before `ollama stop` ran. Fixed by renaming the managed drop-in to
+      zzzzz-idc03-remote-only.conf and removing the ineffective 60- file
+      (commit b5990cf1b6c); re-apply passed all assertions.
+  runner_cap:
+    file: ansible/inventory/host_vars/idc03.yml
+    change: "runner_cap 2 -> 1 (RUNNER_MAX_LOAD_PC stays 0.7)"
+    result: >-
+      Apply ok=5 changed=1; cap.conf now RUNNER_CAP=1 / MAX_LOAD_PC=0.7 and
+      systemd reloaded. runner-agent.service was inactive at verification, so
+      the next start picks up cap 1 automatically; no restart was forced.
+      Idempotency changed=0.
+  litellm_cap:
+    file: ansible/playbooks/idc03-memory-guard.yml
+    change: "MemoryHigh/MemoryMax 900M/1200M -> 1200M/1600M (OOMScoreAdjust stays 500)"
+    result: >-
+      Effective properties read back as 1258291200 / 1677721600 bytes with
+      OOMScoreAdjust=500. Idempotency changed=0.
+
+publisher_hardening:
+  status: "applied and verified 2026-11-27 ~18:13"
+  symptom: >-
+    Both timer publishers POST /v1/add immediately after a TCP/health probe.
+    An OOM restart leaves /health open ~84-104s before /v1 routes are live
+    (15:58:55 vs 16:00:37), so a tick starting in that window gets HTTP 404
+    and exits 1; embed congestion adds a second transient failure mode.
+  changes:
+    - "scripts/ada/media-inbox-update.py: gate _post() on GET /v1/stats,
+       retry 404/429/5xx and disconnects at most 3x with 2/4s backoff;
+       MDDB_HTTP_WRITE_TIMEOUT default 120 (was a hardcoded 120 at one call
+       site), MDDB_ROUTE_WAIT_S default 120."
+    - "../ada-voice/scripts/ops-health-report.py: same gate + bounded retry
+       in post(); MDDB now honours MDDB_BASE_URL (unit already sets it),
+       MDDB_CMS_URL and the two timeout knobs are env-overridable."
+    - "Keyed /v1/add makes a retry an upsert, not a duplicate document."
+  pins_sha256:
+    media-inbox-update.py: ca19116810cba172296dd968f8595e21377e9b5e54075ec3c0560d8769336168
+    ops-health-report.py: b04d81ecf329655a12cbc02f749642d4f89e14ae224f4c8cf163e9aa57e5c4d3
+  tests:
+    file: tests/test_publisher_mddb_retry.py
+    result: "5 passed for ops-health-report.py: readiness 404/503 -> POST,
+      disconnect retried, 3-attempt ceiling, routes-never-ready refuses POST,
+      non-retryable 400 fails immediately. media-inbox-update.py is covered
+      upstream by tests/ada/test_media_inbox_mddb_gate.py (commit
+      9098c165719)"
+    run: "python3 -m pytest tests/test_publisher_mddb_retry.py -q (system python; httpx stubbed)"
+  playbook: ansible/playbooks/idc03-publisher-hardening.yml
+  preflight: "--check --diff --limit idc03: ok=5 changed=1 unreachable=0
+    failed=0 (the one change is the check-mode diff of the backup directory)"
+  deploy: >-
+    From the controller (tony-dell) in the chaba worktree ansible/ dir:
+    ansible-playbook playbooks/idc03-publisher-hardening.yml --limit idc03
+    -e idc03_publisher_hardening_approved=true
+    -e card_id=mddb-idc03-oom-coldstart-publisher-window
+  result: >-
+    Applied 2026-11-27 18:10:47: ok=12 changed=3 unreachable=0 failed=0.
+    Backups in /home/tony/.local/share/chaba-backups/
+    idc03-publisher-hardening/20261127T181047/. Installed sha256 matched both
+    pins; py_compile passed with each script's own interpreter; GET /v1/stats
+    was 200 on :11023 and :11027. Two fresh oneshot ticks were started
+    manually after the deploy (the 18:10 media tick had started before it):
+    both finished ExecMainStatus=0 — media-inbox[kk] published 28 leaves +
+    rollup + qc, ops-health published report/health-20261127-181221 (5
+    pre-existing health flags, not a script failure). No service restart.
+    Memory after: 10 GiB used / 5.3 GiB available, swap 4.0/4.0 GiB, zero
+    kernel OOM since 18:10. Idempotency re-check: ok=4 changed=0 failed=0
+    after gating the timestamped backup-directory task out of check mode.
+  rebase_reconciliation: >-
+    Rebasing onto master exposed upstream commit 9098c165719, which had
+    already landed equivalent publisher hardening for media-inbox-update.py
+    (shared mddb_http retry, /v1/health readiness gate, upstream test
+    tests/ada/test_media_inbox_mddb_gate.py) plus the original incident job
+    record. Our divergent media implementation was dropped in favour of the
+    upstream version and the playbook pin updated to master's sha256;
+    ops-health-report.py keeps our implementation because the upstream
+    integration patch (integrations/ada-voice/scripts.ops-health-report.mddb-gate.patch)
+    no longer applies to ada-voice HEAD even without our change, which is
+    the actual cause of the pre-commit hook failure. Host was redeployed
+    with the reconciled pins and both timer ticks re-verified.
+  rollback: >-
+    Restore from /home/tony/.local/share/chaba-backups/
+    idc03-publisher-hardening/20261127T181047/, or from the copy module's
+    sibling .bak files. No rollback was needed.
+
+rollback: >-
+  Restore both .conf files from the timestamped backup directory, delete the
+  six 60-idc03-memory.conf files, systemctl --user daemon-reload, and re-apply
+  the old properties: mddb MemoryHigh=25769803776 / MemoryMax=30064771072;
+  set the other five back to infinity. No restore command was needed.
+
+lessons:
+  - "A vars-level lookup('pipe','date ...') is re-evaluated per loop item:
+    pin one tag with set_fact, and create the destination directory before a
+    remote_src copy. The first apply aborted here before any mutation."
+  - "OOMScoreAdjust is exec-time (systemd.exec), not a runtime
+    resource-control property; deliver it by drop-in, not set-property."
+  - "idc01→idc03 migrations must retune memory drop-ins — host size is part
+    of the config, not just the service list."
+  - "systemd drop-ins are applied in filename order: a managed 60-*.conf was
+    silently overridden by an existing zzzz-*.conf, and the shim kept both
+    upstreams. Name managed override drop-ins to sort last, and verify the
+    *effective* config (shim /health, systemctl show), not just file install."
+  - "A timestamped backup-directory task shows changed=1 on every --check,
+    masking real drift. Gate directory creation (and its dependent copy)
+    out of check mode so idempotency can read changed=0."
+  - "A oneshot timer that started just before deploy ran the old code; to
+    prove a publisher fix, trigger a fresh tick and check ExecMainStatus and
+    the published document, not just the timer's last-pass timestamp."

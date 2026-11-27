@@ -1,0 +1,183 @@
+---
+# bound-yomi-api-memory.yml — cap the unbounded yomi-api Podman container on idc03.
+#
+# 2026-11-27 incident (follow-up to idc03-memory-guard.yml):
+#   * The guard capped six systemd units but not container scopes.
+#   * yomi-api.service runs `podman run ... --name yomi-api ...` with no
+#     --memory, so its node process grew to 3.2 GiB in ~2 minutes, exhausted
+#     RAM/swap and caused global OOM kills of mddb.service (11 restarts), whose
+#     80s cold start then made fleet MCP probes report false failures.
+#
+# This play adds --memory=2g --memory-swap=2g to the unit (persistent, with a
+# timestamped sibling backup), applies a live cap, and restarts yomi-api so the
+# container is recreated under the cap. The restart drops in-flight Yomi API
+# requests; it is gated on explicit approval and a card id.
+#
+# Rollback: restore the backed-up yomi-api.service, daemon-reload, restart
+# yomi-api.service. Runtime podman update is discarded on container recreation.
+#
+# Usage (controller = tony-dell; ALWAYS --limit):
+#   ansible-playbook playbooks/bound-yomi-api-memory.yml --check --diff --limit idc03
+#   ansible-playbook playbooks/bound-yomi-api-memory.yml --limit idc03 \
+#     -e yomi_api_cap_approved=true -e card_id=mddb-idc03-oom-yomi-cap
+
+- name: Bound yomi-api container memory on idc03
+  hosts: idc03
+  gather_facts: false
+  become: false
+
+  vars:
+    yomi_api_cap_approved: false
+    yomi_unit_path: /home/tony/.config/systemd/user/yomi-api.service
+    cap_memory: 2g
+    cap_swap: 2g
+    cap_bytes: 2147483648
+
+  tasks:
+    - name: Require explicit approval and traceability for a real run
+      ansible.builtin.assert:
+        that:
+          - yomi_api_cap_approved | bool
+          - card_id is defined or card_ref is defined
+        fail_msg: >-
+          This is a PREP preview. Re-run with -e yomi_api_cap_approved=true
+          and -e card_id=<card>. Disruption: yomi-api.service is restarted.
+      when: not ansible_check_mode
+      tags: [always]
+
+    - name: Read current yomi-api unit
+      ansible.builtin.slurp:
+        src: "{{ yomi_unit_path }}"
+      register: yomi_unit
+      tags: [bound]
+
+    - name: Assert the unit is the expected yomi-api podman run
+      ansible.builtin.assert:
+        that:
+          - "'podman run --rm --replace' in unit_text"
+          - "'--name yomi-api' in unit_text"
+        fail_msg: >-
+          yomi-api.service no longer matches the expected podman run line;
+          inspect it before capping.
+      vars:
+        unit_text: "{{ yomi_unit.content | b64decode }}"
+      tags: [bound]
+
+    - name: Add memory cap to yomi-api podman run (with backup)
+      ansible.builtin.replace:
+        path: "{{ yomi_unit_path }}"
+        regexp: 'podman run --rm --replace --name yomi-api'
+        replace: >-
+          podman run --rm --replace --memory={{ cap_memory }}
+          --memory-swap={{ cap_swap }} --name yomi-api
+        backup: true
+      register: yomi_cap
+      tags: [bound]
+
+    - name: Reload user systemd manager
+      ansible.builtin.command:
+        argv: [systemctl, --machine=tony@.host, --user, daemon-reload]
+      become: true
+      changed_when: false
+      when:
+        - not ansible_check_mode
+        - yomi_cap.changed
+      tags: [bound]
+
+    - name: Apply live memory cap to the running container (stopgap)
+      ansible.builtin.command:
+        argv:
+          - podman
+          - update
+          - "--memory={{ cap_memory }}"
+          - "--memory-swap={{ cap_swap }}"
+          - yomi-api
+      register: live_cap
+      changed_when: false
+      failed_when: false
+      when: not ansible_check_mode
+      tags: [bound]
+
+    - name: Restart yomi-api so the container is recreated under the cap
+      ansible.builtin.command:
+        argv: [systemctl, --machine=tony@.host, --user, restart, yomi-api.service]
+      become: true
+      changed_when: false
+      when:
+        - not ansible_check_mode
+        - yomi_cap.changed
+      tags: [bound]
+
+    - name: Wait for Yomi API to accept connections
+      ansible.builtin.wait_for:
+        host: 127.0.0.1
+        port: 3000
+        timeout: 60
+      when: not ansible_check_mode and yomi_cap.changed
+      tags: [verify]
+
+    - name: Re-read unit after convergence
+      ansible.builtin.slurp:
+        src: "{{ yomi_unit_path }}"
+      register: capped_unit
+      when: not ansible_check_mode
+      tags: [verify]
+
+    - name: Assert the persistent memory cap is installed
+      ansible.builtin.assert:
+        that:
+          - "'--memory=' ~ cap_memory in capped_text"
+          - "'--memory-swap=' ~ cap_swap in capped_text"
+        fail_msg: "Memory cap missing from {{ yomi_unit_path }}"
+      vars:
+        capped_text: "{{ capped_unit.content | b64decode }}"
+      when: not ansible_check_mode
+      tags: [verify]
+
+    - name: Read effective container memory limit
+      # Avoid a Jinja-hostile {{...}} --format string; parse the inspect JSON.
+      ansible.builtin.command:
+        argv: [podman, inspect, yomi-api]
+      register: yomi_inspect
+      changed_when: false
+      when: not ansible_check_mode
+      tags: [verify]
+
+    - name: Assert container memory limit is the capped value
+      ansible.builtin.assert:
+        that:
+          - effective_mem | int == cap_bytes | int
+        fail_msg: "yomi-api container memory limit is {{ effective_mem }}, expected {{ cap_bytes }}"
+      vars:
+        effective_mem: "{{ (yomi_inspect.stdout | from_json)[0].HostConfig.Memory }}"
+      when: not ansible_check_mode
+      tags: [verify]
+
+    - name: Check mddb MCP endpoint (informational — mddb health is out of scope)
+      # mddb has its own GOMEMLIMIT=8000MiB in mddb.container and can be in a
+      # slow warmup; do not fail the yomi-api capping run on its state.
+      ansible.builtin.command:
+        argv:
+          - curl
+          - -s
+          - -o
+          - /dev/null
+          - -w
+          - "%{http_code}"
+          - --max-time
+          - "8"
+          - http://100.102.134.91:9000/mcp
+      register: mddb_probe
+      changed_when: false
+      failed_when: false
+      when: not ansible_check_mode
+      tags: [verify]
+
+    - name: Report verification
+      ansible.builtin.debug:
+        msg: >-
+          yomi-api memory={{ (yomi_inspect.stdout | from_json)[0].HostConfig.Memory }} bytes,
+          mddb /mcp HTTP={{ mddb_probe.stdout | default('n/a') }}
+          (informational), live_cap_rc={{ live_cap.rc | default('skipped') }}
+      when: not ansible_check_mode
+      tags: [verify]
