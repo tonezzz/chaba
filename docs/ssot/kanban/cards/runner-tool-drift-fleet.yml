@@ -1823,6 +1823,13 @@ comms:
 - at: 2026-11-27 21:03
   from: devin
   text: closed by devin
+- at: 2026-11-27 21:03
+  from: chaba
+  text: '2026-11-27 21:00 +07: new dispatch_repos.py pin c77eecb4264a / JEVOS_URL=100.123.163.11:8017 verified installed
+    on all six hosts; audit-runner-tools.yml reports 0 DRIFT. tony-omen was the last stale host: its canonical chaba
+    checkout was 141 commits behind, so the local converge kept auditing against the old 022176 pin; fleet-repo-sync.yml
+    --limit tony-omen fast-forwarded it and the tail-step tool sync installed the pin. Root cause of the recurring
+    audit noise: OnCalendar=*:0/2:05 is every 2 min'
 action:
   type: dispatch
   status: done
