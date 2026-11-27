@@ -268,6 +268,11 @@ const CAPTURE_RECIPES = [
   { key: "devin_usage", match: /app\.devin\.ai\/.*\/settings\/usage/, slug: "devin_usage" },
   { key: "devin_billing", match: /app\.devin\.ai\/.*\/settings\/plans/, slug: "devin_billing" },
   {
+    key: "gemini_rate_limits",
+    match: /aistudio\.google\.com\/app\/rate-limit/,
+    slug: "gemini_rate_limits",
+  },
+  {
     key: "gcp_quotas",
     match: /console\.cloud\.google\.com\/iam-admin\/quotas/,
     slug: "gcp_quotas",
@@ -403,18 +408,19 @@ function waitForComplete(tabId, timeoutMs = 30000) {
 }
 
 async function navigateAndCapture(url, slug) {
-  if (!/^https:\/\/app\.devin\.ai\//.test(url || "")) {
-    return { ok: false, error: "only app.devin.ai URLs are allowed" };
+  if (!/^https:\/\/(app\.devin\.ai|aistudio\.google\.com)\//.test(url || "")) {
+    return { ok: false, error: "only app.devin.ai or aistudio.google.com URLs are allowed" };
   }
-  const wantsHistory = /tab=history/.test(url);
+  const target = new URL(url);
   const all = await chrome.tabs.query({});
-  let tab = all.find(
-    (t) =>
-      t.url &&
-      t.url.includes("app.devin.ai/org/") &&
-      t.url.includes("/settings/usage") &&
-      /tab=history/.test(t.url) === wantsHistory
-  );
+  let tab = all.find((t) => {
+    try {
+      const x = new URL(t.url);
+      return x.host === target.host && x.pathname === target.pathname;
+    } catch (_) {
+      return false;
+    }
+  });
   if (tab) {
     await chrome.tabs.update(tab.id, { url, active: false });
   } else {
