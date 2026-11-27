@@ -9,7 +9,7 @@ note: '89% used >= ssot max_root_disk_percent 85% top grower 24h: /home/tony/.ca
   +0.4 GiB, /var/log +0.3 GiB'
 help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
   (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
-updated: '2026-11-27'
+updated: 2026-11-27 20:29
 comms:
 - at: 2026-10-07 07:27
   from: tony
@@ -276,6 +276,13 @@ comms:
 - at: 2026-11-27 17:43
   from: tony
   text: closed by tony
+- at: 2026-11-27 20:29
+  from: tony
+  text: 'PARTIAL CLEANUP 2026-11-27 20:29 +07: approved bounded cache cleanup done — sudo apt-get clean removed
+    789M of old .deb cache (/var/cache/apt/archives 789M -> 16K); df improved from 87%/28G free to 87%/29G free.
+    The 7.3G ~/.cache/uv could not be cleaned safely: uv cache clean reports the cache is in-use, and live uv run
+    processes for mda:2025 and langgraph:2024/2025 (started 15:24) hold builds-v0 paths inside it. Waiting clean
+    processes were cancelled; no running service was stopped. Still at 87'
 brief: Disk space on tony-dell (/) is running low — check the note for the rate and top growers, then free space
   or close the card.
 action:
