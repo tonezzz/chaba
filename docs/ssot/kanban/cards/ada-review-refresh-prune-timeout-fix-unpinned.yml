@@ -1,7 +1,7 @@
 id: ada-review-refresh-prune-timeout-fix-unpinned
 title: ada-review-refresh times out in prune-old-docs.py on tony-omen
 column: done
-updated: 2026-11-27 10:57
+updated: 2026-11-27 10:59
 spec: 'ada-review-refresh.service on tony-omen failed at 09:03 with subprocess.TimeoutExpired: export-transcripts.py
   calling prune-old-docs.py exceeded its 600s timeout (whole unit ran 18m52s wall, 51M swap used). Investigate why
   the prune step now takes >10 minutes and make it complete reliably within the job budget — batch/incremental traversal,
@@ -81,6 +81,15 @@ comms:
   from: chaba
   text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-093753-ada-review-refresh-service-on-,
     branch dispatch/20261127-093753-ada-review-refresh-service-on- on con01'
+- at: 2026-11-27 10:58
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 10:59
+  from: chaba
+  text: 'session-end checkpoint 56c6003f: 1 leftover file(s) committed'
+- at: 2026-11-27 10:59
+  from: chaba
+  text: banked 290 outcome lesson(s) → devin-handoff bank
 claim:
   since: 2026-11-27 09:36
 auto_close:
