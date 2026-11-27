@@ -1,7 +1,7 @@
 id: cms-publish-remote-end-closed-fix-unpinned
 title: idc03 CMS publish timers fail with 'Remote end closed connection'
 column: doing
-updated: 2026-11-27 09:39
+updated: 2026-11-27 10:17
 spec: 'Journal on idc03 for chaba-starboard-tracker.service (08:47) and chaba-cached-videos.service (08:37) ends
   with `error: Remote end closed connection without response` and exit=1, although earlier runs of both published
   successfully. Root cause is an unhandled transient connection close during the CMS page publish step, not missing
@@ -52,5 +52,12 @@ comms:
 - at: 2026-11-27 09:39
   from: chaba
   text: 'con01 defers: runner at local cap (1/1) — remote slots unaffected'
+- at: 2026-11-27 10:17
+  from: devin
+  text: 'fix on dispatch branch (8b653b0b62 + trail 07d8c7d7d4): new scripts/lib/mddb_http.py — bounded retry (2/4/8/16/32s,
+    5 retries) on transport-close errors for the shared MDDB _post used by both jobs; HTTPError+other exceptions
+    raise immediately. Verified on idc03: staged runs through a fail-first proxy AND live mddb-cms congestion both
+    published en+th with EXIT=0; real oneshot units started -> Result=success. Lands via merge->served-checkout
+    pull (oneshot, no restart).'
 claim:
   since: 2026-11-27 09:36
