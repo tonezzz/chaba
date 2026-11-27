@@ -1,7 +1,7 @@
 id: focus-dispatcher-overnight-promise-code-fix
 title: focus-dispatcher-overnight fails with Promise passed as error code
-column: doing
-updated: 2026-11-27 11:55
+column: review
+updated: 2026-11-27 12:02
 spec: 'focus-dispatcher-overnight.service on tony-omen ends with `[overnight] completed with errors` after `TypeError
   [ERR_INVALID_ARG_TYPE]: The "code" argument must be of type number. Received an instance of Promise`. The SSOT
   validation step reports Total errors: 0, so the TypeError is in the JavaScript/Node overnight focus workflow''s
@@ -14,12 +14,15 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: running
+  status: done
   runner: idc02
   attempts: 1
   sweep:
     stale_running: 2026-11-27 11:40
     conflict_sig: 3fca42a295a7|docs/ssot/jobs/infrastructure/2026-11-27-ada-review-refresh-prune-timeout.yml
+  result: 'exit=0 ; deployed verification copies on omen were restored to HEAD so repo-sync lands the merge cleanly.
+    | devin-task-20261127-103140-focus-dispatcher-overnight-ser.service: Consumed 3min 43.643s CPU time, 493.3M
+    memory peak, 0B memory swap peak.'
 ref: OPS-1492
 comms:
 - at: 2026-11-27 10:29
@@ -95,6 +98,25 @@ comms:
   from: chaba
   text: 'merge-sweep: dispatch/20261127-103140-focus-dispatcher-overnight-ser conflicts with origin/master: docs/ssot/jobs/infrastructure/2026-11-27-ada-review-refresh-prune-timeout.yml
     — merge aborted, card stays for human resolution'
+- at: 2026-11-27 12:02
+  from: idc02
+  text: 'finished (ok): exit=0 ; deployed verification copies on omen were restored to HEAD so repo-sync lands the
+    merge cleanly. | devin-task-2'
+- at: 2026-11-27 12:02
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 12:02
+  from: chaba
+  text: banked 376 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-27 12:02
+  from: chaba
+  text: pushed dispatch/20261127-103140-focus-dispatcher-overnight-ser to origin
+- at: 2026-11-27 12:02
+  from: chaba
+  text: 'auto-merge not done: merge: commit after conflict resolution failed — close will block until merged'
+- at: 2026-11-27 12:02
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
 claim:
   since: 2026-11-27 10:30
 requests:
@@ -117,3 +139,4 @@ requests:
     action: hold
     label: hold the card
   suggested: resolve — let devin resolve the conflict and land it ★
+review_kind: verify
