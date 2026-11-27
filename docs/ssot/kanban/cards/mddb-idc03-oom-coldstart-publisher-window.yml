@@ -1,7 +1,7 @@
 id: mddb-idc03-oom-coldstart-publisher-window
 title: MDDB idc03 OOM restarts + cold-start window break publishers
 column: done
-updated: 2026-11-27 17:39
+updated: 2026-11-27 18:10
 brief: mddb.service on idc03 was OOM-killed 15:58:20 (NRestarts=7 today); ~104s cold start leaves /v1 routes 404
   after health port opens. mddb-cms POST /v1/add write timeout 30s under embed congestion. Two timer publishers
   exited 1 at 15:55 and 16:00; both self-healed next tick.
@@ -165,6 +165,13 @@ comms:
 - at: 2026-11-27 17:39
   from: tony
   text: closed by tony
+- at: 2026-11-27 18:10
+  from: chaba
+  text: 'MEM-1507 publisher hardening PREPARED + TESTED, NOT DEPLOYED. Both publishers POSTed to /v1/add right after
+    a health probe; an OOM restart leaves /health open ~84-104s before /v1 routes are live, so ticks in that window
+    exited 1 with HTTP 404. Added to scripts/ada/media-inbox-update.py (chaba branch ops/idc03-memory-guard, commit
+    fe6b3a3661c) and ada-voice/scripts/ops-health-report.py (commit 04aa253, pushed): gate POST on GET /v1/stats
+    (MDDB_ROUTE_WAIT_S=120), retry 404/429/5xx + disconnects up'
 action:
   type: dispatch
   status: done
