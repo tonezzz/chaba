@@ -1,7 +1,7 @@
 id: omen-lan-reservation
 title: tony-omen LAN IP needs DHCP reservation (or dynamic refs)
 column: doing
-updated: 2026-11-27 15:29
+updated: 2026-11-27 15:44
 brief: 'Omen DHCP drifted 192.168.2.86->.84 on 2026-10-12 and silently broke every hardcoded LAN reference (cast-browser-proxy
   target, cast-shots-http bind, MEDIA_BASE, barrier scripts). Proxy+shots now DHCP-proof, but MEDIA_BASE=http://192.168.2.84:8090
   must stay a LAN IP (Chromecast cannot reach tailnet) — it will break again on the next renumber. Fix: pin a DHCP
@@ -337,6 +337,13 @@ comms:
   text: 'attempt 2: prior run delivered all work but auto-merge conflicted on docs/ssot/ssot.dev-system.assessment.yml
     (generated file, last_reviewed timestamp only). Merging dispatch/20261127-142035 into this branch and resolving
     now.'
+- at: 2026-11-27 15:44
+  from: devin
+  text: 'DONE (attempt 2): prior failure was auto-merge conflict on generated docs/ssot/ssot.dev-system.assessment.yml
+    — merged dispatch/20261127-142035 into this branch, resolved it, then zeroed the file delta entirely (restored
+    merge-base blob + skip-worktree) so the recurring producer regen cannot re-conflict. Branch delta vs master
+    = exactly the 7 deliverable files; git merge-tree vs origin/master clean. Re-verified live: from tony-dell ping
+    192.168.2.86 OK + http://192.168.2.86:8090/ -> 200; on omen'
 requests:
 - id: the-card-notes-that-the-tony-o-1dbcf8
   ask: The card notes that the tony-omen LAN IP needs a DHCP reservation or dynamic refs, but does not specify the
@@ -382,3 +389,4 @@ action:
 claim:
   since: 2026-11-27 15:25
 review_kind: verify
+awaiting_action: true
