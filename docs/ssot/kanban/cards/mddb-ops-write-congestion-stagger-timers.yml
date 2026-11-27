@@ -1,7 +1,7 @@
 id: mddb-ops-write-congestion-stagger-timers
 title: mddb-ops write congestion waves — investigate + stagger fleet shipper timers
 column: done
-updated: 2026-11-27 14:26
+updated: 2026-11-27 14:27
 priority: medium
 tags:
 - ops
@@ -131,6 +131,12 @@ comms:
   from: chaba
   text: restarted zombie claim as devin-task-20261127-142613-follow-up-from-ops-1497-log-sh on idc02 — claim committed
     but the response was lost (OPS-1071)
+- at: 2026-11-27 14:27
+  from: devin
+  text: 'attempt-2 (zombie-claim restart OPS-1071): attempt-1 work already merged (a38522d8). Executing Tony-approved
+    kill of drain loop pid 3862968 on idc03 — still alive at 14:29 (+ child prune-old-docs.py 269016); mddb-ops
+    journal still logging deleteWhere completions at ~3300-3450s elapsed. Killing now, then verifying no new deleteWhere
+    requests land.'
 action:
   type: dispatch
   status: done
