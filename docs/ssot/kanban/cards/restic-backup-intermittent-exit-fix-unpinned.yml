@@ -1,7 +1,7 @@
 id: restic-backup-intermittent-exit-fix-unpinned
 title: fleet-restic-backup on tony-macbook intermittently exits 1
 column: doing
-updated: 2026-11-27 09:37
+updated: 2026-11-27 09:39
 spec: fleet-restic-backup.service on tony-macbook alternates between Result=success (1.8-4.9s) and status=1/FAILURE
   on consecutive runs (including 09:06). Read the full journal around the failed runs to identify the actual restic
   error (repository lock, target tony-dell:/mnt/sdb unavailable, or a transient network drop), then add a bounded
@@ -36,5 +36,18 @@ comms:
 - at: 2026-11-27 09:37
   from: tony-dell
   text: claimed
+- at: 2026-11-27 09:39
+  from: chaba
+  text: 'con01 defers: runner at local cap (1/1) — remote slots unaffected'
+- at: 2026-11-27 09:39
+  from: chaba
+  text: started devin-task-20261127-093800-fleet-restic-backup-service-on on tony-dell (dispatch executor=devin)
+- at: 2026-11-27 09:39
+  from: chaba
+  text: 'primer injected 8 lesson(s): [timer-alert-idc02-fleet-restic-backup] RESOLVED 2026-11-25: snapshot saved,
+    the; [omen-maintenance-preflight-back-up-ha-st-b3738f] Dispatch started on tony-macbo; [ops-1025-remote-read-smoke-idc03]
+    finished (failed): exit=1 /FAILURE | devin-ta; [ops-1025-remote-read-smoke-idc03] finished (failed): exit=1
+    1/FAILURE | devin-t; [ansible-vs-legacy-fleet-benchmark] finished (failed): journal=exit-code hmark-a; [devin-session-audit-2026-10-29]
+    finished (failed): journal=e'
 claim:
   since: 2026-11-27 09:37
