@@ -258,6 +258,13 @@ comms:
 - at: 2026-11-27 12:57
   from: chaba
   text: classified as manual (kw:camera conf 1.00)
+- at: 2026-11-27 12:57
+  from: tony
+  text: 'routing edited: lane=paid_frontier, executor=devin by tony: re-arm for next batch 2026-11-27: manual lane
+    blocked dispatch; promote to paid_frontier/devin'
+- at: 2026-11-27 12:57
+  from: tony
+  text: queued for processing
 spec: Fix the remaining go2rtc camera producers on tony-omen that return empty 200/0B frames for ip_cam_65 and the
   xiaomi_c100/c201 variants. Inspect and correct the producer configurations located in ~/.config/go2rtc/*.sh on
   tony-omen and check xiaomi-token-refresh.py. The target host is tony-omen and the relevant repo/environment context
@@ -266,8 +273,7 @@ spec: Fix the remaining go2rtc camera producers on tony-omen that return empty 2
   image payloads instead of 0B responses.
 action:
   type: dispatch
-  status: idle
-  lane: manual
-  lane_source: kw
+  status: queued
+  lane: paid_frontier
+  executor: devin
 claim: {}
-awaiting_action: true
