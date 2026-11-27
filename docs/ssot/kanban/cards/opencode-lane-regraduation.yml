@@ -898,6 +898,12 @@ comms:
 - at: 2026-11-27 10:53
   from: tony
   text: queue refused — attempt cap reached (2/2) — /action do=retry re-arms it
+- at: 2026-11-27 10:53
+  from: tony
+  text: 'answered s0-gate-ran-twice-post-reset-or-free-nem-a3e28c: proceed'
+- at: 2026-11-27 10:53
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
@@ -1011,12 +1017,13 @@ requests:
     qualification-only, NOT a STRONG_MODELS/free-tier admission change — your call) C) hold lane at S0, revisit
     later. Note: S1 canary still needs your live ~10min watch on idc02 (s1-watch.sh) whenever the gate passes. Prior
     quota request is moot post-reset.'
-  status: open
+  status: answered
   at: 2026-11-27 09:11
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 action:
   type: dispatch
   status: failed
@@ -1032,3 +1039,4 @@ action:
   last_failure: attempt cap reached (2/2) — /action do=retry re-arms it
 claim:
   since: 2026-11-27 08:04
+awaiting_action: true
