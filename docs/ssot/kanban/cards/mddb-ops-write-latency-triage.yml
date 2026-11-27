@@ -1,7 +1,7 @@
 id: mddb-ops-write-latency-triage
 title: 'mddb-ops: diagnose /add + /ingest ~125s congestion waves (read-only, approval-gated)'
 column: doing
-updated: 2026-11-27 13:30
+updated: 2026-11-27 13:31
 brief: Next batch 2026-11-27 — 4 runner slots free.
 priority: high
 tags:
@@ -67,5 +67,28 @@ comms:
 
     Chain: host-logs has 592,247 docs of which 387,737 are expired (>3d) — backlog from weeks of broken retention
     sweep (MEM-0871 paging-limit + ADA-1485 timeouts). Each loop iteration'
+- at: 2026-11-27 13:31
+  from: devin
+  text: 'raised request approval-needed-mddb-ops-write-congestio-f92e57: APPROVAL NEEDED — mddb-ops write congestion
+    fix. Diagnosis posted as comment: detached drain loop PID 3862968 on idc03 ('
 claim:
   since: 2026-11-27 12:58
+requests:
+- id: approval-needed-mddb-ops-write-congestio-f92e57
+  ask: 'APPROVAL NEEDED — mddb-ops write congestion fix. Diagnosis posted as comment: detached drain loop PID 3862968
+    on idc03 (from the prune-timeout fix dispatch) is flooding mddb-ops with orphaned 66-82min deleteWhere handlers
+    that convoy the single bbolt write tx -> /add//ingest at 10-200s, fleet log shipping failing. RECOMMENDED: (A)
+    kill the drain loop now — client-side only, no MDDB service/data change, orphans self-drain in ~1-2h, /add recovers
+    to ~2-6s; (B) then schedule a Procedure-C offline bbolt compact of mddb-ops (docs/kb/mddb-prune-compact.md,
+    verified 76G->6.2G on 2026-11-24; 26.85GB->~3GB, ~15-30min downtime, .pre-compact rollback) to kill the 23.6GB
+    freelist poison so commits/deletes get fast; retention backlog (387k expired host-logs) then drains cheaply
+    via normal sweep. ALTERNATIVE to B: Procedure-B export->fresh re-add of only non-expired docs (~204k host-logs
+    + 24k telemetry; embeddings are OFF on ops so nothing vector-side is lost) — atomic retention+rebuild, more
+    moving parts. OPTIONS: [approve A+B] [approve A only, defer B] [approve A+C(export-rebuild) instead of B] [hold
+    — leave drain running]. Default recommendation: A+B.'
+  status: open
+  at: 2026-11-27 13:31
+  from: devin
+  options:
+  - proceed
+  - hold
