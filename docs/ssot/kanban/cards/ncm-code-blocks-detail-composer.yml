@@ -1,7 +1,7 @@
 id: ncm-code-blocks-detail-composer
 title: NCM code-block composer — detail by layer (Variant B, review)
 column: review
-updated: 2026-11-27 09:27
+updated: 2026-11-27 09:42
 brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
   by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
   for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
@@ -296,3 +296,10 @@ comms:
     0.5->0.2, learned_l1_sampling off, quant_resi off, 600 updates/batch64 (1177s CPU). Result: pad-excluded reconstruction
     0.000 (gate FAIL), mean unique codes 1.000, 0 of 12 levels with >1 code (usage FAIL); overall accuracy 0.768
     is entirely padding (pad fraction 0.768). D'
+- at: 2026-11-27 09:42
+  from: devin
+  text: 'Role-conditioned detail generator done — both pre-registered gates PASS, verdict watch. After both VQ tokenizers
+    collapsed (Sudoku + pack) and anti-collapse settings made it worse, this experiment drops the tokenizer entirely:
+    a supervised MLP conditioned ONLY on the block role (the block Jev/nest would choose) predicts all 81 detail
+    tokens in one forward pass — Variant B''s composition premise without the failed bottleneck. Gates declared
+    before training: held-out detail F1 >= 0.50 and produce-t'
