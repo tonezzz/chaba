@@ -1,7 +1,7 @@
 id: focus-dispatcher-overnight-promise-code-fix
 title: focus-dispatcher-overnight fails with Promise passed as error code
 column: doing
-updated: 2026-11-27 10:31
+updated: 2026-11-27 10:45
 spec: 'focus-dispatcher-overnight.service on tony-omen ends with `[overnight] completed with errors` after `TypeError
   [ERR_INVALID_ARG_TYPE]: The "code" argument must be of type number. Received an instance of Promise`. The SSOT
   validation step reports Total errors: 0, so the TypeError is in the JavaScript/Node overnight focus workflow''s
@@ -56,5 +56,11 @@ comms:
     report ExecMainStatus=0/Result=success DEFAULTS — exit ; idc02''s kanban-dispatch.service was a linked unit
     running a stale scripts/-only ; [dispatch-lane-classifier-codemod-keyword-false-positive] finished (failed):
     exi; [dispatch-lane-classifier-codemod-keyword-false-positive] fin'
+- at: 2026-11-27 10:45
+  from: devin
+  text: 'Root cause found: scripts/ssot-optimize-to-inbox.mjs ends with process.exit(main()) where main() is async
+    — passes a Promise to process.exit -> TypeError ERR_INVALID_ARG_TYPE on every run (it is the step right after
+    ssot-validate-all/ssot-optimize in overnight-focus-review.py). Fix applied in worktree: await main() and process.exit(resolved
+    code), catch->exit 1. Verifying locally then on tony-omen.'
 claim:
   since: 2026-11-27 10:30
