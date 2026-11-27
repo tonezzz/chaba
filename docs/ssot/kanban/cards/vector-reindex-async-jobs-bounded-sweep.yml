@@ -1,7 +1,7 @@
 id: vector-reindex-async-jobs-bounded-sweep
 title: 'vector-reindex.py: async jobs + bounded sweep + per-collection failure isolation'
-column: review
-updated: 2026-11-27 22:23
+column: done
+updated: 2026-11-27 22:26
 brief: 'Follow-up to OPS-1515 triage: the daily reindex sweep times out at 45min because it fires 64 sequential
   sync per-collection reindex calls with no global deadline; one collection has 149,550 docs (86% of corpus). Deployed
   mddb 2.18.10 supports async reindex jobs — switch the client to async+poll with a bounded sweep.'
@@ -90,6 +90,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-214836-implement-the-phase-1-fix-from,
     branch dispatch/20261127-214836-implement-the-phase-1-fix-from'
+- at: 2026-11-27 22:26
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -104,3 +107,7 @@ action:
 claim:
   since: 2026-11-27 21:47
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 22:26
+  note: verified — evidence checks green, closing itself
