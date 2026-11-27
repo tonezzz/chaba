@@ -1,0 +1,78 @@
+icon: shield
+title: Fleet-ssh ProxyJump resilience + tony-dell stale jump repair
+date: 2026-11-27
+card: runner-drift-rearm-idc03-ssh-proxyjump-dead
+ref: SYS-1487
+context: >-
+  Found during runner-tools-converge-local-scope-fix (OPS-1478):
+  scripts/board/runner-drift-rearm.py defaults --ssh-host idc03 and every
+  board_call raised RuntimeError on tony-dell because `ssh idc03` resolved
+  via ~/.ssh/config `ProxyJump tony-omen`, which the 2026-11-26 scoped-sftp
+  hardening (AllowTcpForwarding no fleet-wide) refuses — `channel 0: open
+  failed: administratively prohibited`. Callers `|| true` the script so
+  drift re-arm + verify comments silently no-op'd on the controller.
+  Reproduced live: plain `ssh idc03` rc=255, `ssh -o ProxyJump=none
+  idc03` rc=0. tony-dell's ~/.ssh/config is hand-managed (no SYS-0032
+  managed block); the ProxyJump line was stale drift — direct tailnet is
+  the declared route (ansible_host=100.102.134.91).
+changes:
+  - "scripts/lib/ssh_route.py (new): ssh_run()/ssh_argvs() — tries
+    `ssh -o ProxyJump=none -o ProxyCommand=none <host>` (direct tailnet,
+    alias still resolves HostName/User/IdentityFile) first, then the
+    operator's ssh config as fallback. Same ordering as mcp-health
+    execOnHealthHost (2026-11-26). All-routes-fail returns the last
+    route's result; last-route TimeoutExpired propagates."
+  - "scripts/board/board-cli.py: --ssh transport now goes through
+    ssh_run — fixes every `board-cli --ssh idc03` consumer (card-run,
+    card-pick, card-context, capture-apply) at once."
+  - "scripts/board/runner-drift-rearm.py: board_call() uses ssh_run."
+  - "scripts/ada/timer-sentinel.py: _live_verify() ssh probes use
+    ssh_run (guarded import — falls back to plain ssh on a stale
+    checkout mid-sync so the watchdog can't die on a missing lib)."
+  - "scripts/ada/timer-timeline-update.py: collect_host() fleet ssh
+    uses ssh_run (same guarded import) — the sweep feeds sentinel's
+    host_ok, same latent fragility."
+  - "tony-dell ~/.ssh/config: removed `ProxyJump tony-omen` from the
+    Host idc03 stanza (backup ~/.ssh/config.bak-20261127-sshproxyjump).
+    Root-cause repair — every other `ssh idc03` consumer on dell
+    (chaba-nag relay, mddb-standby-pull, llm-burn, ci-smoke, ad-hoc
+    ops) is fixed without code changes."
+verification:
+  - "mn01: `ssh -o BatchMode=yes idc03 true` OK before and after —
+    unaffected host."
+  - "tony-dell before fix: `ssh idc03 true` -> rc=255 'channel 0: open
+    failed: administratively prohibited'; `ssh -G idc03` showed
+    proxyjump tony-omen."
+  - "tony-dell after fix: ProxyJump line gone, `ssh -G idc03` clean,
+    `ssh idc03 true` rc=0, and the board_call path verified end-to-end:
+    `ssh idc03 python3 ~/CascadeProjects/chaba/scripts/board/board-cli.py
+    __api` GET /cards returned the card JSON."
+  - "tony-omen/mn01/idc02 `ssh -G idc03`: no proxyjump — only dell was
+    drifted; idc03's own config is clean (board-api-side ssh calls to
+    runner hosts unaffected)."
+  - "python3 -m unittest tests.test_ssh_route (8 tests),
+    tests.board.test_board_cli (13), test_runner_drift_rearm functions —
+    all pass; py_compile clean on all touched files; sentinel and
+    timeline modules import with ssh_run resolving to ssh_route."
+  - "Card's timer-sentinel hypothesis checked: sentinel+timeline are
+    co-located on tony_omen (ssot.jobs.yml), whose ssh config is clean —
+    _live_verify was NOT actually broken today; patched anyway as the
+    same latent class."
+residual: >-
+  Other fleet-ssh call sites not yet on ssh_run (deliberate scope):
+  scripts/board/runner-fleet-health.py probe(), board-api.py
+  _hide_remote_session + answer delivery, kanban-dispatch.py,
+  merge-sweep.py, opencode_command.py, scripts/ada/host-services-cms.py,
+  log-shipper.py, scripts/ops/*.py — most run on idc03 (clean config)
+  or report ssh failure visibly rather than silently. Adopt ssh_run
+  when next touched. tony-dell's ~/.ssh/config remains hand-managed —
+  running ansible/playbooks/ssh-config-generate.yml on dell would put
+  the stanza under the SYS-0032 managed block and prevent recurrence.
+  con01's ssh config unverified (mn01->con01 publickey denied).
+lesson: >-
+  `AllowTcpForwarding no` silently kills every ProxyJump fleet-wide —
+  any ~/.ssh/config jump-host path becomes dead weight overnight. The
+  durable pattern (now in scripts/lib/ssh_route.py, mirroring mcp-health
+  execOnHealthHost): try direct tailnet first, operator config as
+  fallback. And `|| true` on a board-writing script turns ssh failure
+  into a silent no-op — verify the transport, not just the exit code.

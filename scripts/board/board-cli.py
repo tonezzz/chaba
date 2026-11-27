@@ -29,10 +29,10 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import subprocess
 import sys
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 LOOPBACK_API = "http://127.0.0.1:8787"
 TAILNET_API = "https://idc03.taila0626a.ts.net:10000"
@@ -55,13 +55,18 @@ def call(method: str, path: str, payload: dict | None,
     if ssh_host:
         # board-api binds localhost on the remote host; the same script
         # exists there via chaba-repo-sync. JSON envelope on stdin avoids
-        # shell mangling of '&' in query strings.
+        # shell mangling of '&' in query strings. ssh_run tries the
+        # direct tailnet route first so a stale ProxyJump in the local
+        # ssh config cannot wedge the call (ssh_route.py).
         env = json.dumps({"method": method, "path": path,
                           "payload": payload}).encode()
-        r = subprocess.run(
-            ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15",
-             ssh_host, "python3", REMOTE_SCRIPT, "__api"],
-            input=env, capture_output=True, timeout=HTTP_TIMEOUT_S + 30)
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2]
+                               / "scripts" / "lib"))
+        from ssh_route import ssh_run
+        r = ssh_run(
+            ssh_host, ["python3", REMOTE_SCRIPT, "__api"],
+            opts=["-o", "BatchMode=yes", "-o", "ConnectTimeout=15"],
+            input=env, timeout=HTTP_TIMEOUT_S + 30)
         if r.returncode:
             raise RuntimeError(
                 (r.stderr or r.stdout or b"ssh failed").decode()[:300])

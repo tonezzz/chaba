@@ -38,6 +38,18 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 REPO = Path(os.environ.get("REPO") or Path(__file__).resolve().parents[2])
+sys.path.insert(0, str(REPO / "scripts" / "lib"))
+try:
+    from ssh_route import ssh_run
+except ImportError:
+    # stale checkout mid-sync — plain ssh, no ProxyJump fallback
+    def ssh_run(target, remote, *, opts=None, input=None,
+                capture_output=True, text=False, timeout=60):
+        remote = [remote] if isinstance(remote, str) else list(remote)
+        return subprocess.run(
+            ["ssh", *(opts or ["-o", "BatchMode=yes"]), target, *remote],
+            input=input, capture_output=capture_output, text=text,
+            timeout=timeout)
 BOARD_API = os.environ.get("BOARD_API", "http://127.0.0.1:8787").rstrip("/")
 STATE_DIR = Path(os.environ.get(
     "TT_STATE_DIR", str(Path.home() / ".local/share/chaba/timer-timeline")))
@@ -126,9 +138,10 @@ def _live_verify(cid, sweep):
     if cid.startswith("timer-alert-host-"):
         host = cid[len("timer-alert-host-"):]
         try:
-            res = subprocess.run(
-                ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8",
-                 host, "true"], capture_output=True, timeout=15)
+            res = ssh_run(
+                host, "true",
+                opts=["-o", "BatchMode=yes", "-o", "ConnectTimeout=8"],
+                capture_output=True, timeout=15)
             return res.returncode != 0
         except Exception:
             return None
@@ -140,11 +153,11 @@ def _live_verify(cid, sweep):
             continue
         name = cid[len(prefix):]
         try:
-            res = subprocess.run(
-                ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8",
-                 host,
-                 f"systemctl --user show {name}.service -p Result "
-                 f"--value; systemctl --user is-enabled {name}.timer"],
+            res = ssh_run(
+                host,
+                f"systemctl --user show {name}.service -p Result "
+                f"--value; systemctl --user is-enabled {name}.timer",
+                opts=["-o", "BatchMode=yes", "-o", "ConnectTimeout=8"],
                 capture_output=True, text=True, timeout=15)
         except Exception:
             return None
