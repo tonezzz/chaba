@@ -1,7 +1,7 @@
 id: omen-lan-reservation
 title: tony-omen LAN IP needs DHCP reservation (or dynamic refs)
 column: doing
-updated: 2026-11-27 14:25
+updated: 2026-11-27 14:47
 brief: 'Omen DHCP drifted 192.168.2.86->.84 on 2026-10-12 and silently broke every hardcoded LAN reference (cast-browser-proxy
   target, cast-shots-http bind, MEDIA_BASE, barrier scripts). Proxy+shots now DHCP-proof, but MEDIA_BASE=http://192.168.2.84:8090
   must stay a LAN IP (Chromecast cannot reach tailnet) — it will break again on the next renumber. Fix: pin a DHCP
@@ -269,6 +269,12 @@ comms:
     Phase B+ ansible session-captu; runbook docs/kb/host-hygiene-rules.md: Host Hygiene Rules — how machines stay
     cl; runbook docs/kb/host-reboot-verification.md: Host Reboot Verification Runbook — ; runbook docs/kb/overnight-assessment-areas.md:
     Assessment Are'
+- at: 2026-11-27 14:47
+  from: devin
+  text: 'dispatch progress: verified live — eno1 is NM manual static 192.168.2.86 (no DHCP), ZTE F688 bindings tonyomen->.86
+    + omenwlan->.84 both present (10/10 table). Found live cast-browser.service still had MEDIA_BASE=.84 (dead IP)
+    — fixed to .86 + restarted, verified active. cast-shots-http repo synced to live 0.0.0.0 bind. SSOT registries
+    updated; runbook docs/kb/zte-f688-admin-api.md + jobs trail written.'
 requests:
 - id: the-card-notes-that-the-tony-o-1dbcf8
   ask: The card notes that the tony-omen LAN IP needs a DHCP reservation or dynamic refs, but does not specify the
