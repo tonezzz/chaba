@@ -1,7 +1,7 @@
 id: timer-alert-idc03-chaba-cached-videos
 title: Timer chaba-cached-videos on idc03 failing
-column: backlog
-updated: 2026-11-27 09:05
+column: done
+updated: 2026-11-27 09:46
 priority: high
 tags:
 - timer-alert
@@ -908,6 +908,13 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-27 08:37) of `chaba-cached-videos.service` on `idc03` result=exit-code
     — investigate journal: `journalctl --user -u chaba-cached-videos.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-27 09:46
+  from: tony
+  text: '[cleanup 2026-11-27] Live verify 2026-11-27: chaba-cached-videos.service Result=success, timer enabled.
+    Transient CMS publish error cleared. Closing; the retry fix is in flight on KNB-1484.'
+- at: 2026-11-27 09:46
+  from: tony
+  text: closed by tony
 action:
   status: done
 spec: Investigate the recurring exit-code failures of the `chaba-cached-videos.service` user timer on host idc03
