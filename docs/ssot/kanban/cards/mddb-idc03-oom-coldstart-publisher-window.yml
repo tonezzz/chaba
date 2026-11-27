@@ -1,7 +1,7 @@
 id: mddb-idc03-oom-coldstart-publisher-window
 title: MDDB idc03 OOM restarts + cold-start window break publishers
 column: done
-updated: 2026-11-27 18:31
+updated: 2026-11-27 18:36
 brief: mddb.service on idc03 was OOM-killed 15:58:20 (NRestarts=7 today); ~104s cold start leaves /v1 routes 404
   after health port opens. mddb-cms POST /v1/add write timeout 30s under embed congestion. Two timer publishers
   exited 1 at 15:55 and 16:00; both self-healed next tick.
@@ -189,6 +189,13 @@ comms:
     in favour of master''s, updated the playbook pin to ca19116810cb..., reduced our test file to the ops-specific
     cases (media is covered upstream by tests/ada/test_media_inbox_mddb_gate.py), and force-with-lease pushed the
     reconciled branch. Re-deployed 18:29:38 (ok=12 chang'
+- at: 2026-11-27 18:36
+  from: chaba
+  text: 'MERGED TO MASTER 2026-11-27: ops/idc03-memory-guard fast-forwarded origin/master to 8178a2cc6c7. Rebase
+    found upstream PR #257 (5eeb0996eb4) had already landed the memory guard, embed offload, runner cap, litellm
+    cap and incident record, and commit 9098c165719 had landed the media publisher fix + test; those replayed commits
+    were dropped as already-upstream after verifying content equivalence. Only the final reconciled-redeploy documentation
+    paragraph remained and is now in master. Remote branch'
 action:
   type: dispatch
   status: done
