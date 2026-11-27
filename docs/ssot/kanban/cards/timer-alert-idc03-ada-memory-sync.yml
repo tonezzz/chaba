@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-memory-sync
 title: Timer ada-memory-sync on idc03 failing
 column: done
-updated: 2026-11-27 11:00
+updated: 2026-11-27 11:18
 priority: high
 tags:
 - timer-alert
@@ -75,5 +75,12 @@ comms:
 - at: 2026-11-27 11:00
   from: tony
   text: closed by tony
+- at: 2026-11-27 11:18
+  from: devin
+  text: 'RESOLVED 2026-11-27 ~11:15 +07 (card ada-memory-sync-mddb-readtimeout-fix / ADA-1490). Root cause: idc03
+    chaba-vault checkout 119k commits behind origin, no sync mechanism — ran pre-retry script (timeout=20). Deployed
+    current script surgically + installed repo timer (:17). Also fixed two latent bugs found on first healthy run:
+    delete-404 crash (search index lag) and shared-collection delete-storm (personal/tony + personal-tony -> same
+    collection). Verified: 3 consecutive manual runs Result=succe'
 action:
   status: done
