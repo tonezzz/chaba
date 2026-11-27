@@ -1,7 +1,7 @@
 id: runner-drift-rearm-idc03-ssh-proxyjump-dead
 title: runner-drift-rearm board writes silently dead on tony-dell (ssh idc03 ProxyJump refused)
 column: doing
-updated: 2026-11-27 10:04
+updated: 2026-11-27 10:20
 priority: medium
 tags:
 - infra
@@ -45,6 +45,13 @@ comms:
     [verify] OPS-0790 close-out (T; When board-api is unresponsive, verify lesson writes via direct MediaWiki API
     (b; gcloud/ADC for project gen-lang-client-0694401188 exists only on idc02; ssh -o P; idc02''s kanban-dispatch.service
     was a linked unit running a s'
+- at: 2026-11-27 10:20
+  from: devin
+  text: 'investigating: reproduced on tony-dell (ssh idc03 rc=255 administratively prohibited; ProxyJump=none rc=0).
+    Root cause = stale hand-managed ProxyJump tony-omen line in dell ~/.ssh/config (no SYS-0032 managed block).
+    omen/mn01/idc02 configs clean — sentinel+timeline co-located on omen are NOT affected today, but same latent
+    fragility. Plan: shared scripts/lib/ssh_route.py (direct-first, config fallback — mcp-health pattern) wired
+    into board-cli --ssh, runner-drift-rearm, timer-sentinel _live_veri'
 action:
   type: dispatch
   status: running
