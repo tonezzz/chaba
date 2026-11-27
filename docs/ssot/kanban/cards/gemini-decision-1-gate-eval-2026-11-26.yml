@@ -1,7 +1,7 @@
 id: gemini-decision-1-gate-eval-2026-11-26
 title: Evaluate gemini-decision-1 as a cheap dispatch-readiness gate
 column: done
-updated: 2026-11-27 10:28
+updated: 2026-11-27 11:06
 brief: Grade calibrated noul decisions on 10 real kanban briefs against a reproducible spec-present label, measure
   confidence and token use, decide whether to replace a full-model yes/no judgment.
 priority: medium
@@ -68,5 +68,12 @@ comms:
     Brier 0.0812), 0.96s, 19,511 input tokens and 0 output tokens. Holdout-tuned 0.536574 had 1 raw-label false
     approval, but that brief had a spec and was dispatched: a "not yet in our SSOT" marker misfire, as was the second
     FP at 0.5 ("only after policy checks"). With those two labels '
+- at: 2026-11-27 11:06
+  from: ada
+  text: 'Decisions rubric probe complete: score + choice question types over the same shared input on both the 130-brief
+    validation set and the original 110-brief holdout. Two batched free-key calls (260 and 220 questions), 1.2-1.4s,
+    95,931 input tokens total, zero output tokens. No reliable gain over binary noul: choice P(ready) at fixed 0.5
+    looked better on 130 (53/62 READY, 0 FP, Brier 0.0525 vs 0.0767) but was tied on 110 (one FP each, Brier 0.1245
+    vs 0.1248), so NOT adopted. Score expected value mis'
 action:
   status: done
