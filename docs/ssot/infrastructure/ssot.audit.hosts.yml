@@ -2324,8 +2324,11 @@ hosts:
         reason: "Deliberately stopped during the 2026-10 cam-wall pipeline rework alongside go2rtc (journal shows explicit Stopped, not a crash)"
         action: verify-after-camwall-rework
       - name: doc-mirror.service
-        reason: "Exceeds TimeoutStartSec=600 mirroring doc-archive — likely hanging on dead mddb default 100.74.146.0 in doc_archive.py; tracked in card sweep-stale-mddb-endpoint"
-        action: card-sweep-stale-mddb-endpoint
+        reason: "RESOLVED 2026-11-27: hourly doc-archive -> ha-www mirror aborted with curl exit 28. Root cause was one 240s budget for both small JSON and 22MB+ Drive PDF pages; a hung page request stalled the single-worker uvicorn and cascaded. Fixed with split curl budgets (60s metadata+retries / 300s pages+retries, -S), a no-DELETE partial-stage guard, single manifest parse per slug, and a 300s per-slug manifest cache in doc_archive.py. Last run Result=success (100 pages). Retained as rollout cover; a fresh failure is real."
+        action: monitor-next-sweep
+      - name: kraut-rain-watch.service
+        reason: "Persistent external dependency outage, not local drift: rain-check reads Michael's HA at http://127.0.0.1:18123 (SSH relay via tony-omen -> michael-ha:8123). tony-omen sshd has global AllowTcpForwarding no, so every channel is refused ('administratively prohibited: open failed') and urllib gets ConnectionResetError. Direct idc03 egress to michael-ha:8123 is also deliberately DROPped by mn-ha-quarantine.service (Tony order 2026-10-16). Manually re-run 2026-11-27 18:23: still exit 1. Restoring access would require overriding a security hardening and an explicit Tony order — owner policy decision needed."
+        action: owner-decide-ha-access-vs-retire-job
       - name: ada-scenario-casting.service
         reason: "Weekly scenario suite — exit 2 = refused while another suite holds the Ada session lock; schedule collision tracked in card fix-scenario-schedule-collision"
         action: card-fix-scenario-schedule-collision

@@ -139,6 +139,11 @@ applied:
     - "FINAL: read-only full-fleet ansible audit rerun after A/C reconciliation — ZERO deltas on all 7 hosts (tony-omen, tony-dell, mn01, idc02, idc03, con01, tony-macbook)."
     - "Legacy scripts/audit-hosts.py live reruns matched the ansible delta lists 1:1 (0 == 0) on tony-omen, tony-dell, idc03 and con01."
     - "YAML parse OK after the edit (the scripted insertion initially produced 'known_failed: []' followed by a sequence item on macbook — converted to a block section before the final audit)."
+    - "doc-mirror fix verified post-sweep: con01 doc-mirror.service last run Result=success, synced 100 pages across 100 archives (was failing hourly with curl exit 28). Fix = split curl budgets (60s metadata w/ retries, 300s pages w/ retries, -S), no-DELETE partial-stage guard, single manifest parse per slug, 300s per-slug manifest cache in doc_archive.py."
+    - "Post-long-sweep audit surfaced 3 new deltas, all triaged: (1) idc02 mddb.service quadlet inactive mid-sweep — systemctl --user restart -> active/Result=success, transient, no SSOT change; (2) idc03 chaba-kanban-brief.service SIGTERM/timeout at 17:56 — manual re-run Result=success, transient, no SSOT change; (3) idc03 kraut-rain-watch.service exit 1 (ConnectionResetError) — persistent, declared in known_failed (tony-omen sshd AllowTcpForwarding no breaks the :18123 relay to michael-ha:8123; direct egress DROPped by mn-ha-quarantine.service, Tony order 2026-10-16)."
+    - "Declared tony-dell picker-server.service (Adobe Stock mask-picker HTTP server on :8777; unitized 2026-11-27) in expected_services — it was the final undeclared running-service delta after the sweep triage."
+    - "Syntax checks OK: YAML parse (audit hosts SSOT + triage record), python3 -m py_compile scripts/audit-hosts.py, ansible-playbook --syntax-check playbooks/audit-fleet-services.yml."
+    - "FINAL read-only full-fleet rerun after all doc-mirror + sweep-delta reconciliation: ZERO deltas on all 7 hosts (ansible engine). Legacy scripts/audit-hosts.py live reruns agreed (0 == 0) on tony-dell, idc02, idc03 and con01."
   remaining_deltas:
     tony-omen: 0
     tony-dell: 0
@@ -153,7 +158,8 @@ followups:
   - "When a new distro/OS timer appears, add its name to OS_TIMER_RE in scripts/audit-hosts.py AND os_timer_re in ansible/playbooks/audit-fleet-services.yml (parity is required or the two reports will diverge)."
   - "2 census units have a 'rendered from ssot.jobs.yml' description but no matching job (devin-taskdir-prune, xiaomi-cam-resolve) — declared with a retired-job note; owner may decide to retire them. chaba-review-digest.timer was already declared."
   - "DONE 2026-11-27: con01 jev-bench repointed from the parked idc03 lane (100.102.134.91:8778) to the live tony-omen confirm-gate (100.75.102.88:8778). Live probe: idc03 unit inactive/disabled with no listener; omen jev-student.service active on :8778 (migrated 2026-11-18); bench GET returns 405 (alive). Updated ssot.jobs.yml + regenerated systemd/generated/con01/jev-bench.{service,timer}, copied to con01, daemon-reload, manual run Result=success (bench/jev-20261127-163909, 10/18 accuracy). con01 checkout had drifted, so units were copied directly rather than pulling the repo."
-  - "known_failed actions left for owner follow-up (not audit drift): con01 doc-mirror curl timeout, idc03 ops-health-report probe 404, macbook zram-swap exit-code, omen yomi-process start-limit-hit, dell gemini-ollama-proxy envfile."
+  - "DONE 2026-11-27: con01 doc-mirror curl exit-28 timeout diagnosed and fixed (split curl budgets + partial-stage guard + manifest cache); last sweep synced 100/100 pages successfully."
+  - "known_failed actions left for owner follow-up (not audit drift): idc03 kraut-rain-watch HA access vs job retirement (tony-omen AllowTcpForwarding no + mn-ha-quarantine Tony order 2026-10-16), idc03 ops-health-report probe 404, macbook zram-swap exit-code, omen yomi-process start-limit-hit, dell gemini-ollama-proxy envfile."
 refs:
   - docs/ssot/infrastructure/ssot.audit.hosts.yml
   - docs/ssot/infrastructure/ssot.jobs.yml
