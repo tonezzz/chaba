@@ -65,5 +65,11 @@ comms:
     on the checksum-gated task: tony-dell, idc02, idc03, tony-omen, con01, mn01, tony-macbook. So the recurring
     ''con01 defers: installed runner-agent drifted'' defer line is stale as of this check — no redeploy needed,
     and NO apply/restart was performed. Note: verif'
+- at: 2026-11-27 16:49
+  from: chaba
+  text: 'SYSTEMWIDE ADDENDUM: kk-mac (macOS, excluded from the Ansible play by design — launchd/never-downgrade
+    path) verified read-only separately: installed ~/.local/bin/runner-agent sha256 matches the controller source
+    d0465bfe2a6e1ff241f253195ad83846f199f7cba7e66331cebb37b2b6c2c062. So all 8 runner hosts are in-sync; no apply/restart
+    needed anywhere.'
 action:
   status: done
