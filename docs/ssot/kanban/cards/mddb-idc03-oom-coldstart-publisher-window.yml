@@ -1,7 +1,7 @@
 id: mddb-idc03-oom-coldstart-publisher-window
 title: MDDB idc03 OOM restarts + cold-start window break publishers
 column: doing
-updated: 2026-11-27 17:09
+updated: 2026-11-27 17:11
 brief: mddb.service on idc03 was OOM-killed 15:58:20 (NRestarts=7 today); ~104s cold start leaves /v1 routes 404
   after health port opens. mddb-cms POST /v1/add write timeout 30s under embed congestion. Two timer publishers
   exited 1 at 15:55 and 16:00; both self-healed next tick.
@@ -113,6 +113,18 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-163402-follow-up-from-triage-of-timer,
     branch dispatch/20261127-163402-follow-up-from-triage-of-timer'
+- at: 2026-11-27 17:11
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-163402-follow-up-from-triage-of-timer no longer active on con01 but card
+    still says running — sweeping its branch'
+- at: 2026-11-27 17:11
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261127-163402-follow-up-from-triage-of-timer — close will block
+    until merged'
+- at: 2026-11-27 17:11
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261127-163402-follow-up-from-triage-of-timer on
+    con01 — if the work was never pushed it may be gone'
 action:
   type: dispatch
   status: running
@@ -120,6 +132,9 @@ action:
   lane_source: fallback
   runner: con01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 17:11
+    session_gone: 2026-11-27 17:11
 claim:
   since: 2026-11-27 16:32
 requests:
