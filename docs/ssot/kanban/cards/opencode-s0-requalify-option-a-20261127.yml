@@ -1,7 +1,7 @@
 id: opencode-s0-requalify-option-a-20261127
 title: S0 requalify + climb retry (option A) — or-free-nemotron-ultra
 column: doing
-updated: 2026-11-27 12:03
+updated: 2026-11-27 12:10
 brief: 'Tony chose A 2026-11-27: retry the S0 gate with the same free model after both post-reset climbs capped
   at 0.40. No STRONG_MODELS / free-tier admission changes. Stop for live S1 watch if the gate passes.'
 priority: high
@@ -40,6 +40,9 @@ action:
   status: running
   runner: tony-dell
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 12:10
+    dirty: 1
 ref: OPS-1494
 comms:
 - at: 2026-11-27 10:57
@@ -97,6 +100,14 @@ comms:
     peek) + c4 rollback (detector-FP tool_denial). lane_gate promoted S0->S1 @04:57:58Z on idc02. S1 canary watch
     request raised: s0-gate-passed-on-climb-c5-3-5-verified-a162f5 — needs your live ~10min watch via ~/.local/state/opencode-lane/s1-watch.sh
     on idc02 (human_minutes only records on your typed attestation). Evidence: evals/opencode-lane/reports/2026-11-27-promotion-review-climb{2-ho'
+- at: 2026-11-27 12:10
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-110009-decision-2026-11-27-tony-answe no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-27 12:10
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261127-110009-decision-2026-11-27-tony-answe on tony-dell still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 claim:
   since: 2026-11-27 10:59
 requests:
