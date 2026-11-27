@@ -1,7 +1,7 @@
 id: log-shipper-mddb-heartbeat-timeout-fix
 title: 'Log shipper: heartbeat /add 10s timeout < observed 13-20s (fleet-wide false failures)'
 column: doing
-updated: 2026-11-27 11:39
+updated: 2026-11-27 11:59
 brief: Systemic fix from live triage 2026-11-27; two runner slots free.
 priority: high
 tags:
@@ -66,5 +66,12 @@ comms:
   text: 'picked up: root cause confirmed in scripts/ada/log-shipper.py — post_state() hardcodes timeout=10 on heartbeat
     /add while mddb-ops /add measures ~13-20s. Plan: bounded retry (2 attempts) + ~45s timeout on heartbeat and
     the per-doc /add fallback; deploy via ansible/playbooks/log-shipper.yml; verify on idc02 + tony-omen.'
+- at: 2026-11-27 11:59
+  from: devin
+  text: 'fix committed (354d127 + playbook hardening): _post() gains bounded attempts; heartbeat + per-doc /add
+    fallback now 45s x2 (was 10s/15s). Fleet converge via ansible/playbooks/log-shipper.py DONE on all 6 hosts (script+units
+    checksum-deployed; mn01 stale TimeoutStartSec=600 units also refreshed to 2700). Triggered log-shipper+severe
+    on idc02 and tony-omen — polling for Result=success + fresh ship/<host> docs. Note: mddb-ops server logs show
+    congestion-window handlers at 127-198s — those remain ho'
 claim:
   since: 2026-11-27 11:34
