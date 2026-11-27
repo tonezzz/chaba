@@ -1,7 +1,7 @@
 id: yomi-update-conversations-missing-imports
 title: Yomi summaries fail — missing summary-utils imports in update-conversations.mjs
 column: done
-updated: 2026-11-27 15:42
+updated: 2026-11-27 15:43
 brief: yomi-update-all writes conversations but every summary fails with "validateAndTruncateContext is not defined".
   Three symbols used but not imported in update-conversations.mjs; all exported by summary-utils.mjs. Import-only
   fix.
@@ -118,6 +118,12 @@ comms:
   text: "auto-merge not done: push: To github.com:tonezzz/chaba.git\n ! [rejected]                HEAD -> master
     (fetch first)\nerror: failed to push some refs to 'github.com:tonezzz/chaba.git'\nhint: Updates were rejected
     because the remo — close will block until merged"
+- at: 2026-11-27 15:43
+  from: chaba
+  text: 'RUNTIME HOTFIX APPLIED + VERIFIED (Tony 2026-11-27 15:37 +07). Patched the live copy only: /home/tony/CascadeProjects/chaba-tony-dell/scripts/yomi/update-conversations.mjs
+    on idc03 — added validateAndTruncateContext, getContextLengthStatus and LLAMA_REQUEST_TIMEOUT to the named import
+    from "./summary-utils.mjs". Timestamped backup kept at update-conversations.mjs.pre-OPS-1505-20261127-153730
+    (rollback: copy it back over the file). Verification: node --check rc=0; all three symbols confirmed expo'
 ref: OPS-1505
 claim:
   since: 2026-11-27 15:33
