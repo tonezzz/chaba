@@ -1,6 +1,6 @@
 id: weather-bakeoff-ha-config-bounded-retry
 title: Bounded retry for weather-bakeoff HA /api/config fetch (kraut-rain-watch repeat)
-column: backlog
+column: doing
 updated: 2026-11-27 18:23
 brief: Fix weather-bakeoff.py http_json transient HA reset with bounded retry + tests; code only, no deploy.
 priority: high
@@ -31,10 +31,12 @@ spec: 'Root cause: scripts/ada/weather-bakeoff.py main() line ~534 fetches {ha_u
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
   executor: devin
+  runner: con01
+  attempts: 1
 comms:
 - at: 2026-11-27 18:22
   from: chaba
@@ -53,4 +55,9 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 18:23
+  from: con01
+  text: claimed
 ref: HOM-1509
+claim:
+  since: 2026-11-27 18:23
