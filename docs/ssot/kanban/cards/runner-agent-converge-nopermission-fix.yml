@@ -1,7 +1,7 @@
 id: runner-agent-converge-nopermission-fix
 title: runner-agent-converge exits 4/NOPERMISSION on tony-dell
-column: review
-updated: 2026-11-27 12:04
+column: done
+updated: 2026-11-27 12:54
 spec: runner-agent-converge.service on tony-dell alternates between clean runs and `Main process exited, code=exited,
   status=4/NOPERMISSION`. Read the full journal and the underlying ansible task output around the failed runs to
   identify the exact task that loses permission (likely a become/become_user or file-mode step when redeploying
@@ -102,6 +102,13 @@ comms:
 - at: 2026-11-27 12:04
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-27 12:54
+  from: tony
+  text: '[land 2026-11-27] merged past the generated assessment-file conflict by taking master copy; ansible deploy-runner-agent
+    + outcome doc landed as 8ea65c2ed6a. Verified ancestor of origin/master; closing.'
+- at: 2026-11-27 12:54
+  from: tony
+  text: closed by tony
 claim:
   since: 2026-11-27 10:31
 review_kind: verify
