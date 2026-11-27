@@ -95,6 +95,21 @@ Note that production has no LLM dispatch judge at all — it uses deterministic
 generative stand-in, not a production path being replaced. Evidence:
 `scripts/voice-bench/results/g4-decision-gate-heldout110-graded.json`.
 
+**Production rule-gate baseline (2026-11-27):** replaying `ada_preflight`
+against the same 110 card YAMLs showed there is no production LLM dispatch
+judge to replace. `typed_dispatch_available` is hardcoded `False`, so
+`ready_for_dispatch` is always False and the menu never offers *Approve
+dispatch*. The gate is a workflow precondition check, not a semantic
+readiness classifier: `no_open_requests` alone would approve 52/55 negatives
+(precision 0.4526), `safe_scope` 51/55 (precision 0.2917), and both together
+give precision 0.25 / recall 0.29. A model judgment would add 46 approvals
+beyond the wired gate, 45 genuinely READY, but all 46 are blocked by
+non-backlog column and missing typed dispatch envelope. Keep any model gate
+**after** preflight and behind human approval, never as a bypass. This
+comparison is a workflow-state baseline, not an apples-to-apples accuracy
+test, because the holdout deliberately used real cards regardless of column.
+Evidence: `scripts/voice-bench/results/g4-production-gate-baseline-20261127.json`.
+
 ### Managed Agents
 
 `client.agents` / `agent=...` with a sandboxed filesystem, code execution, web
@@ -193,7 +208,9 @@ be empty, so code must handle that. This is distinct from the separate
    0.32–9.61% and placed a full-model stand-in ahead on accuracy (88.18% vs
    82.73%) but far behind on cost and latency. Keep it as a high-precision
    approve pre-filter with human dispatch approval; do not adopt the
-   holdout-tuned thresholds without an independent negative set.
+   holdout-tuned thresholds without an independent negative set. Production
+   has no model judge and preflight cannot approve at all today, so a model
+   gate must sit after those preconditions, never bypass them.
 5. The official `gemini-api-dev` skill is installed and trialled (87.5% vs
    25% pass rate with vs without it); load it for any Gemini API code work.
 6. DONE: Managed Agents verified on the free tier and cost-compared on a
@@ -286,6 +303,10 @@ result. Keep 3.5 as the comparison baseline.
   and JSONs `g4-decision-gate-heldout110-*` under
   `scripts/voice-bench/results/`. No wiki publish of these results without a
   separate go-ahead.
+- Production gate baseline: harness `scripts/voice-bench/g4-production-gate-baseline.py`
+  and result `scripts/voice-bench/results/g4-production-gate-baseline-20261127.json`,
+  replaying `ada_preflight` from `ada-voice/opencode/ada_mcp.py` against the
+  same 110 cards.
 - Related prior pages: `Education:LLM Providers/Gemini API`,
   `Education:Ada-Developer-Paid-Model-Candidates`,
   `Education:Ada-Dev-Gap-Model-Vs-Harness`.

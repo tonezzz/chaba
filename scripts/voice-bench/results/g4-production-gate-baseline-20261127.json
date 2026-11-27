@@ -1,0 +1,4005 @@
+{
+  "schema": "production-gate-baseline-110",
+  "date": "2026-11-27",
+  "source": "ada-voice/opencode/ada_mcp.py preflight gates; origin/master kanban-card snapshot",
+  "caveat": "ada_preflight hardcodes typed_dispatch_available=False, so literal ready_for_dispatch is always false; the counterfactual drops only that gate.",
+  "counts": {
+    "ready": 55,
+    "not_ready": 55
+  },
+  "literal_current_gate": {
+    "tp": 0,
+    "fn": 55,
+    "tn": 55,
+    "fp": 0,
+    "accuracy": 0.5,
+    "approve_precision": null,
+    "approve_recall": 0.0
+  },
+  "if_typed_dispatch_wired": {
+    "tp": 0,
+    "fn": 55,
+    "tn": 55,
+    "fp": 0,
+    "accuracy": 0.5,
+    "approve_precision": null,
+    "approve_recall": 0.0
+  },
+  "gate_stats": {
+    "backlog": {
+      "pass_ready": 0,
+      "pass_not_ready": 0
+    },
+    "no_open_requests": {
+      "pass_ready": 43,
+      "pass_not_ready": 52
+    },
+    "safe_scope": {
+      "pass_ready": 21,
+      "pass_not_ready": 51
+    },
+    "typed_dispatch_fields": {
+      "pass_ready": 0,
+      "pass_not_ready": 0
+    }
+  },
+  "per_gate_confusion": {
+    "backlog": {
+      "tp": 0,
+      "fn": 55,
+      "tn": 55,
+      "fp": 0,
+      "accuracy": 0.5,
+      "approve_precision": null,
+      "approve_recall": 0.0
+    },
+    "no_open_requests": {
+      "tp": 43,
+      "fn": 12,
+      "tn": 3,
+      "fp": 52,
+      "accuracy": 0.4182,
+      "approve_precision": 0.4526,
+      "approve_recall": 0.7818
+    },
+    "safe_scope": {
+      "tp": 21,
+      "fn": 34,
+      "tn": 4,
+      "fp": 51,
+      "accuracy": 0.2273,
+      "approve_precision": 0.2917,
+      "approve_recall": 0.3818
+    }
+  },
+  "semantic_gates_only": {
+    "definition": "no_open_requests AND safe_scope; excludes workflow-state gates (backlog, typed envelope) and the hardcoded typed flag",
+    "confusion": {
+      "tp": 16,
+      "fn": 39,
+      "tn": 7,
+      "fp": 48,
+      "accuracy": 0.2091,
+      "approve_precision": 0.25,
+      "approve_recall": 0.2909
+    }
+  },
+  "model_added_approvals": {
+    "n": 46,
+    "of_which_ready": 45,
+    "of_which_not_ready": 1,
+    "detail": [
+      {
+        "n": 1,
+        "id": "2026-11-12-155922-wiki-login-polish",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "no_open_requests",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 5,
+        "id": "ada-deploy-preflight-gate",
+        "label": true,
+        "d1_approve": false,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 7,
+        "id": "ada-gemini-quota-breaker",
+        "label": true,
+        "d1_approve": false,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 9,
+        "id": "ada-ha-hardening",
+        "label": false,
+        "d1_approve": true,
+        "fm_approve": false,
+        "blocked_by": [
+          "backlog",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 10,
+        "id": "ada-ha-kanban2-tab",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "no_open_requests",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 11,
+        "id": "ada-nest-real-job-plan",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": false,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 12,
+        "id": "ada-nest-trivial-gate",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 13,
+        "id": "ada-ocb-answer-eval",
+        "label": true,
+        "d1_approve": false,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 14,
+        "id": "ada-ocb-answer-eval-r2",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": false,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 15,
+        "id": "ada-ocb-board-read-latency",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 16,
+        "id": "ada-ocb-bridge-version",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 17,
+        "id": "ada-ocb-kanban-sweep-report",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 18,
+        "id": "ada-ocb-manual-queue-semantics",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 19,
+        "id": "ada-ocb-regression-suite",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 20,
+        "id": "ada-opencode-nl-card-resolve",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 21,
+        "id": "ada-opencode-repair-menu-card",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 22,
+        "id": "ada-printer-diagnostics-safe-repair",
+        "label": true,
+        "d1_approve": false,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "no_open_requests",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 23,
+        "id": "ada-session-audit-daily",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 25,
+        "id": "ada-wiki-extension-confirm-flag",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 26,
+        "id": "adobe-stock-artifact-landing-service",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 27,
+        "id": "adobe-stock-illustration-pivot-test",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 28,
+        "id": "adobe-stock-upscaler-eval",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "no_open_requests",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 30,
+        "id": "ansible-ada-ocb-tony-dell-fallback",
+        "label": true,
+        "d1_approve": false,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 31,
+        "id": "ansible-disk-headroom-harden",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 33,
+        "id": "ansible-vs-legacy-fleet-benchmark",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 34,
+        "id": "app-retirement-sweep",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "no_open_requests",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 66,
+        "id": "automate-host-post-restart-verification-5ad4ac",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "no_open_requests",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 67,
+        "id": "board-api-compact-cards",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 68,
+        "id": "board-api-exec-checkout-mismatch",
+        "label": true,
+        "d1_approve": false,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 69,
+        "id": "board-api-lesson-delete-op",
+        "label": true,
+        "d1_approve": false,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 70,
+        "id": "boards-public-origin-502",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 71,
+        "id": "cards-api-summary-gzip",
+        "label": true,
+        "d1_approve": false,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 72,
+        "id": "chaba-merge-gate-ada-drops-rot-audit",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 74,
+        "id": "chore-tony-dell-worktree-sprawl",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 75,
+        "id": "ci-test-gate",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 76,
+        "id": "classifier-readonly-audit-class-reroute",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 78,
+        "id": "cline-nest-failure-artifact-durability",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "no_open_requests",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 89,
+        "id": "cms-lab-eval",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 90,
+        "id": "comms-digest-builder",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 91,
+        "id": "con01-runner-pilot-smoke-runner-agent-di-a73b38",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 92,
+        "id": "con01-script-smoke",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 96,
+        "id": "devnest-colab-release-pinning",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": false,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 97,
+        "id": "devnest-colab-t4-model-slot-adapter",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "no_open_requests",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 98,
+        "id": "devnest-devin-replay-benchmark",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 99,
+        "id": "devnest-fl-pilot-code",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      },
+      {
+        "n": 100,
+        "id": "devnest-fl-pilot-doc",
+        "label": true,
+        "d1_approve": true,
+        "fm_approve": true,
+        "blocked_by": [
+          "backlog",
+          "safe_scope",
+          "typed_dispatch_available",
+          "typed_dispatch_fields"
+        ]
+      }
+    ]
+  },
+  "rows": [
+    {
+      "n": 1,
+      "id": "2026-11-12-155922-wiki-login-polish",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": false,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 2,
+      "id": "ada-acl-explain",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 3,
+      "id": "ada-card-loop-tiers",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "service"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 4,
+      "id": "ada-dead-surface-metric",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 5,
+      "id": "ada-deploy-preflight-gate",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "deploy",
+        "deployment",
+        "production",
+        "systemd",
+        "timer"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": true
+    },
+    {
+      "n": 6,
+      "id": "ada-dev-control-plane-envelope",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 7,
+      "id": "ada-gemini-quota-breaker",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": true
+    },
+    {
+      "n": 8,
+      "id": "ada-ha-dashboard-live-view-drift",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": false,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 9,
+      "id": "ada-ha-hardening",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": false
+    },
+    {
+      "n": 10,
+      "id": "ada-ha-kanban2-tab",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": false,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 11,
+      "id": "ada-nest-real-job-plan",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "gpu"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": false
+    },
+    {
+      "n": 12,
+      "id": "ada-nest-trivial-gate",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 13,
+      "id": "ada-ocb-answer-eval",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": true
+    },
+    {
+      "n": 14,
+      "id": "ada-ocb-answer-eval-r2",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "origin"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "profile",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": false
+    },
+    {
+      "n": 15,
+      "id": "ada-ocb-board-read-latency",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "compact"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 16,
+      "id": "ada-ocb-bridge-version",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "deploy"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 17,
+      "id": "ada-ocb-kanban-sweep-report",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 18,
+      "id": "ada-ocb-manual-queue-semantics",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 19,
+      "id": "ada-ocb-regression-suite",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "deploy",
+        "timer",
+        "compact"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 20,
+      "id": "ada-opencode-nl-card-resolve",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "deploy",
+        "media"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 21,
+      "id": "ada-opencode-repair-menu-card",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "deploy",
+        "render"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 22,
+      "id": "ada-printer-diagnostics-safe-repair",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": false,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "deploy",
+        "production",
+        "service"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": true
+    },
+    {
+      "n": 23,
+      "id": "ada-session-audit-daily",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "systemd",
+        "timer",
+        "render"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 24,
+      "id": "ada-track-lost-persist",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 25,
+      "id": "ada-wiki-extension-confirm-flag",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "deploy",
+        "install"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 26,
+      "id": "adobe-stock-artifact-landing-service",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "service",
+        "render",
+        "compact"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 27,
+      "id": "adobe-stock-illustration-pivot-test",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 28,
+      "id": "adobe-stock-upscaler-eval",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": false,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "gpu",
+        "mlx"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 29,
+      "id": "ai-workforce-eval",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": false,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 30,
+      "id": "ansible-ada-ocb-tony-dell-fallback",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "service"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": true
+    },
+    {
+      "n": 31,
+      "id": "ansible-disk-headroom-harden",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "production"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 32,
+      "id": "ansible-prep-plan-apply-verify",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": false,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "secret",
+        "install",
+        "service",
+        "timer",
+        "render"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 33,
+      "id": "ansible-vs-legacy-fleet-benchmark",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "systemd",
+        "service"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "profile",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 34,
+      "id": "app-retirement-sweep",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": false,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "restore",
+        "timer",
+        "gpu"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 35,
+      "id": "audit-auto-macbook",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "service",
+        "timer"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 36,
+      "id": "audit-degraded-cast-to-screen",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": false,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 37,
+      "id": "audit-fail-ada-camera-snapshot",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 38,
+      "id": "audit-fail-ada-enroll-speaker",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 39,
+      "id": "audit-fail-ada-member-keys",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 40,
+      "id": "audit-fail-ada-memory-search",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 41,
+      "id": "audit-fail-ada-remember",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 42,
+      "id": "audit-fail-calendar-read",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 43,
+      "id": "audit-fail-cast-to-screen",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 44,
+      "id": "audit-fail-cctv-wall",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 45,
+      "id": "audit-fail-chat-send",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 46,
+      "id": "audit-fail-cms-edit",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 47,
+      "id": "audit-fail-cms-publish-page",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 48,
+      "id": "audit-fail-cms-read",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 49,
+      "id": "audit-fail-control-entity",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 50,
+      "id": "audit-fail-devin-read",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 51,
+      "id": "audit-fail-docs",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 52,
+      "id": "audit-fail-drive",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 53,
+      "id": "audit-fail-get-home-state",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 54,
+      "id": "audit-fail-gev-command",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 55,
+      "id": "audit-fail-home-status",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 56,
+      "id": "audit-fail-kanban",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 57,
+      "id": "audit-fail-percussion",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 58,
+      "id": "audit-fail-set-facial-expression",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 59,
+      "id": "audit-fail-tv-action",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 60,
+      "id": "audit-fail-vcast-snapshot",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 61,
+      "id": "audit-fail-web-search",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 62,
+      "id": "audit-no-result-ada-camera-snapshot",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 63,
+      "id": "audit-oc-lane-state-missing-lane",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 64,
+      "id": "audit-phantom-claim-no-call",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 65,
+      "id": "audit-repeat-user-reask",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 66,
+      "id": "automate-host-post-restart-verification-5ad4ac",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": false,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "service",
+        "timer"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "model",
+        "profile",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 67,
+      "id": "board-api-compact-cards",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "compact"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 68,
+      "id": "board-api-exec-checkout-mismatch",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "service",
+        "origin",
+        "render"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": true
+    },
+    {
+      "n": 69,
+      "id": "board-api-lesson-delete-op",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "delete",
+        "service",
+        "wp",
+        "upsert"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": true
+    },
+    {
+      "n": 70,
+      "id": "boards-public-origin-502",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "origin",
+        "restore",
+        "wp"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 71,
+      "id": "cards-api-summary-gzip",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": true
+    },
+    {
+      "n": 72,
+      "id": "chaba-merge-gate-ada-drops-rot-audit",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "origin"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "profile",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 73,
+      "id": "cheap-agent-cascade",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 74,
+      "id": "chore-tony-dell-worktree-sprawl",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "gpu"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 75,
+      "id": "ci-test-gate",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 76,
+      "id": "classifier-readonly-audit-class-reroute",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "deploy",
+        "timer"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 77,
+      "id": "cline-kanban-offline-image-build",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "deployment",
+        "install",
+        "service"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 78,
+      "id": "cline-nest-failure-artifact-durability",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": false,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 79,
+      "id": "cms-auto-docs-digest",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 80,
+      "id": "cms-auto-finance-digest",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 81,
+      "id": "cms-auto-flood-alert",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 82,
+      "id": "cms-auto-general-digest",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 83,
+      "id": "cms-auto-health-digest",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 84,
+      "id": "cms-auto-home-digest",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 85,
+      "id": "cms-auto-infra-digest",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 86,
+      "id": "cms-auto-kanban-brief",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 87,
+      "id": "cms-auto-kanban-digest",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 88,
+      "id": "cms-auto-lab-digest",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 89,
+      "id": "cms-lab-eval",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 90,
+      "id": "comms-digest-builder",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 91,
+      "id": "con01-runner-pilot-smoke-runner-agent-di-a73b38",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "profile",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 92,
+      "id": "con01-script-smoke",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 93,
+      "id": "device-telemetry-prune",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "prune"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 94,
+      "id": "devin-autonomy-contract",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 95,
+      "id": "devnest-capacity-aware-dispatch",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": false,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "service",
+        "gpu"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 96,
+      "id": "devnest-colab-release-pinning",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "origin",
+        "timer"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": false
+    },
+    {
+      "n": 97,
+      "id": "devnest-colab-t4-model-slot-adapter",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": false,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "render"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 98,
+      "id": "devnest-devin-replay-benchmark",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 99,
+      "id": "devnest-fl-pilot-code",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "origin"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "profile",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 100,
+      "id": "devnest-fl-pilot-doc",
+      "label": true,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "origin"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "profile",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": true,
+      "fm_approve": true
+    },
+    {
+      "n": 101,
+      "id": "disk-auto-idc01-root",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 102,
+      "id": "disk-auto-idc02-root",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 103,
+      "id": "disk-auto-kk-mac-System-Volumes-VM",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 104,
+      "id": "disk-auto-tony-omen-data",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 105,
+      "id": "disk-auto-tony-omen-home",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": false,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 106,
+      "id": "edge-ha-restructure-subdomain-cloudflare-4ff3ad",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "service"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 107,
+      "id": "flood-hub-integration",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": false,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "profile",
+        "repo",
+        "target_host",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 108,
+      "id": "gev-auto-api",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": true,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 109,
+      "id": "gev-auto-api-service",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "service"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    },
+    {
+      "n": 110,
+      "id": "gev-auto-bridge",
+      "label": false,
+      "column": "done",
+      "gates": {
+        "card_found": true,
+        "backlog": false,
+        "no_open_requests": true,
+        "safe_scope": false,
+        "typed_dispatch_available": false
+      },
+      "risk_terms": [
+        "service"
+      ],
+      "dispatch_ok": false,
+      "missing_fields": [
+        "artifact",
+        "executor",
+        "model",
+        "profile",
+        "repo",
+        "target_host",
+        "type",
+        "verifier"
+      ],
+      "verifier": null,
+      "ready_current": false,
+      "ready_if_typed_wired": false,
+      "d1_approve": false,
+      "fm_approve": false
+    }
+  ]
+}
