@@ -1,7 +1,7 @@
 id: ncm-code-blocks-detail-composer
 title: NCM code-block composer — detail by layer (Variant B, review)
 column: review
-updated: 2026-11-27 14:00
+updated: 2026-11-27 14:27
 brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
   by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
   for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
@@ -357,3 +357,10 @@ comms:
     Trained the real VQVAE with an auxiliary soft-assignment cross-entropy from level-0 codes to the 24 pack roles
     (400 updates, batch 64, CPU). Result: pad-excluded recon 0.20013, mean unique codes 1.000, 0 of 12 levels with
     >1 code — both gates fail. Notably role_ce stayed EXACTLY'
+- at: 2026-11-27 14:27
+  from: devin
+  text: 'Supervised tokenizer v2 (cosine fix) done - early-stopped, verdict stop. Diagnosed v1 flat role CE as exploded
+    level-0 codebook norms (std 1784) pinning raw-distance softmax; retried with L2-normalized cosine assignments
+    (tau=0.1) and pre-registered gates: role CE < 4.0 by step 400, early stop if CE > 4.5 at step 100, pad-excluded
+    recon >= 0.50, codebook usage >= 5 mean unique / >= 6 multi-code levels. Result: CE moved only 4.8504 -> 4.7422
+    by step 100, above the 4.5 early-stop floor, so trainin'
