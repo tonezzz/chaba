@@ -1,7 +1,7 @@
 id: board-diagram-lanes-view
 title: 'Board: finish /apps/board-diagram lane view — prototype exists, needs commit+deploy+tab+controls'
 column: doing
-updated: 2026-11-27 14:58
+updated: 2026-11-27 15:04
 brief: Lane/sub lane diagram of kanban cards per project, starting with Adobe Stock; Tony wants a mental image of
   project flow and manual control (claim/move/finish) without n8n.
 priority: high
@@ -268,6 +268,13 @@ comms:
     board-gantt on 2026-11-24 → page was dead. Added CONTROL: node-click action panel (claim/move/finish → board-api
     /action) + lane claim-queued button. Node smoke test PASS (5 adobe-stock cards), headless chrome render verified.
     Pushed df098af67e3; awaiting merge for deploy sync.'
+- at: 2026-11-27 15:04
+  from: devin
+  text: 'DONE (dispatch/20261127-141928, commits df098af67e3+1bab957f1bb+outcome, pushed). Spec was stale: prototype
+    was already committed+deployed since 2026-11-10 — route, Caddyfile, routes.json, web-srv files, AND the HA Diagram
+    tab (after kanban; Gantt already after Obsidian) were all live. Real bug found+fixed: diagram.js imported groupOf
+    which board-gantt renamed to groupIdOf on 2026-11-24 — page was dead. Added CONTROL: node-click action panel
+    (claim/move/finish -> board-api /action, host=tony, bo'
 action:
   type: dispatch
   status: running
