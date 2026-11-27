@@ -61,6 +61,10 @@ GEN_LINE_RE = re.compile(r"^Generated:.*$", re.M)
 # md "Source: ada-voice@<head> (<date>)" — same provenance class as the
 # normalized JSON keys; only declaration content should gate --check.
 GEN_SRC_RE = re.compile(r"ada-voice@[0-9a-f?]+ \([^)]*\)")
+# md "— ⚠ ada-voice checkout is N commit(s) behind …" — upstream lag is
+# local runtime state, same provenance class as source.behind.
+GEN_BEHIND_RE = re.compile(
+    r" — ⚠ ada-voice checkout is \d+ commit\(s\) behind[^.]*")
 GEN_JSON_RE = re.compile(
     # Provenance is informational, not declaration content: generated_at
     # drifts every run; source.{head,head_date} move on any ada-voice
@@ -668,7 +672,8 @@ def _stable(text):
     return GEN_JSON_RE.sub(
         '"generated_at": "<normalized>"',
         GEN_SRC_RE.sub("ada-voice@<normalized>",
-        GEN_LINE_RE.sub("Generated: <normalized>", text)))
+        GEN_BEHIND_RE.sub("",
+        GEN_LINE_RE.sub("Generated: <normalized>", text))))
 
 
 def main(argv=None):
