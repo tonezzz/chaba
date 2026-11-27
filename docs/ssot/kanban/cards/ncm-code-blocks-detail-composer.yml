@@ -1,7 +1,7 @@
 id: ncm-code-blocks-detail-composer
 title: NCM code-block composer — detail by layer (Variant B, review)
 column: review
-updated: 2026-11-27 12:56
+updated: 2026-11-27 13:15
 brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
   by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
   for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
@@ -343,3 +343,10 @@ comms:
     (5.2 GB) and qwen3:4b (2.5 GB, digest 359d7dd4bcda...) in the user-local Ollama store. The qwen3:4b pull succeeded;
     a first JSON-mode glue call took 12.7s vs 19.0s for qwen3:8b on that host (KK-Mac Studio still faster at 5.3s).
     Rollback: ollama rm qwen3:4b as the tony user. Job record updated; no paid spend/GPU; OPS-1325 unchanged.'
+- at: 2026-11-27 13:15
+  from: devin
+  text: 'Reopened NCM with free local GPU approval (Tony chose the GTX 1650 option). Pre-registered gates written
+    before training on tony-omen: pad-excluded recon >= 0.50 and codebook usage >= 5 mean unique codes with >= 6
+    multi-code levels, 2h cap. Result: BOTH gates FAIL, verdict stop - pad-excluded recon 0.20013, mean unique codes
+    1.000, 0 of 12 levels with more than one code. Training took only 32s for 400 updates at batch 8 on the GTX
+    1650 via the open-jev CUDA torch venv, so speed/wall-clock is not'
