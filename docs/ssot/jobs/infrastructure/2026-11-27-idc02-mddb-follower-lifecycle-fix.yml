@@ -72,8 +72,21 @@ verification:
     active/running at every sample, NRestarts=0 throughout, zero STALL events.
     LSN advanced 262184914 -> 262216271 (+31357); replication_lag_s grew to
     2739 then fell to 1772 in the last two samples (catch-up turning the corner).
-    This outlasts the old 6-13 min clean-exit window, so the crash loop is
-    resolved.
+    This outlasts the old 6-13 min clean-exit window; see post_soak for the
+    longer-term picture.
+  post_soak_2026-11-27T20-50+07: >-
+    Beyond the soak window the mddbd process still exits periodically — 2
+    transparent systemd restarts at 20:34:32 and 20:43:42 (NRestarts=2), each
+    followed by a clean 72s startup and LSN resume from the persisted value.
+    This is pre-existing app behaviour, not a regression: before the fix the
+    service started at 16:53, 17:28, 17:53, 18:25 and 19:52 with the same
+    ~25-40 min exit cadence, only then it failed the unit and removed the
+    container. The fix changes the failure mode from a hard unit failure to a
+    transparent self-heal (service stays active, autoRemove=false, replication
+    continues); it does not cure why mddbd exits. Watchdog logs confirm it did
+    not trigger either restart ('applying ... leave it' / grace / api-unreachable
+    skips); no OOM or cgroup memory events; no memory limit set. At 20:50 the
+    service was active, LSN 262261939, lag down to 581s, connected.
   fleet_audit: >-
     ansible-playbook playbooks/audit-fleet-services.yml (full fleet, read-only)
     reports 0 deltas on all 7 hosts after the fix and the related SSOT
