@@ -1,7 +1,7 @@
 id: idc03-swap-workload-placement
 title: 'MEM-1511: idc03 swap 4/4 GiB — workload placement triage'
 column: review
-updated: 2026-11-27 20:05
+updated: 2026-11-27 20:10
 brief: 'After MEM-1507/1510 fixes, idc03 still has 4.0/4.0 GiB swap used, 5.1 GiB RAM available, user cgroup 14.4
   GiB RAM + 4.16 GiB swap. Top swap holders: jevos 761MiB, ada-dev 243MiB, ada-kk-dev 184MiB, ada-bankq-student
   309MiB, ada-chaba 364MiB, ada-ha-ada 359MiB, mddb-cms 290MiB.'
@@ -102,6 +102,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-191831-rank-candidates-by-reclaim-vs-,
     branch dispatch/20261127-191831-rank-candidates-by-reclaim-vs-'
+- at: 2026-11-27 20:10
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''idc03-swap-placement-two-owner''] block close)'
 action:
   type: dispatch
   status: done
@@ -113,6 +116,8 @@ action:
   result: 'exit=0 out with the final state and the open request blocking close. | devin-task-20261127-191831-rank-candidates-by-reclaim-vs-.service:
     Consumed 1min 30.529s CPU time over 41min 41.838s wall clock time, 1.2G memory peak, 575.9M memory swap peak.'
   verified: true
+  sweep:
+    close_held: 2026-11-27 20:10
 claim:
   since: 2026-11-27 19:17
 requests:
