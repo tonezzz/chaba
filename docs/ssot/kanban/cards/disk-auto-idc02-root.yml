@@ -2,7 +2,7 @@ id: disk-auto-idc02-root
 title: Disk idc02 / fills in <7d
 brief: Disk space on idc02 (/) is running low — check the note for the rate and top growers, then free space or
   close the card.
-column: review
+column: done
 review_kind: triage
 generated: disk-trend-watch
 area: monitoring
@@ -10,7 +10,7 @@ priority: high
 note: 82% used, growing 13.5 GiB/day -> full in ~3.9d
 help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
   (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
-updated: '2026-11-27'
+updated: 2026-11-27 16:45
 comms:
 - at: 2026-11-27 08:34
   from: tony
@@ -25,6 +25,14 @@ comms:
 - at: 2026-11-27 14:51
   from: tony
   text: moved review -> done
+- at: 2026-11-27 16:45
+  from: chaba
+  text: 'STALE ALERT — CLOSE 2026-11-27 16:47 +07 (read-only df): idc02 / = 238G used / 53G avail (82%) — below
+    the 85% root threshold in ssot.audit.hosts.yml. Card was previously closed by tony; current read-only df confirms
+    no recurrence.'
+- at: 2026-11-27 16:45
+  from: chaba
+  text: closed by chaba
 action:
   status: done
 claim: {}
