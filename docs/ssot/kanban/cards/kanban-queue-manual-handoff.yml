@@ -1,7 +1,7 @@
 id: kanban-queue-manual-handoff
 title: 'Kanban queue truth: separate human-owned cards from the dispatch queue'
 column: doing
-updated: 2026-11-27 09:26
+updated: 2026-11-27 09:30
 priority: high
 tags:
 - kanban
@@ -227,6 +227,13 @@ comms:
     invisible), cycle-pane claim reason labels queued-but-unclaimable, classic board waitReason() same, modal Start
     suppressed for human/unserved, board-invariants Q1 now catches executor/lane=manual + unknown executor + unserved
     types (was type!=dispatch only), do=finish auto-retry g'
+- at: 2026-11-27 09:30
+  from: devin
+  text: 'DONE on dispatch branch @ 599c1482bd9 (not pushed). Core invariant was already live since 33a06385718 —
+    verified: write doors refuse manual/unserved queueing, GET /queue splits human_waiting {kind,owner,next_action},
+    live queue clean, zero stranded queued cards, ADA-0783 resolved itself (done+verified, promotion stayed Tony
+    call). This pass closed residue: board2 Needs Tony now lists awaiting_action cards with owner+reason+next (was
+    invisible), cycle-pane + classic board label the wait and suppr'
 requests:
 - id: queue-truth-sequencing
   ask: How should we sequence the queue-truth fix?
