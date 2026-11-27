@@ -1,7 +1,7 @@
 id: yomi-update-conversations-missing-imports
 title: Yomi summaries fail — missing summary-utils imports in update-conversations.mjs
-column: doing
-updated: 2026-11-27 15:40
+column: done
+updated: 2026-11-27 15:41
 brief: yomi-update-all writes conversations but every summary fails with "validateAndTruncateContext is not defined".
   Three symbols used but not imported in update-conversations.mjs; all exported by summary-utils.mjs. Import-only
   fix.
@@ -34,7 +34,7 @@ spec: "Found 2026-11-27 during LINE re-login verification (card yomi-line-sessio
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   task_class: verify_only
   executor: claude
   executor_source: queue
@@ -42,6 +42,7 @@ action:
   attempts: 1
   sweep:
     stale_running: 2026-11-27 15:40
+  verified: true
 comms:
 - at: 2026-11-27 15:33
   from: chaba
@@ -89,6 +90,24 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261127-153434-found-2026-11-27-during-line-r no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-27 15:41
+  from: chaba
+  text: 'merge-sweep: merged 97fe43af (dispatch/20261127-153434-found-2026-11-27-during-line-r from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261127-153434-found-2026-11-27-during-line-r.md)
+    — auto-closed'
+- at: 2026-11-27 15:41
+  from: local
+  text: 'pub milestone: card verified: yomi-update-conversations-missing-imports on idc03 — merged 97fe43af (dispatch/20261127-153434-found-2026-11-27-during-line-r
+    from idc02) -> origin/master — verified — auto- — merged 97fe43af (dispatch/20261127-153434-found-2026-11-27-during-line-r
+    from idc02) -> origin/master — verified — auto-closed [evt-85ae8ada7957e65e]'
+- at: 2026-11-27 15:41
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-153434-found-2026-11-27-during-line-r,
+    branch dispatch/20261127-153434-found-2026-11-27-during-line-r on idc02'
 ref: OPS-1505
 claim:
   since: 2026-11-27 15:33
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 15:41
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261127-153434-found-2026-11-27-during-line-r.md
