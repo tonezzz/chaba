@@ -1,7 +1,7 @@
 id: mddb-ops-write-latency-triage
 title: 'mddb-ops: diagnose /add + /ingest ~125s congestion waves (read-only, approval-gated)'
 column: done
-updated: 2026-11-27 22:02
+updated: 2026-11-27 22:11
 brief: Next batch 2026-11-27 — 4 runner slots free.
 priority: high
 tags:
@@ -178,6 +178,12 @@ comms:
     db 33,689,640,960 bytes (~32G; grown from 26G at 16:35 from normal writes); no mddb-compact.db or .pre-compact
     anywhere; no running compact; docker.io/golang:1.23-bookworm present; 113G free on /; MDDB_ADDR=100.102.134.91:11026
     (tailnet-only). BASELINE: /health 200 status healthy'
+- at: 2026-11-27 22:11
+  from: tony
+  text: 'STEP B PROGRESS 2026-11-27 22:11 +07: service stopped at 22:02:32 (inactive/dead in 1s, container gone).
+    Detached bbolt@v1.4.3 compact running under podman (PID 1458422, bbolt PID 1458443); output mddb-compact.db
+    growing (3,565,297,664 bytes at 22:10:45). Source mddb.db untouched at 33,689,640,960 bytes. No swap performed
+    yet — rollback and data integrity intact. Will reattach, confirm rc=0, then mv swap and restart.'
 claim:
   since: 2026-11-27 12:58
 requests:
