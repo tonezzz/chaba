@@ -1,7 +1,7 @@
 id: runner-tools-converge-timer-2min-bug
 title: runner-tools-converge.timer fires every 2 minutes, not 2 hours
 column: backlog
-updated: 2026-11-27 21:03
+updated: 2026-11-27 21:17
 brief: ansible/systemd/runner-tools-converge.timer uses OnCalendar=*:0/2:05 (hour=*, minute=0/2, second=05) = every
   2 minutes fleet-wide. Description and commit 45219a493cc claim every 2 hours. tony-omen journal shows full check/apply/audit/re-audit
   at 20:52, 20:54, 20:56 with repeated runner-agent restarts.
@@ -13,3 +13,15 @@ comms:
 - at: 2026-11-27 21:03
   from: tony
   text: card captured via board-api
+- at: 2026-11-27 21:17
+  from: chaba
+  text: classified as devin (fallback conf 0.28)
+- at: 2026-11-27 21:17
+  from: chaba
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: devin
+  lane_source: fallback
+claim: {}
