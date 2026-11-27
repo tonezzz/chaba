@@ -1,7 +1,7 @@
 id: oswe-eval-ada-test-tab
 title: Self-deploy OpenSWE (Robin) on tony-dell + Ada Test tab on ada-ha
 column: doing
-updated: 2026-11-27 15:36
+updated: 2026-11-27 15:40
 brief: Evaluate OpenSWE/Robin; self-deploy on tony-dell dev-mode, expose like ada-ocb, add 'Ada Test' sidebar tab
   (OSWE first) on ada-ha chaba-admin.
 priority: medium
@@ -347,6 +347,10 @@ comms:
     refactor — correct minimal diffs, ~minutes, near-zero cost; model is cheaper than intended so scores are a floor).
     Ada Test tab repointed to tailnet split-origin :8445->:8444 so cookie is Secure;SameSite=None and survives the
     iframe; dashboard snapshot synced. Education lesson filed '
+- at: 2026-11-27 15:40
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-142131-tony-decision-2026-11-12-evalu no longer active on con01 but card
+    still says running — sweeping its branch'
 requests:
 - id: 4-gated-items-needed-to-boot-robin-optio-41e2b0
   ask: '4 gated items needed to boot Robin (options in spec): (1) LangSmith account + API key — agent loop + cloud
@@ -384,6 +388,8 @@ action:
   lane_source: kw
   runner: con01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 15:40
 claim:
   since: 2026-11-27 14:19
 awaiting_action: true
