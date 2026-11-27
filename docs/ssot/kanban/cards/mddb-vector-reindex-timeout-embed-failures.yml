@@ -1,7 +1,7 @@
 id: mddb-vector-reindex-timeout-embed-failures
 title: 'con01 mddb-vector-reindex: 13 embed failures, then 45min timeout'
 column: backlog
-updated: 2026-11-27 21:17
+updated: 2026-11-27 21:18
 brief: '2026-11-26 run: embedded=5 skipped=111688 failed=13 (ada-cms-pages:1, ada-ha-bank-devin-handoff:1, ada-ha-events-michael:1,
   ada-ha-scenario-reports:10). 2026-11-27 05:40 run hit TimeoutStartSec and was TERMed at 06:25.'
 priority: medium
@@ -28,6 +28,10 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 21:18
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
 action:
   type: dispatch
   status: queued

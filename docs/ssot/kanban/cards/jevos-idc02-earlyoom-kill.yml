@@ -1,7 +1,7 @@
 id: jevos-idc02-earlyoom-kill
 title: idc02 JevOS killed by earlyoom; clean SIGTERM bypassed Restart=on-failure
 column: doing
-updated: 2026-11-27 21:17
+updated: 2026-11-27 21:18
 brief: '2026-11-27 20:47:40 +07: earlyoom on idc02 (0 swap, avail 9.92% < 10% threshold) sent SIGTERM to jev PID
   1233450 (RSS 1543 MiB) after killing three chrome processes. systemd saw Result=success, so Restart=on-failure
   did not restart it; lane stayed down ~17min (health=000). Restored 21:05, health 200 in 15s.'
@@ -28,6 +28,16 @@ comms:
 - at: 2026-11-27 21:17
   from: chaba
   text: claude auto-route not servable on this host — running the next lane
+- at: 2026-11-27 21:18
+  from: chaba
+  text: started devin-task-20261127-211808-choose-one-a-add-avoid-jev-to- on idc02 (dispatch executor=claude)
+- at: 2026-11-27 21:18
+  from: chaba
+  text: 'primer injected 8 lesson(s): [runner-tool-drift-fleet] primer injected 8 lesson(s): [ansible-worktree-audit-a;
+    idc02''s kanban-dispatch.service was a linked unit running a stale scripts/-only ; [idc03-swap-workload-placement]
+    primer injected 8 lesson(s): [ansible-verify-hos; [job-health-sweep-consecutive-failure-alerts] primer injected
+    8 lesson(s): editi; [runner-fleet-health-host-regex-gap] primer injected 8 lesson(s): [ansible-vs-le; [timer-alert-idc02-chaba-repo-mirror]
+    RESOLVED 2026-11-26: Ex'
 action:
   type: dispatch
   status: running
