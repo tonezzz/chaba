@@ -1,14 +1,14 @@
 id: timer-alert-idc03-news-flood
 title: Timer news-flood on idc03 failing
 column: backlog
-updated: 2026-11-28 01:15
+updated: 2026-11-28 01:25
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-24 08:00) of `news-flood.service` on `idc03` result=exit-code — investigate journal:
-  `journalctl --user -u news-flood.service` on the host. See CMS `timer-timeline-idc03`.'
+note: 'Last run (11-24 08:00) of `news-flood.service` on `idc03` result=exit-code — investigate journal: `journalctl
+  --user -u news-flood.service` on the host. See CMS `timer-timeline-idc03`.'
 ref: OPS-0019
 comms:
 - at: 2026-11-24 08:13
@@ -28,8 +28,8 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-24 08:24
   from: devin
-  text: '[still suspicious] Last run (11-24 08:00) of `news-flood.service` on `idc03` result=exit-code
-    — investigate journal: `journalctl --user -u news-flood.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (11-24 08:00) of `news-flood.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u news-flood.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-24 08:32
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -53,8 +53,8 @@ comms:
     — investigate journal: `journalctl --user -u news-flood.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-24 10:23
   from: devin
-  text: '[still suspicious] Last run (11-24 10:00) of `news-flood.service` on `idc03` result=exit-code
-    — investigate journal: `journalctl --user -u news-flood.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (11-24 10:00) of `news-flood.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u news-flood.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-24 11:24
   from: devin
   text: '[auto-resolved] last run result=success at 11-24 11:00 — closing (timer-sentinel KNB-0577)'
@@ -86,8 +86,8 @@ comms:
     — investigate journal: `journalctl --user -u news-flood.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-25 04:24
   from: devin
-  text: '[still suspicious] Last run (11-25 04:00) of `news-flood.service` on `idc03` result=exit-code
-    — investigate journal: `journalctl --user -u news-flood.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (11-25 04:00) of `news-flood.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u news-flood.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-25 07:45
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -168,10 +168,14 @@ comms:
 - at: 2026-11-28 01:23
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-28 01:25
+  from: devin
+  text: '[still suspicious] Last run (11-28 01:00) of `news-flood.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u news-flood.service` on the host. See CMS `timer-timeline-idc03`.'
 action:
   status: done
-spec: Investigate the failure of `news-flood.service` on host `idc03` by checking the user journal via
-  `journalctl --user -u news-flood.service` and reviewing CMS `timer-timeline-idc03`. Fix the underlying
-  cause of the exit-code failure so that a subsequent manual test run or timer trigger succeeds. The host
-  involved is `idc03` and the relevant repository context is `chaba`. The done-condition is verified when
-  `news-flood.service` runs successfully without exiting with an error code.
+spec: Investigate the failure of `news-flood.service` on host `idc03` by checking the user journal via `journalctl
+  --user -u news-flood.service` and reviewing CMS `timer-timeline-idc03`. Fix the underlying cause of the exit-code
+  failure so that a subsequent manual test run or timer trigger succeeds. The host involved is `idc03` and the relevant
+  repository context is `chaba`. The done-condition is verified when `news-flood.service` runs successfully without
+  exiting with an error code.
