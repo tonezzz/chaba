@@ -1,0 +1,51 @@
+id: board-diagram-lanes-view-finish
+title: board-diagram finished — gantt import fix + board-api /action control panel
+date: 2026-11-27
+card: board-diagram-lanes-view
+host: web-static (stacks/web/public/apps/board-diagram)
+status: implemented — verified via node smoke + headless-chrome render; awaits merge/deploy for live check
+
+goal: >
+  Card spec: finish the /apps/board-diagram lane view — prototype
+  already existed (committed 2026-11-10, 703041d99b0+31ec26dd1f7),
+  needed import fix, smoke test, commit+push, deploy, HA tab, and
+  CONTROL buttons posting to board-api /action (claim/move/finish).
+
+state_found: >
+  Everything static was already on master and live: app files, the
+  ssot.routes.yml route, the Caddyfile handle_path block, routes.json,
+  the HA chaba-admin Diagram tab (views[3]) and Gantt-after-Obsidian
+  order (views[17]) — all verified against the live lovelace.chaba_admin
+  storage on tony-omen. The page was nevertheless DEAD in the browser:
+  board-gantt renamed groupOf -> groupIdOf on 2026-11-24 (7c3cd799fa3)
+  and diagram.js still imported groupOf, so the module threw at
+  instantiation. Live cards.json is the compact payload (KNB-1302):
+  658 cards, sparse per-card fields, zero project:/project-field
+  slugs — the 'adobe-stock' alias group resolves to 5 cards via
+  tags/program/id-prefix, all landing in the 'members' lane until the
+  project:slug convention gets adopted.
+
+changes:
+  - "js/diagram.js: import groupIdOf (was groupOf — the breakage); buildLanes uses it; added actOf/isQueued helpers (tolerate raw or normalized card shape); per-lane queued count + SVG 'claim n' lane-act button -> onLaneAction; node <title> tooltip"
+  - "js/app.js: rewritten interaction layer — node click opens an action panel (was hover-follow info popup, pointer-events:none); panel posts to /apps/board-api/action: ▶ claim {do:claim,host:tony} gated client-side on action.status=queued + non-manual lane/executor/type, move <select> {do:move,column} over board-api COLUMNS (lab excluded — do_move refuses it), ✓ finish = do:finish {host:tony,ok:true} when running-by-tony else do:close (merge-guarded, same as board2's close); lane claim-queued button confirms then claims each queued card sequentially; Esc/background-click dismiss; 60s fetch timeout matching board2 api()"
+  - "index.html: popup restyled interactive (.pp-head/.px/.pa/.pb/.pmv/.pmsg), .lane-act cursor+hover"
+  - "auth: unchanged — same-origin POST to /apps/board-api/*; tailnet front gets Tailscale-User-Login, CF-Access vhost gets X-Board-Edge-Key injected by ~/.config/caddy/Caddyfile (edge:<cf-email>). No credentials in JS — identical to board2"
+
+verified:
+  - "node smoke (/tmp/bd-smoke, package.json type:module): buildLanes over live cards.json (658 cards) -> 'members' lane with the 5 in-scope adobe-stock cards (3 done/2 doing); actOf/isQueued correct; import resolves (the original bug class)"
+  - "headless chrome --dump-dom against symlinked worktree tree + real cards.json: status 'Adobe Stock — lanes · 5 cards · 210px', 5 .node.col-* nodes (3 done/2 doing), lane-head 'members' count 5, legend renders, zero JS errors"
+  - "write path: POST /action on idc03 tailnet front answers verb validation + card lookup (auth passed); public edge injects X-Board-Edge-Key for /apps/board-api/* — same path board2 writes through"
+  - "routes: render-routes.py --check clean for board-diagram (55 routes, 18 pre-existing unrelated shadow warnings); routes.json already contained the route — no regen needed"
+  - "HA dashboard: live lovelace.chaba_admin on tony-omen already has Diagram tab after kanban tabs and Gantt after Obsidian — repo snapshot matches"
+
+notes:
+  - "commit df098af67e3 on dispatch/20261127-141928-prototype-already-exists-uncom, pushed via git-safe-push; merge->idc03 repo-sync->web-srv-sync carries it to :8099/idc03 edge automatically"
+  - "claim host is the literal string 'tony' — canon_host matches claim+finish; a claimed-but-never-finished card becomes a stalled claim the existing reaper handles"
+  - "per-lane scope kept to claim-queued only — mass move/finish across a lane was judged too destructive for a diagram click; per-node panel covers move/finish"
+  - "live verify pending merge: https://tony-ha.surf-thailand.com/apps/board-diagram/ (CF Access) + chaba-admin Diagram tab on ada-ha"
+
+lessons:
+  - "cross-app ES-module imports in stacks/web/public/apps break silently when the exporting app renames a function — grep the importer whenever board-gantt/board2 js exports change"
+  - "compact cards.json (KNB-1302) drops project/program/brief on most cards — group-by-project views degenerate to alias groups + 'members' lanes until project:<slug> adoption lands"
+  - "board-api COLUMNS excludes 'lab' — any move UI must not offer it or do_move 400s"
+  - "board-api error bodies are {error:...} without ok:false — check j.ok===true, not j.ok===false"
