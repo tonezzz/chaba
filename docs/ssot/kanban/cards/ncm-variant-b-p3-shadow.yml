@@ -1,7 +1,7 @@
 id: ncm-variant-b-p3-shadow
 title: NCM Variant B P3 — shadow rollout of the role-conditioned detail lane
 column: doing
-updated: 2026-11-27 15:17
+updated: 2026-11-27 15:42
 brief: Tony approved P3 shadow 2026-11-27 after scaled gate PASS (median +0.533, guard 0). Run the role-conditioned
   lane in shadow on real packs with a pre-registered promotion gate; no user-facing promotion, no paid resources.
 priority: medium
@@ -76,6 +76,13 @@ comms:
     P1′ v2 revision done — gate also FAIL, verdict; [ncm-code-blocks-detail-composer] Codebook comparison done (Sudoku
     v2 vs pack to; [ncm-code-blocks-detail-composer] JevOS supervision + Choice rerun done (Tony ap; idc02''s kanban-dispatch.service
     was a linked unit running a s'
+- at: 2026-11-27 15:42
+  from: devin
+  text: 'P3 shadow started. Frozen artifacts staged under experiments/ncm-code-blocks-p3/ in dispatch worktree:
+    73-pack corpus snapshot + 3 fresh devnest video-packs (never in prior train/eval), role-conditioned MLP exported
+    to stdlib JSON (verified identical predictions vs model.pt on all 24 roles, 0 mismatches), pre-registration.json
+    written BEFORE any provider call (gate: median advantage >= +0.10, guard=0, >=1 fresh pack x 3 reps). Recording
+    33 tasks x 3 paired reps now: JevOS jevos-v5 choices on idc'
 ref: OPS-1504
 claim:
   since: 2026-11-27 15:16
