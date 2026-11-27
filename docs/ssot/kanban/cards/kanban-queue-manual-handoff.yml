@@ -1,7 +1,7 @@
 id: kanban-queue-manual-handoff
 title: 'Kanban queue truth: separate human-owned cards from the dispatch queue'
-column: review
-updated: 2026-11-27 09:35
+column: done
+updated: 2026-11-27 09:41
 priority: high
 tags:
 - kanban
@@ -260,6 +260,9 @@ comms:
 - at: 2026-11-27 09:35
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-27 09:40
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 requests:
 - id: queue-truth-sequencing
   ask: How should we sequence the queue-truth fix?
@@ -289,5 +292,8 @@ action:
   verified: true
 claim:
   since: 2026-11-27 08:33
-awaiting_action: true
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 09:40
+  note: verified — evidence checks green, closing itself
