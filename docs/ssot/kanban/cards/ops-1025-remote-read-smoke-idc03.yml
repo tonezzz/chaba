@@ -1,7 +1,7 @@
 id: ops-1025-remote-read-smoke-idc03
 title: 'OPS-1025 one-shot remote-read verification: idc02 to idc03'
 column: doing
-updated: 2026-11-27 00:10
+updated: 2026-11-27 08:03
 brief: One supervised, read-only S3 verification of the merged remote-read gates.
 priority: medium
 program: OPS-1025
@@ -869,6 +869,12 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261126-234536-parent-ops-1025-perform-one-bo on idc02 still dirty —
     2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-27 08:03
+  from: tony
+  text: 'answered remote-read-path-to-idc03-is-broken-at-t-cae463: proceed'
+- at: 2026-11-27 08:03
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
 claim:
   since: 2026-11-26 23:44
 requests:
@@ -877,12 +883,13 @@ requests:
     hosts + install ~/.local/bin/mcp-debug on idc03 + fix devin mcp-debug spawn (PYTHONPATH/wrapper), then retry
     [recommended — unblocks the whole idc fleet, not just this card]; (b) accept blocker and close OPS-1025 as tooling-gap;
     (c) other.
-  status: open
+  status: answered
   at: 2026-11-27 00:01
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 - id: job-input-ops-1025-remote-read-smoke-idc03
   ask: 'Job needs your input: How should OPS-1025 proceed now that the remote-read path to idc03 is blocked at two
     tooling layers (mcp-debug spawn config + idc03 missing from the mcp-debug host registry)?'
