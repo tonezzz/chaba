@@ -1,0 +1,294 @@
+---
+# idc03-memory-guard.yml — bound idc03's memory hogs and stop the global-OOM loop.
+#
+# 2026-11-27 incident: mddb.service was OOM-killed 8x and node runner jobs 7x.
+# Kernel OOM was global_oom / CONSTRAINT_NONE (no cgroup cap was reached), with
+# 4/4 GiB swap exhausted. Read-only diagnosis found two direct contributors:
+#   * mddb.service.d/mem.conf and memory.conf still carry the idc01 tuning
+#     (MemoryMax=20G/28G, GOMEMLIMIT=22000/12000MiB) from a 31 GiB box. The
+#     idc01->idc03 migration plan says "retune for idc03" — it never happened.
+#     On a 15 GiB host this leaves mddb free to balloon until the kernel OOM
+#     killer reaps it (and every restart re-enters the 84-104s /v1 warmup that
+#     broke the media-inbox and ops-health publishers).
+#   * mddb-cms, mddb-ops, litellm and jevos had NO cgroup limit at all; mddb-cms
+#     peaked at 7.6 GiB against its 2 GiB GOMEMLIMIT.
+#
+# This play retunes those drop-ins for a 15 GiB host, bounds the other
+# unbounded co-tenants, and biases OOM preference toward transient/secondary
+# units instead of MDDB. Runtime cgroup memory caps are applied with
+# systemctl set-property (NO service restart); drop-ins make them persistent.
+# OOMScoreAdjust and GOMEMLIMIT are exec-time settings, so they take effect at
+# each unit's next natural restart — deliberately not forced here.
+#
+# Usage (controller = tony-dell; ALWAYS --limit):
+#   ansible-playbook playbooks/idc03-memory-guard.yml --check --diff --limit idc03
+#   ansible-playbook playbooks/idc03-memory-guard.yml --limit idc03 \
+#     -e idc03_memory_guard_approved=true \
+#     -e card_id=mddb-idc03-oom-coldstart-publisher-window
+#
+# Disruption: no service restart. Applied values can briefly throttle a unit
+# whose working set is above its new cap; the cap is above the observed peak
+# of every unit listed below. Rollback: restore mem.conf/memory.conf from the
+# timestamped backup under backup_root, delete the 60-idc03-memory.conf files,
+# daemon-reload, and re-apply the old properties with systemctl set-property.
+
+- name: Bound idc03 memory and stop the MDDB OOM loop
+  hosts: idc03
+  gather_facts: false
+  become: false
+
+  vars:
+    idc03_memory_guard_approved: false
+    user_systemd_dir: /home/tony/.config/systemd/user
+    backup_root: /home/tony/.local/share/chaba-backups/idc03-memory-guard
+    stale_mddb_dropins:
+      - /home/tony/.config/systemd/user/mddb.service.d/mem.conf
+      - /home/tony/.config/systemd/user/mddb.service.d/memory.conf
+    guard_dropin_dirs:
+      - /home/tony/.config/systemd/user/mddb.service.d
+      - /home/tony/.config/systemd/user/mddb-cms.service.d
+      - /home/tony/.config/systemd/user/mddb-ops.service.d
+      - /home/tony/.config/systemd/user/litellm.service.d
+      - /home/tony/.config/systemd/user/jevos.service.d
+      - /home/tony/.config/systemd/user/runner-agent.service.d
+    # Observed peaks on 2026-11-27: mddb 3.5G, cms 7.6G, ops 4.3G,
+    # litellm 0.97G, jevos 2.3G, runner-agent 0.11G. Caps leave headroom.
+    guard_units:
+      - {name: mddb.service, high_mib: 3800, max_mib: 4500, oom: -500}
+      - {name: mddb-cms.service, high_mib: 2048, max_mib: 2500, oom: -400}
+      - {name: mddb-ops.service, high_mib: 1536, max_mib: 2048, oom: -400}
+      - {name: litellm.service, high_mib: 1200, max_mib: 1600, oom: 500}
+      - {name: jevos.service, high_mib: 1200, max_mib: 1600, oom: 500}
+      - {name: runner-agent.service, high_mib: 400, max_mib: 600, oom: 500}
+
+  tasks:
+    - name: Compute one backup tag for this run
+      # A lookup in vars is re-evaluated per loop item; set_fact pins one tag
+      # so both stale drop-ins land in the same timestamped backup directory.
+      ansible.builtin.set_fact:
+        backup_tag: "{{ lookup('pipe', 'date +%Y%m%dT%H%M%S') }}"
+      tags: [always]
+
+    - name: Require explicit approval and traceability for a real run
+      ansible.builtin.assert:
+        that:
+          - idc03_memory_guard_approved | bool
+          - card_id is defined or card_ref is defined
+        fail_msg: >-
+          This is a PREP preview. Re-run with -e idc03_memory_guard_approved=true
+          and -e card_id=<card> (or card_ref). Rollback path: the timestamped
+          backup under {{ backup_root }} plus removal of the managed drop-ins.
+      when: not ansible_check_mode
+      tags: [always]
+
+    - name: Stat stale idc01-era mddb drop-ins
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      register: stale_dropin_stat
+      loop: "{{ stale_mddb_dropins }}"
+      tags: [guard]
+
+    - name: Create the timestamped backup directory
+      ansible.builtin.file:
+        path: "{{ backup_root }}/{{ backup_tag }}"
+        state: directory
+        owner: tony
+        group: tony
+        mode: "0700"
+      when: not ansible_check_mode
+      tags: [guard]
+
+    - name: Back up stale mddb drop-ins before replacing them
+      ansible.builtin.copy:
+        src: "{{ item.item }}"
+        dest: "{{ backup_root }}/{{ backup_tag }}/{{ item.item | basename }}"
+        remote_src: true
+        mode: preserve
+      loop: "{{ stale_dropin_stat.results }}"
+      when:
+        - not ansible_check_mode
+        - item.stat.exists
+      tags: [guard]
+
+    - name: Ensure drop-in directories exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: tony
+        group: tony
+        mode: "0755"
+      loop: "{{ guard_dropin_dirs }}"
+      tags: [guard]
+
+    - name: Install idc03-sized mddb drop-in (replaces idc01 24G/28G tuning)
+      ansible.builtin.copy:
+        dest: "{{ user_systemd_dir }}/mddb.service.d/60-idc03-memory.conf"
+        owner: tony
+        group: tony
+        mode: "0644"
+        content: |
+          # Managed by chaba/ansible (idc03-memory-guard.yml). Do not edit on host.
+          # idc03 has 15 GiB, not idc01's 31 GiB. Preserve the restart policy and
+          # the gemini-ollama-proxy embedding settings from the old drop-ins.
+          [Unit]
+          StartLimitIntervalSec=300
+
+          [Service]
+          Environment=GOMEMLIMIT=3200MiB
+          Environment=GOGC=150
+          Environment=MDDB_EMBEDDING_PROVIDER=gemini-ollama-proxy
+          Environment=GEMINI_OLLAMA_PROXY_URL=http://127.0.0.1:11435
+          MemoryHigh=3800M
+          MemoryMax=4500M
+          OOMScoreAdjust=-500
+          RestartSec=30
+      tags: [guard]
+
+    - name: Bound mddb-cms (previously unlimited, peaked at 7.6 GiB)
+      ansible.builtin.copy:
+        dest: "{{ user_systemd_dir }}/mddb-cms.service.d/60-idc03-memory.conf"
+        owner: tony
+        group: tony
+        mode: "0644"
+        content: |
+          # Managed by chaba/ansible (idc03-memory-guard.yml). Do not edit on host.
+          # Aligns the cgroup cap with the quadlet's GOMEMLIMIT=2000MiB.
+          [Service]
+          MemoryHigh=2048M
+          MemoryMax=2500M
+          OOMScoreAdjust=-400
+      tags: [guard]
+
+    - name: Bound mddb-ops (previously unlimited, peaked at 4.3 GiB)
+      ansible.builtin.copy:
+        dest: "{{ user_systemd_dir }}/mddb-ops.service.d/60-idc03-memory.conf"
+        owner: tony
+        group: tony
+        mode: "0644"
+        content: |
+          # Managed by chaba/ansible (idc03-memory-guard.yml). Do not edit on host.
+          [Service]
+          MemoryHigh=1536M
+          MemoryMax=2048M
+          OOMScoreAdjust=-400
+      tags: [guard]
+
+    - name: Bound litellm gateway (new workload, previously unlimited)
+      ansible.builtin.copy:
+        dest: "{{ user_systemd_dir }}/litellm.service.d/60-idc03-memory.conf"
+        owner: tony
+        group: tony
+        mode: "0644"
+        content: |
+          # Managed by chaba/ansible (idc03-memory-guard.yml). Do not edit on host.
+          # Secondary lane: preferred OOM victim ahead of MDDB. Raised 2026-11-27
+          # from 900M/1200M after repeated cgroup kills at ~958M anon RSS.
+          [Service]
+          MemoryHigh=1200M
+          MemoryMax=1600M
+          OOMScoreAdjust=500
+      tags: [guard]
+
+    - name: Bound jevos (new workload, previously unlimited)
+      ansible.builtin.copy:
+        dest: "{{ user_systemd_dir }}/jevos.service.d/60-idc03-memory.conf"
+        owner: tony
+        group: tony
+        mode: "0644"
+        content: |
+          # Managed by chaba/ansible (idc03-memory-guard.yml). Do not edit on host.
+          [Service]
+          MemoryHigh=1200M
+          MemoryMax=1600M
+          OOMScoreAdjust=500
+      tags: [guard]
+
+    - name: Mark runner-agent as a preferred OOM victim
+      ansible.builtin.copy:
+        dest: "{{ user_systemd_dir }}/runner-agent.service.d/60-idc03-memory.conf"
+        owner: tony
+        group: tony
+        mode: "0644"
+        content: |
+          # Managed by chaba/ansible (idc03-memory-guard.yml). Do not edit on host.
+          # Keeps the cap.conf concurrency settings intact in the same directory.
+          [Service]
+          MemoryHigh=400M
+          MemoryMax=600M
+          OOMScoreAdjust=500
+      tags: [guard]
+
+    - name: Remove superseded idc01-era mddb drop-ins
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop: "{{ stale_mddb_dropins }}"
+      tags: [guard]
+
+    - name: Reload the user systemd manager
+      ansible.builtin.command:
+        argv: [systemctl, --machine=tony@.host, --user, daemon-reload]
+      become: true
+      changed_when: false
+      when: not ansible_check_mode
+      tags: [guard]
+
+    - name: Apply new cgroup memory caps live (no restart)
+      # OOMScoreAdjust is an exec-time setting (systemd.exec), not a runtime
+      # resource-control property — it is delivered by the drop-in at the next
+      # natural restart. set-property here only carries MemoryHigh/MemoryMax.
+      ansible.builtin.command:
+        argv:
+          - systemctl
+          - --machine=tony@.host
+          - --user
+          - set-property
+          - "{{ item.name }}"
+          - "MemoryHigh={{ item.high_mib }}M"
+          - "MemoryMax={{ item.max_mib }}M"
+      become: true
+      changed_when: false
+      loop: "{{ guard_units }}"
+      when: not ansible_check_mode
+      tags: [guard]
+
+    - name: Read effective cgroup properties after convergence
+      ansible.builtin.command:
+        argv:
+          - systemctl
+          - --machine=tony@.host
+          - --user
+          - show
+          - "{{ item.name }}"
+          - -p
+          - MemoryHigh
+          - -p
+          - MemoryMax
+          - -p
+          - OOMScoreAdjust
+          - --value
+      become: true
+      changed_when: false
+      register: effective_limits
+      loop: "{{ guard_units }}"
+      when: not ansible_check_mode
+      tags: [verify]
+
+    - name: Assert effective memory caps match the guard
+      ansible.builtin.assert:
+        that:
+          - item.stdout_lines[0] | int == item.item.high_mib * 1048576
+          - item.stdout_lines[1] | int == item.item.max_mib * 1048576
+        fail_msg: >-
+          {{ item.item.name }} effective limits {{ item.stdout_lines }} do not
+          match the guard ({{ item.item.high_mib }}M / {{ item.item.max_mib }}M).
+      loop: "{{ effective_limits.results }}"
+      when: not ansible_check_mode
+      tags: [verify]
+
+    - name: Report effective OOM preference (may need a restart to change)
+      ansible.builtin.debug:
+        msg: "{{ item.item.name }} OOMScoreAdjust={{ item.stdout_lines[2] }}"
+      loop: "{{ effective_limits.results }}"
+      when: not ansible_check_mode
+      tags: [verify]

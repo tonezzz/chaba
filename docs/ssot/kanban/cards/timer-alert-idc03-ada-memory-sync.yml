@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-memory-sync
 title: Timer ada-memory-sync on idc03 failing
-column: done
-updated: 2026-11-27 11:18
+column: backlog
+updated: 2026-11-27 17:45
 priority: high
 tags:
 - timer-alert
@@ -82,5 +82,22 @@ comms:
     current script surgically + installed repo timer (:17). Also fixed two latent bugs found on first healthy run:
     delete-404 crash (search index lag) and shared-collection delete-storm (personal/tony + personal-tony -> same
     collection). Verified: 3 consecutive manual runs Result=succe'
+- at: 2026-11-27 17:35
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-27 17:35
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-27 17:21) of `ada-memory-sync.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-27 17:43
+  from: chaba
+  text: 'TRIAGE 2026-11-27 ~17:50 +07 (read-only): 17:21 run ended on requests.exceptions.ReadTimeout — HTTPConnectionPool(host=100.102.134.91,
+    port=11023) read timed out after 60s. The 11:15 fix (ADA-1490) deployed a timeout/retry script, so this is a
+    latency recurrence under mddb congestion, not the old missing-sync mechanism. mddb /v1/health is 200 now; idc03
+    load 5.8/8.9/20.4. Next :17 tick has not run yet — no dispatch this wave, recheck after it.'
+- at: 2026-11-27 17:45
+  from: devin
+  text: '[still suspicious] Last run (11-27 17:21) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
 action:
   status: done

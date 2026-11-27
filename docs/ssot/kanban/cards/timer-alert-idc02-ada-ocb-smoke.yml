@@ -1,7 +1,7 @@
 id: timer-alert-idc02-ada-ocb-smoke
 title: Timer ada-ocb-smoke on idc02 failing
-column: done
-updated: 2026-11-27 11:04
+column: backlog
+updated: 2026-11-27 17:43
 priority: high
 tags:
 - timer-alert
@@ -660,6 +660,24 @@ comms:
     slowness, then ada_context_pack dropped its card leg — _context_card ran 3 sequential UNCACHED /cards fetches
     (incl. an /cards?id= probe that can never match a ref) inside the shared 8s pack deadline while find_card/_pick_cards
     had just warmed _snapshot_cache. Fix in ada-voice 912e'
+- at: 2026-11-27 17:16
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-27 17:16
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-27 17:00) of `ada-ocb-smoke.service` on `idc02` result=exit-code
+    — investigate journal: `journalctl --user -u ada-ocb-smoke.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-27 17:25
+  from: devin
+  text: '[still suspicious] Last run (11-27 17:00) of `ada-ocb-smoke.service` on `idc02` result=exit-code — investigate
+    journal: `journalctl --user -u ada-ocb-smoke.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-27 17:43
+  from: chaba
+  text: 'TRIAGE 2026-11-27 ~17:50 +07 (read-only): last 17:00 run Result=exit-code / ExecMainStatus=1. Three FAILs:
+    _pick_cards sweep 9.06s (SLOW), ada_context_pack ''card snapshot missing from pack'', ada_preflight ''The read
+    operation timed out'' against board-api. mddb /v1/health and board /health both answer 200 now; idc03 load 5.8/8.9/20.4
+    (still elevated). Pattern points to read/card-write congestion rather than a bridge regression; the next hourly
+    tick (18:00) has not run yet. No dispatch this wave — '
 action:
   status: done
   type: dispatch

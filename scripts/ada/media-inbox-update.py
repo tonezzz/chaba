@@ -38,15 +38,20 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import http.client
 import json
 import os
 import re
 import sys
+import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
 REPO = Path(os.environ.get("REPO") or Path(__file__).resolve().parents[2])
 sys.path.insert(0, str(REPO / "scripts" / "lib"))
+
+from mddb_http import post as _mddb_post  # noqa: E402
 
 MDDB = os.environ.get(
     "MDDB_BASE_URL", "http://100.102.134.91:11027/v1").rstrip("/")
@@ -79,11 +84,73 @@ LANES = {
 }
 
 
+# Transport failures mddb_http.post already retried internally — reaching
+# here means its ~62s backoff budget was exhausted, i.e. a restart or a
+# longer congestion wave. Same class list as mddb_http._RETRYABLE.
+_TRANSPORT_ERRORS = (
+    urllib.error.URLError,
+    http.client.RemoteDisconnected,
+    http.client.IncompleteRead,
+    ConnectionResetError,
+    ConnectionAbortedError,
+    TimeoutError,
+)
+
+# mddb's early health listener answers /v1/health during startup but 404s
+# every other route until 'mddb HTTP listening' — ~104s observed after an
+# OOM-kill restart on idc03 (2026-11-27). Gate publishes on that signal.
+READY_BUDGET_S = 200
+READY_POLL_S = 5
+
+
+def _healthy(timeout: float = 5) -> bool:
+    try:
+        with urllib.request.urlopen(f"{MDDB}/health", timeout=timeout) as r:
+            return r.status == 200
+    except Exception:
+        return False
+
+
+def wait_ready(budget: float = READY_BUDGET_S) -> bool:
+    """Poll {MDDB}/health until it reports ready or the budget runs out.
+
+    /v1/health returns 503 {"status":"warming_up"} while the server is
+    still starting and 200 once listeners are live; connection refused
+    means a harder outage — both keep polling until the budget ends.
+    """
+    deadline = time.time() + budget
+    while time.time() < deadline:
+        if _healthy():
+            return True
+        time.sleep(READY_POLL_S)
+    return _healthy()
+
+
 def _post(path: str, payload: dict, timeout: float = 60):
-    req = urllib.request.Request(
-        f"{MDDB}/{path}", data=json.dumps(payload).encode(),
-        headers={"Content-Type": "application/json"})
-    return json.load(urllib.request.urlopen(req, timeout=timeout))
+    """POST via mddb_http with cold-start/restart readiness gating.
+
+    Up front and once more on failure we wait for /v1/health to report
+    ready, so a publisher firing inside the post-OOM warmup window waits
+    it out instead of eating a 404 (card
+    mddb-idc03-oom-coldstart-publisher-window). mddb_http.post supplies
+    the bounded transport retry inside each attempt; HTTP errors other
+    than the warmup 404 still raise immediately.
+    """
+    last_exc = None
+    for _ in range(2):
+        if not _healthy() and not wait_ready():
+            break
+        try:
+            return _mddb_post(MDDB, path, payload, timeout=timeout)
+        except urllib.error.HTTPError as e:
+            if e.code != 404:
+                raise
+            last_exc = e  # warmup window raced us — loop waits on health
+        except _TRANSPORT_ERRORS as e:
+            last_exc = e  # restart mid-flight — wait for ready, retry once
+    if last_exc is None:
+        raise RuntimeError(f"mddb {MDDB} not ready within {READY_BUDGET_S}s")
+    raise last_exc
 
 
 def _md_escape(t: str) -> str:
@@ -356,7 +423,7 @@ def publish(collection, key, body, now, role, title, domain, summary,
         print(f"--- {key} ({role}) ---\n{body[:800]}\n…[{len(body)}B]\n")
         return
     _post("add", {"collection": collection, "key": key, "lang": "en",
-                  "contentMd": body, "meta": meta}, timeout=120)
+                  "contentMd": body, "meta": meta}, timeout=130)
 
 
 def main() -> int:
@@ -384,6 +451,11 @@ def main() -> int:
     # coverage scan: receipt/extract/stale detection needs the collection
     existing: set[str] = set()
     if not args.dry_run:
+        if not wait_ready():
+            print(f"error: mddb {MDDB} not ready after "
+                  f"{READY_BUDGET_S}s — aborting before publish",
+                  file=sys.stderr)
+            return 1
         try:
             from cms_index import list_docs
             existing = {d.get("key") for d in list_docs(MDDB, collection)}

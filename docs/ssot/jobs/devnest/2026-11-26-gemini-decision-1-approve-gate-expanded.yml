@@ -2,9 +2,10 @@ title: Expand decision-1 gate evaluation to an approve-gate threshold
 subtitle: >
   Batched Decisions API calls over real kanban briefs: held-out threshold
   calibration, 110/130-brief comparisons, a rubric probe, and a diverse-negative
-  third set that broke the earlier high-precision result. Not an approve gate.
+  third set (binary + paired choice arms) that broke the earlier high-precision
+  result. Not an approve gate.
 icon: education
-version: 7  # v7: diverse-negative third set (60 briefs, seven negative families)
+version: 8  # v8: paired choice arm on the diverse-negative third set
 
 card: gemini-decision-1-gate-eval-2026-11-26  # ADA-1445
 date: 2026-11-26
@@ -223,6 +224,44 @@ delivered:
       - scripts/voice-bench/results/g4-decision-gate-diverse60-response.json
       - scripts/voice-bench/results/g4-decision-gate-diverse60-graded.json
 
+  diverse_negative_choice_paired:
+    date: 2026-11-27
+    purpose: "Tony asked for the choice arm on the same diverse 60-brief set for a paired comparison with binary noul."
+    method: "Same shared input verbatim as the noul call, 60 choice questions over ready/deferral/approval_gated/fixture_or_status; one batched POST /v1beta/decisions on the free tier, zero output tokens, no card/config/pipeline change."
+    usage: {total_input_tokens: 13317, total_output_tokens: 0, total_tokens: 13317}
+    brier: {noul: 0.204, choice: 0.1859}
+    at_0.5:
+      noul: {tp: 8, fn: 12, tn: 28, fp: 12, accuracy: 0.6, approve_precision: 0.4, approve_recall: 0.4, false_approval_rate_wilson95: {low: 0.1807, high: 0.4543}}
+      choice: {tp: 16, fn: 4, tn: 27, fp: 13, accuracy: 0.7167, approve_precision: 0.5517, approve_recall: 0.8, false_approval_rate_wilson95: {low: 0.2008, high: 0.4798}}
+    at_0.536574:
+      noul: {tp: 8, fn: 12, tn: 31, fp: 9, approve_precision: 0.4706, approve_recall: 0.4}
+      choice: {tp: 15, fn: 5, tn: 29, fp: 11, approve_precision: 0.5769, approve_recall: 0.75}
+    top_choice_is_ready: {tp: 17, fn: 3, tn: 18, fp: 22, accuracy: 0.5833, approve_precision: 0.4359, approve_recall: 0.85}
+    zero_fp_sweeps_exploratory:
+      noul: {threshold: 0.754134, tp: 4, fn: 16, tn: 40, fp: 0, approve_recall: 0.2}
+      choice: {threshold: 0.87012, tp: 3, fn: 17, tn: 40, fp: 0, approve_recall: 0.15}
+    paired_at_0.5:
+      both_approve: {n: 14, truly_ready: 8, not_ready: 6}
+      noul_only_approve: {n: 6, truly_ready: 0, not_ready: 6}
+      choice_only_approve: {n: 15, truly_ready: 8, not_ready: 7}
+      both_reject: {n: 25, truly_ready: 4, not_ready: 21}
+    choice_false_approvals_by_family_at_0.5: {approval_gated: 0, deferred_or_parked: 2, human_eyeball: 0, fixture_or_test: 1, noop_or_informational: 3, umbrella_or_parent: 3, descriptive_only: 4}
+    confident_reject_shortcuts:
+      noul_confident_no: {n: 1, false_rejects: 0, coverage_of_not_ready: "1/40"}
+      choice_confident_not_ready: {n: 0, false_rejects: 0, coverage_of_not_ready: "0/40"}
+    label_ambiguity_sensitivity:
+      note: "Same six reclassifications as the noul grading; primary labels unchanged."
+      at_0.5: {noul: {tp: 14, fn: 12, tn: 28, fp: 6, approve_precision: 0.7}, choice: {tp: 20, fn: 6, tn: 25, fp: 9, approve_precision: 0.6897, approve_recall: 0.7692}}
+      at_0.536574: {noul: {tp: 13, fn: 13, tn: 30, fp: 4, approve_precision: 0.7647}, choice: {tp: 19, fn: 7, tn: 27, fp: 7, approve_precision: 0.7308, approve_recall: 0.7308}}
+    conclusion: "Choice earns its earlier keep-or-reject verdict again: better recall/Brier, but one MORE false approval than noul at 0.5 (13 vs 12) and worse false approvals at the tuned threshold (11 vs 9). It fixes six noul false approvals and adds seven, including two deferred and three umbrella cards where noul was clean. Not adopted; no auto-approve."
+    artifacts:
+      - scripts/voice-bench/g4-decision-gate-diverse60-choice-build.py
+      - scripts/voice-bench/g4-decision-gate-diverse60-choice-call.py
+      - scripts/voice-bench/g4-decision-gate-diverse60-choice-grade.py
+      - scripts/voice-bench/results/g4-decision-gate-diverse60-choice-payload.json
+      - scripts/voice-bench/results/g4-decision-gate-diverse60-choice-response.json
+      - scripts/voice-bench/results/g4-decision-gate-diverse60-choice-graded.json
+
 findings:
   - "The 60-brief set lifted accuracy from 0.80 to 0.9167 with zero false approvals at the default 0.5 threshold; 25/30 READY approved and 30/30 NOT_READY rejected."
   - "Tony reviewed the two borderline labels: nest-lane-metrics changed NOT_READY -> READY because it explicitly asks for dispatch, and devnest-news-promote-wp4010 changed READY -> NOT_READY because the action is gated on Ada/Tony approval. Rule refined: 'nothing needed from you' alone does not mean NOT_READY when dispatch is explicitly requested; idc02-runner-smoke stays NOT_READY because it says the worker drains itself."
@@ -247,6 +286,8 @@ findings:
   - "The diverse-negative third set broke the high-precision result: at 0.5 the Decisions API approved 12/40 negatives (precision 0.40, recall 0.40, Brier 0.204, Wilson 95% FAR 18.07%-45.43%) and rejected 12/20 READY. It was clean only on deferred/backlog (0/8) and umbrella (0/7) negatives; noop/informational alerts were 5/6 false approvals."
   - "Label ambiguity explains part but not all of the gap: reclassifying six arguably dispatchable negatives raises precision only to 0.70 at 0.5 and still leaves six false approvals. A zero-FP threshold on this set is 0.754134, which approves only 4/20 READY."
   - "The directional confident-NO shortcut fired once on the diverse set with no false reject, but covers only 1/40 negatives; it remains unvalidated, not adopted."
+  - "Paired choice arm on the diverse set improved recall (16/20 vs 8/20) and Brier (0.1859 vs 0.204) but made 13 false approvals vs noul's 12 at 0.5, and 11 vs 9 at 0.536574; it fixes six noul false approvals and adds seven. Choice still fails the zero-FP bar and is not adopted."
+  - "Choice's top-option rule was the worst arm on this set (22 false approvals, 0.5833 accuracy); its confident-not-ready shortcut never fired (0/40 coverage), so it is unvalidated too."
 
 guardrails:
   - "No key, billing, gateway, model-pin or production-path changes."
@@ -255,6 +296,7 @@ guardrails:
   - "The validation set is 130 new disjoint briefs; primary metrics keep the deterministic labels even where a marker misfired. Corrected-label results are a sensitivity read only, not a retuned gate."
   - "Rubric probe used the free key on idc03 with two batched Decisions calls (260 and 220 questions); no paid key, billing, gateway, model-pin or production-path change. Docs fetched before writing code per the gemini-api-dev skill."
   - "Diverse third set used one batched Decisions call on the free tier after the saved Michael key returned API_KEY_INVALID; a fresh free-tier key was supplied on a private secret card and its value was never printed or written to the repo."
+  - "Paired choice arm used a second batched Decisions call on that fresh free-tier key (13,317 input tokens, zero output tokens); no paid key, billing, gateway, model-pin or production-path change."
 
 activation_gate:
   - "DONE 2026-11-26: Tony said 'please proceed' after the open-items review."
@@ -270,6 +312,7 @@ verify:
   - "DONE 2026-11-27: 130-brief independent validation built (60/70, disjoint from all three prior sets) and manually audited; Decisions call returned 130 answers with zero output tokens; graded locally with a label-noise sensitivity read and eight artifacts parsed."
   - "DONE 2026-11-27: score/choice rubric probe run on both 130 and 110 briefs (260 and 220 answers, zero output tokens), graded locally, ten artifacts parsed."
   - "DONE 2026-11-27: diverse-negative third set built (20/40, seven negative families, disjoint from four prior sets), one batched Decisions call returned 60 answers with 9,597 input tokens and zero output tokens; graded locally including family breakdown, label-ambiguity sensitivity and shortcut checks; eight artifacts parsed."
+  - "DONE 2026-11-27: paired choice arm run on the same shared input (60 answers, 13,317 input tokens, zero output tokens); graded locally with paired 0.5 decisions, family breakdown, zero-FP sweep, shortcut and label-ambiguity sensitivity checks; six artifacts parsed."
 
 remaining:
   - "DONE 2026-11-27: Tony said 'proceed with the Managed Agents cost comparison and publish a wiki revid 799 with these decision-1 results'; published, MediaWiki assigned revid 808."
@@ -278,8 +321,8 @@ remaining:
   - "Do not wire any model approval into dispatch while typed_dispatch_available is false; keep the preflight preconditions and the native approval menu in front."
   - "DONE 2026-11-27: Decisions threshold 0.536574 validated on the fresh 130-brief set; zero genuine false approvals after label audit (raw labels show one marker misfire). The confidence >= 0.90 shortcut was re-validated and rejected."
   - "DONE 2026-11-27: score/choice rubric probe completed on both sets; choice arm not adopted because the 130-set gain did not replicate on 110. Binary noul at 0.5 remains the recommended pre-filter, with human approval."
-  - "Do not treat binary noul as a general auto-approve pre-filter: the diverse-negative set produced 12/40 false approvals at 0.5. Any revival needs a redesigned prompt or card text that includes the spec, plus a fresh independent validation set; no threshold tuning on this set."
+  - "Do not treat binary noul or choice as a general auto-approve pre-filter: the diverse-negative set produced 12/40 false approvals for noul and 13/40 for choice at 0.5. Any revival needs a redesigned prompt or card text that includes the spec, plus a fresh independent validation set; no threshold tuning on this set."
   - "The full-model 0.25 threshold still needs an independent negative set once gemini-3.8-flash or an alternate generateContent model is available again; this run was 503/429 across all candidates."
-  - "DONE 2026-11-27: third disjoint set built and noul tested; directional confident-NO fired once with no false reject but remains unvalidated at 1/40 coverage. The choice arm was not run on this set (one batched call authorized), so the earlier 110 false reject is still unresolved."
+  - "DONE 2026-11-27: third disjoint set built with both noul and choice arms tested; directional confident-NO fired once with no false reject but remains unvalidated at 1/40 coverage; choice confident-not-ready never fired (0/40). The earlier 110 false reject is still unresolved."
   - "Do not retry any paid key until the cap situation is explicitly resolved by Tony."
   - "Do not publish these 110-brief results to the wiki without a separate go-ahead from Tony."

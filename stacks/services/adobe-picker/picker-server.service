@@ -1,0 +1,12 @@
+[Unit]
+Description=Adobe Stock mask-picker HTTP server (chaba/scripts/adobe-stock/picker-server.py)
+
+[Service]
+# Replace any ad-hoc process from before unitization
+ExecStartPre=/bin/sh -c "pkill -f '[p]icker-server.py' || true"
+ExecStart=/usr/bin/python3 /home/tony/CascadeProjects/chaba/scripts/adobe-stock/picker-server.py --dir /home/tony/adobe-work/picker --port 8777
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target

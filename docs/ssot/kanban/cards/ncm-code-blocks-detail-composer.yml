@@ -1,7 +1,7 @@
 id: ncm-code-blocks-detail-composer
 title: NCM code-block composer — detail by layer (Variant B, review)
 column: lab
-updated: 2026-11-27 16:53
+updated: 2026-11-27 17:38
 brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
   by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
   for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
@@ -444,6 +444,19 @@ comms:
 - ts: '2026-11-27T16:56:01'
   from: chaba
   text: 'lab decision executed: extend'
+- at: 2026-11-27 17:26
+  from: devin
+  text: 'Hugging Face search filed (Tony asked for useful info on NCM + coding agent). Top finds in docs/kb/ncm-code-blocks-external-ideas.md
+    §8: (1) official hazyresearch/ncm-checkpoints has real tokenizer+generator .pt for Sudoku/TinyStories/WMT14/XSum/LM1B
+    (Sudoku ~60MB/~103MB), plus ncm-datasets eval pickles and baselines; (2) velaia/ncm-reproduction: quality reproduces,
+    KV-cache fix gives identical outputs 2.1-5.1x faster, paper wall-clock needs bf16+cache+CUDA graphs; (3) jpnmnb/NCM-Sume-Portuguese'
+- at: 2026-11-27 17:38
+  from: devin
+  text: 'Priority-0 revisit DONE (Tony approved download of official checkpoints; no GPU, no spend). Downloaded
+    hazyresearch/ncm-checkpoints sudoku/easy tokenizer (58MB) + generator (98MB) + config into /home/tony/tony-projects/ncm-code-blocks/official-ncm/.
+    On the SAME 200 held-out boards: official tokenizer 0.7917 mean codebook utilisation / 1.000 recon vs our sudoku
+    toy 0.0990 / 0.805 and pack toy 0.0097 / 0.838. Official per-level unique codes /16: 14,3,12,14,2,15,15,15,15,15,16,16;
+    ours: 1,1,1,1,1,1'
 requests:
 - id: review-decision-ncm-variant-b-research-l-448a63
   ask: 'REVIEW DECISION — NCM Variant B research lane concluded; P3 (shadow/promotion) needs your call. Results:

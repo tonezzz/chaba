@@ -1,0 +1,133 @@
+title: mddb idc03 OOM loop + publisher cold-start window — diagnosis and gated publishers
+subtitle: >-
+  mddb.service OOM-killed 9+ times on 2026-11-27 (global OOM on the 15Gi
+  box); each restart leaves a ~104s window where /v1/* 404s while
+  /v1/health already answers. Publishers now gate on /v1/health and
+  retry transport failures; host-side memory bounds await Tony approval.
+icon: warning
+job: mddb-idc03-oom-coldstart-publisher-window
+card: mddb-idc03-oom-coldstart-publisher-window
+date: 2026-11-27
+host: idc03
+instance: >-
+  scripts/ada/media-inbox-update.py (chaba worktree, merges via
+  kanban-commit pull); scripts/ops-health-report.py patch artifact at
+  integrations/ada-voice/scripts.ops-health-report.mddb-gate.patch
+  (ada-voice repo — apply on tony-dell edit point, deploy via
+  deploy-ada.sh)
+result: partial — publisher-side fixes landed in worktree; host/service
+  changes (memory bounds, mddb-cms write timeout) need Tony approval
+summary: >-
+  Two timer publishers (media-inbox-update-kk, ops-health-report) exited
+  1 inside the post-OOM warmup window. Root cause chain: (1) system-wide
+  memory exhaustion on idc03 — 19 global OOM kills today across ~10
+  mddbd (~3-4GB RSS each) and ~9 node procs (yomi-api alone killed 4x,
+  ~3-3.8GB RSS); swap 4Gi completely full; (2) mddb.service effective
+  config is drifted — stale ansible drop-ins
+  (~/.config/systemd/user/mddb.service.d/{memory.conf,mem.conf},
+  generated 2026-11-26 from the now-retired quadlet_services inventory)
+  override the quadlet to GOMEMLIMIT=12000MiB + MemoryHigh=24G/
+  MemoryMax=28G — cgroup limits that can never trigger on 15Gi RAM;
+  (3) mddb-cms/mddb-ops quadlets have NO cgroup memory bound at all
+  (mddb-cms peaked 7.1G RSS); (4) mddb-cms lacks
+  MDDB_HTTP_WRITE_TIMEOUT (default 30s) — /v1/add handlers running
+  36-198s under embed congestion get "response not delivered" and the
+  client sees RemoteDisconnected. Publisher fixes: media-inbox-update.py
+  routes _post through scripts/lib/mddb_http.py (bounded transport
+  retry, landed earlier today) plus a /v1/health readiness gate
+  (wait_ready, 200s budget > ~104s worst cold start) and publish timeout
+  120->130s; ops-health-report.py gets the same gate+retry as an
+  ada-voice patch artifact.
+verifier_goals:
+  unit_tests: pass — tests/ada/test_media_inbox_mddb_gate.py 12/12 +
+    test_mddb_http_retry.py 6/6
+  live_probe: pass — _healthy() True against real mddb-cms
+    /v1/health (status:healthy) from con01
+  dry_run: pass — media-inbox-update.py --lane tony --dry-run --json
+    renders and exits 0
+  patch_apply: pass — ops-health-report patch applies clean to ada-voice
+    HEAD (patch --dry-run verified, output identical to intended file)
+notes:
+  - >-
+    OOM evidence (journalctl -k, 2026-11-27): constraint=CONSTRAINT_NONE
+    global_oom; kills at 11:03, 13:57, 15:24, 15:38, 15:49, 15:58, 16:26,
+    16:33, 16:46, 16:54 ICT — accelerating. mddbd anon-rss at kill
+    ~2.8-4.0GB; node procs ~2.9-3.8GB. One node scope resolved to
+    yomi-api (4 kills). NOT a cgroup OOM — the 24-28G MemoryMax drop-in
+    cannot fire on a 15Gi box.
+  - >-
+    Cold-start window mechanics (mddb-fork services/mddbd):
+    startEarlyHealth binds the SAME addr early and serves ONLY
+    /health + /v1/health (503 {"status":"warming_up","phase":...});
+    every other route 404s until 'startup complete'/'mddb HTTP
+    listening'. Observed gap 15:58:55->16:00:37 = 102s. /v1/health is
+    therefore the correct readiness probe — no server change needed.
+  - >-
+    Config drift inventory on idc03 mddb.service: quadlet
+    ~/.config/containers/systemd/mddb.container says
+    GOMEMLIMIT=8000MiB + ollama/bge-m3@11436; drop-in memory.conf
+    (Ansible, "DO NOT EDIT", generated 2026-11-26T02:17Z) overrides to
+    gemini-ollama-proxy@11435 + GOMEMLIMIT=12000MiB + MemoryHigh=24G/
+    MemoryMax=28G; mem.conf adds GOMEMLIMIT=22000MiB/MemoryMax=20G.
+    Effective = drop-in values. Same stale-redeploy pattern as the
+    2026-11-27 embed-probe incident (ansible-chaba site.yml from idc02
+    redeploying retired host_vars). quadlet_services in
+    ansible-chaba/inventory/host_vars/idc03.yml is now marked retired —
+    the drop-ins are orphaned drift nothing will reconcile.
+  - >-
+    stacks/idc03/mddb/mddb.container in this repo is ALSO stale vs the
+    live quadlet (image 2.15.4-lsn vs live 2.18.10-merge, gemini-
+    embedding-2@11435 vs live ollama/bge-m3@11436, missing
+    MDDB_FREELIST_SYNC/MDDB_OUTBOUND_ALLOWLIST). Live file appears to be
+    the bge-m3-migration state; repo SSOT needs a sync pass (not done
+    here — live-vs-SSOT authority for the embedding route is part of
+    the open request).
+  - >-
+    mddb-cms (:11027) write path: no MDDB_HTTP_WRITE_TIMEOUT env ->
+    30s default; journal shows /v1/add elapsed 36.3s "response not
+    delivered" during ollama embed 504 congestion -> client
+    RemoteDisconnected. mddb-ops (:11026) already has
+    MDDB_HTTP_WRITE_TIMEOUT=120s + GOMEMLIMIT=2000MiB (OPS-1500 fix,
+    precedent for the requested mddb-cms change).
+  - >-
+    ops-health-report.py on con01's ada-voice checkout has UNCOMMITTED
+    edits (CMS-plane routing via is_cms_collection + mddb-cms-vector
+    probe) — not mine, looks complete. The shipped patch targets ada-
+    voice HEAD; if those edits land first, rebase: keep the
+    `base = MDDB_CMS if is_cms_collection(...) else MDDB` line and swap
+    MDDB->base inside post()'s health gate + Request.
+  - >-
+    GOMEMLIMIT caveat: mddb-cms runs GOMEMLIMIT=2000MiB yet peaked 7.1G
+    RSS — Go runtime limit bounds heap, not mmap'd bbolt/vector indexes
+    or GC pacing. Only a cgroup MemoryMax hard-bounds RSS; that is why
+    the request offers real MemoryHigh/MemoryMax values.
+  - >-
+    Sibling publishers: ~15 scripts/ada/*-update.py still use unguarded
+    _post (noted in 2026-11-27-cms-publish-remote-close-retry.yml).
+    media-inbox-update.py was the one this card covers; adopting the
+    same gate elsewhere is mechanical now that the pattern exists in
+    two repos.
+requests_raised:
+  - >-
+    board-api /request on mddb-idc03-oom-coldstart-publisher-window —
+    approve idc03 host changes: (A) remove stale mddb.service.d drop-ins
+    or rewrite with real bounds [recommended: delete both, restores
+    quadlet GOMEMLIMIT=8000MiB + bge-m3 route], (B) add
+    MDDB_HTTP_WRITE_TIMEOUT=120s to mddb-cms.container (+ optionally
+    mddb.container), (C) optional cgroup MemoryHigh/MemoryMax on the
+    three mddb units. Structural fix stays with card
+    idc03-structural-capacity-15gb-4core-per-2d787f.
+lessons:
+  - >-
+    mddb /v1/health during startup returns 503 warming_up from the
+    early listener while every other route 404s — it is the readiness
+    probe; do not treat a health-port-open as routes-live.
+  - >-
+    systemd drop-ins override quadlet Environment= — check
+    `systemctl --user show -p Environment` for EFFECTIVE env, not just
+    the .container file; stale ansible drop-ins can silently re-impose
+    retired config (same failure as the embed-probe redeploy).
+  - >-
+    GOMEMLIMIT bounds Go heap only; RSS can far exceed it (mddb-cms:
+    2GiB limit, 7.1G peak). For hard RSS bounds use cgroup
+    MemoryHigh/MemoryMax — and pick values below physical RAM.
