@@ -1,7 +1,7 @@
 id: yomi-idc03-active-refresh-cgroup-oom
 title: 'MEM-1508: idc03 yomi-api cgroup OOM loop from active refresh sweep'
 column: done
-updated: 2026-11-27 18:56
+updated: 2026-11-27 18:58
 brief: yomi-api 2 GiB cgroup is hit repeatedly by yomi-update-active refresh of top-20 chats; mcpb/run.mjs browser
   worker grows to ~2 GiB on heavy chats. 9 CONSTRAINT_MEMCG kills 18:00-18:44.
 priority: high
@@ -62,6 +62,10 @@ comms:
 - at: 2026-11-27 18:56
   from: chaba
   text: closed by chaba
+- at: 2026-11-27 18:58
+  from: chaba
+  text: Committed as 1d696bf948c on an ops/idc03-yomi-refresh-bounds worktree, fast-forward merged to master and
+    pushed to origin/master. Worktree and branch cleaned up.
 action:
   type: dispatch
   status: done
