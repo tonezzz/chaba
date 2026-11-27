@@ -1,10 +1,10 @@
 id: pin-a-free-openrouter-model-for-store-aw-ed0cc2
 title: Pin a free OpenRouter model for store-awareness A/B
-column: doing
-updated: 2026-11-27 15:10
+column: review
+updated: 2026-11-27 15:13
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   executor: devin
   lane: paid_frontier
@@ -13,6 +13,9 @@ action:
   sweep:
     stale_running: 2026-11-27 15:10
     dirty: 1
+  result: 'exit=0 contextprotocol.server.name=io.github.github/github-mcp-server) | devin-task-20261127-144253-pin-a-free-openrouter-model-in.service:
+    Consumed 2min 53.821s CPU time over 26min 45.008s wall clock time, 1G memory peak, 618.2M memory swap peak.'
+  verified: true
 ref: OPS-0827
 comms:
 - at: 2026-10-24 17:03
@@ -493,6 +496,35 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261127-144253-pin-a-free-openrouter-model-in on tony-dell still dirty
     — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-27 15:13
+  from: tony-dell
+  text: 'finished (ok): exit=0 contextprotocol.server.name=io.github.github/github-mcp-server) | devin-task-20261127-144253-pin-a-free-openroute'
+- at: 2026-11-27 15:13
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 15:13
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261127-144253-pin-a-free-openrouter-model-in'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-27 15:13
+  from: chaba
+  text: banked 38 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-27 15:13
+  from: chaba
+  text: pushed dispatch/20261127-144253-pin-a-free-openrouter-model-in to origin
+- at: 2026-11-27 15:13
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_board_api_liveness.py tests/board/test_kanban_act.py
+    tests/board/test_wiki_extension.py tests/board/test_board_ap
+- at: 2026-11-27 15:13
+  from: chaba
+  text: auto-merged 1e058dbc (dispatch/20261127-144253-pin-a-free-openrouter-model-in) → origin/master
+- at: 2026-11-27 15:13
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 requests:
 - id: pinned-nemotron-store-aware-treatment-hi-0672dc
   ask: Pinned Nemotron store-aware treatment hit OpenRouter free-tier HTTP 429 twice and was stopped. What should
@@ -511,3 +543,4 @@ spec: Pin a free OpenRouter model in the configuration used for store-awareness 
   change passes syntax checks and successfully loads the targeted A/B test pipeline.
 claim:
   since: 2026-11-27 14:42
+review_kind: verify
