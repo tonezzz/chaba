@@ -1,7 +1,7 @@
 id: gemini-proxy-quadlet-envfile-drop
 title: gemini-ollama-proxy quadlet lost EnvironmentFile=mddb-gemini.env — restart = total embed outage
-column: review
-updated: 2026-11-27 01:24
+column: done
+updated: '2026-11-27'
 priority: high
 tags:
 - mddb
@@ -113,3 +113,7 @@ action:
 claim:
   since: 2026-11-27 00:16
 review_kind: verify
+note: '[verify 2026-11-27] CLOSED as resolved. idc03''s current gemini-ollama-proxy.container carries EnvironmentFile=/home/tony/.config/secrets/mddb-gemini.env;
+  that file supplies GEMINI_FREE_KEYS_01..10, EMBED_GATEWAY_BASE/MODEL and LITELLM_KEY, and podman inspect confirms
+  those keys in the running container''s Config.Env (Up 38h, healthy; /health returns ok). Source fix was recorded
+  as done at ansible-chaba host_vars on idc02; no restart performed.'

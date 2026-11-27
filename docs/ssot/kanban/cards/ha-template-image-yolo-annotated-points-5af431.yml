@@ -1,17 +1,15 @@
 id: ha-template-image-yolo-annotated-points-5af431
 title: HA template image.yolo_annotated points at dead LAN-IP :8780 — repoint to 127.0.0.1
-column: review
-updated: 2026-11-26 23:44
+column: done
+updated: '2026-11-27'
 priority: low
 tags:
 - home-assistant
 - yolo
 - tony-omen
-note: 'Found during tony-omen-post-reboot-dead-user-units-pl-9d08a4 (2026-11-25). tony-ha templates.yaml image.yolo_annotated
-  fetches http://192.168.2.86:8780/image — but yolo-detect.service on omen binds 127.0.0.1:8780 only, so the dashboard
-  yolo image is broken. HA runs host-networked so http://127.0.0.1:8780/image should work (verify /image route responds
-  — it returned 404 on a bare GET during the audit; check server.py route params). Alternative: give yolo-detect
-  a second bind on the LAN IP, but th'
+note: '[verify 2026-11-27] CLOSED as resolved live. tony-omen''s ~/.config/home-assistant/templates.yaml now uses
+  http://127.0.0.1:8780/image?t={{ now().timestamp() | int }}; yolo-detect.service is active, listening on 127.0.0.1:8780
+  (and 100.75.102.88:8780), and GET /image returns HTTP 200. No template or service change made during triage.'
 ref: HOM-1383
 comms:
 - at: 2026-11-25 10:37
