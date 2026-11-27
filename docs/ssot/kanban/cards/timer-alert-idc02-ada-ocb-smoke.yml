@@ -1,7 +1,7 @@
 id: timer-alert-idc02-ada-ocb-smoke
 title: Timer ada-ocb-smoke on idc02 failing
-column: doing
-updated: 2026-11-27 08:55
+column: review
+updated: 2026-11-27 08:57
 priority: high
 tags:
 - timer-alert
@@ -613,8 +613,28 @@ comms:
   from: chaba
   text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-083400-investigate-the-failure-of-ada,
     branch dispatch/20261127-083400-investigate-the-failure-of-ada on idc02'
+- at: 2026-11-27 08:57
+  from: idc02
+  text: 'finished (ok): exit=0 cb-smoke.py` until the dispatch merge lands and it pulls once (bytes are identical,
+    so it self-cleans). | devin-t'
+- at: 2026-11-27 08:57
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 08:57
+  from: chaba
+  text: banked 96 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-27 08:57
+  from: chaba
+  text: pushed dispatch/20261127-083400-investigate-the-failure-of-ada to origin
+- at: 2026-11-27 08:57
+  from: chaba
+  text: test gate passed (/home/tony/CascadeProjects/ada-voice/.venv/bin/python -m pytest tests -k 'not slow' -x
+    -q, 271.8s)
+- at: 2026-11-27 08:57
+  from: chaba
+  text: auto-merged c9a2f010 (dispatch/20261127-083400-investigate-the-failure-of-ada) → origin/main
 action:
-  status: running
+  status: done
   type: dispatch
   repo: ada-voice
   executor: devin
@@ -623,6 +643,10 @@ action:
   attempts: 1
   sweep:
     stale_running: 2026-11-27 08:55
+  result: 'exit=0 cb-smoke.py` until the dispatch merge lands and it pulls once (bytes are identical, so it self-cleans).
+    | devin-task-20261127-083400-investigate-the-failure-of-ada.service: Consumed 19.968s CPU time, 515.1M memory
+    peak, 0B memory swap peak.'
+  verified: true
 spec: Investigate the failure of `ada-ocb-smoke.service` on host idc02 by checking the user journal via `journalctl
   --user -u ada-ocb-smoke.service`, and redeploy the runner-agent from the chaba repository to idc02 by copying
   scripts/board/runner-agent.py to ~/.local/bin/runner-agent. The target host is idc02 and the relevant repository
@@ -630,3 +654,4 @@ spec: Investigate the failure of `ada-ocb-smoke.service` on host idc02 by checki
   cause is investigated and resolved.
 claim:
   since: 2026-11-27 08:33
+review_kind: verify
