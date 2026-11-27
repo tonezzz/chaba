@@ -1,7 +1,7 @@
 id: gemini-ollama-proxy-conmon-logtag-failure
 title: 'tony-dell gemini-ollama-proxy: conmon rejects --log-tag, exit 126'
-column: backlog
-updated: 2026-11-27 21:17
+column: doing
+updated: 2026-11-27 21:18
 brief: 'Persistent failure since 2026-11-26 11:56 +07: conmon says k8s-file doesn t support --log-tag; podman create/remove
   churn; ExecMainStatus=126; NRestarts=5 then start-rate limited. Unrelated to existing MEM-1464/MEM-1469 proxy
   cards.'
@@ -29,10 +29,16 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 21:18
+  from: con01
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   task_class: report_triage
   executor: claude
   executor_source: queue
-claim: {}
+  runner: con01
+  attempts: 1
+claim:
+  since: 2026-11-27 21:18
