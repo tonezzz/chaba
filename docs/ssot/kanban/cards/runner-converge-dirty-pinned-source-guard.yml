@@ -1,7 +1,7 @@
 id: runner-converge-dirty-pinned-source-guard
 title: 'runner-tools-converge: detect dirty pinned sources before deploy (fail-loop + drift churn)'
 column: doing
-updated: 2026-11-27 20:48
+updated: 2026-11-27 20:53
 brief: 'idc02 exec checkout had an uncommitted edit to scripts/board/dispatch_repos.py (JEVOS_URL WIP). Its runner-tools-converge.timer
   (~2min cadence) ran deploy-runner-tools.yml --limit idc02 from the dirty checkout: copy installed the WIP bytes,
   post-copy pin assert failed, drifted file stayed -> audit DRIFT -> runner-tool-drift-fleet re-armed ~50x on 2026-11-27.
@@ -50,6 +50,10 @@ comms:
     primer injected 8 lesson(s): [chaba-exec-checkout-i; `_self_stale_check`/`_claimable` gate every claim on installed==checkout-ref
     byt; `docs/ssot/infrastructure/ssot.home-assistant.tony.yml` is stale (still says hos; runner-tooling.manifest.json
     pins sha256 of runner-agent.py a'
+- at: 2026-11-27 20:53
+  from: devin
+  text: 'dispatch picked up: implementation already exists on origin branch fix/20261127-runner-converge-dirty-guard
+    (4b767cc7e1, authored 20:39). Verifying + cherry-picking onto this dispatch branch so it lands via close-out.'
 action:
   type: dispatch
   status: running
