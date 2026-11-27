@@ -1,0 +1,165 @@
+---
+# earlyoom-avoid-jev.yml — exempt the JevOS decision lane from earlyoom on idc02.
+#
+# 2026-11-27 incident (OPS-1516 / card jevos-idc02-earlyoom-kill): earlyoom
+# SIGTERMed jev (PID 1233450, RSS 1543 MiB) at 20:47:40 +07 after killing three
+# chrome processes, when MemAvailable fell to 9.92% of 16 GiB. idc02 has ZERO
+# swap, so earlyoom's swap arm (swap free <= 10%) is permanently true and every
+# mem<10% event kills the worst-badness process — jev at ~1.7 GiB RSS is a
+# recurring candidate. The SIGTERM is a clean exit: systemd recorded
+# Result=success, so jevos.service's Restart=on-failure never fired and the
+# relocated decision lane stayed down ~17 min (health=000) until manual
+# restart. Evidence: docs/ssot/jobs/infrastructure/2026-11-27-idc03-mddb-swap-reclaim-fleet-triage.yml
+#
+# Chosen fix (option a of three delegated to this dispatch): add
+# --avoid '(^|/)(jev)$' to EARLYOOM_ARGS in /etc/default/earlyoom and restart
+# earlyoom.service. Rejected: Restart=always on jevos.service (kill->restart->
+# kill loop under sustained pressure; `systemctl stop` stops sticking for
+# maintenance) and accept+alert (detection without availability — the lane
+# already proved it dies silently). An inactive-unit alert remains a useful
+# follow-up for OTHER units but does not protect this lane.
+#
+# The regex matches comm "jev" exactly — verified it does NOT match the
+# sibling "openjev" process (gemma torch lane, comm=openjev, ~2.5 GiB RSS on
+# this host), which stays earlyoom-exposed by design (out of scope).
+# systemd's ExecStart=$EARLYOOM_ARGS word-splitting honors the single quotes
+# (verified with a transient unit on idc02 2026-11-27), so earlyoom receives
+# the clean regex argv — same quoting pattern as Debian's own
+# /etc/default/earlyoom example.
+#
+# Usage (run from ansible/; idc02 is itself a valid controller):
+#   ansible-playbook playbooks/earlyoom-avoid-jev.yml --check --diff --limit idc02
+#   ansible-playbook playbooks/earlyoom-avoid-jev.yml --limit idc02 \
+#     -e earlyoom_avoid_approved=true -e card_id=jevos-idc02-earlyoom-kill
+#
+# Disruption: restarts earlyoom.service once (~instant; brief gap in
+# userspace-OOM coverage). Does NOT touch jevos.service or any workload.
+# Rollback: restore /etc/default/earlyoom.<timestamp> (lineinfile backup: true
+# sibling) and `systemctl restart earlyoom.service`.
+
+- name: Exempt jev from earlyoom victim selection on idc02
+  hosts: idc02
+  gather_facts: false
+  become: true
+
+  vars:
+    earlyoom_avoid_approved: false
+    earlyoom_defaults: /etc/default/earlyoom
+    earlyoom_args: '-r 3600 --avoid ''(^|/)(jev)$'''
+    jev_health_url: http://100.123.163.11:8017/health
+
+  tasks:
+    - name: Require explicit approval and traceability for a real run
+      ansible.builtin.assert:
+        that:
+          - earlyoom_avoid_approved | bool
+          - card_id is defined or card_ref is defined
+        fail_msg: >-
+          This is a PREP preview. Re-run with
+          -e earlyoom_avoid_approved=true -e card_id=<card>. Rollback: restore
+          the /etc/default/earlyoom.<timestamp> backup and restart
+          earlyoom.service.
+      when: not ansible_check_mode
+      tags: [always]
+
+    - name: Verify earlyoom supports --avoid before changing config
+      ansible.builtin.command: earlyoom -h
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      register: earlyoom_help
+      tags: [guard]
+
+    - name: Refuse to configure an earlyoom that lacks --avoid
+      ansible.builtin.assert:
+        that:
+          - "'--avoid' in (earlyoom_help.stdout ~ earlyoom_help.stderr)"
+        fail_msg: >-
+          earlyoom on {{ inventory_hostname }} does not advertise --avoid;
+          refusing to write EARLYOOM_ARGS it cannot honor.
+      tags: [guard]
+
+    - name: Set EARLYOOM_ARGS with the jev exemption (timestamped backup)
+      ansible.builtin.lineinfile:
+        path: "{{ earlyoom_defaults }}"
+        regexp: '^EARLYOOM_ARGS='
+        line: 'EARLYOOM_ARGS="{{ earlyoom_args }}"'
+        backup: true
+        validate: '/bin/sh -n %s'
+      register: earlyoom_args_line
+      notify: Restart earlyoom
+      tags: [guard]
+
+    - name: Flush handlers so earlyoom restarts before verification
+      ansible.builtin.meta: flush_handlers
+      tags: [verify]
+
+    - name: Check earlyoom service state
+      ansible.builtin.command: systemctl is-active earlyoom.service
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      register: earlyoom_state
+      tags: [verify]
+
+    - name: Assert earlyoom is active after converge
+      ansible.builtin.assert:
+        that:
+          - earlyoom_state.stdout == 'active'
+        fail_msg: >-
+          earlyoom.service is '{{ earlyoom_state.stdout }}' after converge;
+          check `journalctl -u earlyoom.service -n 50` on the host.
+      tags: [verify]
+
+    - name: Read the running earlyoom argv
+      ansible.builtin.command: pgrep -a earlyoom
+      changed_when: false
+      check_mode: false
+      register: earlyoom_argv
+      tags: [verify]
+
+    - name: Assert the running earlyoom carries the --avoid exemption
+      ansible.builtin.assert:
+        that:
+          - "'--avoid' in earlyoom_argv.stdout"
+          - "'(^|/)(jev)$' in earlyoom_argv.stdout"
+        fail_msg: >-
+          Running earlyoom argv '{{ earlyoom_argv.stdout }}' does not carry
+          the expected --avoid '(^|/)(jev)$' — the unit may not have reloaded
+          /etc/default/earlyoom.
+      when: not ansible_check_mode
+      tags: [verify]
+
+    - name: Prove the avoid regex exempts jev but not openjev
+      ansible.builtin.shell: |
+        re='(^|/)(jev)$'
+        printf 'jev\n' | grep -qE "$re" || { echo 'FAIL: jev comm not matched'; exit 1; }
+        printf 'openjev\n' | grep -qE "$re" && { echo 'FAIL: openjev wrongly exempted'; exit 1; }
+        printf 'jev-serve\n' | grep -qE "$re" && { echo 'FAIL: jev-serve wrongly exempted'; exit 1; }
+        echo 'regex OK: jev exempt, openjev/jev-serve stay exposed'
+      check_mode: false
+      changed_when: false
+      tags: [verify]
+
+    - name: Confirm the jev lane still answers /health
+      ansible.builtin.uri:
+        url: "{{ jev_health_url }}"
+        status_code: 200
+        timeout: 10
+      register: jev_health
+      tags: [verify]
+
+    - name: Report verification summary
+      ansible.builtin.debug:
+        msg: >-
+          earlyoom={{ earlyoom_state.stdout }}
+          argv={{ earlyoom_argv.stdout | default('n/a') }}
+          jev_health={{ jev_health.status | default('n/a') }}
+      tags: [verify]
+
+  handlers:
+    - name: Restart earlyoom
+      ansible.builtin.systemd:
+        name: earlyoom.service
+        state: restarted
+      tags: [guard]

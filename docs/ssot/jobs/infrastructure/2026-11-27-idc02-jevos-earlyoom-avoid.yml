@@ -1,0 +1,94 @@
+---
+title: OPS-1516 — jev exempted from earlyoom on idc02 via --avoid EARLYOOM_ARGS
+subtitle: Chosen fix (a) of three for the JevOS earlyoom SIGTERM kill; converged and verified
+icon: shield
+date: 2026-11-27
+card: jevos-idc02-earlyoom-kill
+ref: OPS-1516
+status: applied-verified
+
+context:
+  trigger: >-
+    Card jevos-idc02-earlyoom-kill delegated a three-way choice after the
+    2026-11-27 20:47:40 +07 incident: earlyoom on idc02 (zero swap, so its
+    swap arm is permanently true) SIGTERMed jev at MemAvailable 9.92% of
+    16 GiB; the clean exit recorded Result=success so Restart=on-failure
+    never fired and the relocated decision lane stayed down ~17 min.
+    Evidence: 2026-11-27-idc03-mddb-swap-reclaim-fleet-triage.yml.
+  decision: >-
+    Option (a) chosen and applied: --avoid '(^|/)(jev)$' added to
+    EARLYOOM_ARGS in /etc/default/earlyoom on idc02, earlyoom.service
+    restarted. Rejected (b) Restart=always on jevos.service — under
+    sustained pressure earlyoom would kill->restart->kill loop (each
+    restart reallocates ~1.7 GiB RSS, worsening the pressure it responds
+    to) and `systemctl --user stop` would stop sticking for maintenance.
+    Rejected (c) accept+alert — detection without availability; the lane
+    already proved it dies silently for ~17 min. An inactive-unit alert
+    remains a worthwhile follow-up for OTHER units but does not protect
+    this lane.
+
+changes:
+  - id: earlyoom_jev_exempt
+    verdict: applied-verified
+    action: >-
+      New playbook ansible/playbooks/earlyoom-avoid-jev.yml (single-host,
+      hosts: idc02, approval-gated like idc03-memory-guard.yml). lineinfile
+      rewrote the one uncommented EARLYOOM_ARGS line to
+      EARLYOOM_ARGS="-r 3600 --avoid '(^|/)(jev)$'" with backup: true and
+      sh -n validation; handler restarted earlyoom.service. Ran from the
+      idc02 dispatch worktree (idc02 is a valid ansible controller):
+      --check --diff clean (one-line diff), real run
+      -e earlyoom_avoid_approved=true -e card_id=jevos-idc02-earlyoom-kill
+      -> ok=12 changed=2 failed=0.
+    quoting_proof: >-
+      systemd ExecStart=/usr/bin/earlyoom $EARLYOOM_ARGS word-splitting
+      honors the single quotes inside the EnvironmentFile value — proven
+      empirically on idc02 with a transient unit (systemd-run +
+      EnvironmentFile) before writing the playbook, and confirmed live:
+      running argv is `/usr/bin/earlyoom -r 3600 --avoid (^|/)(jev)$`.
+      Same quoting pattern as Debian's own /etc/default/earlyoom example.
+    scope_note: >-
+      The regex matches comm "jev" exactly. The sibling openjev process
+      (gemma-3-4b torch CPU lane on :8777, comm=openjev, ~2.5 GiB RSS —
+      the LARGEST process on idc02) is NOT exempted and remains an
+      earlyoom kill candidate; widening the exemption was out of scope
+      for this card but is worth a follow-up look.
+
+verification:
+  checks:
+    - "pgrep -a earlyoom -> `/usr/bin/earlyoom -r 3600 --avoid (^|/)(jev)$` (quotes correctly stripped by systemd)"
+    - "systemctl is-active earlyoom.service -> active; restarted 21:32:58 +07, NRestarts=0"
+    - "curl http://100.123.163.11:8017/health -> 200 (consumer proof, lane untouched)"
+    - "playbook regex-sanity task: comm 'jev' matches, 'openjev' and 'jev-serve' do not"
+    - "idempotency: second --check --diff run -> changed=0 everywhere"
+    - "backup: /etc/default/earlyoom.1398770.2026-11-27@21:32:57~ (lineinfile backup: true)"
+  caveat: >-
+    Protection is verified at config level (correct argv delivered to a
+    running earlyoom). Behavioral proof — earlyoom actually skipping jev
+    under pressure — can only be observed at the next real mem<10% event;
+    earlyoom logs every victim decision to the journal.
+
+rollback:
+  - >-
+    cp /etc/default/earlyoom.1398770.2026-11-27@21:32:57~ /etc/default/earlyoom
+    && systemctl restart earlyoom.service — or re-run the playbook after
+    reverting the commit; the file edit is a single line.
+
+lessons:
+  - >-
+    ansible command/shell tasks are SKIPPED in --check mode unless the task
+    sets check_mode: false — read-only probes (earlyoom -h, is-active,
+    pgrep) need it or their registered vars are empty and downstream asserts
+    fail confusingly.
+  - >-
+    earlyoom -h writes help to STDERR, not stdout — assert on
+    stdout ~ stderr or the capability check false-negatives.
+  - >-
+    systemd EnvironmentFile + ExecStart=$VAR word-splitting DOES honor
+    single quotes in the value (verified via systemd-run transient unit) —
+    the Debian /etc/default/earlyoom --avoid example quoting is correct
+    as-is; no extra escaping needed.
+  - >-
+    earlyoom --avoid matches the process comm name: '(^|/)(jev)$' exempts
+    jev but NOT openjev — sibling lanes sharing a name prefix need the
+    anchored regex checked against every co-tenant's comm.
