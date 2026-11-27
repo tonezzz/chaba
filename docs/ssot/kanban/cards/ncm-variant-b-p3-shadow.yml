@@ -1,7 +1,7 @@
 id: ncm-variant-b-p3-shadow
 title: NCM Variant B P3 — shadow rollout of the role-conditioned detail lane
-column: backlog
-updated: 2026-11-27 15:15
+column: doing
+updated: 2026-11-27 15:16
 brief: Tony approved P3 shadow 2026-11-27 after scaled gate PASS (median +0.533, guard 0). Run the role-conditioned
   lane in shadow on real packs with a pre-registered promotion gate; no user-facing promotion, no paid resources.
 priority: medium
@@ -51,9 +51,11 @@ spec: 'Tony approved P3 shadow rollout 2026-11-27 (decision on card ncm-code-blo
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: paid_frontier
   lane_source: kw
+  runner: idc02
+  attempts: 1
 comms:
 - at: 2026-11-27 15:15
   from: chaba
@@ -61,4 +63,9 @@ comms:
 - at: 2026-11-27 15:15
   from: tony
   text: card captured via board-api
+- at: 2026-11-27 15:16
+  from: idc02
+  text: claimed
 ref: OPS-1504
+claim:
+  since: 2026-11-27 15:16
