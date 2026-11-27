@@ -64,7 +64,7 @@ def check_service(u, lines=50):
             "sample_errors": hits[:5],
         }
     except Exception as e:
-        return {**u, "ok": False, "error_count": 0, "sample_errors": [str(e)]}
+        return {**u, "ok": False, "chars": 0, "error_count": 0, "sample_errors": [str(e)]}
 
 
 def main():
