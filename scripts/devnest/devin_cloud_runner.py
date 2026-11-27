@@ -22,8 +22,12 @@ printed. No secrets go into prompts or launch records.
 Usage::
 
     python3 scripts/devnest/devin_cloud_runner.py --input validated.json
-    python3 scripts/devnest/devin_cloud_runner.py --input validated.json --live --remaining-pct 62
+    python3 scripts/devnest/devin_cloud_runner.py --input validated.json --live \\
+        --remaining-pct 71 --on-demand-balance 3.55
     python3 scripts/devnest/devin_cloud_runner.py --poll <session_id>
+
+On-demand balance is operator-supplied from the Console (the v3 API does not
+expose it on Pro). --live refuses to launch without it or below the floor.
 """
 from __future__ import annotations
 
@@ -144,6 +148,10 @@ def main() -> int:
     ap.add_argument("--mode", default="lite", choices=ALLOWED_MODES)
     ap.add_argument("--remaining-pct", type=float, default=None)
     ap.add_argument("--min-remaining", type=float, default=30.0)
+    ap.add_argument("--on-demand-balance", type=float, default=None,
+                    help="remaining on-demand USD from the Console (operator input)")
+    ap.add_argument("--min-on-demand-balance", type=float, default=5.0,
+                    help="--live refuses to launch below this USD balance")
     args = ap.parse_args()
 
     if args.poll:
@@ -159,8 +167,18 @@ def main() -> int:
     if args.remaining_pct is not None and args.remaining_pct < args.min_remaining:
         reasons.append(f"quota headroom {args.remaining_pct:g}% < "
                        f"{args.min_remaining:g}% minimum")
-    if reasons:
-        print(json.dumps({"ok": False, "held": reasons}))
+    # On-demand balance is not exposed by the API on Pro, so it is read from
+    # the Console by the operator. Never spend the last of it unattended.
+    balance_reasons: list[str] = []
+    if args.on_demand_balance is None:
+        balance_reasons.append(
+            "on-demand balance unknown — supply --on-demand-balance from the Console")
+    elif args.on_demand_balance < args.min_on_demand_balance:
+        balance_reasons.append(
+            f"on-demand balance ${args.on_demand_balance:.2f} < "
+            f"${args.min_on_demand_balance:.2f} minimum")
+    if args.live and balance_reasons:
+        print(json.dumps({"ok": False, "held": reasons + balance_reasons}))
         return 1
 
     try:
@@ -198,6 +216,7 @@ def main() -> int:
             "ok": True, "dry_run": True, "would_launch": len(chosen),
             "mode": args.mode, "launched_24h": launched_today,
             "daily_cap": args.max_per_day, "cap_left": cap_left,
+            "warnings": balance_reasons,
             "tasks": [{"task_id": s["task_id"], "card_ref": s.get("card_ref"),
                        "repo": s["repo"],
                        "prompt_head": s["prompt"][:160]} for s in chosen],
