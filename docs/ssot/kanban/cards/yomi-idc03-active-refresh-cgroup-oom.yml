@@ -1,7 +1,7 @@
 id: yomi-idc03-active-refresh-cgroup-oom
 title: 'MEM-1508: idc03 yomi-api cgroup OOM loop from active refresh sweep'
-column: doing
-updated: 2026-11-27 18:48
+column: done
+updated: 2026-11-27 18:56
 brief: yomi-api 2 GiB cgroup is hit repeatedly by yomi-update-active refresh of top-20 chats; mcpb/run.mjs browser
   worker grows to ~2 GiB on heavy chats. 9 CONSTRAINT_MEMCG kills 18:00-18:44.
 priority: high
@@ -52,9 +52,19 @@ comms:
     Full-fleet run 2026-11-23 (controller tony-ome; [camwall-retire-to-wiki] primer injected 8 lesson(s): no chaba-audit.service/cha;
     [idle-qa-and-backups-idc] primer injected 8 lesson(s): no chaba-audit.service/ch; Card specs written from journal
     symptoms can misattribute whi'
+- at: 2026-11-27 18:56
+  from: chaba
+  text: 'FIXED + VERIFIED 2026-11-27 18:56 +07 on idc03. Deployed ansible/playbooks/idc03-yomi-refresh-bounds.yml
+    (check mode clean, real run ok=14 changed=6 failed=0, pinned sha256 verified, timestamped backups in /home/tony/.local/share/chaba-backups/idc03-yomi-refresh-bounds/<tag>/).
+    Bounded work: MAX_ACTIVE 20->5; getChatMessages pages 200->5, messages 20k->500, media 10 with concurrency 2;
+    NODE_OPTIONS=--max-old-space-size=1536 in yomi-api.env and container restarted. 18:54 timer tick refreshed 5
+    he'
+- at: 2026-11-27 18:56
+  from: chaba
+  text: closed by chaba
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   lane_source: fallback
   runner: tony-dell
