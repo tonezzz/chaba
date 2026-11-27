@@ -1,0 +1,229 @@
+---
+# jevos-migrate.yml — move jevos.service (JevOS v5 OpenVINO /v1/systemone,
+# 127.0.0.1:8017) off idc03 to a roomier host. Card
+# idc03-swap-workload-placement / MEM-1511 — jevos is idc03's top swap
+# holder (~780MiB swap + ~960MiB RSS, ~1.7GiB footprint on a 15GiB box).
+#
+# Two plays, run together:
+#   play 1 (target): rsync-pull ~/jev-bench/jev from idc03, install a
+#     user unit bound to the target's tailnet IP :8017, verify /health
+#     and a real /v1/systemone Choice round-trip, set_fact ready.
+#   play 2 (idc03): only runs when the target verified — repoint the
+#     runner-agent JEVOS_URL drop-in, stop+disable jevos.service.
+#
+# Usage (controller = tony-dell; ALWAYS --limit is NOT used — the target
+# comes from -e; restrict with -e jevos_target_host=<name>):
+#   ansible-playbook playbooks/jevos-migrate.yml --check --diff \
+#     -e jevos_target_host=tony-omen
+#   ansible-playbook playbooks/jevos-migrate.yml \
+#     -e jevos_target_host=tony-omen \
+#     -e jevos_migrate_approved=true -e card_id=idc03-swap-workload-placement
+#
+# Disruption: play 2 stops idc03's jevos — JEV_LANE claim-classify on
+# idc03's runner-agent falls back to the devin lane for the seconds
+# between stop and the JEVOS_URL repoint taking effect (next runner-agent
+# restart; env is exec-time). In-flight /v1/systemone calls on idc03:8017
+# are cut. Rollback: re-enable+start jevos.service on idc03 (payload dir
+# is untouched), remove the 65-jevos-url.conf drop-in, daemon-reload;
+# optionally stop+disable jevos.service on the target.
+
+- name: Install and verify jevos on the target host
+  hosts: "{{ jevos_target_host | default('') }}"
+  gather_facts: false
+  become: false
+  any_errors_fatal: true
+
+  vars:
+    jevos_source_host: idc03
+    jevos_port: 8017
+    jevos_payload_dir: /home/tony/jev-bench/jev
+
+  tasks:
+    - name: Require approval, a real target, and traceability
+      ansible.builtin.assert:
+        that:
+          - jevos_migrate_approved | bool
+          - jevos_target_host | length > 0
+          - jevos_target_host != 'idc03'
+          - card_id is defined or card_ref is defined
+        fail_msg: >-
+          PREP preview. Re-run with -e jevos_migrate_approved=true
+          -e jevos_target_host=<omen|idc02|con01> -e card_id=<card>.
+      when: not ansible_check_mode
+      tags: [always]
+
+    - name: Ensure payload parent directory exists
+      ansible.builtin.file:
+        path: /home/tony/jev-bench
+        state: directory
+        owner: tony
+        group: tony
+        mode: "0755"
+      tags: [install]
+
+    - name: Pull jev payload from idc03 (idempotent rsync -ai)
+      # Target pulls over the tailnet ssh mesh (verified all candidates
+      # reach idc03). -i itemizes only changed paths; empty stdout = sync.
+      ansible.builtin.command:
+        argv:
+          - rsync
+          - -ai
+          - --delete
+          - "tony@{{ jevos_source_host }}:{{ jevos_payload_dir }}/"
+          - "{{ jevos_payload_dir }}/"
+      register: jevos_rsync
+      changed_when: jevos_rsync.stdout_lines | length > 0
+      tags: [install]
+
+    - name: Install jevos.service bound to the tailnet address
+      ansible.builtin.copy:
+        dest: /home/tony/.config/systemd/user/jevos.service
+        owner: tony
+        group: tony
+        mode: "0644"
+        content: |
+          # Managed by chaba/ansible (jevos-migrate.yml). Do not edit on host.
+          # Migrated from idc03 2026-11-27 (MEM-1511). Binds the tailnet IP —
+          # never 0.0.0.0 on a public VPS.
+          [Unit]
+          Description=JevOS v5 OpenVINO /v1/systemone decision lane
+          After=network-online.target
+
+          [Service]
+          Type=simple
+          WorkingDirectory={{ jevos_payload_dir }}
+          ExecStart={{ jevos_payload_dir }}/jev serve --host {{ ansible_host }} --port {{ jevos_port }}
+          Restart=on-failure
+          RestartSec=5
+
+          [Install]
+          WantedBy=default.target
+      tags: [install]
+
+    - name: Reload user systemd manager
+      ansible.builtin.command: systemctl --machine=tony@.host --user daemon-reload
+      become: true
+      changed_when: false
+      when: not ansible_check_mode
+      tags: [install]
+
+    - name: Enable and start jevos on the target
+      ansible.builtin.command: systemctl --machine=tony@.host --user enable --now jevos.service
+      become: true
+      changed_when: false
+      when: not ansible_check_mode
+      tags: [install]
+
+    - name: Wait for /health to report ready (OpenVINO warmup can take a while)
+      ansible.builtin.uri:
+        url: "http://{{ ansible_host }}:{{ jevos_port }}/health"
+        method: GET
+        status_code: 200
+        timeout: 15
+        retries: 40
+        delay: 3
+        until: "'ready' in (jevos_health.content | default(''))"
+      register: jevos_health
+      when: not ansible_check_mode
+      tags: [verify]
+
+    - name: Real /v1/systemone Choice round-trip
+      ansible.builtin.uri:
+        url: "http://{{ ansible_host }}:{{ jevos_port }}/v1/systemone"
+        method: POST
+        body_format: json
+        body:
+          model: jev-latest
+          state:
+            card: migration-probe
+            title: jevos migrate verify
+            brief: health check after move
+          questions:
+            lane:
+              type: choice
+              instructions: Choose the cheapest lane that can complete this card's work class.
+              criteria:
+                devin: multi-step, remote diagnosis, ambiguous
+                manual: needs Tony's hands
+        status_code: 200
+        timeout: 30
+        retries: 3
+        delay: 5
+      register: jevos_probe
+      when: not ansible_check_mode
+      tags: [verify]
+
+    - name: Mark target verified for play 2
+      ansible.builtin.set_fact:
+        jevos_target_ready: true
+      when: not ansible_check_mode
+      tags: [verify]
+
+- name: Retire jevos on idc03 and repoint consumers
+  hosts: idc03
+  gather_facts: false
+  become: false
+
+  vars:
+    jevos_source_host: idc03
+    jevos_port: 8017
+
+  tasks:
+    - name: Require approval and a verified target before retiring the source
+      ansible.builtin.assert:
+        that:
+          - jevos_migrate_approved | bool
+          - hostvars[jevos_target_host].jevos_target_ready | default(false) | bool
+        fail_msg: >-
+          Refusing to retire idc03 jevos: target {{ jevos_target_host }}
+          did not verify (play 1 must pass /health + /v1/systemone first).
+      when: not ansible_check_mode
+      tags: [always]
+
+    - name: Point idc03 runner-agent JEVOS_URL at the migrated jevos
+      ansible.builtin.copy:
+        dest: /home/tony/.config/systemd/user/runner-agent.service.d/65-jevos-url.conf
+        owner: tony
+        group: tony
+        mode: "0644"
+        content: |
+          # Managed by chaba/ansible (jevos-migrate.yml). Do not edit on host.
+          # jevos moved idc03 -> {{ jevos_target_host }} 2026-11-27 (MEM-1511).
+          [Service]
+          Environment=JEVOS_URL=http://{{ hostvars[jevos_target_host].ansible_host }}:{{ jevos_port }}
+      tags: [retire]
+
+    - name: Reload user systemd manager so the drop-in is seen
+      ansible.builtin.command: systemctl --machine=tony@.host --user daemon-reload
+      become: true
+      changed_when: false
+      when: not ansible_check_mode
+      tags: [retire]
+
+    - name: Stop and disable jevos.service on idc03
+      ansible.builtin.systemd_service:
+        name: jevos.service
+        scope: user
+        state: stopped
+        enabled: false
+      tags: [retire]
+
+    - name: Verify idc03 jevos is down and the runner-agent env is staged
+      ansible.builtin.command:
+        argv:
+          - sh
+          - -c
+          - >-
+            systemctl --user is-active jevos.service || true;
+            systemctl --user is-enabled jevos.service || true;
+            grep -h JEVOS_URL /home/tony/.config/systemd/user/runner-agent.service.d/65-jevos-url.conf || true
+      changed_when: false
+      failed_when: false
+      register: retire_state
+      when: not ansible_check_mode
+      tags: [verify]
+
+    - name: Report retire state
+      ansible.builtin.debug:
+        msg: "{{ retire_state.stdout_lines | default(['skipped']) }}"
+      tags: [verify]

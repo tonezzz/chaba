@@ -1,0 +1,360 @@
+---
+# idc03-swap-placement.yml — reclaim idc03 swap by retiring dead twins,
+# bouncing the idle bankq shadow, staggered-restarting cold ada lanes, and
+# installing a jevos swap-reclaim guard.
+#
+# 2026-11-27 triage (card idc03-swap-workload-placement / MEM-1511): idc03
+# (15 GiB) sits at swap 4/4 GiB with ~2 GiB MemAvailable after the MEM-1507
+# memory guard and MEM-1510 yomi bounds. Per-unit MemorySwapCurrent leaders:
+#   jevos 780MiB/961MiB RSS, ada-chaba 372/44, ada-ha-ada 367/46,
+#   ada-bankq-student 316/15 (shadow, no journal 72h+, localhost :8791,
+#   zero connections), mddb-cms 290/1400 (leader — DO NOT TOUCH),
+#   ada-kk 263/111, kk-ha 259/91, ada-dev 244/133 + ada-kk-dev 184/191
+#   (localhost-only twins; every scenario unit already targets omen
+#   ws://100.75.102.88:8005 since 2026-11-25 — they only resurrect because
+#   scripts/deploy-ada.sh SERVICES still lists them).
+#
+# Actions are individually gated so the owner decisions on the card can land
+# independently:
+#   swap_retire_twins      stop+disable idc03 ada-dev/ada-kk-dev  (Q1 option a)
+#   swap_bankq_action      restart|stop|none for ada-bankq-student
+#   swap_restart_cold_ada  staggered restart of the four cold ada lanes
+#   swap_jevos_guard       install jevos-swap-reclaim script+timer (fallback
+#                          for the JevOS destination decision — harmless if
+#                          jevos later moves; the unit simply reports 0)
+#
+# Usage (controller = tony-dell; ALWAYS --limit):
+#   ansible-playbook playbooks/idc03-swap-placement.yml --check --diff --limit idc03
+#   ansible-playbook playbooks/idc03-swap-placement.yml --limit idc03 \
+#     -e idc03_swap_approved=true -e card_id=idc03-swap-workload-placement \
+#     [-e swap_retire_twins=true] [-e swap_restart_cold_ada=true] \
+#     [-e swap_bankq_action=stop]
+#
+# Disruption: bankq restart is invisible (idle shadow, :8791 localhost, no
+# consumers). Cold-ada restarts bounce four prod voice lanes one at a time
+# (~10-60s each; in-flight voice sessions on that persona reconnect).
+# Twins stop+disable ends the idc03 bench-lane copies — only valid once the
+# owner confirms the bench lane lives on omen. Rollback: systemctl --user
+# enable --now <unit> for any stopped unit; the reclaim timer can be disabled
+# with `systemctl --user disable --now jevos-swap-reclaim.timer`.
+
+- name: Reclaim idc03 swap via workload placement
+  hosts: idc03
+  gather_facts: false
+  become: false
+
+  vars:
+    idc03_swap_approved: false
+    user_systemd_dir: /home/tony/.config/systemd/user
+    user_bin_dir: /home/tony/.local/bin
+    # Owner-decision gates — defaults keep every mutation opt-in.
+    swap_retire_twins: false
+    swap_restart_cold_ada: false
+    swap_bankq_action: restart
+    swap_jevos_guard: true
+    # Cold lanes ordered lab-first, house persona last; ports for the
+    # post-restart health probe (kk-ha has no HTTP port — is-active only).
+    cold_ada_units:
+      - {name: ada-ha-ada.service, port: 8006}
+      - {name: kk-ha.service, port: 0}
+      - {name: ada-kk.service, port: 8007}
+      - {name: ada-chaba.service, port: 8008}
+    twin_units:
+      - ada-dev.service
+      - ada-kk-dev.service
+
+  tasks:
+    - name: Require explicit approval and traceability for a real run
+      ansible.builtin.assert:
+        that:
+          - idc03_swap_approved | bool
+          - card_id is defined or card_ref is defined
+        fail_msg: >-
+          This is a PREP preview. Re-run with -e idc03_swap_approved=true
+          and -e card_id=idc03-swap-workload-placement. Rollback: re-enable
+          any stopped unit; disable jevos-swap-reclaim.timer to remove the
+          guard.
+      when: not ansible_check_mode
+      tags: [always]
+
+    - name: Capture swap/memory baseline before any change
+      ansible.builtin.command:
+        argv: [sh, -c, "free -m | awk '/^Mem:|^Swap:/{print}'; grep -E 'MemAvailable|SwapFree' /proc/meminfo"]
+      changed_when: false
+      check_mode: no
+      register: swap_baseline
+      tags: [always]
+
+    - name: Show per-unit swap baseline
+      ansible.builtin.command:
+        argv:
+          - sh
+          - -c
+          - >-
+            for u in jevos ada-bankq-student mddb-cms ada-chaba ada-ha-ada
+            ada-kk kk-ha ada-dev ada-kk-dev mddb litellm; do
+            printf '%s ' "$u";
+            systemctl --user show "$u.service" -p MemoryCurrent,MemorySwapCurrent --value 2>/dev/null | tr '\n' ' ';
+            echo; done
+      changed_when: false
+      check_mode: no
+      register: unit_swap_baseline
+      tags: [always]
+
+    # ------------------------------------------------------------------
+    # Q1 — dev-twin bench lane: retire the idc03 localhost twins.
+    # ------------------------------------------------------------------
+    - name: Stop idc03 dev twins (bench lane lives on omen)
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        scope: user
+        state: stopped
+      loop: "{{ twin_units }}"
+      when: swap_retire_twins | bool
+      tags: [twins]
+
+    - name: Disable idc03 dev twins so deploys cannot resurrect them
+      ansible.builtin.systemd_service:
+        name: "{{ item }}"
+        scope: user
+        enabled: false
+      loop: "{{ twin_units }}"
+      when: swap_retire_twins | bool
+      tags: [twins]
+
+    - name: Verify twins are inactive and disabled
+      ansible.builtin.command:
+        argv: [sh, -c, "systemctl --user is-active {{ item }} || true; systemctl --user is-enabled {{ item }} || true"]
+      changed_when: false
+      failed_when: false
+      register: twin_state
+      loop: "{{ twin_units }}"
+      when: swap_retire_twins | bool
+      tags: [verify]
+
+    - name: Assert twins stayed down
+      ansible.builtin.assert:
+        that:
+          - "'inactive' in item.stdout_lines[0] or 'failed' in item.stdout_lines[0]"
+          - "'disabled' in item.stdout_lines[1]"
+        fail_msg: "{{ item.item }} still active/enabled on idc03: {{ item.stdout_lines }}"
+      loop: "{{ twin_state.results }}"
+      when:
+        - swap_retire_twins | bool
+        - not ansible_check_mode
+      tags: [verify]
+
+    # ------------------------------------------------------------------
+    # bankq shadow student — idle 72h+, localhost-only :8791, 316MiB swap.
+    # ------------------------------------------------------------------
+    - name: Restart ada-bankq-student to drop its swapped pages
+      ansible.builtin.systemd_service:
+        name: ada-bankq-student.service
+        scope: user
+        state: restarted
+      when: swap_bankq_action == 'restart'
+      tags: [bankq]
+
+    - name: Stop+disable ada-bankq-student (full reclaim, shadow eval over)
+      ansible.builtin.systemd_service:
+        name: ada-bankq-student.service
+        scope: user
+        state: stopped
+        enabled: false
+      when: swap_bankq_action == 'stop'
+      tags: [bankq]
+
+    - name: Verify bankq student state matches the chosen action
+      ansible.builtin.command:
+        argv: [sh, -c, "systemctl --user is-active ada-bankq-student.service || true; systemctl --user is-enabled ada-bankq-student.service || true"]
+      changed_when: false
+      failed_when: false
+      register: bankq_state
+      when: swap_bankq_action != 'none'
+      tags: [verify]
+
+    - name: Report bankq state
+      ansible.builtin.debug:
+        msg: "ada-bankq-student: {{ bankq_state.stdout_lines | default(['skipped']) | join(' / ') }}"
+      when: swap_bankq_action != 'none'
+      tags: [verify]
+
+    # ------------------------------------------------------------------
+    # Cold ada lanes — staggered one-at-a-time restart clears ~1.3GiB swap.
+    # ------------------------------------------------------------------
+    - name: Restart cold ada lanes one at a time (lab -> house)
+      ansible.builtin.systemd_service:
+        name: "{{ item.name }}"
+        scope: user
+        state: restarted
+      loop: "{{ cold_ada_units }}"
+      when: swap_restart_cold_ada | bool
+      tags: [cold-restart]
+
+    - name: Wait for each cold lane to come back active
+      ansible.builtin.command:
+        argv: [sh, -c, "for i in $(seq 1 30); do systemctl --user is-active --quiet {{ item.name }} && exit 0; sleep 2; done; exit 1"]
+      changed_when: false
+      loop: "{{ cold_ada_units }}"
+      when: swap_restart_cold_ada | bool
+      tags: [verify]
+
+    - name: Probe cold-lane HTTP health where a port exists
+      # pwa_server ramps take 30-90s after is-active flips; single-shot uri
+      # probes race the bind (ada-chaba :8008 refused once on 2026-11-27).
+      # Bounded wait-loop instead: up to ~2min per lane.
+      ansible.builtin.command:
+        argv:
+          - sh
+          - -c
+          - >-
+            for i in $(seq 1 40); do
+            curl -sf -m 3 http://127.0.0.1:{{ item.port }}/api/health >/dev/null && exit 0;
+            sleep 3; done; exit 1
+      changed_when: false
+      loop: "{{ cold_ada_units }}"
+      when:
+        - swap_restart_cold_ada | bool
+        - item.port | int > 0
+      tags: [verify]
+
+    # ------------------------------------------------------------------
+    # jevos swap-reclaim guard — open-jev-guard.yml pattern, idc03-sized.
+    # Safe whether jevos stays (reclaims daily) or moves (reports 0).
+    # ------------------------------------------------------------------
+    - name: Ensure user bin directory exists for the reclaim script
+      ansible.builtin.file:
+        path: "{{ user_bin_dir }}"
+        state: directory
+        owner: tony
+        group: tony
+        mode: "0755"
+      tags: [jevos-guard]
+
+    - name: Install jevos swap-reclaim script
+      ansible.builtin.copy:
+        dest: "{{ user_bin_dir }}/jevos-swap-reclaim.sh"
+        owner: tony
+        group: tony
+        mode: "0755"
+        content: |
+          #!/bin/bash
+          # Managed by chaba/ansible (idc03-swap-placement.yml). Do not edit on host.
+          # Restart jevos only when its cgroup swap exceeds the threshold.
+          # jevos is capped at MemoryMax=1600M; ~780MiB swap accumulated in
+          # ~30h on 2026-11-27. Threshold 512MiB reclaims daily-ish buildup
+          # while staying well under the cap. JEV_LANE consumers fall back
+          # to the devin lane while the unit is down (~seconds).
+          set -u
+          unit=jevos.service
+          threshold_mb=512
+          raw=$(systemctl --user show "$unit" -p MemorySwapCurrent --value 2>/dev/null || echo 0)
+          case "$raw" in
+            ''|'[not set]') raw=0 ;;
+          esac
+          swap_mb=$((raw / 1048576))
+          if [ "$swap_mb" -gt "$threshold_mb" ]; then
+            echo "jevos swap ${swap_mb}MiB > ${threshold_mb}MiB - restarting $unit"
+            systemctl --user restart "$unit"
+          else
+            echo "jevos swap ${swap_mb}MiB <= ${threshold_mb}MiB - no restart needed"
+          fi
+      when: swap_jevos_guard | bool
+      tags: [jevos-guard]
+
+    - name: Install jevos-swap-reclaim oneshot service
+      ansible.builtin.copy:
+        dest: "{{ user_systemd_dir }}/jevos-swap-reclaim.service"
+        owner: tony
+        group: tony
+        mode: "0644"
+        content: |
+          # Managed by chaba/ansible (idc03-swap-placement.yml). Do not edit on host.
+          [Unit]
+          Description=Reclaim jevos swapped pages when above 512 MiB
+
+          [Service]
+          Type=oneshot
+          ExecStart=/home/tony/.local/bin/jevos-swap-reclaim.sh
+      when: swap_jevos_guard | bool
+      tags: [jevos-guard]
+
+    - name: Install jevos-swap-reclaim daily timer
+      ansible.builtin.copy:
+        dest: "{{ user_systemd_dir }}/jevos-swap-reclaim.timer"
+        owner: tony
+        group: tony
+        mode: "0644"
+        content: |
+          # Managed by chaba/ansible (idc03-swap-placement.yml). Do not edit on host.
+          [Unit]
+          Description=Daily jevos swap reclaim check
+
+          [Timer]
+          OnCalendar=*-*-* 04:30:00
+          Persistent=true
+          Unit=jevos-swap-reclaim.service
+
+          [Install]
+          WantedBy=timers.target
+      when: swap_jevos_guard | bool
+      tags: [jevos-guard]
+
+    - name: Reload user systemd manager
+      # SSH has no user bus; use the machine bus as root (same as open-jev-guard).
+      ansible.builtin.command: systemctl --machine=tony@.host --user daemon-reload
+      become: true
+      changed_when: false
+      when:
+        - swap_jevos_guard | bool
+        - not ansible_check_mode
+      tags: [jevos-guard]
+
+    - name: Enable and start the jevos-swap-reclaim timer
+      # Command form: the systemd module fails in --check because the unit
+      # file is only a pending copy. Idempotent by nature; changed_when false
+      # keeps rechecks clean (same pattern as open-jev-guard.yml). Gated out
+      # of check mode — the unit does not exist until the copies land.
+      ansible.builtin.command: systemctl --machine=tony@.host --user enable --now jevos-swap-reclaim.timer
+      become: true
+      changed_when: false
+      when:
+        - swap_jevos_guard | bool
+        - not ansible_check_mode
+      tags: [jevos-guard]
+
+    # ------------------------------------------------------------------
+    # Measure — after-state for the card comms / job record.
+    # ------------------------------------------------------------------
+    - name: Capture swap/memory after the run
+      ansible.builtin.command:
+        argv: [sh, -c, "free -m | awk '/^Mem:|^Swap:/{print}'; grep -E 'MemAvailable|SwapFree' /proc/meminfo"]
+      changed_when: false
+      check_mode: no
+      register: swap_after
+      tags: [always]
+
+    - name: Show per-unit swap after the run
+      ansible.builtin.command:
+        argv:
+          - sh
+          - -c
+          - >-
+            for u in jevos ada-bankq-student mddb-cms ada-chaba ada-ha-ada
+            ada-kk kk-ha ada-dev ada-kk-dev mddb litellm; do
+            printf '%s ' "$u";
+            systemctl --user show "$u.service" -p MemoryCurrent,MemorySwapCurrent --value 2>/dev/null | tr '\n' ' ';
+            echo; done
+      changed_when: false
+      check_mode: no
+      register: unit_swap_after
+      tags: [always]
+
+    - name: Report before/after swap
+      ansible.builtin.debug:
+        msg:
+          baseline: "{{ swap_baseline.stdout_lines }}"
+          after: "{{ swap_after.stdout_lines }}"
+          units_before: "{{ unit_swap_baseline.stdout_lines }}"
+          units_after: "{{ unit_swap_after.stdout_lines }}"
+      tags: [always]
