@@ -34,7 +34,6 @@ Apply this skill when ending a session/handoff, after meaningful discovery, when
 4. **Focus parity:** log focus decisions/session summaries append-only to `docs/ssot/ssot.focus.decisions.yml` / `docs/ssot/ssot.focus.sessions.yml` (prefer `mcp-debug` `mcp_focus` `session_summary`/`technical_decision`; else consistent append-only edits, never rewrite history)
 5. **Evidence:** attach outcomes/evidence; capture only reusable deltas
 6. **Handoff packet (required):** save a Session Handoff Packet (OpenChamber knowledge note preferred and/or card comms refs) and report `where_filed` in the response
-7. **Router event (dry-run, idempotent):** emit ONE capture-router event for the packet — `python3 scripts/chaba/capture-event.py --type handoff --source opencode --session <id> --subject <packet-id> --summary "<objective + state>" --ref <sink ref> --where-filed "<item -> sink>" [--open-ask ...]`. Dry-run only (events/audit JSONL under `~/.local/share/chaba/capture`), dedupes by `dedupe_key` (re-emit = noop, never a second packet), refuses evidence-free handoffs, never writes canonical sinks.
 
 ## Session Handoff Packet (required)
 - `objective`, `as_of`

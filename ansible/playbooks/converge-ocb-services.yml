@@ -1,0 +1,66 @@
+---
+# converge-ocb-services.yml — enforce ssot.audit.hosts.yml on the fleet.
+# Port of chaba/ansible/playbooks/converge-fleet-services.yml (verify+fix pattern).
+#
+# Default mode is AUDIT-ONLY. To converge:  -e apply=true
+#   ansible-playbook playbooks/converge-ocb-services.yml -e apply=true --limit tony-dell
+#
+# Preflight: read-only gate before convergence. Skip with --skip-tags preflight.
+# Report-only: -e preflight_fail_fast=false
+
+- import_playbook: preflight.yml
+  vars:
+    preflight_profile: service_cutover
+    preflight_hosts: "all:!macos:!disabled"
+  tags: [preflight]
+
+- name: Converge OCB-managed fleet services per host
+  hosts: all:!macos:!disabled
+  gather_facts: true
+  become: false
+  vars:
+    ssot_key_map:
+      tony-macbook: macbook
+    apply_flag: "{{ apply | default('false') }}"
+  tasks:
+    - name: Load audit SSOT (via controller lookup)
+      ansible.builtin.set_fact:
+        ssot: >-
+          {{ lookup('ansible.builtin.file',
+                    playbook_dir ~ '/../../docs/ssot/infrastructure/ssot.audit.hosts.yml')
+             | from_yaml }}
+
+    - name: Resolve this host's SSOT block
+      ansible.builtin.set_fact:
+        host_ssot_key: "{{ ssot_key_map.get(inventory_hostname, inventory_hostname) }}"
+        host_ssot: >-
+          {{ (ssot['hosts'] | default({}))
+             .get(ssot_key_map.get(inventory_hostname, inventory_hostname), {}) }}
+
+    - name: Render the per-host convergence script
+      ansible.builtin.template:
+        src: ocb-converge.sh.j2
+        dest: "{{ ansible_facts.env.HOME }}/.local/bin/ocb-converge.sh"
+        mode: "0755"
+      vars:
+        expected_services: "{{ host_ssot.get('expected_services', []) }}"
+        expected_absent: "{{ host_ssot.get('expected_absent', []) }}"
+
+    - name: Run convergence script (audit-only unless apply=true)
+      ansible.builtin.shell: |
+        APPLY="{{ '1' if (apply_flag | bool) else '0' }}" \
+          bash "{{ ansible_facts.env.HOME }}/.local/bin/ocb-converge.sh"
+      register: converge_out
+      changed_when: false
+      failed_when: false
+
+    - name: Show convergence output
+      ansible.builtin.debug:
+        msg: "{{ converge_out.stdout | default('') }}"
+
+- import_playbook: preflight.yml
+  vars:
+    preflight_profile: service_cutover
+    preflight_mode: post_verify
+    preflight_hosts: "all:!macos:!disabled"
+  tags: [post_verify]

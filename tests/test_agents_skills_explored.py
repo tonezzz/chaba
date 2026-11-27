@@ -20,7 +20,6 @@ export = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(export)
 
 EXPLORED_SKILLS = {
-    "ansible-first",
     "auto-kb",
     "docker-restart",
     "git-status",
@@ -56,9 +55,8 @@ def test_explored_session_skills_exist():
 
 def test_each_skill_has_name_and_description():
     skills = export.collect_skills(REPO)
-    # Pin the skills explored in session history; newer skills may be added.
-    assert (EXPLORED_SKILLS | EXPLORED_SESSION_SKILLS) <= {
-        s["name"] for s in skills}
+    assert {s["name"] for s in skills} == (
+        EXPLORED_SKILLS | EXPLORED_SESSION_SKILLS)
     for skill in skills:
         assert (REPO / skill["location"]).exists(), skill
         assert len(skill["description"]) > 10, skill
@@ -96,14 +94,6 @@ def test_wiki_export_shape_with_fixtures():
         assert param in page, param
     assert "== Inventory ==" in page
     assert "== Repositories explored ==" in page
-    assert "== Benchmarks ==" in page and "info-find efficiency A/B" in page
-    assert "Build is not apply" in page and "OPS-1447" in page
-    assert "== Operations ==" in page and "PR #246" in page
-    for token in ("MDDB findability eval", "build-mcp-server", "acfd73e3-04e7-43f9-82e5-bdc5635e3358"):
-        assert token in page, token
-    assert "== Related tooling ==" in page and "ansible-first" in page
-    assert "== External skill packs evaluated ==" in page
-    assert "ansible-community/ai-forge" in page and "DEV-1499" in page
     assert page.count("\n|-") == len(fixtures) + len(export.REPOS)
     for repo in export.REPOS:
         assert repo["name"] in page, repo["name"]
