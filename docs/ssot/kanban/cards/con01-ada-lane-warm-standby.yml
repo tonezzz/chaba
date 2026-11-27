@@ -1,7 +1,7 @@
 id: con01-ada-lane-warm-standby
 title: con01 warm standby for ada-line-relay + ada-ha-tony
 column: doing
-updated: 2026-11-27 14:22
+updated: 2026-11-27 14:34
 priority: low
 action:
   type: dispatch
@@ -288,5 +288,12 @@ comms:
   from: devin
   text: dispatch picked up the card again — prior session staged everything 2026-11-26 (masked standby units, playbook,
     runbook). Verifying on-host state is still intact + checking for drift before closing.
+- at: 2026-11-27 14:34
+  from: devin
+  text: 'VERIFY PASS 2026-11-27 (dispatch 142108): warm standby confirmed live+inert on con01 — masked units present,
+    repo==host sha256 match, secrets tarball fresh (2026-11-27 03:00 has all 4 env files), caddy-edge Caddyfile
+    routes /webhook/line+/relay-img/*->:8912 and /apps/ha/ada-tony/*->:8002 intact, live idc03 units unchanged.
+    SSOT drift fixed in 5e9153f: services.yml stale idc01-standby notes corrected (idc01 retired 2026-11-14), system-map
+    standby pointers added, audit.hosts con01 declares both ma'
 claim:
   since: 2026-11-27 14:20
