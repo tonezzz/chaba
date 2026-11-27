@@ -1,7 +1,7 @@
 id: weather-bakeoff-ha-config-bounded-retry
 title: Bounded retry for weather-bakeoff HA /api/config fetch (kraut-rain-watch repeat)
 column: doing
-updated: 2026-11-27 18:29
+updated: 2026-11-27 18:32
 brief: Fix weather-bakeoff.py http_json transient HA reset with bounded retry + tests; code only, no deploy.
 priority: high
 tags:
@@ -79,6 +79,13 @@ comms:
     + HTTP 5xx; 4xx and non-transient raise immediately; success path unchanged. New tests/ada/test_weather_bakeoff_http_retry.py:
     7 passed. py_compile clean. No deploy per guardrails — idc03 promotion needs separate approval. Note: new test
     file is not in REPO_TESTS m'
+- at: 2026-11-27 18:32
+  from: chaba
+  text: 'ROOT CAUSE ESCALATED 2026-11-27 ~18:35 +07 (read-only, no host change): the idc03 relay unit michael-ha-via-omen-tunnel.service
+    is active but every forwarded channel is refused — journal repeats channel 1: open failed: administratively
+    prohibited: open failed; curl to 127.0.0.1:18123/api/config resets 3/3, while the upstream HA on tony-omen answers
+    401 (alive). Effective sshd policy on tony-omen is allowtcpforwarding no (global, set 2026-11-26 by the fleet
+    SFTP hardening; canonical source roles/'
 ref: HOM-1509
 claim:
   since: 2026-11-27 18:23

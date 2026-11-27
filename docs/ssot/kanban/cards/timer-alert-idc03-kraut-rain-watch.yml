@@ -1,7 +1,7 @@
 id: timer-alert-idc03-kraut-rain-watch
 title: Timer kraut-rain-watch on idc03 failing
 column: backlog
-updated: 2026-11-27 18:25
+updated: 2026-11-27 18:32
 priority: high
 tags:
 - timer-alert
@@ -154,5 +154,12 @@ comms:
     http_json(). No new dispatch: fix card HOM-1509 (weather-bakeoff-ha-config-bounded-retry) is already running
     on con01 as devin-task-20261127-182454-root-cause-scripts-ada-weather (attempts=1). Card stays open until the
     fix is reviewed, deployed with approval, and one rain-watch tick passes.'
+- at: 2026-11-27 18:32
+  from: chaba
+  text: 'ROOT CAUSE ESCALATED 2026-11-27 ~18:35 +07 (read-only, no host change): the idc03 relay unit michael-ha-via-omen-tunnel.service
+    is active but every forwarded channel is refused — journal repeats channel 1: open failed: administratively
+    prohibited: open failed; curl to 127.0.0.1:18123/api/config resets 3/3, while the upstream HA on tony-omen answers
+    401 (alive). Effective sshd policy on tony-omen is allowtcpforwarding no (global, set 2026-11-26 by the fleet
+    SFTP hardening; canonical source roles/'
 action:
   status: done
