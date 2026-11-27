@@ -1,7 +1,7 @@
 id: adobe-stock-kkmac-vision-qa
 title: adobe-stock candidates — kk-mac qwen2.5vl visual QA pass
-column: doing
-updated: 2026-11-27 15:10
+column: review
+updated: 2026-11-27 15:11
 spec: '3 adobe-stock cards sit in review (illustration-pivot-test, inpaint-defect-repair, upscaler-eval). Once kk-mac
   vision eval proves qwen2.5vl:7b usable, run a visual QA pass over the stock candidate images: defect detection,
   spec-match, artifact flagging. Depends on kk-mac-vision-lane-eval verdict.'
@@ -10,12 +10,14 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: running
+  status: done
   runner: mn01
   attempts: 1
   sweep:
     stale_running: 2026-11-27 15:10
     dirty: 6
+  result: 'exit=0 ")\npaths=[f\"crops/{t}-mask3x.jpg\" for t in order]\nprint(ask(p,paths)[:3000])\nEOF"}}} | devin-task-20261127-144236-3-adobe-stock-cards-sit-in-rev.service:
+    Consumed 39.932s CPU time over 26min 33.696s wall clock time, 955.6M memory peak.'
 ref: OPS-0222
 comms:
 - at: 2026-11-19 08:58
@@ -231,5 +233,38 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261127-144236-3-adobe-stock-cards-sit-in-rev on mn01 still dirty —
     6 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-27 15:11
+  from: mn01
+  text: 'finished (ok): exit=0 ")\npaths=[f\"crops/{t}-mask3x.jpg\" for t in order]\nprint(ask(p,paths)[:3000])\nEOF"}}}
+    | devin-task-20261127-1'
+- at: 2026-11-27 15:11
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 15:11
+  from: chaba
+  text: 'session-end checkpoint d5342990: 6 leftover file(s) committed'
+- at: 2026-11-27 15:11
+  from: chaba
+  text: banked 26 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-27 15:11
+  from: chaba
+  text: pushed dispatch/20261127-144236-3-adobe-stock-cards-sit-in-rev to origin
+- at: 2026-11-27 15:11
+  from: chaba
+  text: 'auto-merge not done: worktree add: Preparing worktree (detached HEAD ec82cf6d75)
+
+    Updating files:  19% (3442/18036)
+
+    Updating files:  20% (3608/18036)
+
+    Updating files:  21% (3788/18036)
+
+    Updating files:  22% (3968/18036)
+
+    Updating files:  2 — close will block until merged'
+- at: 2026-11-27 15:11
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
 claim:
   since: 2026-11-27 14:41
+review_kind: verify
