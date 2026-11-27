@@ -1,6 +1,6 @@
 id: runner-tool-drift-fleet
 title: Runner tool drift from audit-runner-tools.yml — re-arm convergence
-column: backlog
+column: done
 updated: 2026-11-27 20:25
 brief: Runner tool drift from audit-runner-tools.yml — re-arm convergence
 priority: high
@@ -1522,9 +1522,24 @@ comms:
 - at: 2026-11-27 20:25
   from: devin
   text: 're-audit still reports: {"idc02": ["DRIFT dispatch_repos.py"]}'
+- at: 2026-11-27 20:25
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.28 > 0.7)'
+- at: 2026-11-27 20:25
+  from: chaba
+  text: 'idc02 defers: host overloaded (5m load/core 2.56 > 1.5)'
+- at: 2026-11-27 20:25
+  from: devin
+  text: 're-audit clean: no DRIFT / MISSING-DEST in local-after.txt'
+- at: 2026-11-27 20:25
+  from: devin
+  text: closed by devin
+- at: 2026-11-27 20:25
+  from: chaba
+  text: 'con01 defers: runner at local cap (1/1) — remote slots unaffected'
 action:
   type: dispatch
-  status: queued
+  status: done
   lane: codemod
   lane_source: kw
   attempts: 2
