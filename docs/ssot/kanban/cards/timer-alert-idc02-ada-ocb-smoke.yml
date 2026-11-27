@@ -1,7 +1,7 @@
 id: timer-alert-idc02-ada-ocb-smoke
 title: Timer ada-ocb-smoke on idc02 failing
 column: doing
-updated: 2026-11-27 08:35
+updated: 2026-11-27 08:52
 priority: high
 tags:
 - timer-alert
@@ -588,6 +588,13 @@ comms:
   from: devin
   text: 'investigating: smoke fails hourly on find_card ADA-0172 (matched 159 cards) -> context_pack + preflight
     cascade. runner-agent on idc02 already md5-identical to chaba checkout; verifying pin.'
+- at: 2026-11-27 08:52
+  from: devin
+  text: 'RESOLVED 2026-11-27 08:50 +07. Root cause: smoke fixture find_card ADA-0172 has 0 live hits -> bridge fallback
+    matched ~160 cards -> LookupError cascading into context_pack+preflight. Same hotfix was applied locally 11-25/11-26
+    but never committed, so it kept reverting (3rd recurrence). Fix: committed 02e8365 on dispatch branch (ADA-0172->ADA-1110
+    + per-check 15s budgets, byte-identical to proven .bak-retry); hot-applied same bytes to idc02 checkout (ff-pulled
+    to 0a5dbd8 first). Verified: manual'
 action:
   status: running
   type: dispatch
