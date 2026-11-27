@@ -1,7 +1,7 @@
 id: ops-1025-remote-read-smoke-idc03
 title: 'OPS-1025 one-shot remote-read verification: idc02 to idc03'
 column: doing
-updated: 2026-11-27 08:17
+updated: 2026-11-27 08:18
 brief: One supervised, read-only S3 verification of the merged remote-read gates.
 priority: medium
 program: OPS-1025
@@ -911,6 +911,14 @@ comms:
   text: 'final: BLOCKED, no artifact emitted (spec: stop+report blocker rather than guess). Evidence + fix path
     in dispatch worktree dispatch-outcome-20261127-080529-parent-ops-1025-perform-one-bo.md; operator question in
     task needs-input.txt; board request raised. No commits/pushes made.'
+- at: 2026-11-27 08:18
+  from: chaba
+  text: 'raised request job-input-ops-1025-remote-read-smoke-idc03-1795742282: Job needs your input: mcp-debug cannot
+    reach idc03 — the mandated read-only tool path is broken at two layers; fix infra'
+- at: 2026-11-27 08:18
+  from: chaba
+  text: 'needs input: mcp-debug cannot reach idc03 — the mandated read-only tool path is broken at two layers; fix
+    infra and re-dispatch, or close the card as blocked?'
 claim:
   since: 2026-11-26 23:44
 requests:
@@ -955,3 +963,17 @@ requests:
   options:
   - proceed
   - hold
+- id: job-input-ops-1025-remote-read-smoke-idc03-1795742282
+  ask: 'Job needs your input: mcp-debug cannot reach idc03 — the mandated read-only tool path is broken at two layers;
+    fix infra and re-dispatch, or close the card as blocked?'
+  status: open
+  at: 2026-11-27 08:18
+  from: chaba
+  options:
+  - id: answer
+    label: Answer — reply in chat
+    action: none
+  - id: hold
+    label: Hold — leave blocked
+    action: hold
+awaiting_action: true
