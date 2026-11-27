@@ -193,6 +193,38 @@ was worst (22 false approvals), and the confident-not-ready shortcut never fired
 better discrimination does not clear the zero-FP bar. Evidence:
 `scripts/voice-bench/results/g4-decision-gate-diverse60-choice-graded.json`.
 
+**Fresh brief+spec arm (2026-11-27): the brief-only gap is recoverable, but
+this is not a validated gate.** Tony approved proceeding after the status
+review, so a fourth disjoint set of 60 cards (40 READY / 20 NOT_READY) was
+built from unused snapshot cards: no card ID or normalized brief appears in
+any prior set. The judge now sees each card's **brief plus its full spec**
+(69,822 shared-input chars); one batched Decisions call returned 60 `noul`
+answers in 26,785 input tokens with zero output tokens. Fixed thresholds only
+— 0.5, 0.5162 and 0.536574 — were graded, no tuning on this set.
+
+| Threshold | READY approved | False approvals / 20 | Approve recall | Brier |
+|---|---|---|---|---|
+| 0.5 | 28/40 | **0** | 0.70 | 0.1338 |
+| 0.5162 | 27/40 | **0** | 0.675 | 0.1338 |
+| 0.536574 | 26/40 | **0** | 0.65 | 0.1338 |
+
+All four negative families were clean at 0.5: 13 approval/decision-gated, 3
+descriptive/done-only, 3 umbrella/audit-only, and 1 blocked-by card. The
+exploratory zero-FP sweep reaches 32/40 READY at 0.430027 but is tuned on this
+set, so it is inadmissible. The broad confidence ≥ 0.90 auto-reject shortcut
+is still dead (8 READY false rejects); the directional version rejects 8/20
+negatives with no false reject but remains unadopted.
+
+Important caveat: this set was curated and hand-labeled by the same assistant
+that wrote the judge prompt, and its negatives were deliberately chosen for
+explicit gates visible in the spec. It is evidence that **brief-only text**,
+not the Decisions model, caused most of the diverse-set false approvals; it is
+not an independent validation of an approve gate. With 20 negatives the Wilson
+95% false-approval upper bound is still 16.11%, and 12/40 READY are rejected.
+Keep preflight preconditions and human dispatch approval; do not adopt a
+threshold from this set. Evidence:
+`scripts/voice-bench/results/g4-decision-gate-spec60-graded.json`.
+
 ### Managed Agents
 
 `client.agents` / `agent=...` with a sandboxed filesystem, code execution, web
@@ -427,6 +459,9 @@ result. Keep 3.5 as the comparison baseline.
   Paired choice arm: harnesses
   `scripts/voice-bench/g4-decision-gate-diverse60-choice-{build,call,grade}.py`
   and JSONs `g4-decision-gate-diverse60-choice-*` in the same results directory.
+- Fresh brief+spec arm: harnesses
+  `scripts/voice-bench/g4-decision-gate-spec60-{build,select,call,grade}.py` and
+  JSONs `g4-decision-gate-spec60-*` under `scripts/voice-bench/results/`.
 - Related prior pages: `Education:LLM Providers/Gemini API`,
   `Education:Ada-Developer-Paid-Model-Candidates`,
   `Education:Ada-Dev-Gap-Model-Vs-Harness`.

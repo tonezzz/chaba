@@ -1,0 +1,696 @@
+{
+  "schema": "decision-gate-spec60-graded",
+  "date": "2026-11-27",
+  "source": "One batched Decisions call over 60 fresh cards with brief+spec; fixed thresholds only",
+  "usage": {
+    "total_tokens": 26785,
+    "total_input_tokens": 26785,
+    "input_tokens_by_modality": [
+      {
+        "modality": "text",
+        "tokens": 26785
+      }
+    ],
+    "total_output_tokens": 0
+  },
+  "brier": 0.1338,
+  "primary_arms": {
+    "default": {
+      "threshold": 0.5,
+      "confusion": {
+        "tp": 28,
+        "fn": 12,
+        "tn": 20,
+        "fp": 0,
+        "n": 60,
+        "accuracy": 0.8,
+        "approve_precision": 1.0,
+        "approve_recall": 0.7
+      },
+      "false_approval_rate_wilson95": {
+        "low": 0,
+        "high": 0.1611
+      }
+    },
+    "train_calibrated": {
+      "threshold": 0.5161926625710843,
+      "confusion": {
+        "tp": 27,
+        "fn": 13,
+        "tn": 20,
+        "fp": 0,
+        "n": 60,
+        "accuracy": 0.7833,
+        "approve_precision": 1.0,
+        "approve_recall": 0.675
+      },
+      "false_approval_rate_wilson95": {
+        "low": 0,
+        "high": 0.1611
+      }
+    },
+    "holdout_zero_fp": {
+      "threshold": 0.536574,
+      "confusion": {
+        "tp": 26,
+        "fn": 14,
+        "tn": 20,
+        "fp": 0,
+        "n": 60,
+        "accuracy": 0.7667,
+        "approve_precision": 1.0,
+        "approve_recall": 0.65
+      },
+      "false_approval_rate_wilson95": {
+        "low": 0,
+        "high": 0.1611
+      }
+    }
+  },
+  "zero_fp_sweep_exploratory_tuned_on_this_set_not_adoptable": {
+    "threshold": 0.430027,
+    "confusion": {
+      "tp": 32,
+      "fn": 8,
+      "tn": 20,
+      "fp": 0,
+      "n": 60,
+      "accuracy": 0.8667,
+      "approve_precision": 1.0,
+      "approve_recall": 0.8
+    }
+  },
+  "negative_family_breakdown": {
+    "approval_gated": {
+      "n": 13,
+      "mean_p_yes": 0.1693,
+      "false_approvals_at_0.5": [],
+      "false_approvals_at_0.536574": []
+    },
+    "blocked_by": {
+      "n": 1,
+      "mean_p_yes": 0.0763,
+      "false_approvals_at_0.5": [],
+      "false_approvals_at_0.536574": []
+    },
+    "descriptive_only": {
+      "n": 3,
+      "mean_p_yes": 0.1104,
+      "false_approvals_at_0.5": [],
+      "false_approvals_at_0.536574": []
+    },
+    "umbrella_or_audit": {
+      "n": 3,
+      "mean_p_yes": 0.221,
+      "false_approvals_at_0.5": [],
+      "false_approvals_at_0.536574": []
+    }
+  },
+  "confident_shortcuts": {
+    "confidence_ge_0.90_reject": {
+      "n": 16,
+      "false_rejects": [
+        "ada-get-home-state-plug-omission",
+        "answer-sweep-auto-compose-spec",
+        "dispatch-priority-order",
+        "dispatch-triage-arbiter-label-pass",
+        "embed-lane-banks-bounded-run",
+        "idc02-vps-lane-canary-hv",
+        "lesson-primer-scoring-fixes",
+        "openchamber-devnest-project-path"
+      ]
+    },
+    "directional_confident_no": {
+      "rule": "reject when p_yes <= 0.10 and confidence >= 0.90",
+      "ids": [
+        "ada-ocb-context-windowed-excerpts",
+        "ada-voice-map-embed-pr22-merge-deploy",
+        "gemini-billing-dunning",
+        "kk-cms-only-memory-pilot-acceptance",
+        "ocb-cli-pin-drift",
+        "omen-partition-cleanup-p5-to-data",
+        "ops-manual-command-api-mcp-efficiency-audit",
+        "primer-v2-semantic-match"
+      ],
+      "false_rejects": [],
+      "coverage_of_not_ready": "8/20"
+    }
+  },
+  "false_approvals_at_0.5": [],
+  "false_rejects_at_0.5": [
+    "ada-member-pwa-invite",
+    "ada-ocb-session-model-auth",
+    "chaba-merge-gate-ada-drop10-rotted",
+    "cms-11023-parked-writers",
+    "devnest-layered-report-pipeline",
+    "devnest-token-savings-lane-catalog",
+    "exec-checkout-generated-writes-never-commit",
+    "inference-provider-watch",
+    "kk-video-c9f99fee6146",
+    "lab-ada-session-boundaries",
+    "memory-inspect-pages",
+    "mn-dev-rename"
+  ],
+  "rows": [
+    {
+      "n": 1,
+      "id": "ada-card-runner",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "four concrete pieces plus a named pilot card and first target",
+      "p_yes": 0.5324538816801525,
+      "confidence": 0.5324538816801525
+    },
+    {
+      "n": 2,
+      "id": "ada-chat-text-lane-provider-reconnects-c-8ad4bc",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "named reconnect fix in a named file with a repro and voice non-regression test",
+      "p_yes": 0.651187698598887,
+      "confidence": 0.651187698598887
+    },
+    {
+      "n": 3,
+      "id": "ada-get-home-state-plug-omission",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "find the plug filter, fix it, add a named unit test",
+      "p_yes": 0.9098423518757658,
+      "confidence": 0.9098423518757658
+    },
+    {
+      "n": 4,
+      "id": "ada-member-pwa-invite",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "numbered standard + invite/redeem/approve build steps with named surfaces",
+      "p_yes": 0.4516540820486485,
+      "confidence": 0.5483459179513515
+    },
+    {
+      "n": 5,
+      "id": "ada-memory-staged-writes",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "named routing rule and pending-store shape with an existing approver surface",
+      "p_yes": 0.7367275230368671,
+      "confidence": 0.7367275230368671
+    },
+    {
+      "n": 6,
+      "id": "ada-nest-fishing-final-cut",
+      "label": false,
+      "kind": "approval_gated",
+      "label_reason": "spec makes work conditional on Tony choosing target, soundtrack and subtitle treatment",
+      "p_yes": 0.14886028318958244,
+      "confidence": 0.8511397168104176
+    },
+    {
+      "n": 7,
+      "id": "ada-ocb-context-windowed-excerpts",
+      "label": false,
+      "kind": "descriptive_only",
+      "label_reason": "already done in a named commit; only optional follow-ups remain",
+      "p_yes": 0.061901886091954364,
+      "confidence": 0.9380981139080456
+    },
+    {
+      "n": 8,
+      "id": "ada-ocb-session-model-auth",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "fix named session-create path failure with approved secret path for credentials",
+      "p_yes": 0.1671718253082072,
+      "confidence": 0.8328281746917928
+    },
+    {
+      "n": 9,
+      "id": "ada-render-video-line-unsendable",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "hybrid delivery contract chosen per Tony with named relay changes and done condition",
+      "p_yes": 0.6797037629057201,
+      "confidence": 0.6797037629057201
+    },
+    {
+      "n": 10,
+      "id": "ada-text-mode-sessions",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "named files, flags and test/deploy steps for the text provider path",
+      "p_yes": 0.8588797781205046,
+      "confidence": 0.8588797781205046
+    },
+    {
+      "n": 11,
+      "id": "ada-voice-map-embed-pr22-merge-deploy",
+      "label": false,
+      "kind": "approval_gated",
+      "label_reason": "explicit HUMAN-GATED tail; production restart needs approval and key decision",
+      "p_yes": 0.0841343414741882,
+      "confidence": 0.9158656585258118
+    },
+    {
+      "n": 12,
+      "id": "ansible-benchmark-ssot-duplicate-action-430",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "duplicate action key on a named line; decide, remove, validate",
+      "p_yes": 0.859841034832441,
+      "confidence": 0.859841034832441
+    },
+    {
+      "n": 13,
+      "id": "answer-sweep-auto-compose-spec",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "Phase 1 only, named script/tests, detection and one request with a re-raise guard",
+      "p_yes": 0.9285431324704235,
+      "confidence": 0.9285431324704235
+    },
+    {
+      "n": 14,
+      "id": "audit-miss-claimed-docs-never-landed",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "three named missing doc paths; write the doc or fix the registry",
+      "p_yes": 0.5039841365840485,
+      "confidence": 0.5039841365840485
+    },
+    {
+      "n": 15,
+      "id": "audit-miss-remote-eval-results-not-landed",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "three named artifacts to locate/land on named hosts",
+      "p_yes": 0.5794636245577655,
+      "confidence": 0.5794636245577655
+    },
+    {
+      "n": 16,
+      "id": "audit-miss-unlanded-oct17-cards",
+      "label": false,
+      "kind": "approval_gated",
+      "label_reason": "restore cards only after current evidence; dirty mirror must not be touched",
+      "p_yes": 0.35983363674782337,
+      "confidence": 0.6401663632521766
+    },
+    {
+      "n": 17,
+      "id": "bench-verifier-inject-clobber",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "fix injected test overwrite with named options and post-run cleanup",
+      "p_yes": 0.8689178894513475,
+      "confidence": 0.8689178894513475
+    },
+    {
+      "n": 18,
+      "id": "board-api-lock-contention",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "harden named render function and audit siblings against malformed cards",
+      "p_yes": 0.5845751586821412,
+      "confidence": 0.5845751586821412
+    },
+    {
+      "n": 19,
+      "id": "boards-502-residuals-dns-h3-access",
+      "label": false,
+      "kind": "approval_gated",
+      "label_reason": "part 2 needs obtaining/registering Plesk or SSH credentials for h3",
+      "p_yes": 0.1531120824522442,
+      "confidence": 0.8468879175477558
+    },
+    {
+      "n": 20,
+      "id": "capacity-move-michael-dev",
+      "label": false,
+      "kind": "approval_gated",
+      "label_reason": "stateful HA move explicitly needs a maintenance window",
+      "p_yes": 0.11500667623870335,
+      "confidence": 0.8849933237612967
+    },
+    {
+      "n": 21,
+      "id": "chaba-merge-gate-ada-drop10-rotted",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "failing named test with a stated done-condition: repair the rotted drop or retire it",
+      "p_yes": 0.4546999419760917,
+      "confidence": 0.5453000580239082
+    },
+    {
+      "n": 22,
+      "id": "claude-agent-idc02-opencode",
+      "label": false,
+      "kind": "approval_gated",
+      "label_reason": "claude interactive OAuth login needs Tony unless a setup-token is supplied",
+      "p_yes": 0.3073575084085227,
+      "confidence": 0.6926424915914773
+    },
+    {
+      "n": 23,
+      "id": "cms-11023-parked-writers",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "sweep named units/args to :11027 with an explicit migration-completion step",
+      "p_yes": 0.4661880828070683,
+      "confidence": 0.5338119171929316
+    },
+    {
+      "n": 24,
+      "id": "cms-page-standard-house-timeline-family-6b7c77",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "two named deliverables and a machine-checkable done-condition",
+      "p_yes": 0.7580392071190826,
+      "confidence": 0.7580392071190826
+    },
+    {
+      "n": 26,
+      "id": "devin-usage-reduction",
+      "label": false,
+      "kind": "descriptive_only",
+      "label_reason": "assessment with suggested levers; no lever selected or scoped for dispatch",
+      "p_yes": 0.12257142836022003,
+      "confidence": 0.8774285716397799
+    },
+    {
+      "n": 27,
+      "id": "devnest-layered-report-pipeline",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "define L0-L3 layers and verifier, apply first to host assessment",
+      "p_yes": 0.33168838761273245,
+      "confidence": 0.6683116123872676
+    },
+    {
+      "n": 28,
+      "id": "devnest-token-savings-lane-catalog",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "named lane catalog and a monthly savings report contract",
+      "p_yes": 0.23568299992057062,
+      "confidence": 0.7643170000794294
+    },
+    {
+      "n": 30,
+      "id": "dispatch-lane-classifier-spend-false-manual",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "fix the named keyword set and validate against the two named false positives",
+      "p_yes": 0.8479722434195852,
+      "confidence": 0.8479722434195852
+    },
+    {
+      "n": 31,
+      "id": "dispatch-priority-order",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "priority-aware claim order with starvation guard and named test coverage",
+      "p_yes": 0.9451730267173837,
+      "confidence": 0.9451730267173837
+    },
+    {
+      "n": 32,
+      "id": "dispatch-triage-arbiter-label-pass",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "Tony answered proceed; approved strategy and concrete deliverables",
+      "p_yes": 0.9269099215476143,
+      "confidence": 0.9269099215476143
+    },
+    {
+      "n": 33,
+      "id": "distiller-enrich-productionize",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "enable named flag and hybrid recall path with a verified done-condition",
+      "p_yes": 0.7437228285780425,
+      "confidence": 0.7437228285780425
+    },
+    {
+      "n": 34,
+      "id": "embed-lane-banks-bounded-run",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "named script cap under a wall-clock budget and a oneshot verification",
+      "p_yes": 0.9071560160828452,
+      "confidence": 0.9071560160828452
+    },
+    {
+      "n": 35,
+      "id": "exec-checkout-generated-writes-never-commit",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "inventory named producers, repoint to /inbox, verify an alert lands on the writer",
+      "p_yes": 0.42068923650388146,
+      "confidence": 0.5793107634961185
+    },
+    {
+      "n": 37,
+      "id": "gemini-billing-dunning",
+      "label": false,
+      "kind": "approval_gated",
+      "label_reason": "account/billing state and Tony-side key or billing decision; no local fix",
+      "p_yes": 0.08081506552482293,
+      "confidence": 0.919184934475177
+    },
+    {
+      "n": 38,
+      "id": "ha-owner-llat-co-use-split",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "provision per-consumer users/tokens with a named helper and kill the old token",
+      "p_yes": 0.5485490474030886,
+      "confidence": 0.5485490474030886
+    },
+    {
+      "n": 39,
+      "id": "hosting-provider-intl-report",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "queued request with named new report and cross-link deliverables",
+      "p_yes": 0.8522809919905873,
+      "confidence": 0.8522809919905873
+    },
+    {
+      "n": 40,
+      "id": "idc02-vps-lane-canary-hv",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "one-line canary file in a named path with an exact commit message; do not push",
+      "p_yes": 0.923645389394373,
+      "confidence": 0.923645389394373
+    },
+    {
+      "n": 41,
+      "id": "inference-provider-watch",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "living doc with four named experiments to run and record",
+      "p_yes": 0.26489013974045145,
+      "confidence": 0.7351098602595485
+    },
+    {
+      "n": 42,
+      "id": "jack-opencode-podman-ide",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "sandbox with explicit isolation, allowed paths and verification steps",
+      "p_yes": 0.7479950433915575,
+      "confidence": 0.7479950433915575
+    },
+    {
+      "n": 43,
+      "id": "jev-code-decision-layer-construct-templa-77e184",
+      "label": false,
+      "kind": "approval_gated",
+      "label_reason": "design doc is written for review; architecture is proposed, not authorized",
+      "p_yes": 0.1887726444629618,
+      "confidence": 0.8112273555370382
+    },
+    {
+      "n": 45,
+      "id": "kanban-free-lane-routing-contract",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "Tony decision recorded as adopt; implement envelope staging with regression tests",
+      "p_yes": 0.8375284644465705,
+      "confidence": 0.8375284644465705
+    },
+    {
+      "n": 46,
+      "id": "kk-cms-only-memory-pilot-acceptance",
+      "label": false,
+      "kind": "approval_gated",
+      "label_reason": "explicit product decision: ask KK to accept a pilot before profile changes",
+      "p_yes": 0.07026423260897177,
+      "confidence": 0.9297357673910283
+    },
+    {
+      "n": 48,
+      "id": "kk-video-c9f99fee6146",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "planning package is batched work before the later Tony ask",
+      "p_yes": 0.3641853129622414,
+      "confidence": 0.6358146870377586
+    },
+    {
+      "n": 49,
+      "id": "kk-video-preview-pack-idc02",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "named executor and pack inputs/outputs with an explicit no-publish, no-spend gate",
+      "p_yes": 0.5385338009696325,
+      "confidence": 0.5385338009696325
+    },
+    {
+      "n": 50,
+      "id": "lab-ada-session-boundaries",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "spike questions first with named measurement and a bounded ada-dev prototype",
+      "p_yes": 0.3070974513998748,
+      "confidence": 0.6929025486001252
+    },
+    {
+      "n": 51,
+      "id": "lesson-comments-dev-board",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "Phase 1 only with named digest change, WP identities and verification",
+      "p_yes": 0.7778567988329744,
+      "confidence": 0.7778567988329744
+    },
+    {
+      "n": 52,
+      "id": "lesson-primer-scoring-fixes",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "three named scoring bugs with named files and regression cases",
+      "p_yes": 0.9778944618198085,
+      "confidence": 0.9778944618198085
+    },
+    {
+      "n": 54,
+      "id": "memory-inspect-pages",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "named snapshot script and page family with a verified done-condition",
+      "p_yes": 0.4300273625408719,
+      "confidence": 0.5699726374591281
+    },
+    {
+      "n": 55,
+      "id": "mn-dev-rename",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "five numbered rename steps with verification",
+      "p_yes": 0.29423202723135716,
+      "confidence": 0.7057679727686428
+    },
+    {
+      "n": 56,
+      "id": "narrated-comms-digest",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "named narration layer on an existing digest with format and lane gates",
+      "p_yes": 0.6428163249500222,
+      "confidence": 0.6428163249500222
+    },
+    {
+      "n": 57,
+      "id": "ncm-thai-adaptation",
+      "label": false,
+      "kind": "descriptive_only",
+      "label_reason": "feasibility note on a research question; no stack utility and no chosen build",
+      "p_yes": 0.14682347822123326,
+      "confidence": 0.8531765217787668
+    },
+    {
+      "n": 58,
+      "id": "nest-io-fabric",
+      "label": false,
+      "kind": "umbrella_or_audit",
+      "label_reason": "multi-surface Nest fabric spanning every input/output lane; no bounded first deliverable",
+      "p_yes": 0.17949865552232122,
+      "confidence": 0.8205013444776788
+    },
+    {
+      "n": 60,
+      "id": "ocb-cli-pin-drift",
+      "label": false,
+      "kind": "approval_gated",
+      "label_reason": "spec says a Tony decision is needed and a prod host/npm change needs explicit approval",
+      "p_yes": 0.09800028084673523,
+      "confidence": 0.9019997191532647
+    },
+    {
+      "n": 61,
+      "id": "omen-partition-cleanup-p5-to-data",
+      "label": false,
+      "kind": "approval_gated",
+      "label_reason": "irreversible partition change with delete only after Tony confirms",
+      "p_yes": 0.054959027486445086,
+      "confidence": 0.9450409725135549
+    },
+    {
+      "n": 62,
+      "id": "openchamber-devnest-project-path",
+      "label": true,
+      "kind": "ready",
+      "label_reason": "stale project path with a named settings fix and acceptance check",
+      "p_yes": 0.9163431062516637,
+      "confidence": 0.9163431062516637
+    },
+    {
+      "n": 68,
+      "id": "ops-manual-command-api-mcp-efficiency-audit",
+      "label": false,
+      "kind": "umbrella_or_audit",
+      "label_reason": "fleet-wide command/MCP audit with no selected candidate or bounded deliverable",
+      "p_yes": 0.09602284848090184,
+      "confidence": 0.9039771515190982
+    },
+    {
+      "n": 71,
+      "id": "primer-v2-semantic-match",
+      "label": false,
+      "kind": "blocked_by",
+      "label_reason": "explicit blocked_by gate on primer-efficacy-measurement; report must exist first",
+      "p_yes": 0.07627792429623967,
+      "confidence": 0.9237220757037603
+    },
+    {
+      "n": 72,
+      "id": "r7-con01-python-ml-timeout",
+      "label": false,
+      "kind": "approval_gated",
+      "label_reason": "spec forbids auto-install without confirming after diagnosis",
+      "p_yes": 0.42143464324837004,
+      "confidence": 0.57856535675163
+    },
+    {
+      "n": 84,
+      "id": "tony-macbook-crd",
+      "label": false,
+      "kind": "approval_gated",
+      "label_reason": "pairing needs a one-time Google auth code generated by Tony",
+      "p_yes": 0.11817673605872814,
+      "confidence": 0.8818232639412719
+    },
+    {
+      "n": 88,
+      "id": "vcast-ux-flow",
+      "label": false,
+      "kind": "umbrella_or_audit",
+      "label_reason": "end-to-end UX redesign across all lifecycle stages, not a bounded task",
+      "p_yes": 0.3875658254096945,
+      "confidence": 0.6124341745903055
+    }
+  ]
+}
