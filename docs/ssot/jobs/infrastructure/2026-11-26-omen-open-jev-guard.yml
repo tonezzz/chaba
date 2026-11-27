@@ -105,8 +105,7 @@ follow_up_incident_20261127: |
   ~0.98 GiB, zram from 23G to 17.9G, load average from 39.18 to 6.44.
   /metrics counted 11 completed /v1/systemone calls and 12 rejected bursts
   (429 + Retry-After: 60), all from 100.75.102.88; no AnyIO pileup recurred
-  (2 worker threads, one in Linear.forward, one waiting). Important caveat:
-  every completed call landed only in the le_inf latency bucket (le_60 = 0),
+  (2 worker threads, one in Linear.forward, one waiting). Important caveat: every completed call landed only in the le_inf latency bucket (le_60 = 0),
   ~130s each, and uvicorn logged no 200 lines for them — consistent with
   callers disconnecting on a shorter timeout while the handler still runs.
   The guard prevents collapse but does not make CPU gemma-3-4b fast; caller
