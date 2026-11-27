@@ -1,7 +1,7 @@
 id: timer-alert-idc03-mddb-embed-probe
 title: Timer mddb-embed-probe on idc03 failing
 column: done
-updated: 2026-11-27 09:04
+updated: 2026-11-27 09:12
 priority: high
 tags:
 - timer-alert
@@ -1595,6 +1595,13 @@ comms:
 - at: 2026-11-27 09:04
   from: tony
   text: closed by tony
+- at: 2026-11-27 09:12
+  from: devin
+  text: 'RESOLVED 2026-11-27: root cause = ansible-chaba site.yml run from idc02 at 11-26 19:50 redeployed stale
+    host_vars over the 18:00 manual fix — ExecStart->nonexistent mddb-embed-probe.py (203/EXEC) + cron-syntax OnCalendar
+    (bad-setting, timer dead 13h). Same staleness had mddb-vector-reindex crash-looping 203/EXEC x5448 since 17:30
+    (probe''s reindex kick never ran). FIXED: live units on idc03 corrected + verified (probe Result=success 09:00:41,
+    timer armed, 0 bad-setting units, reindex sweep now ru'
 action:
   status: done
   type: dispatch
