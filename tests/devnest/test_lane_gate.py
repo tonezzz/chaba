@@ -246,8 +246,11 @@ class Admit(unittest.TestCase):
 
     def test_quota_exceeded(self):
         env = mk_env(task_class="report", stage="S1")
+        # quota tracks STAGES — S1's was raised 3->15 for the OPS-1363
+        # repoint gate run; derive it so the next bump can't stale this
+        done = mod.STAGES["S1"]["quota"]
         d = mod.admit(env, probe=PROBE_OK, host="tony-macbook",
-                      stage_state=stage_state("S1", done=3), inflight=0,
+                      stage_state=stage_state("S1", done=done), inflight=0,
                       env_get=lambda k, d=None:
                       "1" if k == "OPENCODE_LANES" else d)
         self.assertTrue(any(r.startswith("quota_exceeded")

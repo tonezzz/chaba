@@ -557,6 +557,33 @@ class DispatchUnclaimableFlagTest(unittest.TestCase):
         self.assertEqual(len(hits), 1)
         self.assertEqual(started, [])
 
+    def test_staged_lane_envelope_never_a_devin_claim(self):
+        """kanban-free-lane-routing-contract: a card carrying
+        action.lane_envelope is opencode-bound even with executor
+        unset — this devin-only dispatcher must skip it, not steal it.
+        executor=devin remains the escape hatch and still claims."""
+        env = {"id": "j1", "card": "c-env"}
+        out, cards, started = self._run(
+            ("c-env", {"column": "backlog",
+                       "action": {"type": "dispatch",
+                                  "status": "queued",
+                                  "lane": "free_lane",
+                                  "lane_envelope": env}}),
+            ("c-pin", {"column": "backlog",
+                       "action": {"type": "dispatch",
+                                  "status": "queued",
+                                  "executor": "devin",
+                                  "lane": "free_lane",
+                                  "lane_envelope": env}}))
+        self.assertIn("staged", out)
+        self.assertIn("lane_envelope", out)
+        # opencode-bound card skipped; the devin pin still claims
+        # (mark_start leaves status=starting — start_pending is stubbed)
+        self.assertEqual(started, ["c-pin"])
+        self.assertEqual(cards["c-env"]["action"]["status"], "queued")
+        self.assertEqual(cards["c-pin"]["action"]["status"], "starting")
+        self.assertEqual(cards["c-pin"]["column"], "doing")
+
     def test_flag_debounced_on_second_pass(self):
         """An unchanged reason isn't re-logged every pass."""
         fields = {"column": "backlog",

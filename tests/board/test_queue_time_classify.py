@@ -455,8 +455,13 @@ class KkMacAutoRouteQueueTest(unittest.TestCase):
                           action={"lane": "free_lane"})
         self.api.do_action(card, "queue", "devin")
         a = card["action"]
-        self.assertNotIn("executor", a)
         self.assertEqual(a["lane"], "free_lane")
+        # kk_mac_route still doesn't touch a lane pin — but the
+        # free_lane->opencode envelope staging
+        # (kanban-free-lane-routing-contract) legitimately declares
+        # executor=opencode; it must never be kk_mac_local
+        self.assertNotEqual(a.get("executor"), "kk_mac_local")
+        self.assertEqual(a.get("executor"), "opencode")
 
     def test_host_pin_not_rerouted(self):
         card = self._card(title="Summarize the probe report",

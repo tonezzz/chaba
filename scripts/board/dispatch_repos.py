@@ -539,6 +539,233 @@ def classify_lane(card: dict, with_detail: bool = False):
             else "devin"  # jevos down -> safe default, not None
 
 
+# --- queue-time lane envelope staging (card
+# kanban-free-lane-routing-contract, DECISION 2026-11-26 Tony: adopt) ---
+# When a queued card's lane resolves to the opencode executor, the board
+# stages action.lane_envelope at queue time so runner-agent's claim gate
+# sees the complete contract instead of holding the card for a manual
+# staging edit or an executor=devin pin. The shape mirrors the
+# hand-declared pilot envelope (ada-ocb-free-lane-workflow-pilot) with
+# every field derived from the card + the task profile's own contract —
+# profile-bound fields (verifier, artifact schema, model allowlist,
+# stage/class ceilings) are read from profile.yml so a profile edit
+# can't silently drift the staged copy.
+#
+# The staged window is deliberately narrow — it replicates exactly what
+# runner-agent.prepare_profile_dispatch admits at start: unattended S3
+# read-only/report jobs on the one qualified host. Cards that don't fit
+# (mutation intent, declared foreign host pin, unadmitted task_class,
+# remote-read profiles needing a subject_host) return None and keep the
+# existing claim hold — the executor=devin pin stays the override.
+
+# lane -> task profile, mirror of runner-agent.LANE_PROFILES — keep in
+# lockstep (runner-agent deploys single-file; this copy is canonical
+# for queue-time staging).
+LANE_PROFILES = {
+    "free_lane": "ops-readonly",
+}
+# The admitted staged-dispatch window (runner-agent
+# prepare_profile_dispatch hard-requires HOST == idc02 + stage S3 +
+# profile in its S3 staged set). Queue-time staging pins the card to
+# that host — honest, not restrictive: no other host can pass the
+# start-time admission anyway, and the pin makes the wait visible
+# instead of attempt-burning on the wrong runner.
+STAGED_LANE_HOST = "idc02"
+STAGED_LANE_STAGE = "S3"
+# task classes the standard (non-remote-read) staged window admits —
+# mirror of prepare_profile_dispatch's `classes` for non-remote-read.
+STAGED_LANE_CLASSES = ("read_only", "report")
+# Profiles prepare_profile_dispatch admits under the staged S3/idc02
+# window — mirror of runner-agent.S3_STAGED_PROFILES. Anything else
+# (ops-remote-read needs a declared subject_host + mcp_debug
+# allowlist the queue can't derive, supervised/pilot profiles aren't
+# unattended-staged) keeps the claim hold.
+STAGED_LANE_PROFILES = {"ops-readonly", "ssot-research", "storage-dryrun"}
+# lane_gate.STAGE_ALLOWED_ROOTS[S3] mirror — allowed_paths entries must
+# sit under these for admit() to pass.
+STAGED_LANE_ROOTS = ["evals/opencode-lane/out/", "reports/"]
+OPENCODE_ARTIFACT_DIR = "evals/opencode-lane/out/"
+
+
+def _path_under_roots(path: str, roots) -> bool:
+    """lane_gate._path_under semantics: p equals a root or sits under
+    it (roots keep their trailing slash so 'out-evil' can't prefix-hit
+    'out/')."""
+    p = str(path or "").lstrip("/")
+    return any(p == str(r).rstrip("/") or p.startswith(str(r))
+               for r in roots)
+
+
+def _lane_profile_yaml(repo_root, pid: str):
+    """Parsed evals/opencode-lane/profiles/<pid>/profile.yml, or None.
+    Returns the raw mapping — the same shape lane_gate._load_yaml_min
+    hands to prepare/check_envelope comparisons."""
+    if not repo_root:
+        return None
+    p = Path(repo_root) / "evals" / "opencode-lane" / "profiles" \
+        / pid / "profile.yml"
+    if not p.is_file():
+        return None
+    try:
+        import yaml  # lazy — runner hosts may lack it
+        data = yaml.safe_load(p.read_text())
+    except Exception:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def lane_envelope_plan(card: dict, lane: str, repo_root=None) -> dict | None:
+    """Queue-time lane_envelope staging plan for a card whose lane
+    resolves to the opencode executor.
+
+    Returns {"envelope": <lane_envelope dict>, "action": <fields to
+    merge into action>} or None when the card can't carry a valid
+    staged envelope — the caller then leaves it on the existing hold
+    (staged envelope or executor=devin pin). Never overwrites an
+    author-staged lane_envelope and never overrides declared pins.
+    """
+    a = _act(card)
+    lane = str(lane or a.get("lane") or "").strip()
+    if not lane or lane == "manual" or lane not in LANE_MODELS:
+        return None
+    if a.get("lane_envelope"):
+        return None                      # author-staged wins
+    # Declared host pins win: a card pinned away from the staged host
+    # can't be served by this envelope — leave it for its own route.
+    for pin in (a.get("target_host"), a.get("host")):
+        pin = canon_host(pin)
+        if pin and pin != canon_host(STAGED_LANE_HOST):
+            return None
+    # subject_host is the remote-read contract's field — for a staged
+    # non-remote profile it must be absent or name the staged host, or
+    # prepare_profile_dispatch's subject_ok check fails at claim.
+    subj = canon_host(a.get("subject_host"))
+    if subj and subj != canon_host(STAGED_LANE_HOST):
+        return None
+    # The lane's verifier ref, artifact dirs and allowed roots are all
+    # chaba-checkout-relative — resolved inside the card repo's
+    # dispatch worktree, so a foreign-repo card can never satisfy them.
+    if canon_repo(str(a.get("repo") or "chaba")) != "chaba":
+        return None
+    prof_id = card_profile(card) or LANE_PROFILES.get(lane)
+    if not prof_id or not PROFILE_ID_RE.match(prof_id) \
+            or prof_id not in STAGED_LANE_PROFILES:
+        return None
+    prof = _lane_profile_yaml(repo_root, prof_id)
+    if not prof or prof.get("status") != "enabled":
+        return None
+    if STAGED_LANE_STAGE not in (prof.get("stages") or []):
+        return None
+    # task_class: a declared class must already fit the staged window;
+    # undeclared defaults to report (the lane's own output class).
+    tc = str(a.get("task_class") or "").strip()
+    pclasses = prof.get("task_classes") or []
+    if tc:
+        if tc not in STAGED_LANE_CLASSES or tc not in pclasses:
+            return None
+    else:
+        # default to the lane's own output class — a report artifact —
+        # before the generic read_only floor
+        tc = next((c for c in ("report", "read_only")
+                   if c in STAGED_LANE_CLASSES and c in pclasses), "")
+        if not tc:
+            return None
+    # Mutation/side-effect intent keeps the card OFF the read-only lane
+    # — the same guard kk_mac_route applies before self-routing bounded
+    # classes. Without it a mutation card classified free_lane would
+    # "succeed" as a read-only report and close with the wrong artifact.
+    text = " ".join(str(x) for x in
+                    (card.get("title"), card.get("brief"),
+                     card.get("spec"), card.get("note"),
+                     a.get("prompt")) if x).lower()
+    if KK_MAC_MUTATING_RE.search(text):
+        return None
+    # artifact: declared path wins (must already sit inside the
+    # profile's artifact dirs); undeclared derives a per-card report
+    # under the lane's out/ root.
+    art_dirs = [str(d) for d in
+                ((prof.get("artifact") or {}).get("dirs") or [])]
+    art = str(a.get("artifact") or "").strip()
+    if not art:
+        slug = re.sub(r"[^a-z0-9-]+", "-",
+                      str(card.get("id") or "card").lower()
+                      ).strip("-") or "card"
+        art = f"{OPENCODE_ARTIFACT_DIR}{slug}.json"
+    if not art or art.startswith("/") or ".." in Path(art).parts \
+            or not _path_under_roots(art, art_dirs):
+        return None
+    # model: identical precedence to runner-agent._start_opencode_lane
+    # (action.model > lane table > profile default, first id valid for
+    # the opencode executor) so env.model always equals the model the
+    # claim resolves — then the profile's own ceilings must admit it.
+    model = ""
+    for cand in (str(a.get("model") or "").strip(),
+                 str(LANE_MODELS.get(lane) or ""),
+                 str(((prof.get("model") or {}).get("default")) or "")):
+        if cand and model_valid_for_executor(cand, "opencode"):
+            model = cand
+            break
+    if not model:
+        return None
+    m_allowed = (prof.get("model") or {}).get("allowed") or []
+    if (m_allowed and model not in m_allowed) \
+            or model_provider(model) not in (prof.get("providers") or []):
+        return None
+    verifier = prof.get("verifier")
+    art_schema = str((prof.get("artifact") or {}).get("schema") or "")
+    if not isinstance(verifier, dict) or not verifier.get("ref") \
+            or not art_schema:
+        return None
+    esc_prof = prof.get("escalation") or {}
+    on_fail = "manual" if "manual" in (esc_prof.get("allowed_on_fail")
+                                       or []) else ""
+    if not on_fail:
+        allowed = esc_prof.get("allowed_on_fail") or []
+        on_fail = str(allowed[0]) if allowed else ""
+    if not on_fail:
+        return None
+    try:
+        max_retries = max(0, min(1, int(esc_prof.get("max_retries")
+                                    if esc_prof.get("max_retries") is not None
+                                    else 0)))
+    except (TypeError, ValueError):
+        return None
+    rb_kind = str((prof.get("rollback") or {}).get("kind") or "none")
+    cid = str(card.get("id") or "")
+    env = {
+        "id": cid,
+        "card": cid,
+        "task_class": tc,
+        "stage": STAGED_LANE_STAGE,
+        "target_host": STAGED_LANE_HOST,
+        "executor": "opencode",
+        "profile": prof_id,
+        "model": model,
+        "provider": model_provider(model),
+        "unattended": True,
+        "mcp_allowlist": [],
+        "allowed_paths": [d for d in art_dirs
+                          if _path_under_roots(d, STAGED_LANE_ROOTS)],
+        "artifact": {"path": art, "schema": art_schema},
+        "verifier": dict(verifier),
+        "escalation": {"on_fail": on_fail,
+                       "allowed_on_fail": [on_fail],
+                       "max_retries": max_retries},
+        "rollback": {"kind": rb_kind},
+        "heartbeat": {"required": True, "stale_s": 300},
+        "timeout_s": 420,
+    }
+    if not env["allowed_paths"]:
+        return None
+    return {"envelope": env,
+            "action": {"executor": "opencode",
+                       "agent_profile": prof_id,
+                       "task_class": tc,
+                       "artifact": art,
+                       "target_host": STAGED_LANE_HOST,
+                       "lane_envelope": env}}
+
+
 # --- kk_mac auto-route (card kk-mac-auto-lane-classifier, OPS-0079
 # follow-up; decision standard rank 3 in ssot.repo-decision.yml) -------
 # Bounded read-only task classes self-route to executor=kk_mac_local at

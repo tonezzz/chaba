@@ -1608,6 +1608,27 @@ def _apply_classify_at_queue(card: dict, a: dict) -> str | None:
             return "classified as manual — queue skipped"
         comms_add(card, "chaba",
                   f"classified as {lane} ({source} conf {conf:.2f})")
+    # Queue-time lane envelope (kanban-free-lane-routing-contract,
+    # DECISION 2026-11-26): a dispatch card whose lane resolves to the
+    # opencode executor gets action.lane_envelope staged here so the
+    # runner's claim gate sees the complete contract instead of holding
+    # the card for a manual staging edit. Runs for classified AND
+    # author-pinned lanes; skipped when an executor is declared (that
+    # is the author's own contract — executor=opencode cards stage
+    # their own envelopes) and whenever the plan can't derive a valid
+    # envelope (the card keeps the staged-envelope/executor=devin hold).
+    if a.get("type") == "dispatch" and not a.get("executor") \
+            and not a.get("lane_envelope"):
+        plan = dr.lane_envelope_plan(card, str(a.get("lane") or ""), REPO)
+        if plan:
+            a.update(plan["action"])
+            comms_add(card, "chaba",
+                      "staged lane_envelope "
+                      f"(profile={plan['envelope'].get('profile')} "
+                      f"model={plan['envelope'].get('model')} "
+                      f"stage={plan['envelope'].get('stage')} "
+                      f"host={plan['action']['target_host']} "
+                      "executor=opencode)")
     return None
 
 

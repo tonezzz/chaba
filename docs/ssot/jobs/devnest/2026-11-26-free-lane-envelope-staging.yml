@@ -1,0 +1,110 @@
+title: free_lane queue-time lane_envelope staging
+subtitle: board-api derives the complete opencode dispatch envelope at
+  queue time so free_lane cards claim on idc02 without a manual staging
+  edit or an executor=devin pin
+icon: route
+
+context:
+  card: kanban-free-lane-routing-contract
+  ref: KNB-0244
+  decision: "DECISION 2026-11-26 Tony: adopt — implement the dispatch
+    envelope part of the free_lane routing contract; keep the
+    executor=devin pin escape hatch."
+  problem: "a queued card whose lane classified free_lane was HELD at
+    claim with 'lane_envelope is not staged' (runner-agent
+    _claimable/executor_defer_reason) until someone hand-staged
+    action.lane_envelope or pinned executor=devin — every free_lane
+    card needed a manual touch. KNOWN_PITFALLS recorded the stall.
+    The pilot envelope (ada-ocb-free-lane-workflow-pilot) proved the
+    shape by hand; this automates it."
+  contract_source: "runner-agent.prepare_profile_dispatch is the
+    admission contract the staged envelope must satisfy at start:
+    lint_envelope + check_envelope, expected={card, profile, model,
+    provider, executor:opencode, target_host:HOST, task_class},
+    unattended S3, HOST==idc02, profile in S3_STAGED_PROFILES
+    {ops-readonly, ssot-research, storage-dryrun}, artifact path ==
+    action.artifact, verifier == profile's held-out verifier."
+
+design:
+  planner: "dispatch_repos.lane_envelope_plan(card, lane, repo_root)
+    returns {envelope, action} or None (fail-safe hold). It mirrors
+    the admission contract field-by-field: profile resolved via
+    card_profile() else LANE_PROFILES[lane]; must be in
+    STAGED_LANE_PROFILES (positive set — ops-remote-read needs a
+    subject_host + mcp_debug allowlist the queue can't derive);
+    profile.yml must be enabled, admit S3, and cover the task_class
+    (undeclared defaults to report before read_only — the lane's own
+    output class). Model precedence is identical to
+    runner-agent._start_opencode_lane (action.model > LANE_MODELS[lane]
+    > profile default, first model_valid_for_executor(opencode) pick)
+    so env.model always equals the model the claim resolves; the
+    profile's own model.allowed/providers ceilings are re-checked.
+    verifier/artifact.schema/escalation/rollback are copied from
+    profile.yml so a profile edit can't silently drift the staged
+    copy."
+  guards: "returns None (keeps the existing hold) on: author-staged
+    lane_envelope, declared executor, lane=manual/unmapped, foreign
+    target_host/host pin, foreign subject_host, non-chaba repo (the
+    verifier ref + artifact dirs resolve inside the card repo's
+    dispatch worktree — only chaba carries evals/opencode-lane),
+    unadmitted declared task_class, artifact outside the profile's
+    artifact dirs, no resolvable model, missing verifier/schema, or
+    KK_MAC_MUTATING_RE intent in title/brief/spec/note/prompt (a
+    mutation card must not 'succeed' as a read-only report)."
+  staging: "board-api._apply_classify_at_queue calls the planner on
+    every queue path (do=queue, report-page respawn, do_create+queue)
+    when type=dispatch and no executor/lane_envelope is declared.
+    It merges action={executor:opencode, agent_profile, task_class,
+    artifact, target_host:idc02, lane_envelope} and posts a 'staged
+    lane_envelope' comms line. target_host is pinned to idc02 at queue
+    time — honest, not restrictive: prepare_profile_dispatch only
+    admits HOST==idc02 anyway, and the pin makes the wait visible
+    instead of attempt-burning on the wrong runner."
+  devin_guard: "kanban-dispatch (devin-only) skips any queued card
+    with action.lane_envelope when executor is unset — a staged
+    envelope means opencode-bound. executor=devin remains the escape
+    hatch and still claims."
+  drift_fix: "runner-agent's vendored LANE_MODELS['free_lane'] still
+    said litellm/gemini-3.5-flash-lite after the OPS-1363 repoint to
+    litellm/agent-local — fixed to match dispatch_repos (a stale copy
+    would resolve a different model at claim and fail the envelope's
+    expected-match). ops-readonly profile.yml model.allowed gained
+    litellm/agent-local. runner-tooling.manifest.json pins bumped for
+    runner-agent.py + dispatch_repos.py (same-commit contract)."
+
+ops:
+  deploy_order: "IMPORTANT — merge order matters. board-api stages
+    env.model=litellm/agent-local from the canonical dispatch_repos
+    table; the CLAIMING runner resolves the same table from its
+    installed runner-agent. Until sync-runner-tools.sh installs the
+    new runner-agent on idc02, a staged card claimed by the stale
+    runner resolves gemini-3.5-flash-lite and fails admission
+    (expected-match) — burning an attempt. Sequence: merge ->
+    sync runner tools fleet-wide (manifest pins already bumped) ->
+    free_lane cards claim cleanly. Cards queued before the merge keep
+    the hold until re-queued (/action do=queue re-runs staging)."
+  verify: "tests/board/test_lane_envelope_staging.py (23 tests): the
+    staged envelope passes lane_gate.lint_envelope +
+    opencode_profiles.check_envelope AND
+    runner-agent.prepare_profile_dispatch end-to-end on idc02;
+    claimable()/executor_defer_reason() clear on an OPENCODE_LANES
+    host and hold on foreign hosts; devin-pin path untouched; escape
+    tests cover mutating intent, foreign pins/repo/subject_host,
+    non-staged profiles, author-staged envelopes, declared
+    executor=opencode. tests/board/test_queue_starvation.py gained a
+    kanban-dispatch steal-guard test. Lane-table lockstep test pins
+    LANE_MODELS/DEVIN_LANE_MODELS/LANE_PROFILES across the two files."
+
+files:
+  - scripts/board/dispatch_repos.py (lane_envelope_plan + constants)
+  - scripts/board/board-api.py (_apply_classify_at_queue staging)
+  - scripts/board/kanban-dispatch.py (staged-envelope skip x2)
+  - scripts/board/runner-agent.py (LANE_MODELS free_lane repoint)
+  - evals/opencode-lane/profiles/ops-readonly/profile.yml
+    (model.allowed + litellm/agent-local)
+  - scripts/devin/runner-tooling.manifest.json (pin bumps)
+  - tests/board/test_lane_envelope_staging.py (new, 23 tests)
+  - tests/board/test_queue_starvation.py (devin-steal guard test)
+  - tests/board/test_queue_time_classify.py (lane-pin expectation)
+  - tests/devnest/test_lane_gate.py (stale S1 quota fixture —
+    pre-existing failure from the OPS-1363 quota raise 3->15)

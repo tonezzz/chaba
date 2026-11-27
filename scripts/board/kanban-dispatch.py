@@ -1133,6 +1133,12 @@ def _verdict_reason(card: dict, ctx: dict) -> str:
                else "Tony's hands — never claimed" if ex == "manual"
                else f"routes to the {ex} executor, not devin")
         return f"executor={ex} ({why})"
+    if not ex and isinstance(a.get("lane_envelope"), dict):
+        # a staged lane_envelope is opencode-bound by definition
+        # (kanban-free-lane-routing-contract) — this dispatcher only
+        # runs devin claims, so it must not steal the card even when
+        # the author left executor unset
+        return "staged lane_envelope — routes to the opencode executor"
     th = str(a.get("target_host") or "").strip()
     if th and th != HOST:
         return f"target_host={th}"
@@ -1389,6 +1395,13 @@ def main() -> int:
                         changed = True
                     print(f"{card['id']}: skipped — executor={ex} "
                           f"({why})")
+                    continue
+                if not ex and isinstance(a.get("lane_envelope"), dict):
+                    # staged lane_envelope = opencode-bound
+                    # (kanban-free-lane-routing-contract) — never a
+                    # devin claim even with executor unset
+                    print(f"{card['id']}: skipped — staged "
+                          "lane_envelope (opencode executor)")
                     continue
                 th = str(a.get("target_host") or "").strip()
                 if th and th != HOST:

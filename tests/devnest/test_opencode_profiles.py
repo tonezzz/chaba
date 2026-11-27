@@ -1099,7 +1099,9 @@ class JobLibrary(unittest.TestCase):
     def test_profile_envelopes_parse_and_lint(self):
         jobs = sorted((REPO / "evals/opencode-lane/jobs")
                       .glob("p*.yaml"))
-        self.assertEqual(len(jobs), 7)
+        # 9 = 8 p1-* (incl. the two OPS-1363 info-find model test
+        # envelopes) + p5-branch-code-disabled
+        self.assertEqual(len(jobs), 9)
         for j in jobs:
             env = lane_gate.load_envelope(j)
             self.assertEqual(lane_gate.lint_envelope(env), [], j.name)
