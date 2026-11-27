@@ -99,6 +99,18 @@ follow_up_incident_20261127: |
   load_s=55.9. The reclaim timer alone is insufficient at daily cadence;
   reassess after the concurrency bound has run for a full day.
 
+  Production observation 2026-11-27 09:24-09:47 (+07): /health stayed 200
+  (13-138ms) throughout; service MemorySwapCurrent fell from 5.69 GiB to
+  ~0.98 GiB, zram from 23G to 17.9G, load average from 39.18 to 6.44.
+  /metrics counted 11 completed /v1/systemone calls and 12 rejected bursts
+  (429 + Retry-After: 60), all from 100.75.102.88; no AnyIO pileup recurred
+  (2 worker threads, one in Linear.forward, one waiting). Important caveat:
+  every completed call landed only in the le_inf latency bucket (le_60 = 0),
+  ~130s each, and uvicorn logged no 200 lines for them — consistent with
+  callers disconnecting on a shorter timeout while the handler still runs.
+  The guard prevents collapse but does not make CPU gemma-3-4b fast; caller
+  timeouts and model choice remain a separate capacity question.
+
 rollback: |
   Delete the 4 installed files and the alarm file, then:
     systemctl --machine=tony@.host --user disable --now open-jev-reclaim.timer
