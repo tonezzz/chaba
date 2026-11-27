@@ -1,0 +1,71 @@
+date: 2026-11-27
+title: ada-ocb-eval + ada-ocb-smoke harness fix — eval fixture rot
+       (archived ADA-0172/0174) + _context_card cache-unaware refetches
+       burning the 8s pack deadline
+card: ada-ocb-eval-smoke-harness-fix (ref ADA-1489)
+domain: ada
+job: dispatch 20261127-103128-two-nightly-ada-bridge-benchma, runner tony-dell
+host: idc02 (units + staging checkout ~/CascadeProjects/ada-voice)
+repo: ada-voice (branch dispatch/20261127-103128-two-nightly-ada-bridge-benchma,
+      commit 912e064, pushed to origin)
+
+summary: >
+  Two nightly benchmark units on idc02 failed for two different reasons,
+  neither a gate-contract or provider-output regression:
+
+  1. ada-ocb-eval score 7/10 since 2026-11-27 00:20 — tests/eval_ocb/
+     cases.yml still probed ADA-0172 (ada-ocb-board-read-latency) and
+     ADA-0174 (ada-ocb-regression-suite). Both cards were archived out of
+     board-api /cards between Nov-26 18:20 and Nov-27 00:20 (cap sweep —
+     board >600 done cards), so find_card fell through to token scoring
+     and every card-tool case returned ok=false. Same fixture-rot class
+     as the smoke suite's ADA-0172->ADA-1110 repoint earlier the same
+     day; the eval cases were missed then.
+
+  2. ada-ocb-smoke flaked once at 10:00 — find_card ADA-1110 took 10.6s
+     (idc03 board-api slow under load), then ada_context_pack's card leg
+     dropped ("card snapshot missing from pack"). Root cause:
+     opencode/ada_mcp.py _context_card ran three sequential UNCACHED
+     /cards fetches (id-probe that can never match a ref, compact dump,
+     hydrate) inside the shared 8s pack deadline — it never used the
+     _snapshot_cache that find_card/_pick_cards had just warmed.
+
+fix:
+  - >-
+    tests/eval_ocb/cases.yml: repoint card-status-real-ref,
+    card-context-pack, preflight-gates-readonly to ADA-1110 (same live
+    fixture card the smoke suite uses); expectations updated to its
+    id/ref; comment added warning fixture refs must be live cards.
+  - >-
+    opencode/ada_mcp.py: _context_card now resolves through
+    _compact_cards/_fetch_card_full with deadline-bounded timeouts
+    (new optional timeout= plumbed through _get_json_cached and the two
+    helpers), and skips the /cards?id= probe for ref-shaped needles
+    (^[A-Za-z]+-\d+$ — id= never matches ref, guaranteed miss). Gate
+    assertions unchanged; context_pack card leg dropped 8-9.5s -> ~2.5s
+    warm.
+
+verification:
+  - >-
+    idc02: pytest tests -k 'opencode_ada_mcp or ocb or eval_ocb' -> 110 passed
+  - >-
+    ocb-eval --dry-run -> score 10/10
+  - >-
+    systemctl --user start ada-ocb-eval.service -> Result=success,
+    score=10/10, wrote ada-ha-scenario-reports/benchmark/ocb-eval-20261127-105551
+  - >-
+    systemctl --user start ada-ocb-smoke.service -> Result=success, all
+    checks PASS, wrote benchmark/ocb-smoke-20261127-105608 (+ocb-bench rollup)
+
+followups:
+  - >-
+    Fixture rot is recurring (3rd hit in 2 days): any harness probing a
+    specific card ref breaks when archive-done's cap sweep (>600 board
+    cards) retires it. ADA-1110 is done+recent so it is last in the cap
+    sweep's oldest-first order, but it will rot eventually — consider a
+    permanent non-archivable fixture card or a liveness preflight in the
+    suites.
+  - >-
+    idc02 ~/CascadeProjects/ada-voice left on main @912e064 (ahead of
+    origin/main by the dispatch commit); merge-sweep lands the branch,
+    then a plain git pull --ff-only fast-forwards cleanly.
