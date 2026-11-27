@@ -1,7 +1,7 @@
 id: mddb-ops-write-latency-triage
 title: 'mddb-ops: diagnose /add + /ingest ~125s congestion waves (read-only, approval-gated)'
 column: doing
-updated: 2026-11-27 13:33
+updated: 2026-11-27 13:34
 brief: Next batch 2026-11-27 — 4 runner slots free.
 priority: high
 tags:
@@ -78,6 +78,14 @@ comms:
     deleteWhere handlers (66-82min each, every call times out client-side at 110s) that convoy bbolt single write
     tx -> /add//ingest 10-200s, fleet log shipping failing. Live probes: /add p50~14s p95~26s; /ingest 12.8s; reads
     fine. Backlog: 387,737 expired host-logs docs; net drain ~'
+- at: 2026-11-27 13:34
+  from: tony
+  text: 'answered approval-needed-mddb-ops-write-congestio-f92e57: APPROVED A+B (Tony 2026-11-27). (A) Kill detached
+    drain loop PID 3862968 on idc03 now — client-side only, no MDDB service/data change; let orphans self-drain.
+    Verify /add latency recovers to ~2-6s and'
+- at: 2026-11-27 13:34
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
 claim:
   since: 2026-11-27 12:58
 requests:
@@ -93,9 +101,14 @@ requests:
     + 24k telemetry; embeddings are OFF on ops so nothing vector-side is lost) — atomic retention+rebuild, more
     moving parts. OPTIONS: [approve A+B] [approve A only, defer B] [approve A+C(export-rebuild) instead of B] [hold
     — leave drain running]. Default recommendation: A+B.'
-  status: open
+  status: answered
   at: 2026-11-27 13:31
   from: devin
   options:
   - proceed
   - hold
+  answer: 'APPROVED A+B (Tony 2026-11-27). (A) Kill detached drain loop PID 3862968 on idc03 now — client-side only,
+    no MDDB service/data change; let orphans self-drain. Verify /add latency recovers to ~2-6s and log-shipper heartbeats
+    succeed. (B) Then schedule Procedure-C offline bbolt compact of mddb-ops per docs/kb/mddb-prune-compact.md (26.85GB
+    -> ~3GB, ~15-30min downtime, .pre-compact rollback). Coordinate the downtime window on this card before touching
+    the service; do not compact without announcing '
