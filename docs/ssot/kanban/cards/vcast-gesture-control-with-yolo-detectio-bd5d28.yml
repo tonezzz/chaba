@@ -1,7 +1,7 @@
 id: vcast-gesture-control-with-yolo-detectio-bd5d28
 title: Vcast gesture control with YOLO detection
 column: doing
-updated: 2026-11-27 08:38
+updated: 2026-11-27 08:47
 priority: medium
 note: Use YOLO instead of MediaPipe for hand-gesture tracking on vcast displays to keep device load low
 ref: MED-1064
@@ -283,6 +283,13 @@ comms:
   text: Picked up on idc02/ada-voice. Found canonical card rebuild-gesture-control-using-yolo-83cf4a produced verified
     commits (dd8a928+3ca1ffc) that never merged to origin/main (merge-sweep false-positive). Porting that ada-voice-side
     work onto this branch, then re-running gates.
+- at: 2026-11-27 08:47
+  from: devin
+  text: 'DONE on dispatch/20261127-083443-vcast-gesture-control-with-yol (idc02, ada-voice). Finding: vcast hand-gesture
+    tracking is already YOLO end-to-end in chaba since 2026-10-15 (yolo-gesture.service hand_yolov8n); MediaPipe
+    remains only the wand default — chaba-side, outside this repo. The canonical card rebuild-gesture-control-using-yolo-83cf4a
+    produced the ada-voice fix but its merge was a merge-sweep false positive (5da3cc0 never landed). This dispatch
+    cherry-picked dd8a928+3ca1ffc clean onto ma'
 requests:
 - id: the-vcast-gesture-control-task-e92e2b
   ask: The vcast gesture control task requires deploying YOLO instead of MediaPipe for hand-gesture tracking to
@@ -321,3 +328,4 @@ action:
   attempts: 1
 claim:
   since: 2026-11-27 08:34
+awaiting_action: true
