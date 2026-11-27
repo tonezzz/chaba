@@ -1,0 +1,36 @@
+id: cms-publish-remote-end-closed-fix
+title: idc03 CMS publish timers fail with 'Remote end closed connection'
+column: backlog
+updated: 2026-11-27 09:30
+spec: 'Journal on idc03 for chaba-starboard-tracker.service (08:47) and chaba-cached-videos.service (08:37) ends
+  with `error: Remote end closed connection without response` and exit=1, although earlier runs of both published
+  successfully. Root cause is an unhandled transient connection close during the CMS page publish step, not missing
+  content (cached-videos published 0/0/0 successfully many times; starboard also warns that the card starboard-windsurf-catalogs.yml
+  is unreadable in the tony-dell checkout — note that but do not conflate it with the exit code). Add bounded retry/backoff
+  for transient connection-close errors around the CMS publish HTTP calls shared by both jobs; keep non-retryable
+  errors loud and do not mask a real failure as ''published 0 items''. Verify by starting both oneshot services
+  on idc03 and confirming Result=success with the CMS pages still rendered (en+th). Then note the result on timer-alert-idc03-chaba-starboard-tracker
+  and timer-alert-idc03-chaba-cached-videos.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  target_host: idc03
+  lane: paid_frontier
+  status: queued
+ref: KNB-1481
+comms:
+- at: 2026-11-27 09:30
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-27 09:30
+  from: chaba
+  text: 'WARNING: unclaimable by the declared runner fleet — push guard: `git push --dry-run` fails on the only
+    eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing. Fix action.labels/host pins
+    or teach a runner the capability (RUNNER_LABELS + ssot.kanban.yml runner_fleet)'
+- at: 2026-11-27 09:30
+  from: tony
+  text: '[timer-fix batch 2026-11-27] Approved after triage: both idc03 publish timers failed only on a transient
+    ''Remote end closed connection without response''. Scope is chaba CMS publish resilience; do not change unrelated
+    jobs.'
+awaiting_action: true

@@ -1,0 +1,26 @@
+id: ada-review-refresh-prune-timeout-fix
+title: ada-review-refresh times out in prune-old-docs.py on tony-omen
+column: backlog
+updated: 2026-11-27 09:30
+spec: 'ada-review-refresh.service on tony-omen failed at 09:03 with subprocess.TimeoutExpired: export-transcripts.py
+  calling prune-old-docs.py exceeded its 600s timeout (whole unit ran 18m52s wall, 51M swap used). Investigate why
+  the prune step now takes >10 minutes and make it complete reliably within the job budget — batch/incremental traversal,
+  avoid quadratic scans, or a justified timeout change with a hard upper bound. Do not simply delete the prune step.
+  Verify by running the service on tony-omen and confirming Result=success with the review corpus refreshed, then
+  note the result on timer-alert-tony-omen-ada-review-refresh.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  target_host: tony-omen
+  lane: paid_frontier
+  status: queued
+ref: ADA-1482
+comms:
+- at: 2026-11-27 09:30
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-27 09:30
+  from: tony
+  text: '[timer-fix batch 2026-11-27] Approved after triage: real failure, 600s subprocess timeout in prune-old-docs.py
+    under export-transcripts.py on tony-omen. Keep the prune semantics; fix the runtime.'
