@@ -1,7 +1,7 @@
 id: omen-lan-reservation
 title: tony-omen LAN IP needs DHCP reservation (or dynamic refs)
 column: doing
-updated: 2026-11-27 14:54
+updated: 2026-11-27 14:55
 brief: 'Omen DHCP drifted 192.168.2.86->.84 on 2026-10-12 and silently broke every hardcoded LAN reference (cast-browser-proxy
   target, cast-shots-http bind, MEDIA_BASE, barrier scripts). Proxy+shots now DHCP-proof, but MEDIA_BASE=http://192.168.2.84:8090
   must stay a LAN IP (Chromecast cannot reach tailnet) — it will break again on the next renumber. Fix: pin a DHCP
@@ -282,6 +282,14 @@ comms:
     live cast-browser.service still had MEDIA_BASE=.84 — corrected to .86 and restarted. Deliverables: docs/kb/zte-f688-admin-api.md
     (router API recipe), docs/ssot/jobs/infrastructure/2026-11-27-omen-lan-reservation.yml (trail), SSOT registry
     updates, repo cast-shots-http synced to '
+- at: 2026-11-27 14:55
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-142035-configure-a-static-dhcp-reserv no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-27 14:55
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261127-142035-configure-a-static-dhcp-reserv on idc02 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 requests:
 - id: the-card-notes-that-the-tony-o-1dbcf8
   ask: The card notes that the tony-omen LAN IP needs a DHCP reservation or dynamic refs, but does not specify the
@@ -318,6 +326,9 @@ action:
   status: running
   runner: idc02
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 14:55
+    dirty: 1
 claim:
   since: 2026-11-27 14:19
 awaiting_action: true
