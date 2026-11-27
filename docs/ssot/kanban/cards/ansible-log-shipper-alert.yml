@@ -1,11 +1,12 @@
 id: ansible-log-shipper-alert
 title: 'Ansible audit: log-shipper drift/fail'
-column: backlog
-updated: 2026-11-27 13:36
+column: done
+updated: 2026-11-27 13:37
 spec: 'Read-only ansible audit-log-shipper detected fail/drift/unreachable hosts. Hosts: con01, idc02, idc03, mn01,
   tony-dell, tony-omen. Report dir: reports/ansible-benchmark/log-shipper/. No remediation performed.'
 action:
   type: manual
+  status: done
 ref: OPS-1474
 comms:
 - at: 2026-11-27 06:34
@@ -25,3 +26,6 @@ comms:
     /add timeouts); dispatch log-shipper-mddb-heartbeat-timeout-fix deployed the fix fleet-wide ~12:00 via approved
     ansible/playbooks/log-shipper.yml. Fresh reports: mn01 timeout healed (units refreshed to 2700), all lanes active/enabled,
     last_result=success, journals ok on all 7 h'
+- at: 2026-11-27 13:37
+  from: devin
+  text: closed by devin
