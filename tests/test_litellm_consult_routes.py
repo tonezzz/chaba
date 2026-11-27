@@ -13,8 +13,15 @@ def test_consult_aliases_have_single_explicit_routes_without_fallbacks():
               for item in config["model_list"]}
     fallbacks = config["router_settings"]["fallbacks"]
     fallback_sources = {next(iter(item)) for item in fallbacks}
+
+    def _target_name(leg):
+        # legs are bare model names or dicts pinning options
+        # (e.g. {model: x, disable_fallbacks: true})
+        return leg["model"] if isinstance(leg, dict) else leg
+
     fallback_targets = {
-        target for item in fallbacks for targets in item.values()
+        _target_name(target)
+        for item in fallbacks for targets in item.values()
         for target in targets
     }
 
