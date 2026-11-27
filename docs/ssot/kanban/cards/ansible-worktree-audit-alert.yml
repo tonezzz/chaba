@@ -1,7 +1,7 @@
 id: ansible-worktree-audit-alert
 title: 'Ansible audit: worktree hygiene drift/fail'
 column: backlog
-updated: 2026-11-27 16:06
+updated: 2026-11-27 16:38
 spec: 'Read-only ansible audit-worktrees detected fail/drift/unreachable hosts. Hosts: con01, idc02, idc03, mn01,
   tony-dell, tony-omen. Report dir: reports/ansible-benchmark/worktrees/. No remediation performed.'
 action:
@@ -39,3 +39,10 @@ comms:
     idc03 role: served / declared_role: served — the role-marker false positive is gone. Committed e70c424b433 and
     pushed to origin/master. idc03 still summary=fail for a genuine reason: served/live-deploy checkout dirty with
     42 uncommitted paths (plus 2 unpushed commits, no co'
+- at: 2026-11-27 16:38
+  from: chaba
+  text: 'READ-ONLY RE-INVENTORY 2026-11-27 16:40 +07 (idc03 served checkout chaba-tony-dell): git status is down
+    to 17 dirty paths from the 42 reported at 16:05 — 1 modified (docs/ssot/kanban/.render-state-board2) and 16
+    untracked artifacts (LiteLLM spend-hook/credits-poll scripts + service units, public/apps/or-panel/, out/, .stale-board2-nested-20261120/,
+    backup/conflict files, and the three timestamped Yomi hotfix backups from OPS-1505). No mass clean performed:
+    these are uncommitted user work or safe'

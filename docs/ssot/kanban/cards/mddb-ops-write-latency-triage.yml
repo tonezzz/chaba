@@ -1,7 +1,7 @@
 id: mddb-ops-write-latency-triage
 title: 'mddb-ops: diagnose /add + /ingest ~125s congestion waves (read-only, approval-gated)'
 column: done
-updated: 2026-11-27 15:15
+updated: 2026-11-27 16:38
 brief: Next batch 2026-11-27 — 4 runner slots free.
 priority: high
 tags:
@@ -157,6 +157,13 @@ comms:
     retained until verification. Announcing here per the A+B approval before any service change. Sequence per docs/kb/mddb-prune-compact.md:
     stop mddb-ops.service -> golang:1.23-bookworm bbolt@v1.4.3 compact -> podman unswap mv (mddb.db -> .pre-compact,
     compact -> mddb.db) -> start service -'
+- at: 2026-11-27 16:38
+  from: chaba
+  text: 'EARLY PREFLIGHT + SCHEDULE HARDENING 2026-11-27 16:36 +07: service active/running, db 26G, no stray mddb-compact.db
+    / .pre-compact, golang:1.23-bookworm image present — all green for the 22:00 window. Found and fixed a verification
+    trap: mddb-ops binds ONLY to 100.102.134.91:11026, so http://127.0.0.1:11026/health returns http=000 while http://100.102.134.91:11026/health
+    returns 200 ''status: healthy''. The 22:00 scheduled task prompt now pins the explicit tailnet base URL for
+    /health, /v1/stats a'
 claim:
   since: 2026-11-27 12:58
 requests:
