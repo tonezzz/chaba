@@ -1,7 +1,7 @@
 id: oswe-eval-ada-test-tab
 title: Self-deploy OpenSWE (Robin) on tony-dell + Ada Test tab on ada-ha
 column: doing
-updated: 2026-11-27 15:31
+updated: 2026-11-27 15:36
 brief: Evaluate OpenSWE/Robin; self-deploy on tony-dell dev-mode, expose like ada-ocb, add 'Ada Test' sidebar tab
   (OSWE first) on ada-ha chaba-admin.
 priority: medium
@@ -340,6 +340,13 @@ comms:
   from: devin
   text: 'raised request stack-is-live-on-tony-dell-tailnet-3-rem-3dbf41: Stack is LIVE on tony-dell (tailnet). 3
     remaining gates, all yours: (1) LangSmith OAuth app — Chaba Lab org > Settings >'
+- at: 2026-11-27 15:36
+  from: devin
+  text: 'Stack LIVE on tony-dell: systemd units oswe-backend :2024 / oswe-mda :2025 / oswe-shim :4100 (model via
+    fleet LiteLLM deepseek-v4-flash, LangSmith gateway off). Eval smoke: 3/3 robin CLI tasks PASS (bugfix, feature,
+    refactor — correct minimal diffs, ~minutes, near-zero cost; model is cheaper than intended so scores are a floor).
+    Ada Test tab repointed to tailnet split-origin :8445->:8444 so cookie is Secure;SameSite=None and survives the
+    iframe; dashboard snapshot synced. Education lesson filed '
 requests:
 - id: 4-gated-items-needed-to-boot-robin-optio-41e2b0
   ask: '4 gated items needed to boot Robin (options in spec): (1) LangSmith account + API key — agent loop + cloud
