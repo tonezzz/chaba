@@ -1,7 +1,7 @@
 id: kanban-queue-manual-handoff
 title: 'Kanban queue truth: separate human-owned cards from the dispatch queue'
-column: doing
-updated: 2026-11-27 09:30
+column: review
+updated: 2026-11-27 09:35
 priority: high
 tags:
 - kanban
@@ -234,6 +234,32 @@ comms:
     live queue clean, zero stranded queued cards, ADA-0783 resolved itself (done+verified, promotion stayed Tony
     call). This pass closed residue: board2 Needs Tony now lists awaiting_action cards with owner+reason+next (was
     invisible), cycle-pane + classic board label the wait and suppr'
+- at: 2026-11-27 09:35
+  from: tony-dell
+  text: 'finished (ok): exit=0 come doc committed at repo root; final comms posted to the card. | devin-task-20261127-083355-make-the-dispatch-q'
+- at: 2026-11-27 09:35
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 09:35
+  from: chaba
+  text: 'checkpoint failed: commit: Command ''[''git'', ''-C'', ''/home/tony/CascadeProjects/dispatch-wt-20261127-083355-make-the-dispatch-queue-truthf'',
+    ''commit'', ''-q'', ''-m'', ''dispatch checkpoint: 1 le'
+- at: 2026-11-27 09:35
+  from: chaba
+  text: pushed dispatch/20261127-083355-make-the-dispatch-queue-truthf to origin
+- at: 2026-11-27 09:35
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_board_api_liveness.py tests/board/test_kanban_act.py
+    tests/board/test_wiki_extension.py tests/board/test_board_ap
+- at: 2026-11-27 09:35
+  from: chaba
+  text: auto-merged 5d70bf99 (dispatch/20261127-083355-make-the-dispatch-queue-truthf) → origin/master
+- at: 2026-11-27 09:35
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 requests:
 - id: queue-truth-sequencing
   ask: How should we sequence the queue-truth fix?
@@ -255,9 +281,13 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: running
+  status: done
   runner: tony-dell
   attempts: 1
+  result: 'exit=0 come doc committed at repo root; final comms posted to the card. | devin-task-20261127-083355-make-the-dispatch-queue-truthf.service:
+    Consumed 11min 48.020s CPU time over 57min 15.662s wall clock time, 1G memory peak, 480M memory swap peak.'
+  verified: true
 claim:
   since: 2026-11-27 08:33
 awaiting_action: true
+review_kind: verify
