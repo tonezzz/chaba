@@ -1109,6 +1109,25 @@ jobs:
   persistent: true
   timeout: 5m
   exec: /usr/bin/python3 %h/.config/go2rtc/xiaomi-token-refresh.py
+  enabled: false
+  note: >-
+    RETIRED on-host 2026-11-26 (units moved to ~/.config/systemd/user/_retired-20261126,
+    masked) — Chrome on omen has no account.xiaomi.com cookies so the job can
+    only fail. passToken in go2rtc.yaml still valid as of 2026-11-27. Re-arm
+    (unmask + restore units + enabled:true) only after Tony re-logs into
+    account.xiaomi.com in Chrome on omen.
+- id: xiaomi-cam-resolve
+  name: Xiaomi Cam IP Resolve
+  host: tony_omen
+  dispatch: systemd
+  every: 5min
+  timeout: 2m
+  exec: /usr/bin/python3 %h/.config/go2rtc/xiaomi-cam-resolve.py
+  note: >-
+    Rewrites stale xiaomi:// camera IPs in go2rtc.yaml from the go2rtc cloud
+    device list (MAC-verified, throttled /24 ARP sweep fallback) then
+    /api/restart. The c100/c201 cameras are DHCP floaters — hardcoded IPs
+    caused recurring 200/0B frames (card go2rtc-7-camera-producers).
 - id: cam-frame-refresh
   name: Cam Frame Refresh
   host: tony_omen

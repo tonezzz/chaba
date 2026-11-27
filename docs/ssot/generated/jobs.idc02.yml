@@ -5,12 +5,20 @@ jobs:
   - id: ada-nest-heartbeat-idc02
     schedule: "every 5m"
     dispatch: "systemd"
+  - id: chaba-capture-harvest
+    schedule: "*-*-* 05:30:00"
+    dispatch: "systemd"
+    persistent: true
   - id: chaba-host-loads
     schedule: "every 5min"
     dispatch: "systemd"
   - id: embed-lane-banks
     schedule: "every 1d"
     dispatch: "systemd"
+  - id: job-health-sweep
+    schedule: "hourly"
+    dispatch: "systemd"
+    persistent: true
   - id: log-shipper
     schedule: "every 1h"
     dispatch: "systemd"
@@ -19,5 +27,9 @@ jobs:
     dispatch: "systemd"
   - id: opencode-models-sync
     schedule: "*-*-* *:37:00"
+    dispatch: "systemd"
+    persistent: true
+  - id: retry-storm-watch
+    schedule: "every 10min"
     dispatch: "systemd"
     persistent: true

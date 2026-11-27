@@ -38,6 +38,10 @@ jobs:
     schedule: "hourly"
     dispatch: "systemd"
     persistent: true
+  - id: job-health-sweep
+    schedule: "hourly"
+    dispatch: "systemd"
+    persistent: true
   - id: log-shipper
     schedule: "every 1h"
     dispatch: "systemd"
@@ -50,6 +54,10 @@ jobs:
     persistent: true
   - id: report-distill
     schedule: "*-*-* 04:00:00"
+    dispatch: "systemd"
+    persistent: true
+  - id: retry-storm-watch
+    schedule: "every 10min"
     dispatch: "systemd"
     persistent: true
   - id: ssot-optimization-snapshot
