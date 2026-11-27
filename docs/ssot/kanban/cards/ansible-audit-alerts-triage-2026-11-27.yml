@@ -1,7 +1,7 @@
 id: ansible-audit-alerts-triage-2026-11-27
 title: Triage 5 open Ansible audit alerts — stale vs real drift (approval-gated)
-column: doing
-updated: 2026-11-27 13:40
+column: review
+updated: 2026-11-27 14:21
 brief: Next batch 2026-11-27 — 4 runner slots free.
 priority: high
 tags:
@@ -24,12 +24,14 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: running
+  status: done
   runner: con01
   attempts: 1
   sweep:
     stale_running: 2026-11-27 13:40
     dirty: 1
+    close_held: 2026-11-27 14:10
+  verified: true
 ref: OPS-1501
 comms:
 - at: 2026-11-27 12:58
@@ -73,6 +75,51 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261127-125951-triage-the-five-open-read-only on con01 still dirty —
     1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-27 13:59
+  from: chaba
+  text: 'merge-sweep: merged f81f841c (dispatch/20261127-125951-triage-the-five-open-read-only from con01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261127-125951-triage-the-five-open-read-only.md)
+    — held in review (open request(s) [''approve-host-state-remediation''] block close)'
+- at: 2026-11-27 13:59
+  from: local
+  text: 'pub milestone: card verified: ansible-audit-alerts-triage-2026-11-27 on idc03 — merged f81f841c (dispatch/20261127-125951-triage-the-five-open-read-only
+    from con01) -> origin/master — verified — held — merged f81f841c (dispatch/20261127-125951-triage-the-five-open-read-only
+    from con01) -> origin/master — verified — held in review (open request(s) [''approve-hos [evt-2dd4f9bb11a4a628]'
+- at: 2026-11-27 13:59
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-125951-triage-the-five-open-read-only,
+    branch dispatch/20261127-125951-triage-the-five-open-read-only on con01'
+- at: 2026-11-27 14:01
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 14:01
+  from: chaba
+  text: 'session-end checkpoint c5df9e7e: 1 leftover file(s) committed'
+- at: 2026-11-27 14:01
+  from: chaba
+  text: banked 915 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-27 14:01
+  from: chaba
+  text: pushed dispatch/20261127-125951-triage-the-five-open-read-only to origin
+- at: 2026-11-27 14:01
+  from: chaba
+  text: "auto-merge not done: push: Authorized access only. All activity may be monitored and reported.\nremote:
+    error: refusing to update checked out branch: refs/heads/master        \nremote: error: By default, updating
+    the current bran — close will block until merged"
+- at: 2026-11-27 14:10
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''approve-host-state-remediation''] block close)'
+- at: 2026-11-27 14:20
+  from: tony
+  text: 'answered approve-host-state-remediation-on-mn01-f-fc1183: approve restart-only first (podman rm -f + unit
+    restart, escalate if persists)'
+- at: 2026-11-27 14:20
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-27 14:21
+  from: tony
+  text: Tony approved full remediation on the request, including podman system migration reset or reboot if needed.
+    Proceed and report what changed; then close the stale audit cards after live verify.
 claim:
   since: 2026-11-27 12:58
 requests:
@@ -83,7 +130,7 @@ requests:
     126 / rootless netns kill permission denied on tailnet-IP publishes; other quadlets healthy. No ansible playbook
     covers quadlet repair. Proposed: investigate+repair mn01 rootless netns (stale pasta/rootlessport cleanup, quadlet
     restart; worst case podman system migration reset or reboot) — reversible, service-level only.'
-  status: open
+  status: answered
   at: 2026-11-27 13:37
   from: devin
   options:
@@ -91,3 +138,5 @@ requests:
   - approve restart-only first (podman rm -f + unit restart, escalate if persists)
   - hold — investigate manually first
   suggested: approve restart-only first (podman rm -f + unit restart, escalate if persists)
+  answer: approve restart-only first (podman rm -f + unit restart, escalate if persists)
+awaiting_action: true

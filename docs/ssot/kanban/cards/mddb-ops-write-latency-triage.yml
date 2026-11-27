@@ -1,7 +1,7 @@
 id: mddb-ops-write-latency-triage
 title: 'mddb-ops: diagnose /add + /ingest ~125s congestion waves (read-only, approval-gated)'
-column: review
-updated: 2026-11-27 13:44
+column: done
+updated: 2026-11-27 13:57
 brief: Next batch 2026-11-27 — 4 runner slots free.
 priority: high
 tags:
@@ -139,6 +139,9 @@ comms:
 - at: 2026-11-27 13:44
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-27 13:56
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 claim:
   since: 2026-11-27 12:58
 requests:
@@ -165,5 +168,8 @@ requests:
     succeed. (B) Then schedule Procedure-C offline bbolt compact of mddb-ops per docs/kb/mddb-prune-compact.md (26.85GB
     -> ~3GB, ~15-30min downtime, .pre-compact rollback). Coordinate the downtime window on this card before touching
     the service; do not compact without announcing '
-awaiting_action: true
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 13:56
+  note: verified — evidence checks green, closing itself

@@ -1,7 +1,7 @@
 id: omen-lan-reservation
 title: tony-omen LAN IP needs DHCP reservation (or dynamic refs)
-column: backlog
-updated: 2026-11-26 21:00
+column: doing
+updated: 2026-11-27 14:20
 brief: 'Omen DHCP drifted 192.168.2.86->.84 on 2026-10-12 and silently broke every hardcoded LAN reference (cast-browser-proxy
   target, cast-shots-http bind, MEDIA_BASE, barrier scripts). Proxy+shots now DHCP-proof, but MEDIA_BASE=http://192.168.2.84:8090
   must stay a LAN IP (Chromecast cannot reach tailnet) — it will break again on the next renumber. Fix: pin a DHCP
@@ -246,6 +246,29 @@ comms:
 - at: 2026-11-26 21:00
   from: chaba
   text: 'HUMAN CALL 2026-11-26: Tony to handle the router/DHCP reservation directly. Card stays human-owned.'
+- at: 2026-11-27 14:19
+  from: tony
+  text: re-spawned from report page
+- at: 2026-11-27 14:19
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.59 > 0.7)'
+- at: 2026-11-27 14:19
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 14:19
+  from: idc02
+  text: claimed
+- at: 2026-11-27 14:20
+  from: chaba
+  text: started devin-task-20261127-142035-configure-a-static-dhcp-reserv on idc02 (dispatch executor=devin)
+- at: 2026-11-27 14:20
+  from: chaba
+  text: 'primer injected 8 lesson(s): idc02''s kanban-dispatch.service was a linked unit running a stale scripts/-only
+    ; Units migrated idc03→tony-omen 2026-11-18 lost ALL drop-ins (stagger + gates) — ; [publish-promote-knowledge-capture-ssot-w-d34a39]
+    Phase B+ ansible session-captu; runbook docs/kb/host-hygiene-rules.md: Host Hygiene Rules — how machines stay
+    cl; runbook docs/kb/host-reboot-verification.md: Host Reboot Verification Runbook — ; runbook docs/kb/overnight-assessment-areas.md:
+    Assessment Are'
 requests:
 - id: the-card-notes-that-the-tony-o-1dbcf8
   ask: The card notes that the tony-omen LAN IP needs a DHCP reservation or dynamic refs, but does not specify the
@@ -270,8 +293,17 @@ requests:
   at: 2026-11-17 01:20
   from: backlog-spec-enrich
   answer: ★ Provide the MAC address and desired IP address for tony-omen so a router DHCP reservation can be configured.
-awaiting_action: true
 spec: Configure a static DHCP reservation for tony-omen on the local network router or configure it to use dynamic
   hostname references so its IP remains consistently reachable. The target host is tony-omen. The done-condition
   is verified when tony-omen consistently resolves and responds reliably via its assigned LAN IP or dynamic reference
   without manual intervention.
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  lane: paid_frontier
+  status: running
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-27 14:19

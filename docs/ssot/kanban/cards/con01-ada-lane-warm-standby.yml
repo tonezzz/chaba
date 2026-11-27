@@ -1,13 +1,19 @@
 id: con01-ada-lane-warm-standby
 title: con01 warm standby for ada-line-relay + ada-ha-tony
-column: backlog
-updated: 2026-11-26 21:12
+column: doing
+updated: 2026-11-27 14:22
 priority: low
 action:
-  type: manual
-note: 'LINE relay + tony lane are idc03-only. Apply the proven DR pattern (mddb-follower, caddy-edge,
-  ada-stt on con01): standby unit files, env/secrets sync path, caddy-edge failover route for /webhook/line,
-  doc restore steps. Size: multi-step infra work — dispatch or dedicated session.'
+  type: dispatch
+  repo: chaba
+  executor: devin
+  lane: paid_frontier
+  status: running
+  runner: tony-dell
+  attempts: 1
+note: 'LINE relay + tony lane are idc03-only. Apply the proven DR pattern (mddb-follower, caddy-edge, ada-stt on
+  con01): standby unit files, env/secrets sync path, caddy-edge failover route for /webhook/line, doc restore steps.
+  Size: multi-step infra work — dispatch or dedicated session.'
 ref: ADA-0784
 comms:
 - at: 2026-10-23 13:41
@@ -15,8 +21,7 @@ comms:
   text: carded by devin 2026-10-23 — scoped, needs dedicated run
 - at: 2026-10-23 13:41
   from: chaba
-  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve
-    in queue'
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
 - at: 2026-11-14 14:14
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -229,15 +234,59 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-26 20:47
   from: chaba
-  text: 'TRIAGE 2026-11-26: multi-step infra work (DR standby units + env/secret sync + caddy failover
-    + restore docs) — needs a dedicated session, not a bounded runner dispatch.'
+  text: 'TRIAGE 2026-11-26: multi-step infra work (DR standby units + env/secret sync + caddy failover + restore
+    docs) — needs a dedicated session, not a bounded runner dispatch.'
 - at: 2026-11-26 21:12
   from: chaba
   text: 'WARM STANDBY STAGED on con01 (2026-11-26, dedicated session). Repo: stacks/con01/{ada-line-relay,ada-ha-tony}/{stack.yml,*.service.standby},
     ansible/playbooks/deploy-con01-ada-warm-standby.yml, docs/kb/con01-ada-lane-warm-standby.md, docs/ssot/jobs/infrastructure/2026-11-26-con01-ada-lane-warm-standby.yml.
-    Ansible-first: targets confirmed from ssot.audit.hosts.yml + inventory; --check --diff --limit con01
-    clean (0 unreachable/0 failed); converged --limit con01, idempotent (changed=0). On host: 2'
+    Ansible-first: targets confirmed from ssot.audit.hosts.yml + inventory; --check --diff --limit con01 clean (0
+    unreachable/0 failed); converged --limit con01, idempotent (changed=0). On host: 2'
 - at: 2026-11-27 13:23
   from: backlog-spec-enrich
-  text: skipped — The card notes indicate warm standby was already staged, converged, and documented on
-    con01 during a dedicated session on 2026-11-26.
+  text: skipped — The card notes indicate warm standby was already staged, converged, and documented on con01 during
+    a dedicated session on 2026-11-26.
+- at: 2026-11-27 14:19
+  from: tony
+  text: '[next batch 2026-11-27] Re-arm as approval-gated DR preparation: draft standby units + secrets-sync path
+    on a branch, no host changes before approval.'
+- at: 2026-11-27 14:19
+  from: tony
+  text: queue skipped — action.type=manual — human-owned work, not runner-dispatchable
+- at: 2026-11-27 14:19
+  from: chaba
+  text: action.type=manual — human-owned work, not runner-dispatchable
+- at: 2026-11-27 14:19
+  from: tony
+  text: queue skipped — action.type=manual — human-owned work, not runner-dispatchable
+- at: 2026-11-27 14:19
+  from: chaba
+  text: action.type=manual — human-owned work, not runner-dispatchable
+- at: 2026-11-27 14:19
+  from: tony
+  text: re-spawned from report page
+- at: 2026-11-27 14:20
+  from: tony-dell
+  text: claimed
+- at: 2026-11-27 14:20
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.58 > 0.7)'
+- at: 2026-11-27 14:21
+  from: chaba
+  text: started devin-task-20261127-142108-con01-warm-standby-for-ada-lin on tony-dell (dispatch executor=devin)
+- at: 2026-11-27 14:21
+  from: chaba
+  text: 'primer injected 8 lesson(s): runbook docs/kb/con01-ada-lane-warm-standby.md: con01 warm standby — ada-line-re;
+    [con01-ada-lane-warm-standby] WARM STANDBY STAGED on con01 (2026-11-26, dedicate; [gemini-proxy-quadlet-envfile-drop]
+    primer injected 8 lesson(s): Job secrets pat; [gemini-eval-judge-lane] primer injected 8 lesson(s): Job secrets
+    pattern: `env_; [audit-miss-cms-page-devin-session-audit-2026-10-17] primer injected 8 lesson(s); [gemini-proxy-live-repo-divergence]
+    primer injected 8 lesson('
+- at: 2026-11-27 14:21
+  from: chaba
+  text: 'con01 defers: runner at local cap (1/1) — remote slots unaffected'
+- at: 2026-11-27 14:22
+  from: devin
+  text: dispatch picked up the card again — prior session staged everything 2026-11-26 (masked standby units, playbook,
+    runbook). Verifying on-host state is still intact + checking for drift before closing.
+claim:
+  since: 2026-11-27 14:20

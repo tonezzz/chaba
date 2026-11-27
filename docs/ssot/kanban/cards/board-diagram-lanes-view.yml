@@ -1,7 +1,7 @@
 id: board-diagram-lanes-view
 title: 'Board: finish /apps/board-diagram lane view — prototype exists, needs commit+deploy+tab+controls'
-column: backlog
-updated: 2026-11-26 20:30
+column: doing
+updated: 2026-11-27 14:19
 brief: Lane/sub lane diagram of kanban cards per project, starting with Adobe Stock; Tony wants a mental image of
   project flow and manual control (claim/move/finish) without n8n.
 priority: high
@@ -230,9 +230,43 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-27 14:17
+  from: tony
+  text: '[next batch 2026-11-27] Re-arm for dispatch. Prototype files are uncommitted on tony-macbook at ~/CascadeProjects/chaba/stacks/web/public/apps/board-diagram/
+    plus route/Caddyfile edits. COPY them into your worktree (do not delete or overwrite anything on tony-macbook),
+    commit, add the tab and claim/move/finish controls, deploy to the served web stack, and verify the page renders
+    live.'
+- at: 2026-11-27 14:17
+  from: chaba
+  text: classified as manual (jevos conf 0.62)
+- at: 2026-11-27 14:18
+  from: chaba
+  text: classified as manual (jevos conf 0.62)
+- at: 2026-11-27 14:18
+  from: tony
+  text: 'routing edited: lane=paid_frontier, executor=devin by tony: re-arm for next batch 2026-11-27'
+- at: 2026-11-27 14:18
+  from: tony
+  text: queued for processing
+- at: 2026-11-27 14:18
+  from: idc02
+  text: claimed
+- at: 2026-11-27 14:19
+  from: chaba
+  text: started devin-task-20261127-141928-prototype-already-exists-uncom on idc02 (dispatch executor=devin)
+- at: 2026-11-27 14:19
+  from: chaba
+  text: 'primer injected 8 lesson(s): [idc02-exec-checkout-117-staged-files-of-70de51] auto-merge not done: push:
+    Auth; 12 tests/board failures on this host are environmental, not code: missing genera; [chaba-exec-checkout-idc02-dirty-files]
+    DECISION 2026-11-24: all 7 code/WIP file; runbook docs/kb/board-static-deploy.md: Deploying board / board2 static
+    UI chang; A dispatch that edits files OUTSIDE its worktree (live /home/tony/ansible on idc; board-api derives
+    REPO from `__file__`, so bind-mounting the '
 action:
   type: dispatch
-  status: idle
-  lane: manual
-  lane_source: jevos
-claim: {}
+  status: running
+  lane: paid_frontier
+  executor: devin
+  runner: idc02
+  attempts: 1
+claim:
+  since: 2026-11-27 14:18

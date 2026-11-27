@@ -1,7 +1,7 @@
 id: mddb-ops-write-congestion-stagger-timers
 title: mddb-ops write congestion waves — investigate + stagger fleet shipper timers
-column: doing
-updated: 2026-11-27 13:56
+column: review
+updated: 2026-11-27 14:20
 priority: medium
 tags:
 - ops
@@ -72,9 +72,61 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261127-131736-follow-up-from-ops-1497-log-sh no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-27 13:56
+  from: chaba
+  text: 'merge-sweep: merged a38522d8 (dispatch/20261127-131736-follow-up-from-ops-1497-log-sh from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261127-131736-follow-up-from-ops-1497-log-sh.md)
+    — held in review (open request(s) [''mddb-ops-deletewhere-drain-loo''] block close)'
+- at: 2026-11-27 13:56
+  from: local
+  text: 'pub milestone: card verified: mddb-ops-write-congestion-stagger-timers on idc03 — merged a38522d8 (dispatch/20261127-131736-follow-up-from-ops-1497-log-sh
+    from idc02) -> origin/master — verified — held — merged a38522d8 (dispatch/20261127-131736-follow-up-from-ops-1497-log-sh
+    from idc02) -> origin/master — verified — held in review (open request(s) [''mddb-ops-de [evt-d0014238f3da5587]'
+- at: 2026-11-27 13:56
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-131736-follow-up-from-ops-1497-log-sh,
+    branch dispatch/20261127-131736-follow-up-from-ops-1497-log-sh on idc02'
+- at: 2026-11-27 13:58
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 13:58
+  from: chaba
+  text: banked 797 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-27 13:58
+  from: chaba
+  text: 'branch push failed: fatal: cannot change to ''/home/tony/CascadeProjects/dispatch-wt-20261127-131736-follow-up-from-ops-1497-log-sh'':
+    No such file or directory'
+- at: 2026-11-27 13:58
+  from: chaba
+  text: 'push failed AND patch-relay failed: bundle: cannot pin session head to a ref — rescue the branch by hand'
+- at: 2026-11-27 13:58
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_board_api_liveness.py tests/board/test_kanban_act.py
+    tests/board/test_wiki_extension.py tests/board/test_board_ap
+- at: 2026-11-27 13:58
+  from: chaba
+  text: auto-merged a38522d8 (dispatch/20261127-131736-follow-up-from-ops-1497-log-sh) → origin/master
+- at: 2026-11-27 13:59
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''mddb-ops-deletewhere-drain-loo''] block close)'
+- at: 2026-11-27 14:20
+  from: tony
+  text: 'answered mddb-ops-deletewhere-drain-loop-on-idc03-acf48f: APPROVED (Tony 2026-11-27, re-confirming A from
+    the A+B decision on OPS-1500). Kill the detached drain loop PID 3862968 on idc03 NOW (client-side only, no MDDB
+    service/data change). It is still alive '
+- at: 2026-11-27 14:20
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-27 14:20
+  from: tony
+  text: 'Tony re-approved: kill PID 3862968 immediately. Verified live it is still running (3h31m, PPID=1) with
+    a child prune-old-docs.py. Please execute and report.'
 action:
   type: dispatch
-  status: running
+  status: done
   task_class: report_triage
   executor: claude
   executor_source: queue
@@ -82,6 +134,8 @@ action:
   attempts: 1
   sweep:
     stale_running: 2026-11-27 13:56
+    close_held: 2026-11-27 13:59
+  verified: true
 claim:
   since: 2026-11-27 13:16
 requests:
@@ -94,9 +148,14 @@ requests:
     kill it, wait for this branch merge, redeploy backoff-fixed prune-old-docs.py to idc03 exec checkout, restart
     drain bounded (e.g. budget 1800 + longer sleep, or only in low-traffic window). Recommend C with A as immediate
     relief if you want the storm stopped now. Which do you want?'
-  status: open
+  status: answered
   at: 2026-11-27 13:43
   from: devin
   options:
   - proceed
   - hold
+  answer: APPROVED (Tony 2026-11-27, re-confirming A from the A+B decision on OPS-1500). Kill the detached drain
+    loop PID 3862968 on idc03 NOW (client-side only, no MDDB service/data change). It is still alive after 3h31m
+    and still starving ops-DB writes. Verify /add latency recovers and log-shipper heartbeats succeed, then report
+    here. Do not proceed to the offline compact until a separate window is approved.
+awaiting_action: true

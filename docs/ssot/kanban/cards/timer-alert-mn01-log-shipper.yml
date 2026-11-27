@@ -1,7 +1,7 @@
 id: timer-alert-mn01-log-shipper
 title: Timer log-shipper on mn01 failing
-column: done
-updated: 2026-11-27 13:14
+column: backlog
+updated: 2026-11-27 14:14
 priority: high
 tags:
 - timer-alert
@@ -406,6 +406,17 @@ comms:
     is NOT the heartbeat bug: it hit TimeoutStartSec=45min draining a backlog (1846 matched, shipped 1360, 0 failed
     — cursor checkpointed, ship/mn01 fresh 06:11Z failed:0). Re-triggered to drain remainder (~500 docs); will close
     if it finishes green, otherwise next hourly run completes it. Leaving open — honest timeout, not false failure.'
+- at: 2026-11-27 14:05
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-27 14:05
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-27 13:59) of `log-shipper.service` on `mn01` result=timeout
+    — investigate journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-mn01`.'
+- at: 2026-11-27 14:14
+  from: devin
+  text: '[still suspicious] Last run (11-27 13:59) of `log-shipper.service` on `mn01` result=timeout — investigate
+    journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-mn01`.'
 action:
   status: done
 spec: Investigate the timeout failure of `log-shipper.service` on host mn01 by checking the systemd journal via

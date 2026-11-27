@@ -1,7 +1,7 @@
 id: oswe-eval-ada-test-tab
 title: Self-deploy OpenSWE (Robin) on tony-dell + Ada Test tab on ada-ha
-column: backlog
-updated: 2026-11-26 21:13
+column: doing
+updated: 2026-11-27 14:22
 brief: Evaluate OpenSWE/Robin; self-deploy on tony-dell dev-mode, expose like ada-ocb, add 'Ada Test' sidebar tab
   (OSWE first) on ada-ha chaba-admin.
 priority: medium
@@ -294,6 +294,41 @@ comms:
     mda :2025 up, langgraph :2024 down. oswe.surf-thailand.com has no DNS/CF Access/caddy route — tab staged, will
     error until creds+edge approved. Eval tasks not run. Commit blocked by role=exec guard; changes in working tree.
     Rollback: re-push 17-view config; dev ports clear.'
+- at: 2026-11-27 14:19
+  from: tony
+  text: '[next batch 2026-11-27] Re-arm as research/evaluation only - no deploy, no SSOT/board changes, open approval
+    request if implementation is recommended.'
+- at: 2026-11-27 14:19
+  from: chaba
+  text: classified as free_lane (kw:evaluate conf 1.00)
+- at: 2026-11-27 14:19
+  from: tony
+  text: queued for processing
+- at: 2026-11-27 14:19
+  from: con01
+  text: claimed
+- at: 2026-11-27 14:20
+  from: chaba
+  text: 'tony-dell defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged
+    — the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-27 14:20
+  from: chaba
+  text: 'idc02 defers: lane free_lane resolves to the opencode executor but action.lane_envelope is not staged —
+    the card stays queued for a staged envelope or an executor=devin pin (unstaged dispatch is held, not attempt-burned)'
+- at: 2026-11-27 14:21
+  from: chaba
+  text: started devin-task-20261127-142131-tony-decision-2026-11-12-evalu on con01 (dispatch)
+- at: 2026-11-27 14:21
+  from: chaba
+  text: 'primer injected 8 lesson(s): [oswe-eval-ada-test-tab] LangSmith naming recommendation: Organization ''Chaba
+    La; [oswe-eval-ada-test-tab] Durable follow-up 2026-11-13: no OpenSWE/Robin Educatio; idc03 deploy-ada.sh fetches
+    `origin` = tony-dell''s LOCAL checkout path, not GitH; [education-lesson-no-th-marker-readback] checkpoint failed:
+    commit: ⚠️ pytest no; [idle-qa-and-backups-idc] DONE. Premise was stale: qc-scoreboard already on idc0; [timer-alert-tony-omen-chaba-audit]
+    2026-11-13: exit 1 after '
+- at: 2026-11-27 14:22
+  from: devin
+  text: 'dispatch 2026-11-27 14:21: gates now SET on tony-dell .env (Anthropic/GitHub App/Slack all filled since
+    last run). Booting dev stack: postgres + langgraph :2024 + mda :2025, then edge/tab verification.'
 requests:
 - id: 4-gated-items-needed-to-boot-robin-optio-41e2b0
   ask: '4 gated items needed to boot Robin (options in spec): (1) LangSmith account + API key — agent loop + cloud
@@ -312,4 +347,12 @@ requests:
   - Hold — I'll do the account setup myself later
   suggested: Provide all 4 — I'll continue wiring
   answer: Provide all 4 — I'll continue wiring
-awaiting_action: true
+action:
+  type: dispatch
+  status: running
+  lane: free_lane
+  lane_source: kw
+  runner: con01
+  attempts: 1
+claim:
+  since: 2026-11-27 14:19
