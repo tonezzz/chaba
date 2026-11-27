@@ -44,6 +44,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import card_io
+import dispatch_repos as dr
 
 def _act(card: dict) -> dict:
     """card['action'] read accessor — schema says dict, but marker cards
@@ -179,17 +180,43 @@ def check_cards():
             if age_d > DOING_STALE_D:
                 finds["S2"].append(
                     f"{cid}: doing, no action, last comm {age_d}d ago")
-        if act.get("status") == "queued" \
-                and str(act.get("type") or "dispatch") != "dispatch":
-            upd = _ts(c.get("updated"))
-            age_h = ((now - upd).total_seconds() / 3600
-                     if upd else QUEUED_STARVE_H + 1)
-            if age_h > QUEUED_STARVE_H:
-                finds["Q1"].append(
-                    f"{cid}: queued {age_h/24:.1f}d but action.type="
-                    f"{act.get('type')!r} — kanban-dispatch claims "
-                    "type=dispatch only (starved)")
+        if act.get("status") == "queued":
+            why = _queue_block_reason(act)
+            if not why and str(act.get("type") or "dispatch") \
+                    != "dispatch":
+                why = ("action.type=%r — kanban-dispatch claims "
+                       "type=dispatch only" % (act.get("type"),))
+            if why:
+                upd = _ts(c.get("updated"))
+                age_h = ((now - upd).total_seconds() / 3600
+                         if upd else QUEUED_STARVE_H + 1)
+                if age_h > QUEUED_STARVE_H:
+                    finds["Q1"].append(
+                        f"{cid}: queued {age_h/24:.1f}d but {why} "
+                        "(starved)")
     return finds
+
+
+def _queue_block_reason(act: dict) -> str:
+    """Why a queued card can never be claimed — the hard gates shared by
+    board-api queue_wait_reason and runner-agent._claimable: manual
+    executor/lane/type is Tony's hands, an unknown executor fails closed,
+    and a type outside dispatch_repos.SERVED_TYPES has no unattended
+    executor at all. '' when some runner contract might serve it."""
+    ex = str(act.get("executor") or "").strip()
+    ln = str(act.get("lane") or "").strip()
+    typ = str(act.get("type") or "dispatch")
+    if ex == "manual":
+        return "action.executor=manual — Tony's hands"
+    if ex and ex not in dr.EXECUTORS:
+        return f"action.executor={ex!r} unknown — fail-closed"
+    if ln == "manual":
+        return "action.lane=manual — Tony's hands"
+    if typ == "manual":
+        return "action.type=manual — human-owned"
+    if typ not in dr.SERVED_TYPES:
+        return f"action.type={typ!r} — no unattended executor"
+    return ""
 
 
 def write_alerts(finds):

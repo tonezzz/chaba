@@ -1,0 +1,82 @@
+id: kanban-queue-truth-board-surfaces-20261127
+title: Queue truth — Board surfaces + Q1 invariant close the remaining gaps
+date: 2026-11-27
+card: kanban-queue-manual-handoff
+ref: KNB-0013
+host: tony-dell (dispatch worktree)
+status: landed-on-dispatch-branch
+
+goal: >
+  Follow-up pass on the 2026-11-20 queue-truth fix (33a06385718): Tony
+  re-spawned the card 2026-11-27 08:32 to verify/finish it. The
+  write-door invariant and GET /queue human_waiting split were already
+  live; this pass closes the display/detection residue — Board showed
+  awaiting_action cards nowhere (board2) or with a wrong label (board1),
+  and board-invariants Q1 only caught type!=dispatch, missing
+  executor=manual / lane=manual / unknown-executor queued cards.
+
+what-landed:
+  scripts/render-board2.py:
+    - >-
+      Needs Tony band now lists awaiting_action cards not already covered
+      by an open request/ask, rendered with owner + reason + next action
+      (waitInfoAct mirrors board-api queue_wait_reason/_wait_kind:
+      human -> owner tony, unserved -> owner chaba, else generic triage).
+      In-flight statuses (queued/running/claimed/starting/verifying/
+      stalled) and done-column cards are excluded. nyItemKey unifies the
+      flash/count keys so wait rows can't crash the poll render; the ny
+      pill counts the same rows the band shows.
+    - >-
+      Card-cycle pane claim reason: a queued card that waitInfoAct marks
+      human/unserved reads "queued but <reason>" instead of plain "queued";
+      awaiting_action pane rows show the real wait reason when present.
+    - >-
+      Modal "Start" (queue) button suppressed when waitInfoAct kind is
+      human/unserved — the write door would refuse anyway.
+  scripts/render-board.py:
+    - >-
+      Classic board needs-you "answered" rows show waitReason() — the same
+      human/unserved reason + owner — instead of always "answer recorded —
+      needs triage", and the "queue it" button is suppressed for
+      human-waiting cards.
+  scripts/board/board-invariants.py:
+    - >-
+      Q1 extended from "type != dispatch" to the full never-claimable
+      contract via _queue_block_reason (executor=manual, unknown executor
+      fail-closed, lane=manual, type=manual, type outside
+      dispatch_repos.SERVED_TYPES); the legacy non-dispatch flag is kept
+      for container/script. Same 24h QUEUED_STARVE_H grace.
+  scripts/board/board-api.py:
+    - >-
+      do=finish failure auto-retry now checks queue_wait_reason first —
+      a human-owned card that somehow reached running parks at
+      idle+awaiting_action instead of being re-armed to queued.
+  tests/board/test_board_invariants.py: new — Q1 findings for manual
+    type/executor/lane, unserved type, unknown executor; claimable and
+    in-grace cards stay clean; _queue_block_reason parity.
+  tests/board/test_control_pane_projection.py: contract assertions for the
+    needs-you wait surface on both board renderers.
+  docs/kb/board-api-write-door.md: queue-truth section extended with the
+    auto-retry guard, Board surfaces, and Q1 coverage.
+
+verified: >-
+  pytest tests/board/test_queue_starvation.py 29 passed;
+  pytest tests/board/test_board_invariants.py 6 passed;
+  pytest tests/board/test_control_pane_projection.py 8 passed;
+  focused board suite (queue-starvation + invariants + control-pane +
+  answer-sweep + executor-contract) 211 passed, 17 subtests;
+  board-api --selftest ok; node --check clean on both rendered pages;
+  node harness over nyItems/waitInfoAct confirmed correct kind+owner and
+  no duplicate rows; live GET /queue on idc03 returns
+  counts {queued:0, human_waiting:0, claimed:7}; repo scan found zero
+  cards at action.status=queued.
+
+residual: >-
+  kanban-dispatch requeue_dead/_fail_or_requeue/merge_pending_one and
+  merge-sweep fail_attempt auto-requeue paths carry no human-wait guard —
+  unreachable in practice (they require a prior claim/run, which manual
+  cards can't get through any door); a mid-run type flip via YAML bypass
+  could still leave one queued, which /queue human_waiting + Q1 then
+  surface truthfully. ADA-0783 (ada-text-model-promotion-path) resolved
+  itself: re-armed as type=dispatch 2026-11-26, ran, done+verified;
+  promotion decision stayed with Tony per card note.

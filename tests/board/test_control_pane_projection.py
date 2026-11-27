@@ -156,3 +156,23 @@ def test_pane_data_contract_on_board_payload():
     assert k["column"] in ("backlog", "doing", "review", "done", "lab")
     for f in fields:
         assert f in k
+
+
+def test_needs_you_surfaces_human_waiting_queue_truth():
+    # kanban-queue-manual-handoff: the write door parks human-owned work at
+    # awaiting_action instead of action.status=queued — the Board must
+    # surface it in Needs Tony with owner + reason + next action, mirroring
+    # GET /queue's human_waiting rows, or the card is invisible.
+    src = (REPO / "scripts/render-board2.py").read_text()
+    for marker in ("function waitInfoAct", "function waitInfo(",
+                   "function nyItemKey", "{c, wait: true}",
+                   "owner: ", "not runner-dispatchable",
+                   "no unattended executor"):
+        assert marker in src
+    # claim-reason pane must not read a queued-but-unclaimable card as
+    # ordinary queued work
+    assert "queued but " in src
+    # the classic board labels the same wait instead of a generic note
+    classic = (REPO / "scripts/render-board.py").read_text()
+    assert "function waitReason" in classic
+    assert "not runner-dispatchable" in classic
