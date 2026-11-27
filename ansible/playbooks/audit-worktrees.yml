@@ -113,6 +113,12 @@
           role: dispatch
           served: false
           allowed_dirty: []
+    # chaba-tony-dell is the readonly mirror on tony-dell but the served
+    # writer on idc03 (install-hooks.sh writes the matching chaba-role
+    # marker). Expecting readonly everywhere makes idc03 a false positive.
+    wt_role_overrides:
+      idc03:
+        "$HOME/CascadeProjects/chaba-tony-dell": served
 
   pre_tasks:
     - name: Report controller detection
@@ -160,6 +166,14 @@
         for entry in POL.get("checkouts") or []:
             if entry.get("path"):
                 policy_by_path[expand(entry["path"])] = entry
+        # Per-host role expectations (e.g. the served writer on idc03
+        # vs the tony-dell readonly mirror of the same path).
+        try:
+            host_role_policy = json.loads(os.environ.get("WT_ROLE_OVERRIDES", "{}"))
+        except Exception:
+            host_role_policy = {}
+        role_overrides = {expand(k): v
+                          for k, v in (host_role_policy.get(HOST) or {}).items()}
 
         # Discovery: known checkout globs + every registered worktree of the
         # primary checkout (catches /tmp/opencode dispatch worktrees too).
@@ -245,7 +259,7 @@
                 "detached": detached,
                 "head": head,
                 "role": role,
-                "declared_role": pol.get("role", ""),
+                "declared_role": role_overrides.get(p, pol.get("role", "")),
                 "served": bool(pol.get("served", False)),
                 "hooks": hooks,
                 "upstream": up,
@@ -266,6 +280,7 @@
         PYEOF
       environment:
         WT_POLICY_JSON: "{{ wt_policy | to_json }}"
+        WT_ROLE_OVERRIDES: "{{ wt_role_overrides | to_json }}"
         WT_HOST: "{{ inventory_hostname }}"
       register: wt_probe_raw
       changed_when: false
