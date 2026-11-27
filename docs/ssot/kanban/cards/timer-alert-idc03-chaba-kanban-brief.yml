@@ -1,7 +1,7 @@
 id: timer-alert-idc03-chaba-kanban-brief
 title: Timer chaba-kanban-brief on idc03 failing
 column: backlog
-updated: 2026-11-27 18:10
+updated: 2026-11-27 18:15
 priority: high
 tags:
 - timer-alert
@@ -258,5 +258,9 @@ comms:
     hit RuntimeMax and TERMd it at 17:56 (Result=timeout). This is a recurrence: the 17:22 run succeeded and the
     card was auto-closed at 17:35. mddb /v1/health is 200, idc03 load 4.0/10.8/27.4 (still elevated). Next tick
     18:19; if it times out again, queue a bounded-retry/timeout fix for '
+- at: 2026-11-27 18:15
+  from: devin
+  text: '[still suspicious] Last run (11-27 17:56) of `chaba-kanban-brief.service` on `idc03` result=timeout — investigate
+    journal: `journalctl --user -u chaba-kanban-brief.service` on the host. See CMS `timer-timeline-idc03`.'
 action:
   status: done
