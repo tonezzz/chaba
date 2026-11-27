@@ -1,7 +1,7 @@
 id: yomi-update-conversations-missing-imports
 title: Yomi summaries fail — missing summary-utils imports in update-conversations.mjs
 column: doing
-updated: 2026-11-27 15:34
+updated: 2026-11-27 15:37
 brief: yomi-update-all writes conversations but every summary fails with "validateAndTruncateContext is not defined".
   Three symbols used but not imported in update-conversations.mjs; all exported by summary-utils.mjs. Import-only
   fix.
@@ -70,6 +70,12 @@ comms:
     DONE. Premise was stale: qc-scoreboard already on idc0; [ops-kanban-commit-guard] [root cause + fix 17:28 +07]
     Not a lifecycle bounce. S; [yomi-line-session-expired-idc03] primer injected 8 lesson(s): [yomi-update-acti;
     line-chat-timeline''s live unit runs `~/.local/bin/` copy, not'
+- at: 2026-11-27 15:37
+  from: devin
+  text: 'Fix applied in dispatch worktree: added validateAndTruncateContext, getContextLengthStatus, LLAMA_REQUEST_TIMEOUT
+    to the summary-utils.mjs named import in scripts/yomi/update-conversations.mjs (matches process-conversations.mjs).
+    Verified: node --check OK; all three symbols confirmed exported by summary-utils.mjs. Committed on dispatch
+    branch — needs merge + idc03 served-checkout pull before the next yomi-update-all picks it up.'
 ref: OPS-1505
 claim:
   since: 2026-11-27 15:33
