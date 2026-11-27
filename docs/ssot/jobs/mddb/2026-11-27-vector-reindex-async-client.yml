@@ -1,0 +1,106 @@
+id: vector-reindex-async-client-20261127
+title: vector-reindex.py phase-1 — async jobs + bounded sweep (OPS-1515 follow-up)
+date: 2026-11-27
+card: vector-reindex-async-jobs-bounded-sweep
+ref: OPS-1515, MEM-1518, triage docs/ssot/jobs/mddb/2026-11-27-vector-reindex-batch-triage.yml
+status: implemented + live-verified (client-only; no mddb server change)
+
+summary: |
+  Rewrote scripts/mddb/vector-reindex.py to drive async reindex jobs
+  (POST /v1/vector-reindex {collection, async:true} -> 202 {jobId}, poll
+  GET /v1/vector-reindex/jobs/{id}) per the OPS-1515 triage phase-1
+  recommendation. Deployed mddb 2.18.10 already supports the API
+  (verified live). Client-only change — no server upgrade needed.
+
+changes:
+  async_jobs: >-
+    Per-collection POST {async:true} then poll to terminal status
+    (queued|running -> completed|failed). HTTP request no longer bounds
+    work; the 64 x sync-call timeout blowout is gone.
+  ordering: >-
+    Collections sorted by /v1/stats documentCount ASCENDING — the
+    153k-doc ada-ha-bank-devin-handoff runs last so a budget-exhausted
+    sweep still covers everything else.
+  bounded_sweep: >-
+    MDDB_REINDEX_SWEEP_BUDGET (default 2400s, inside the 45-min unit
+    budget) + MDDB_REINDEX_LAUNCH_MARGIN (default 300s): no new jobs
+    launch inside the last ~5 min of the sweep window. In-flight jobs
+    continue server-side (no cancel endpoint exists anyway).
+  per_job_deadline: >-
+    MDDB_REINDEX_JOB_TIMEOUT (default 900s, falls back to legacy
+    MDDB_REINDEX_TIMEOUT) capped by the sweep deadline — on expiry the
+    collection is marked deferred and the sweep continues.
+  failure_isolation: >-
+    Per-collection ops-event (type vector_reindex_failed, meta.collection
+    set) emitted IMMEDIATELY when a job completes failed>0 or has
+    errors[] — with a 3-entry errors[] sample the old sync path
+    discarded. Summary event (type vector_reindex, unchanged) lists
+    per-collection results + unattempted/deferred collections
+    explicitly; exit 1 only on real failures, 0 on budget deferrals.
+  attach_active: >-
+    On start GET /v1/vector-reindex/jobs; collections with a
+    queued|running job are polled instead of POSTed (no 409). A 409 on
+    launch (lost race) re-lists jobs and attaches to the winner.
+    "lost" (404 mid-poll = leader restart forgot in-memory jobs) is
+    recorded as an error, not retried forever.
+  env: >-
+    MDDB_REINDEX_HEALTH_WAIT / MDDB_BASE_URL / MDDB_OPS_URL /
+    ADA_OPS_COLLECTION unchanged. New: MDDB_REINDEX_SWEEP_BUDGET,
+    MDDB_REINDEX_LAUNCH_MARGIN, MDDB_REINDEX_JOB_TIMEOUT,
+    MDDB_REINDEX_POLL_INTERVAL. MDDB_REINDEX_TIMEOUT still honored as
+    JOB_TIMEOUT fallback (con01 unit sets 1800). MDDB_REINDEX_MAX_CONCURRENT
+    deliberately NOT used — GO-054 slots need mddb >=2.19.8, deployed
+    2.18.10 has unlimited slots so the client serializes.
+
+live_verify_2026-11-27:
+  run: >-
+    Bounded live run from idc02 worktree against leader :11023 with
+    SWEEP_BUDGET=90s LAUNCH_MARGIN=30s JOB_TIMEOUT=30s POLL=3s —
+    38/64 collections attempted in the launch window, 26 unattempted
+    (incl. ada-ha-bank-devin-handoff 153,490 docs, last by design).
+  events: >-
+    Confirmed in ada-ha-events-tony via mddb-ops :11025: two
+    vector_reindex_failed events (ada-ha-snapshots-ada failed=1,
+    ada-cms-pages failed=3 — real ollama 504 "no upstream answered in
+    time" embed errors, errors[] samples preserved) and the PARTIAL
+    summary event ops-vector-reindex-vector_reindex-20261127221002-2692
+    with full per-collection lines.
+  mocked_tests: >-
+    Throwaway stubbed-HTTP tests verified: ASC ordering, active-job
+    attach (no POST), 409->attach-to-rival, poll-deadline deferral,
+    launch-cutoff unattempted, immediate failure event with errors[]
+    sample, summary content, exit codes (1 on failures, 0 on
+    deferral-only).
+
+findings:
+  - >-
+    Live run surfaced REAL embed failures the old script hid: 4 docs
+    across ada-ha-snapshots-ada + ada-cms-pages failed with ollama 504
+    "no upstream answered in time" — provider-side flakiness visible
+    for the first time thanks to errors[] preservation.
+  - >-
+    ada-ha-bank-devin-handoff grew to 153,490 docs (was 149,550 at
+    triage). Even async, its ~153k per-doc bolt-tx scan likely exceeds
+    any single-run window — phase 2/3 (server batching/sharding) still
+    needed for that collection specifically.
+  - >-
+    con01 unit env MDDB_REINDEX_TIMEOUT=1800 now maps to the per-job
+    poll deadline (capped by sweep deadline anyway) — no unit change
+    required, but ops may want to add MDDB_REINDEX_SWEEP_BUDGET=2400
+    explicitly for clarity (default already correct for 45-min unit).
+
+next: >-
+  Next con01 05:40 run exercises the full sweep. Watch first run for:
+  whether mid-size collections complete inside JOB_TIMEOUT, whether the
+  giant defers nightly (expected — it continues server-side and is
+  attached next run if still active), and whether vector_reindex_failed
+  events correlate with embed-provider circuit state.
+
+rollback: >-
+  git revert the vector-reindex.py change; the sync path is fully
+  replaced (no dual-mode flag kept — async API verified on deployed
+  version, rollback only needed if mddb is downgraded below 2.18.4).
+
+lessons:
+  - "mddb /v1/search filterMeta queries return arbitrary subsets under limit — verify event docs by exact key or larger limit + client-side filter"
+  - "ops-event keys needed a ms suffix once per-collection events can fire multiple times per second (same type+second would collide)"
