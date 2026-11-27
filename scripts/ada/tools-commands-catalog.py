@@ -58,7 +58,17 @@ OUT_MD = REPO / "docs" / "kb" / "ada-tools-commands.md"
 OUT_JSON = REPO / "docs" / "kb" / "ada-tools-commands.json"
 
 GEN_LINE_RE = re.compile(r"^Generated:.*$", re.M)
-GEN_JSON_RE = re.compile(r'"generated_at":\s*"[^"]*"')
+# md "Source: ada-voice@<head> (<date>)" — same provenance class as the
+# normalized JSON keys; only declaration content should gate --check.
+GEN_SRC_RE = re.compile(r"ada-voice@[0-9a-f?]+ \([^)]*\)")
+GEN_JSON_RE = re.compile(
+    # Provenance is informational, not declaration content: generated_at
+    # drifts every run; source.{head,head_date} move on any ada-voice
+    # commit — decl change or not; source.path is the machine's own
+    # checkout path; source.behind is the local upstream count. All four
+    # must not make --check cry STALE on identical declaration content
+    # (Devin Review PR #253).
+    r'"(?:generated_at|head|head_date|path|behind)":\s*"[^"]*"')
 
 
 # ---------------------------------------------------------------- AST
@@ -657,7 +667,8 @@ def render_json(data, now):
 def _stable(text):
     return GEN_JSON_RE.sub(
         '"generated_at": "<normalized>"',
-        GEN_LINE_RE.sub("Generated: <normalized>", text))
+        GEN_SRC_RE.sub("ada-voice@<normalized>",
+        GEN_LINE_RE.sub("Generated: <normalized>", text)))
 
 
 def main(argv=None):
