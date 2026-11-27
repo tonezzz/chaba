@@ -1,7 +1,7 @@
 id: timer-alert-mn01-runner-tools-converge
 title: Timer runner-tools-converge on mn01 failing
-column: done
-updated: 2026-11-27 09:03
+column: backlog
+updated: 2026-11-27 09:05
 priority: high
 tags:
 - timer-alert
@@ -31,6 +31,13 @@ comms:
 - at: 2026-11-27 09:03
   from: tony
   text: closed by tony
+- at: 2026-11-27 09:05
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-27 09:05
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-27 00:00) of `runner-tools-converge.service` on `mn01` result=exit-code
+    — investigate journal: `journalctl --user -u runner-tools-converge.service` on the host. See CMS `timer-timeline-mn01`.'
 spec: Investigate the failure of runner-tools-converge.service on mn01 resulting in an exit-code during the 11-27
   00:00 run, as noted in CMS timer-timeline-mn01. The goal is to inspect the user journal via journalctl --user
   -u runner-tools-converge.service on mn01, identify the root cause of the exit-code failure, and resolve or document
