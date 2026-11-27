@@ -1,7 +1,7 @@
 id: mddb-ops-write-latency-triage
 title: 'mddb-ops: diagnose /add + /ingest ~125s congestion waves (read-only, approval-gated)'
 column: doing
-updated: 2026-11-27 13:31
+updated: 2026-11-27 13:33
 brief: Next batch 2026-11-27 — 4 runner slots free.
 priority: high
 tags:
@@ -71,6 +71,13 @@ comms:
   from: devin
   text: 'raised request approval-needed-mddb-ops-write-congestio-f92e57: APPROVAL NEEDED — mddb-ops write congestion
     fix. Diagnosis posted as comment: detached drain loop PID 3862968 on idc03 ('
+- at: 2026-11-27 13:33
+  from: devin
+  text: 'DONE (read-only). Root cause: detached drain loop PID 3862968 on idc03 (while-true prune-old-docs.py --only
+    host-logs --budget-seconds 1800, started 10:48 by the prune-timeout fix dispatch) floods mddb-ops with orphaned
+    deleteWhere handlers (66-82min each, every call times out client-side at 110s) that convoy bbolt single write
+    tx -> /add//ingest 10-200s, fleet log shipping failing. Live probes: /add p50~14s p95~26s; /ingest 12.8s; reads
+    fine. Backlog: 387,737 expired host-logs docs; net drain ~'
 claim:
   since: 2026-11-27 12:58
 requests:
