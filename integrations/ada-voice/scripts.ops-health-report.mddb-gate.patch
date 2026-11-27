@@ -1,0 +1,83 @@
+--- a/scripts/ops-health-report.py
++++ b/scripts/ops-health-report.py
+@@ -6,7 +6,7 @@
+ systemone, embed proxy. Counts systemd restart churn (restarts in 24h —
+ the crash-loop signal a single is-active check misses).
+ """
+-import json, subprocess, sys, time, urllib.request
++import http.client, json, subprocess, sys, time, urllib.error, urllib.request
+ from datetime import datetime, timezone
+ from pathlib import Path
+ 
+@@ -105,10 +105,68 @@
+     lines.append(f"| {s['unit']} | {s['active']} | {s['restarts_24h']}{s['flag']} |")
+ md = "\n".join(lines)
+ 
++# mddb's early health listener answers /health + /v1/health during startup
++# but 404s every other route until 'mddb HTTP listening' — ~104s observed
++# after an OOM-kill restart on idc03 (2026-11-27). Gate posts on that
++# signal; /add keys are deterministic upserts so a retried write is
++# idempotent (card mddb-idc03-oom-coldstart-publisher-window).
++READY_BUDGET_S = 200
++READY_POLL_S = 5
++
++_TRANSPORT_ERRORS = (
++    urllib.error.URLError,
++    http.client.RemoteDisconnected,
++    http.client.IncompleteRead,
++    ConnectionResetError,
++    ConnectionAbortedError,
++    TimeoutError,
++)
++
++
++def _healthy(base, timeout=5):
++    try:
++        with urllib.request.urlopen(base + "/health", timeout=timeout) as r:
++            return r.status == 200
++    except Exception:
++        return False
++
++
++def wait_ready(base, budget=READY_BUDGET_S):
++    """Poll {base}/health until ready or the budget expires."""
++    deadline = time.time() + budget
++    while time.time() < deadline:
++        if _healthy(base):
++            return True
++        time.sleep(READY_POLL_S)
++    return _healthy(base)
++
++
+ def post(path, payload):
+-    req = urllib.request.Request(MDDB + path, data=json.dumps(payload).encode(),
+-                                 headers={"Content-Type": "application/json"})
+-    return json.loads(urllib.request.urlopen(req, timeout=60).read())
++    """POST /v1/<path> with cold-start gating + bounded transport retry.
++
++    Two outer attempts: wait for /v1/health to report ready, then POST
++    (timeout 130 > mddb-ops' 120s write deadline so the client sees the
++    server's verdict — OPS-1497). HTTP errors other than the warmup 404
++    raise immediately; transport failures get one readiness-gated retry.
++    """
++    last = None
++    for _ in range(2):
++        if not _healthy(MDDB) and not wait_ready(MDDB):
++            break
++        try:
++            req = urllib.request.Request(
++                MDDB + path, data=json.dumps(payload).encode(),
++                headers={"Content-Type": "application/json"})
++            return json.loads(urllib.request.urlopen(req, timeout=130).read())
++        except urllib.error.HTTPError as e:
++            if e.code != 404:
++                raise
++            last = e
++        except _TRANSPORT_ERRORS as e:
++            last = e
++    if last is None:
++        raise RuntimeError(f"mddb {MDDB} not ready within {READY_BUDGET_S}s")
++    raise last
+ 
+ ts = NOW.strftime("%Y%m%d-%H%M%S")
+ meta = {"kind": ["report"], "domain": ["health"], "suite": ["ops-health"],
