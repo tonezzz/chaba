@@ -1,7 +1,7 @@
 id: timer-alert-idc02-ada-ocb-smoke
 title: Timer ada-ocb-smoke on idc02 failing
-column: backlog
-updated: 2026-11-27 17:43
+column: done
+updated: 2026-11-27 18:10
 priority: high
 tags:
 - timer-alert
@@ -678,6 +678,15 @@ comms:
     operation timed out'' against board-api. mddb /v1/health and board /health both answer 200 now; idc03 load 5.8/8.9/20.4
     (still elevated). Pattern points to read/card-write congestion rather than a bridge regression; the next hourly
     tick (18:00) has not run yet. No dispatch this wave — '
+- at: 2026-11-27 18:10
+  from: chaba
+  text: 'SELF-HEALED 2026-11-27 18:00 tick (read-only): Result=success / ExecMainStatus=0. All smoke checks PASS
+    - find_card 0.797s (was 11.78s), _pick_cards 0.487s (was 9.06s SLOW), ada_context_pack PASS 7.6s with only 3
+    non-blocking vector-source timeouts, ada_preflight PASS. Bench report written. The 17:00 failures were mddb/board-api
+    congestion, not a bridge regression. Closing; no dispatch needed.'
+- at: 2026-11-27 18:10
+  from: tony
+  text: closed by tony
 action:
   status: done
   type: dispatch

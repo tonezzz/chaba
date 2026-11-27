@@ -1,7 +1,7 @@
 id: timer-alert-idc03-netdata-nodes-watch
 title: Timer netdata-nodes-watch on idc03 failing
 column: backlog
-updated: 2026-11-27 18:05
+updated: 2026-11-27 18:10
 priority: high
 tags:
 - timer-alert
@@ -204,5 +204,10 @@ comms:
   from: devin
   text: '[reopened — condition recurred] Last run (11-27 17:54) of `netdata-nodes-watch.service` on `idc03` result=timeout
     — investigate journal: `journalctl --user -u netdata-nodes-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-27 18:10
+  from: chaba
+  text: 'SELF-HEALED 2026-11-27 18:08:52 tick (read-only): Result=success / ExecMainStatus=0, 8 expected nodes present.
+    The 17:54 timeout came from the same idc03 congestion window (chaba-kanban-brief logged MDDB unreachable at
+    17:52); mddb /v1/health is 200 now. Closing; no dispatch needed.'
 action:
   status: done
