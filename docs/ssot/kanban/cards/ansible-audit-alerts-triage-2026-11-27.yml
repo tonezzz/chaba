@@ -1,7 +1,7 @@
 id: ansible-audit-alerts-triage-2026-11-27
 title: Triage 5 open Ansible audit alerts — stale vs real drift (approval-gated)
 column: doing
-updated: 2026-11-27 13:38
+updated: 2026-11-27 13:40
 brief: Next batch 2026-11-27 — 4 runner slots free.
 priority: high
 tags:
@@ -27,6 +27,8 @@ action:
   status: running
   runner: con01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 13:40
 ref: OPS-1501
 comms:
 - at: 2026-11-27 12:58
@@ -62,6 +64,10 @@ comms:
     + ansible-log-shipper-alert (OPS-1497 fix verified deployed; residual clears on merge). OPEN real drift: ansible-mcp-verify-alert
     (mn-ha-dev + xmeye-vms crash-looping on mn01 since ~09:16, rootless netns broken), ansible-fleet-service-drift
     (persistent; mostly ssot.audit.hosts.'
+- at: 2026-11-27 13:40
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-125951-triage-the-five-open-read-only no longer active on con01 but card
+    still says running — sweeping its branch'
 claim:
   since: 2026-11-27 12:58
 requests:
