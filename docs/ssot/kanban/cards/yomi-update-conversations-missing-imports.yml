@@ -1,6 +1,6 @@
 id: yomi-update-conversations-missing-imports
 title: Yomi summaries fail — missing summary-utils imports in update-conversations.mjs
-column: backlog
+column: doing
 updated: 2026-11-27 15:33
 brief: yomi-update-all writes conversations but every summary fails with "validateAndTruncateContext is not defined".
   Three symbols used but not imported in update-conversations.mjs; all exported by summary-utils.mjs. Import-only
@@ -34,10 +34,12 @@ spec: "Found 2026-11-27 during LINE re-login verification (card yomi-line-sessio
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   task_class: verify_only
   executor: claude
   executor_source: queue
+  runner: idc02
+  attempts: 1
 comms:
 - at: 2026-11-27 15:33
   from: chaba
@@ -52,4 +54,12 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 15:33
+  from: idc02
+  text: claimed
+- at: 2026-11-27 15:33
+  from: chaba
+  text: claude auto-route not servable on this host — running the next lane
 ref: OPS-1505
+claim:
+  since: 2026-11-27 15:33
