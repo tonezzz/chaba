@@ -2,7 +2,7 @@ id: runner-auto-idc02
 title: Runner host `idc02` fails 1 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on idc02 that will strand dispatch cards. Read the note, fix
   on the host, close the card.
-column: review
+column: done
 review_kind: triage
 generated: runner-fleet-health
 program: chaba-ci
@@ -23,7 +23,7 @@ help: 'Per-check fixes:
   If the checkout matches the pin but the install does not, the sync was skipped — check the sync-runner-tools journal
   line (dirty source / no pin / never-downgrade). Do not edit the manifest on a host; bump it in the same commit
   as the tool.'
-updated: '2026-11-27'
+updated: 2026-11-27 20:35
 comms:
 - at: 2026-11-26 20:59
   from: chaba
@@ -61,6 +61,15 @@ comms:
     and installed sha were falsely reported as stale. Fix: bumped the pin to 38d84bc in commit ed66bfb178 and verified
     43 pin-contract tests pass. Ansible deploy-runner-to'
 - at: 2026-11-27 09:01
+  from: tony
+  text: closed by tony
+- at: 2026-11-27 20:35
+  from: tony
+  text: 'VERIFY 2026-11-27 20:35 +07: the note is stale. idc02 checkout source and installed dispatch_repos.py both
+    hash to 022176564c2684a2d22672b5224906a5a423b17de9d600ac98517945c91694bf after the uncommitted JEVOS_URL edit
+    was restored; runner-tools-converge.service Result=success. scripts/board/runner-fleet-health.py reports 0 hosts
+    failing / 8 ok. Closing.'
+- at: 2026-11-27 20:35
   from: tony
   text: closed by tony
 action:
