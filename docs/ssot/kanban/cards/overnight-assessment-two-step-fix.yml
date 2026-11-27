@@ -1,0 +1,36 @@
+id: overnight-assessment-two-step-fix
+title: 'overnight-assessment: log-sweep row conversion + stale sensor health'
+column: backlog
+updated: 2026-11-27 10:42
+spec: 'overnight-assessment.service on idc03 fails 3 of 4 recent runs. reports/ORCHESTRATION.json shows 3/6 steps
+  ok; the ssot_validate failure from a malformed YAML trail doc was already fixed and pushed (3219cd79f40). Two
+  real failures remain:
+
+  1. service_log_sweep: Traceback ValueError: dictionary update sequence element #0 has length 70; 2 is required
+  at scripts/overnight/service-logs-sweep.py line 91 (`"top_error_patterns": [dict(p) for p in top_errors]`). The
+  sqlite rows are tuples of 70 columns, not 2-pair sequences — fix the row-to-dict conversion so the report builds
+  correctly (use row_factory or zip with the column names). Do not delete the top_error_patterns field.
+
+  2. health_snapshot: endpoint `tony-omen-sensor-reader` at http://100.75.102.88:8001/health times out (curl from
+  idc03: connection timed out after 8s); severity=error so the step exits 1. Determine whether the sensor-reader
+  service on tony-omen is genuinely down or the health entry is stale/misconfigured. If the service is down, restore
+  it; if the host is intentionally offline, mark the entry non-blocking in SSOT so a known-offline host doesn''t
+  fail the nightly. Do not simply raise the global timeout to hide outages.
+
+  Verify by running the oneshot service on idc03 several times and confirming Result=success with reports/ORCHESTRATION.json
+  showing 6/6 steps ok. Then note the result on timer-alert-idc03-overnight-assessment.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  lane: paid_frontier
+  status: queued
+ref: OPS-1493
+comms:
+- at: 2026-11-27 10:42
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-27 10:42
+  from: tony
+  text: '[next 2026-11-27] Two real step failures after the YAML syntax fix landed. Service-log row conversion is
+    a code bug; sensor endpoint needs an honest ok/down decision.'
