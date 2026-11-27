@@ -1,7 +1,7 @@
 id: cms-publish-remote-end-closed-fix-unpinned
 title: idc03 CMS publish timers fail with 'Remote end closed connection'
-column: review
-updated: 2026-11-27 10:24
+column: done
+updated: 2026-11-27 10:25
 spec: 'Journal on idc03 for chaba-starboard-tracker.service (08:47) and chaba-cached-videos.service (08:37) ends
   with `error: Remote end closed connection without response` and exit=1, although earlier runs of both published
   successfully. Root cause is an unhandled transient connection close during the CMS page publish step, not missing
@@ -97,6 +97,13 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-093742-journal-on-idc03-for-chaba-sta,
     branch dispatch/20261127-093742-journal-on-idc03-for-chaba-sta'
+- at: 2026-11-27 10:25
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 claim:
   since: 2026-11-27 09:36
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 10:25
+  note: verified — evidence checks green, closing itself
