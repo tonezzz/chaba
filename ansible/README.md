@@ -273,6 +273,18 @@ hosts. Drift found by `audit-runner-tools.yml` is turned into a board card by
 writing); `--verify` comments the re-audit result and closes the card when
 clean.
 
+Scope (OPS-1478, 2026-11-27): each host's timer converges **only itself** —
+every playbook call carries `--limit <inventory_hostname>` (the host's
+`hostname -s`, verified equal to the inventory name fleet-wide). Hosts
+without `ansible-playbook` on PATH exit 0 with a skip note instead of
+failing the unit. The fleet-wide pass runs only on the controller
+(`tony-dell`, or `RUNNER_CONVERGE_FLEET=1` for a manual run elsewhere): it
+probes `ansible -m ping` first and converges just the reachable managed
+hosts, so a sleeping portable host can't fail the run. Ansible-less hosts
+(idc03, mn01, tony-omen, con01) are still repaired by that fleet pass and
+by `sync-runner-tools.sh` on every repo-sync tick; the read-only fleet
+drift view is the `ansible-runner-tool-guard` job (07:10 on tony-dell).
+
 ## HA temperature telemetry + dashboard (tony-omen)
 
 Two playbooks own the per-zone temperature history shown on the `chaba-admin`
