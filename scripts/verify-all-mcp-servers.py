@@ -68,7 +68,10 @@ def stdio_verify(name, cmd, args, env):
         proc.stdin.flush()
 
     send(1, "initialize", {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "verify-mcp", "version": "0.1"}})
-    deadline = time.time() + 10
+    # SSH-backed servers (e.g. mcp-gpu, mcp-health, playlive) can take longer
+    # than 10s to handshake when the fleet audit is running. Use the same
+    # generous deadline as tools/list so a loaded host is not a false failure.
+    deadline = time.time() + TIMEOUT
     while 1 not in results and time.time() < deadline:
         time.sleep(0.1)
     if 1 not in results:
