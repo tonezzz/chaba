@@ -1,7 +1,7 @@
 id: mddb-ops-write-latency-triage
 title: 'mddb-ops: diagnose /add + /ingest ~125s congestion waves (read-only, approval-gated)'
 column: done
-updated: 2026-11-27 19:52
+updated: 2026-11-27 22:02
 brief: Next batch 2026-11-27 — 4 runner slots free.
 priority: high
 tags:
@@ -171,6 +171,13 @@ comms:
     no stray mddb-compact.db or .pre-compact in ~/.config/containers/mddb-ops/data; docker.io/golang:1.23-bookworm
     present; http://100.102.134.91:11026/health returns 200 status healthy. idc03 load 10.64/9.83/7.38. All green
     — no service or data change made. The approved 22:00 sche'
+- at: 2026-11-27 22:02
+  from: tony
+  text: 'STEP B START 2026-11-27 22:03 +07: executing the Tony-approved Procedure-C offline bbolt compact of mddb-ops
+    on idc03 in the 22:00 window. PREFLIGHT GREEN: mddb-ops.service active/running, NRestarts=0, ExecMainStatus=0;
+    db 33,689,640,960 bytes (~32G; grown from 26G at 16:35 from normal writes); no mddb-compact.db or .pre-compact
+    anywhere; no running compact; docker.io/golang:1.23-bookworm present; 113G free on /; MDDB_ADDR=100.102.134.91:11026
+    (tailnet-only). BASELINE: /health 200 status healthy'
 claim:
   since: 2026-11-27 12:58
 requests:
