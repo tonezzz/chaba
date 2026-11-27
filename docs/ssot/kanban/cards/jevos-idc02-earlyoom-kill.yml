@@ -1,7 +1,7 @@
 id: jevos-idc02-earlyoom-kill
 title: idc02 JevOS killed by earlyoom; clean SIGTERM bypassed Restart=on-failure
 column: doing
-updated: 2026-11-27 21:18
+updated: 2026-11-27 21:26
 brief: '2026-11-27 20:47:40 +07: earlyoom on idc02 (0 swap, avail 9.92% < 10% threshold) sent SIGTERM to jev PID
   1233450 (RSS 1543 MiB) after killing three chrome processes. systemd saw Result=success, so Restart=on-failure
   did not restart it; lane stayed down ~17min (health=000). Restored 21:05, health 200 in 15s.'
@@ -38,6 +38,13 @@ comms:
     primer injected 8 lesson(s): [ansible-verify-hos; [job-health-sweep-consecutive-failure-alerts] primer injected
     8 lesson(s): editi; [runner-fleet-health-host-regex-gap] primer injected 8 lesson(s): [ansible-vs-le; [timer-alert-idc02-chaba-repo-mirror]
     RESOLVED 2026-11-26: Ex'
+- at: 2026-11-27 21:26
+  from: devin
+  text: 'triage: evidence reviewed. idc02 has 0 swap so earlyoom swap-arm is permanently true; jev comm=jev RSS~1.7GiB
+    is a prime badness victim (openjev is a separate comm and stays exposed). Choosing option (a) --avoid jev —
+    surgical exemption preserving earlyoom for everything else; (b) risks kill/restart loops under sustained pressure
+    and breaks manual stop; (c) leaves lane exposed. Writing ansible/playbooks/earlyoom-avoid-jev.yml, will --check
+    then converge idc02.'
 action:
   type: dispatch
   status: running
