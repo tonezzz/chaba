@@ -1,0 +1,189 @@
+{
+  "metrics": {
+    "n_cases": 20,
+    "overall_accuracy": 0.85,
+    "per_lane": {
+      "stock": 0.8462,
+      "ui": 0.8571
+    },
+    "per_kind": {
+      "stock/defect": 0.8333,
+      "stock/match": 0.8571,
+      "ui/triage": 0.8571
+    },
+    "defect_recall": 0.75,
+    "defect_specificity": 1.0,
+    "parse_failures": 0,
+    "latency_s": {
+      "mean": 2.1,
+      "max": 2.8,
+      "total": 42.6
+    },
+    "confusion": {
+      "empty_state": {
+        "empty_state": 1
+      },
+      "error_state": {
+        "error_state": 2
+      },
+      "layout_bug": {
+        "ok": 1,
+        "layout_bug": 1
+      },
+      "no": {
+        "no": 5
+      },
+      "ok": {
+        "ok": 2
+      },
+      "yes": {
+        "no": 2,
+        "yes": 6
+      }
+    },
+    "entity": "ollama",
+    "model": "qwen2.5vl:7b"
+  },
+  "cases": [
+    [
+      "stock-match-001",
+      "stock",
+      "yes",
+      "no",
+      0.5
+    ],
+    [
+      "stock-match-002",
+      "stock",
+      "yes",
+      "yes",
+      0.5
+    ],
+    [
+      "stock-match-003",
+      "stock",
+      "yes",
+      "yes",
+      2.6
+    ],
+    [
+      "stock-match-004",
+      "stock",
+      "yes",
+      "yes",
+      2.6
+    ],
+    [
+      "stock-mismatch-001",
+      "stock",
+      "no",
+      "no",
+      2.8
+    ],
+    [
+      "stock-mismatch-002",
+      "stock",
+      "no",
+      "no",
+      0.6
+    ],
+    [
+      "stock-mismatch-003",
+      "stock",
+      "no",
+      "no",
+      2.8
+    ],
+    [
+      "stock-defect-001",
+      "stock",
+      "yes",
+      "yes",
+      2.6
+    ],
+    [
+      "stock-defect-002",
+      "stock",
+      "yes",
+      "yes",
+      2.6
+    ],
+    [
+      "stock-defect-003",
+      "stock",
+      "yes",
+      "yes",
+      2.6
+    ],
+    [
+      "stock-defect-004",
+      "stock",
+      "yes",
+      "no",
+      2.5
+    ],
+    [
+      "stock-defect-005",
+      "stock",
+      "no",
+      "no",
+      0.4
+    ],
+    [
+      "stock-defect-006",
+      "stock",
+      "no",
+      "no",
+      0.4
+    ],
+    [
+      "ui-ok-001",
+      "ui",
+      "ok",
+      "ok",
+      2.7
+    ],
+    [
+      "ui-ok-002",
+      "ui",
+      "ok",
+      "ok",
+      2.8
+    ],
+    [
+      "ui-error-001",
+      "ui",
+      "error_state",
+      "error_state",
+      2.7
+    ],
+    [
+      "ui-error-002",
+      "ui",
+      "error_state",
+      "error_state",
+      2.7
+    ],
+    [
+      "ui-layout-001",
+      "ui",
+      "layout_bug",
+      "ok",
+      2.8
+    ],
+    [
+      "ui-layout-002",
+      "ui",
+      "layout_bug",
+      "layout_bug",
+      2.7
+    ],
+    [
+      "ui-empty-001",
+      "ui",
+      "empty_state",
+      "empty_state",
+      2.7
+    ]
+  ]
+}
