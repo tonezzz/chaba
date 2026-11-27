@@ -22,9 +22,9 @@
 #     -e idc03_embed_offload_approved=true \
 #     -e card_id=mddb-idc03-oom-coldstart-publisher-window
 #
-# Rollback: delete the 60-idc03-remote-upstreams.conf drop-in, daemon-reload,
-# restart embed-pool-shim.service; the old upstream list is in the unit file
-# (systemctl --user cat embed-pool-shim.service shows every Environment line).
+# Rollback: delete the zzzzz-idc03-remote-only.conf drop-in, daemon-reload,
+# restart embed-pool-shim.service; the prior list is restored by the surviving
+# zzzz-drop-local-idc03.conf drop-in (or `systemctl --user cat` for all lines).
 # A local bge-m3 reload happens automatically on the next /api/embed call.
 
 - name: Offload idc03 embeddings to warm remote bge-m3
@@ -35,7 +35,11 @@
   vars:
     idc03_embed_offload_approved: false
     shim_dropin_dir: /home/tony/.config/systemd/user/embed-pool-shim.service.d
-    shim_dropin: /home/tony/.config/systemd/user/embed-pool-shim.service.d/60-idc03-remote-upstreams.conf
+    # systemd reads drop-ins in lexicographic order; the last Environment=
+    # assignment wins. Existing zzzz-drop-local-idc03.conf restores local as
+    # a primary, so this managed file MUST sort after it.
+    shim_dropin: /home/tony/.config/systemd/user/embed-pool-shim.service.d/zzzzz-idc03-remote-only.conf
+    legacy_shim_dropin: /home/tony/.config/systemd/user/embed-pool-shim.service.d/60-idc03-remote-upstreams.conf
     shim_health_url: http://100.102.134.91:11436/health
 
   tasks:
@@ -59,7 +63,13 @@
         mode: "0755"
       tags: [offload]
 
-    - name: Install remote-only upstream drop-in
+    - name: Remove the ineffective earlier drop-in (it sorted before zzzz-*)
+      ansible.builtin.file:
+        path: "{{ legacy_shim_dropin }}"
+        state: absent
+      tags: [offload]
+
+    - name: Install remote-only upstream drop-in (sorts last to win overrides)
       ansible.builtin.copy:
         dest: "{{ shim_dropin }}"
         owner: tony
