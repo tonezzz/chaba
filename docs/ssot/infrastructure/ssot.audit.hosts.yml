@@ -2527,7 +2527,9 @@ hosts:
       retired idc01's tier — card idc04-contabo-vps8-provision (OPS-0763).
       Roles live: mddb-follower #2 (snapshot+replicating), standby caddy-edge,
       ada-stt migrated off idc02 (native service, not container),
-      secrets-backup target; Cline Kanban pilot (tailnet-only :3484) added
+      secrets-backup target; masked warm-standby units for the idc03-only
+      ada-ha-tony + ada-line-relay lanes (staged 2026-11-26, inert until
+      approved failover); Cline Kanban pilot (tailnet-only :3484) added
       2026-10-27. Pending: offload timers, runner lane."
     role: public-vps
     tags:
@@ -2599,6 +2601,24 @@ hosts:
           stacks/con01/mddb-follower, 100.72.146.39:11123/:11124,
           localhost/mddb:2.15.4-lsn) — warm-DR promote target replacing
           retired idc01 (OPS-0763)"
+      - name: ada-ha-tony.service
+        type: service
+        scope: user
+        expected_state: inactive
+        critical: false
+        note: "MASKED warm standby of the idc03 lane (staged 2026-11-26,
+          stacks/con01/ada-ha-tony — canonical name symlinked to /dev/null,
+          inert .standby source under ~/.config/systemd/user/standby/).
+          Must stay inactive until an approved failover; runbook
+          docs/kb/con01-ada-lane-warm-standby.md"
+      - name: ada-line-relay.service
+        type: service
+        scope: user
+        expected_state: inactive
+        critical: false
+        note: "MASKED warm standby of the idc03 lane (staged 2026-11-26,
+          stacks/con01/ada-line-relay) — same inert/masked pattern as
+          ada-ha-tony; start only after ada-ha-tony is healthy"
       # batch timers shed from idc02 2026-10-25 (idc02 contract review —
       # con01 is the declared absorber; all rendered via ssot.jobs.yml)
       - {name: ssot-optimization-snapshot.timer, type: timer, scope: user}
