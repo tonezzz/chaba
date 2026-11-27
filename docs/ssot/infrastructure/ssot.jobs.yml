@@ -1128,9 +1128,14 @@ jobs:
   exec: /usr/bin/python3 %h/.config/go2rtc/xiaomi-cam-resolve.py
   note: >-
     Rewrites stale xiaomi:// camera IPs in go2rtc.yaml from the go2rtc cloud
-    device list (MAC-verified, throttled /24 ARP sweep fallback) then
-    /api/restart. The c100/c201 cameras are DHCP floaters — hardcoded IPs
-    caused recurring 200/0B frames (card go2rtc-7-camera-producers).
+    device list (MAC-verified, throttled /24 ARP sweep fallback across ALL
+    physical-interface subnets — 192.168.2.x/eno1 + 192.168.0.x/wlo1 on omen)
+    then /api/restart. The c100/c201 cameras are DHCP floaters — hardcoded
+    IPs caused recurring 200/0B frames (card go2rtc-7-camera-producers).
+    ip_cam_65 (VStarcam, no cloud API) self-heals at exec time instead:
+    ~/.config/go2rtc/ipcam65-ip.sh resolves its MAC d4:9e:3b:6a:94:90 to the
+    current IP (cached, port-10554 verified) for the ip_cam_65_*.sh producers
+    and the credential-rotation scripts.
 - id: cam-frame-refresh
   name: Cam Frame Refresh
   host: tony_omen

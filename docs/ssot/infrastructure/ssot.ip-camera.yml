@@ -48,6 +48,8 @@ sections:
         text: "All three scripts source ~/.config/secrets/ipcam65.env (chmod 600). go2rtc.yaml holds no credential — go2rtc does NOT expand env vars in exec: lines, so wrappers are required. Rotation runner: ~/.config/go2rtc/rotate-ipcam65.sh (camera CGI + env update + restarts + new/old verification). Mirrored on tony-dell."
       - label: Auto script
         text: /home/tony/.config/go2rtc/ip_cam_65_auto.sh probes av0_0 then execs either the HD or low ffmpeg pipeline.
+      - label: Camera IP resolution (2026-11-27)
+        text: "The VStarcam is a DHCP floater — the exec scripts no longer hardcode 192.168.2.71. All ip_cam_65_*.sh + rotate-ipcam65.sh + ipcam65-rotate-finisher.sh resolve the target via ~/.config/go2rtc/ipcam65-ip.sh, which finds the camera by MAC d4:9e:3b:6a:94:90 (ARP/port-10554 verified, 300s caches, falls back to .71 when offline). The registry's 'legacy' MAC cc:50:e3:19:a0:2f is a different live device and is NOT matched."
       - label: FFmpeg flags
         text: "-fflags +genpts+discardcorrupt -err_detect ignore_err -rtsp_transport udp -c:v libx264 -pix_fmt yuv420p -an -f mpegts"
 
