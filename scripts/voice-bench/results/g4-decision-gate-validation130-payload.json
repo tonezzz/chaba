@@ -1,0 +1,526 @@
+{
+  "model": "gemini-decision-1",
+  "input": "Kanban card briefs to triage:\n1. [camwall-retire-to-wiki] Tony 2026-11-09: stop camwall and migrate documentation to wiki hierarchy for later restore. WARNING: camwall is a subsystem, not just an app \u2014 it feeds Ada stale-snapshot fallback, CMS cam pages, vcast walls, KK twin.\n2. [cms-auto-embed-healthcheck-devin] A scheduled report-page job ('embed-healthcheck-devin') is dead. Re-run it or check the generator \u2014 details in the note.\n3. [cms-auto-flood-report-nongdon-saraburi] A scheduled report-page job ('flood-report-nongdon-saraburi') is error. Re-run it or check the generator \u2014 details in the note.\n4. [cms-auto-flood-report-pattaya-rayong] A scheduled report-page job ('flood-report-pattaya-rayong') is error. Re-run it or check the generator \u2014 details in the note.\n5. [cms-auto-media-digest] A scheduled report-page job ('media-digest') is stale. Re-run it or check the generator \u2014 details in the note.\n6. [cms-auto-memory-digest] A scheduled report-page job ('memory-digest') is stale. Re-run it or check the generator \u2014 details in the note.\n7. [con01-runner-pilot-smoke-2] Low-risk con01 runner-agent dispatch pilot. Dispatch a tiny verification task on the chaba repo via devin-dispatch and confirm claim/start/close on con01.\n8. [devin-usage-allowance-visibility] DEV-0044 lever 3: est-$0 masking is acceptable only after allowance visibility lands. devin-usage.py reports window burn but not plan allowance remaining.\n9. [devnest-fl-pilot-report] Supervised pilot job \u2014 read the lane catalog + pilot cards and write a read-only status report artifact on the free OpenCode lane.\n10. [devnest-free-pilot-c] Controlled free-lane job with a report artifact to measure real usage and merge success.\n11. [devnest-free-pilot-doc] Produce a small docs-only artifact through OpenCode Flash Lite, then verify and merge it.\n12. [devnest-host-assessment-education-loop] After each deterministic read-only host assessment, publish/update one Education lesson with the fleet snapshot and evidence policy.\n13. [devnest-tg-command-router] Extend the live DevNest Telegram relay beyond capture-only: explain card refs and route explicit approvals through board-api.\n14. [disk-auto-idc03-root] Disk space on idc03 (/) is running critically low \u2014 check the note for the rate and top growers, then free space or close the card.\n15. [disk-auto-kk-mac-System-Volumes-Data] Disk space on kk-mac (/System/Volumes/Data) is running critically low \u2014 check the note for the rate and top growers, then free space or close the card.\n16. [disk-auto-kk-mac-System-Volumes-Data-home] Disk space on kk-mac (/System/Volumes/Data/home) is running critically low \u2014 check the note for the rate and top growers, then free space or close the card.\n17. [disk-auto-macbook-root] Disk space on macbook (/) is running low \u2014 check the note for the rate and top growers, then free space or close the card.\n18. [disk-auto-tony-dell-mnt-hdd-root] Disk space on tony-dell (/mnt/hdd-root) is running critically low \u2014 check the note for the rate and top growers, then free space or close the card.\n19. [disk-auto-tony-dell-mnt-sda5] Disk space on tony-dell (/mnt/sda5) is running critically low \u2014 check the note for the rate and top growers, then free space or close the card.\n20. [disk-auto-tony-dell-root] Disk space on tony-dell (/) is running low \u2014 check the note for the rate and top growers, then free space or close the card.\n21. [disk-guard-ssot-enforce] disk-trend-watch.py uses a flat CRIT 90% and ignores declared max_root_disk_percent (85 on dell/omen/mn01). tony-dell at 88% is missed. Add per-host threshold + 15 GiB absolute floor + underused signal.\n22. [dispatch-prompt-regression-harness] The dispatch prompt is the highest-blast-radius, lowest-verification artifact in the system: rails and primer merge on anecdote while micro-models get golden/hard/adversarial gates. Add a regression suite that pins build_task's contract plus a byte-budget tripwire on rail accretion.\n23. [dispatch-test-baseline-awareness] OpenCode closeout probe changed only README but was blocked by an identical baseline test failure. Make merge gate compare base vs branch or support explicit docs-only expected goals.\n24. [dispatcher-jobs-systemd-migration-impl-ops0790] Turn OPS-0790's answered migration decision into a testable code change; do not make live timer changes in this phase.\n25. [doc-pilot-v2-polish-music-bed-subs-shot-943456] Rough cut v1 done (ss1-roughcut.mp4, 2026-10-24). v2 scope from lesson-95610f8e4c00: music bed under narration, Thai/bilingual subs, shot QC at the i2v boundaries (shot02/18), VO ear-check, delivery decision (CMS/WP/poster). Watch the rough cut first (ada-nest/doc-pilot/final/) and prioritize.\n26. [door-read-ops-lesson-op-list-get-educati-6cfed7] Lessons are invisible to agents (only topics slugs exist). Add /lesson op=list (all topics+modified+level+next_review) and op=get (full content by slug) so agents + lessons-due can read without WP creds.\n27. [education-lesson-no-th-marker-readback] A draft Education lesson was created through lesson-add.py with --no-th, but a supported board-api /lesson op=get read-back returned meta.no_th as null. The lesson content is English-only and the writer code intends to persist no_th=true.\n28. [education-maintenance-consolidated-report] Combine lesson policy audit, source drift, due review, human-review status, and compliance trend into one recurring maintenance artifact.\n29. [eval-ide-opencode-interactive] Hands-on test of the free-lane interactive surface. opencode 1.19.4 already installed on dell + idc02.\n30. [evaluate-resshift-rsd-class-distilled-sr-8d9c80] Non-T2I distilled diffusion SR (ResShift/RSD) \u2014 fits omen 4GB GPU; benchmark vs realesrgan/swinir on campaign assets.\n31. [fix-ada-flood-news-exit] 2026-10-09 audit \u2014 ada-flood-news.service on idc02 fetches the flood news fine (journal shows fresh items through 15:01) then exits status=2/INVALIDARGUMENT. The unit is rendered from ssot.jobs.yml \u2014 fix the job definition, not the generated unit. Fails every run.\n32. [fix-chaba-jobs-network-scan-failure-isolation] Keep healthy dispatcher jobs running when the network-scan dashboard push fails; add per-job backoff and evidence.\n33. [fix-lesson-th-translation-timeout] /lesson writes hang 20s+ when the Gemini Thai-translation lane is slow/capped (hit twice: lesson-add needed --no-th manual flag). The code says best-effort EN-only fallback but _gemini_thai() has NO timeout on generate(), so the intent is unenforced.\n34. [fleet-mcp-inventory-report-wiki-edu] Consolidate the fleet MCP server inventory into the layered reporting standard, emit a per-host observation script and L2 fleet rollup, and integrate the published report into the wiki Reports: namespace with durable lessons in Education:.\n35. [gemini-api-dev-skill-install-trial-2026-11-26] Install google-gemini/gemini-skills gemini-api-dev into a skills root visible to this session, then run 2-3 realistic Gemini API coding prompts and check outputs against the skill critical rules.\n36. [gemini-decision-1-gate-eval-2026-11-26] Grade calibrated noul decisions on 10 real kanban briefs against a reproducible spec-present label, measure confidence and token use, decide whether to replace a full-model yes/no judgment.\n37. [gemini-dev-capabilities-research-2026-11-26] Explore Gemini surfaces not yet in our SSOT (Interactions/Decisions APIs, Gemini 4, Managed Agents, official skills, TTS/Voice, efficiency levers); publish an evidence-backed Education lesson.\n38. [gev-auto-page] An automated health check flagged: GEV page /apps/gev/ not 200. Read the note, fix it, then close the card.\n39. [gev-auto-ws] An automated health check flagged: GEV ws /apps/gev-live/ws upgrade fails. Read the note, fix it, then close the card.\n40. [grand-rename] Tony approved a full naming restructure while the system is still small. Spec lives in ssot.system-map.yml rename_map. Subsumes OPS-0726 (mn-dev rename).\n41. [ha-ada-isolation] Execute docs/kb/ha-ada-isolation.md \u2014 an Ada backend failure (quota storm, tool loop, token leak, bad deploy, idc03 resource exhaustion) must not damage or take down tony-ha (prod) or kk-ha (member node).\n42. [ha-lanes-program] TONY-HA is the stable household instance for every member; ADA-HA (Tony) is the stable private-project instance; each gets a -dev twin for final testing before release. Umbrella card for the lane build-out.\n43. [ha-release-pipeline] Releases become boring: build on dev, verify, promote with one command per lane, evidence recorded on the card. Extends the existing deploy-card/promote-* pattern to the two-lane topology.\n44. [hands-off-waiting-card-procedure] Define when queued/review cards may run and close unattended, with recoverability classes, preflight, stop gates, and Telegram reporting.\n45. [helm-retire-leftovers] helm-retirement card is done (2026-09-30) but leftovers remain: helm service on idc02:3003 in ssot.routes.yml, static bundle stacks/web/public/apps/helm/, ssot.apps.helm.yml still status:active. Tony 2026-11-09 confirmed retire.\n46. [idc01-permanent-retirement] Tony confirmed 2026-11-13: idc01 is retired permanently (superseded by idc03 since 2026-10-05/06). Remove it from host inventory, expected-unit audits, and live references so drift-reconcile and docs stop treating it as a fleet member.\n47. [idc02-vps-lane-canary] One-shot canary for card idc02-second-ada-pi-lane: prove a vps-labeled ada-pi dispatch claims, runs, merges, and passes the test gate on idc02.\n48. [idc03-disk-cleanup-20261124] idc03 at 100% (290G disk, 1.3G free). 131G in ~/mddb-backups: 127G is two *.UNVERIFIED filecopy backups (70G + 57G) whose open-verify failed 3x; valid native gz dumps (1.1G, gzip -t OK) exist for the same dates.\n49. [jack-opencode-cloudflare-prep] Use OpenCode for bounded config/test preparation; no live DNS, Access, secrets, or reload changes.\n50. [jack-opencode-cloudflare-prep-idc02] Bounded OpenCode prep for the Jack Cloudflare route on the executor host.\n51. [jev-claim-metadata-probe] Small verified probe for board claim metadata; should classify free_lane and persist action lane/model at the atomic claim.\n52. [jevnest-worker-scan-latency] The KK-Mac worker eventually processed new packages, but a single --once scan took several minutes over 25+ Drive packs before claiming newly staged work. Make queue discovery bounded and prompt without weakening claim/fallback gates.\n53. [kanban-card-brief] Cards currently open with note/spec jargon. Add a `brief` field \u2014 2-3 sentences of plain language: what's the situation and what Tony's expected action is (review / answer a request / wait / nothing). Expected action on this card: none \u2014 dispatch will implement it.\n54. [kanban-card-compact-loading] Reduce repeated deferral history and avoid reparsing unchanged inactive cards without deleting audit history.\n55. [kanban-retention-archive-done-cards-olde-bba115] Done column has 1000+ cards (~6.6MB cards.json polled per client). Define and implement a retention procedure: archive stale done cards to a separate store/page, keep board fast and searchable.\n56. [key-watch-monitor] 2026-10-12 incident: the OR bridge key hit limit_remaining=$0 with ZERO warning \u2014 inference 403s fleet-wide until noticed in a manual sweep. leak-detection-canary (proposed) covers leaked keys, not expiry/quota \u2014 different job. Build scripts/ops/key-watch.py + systemd timer on tony-dell.\n57. [kk-mac-devin-decline-smoke] Boundary check: an executor=devin dispatch card pinned to kk-mac must be visibly declined by the launchd runner (devin-dispatch drives systemd-run internally \u2014 Linux-only), never silently claimed. Part of kk-mac-launchd-runner-followthrough e2e.\n58. [kk-mac-live-llm-probe-access-0978] Complete the already-approved single bounded KK-Mac JEV probe without enabling automatic routing.\n59. [kk-mac-worker-idle-poll-efficiency] KK-Mac's LaunchAgent runs nest-worker --once every 15 seconds even when the queue is empty; measure and reduce idle polling/model residency without weakening claim or verifier gates.\n60. [kraut-weather-bakeoff] Tony+Michael decision 2026-10-20: keep the RK600 measured report on top, append every candidate forecast source below in engineer numbers, compare together, pick a winner as a team. Demo = one-shot TG report to the mn lane.\n61. [lesson-audit-scheduled] The lesson-polish audit is one-shot. Make it recurring: a nest job (e.g. weekly) runs the lesson-polish pack, and any new R1/R3/R4 flags get routed to the Fable polish pass automatically \u2014 the education system audits + fixes itself.\n62. [lesson-polish-nest-pack] Standard procedure to scan all lesson CPT posts and polish/complete per policy (lesson-capture duty, split rule, series convention, spaced review, Thai). Run nest-style as a Drive pack with an agent lane.\n63. [lesson-qc-sweep] Self-reported lessons are unverified and never retire \u2014 the feedback loop has no damping. Build scripts/board/lesson_qc.py: an advisory QC pass over the lesson corpus that clusters near-duplicates, flags stale/contradicting lines, and publishes a report. Advisory only \u2014 it never deletes.\n64. [logs-auto-con01-add-failed] The log digest flagged something worth a look: logs `con01` MDDB add failed (full). Read the note, then fix it or close the card.\n65. [logs-auto-con01-backlog] The log digest flagged something worth a look: logs `con01` backlog 200. Read the note, then fix it or close the card.\n66. [logs-auto-con01-severe-add-failed] The log digest flagged something worth a look: logs `con01` MDDB add failed (severe). Read the note, then fix it or close the card.\n67. [logs-auto-coverage] The log digest flagged something worth a look: Log coverage gaps. Read the note, then fix it or close the card.\n68. [logs-auto-idc01-severe-spike] The log digest flagged something worth a look: logs `idc01` 73 severe/24h. Read the note, then fix it or close the card.\n69. [logs-auto-idc01-silent] The log digest flagged something worth a look: logs `idc01` silent 16h. Read the note, then fix it or close the card.\n70. [logs-auto-idc01-unreachable] The log digest flagged something worth a look: logs `idc01` ssh probe failed. Read the note, then fix it or close the card.\n71. [logs-auto-idc02-add-failed] The log digest flagged something worth a look: logs `idc02` MDDB add failed (full). Read the note, then fix it or close the card.\n72. [logs-auto-idc02-backlog] The log digest flagged something worth a look: logs `idc02` backlog 715. Read the note, then fix it or close the card.\n73. [logs-auto-idc02-severe-add-failed] The log digest flagged something worth a look: logs `idc02` MDDB add failed (severe). Read the note, then fix it or close the card.\n74. [logs-auto-idc02-severe-spike] The log digest flagged something worth a look: logs `idc02` 5156 severe/24h. Read the note, then fix it or close the card.\n75. [logs-auto-idc02-silent] The log digest flagged something worth a look: logs `idc02` silent 11h. Read the note, then fix it or close the card.\n76. [logs-auto-idc03-add-failed] The log digest flagged something worth a look: logs `idc03` MDDB add failed (full). Read the note, then fix it or close the card.\n77. [logs-auto-idc03-backlog] The log digest flagged something worth a look: logs `idc03` backlog 2378. Read the note, then fix it or close the card.\n78. [logs-auto-idc03-severe-spike] The log digest flagged something worth a look: logs `idc03` 3255 severe/24h. Read the note, then fix it or close the card.\n79. [logs-auto-idc03-silent] The log digest flagged something worth a look: logs `idc03` silent 16h. Read the note, then fix it or close the card.\n80. [logs-auto-michael-ha-silent] The log digest flagged something worth a look: logs `michael-ha` never shipped state. Read the note, then fix it or close the card.\n81. [logs-auto-michael-ha-unreachable] The log digest flagged something worth a look: logs `michael-ha` ssh probe failed. Read the note, then fix it or close the card.\n82. [logs-auto-mn01-backlog] The log digest flagged something worth a look: logs `mn01` backlog 671. Read the note, then fix it or close the card.\n83. [logs-auto-mn01-severe-add-failed] The log digest flagged something worth a look: logs `mn01` MDDB add failed (severe). Read the note, then fix it or close the card.\n84. [logs-auto-mn01-severe-spike] The log digest flagged something worth a look: logs `mn01` 1038 severe/24h. Read the note, then fix it or close the card.\n85. [logs-auto-mn01-silent] The log digest flagged something worth a look: logs `mn01` silent 7h. Read the note, then fix it or close the card.\n86. [logs-auto-mn01-unreachable] The log digest flagged something worth a look: logs `mn01` ssh probe failed. Read the note, then fix it or close the card.\n87. [logs-auto-tony-dell-add-failed] The log digest flagged something worth a look: logs `tony-dell` MDDB add failed (full). Read the note, then fix it or close the card.\n88. [logs-auto-tony-dell-backlog] The log digest flagged something worth a look: logs `tony-dell` backlog 1018. Read the note, then fix it or close the card.\n89. [logs-auto-tony-dell-severe-add-failed] The log digest flagged something worth a look: logs `tony-dell` MDDB add failed (severe). Read the note, then fix it or close the card.\n90. [logs-auto-tony-dell-severe-spike] The log digest flagged something worth a look: logs `tony-dell` 2898 severe/24h. Read the note, then fix it or close the card.\n91. [logs-auto-tony-dell-silent] The log digest flagged something worth a look: logs `tony-dell` silent 7h. Read the note, then fix it or close the card.\n92. [logs-auto-tony-dell-unreachable] The log digest flagged something worth a look: logs `tony-dell` ssh probe failed. Read the note, then fix it or close the card.\n93. [logs-auto-tony-omen-backlog] The log digest flagged something worth a look: logs `tony-omen` backlog 307. Read the note, then fix it or close the card.\n94. [logs-auto-tony-omen-severe-add-failed] The log digest flagged something worth a look: logs `tony-omen` MDDB add failed (severe). Read the note, then fix it or close the card.\n95. [logs-auto-tony-omen-severe-spike] The log digest flagged something worth a look: logs `tony-omen` 5010 severe/24h. Read the note, then fix it or close the card.\n96. [logs-auto-tony-omen-silent] The log digest flagged something worth a look: logs `tony-omen` silent 5h. Read the note, then fix it or close the card.\n97. [mcp-colab-control-plane] Consolidate Colab management into one MCP server (fleet pattern: mcp-gpu, mcp-llama). Wraps rclone gdrive + queue-runner state + tunnel probe so agents/Ada/IDE can submit packs, check status, fetch results without Drive poking.\n98. [mcp-kornia-omen-registration] mcp-kornia is declared operational/agent-lanes but configured only on tony-dell; add it to tony-omen.\n99. [mddb-main-bank-revision-churn-audit] Read-only audit of high-revision main-bank collections after compaction; identify writers and recommend bounded retention.\n100. [mediawiki-infrastructure-host-hierarchy] Consolidate host, service, timer, load, disk, and audit reports into one Infrastructure/Hosts rollup with one consolidated leaf per host, while keeping full topology private.\n101. [mediawiki-private-sso-boundary] Give the shared MediaWiki instance a private in-house hostname and identity-based login so Ada HA can open Infrastructure pages without a second manual login, while public News remains anonymous-safe.\n102. [memory-extract-merge-proposals] Surface probable canonical updates hidden in extract drafts as reviewable proposals \u2014 never auto-write. Builds on memory-distill + consolidate-memory; closes the ADA-0478 leg-3 gap without giving up the human review gate on memory writes.\n103. [memory-lane-policy] Formalize how Ada memory banks map onto the two HA lanes so household members get shared+private memory, Tony gets his private banks, and staging/test traffic can't pollute production memory.\n104. [merge-sweep-conflict-request-flood] 3 review cards carry 15-18 duplicate merge-conflict-* requests. open_conflict_req() counts only UNANSWERED ones, so once a human answers, the next 15-min pass posts a fresh request. Gate on conflict signature (head + paths), not answer state.\n105. [merge-sweep-verified-gate] merge-sweep marked nest-manager-node verified because its branch merged \u2014 but the dispatch unit exited 1s in (empty DEVIN_MODEL) and produced nothing. verified should mean the card's expected_goals/auto_done_when checks pass or the outcome doc exists, not just \"branch in master\".\n106. [mn-ha-v4-8123-blocked] ada-ai-kraut's HOME_ASSISTANT_URL was dead: idc03->michael-ha v4 :8123 times out (silent drop). All HA tools on the mn lane errored (get_rk600_weather, home_search \u2014 journal shows failures since ~Oct 17). Interim fix shipped: HOME_ASSISTANT_URL switched to the v6 ULA literal, lane verified live.\n107. [nest-api-unified-mutation-service] One write door for agents: cards, nest-job CPT, lessons, reports, inbox \u2014 same doctrine as the card write-path split, applied to every mutable surface.\n108. [nest-evidence-loop] Tony (2026-10-08): evidence is everything \u2014 every answer, bench result, and research finding must land as a CMS report page per cms-page-standard, discussable with Ada and assessable by Devin, automatically. Governance map + loop structure in docs/kb/nest-asher-polity-inspiration.md.\n109. [nest-mgr-v2-actuation] Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes eligible queued work to idle hosts \u2014 without bypassing owner/quota/leash gates. Build on the v1 census and the devnest-capacity-aware-dispatch lane machinery.\n110. [nest-report-integration] The chaba-nest CMS hub renders lanes + bench scorecards but is invisible to the report node registry \u2014 no meta.yml, no staleness, no SYSTEM-REPORT presence, no runtime telemetry. Register the nodes and close the telemetry gap.\n111. [opencode-safe-storage-cleanup-report] Use OpenCode for read-only storage triage and reporting; deterministic allowlisted cleanup only after policy checks and Telegram report.\n112. [runner-auto-con01] Automated fleet audit found provisioning gaps on con01 that will strand dispatch cards. Read the note, fix on the host, close the card.\n113. [runner-auto-idc01] Automated fleet audit found provisioning gaps on idc01 that will strand dispatch cards. Read the note, fix on the host, close the card.\n114. [runner-auto-idc02] Automated fleet audit found provisioning gaps on idc02 that will strand dispatch cards. Read the note, fix on the host, close the card.\n115. [runner-auto-idc03] Automated fleet audit found provisioning gaps on idc03 that will strand dispatch cards. Read the note, fix on the host, close the card.\n116. [runner-auto-kk-mac] Automated fleet audit found provisioning gaps on kk-mac that will strand dispatch cards. Read the note, fix on the host, close the card.\n117. [runner-auto-mn01] Automated fleet audit found provisioning gaps on mn01 that will strand dispatch cards. Read the note, fix on the host, close the card.\n118. [runner-auto-tony-dell] Automated fleet audit found provisioning gaps on tony-dell that will strand dispatch cards. Read the note, fix on the host, close the card.\n119. [runner-auto-tony-macbook] Automated fleet audit found provisioning gaps on tony-macbook that will strand dispatch cards. Read the note, fix on the host, close the card.\n120. [runner-auto-tony-omen] Automated fleet audit found provisioning gaps on tony-omen that will strand dispatch cards. Read the note, fix on the host, close the card.\n121. [service-onboarding-standard] A checklist for adding new services cleanly was drafted after recent migrations missed steps. It needs a decision \u2014 read the note and pick a direction.\n122. [vcast-auto-audit-cast] An automated health check flagged: audit-cast runaway guard failing. Read the note, fix it, then close the card.\n123. [vcast-auto-cast-browser-proxy] An automated health check flagged: cast-browser-proxy :8799 not answering. Read the note, fix it, then close the card.\n124. [vcast-auto-displays] An automated health check flagged: vcast display fleet unhealthy (dead/drifted screens). Read the note, fix it, then close the card.\n125. [vcast-auto-flap] An automated health check flagged: vcast flap events in last 24h. Read the note, fix it, then close the card.\n126. [vcast-auto-flap-check] An automated health check flagged: vcast-flap-check regression fails on deployed relay. Read the note, fix it, then close the card.\n127. [vcast-auto-lease] An automated health check flagged: stale vcast capture lease / camwall binding. Read the note, fix it, then close the card.\n128. [vcast-auto-relay] An automated health check flagged: input-bridge relay not healthy. Read the note, fix it, then close the card.\n129. [vcast-auto-yt-live-api] An automated health check flagged: yt-live-api :8791/status not 200. Read the note, fix it, then close the card.\n130. [wiki-education-cargo-declare-verify] Agent-owned follow-up to OPS-0038: re-apply the Cargo declare/store and verify only after the host-owned table creation passes.",
+  "questions": {
+    "ready_1": {
+      "type": "noul",
+      "instructions": "Is brief 1 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_2": {
+      "type": "noul",
+      "instructions": "Is brief 2 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_3": {
+      "type": "noul",
+      "instructions": "Is brief 3 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_4": {
+      "type": "noul",
+      "instructions": "Is brief 4 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_5": {
+      "type": "noul",
+      "instructions": "Is brief 5 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_6": {
+      "type": "noul",
+      "instructions": "Is brief 6 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_7": {
+      "type": "noul",
+      "instructions": "Is brief 7 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_8": {
+      "type": "noul",
+      "instructions": "Is brief 8 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_9": {
+      "type": "noul",
+      "instructions": "Is brief 9 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_10": {
+      "type": "noul",
+      "instructions": "Is brief 10 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_11": {
+      "type": "noul",
+      "instructions": "Is brief 11 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_12": {
+      "type": "noul",
+      "instructions": "Is brief 12 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_13": {
+      "type": "noul",
+      "instructions": "Is brief 13 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_14": {
+      "type": "noul",
+      "instructions": "Is brief 14 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_15": {
+      "type": "noul",
+      "instructions": "Is brief 15 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_16": {
+      "type": "noul",
+      "instructions": "Is brief 16 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_17": {
+      "type": "noul",
+      "instructions": "Is brief 17 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_18": {
+      "type": "noul",
+      "instructions": "Is brief 18 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_19": {
+      "type": "noul",
+      "instructions": "Is brief 19 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_20": {
+      "type": "noul",
+      "instructions": "Is brief 20 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_21": {
+      "type": "noul",
+      "instructions": "Is brief 21 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_22": {
+      "type": "noul",
+      "instructions": "Is brief 22 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_23": {
+      "type": "noul",
+      "instructions": "Is brief 23 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_24": {
+      "type": "noul",
+      "instructions": "Is brief 24 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_25": {
+      "type": "noul",
+      "instructions": "Is brief 25 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_26": {
+      "type": "noul",
+      "instructions": "Is brief 26 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_27": {
+      "type": "noul",
+      "instructions": "Is brief 27 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_28": {
+      "type": "noul",
+      "instructions": "Is brief 28 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_29": {
+      "type": "noul",
+      "instructions": "Is brief 29 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_30": {
+      "type": "noul",
+      "instructions": "Is brief 30 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_31": {
+      "type": "noul",
+      "instructions": "Is brief 31 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_32": {
+      "type": "noul",
+      "instructions": "Is brief 32 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_33": {
+      "type": "noul",
+      "instructions": "Is brief 33 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_34": {
+      "type": "noul",
+      "instructions": "Is brief 34 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_35": {
+      "type": "noul",
+      "instructions": "Is brief 35 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_36": {
+      "type": "noul",
+      "instructions": "Is brief 36 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_37": {
+      "type": "noul",
+      "instructions": "Is brief 37 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_38": {
+      "type": "noul",
+      "instructions": "Is brief 38 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_39": {
+      "type": "noul",
+      "instructions": "Is brief 39 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_40": {
+      "type": "noul",
+      "instructions": "Is brief 40 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_41": {
+      "type": "noul",
+      "instructions": "Is brief 41 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_42": {
+      "type": "noul",
+      "instructions": "Is brief 42 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_43": {
+      "type": "noul",
+      "instructions": "Is brief 43 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_44": {
+      "type": "noul",
+      "instructions": "Is brief 44 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_45": {
+      "type": "noul",
+      "instructions": "Is brief 45 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_46": {
+      "type": "noul",
+      "instructions": "Is brief 46 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_47": {
+      "type": "noul",
+      "instructions": "Is brief 47 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_48": {
+      "type": "noul",
+      "instructions": "Is brief 48 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_49": {
+      "type": "noul",
+      "instructions": "Is brief 49 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_50": {
+      "type": "noul",
+      "instructions": "Is brief 50 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_51": {
+      "type": "noul",
+      "instructions": "Is brief 51 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_52": {
+      "type": "noul",
+      "instructions": "Is brief 52 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_53": {
+      "type": "noul",
+      "instructions": "Is brief 53 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_54": {
+      "type": "noul",
+      "instructions": "Is brief 54 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_55": {
+      "type": "noul",
+      "instructions": "Is brief 55 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_56": {
+      "type": "noul",
+      "instructions": "Is brief 56 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_57": {
+      "type": "noul",
+      "instructions": "Is brief 57 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_58": {
+      "type": "noul",
+      "instructions": "Is brief 58 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_59": {
+      "type": "noul",
+      "instructions": "Is brief 59 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_60": {
+      "type": "noul",
+      "instructions": "Is brief 60 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_61": {
+      "type": "noul",
+      "instructions": "Is brief 61 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_62": {
+      "type": "noul",
+      "instructions": "Is brief 62 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_63": {
+      "type": "noul",
+      "instructions": "Is brief 63 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_64": {
+      "type": "noul",
+      "instructions": "Is brief 64 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_65": {
+      "type": "noul",
+      "instructions": "Is brief 65 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_66": {
+      "type": "noul",
+      "instructions": "Is brief 66 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_67": {
+      "type": "noul",
+      "instructions": "Is brief 67 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_68": {
+      "type": "noul",
+      "instructions": "Is brief 68 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_69": {
+      "type": "noul",
+      "instructions": "Is brief 69 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_70": {
+      "type": "noul",
+      "instructions": "Is brief 70 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_71": {
+      "type": "noul",
+      "instructions": "Is brief 71 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_72": {
+      "type": "noul",
+      "instructions": "Is brief 72 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_73": {
+      "type": "noul",
+      "instructions": "Is brief 73 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_74": {
+      "type": "noul",
+      "instructions": "Is brief 74 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_75": {
+      "type": "noul",
+      "instructions": "Is brief 75 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_76": {
+      "type": "noul",
+      "instructions": "Is brief 76 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_77": {
+      "type": "noul",
+      "instructions": "Is brief 77 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_78": {
+      "type": "noul",
+      "instructions": "Is brief 78 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_79": {
+      "type": "noul",
+      "instructions": "Is brief 79 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_80": {
+      "type": "noul",
+      "instructions": "Is brief 80 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_81": {
+      "type": "noul",
+      "instructions": "Is brief 81 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_82": {
+      "type": "noul",
+      "instructions": "Is brief 82 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_83": {
+      "type": "noul",
+      "instructions": "Is brief 83 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_84": {
+      "type": "noul",
+      "instructions": "Is brief 84 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_85": {
+      "type": "noul",
+      "instructions": "Is brief 85 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_86": {
+      "type": "noul",
+      "instructions": "Is brief 86 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_87": {
+      "type": "noul",
+      "instructions": "Is brief 87 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_88": {
+      "type": "noul",
+      "instructions": "Is brief 88 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_89": {
+      "type": "noul",
+      "instructions": "Is brief 89 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_90": {
+      "type": "noul",
+      "instructions": "Is brief 90 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_91": {
+      "type": "noul",
+      "instructions": "Is brief 91 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_92": {
+      "type": "noul",
+      "instructions": "Is brief 92 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_93": {
+      "type": "noul",
+      "instructions": "Is brief 93 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_94": {
+      "type": "noul",
+      "instructions": "Is brief 94 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_95": {
+      "type": "noul",
+      "instructions": "Is brief 95 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_96": {
+      "type": "noul",
+      "instructions": "Is brief 96 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_97": {
+      "type": "noul",
+      "instructions": "Is brief 97 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_98": {
+      "type": "noul",
+      "instructions": "Is brief 98 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_99": {
+      "type": "noul",
+      "instructions": "Is brief 99 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_100": {
+      "type": "noul",
+      "instructions": "Is brief 100 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_101": {
+      "type": "noul",
+      "instructions": "Is brief 101 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_102": {
+      "type": "noul",
+      "instructions": "Is brief 102 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_103": {
+      "type": "noul",
+      "instructions": "Is brief 103 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_104": {
+      "type": "noul",
+      "instructions": "Is brief 104 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_105": {
+      "type": "noul",
+      "instructions": "Is brief 105 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_106": {
+      "type": "noul",
+      "instructions": "Is brief 106 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_107": {
+      "type": "noul",
+      "instructions": "Is brief 107 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_108": {
+      "type": "noul",
+      "instructions": "Is brief 108 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_109": {
+      "type": "noul",
+      "instructions": "Is brief 109 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_110": {
+      "type": "noul",
+      "instructions": "Is brief 110 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_111": {
+      "type": "noul",
+      "instructions": "Is brief 111 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_112": {
+      "type": "noul",
+      "instructions": "Is brief 112 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_113": {
+      "type": "noul",
+      "instructions": "Is brief 113 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_114": {
+      "type": "noul",
+      "instructions": "Is brief 114 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_115": {
+      "type": "noul",
+      "instructions": "Is brief 115 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_116": {
+      "type": "noul",
+      "instructions": "Is brief 116 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_117": {
+      "type": "noul",
+      "instructions": "Is brief 117 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_118": {
+      "type": "noul",
+      "instructions": "Is brief 118 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_119": {
+      "type": "noul",
+      "instructions": "Is brief 119 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_120": {
+      "type": "noul",
+      "instructions": "Is brief 120 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_121": {
+      "type": "noul",
+      "instructions": "Is brief 121 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_122": {
+      "type": "noul",
+      "instructions": "Is brief 122 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_123": {
+      "type": "noul",
+      "instructions": "Is brief 123 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_124": {
+      "type": "noul",
+      "instructions": "Is brief 124 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_125": {
+      "type": "noul",
+      "instructions": "Is brief 125 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_126": {
+      "type": "noul",
+      "instructions": "Is brief 126 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_127": {
+      "type": "noul",
+      "instructions": "Is brief 127 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_128": {
+      "type": "noul",
+      "instructions": "Is brief 128 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_129": {
+      "type": "noul",
+      "instructions": "Is brief 129 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    },
+    "ready_130": {
+      "type": "noul",
+      "instructions": "Is brief 130 ready for dispatch now? Ready means it states a concrete action and target with enough detail to act without another source; not ready means it defers to a note, says no action is needed, is a test fixture, or is blocked on approval."
+    }
+  }
+}

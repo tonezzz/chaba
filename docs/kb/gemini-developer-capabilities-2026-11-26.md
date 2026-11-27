@@ -110,6 +110,33 @@ comparison is a workflow-state baseline, not an apples-to-apples accuracy
 test, because the holdout deliberately used real cards regardless of column.
 Evidence: `scripts/voice-bench/results/g4-production-gate-baseline-20261127.json`.
 
+**Independent validation (2026-11-27):** a fresh 130-brief set (60 READY /
+70 NOT_READY), disjoint by card ID and normalized brief from the 60-brief
+train set, the 41-brief probe, and the 110-brief holdout, tested the tuned
+thresholds. The Decisions API reproduced high precision: at the default 0.5
+threshold it approved 48/60 READY and 2/70 negatives (precision 0.96, Brier
+0.0812), in 0.96s with 19,511 input tokens and **zero output tokens**. At the
+holdout-tuned `p_yes >= 0.536574` it left one false approval, but that brief
+(`gemini-dev-capabilities-research-2026-11-26`) had a spec and was dispatched —
+a `not yet in our SSOT` marker misfire, not a model error. The other false
+approval (`opencode-safe-storage-cleanup-report`) is the same kind of marker
+misfire (`only after policy checks` is an in-task constraint). With those two
+labels corrected, all three thresholds have zero false approvals and
+`0.536574` gives 44/62 READY approved (recall 0.71). Primary metrics keep the
+as-built labels; corrected numbers are a sensitivity read only.
+
+The **confidence >= 0.90 auto-reject shortcut is dead**: 67 cases crossed the
+threshold and four genuinely READY briefs were high-confidence-ready
+(`p_yes` 0.92-0.93: `disk-guard-ssot-enforce`, `key-watch-monitor`,
+`lesson-qc-sweep`, `mcp-kornia-omen-registration`). It fails under both raw
+and corrected labels; do not adopt it. The negative pool is skewed — 65/70
+are the "read the note / check the note" template family — so this validates
+deferral-to-note negatives well but other negative types less. The full-model
+arm was blocked (`gemini-3.8-flash` 503 on 3 attempts, alternates 503/429/404),
+so its 0.25 threshold remains unvalidated. Evidence: receipt
+`docs/ssot/jobs/devnest/2026-11-26-gemini-decision-1-approve-gate-expanded.yml`
+and `scripts/voice-bench/results/g4-decision-gate-validation130-graded.json`.
+
 ### Managed Agents
 
 `client.agents` / `agent=...` with a sandboxed filesystem, code execution, web
@@ -207,10 +234,13 @@ be empty, so code must handle that. This is distinct from the separate
    approvals. A 110-brief disjoint holdout bounded the false-approval rate at
    0.32–9.61% and placed a full-model stand-in ahead on accuracy (88.18% vs
    82.73%) but far behind on cost and latency. Keep it as a high-precision
-   approve pre-filter with human dispatch approval; do not adopt the
-   holdout-tuned thresholds without an independent negative set. Production
-   has no model judge and preflight cannot approve at all today, so a model
-   gate must sit after those preconditions, never bypass them.
+   approve pre-filter with human dispatch approval. The independent 130-brief
+   set confirmed the Decisions threshold has zero genuine false approvals
+   (one raw-label "false approval" was a note-marker misfire), but the
+   confidence >= 0.90 auto-reject shortcut is rejected and the full-model
+   threshold is still unvalidated. Production has no model judge and preflight
+   cannot approve at all today, so a model gate must sit after those
+   preconditions, never bypass them.
 5. The official `gemini-api-dev` skill is installed and trialled (87.5% vs
    25% pass rate with vs without it); load it for any Gemini API code work.
 6. DONE: Managed Agents verified on the free tier and cost-compared on a
@@ -307,6 +337,10 @@ result. Keep 3.5 as the comparison baseline.
   and result `scripts/voice-bench/results/g4-production-gate-baseline-20261127.json`,
   replaying `ada_preflight` from `ada-voice/opencode/ada_mcp.py` against the
   same 110 cards.
+- Independent validation: harnesses
+  `scripts/voice-bench/g4-decision-gate-validation130-{build,grade}.py` and
+  JSONs `g4-decision-gate-validation130-*` under
+  `scripts/voice-bench/results/`, including the label-noise sensitivity read.
 - Related prior pages: `Education:LLM Providers/Gemini API`,
   `Education:Ada-Developer-Paid-Model-Candidates`,
   `Education:Ada-Dev-Gap-Model-Vs-Harness`.

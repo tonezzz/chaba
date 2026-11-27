@@ -1,0 +1,1526 @@
+{
+  "schema": "decision-gate-validation-130-graded",
+  "date": "2026-11-27",
+  "dataset": {
+    "counts": {
+      "ready": 60,
+      "not_ready": 70
+    },
+    "negative_mix": {
+      "hard_negatives": 70,
+      "hard_negatives_with_action_verb": 68,
+      "descriptive_negatives": 0
+    },
+    "disjoint_from": [
+      "60-brief train set",
+      "41-brief earlier probe",
+      "110-brief holdout"
+    ]
+  },
+  "decisions_api": {
+    "model": "gemini-decision-1",
+    "usage": {
+      "total_tokens": 19511,
+      "total_input_tokens": 19511,
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 19511
+        }
+      ],
+      "total_output_tokens": 0
+    },
+    "brier": 0.0812,
+    "thresholds": {
+      "default": {
+        "threshold": 0.5,
+        "confusion": {
+          "tp": 48,
+          "fn": 12,
+          "tn": 68,
+          "fp": 2,
+          "n": 130,
+          "accuracy": 0.8923,
+          "approve_precision": 0.96,
+          "approve_recall": 0.8
+        },
+        "false_approval_rate_wilson95": {
+          "low": 0.0079,
+          "high": 0.0983
+        }
+      },
+      "train_calibrated": {
+        "threshold": 0.5161926625710843,
+        "confusion": {
+          "tp": 46,
+          "fn": 14,
+          "tn": 68,
+          "fp": 2,
+          "n": 130,
+          "accuracy": 0.8769,
+          "approve_precision": 0.9583,
+          "approve_recall": 0.7667
+        },
+        "false_approval_rate_wilson95": {
+          "low": 0.0079,
+          "high": 0.0983
+        }
+      },
+      "holdout_zero_fp": {
+        "threshold": 0.536574,
+        "confusion": {
+          "tp": 43,
+          "fn": 17,
+          "tn": 69,
+          "fp": 1,
+          "n": 130,
+          "accuracy": 0.8615,
+          "approve_precision": 0.9773,
+          "approve_recall": 0.7167
+        },
+        "false_approval_rate_wilson95": {
+          "low": 0.0025,
+          "high": 0.0766
+        }
+      }
+    },
+    "zero_fp_threshold_on_validation": {
+      "threshold": 0.762708,
+      "confusion": {
+        "tp": 13,
+        "fn": 47,
+        "tn": 70,
+        "fp": 0,
+        "n": 130,
+        "accuracy": 0.6385,
+        "approve_precision": 1.0,
+        "approve_recall": 0.2167
+      }
+    },
+    "mean_p_yes_ready": 0.641,
+    "mean_p_yes_not_ready": 0.0767,
+    "high_confidence_reject_gate": {
+      "threshold": 0.9,
+      "n": 67,
+      "all_not_ready": false,
+      "coverage_of_not_ready": "63/70",
+      "false_rejects": [
+        "disk-guard-ssot-enforce",
+        "key-watch-monitor",
+        "lesson-qc-sweep",
+        "mcp-kornia-omen-registration"
+      ]
+    }
+  },
+  "label_audit": {
+    "as_built": "Primary results keep the deterministic marker labels unchanged; no retroactive tuning.",
+    "marker_misfires": [
+      {
+        "n": 37,
+        "id": "gemini-dev-capabilities-research-2026-11-26",
+        "marker": "not yet",
+        "note": "'not yet in our SSOT' qualifies the surfaces, not the action; spec present, card was dispatched"
+      },
+      {
+        "n": 111,
+        "id": "opencode-safe-storage-cleanup-report",
+        "marker": "only after",
+        "note": "'only after policy checks' is an in-task ordering constraint; spec present, card was dispatched"
+      }
+    ],
+    "negative_pool_skew": "65/70 negatives are the 'read the note/check the note/details in the note' template family, so the set is hard on deferral-to-note but thin on other negative types.",
+    "corrected_label_sensitivity": {
+      "default": {
+        "tp": 50,
+        "fn": 12,
+        "tn": 68,
+        "fp": 0,
+        "n": 130,
+        "accuracy": 0.9077,
+        "approve_precision": 1.0,
+        "approve_recall": 0.8065
+      },
+      "train_calibrated": {
+        "tp": 48,
+        "fn": 14,
+        "tn": 68,
+        "fp": 0,
+        "n": 130,
+        "accuracy": 0.8923,
+        "approve_precision": 1.0,
+        "approve_recall": 0.7742
+      },
+      "holdout_zero_fp": {
+        "tp": 44,
+        "fn": 18,
+        "tn": 68,
+        "fp": 0,
+        "n": 130,
+        "accuracy": 0.8615,
+        "approve_precision": 1.0,
+        "approve_recall": 0.7097
+      }
+    },
+    "corrected_zero_fp_threshold": {
+      "threshold": 0.490629,
+      "confusion": {
+        "tp": 53,
+        "fn": 9,
+        "tn": 68,
+        "fp": 0,
+        "n": 130,
+        "accuracy": 0.9308,
+        "approve_precision": 1.0,
+        "approve_recall": 0.8548
+      }
+    },
+    "corrected_high_confidence_reject": {
+      "n": 67,
+      "false_rejects": [
+        "disk-guard-ssot-enforce",
+        "key-watch-monitor",
+        "lesson-qc-sweep",
+        "mcp-kornia-omen-registration"
+      ]
+    }
+  },
+  "full_model_generative": {
+    "status": "blocked",
+    "block_reason": "gemini-3.8-flash returned 503 high demand on 3 attempts; alternate free models returned 503/429/404"
+  },
+  "comparison_to_prior_holdout": {
+    "prior_holdout_at_0.5162": {
+      "tp": 37,
+      "fn": 18,
+      "tn": 54,
+      "fp": 1,
+      "false_approval_wilson95": {
+        "low": 0.0032,
+        "high": 0.0961
+      }
+    },
+    "prior_zero_fp_threshold": 0.536574,
+    "validation_at_0.5162": {
+      "tp": 46,
+      "fn": 14,
+      "tn": 68,
+      "fp": 2,
+      "n": 130,
+      "accuracy": 0.8769,
+      "approve_precision": 0.9583,
+      "approve_recall": 0.7667
+    },
+    "validation_at_0.536574": {
+      "tp": 43,
+      "fn": 17,
+      "tn": 69,
+      "fp": 1,
+      "n": 130,
+      "accuracy": 0.8615,
+      "approve_precision": 0.9773,
+      "approve_recall": 0.7167
+    }
+  },
+  "rows": [
+    {
+      "n": 1,
+      "id": "camwall-retire-to-wiki",
+      "label": true,
+      "source": "active",
+      "kind": "ready",
+      "brief": "Tony 2026-11-09: stop camwall and migrate documentation to wiki hierarchy for later restore. WARNING: camwall is a subsystem, not just an app \u2014 it feeds Ada stale-snapshot fallback, CMS cam pages, vcast walls, KK twin.",
+      "p_yes": 0.4653609640139884,
+      "confidence": 0.5346390359860116
+    },
+    {
+      "n": 2,
+      "id": "cms-auto-embed-healthcheck-devin",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "A scheduled report-page job ('embed-healthcheck-devin') is dead. Re-run it or check the generator \u2014 details in the note.",
+      "p_yes": 0.035475031875529583,
+      "confidence": 0.9645249681244704
+    },
+    {
+      "n": 3,
+      "id": "cms-auto-flood-report-nongdon-saraburi",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "A scheduled report-page job ('flood-report-nongdon-saraburi') is error. Re-run it or check the generator \u2014 details in the note.",
+      "p_yes": 0.029876325419733576,
+      "confidence": 0.9701236745802664
+    },
+    {
+      "n": 4,
+      "id": "cms-auto-flood-report-pattaya-rayong",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "A scheduled report-page job ('flood-report-pattaya-rayong') is error. Re-run it or check the generator \u2014 details in the note.",
+      "p_yes": 0.03677145638668014,
+      "confidence": 0.9632285436133199
+    },
+    {
+      "n": 5,
+      "id": "cms-auto-media-digest",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "A scheduled report-page job ('media-digest') is stale. Re-run it or check the generator \u2014 details in the note.",
+      "p_yes": 0.040483817773474554,
+      "confidence": 0.9595161822265255
+    },
+    {
+      "n": 6,
+      "id": "cms-auto-memory-digest",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "A scheduled report-page job ('memory-digest') is stale. Re-run it or check the generator \u2014 details in the note.",
+      "p_yes": 0.032266338094896686,
+      "confidence": 0.9677336619051033
+    },
+    {
+      "n": 7,
+      "id": "con01-runner-pilot-smoke-2",
+      "label": true,
+      "source": "active",
+      "kind": "ready",
+      "brief": "Low-risk con01 runner-agent dispatch pilot. Dispatch a tiny verification task on the chaba repo via devin-dispatch and confirm claim/start/close on con01.",
+      "p_yes": 0.7456446963520204,
+      "confidence": 0.7456446963520204
+    },
+    {
+      "n": 8,
+      "id": "devin-usage-allowance-visibility",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "DEV-0044 lever 3: est-$0 masking is acceptable only after allowance visibility lands. devin-usage.py reports window burn but not plan allowance remaining.",
+      "p_yes": 0.258989225291421,
+      "confidence": 0.741010774708579
+    },
+    {
+      "n": 9,
+      "id": "devnest-fl-pilot-report",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Supervised pilot job \u2014 read the lane catalog + pilot cards and write a read-only status report artifact on the free OpenCode lane.",
+      "p_yes": 0.7050745969411839,
+      "confidence": 0.7050745969411839
+    },
+    {
+      "n": 10,
+      "id": "devnest-free-pilot-c",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Controlled free-lane job with a report artifact to measure real usage and merge success.",
+      "p_yes": 0.49655894681870083,
+      "confidence": 0.5034410531812992
+    },
+    {
+      "n": 11,
+      "id": "devnest-free-pilot-doc",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Produce a small docs-only artifact through OpenCode Flash Lite, then verify and merge it.",
+      "p_yes": 0.6432382519393527,
+      "confidence": 0.6432382519393527
+    },
+    {
+      "n": 12,
+      "id": "devnest-host-assessment-education-loop",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "After each deterministic read-only host assessment, publish/update one Education lesson with the fleet snapshot and evidence policy.",
+      "p_yes": 0.6838031938448518,
+      "confidence": 0.6838031938448518
+    },
+    {
+      "n": 13,
+      "id": "devnest-tg-command-router",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Extend the live DevNest Telegram relay beyond capture-only: explain card refs and route explicit approvals through board-api.",
+      "p_yes": 0.6480419309981525,
+      "confidence": 0.6480419309981525
+    },
+    {
+      "n": 14,
+      "id": "disk-auto-idc03-root",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "Disk space on idc03 (/) is running critically low \u2014 check the note for the rate and top growers, then free space or close the card.",
+      "p_yes": 0.05556199955664253,
+      "confidence": 0.9444380004433575
+    },
+    {
+      "n": 15,
+      "id": "disk-auto-kk-mac-System-Volumes-Data",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "Disk space on kk-mac (/System/Volumes/Data) is running critically low \u2014 check the note for the rate and top growers, then free space or close the card.",
+      "p_yes": 0.057502127847016075,
+      "confidence": 0.942497872152984
+    },
+    {
+      "n": 16,
+      "id": "disk-auto-kk-mac-System-Volumes-Data-home",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "Disk space on kk-mac (/System/Volumes/Data/home) is running critically low \u2014 check the note for the rate and top growers, then free space or close the card.",
+      "p_yes": 0.038178806331542255,
+      "confidence": 0.9618211936684578
+    },
+    {
+      "n": 17,
+      "id": "disk-auto-macbook-root",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "Disk space on macbook (/) is running low \u2014 check the note for the rate and top growers, then free space or close the card.",
+      "p_yes": 0.05052608326608707,
+      "confidence": 0.9494739167339129
+    },
+    {
+      "n": 18,
+      "id": "disk-auto-tony-dell-mnt-hdd-root",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "Disk space on tony-dell (/mnt/hdd-root) is running critically low \u2014 check the note for the rate and top growers, then free space or close the card.",
+      "p_yes": 0.04826512290364983,
+      "confidence": 0.9517348770963502
+    },
+    {
+      "n": 19,
+      "id": "disk-auto-tony-dell-mnt-sda5",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "Disk space on tony-dell (/mnt/sda5) is running critically low \u2014 check the note for the rate and top growers, then free space or close the card.",
+      "p_yes": 0.05843840026871605,
+      "confidence": 0.941561599731284
+    },
+    {
+      "n": 20,
+      "id": "disk-auto-tony-dell-root",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "Disk space on tony-dell (/) is running low \u2014 check the note for the rate and top growers, then free space or close the card.",
+      "p_yes": 0.13945730879437027,
+      "confidence": 0.8605426912056298
+    },
+    {
+      "n": 21,
+      "id": "disk-guard-ssot-enforce",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "disk-trend-watch.py uses a flat CRIT 90% and ignores declared max_root_disk_percent (85 on dell/omen/mn01). tony-dell at 88% is missed. Add per-host threshold + 15 GiB absolute floor + underused signal.",
+      "p_yes": 0.9224288320619595,
+      "confidence": 0.9224288320619595
+    },
+    {
+      "n": 22,
+      "id": "dispatch-prompt-regression-harness",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "The dispatch prompt is the highest-blast-radius, lowest-verification artifact in the system: rails and primer merge on anecdote while micro-models get golden/hard/adversarial gates. Add a regression suite that pins build_task's contract plus a byte-budget tripwire on rail accretion.",
+      "p_yes": 0.896473239498231,
+      "confidence": 0.896473239498231
+    },
+    {
+      "n": 23,
+      "id": "dispatch-test-baseline-awareness",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "OpenCode closeout probe changed only README but was blocked by an identical baseline test failure. Make merge gate compare base vs branch or support explicit docs-only expected goals.",
+      "p_yes": 0.8205055319910192,
+      "confidence": 0.8205055319910192
+    },
+    {
+      "n": 24,
+      "id": "dispatcher-jobs-systemd-migration-impl-ops0790",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Turn OPS-0790's answered migration decision into a testable code change; do not make live timer changes in this phase.",
+      "p_yes": 0.6959284974172387,
+      "confidence": 0.6959284974172387
+    },
+    {
+      "n": 25,
+      "id": "doc-pilot-v2-polish-music-bed-subs-shot-943456",
+      "label": true,
+      "source": "active",
+      "kind": "ready",
+      "brief": "Rough cut v1 done (ss1-roughcut.mp4, 2026-10-24). v2 scope from lesson-95610f8e4c00: music bed under narration, Thai/bilingual subs, shot QC at the i2v boundaries (shot02/18), VO ear-check, delivery decision (CMS/WP/poster). Watch the rough cut first (ada-nest/doc-pilot/final/) and prioritize.",
+      "p_yes": 0.4532788114056947,
+      "confidence": 0.5467211885943053
+    },
+    {
+      "n": 26,
+      "id": "door-read-ops-lesson-op-list-get-educati-6cfed7",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Lessons are invisible to agents (only topics slugs exist). Add /lesson op=list (all topics+modified+level+next_review) and op=get (full content by slug) so agents + lessons-due can read without WP creds.",
+      "p_yes": 0.855039028670375,
+      "confidence": 0.855039028670375
+    },
+    {
+      "n": 27,
+      "id": "education-lesson-no-th-marker-readback",
+      "label": true,
+      "source": "active",
+      "kind": "ready",
+      "brief": "A draft Education lesson was created through lesson-add.py with --no-th, but a supported board-api /lesson op=get read-back returned meta.no_th as null. The lesson content is English-only and the writer code intends to persist no_th=true.",
+      "p_yes": 0.44694426846885515,
+      "confidence": 0.5530557315311448
+    },
+    {
+      "n": 28,
+      "id": "education-maintenance-consolidated-report",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Combine lesson policy audit, source drift, due review, human-review status, and compliance trend into one recurring maintenance artifact.",
+      "p_yes": 0.5606757722359681,
+      "confidence": 0.5606757722359681
+    },
+    {
+      "n": 29,
+      "id": "eval-ide-opencode-interactive",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Hands-on test of the free-lane interactive surface. opencode 1.19.4 already installed on dell + idc02.",
+      "p_yes": 0.5254899092550043,
+      "confidence": 0.5254899092550043
+    },
+    {
+      "n": 30,
+      "id": "evaluate-resshift-rsd-class-distilled-sr-8d9c80",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Non-T2I distilled diffusion SR (ResShift/RSD) \u2014 fits omen 4GB GPU; benchmark vs realesrgan/swinir on campaign assets.",
+      "p_yes": 0.6970095595890761,
+      "confidence": 0.6970095595890761
+    },
+    {
+      "n": 31,
+      "id": "fix-ada-flood-news-exit",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "2026-10-09 audit \u2014 ada-flood-news.service on idc02 fetches the flood news fine (journal shows fresh items through 15:01) then exits status=2/INVALIDARGUMENT. The unit is rendered from ssot.jobs.yml \u2014 fix the job definition, not the generated unit. Fails every run.",
+      "p_yes": 0.7694417714588194,
+      "confidence": 0.7694417714588194
+    },
+    {
+      "n": 32,
+      "id": "fix-chaba-jobs-network-scan-failure-isolation",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Keep healthy dispatcher jobs running when the network-scan dashboard push fails; add per-job backoff and evidence.",
+      "p_yes": 0.6969360076908454,
+      "confidence": 0.6969360076908454
+    },
+    {
+      "n": 33,
+      "id": "fix-lesson-th-translation-timeout",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "/lesson writes hang 20s+ when the Gemini Thai-translation lane is slow/capped (hit twice: lesson-add needed --no-th manual flag). The code says best-effort EN-only fallback but _gemini_thai() has NO timeout on generate(), so the intent is unenforced.",
+      "p_yes": 0.6374014966430238,
+      "confidence": 0.6374014966430238
+    },
+    {
+      "n": 34,
+      "id": "fleet-mcp-inventory-report-wiki-edu",
+      "label": true,
+      "source": "active",
+      "kind": "ready",
+      "brief": "Consolidate the fleet MCP server inventory into the layered reporting standard, emit a per-host observation script and L2 fleet rollup, and integrate the published report into the wiki Reports: namespace with durable lessons in Education:.",
+      "p_yes": 0.7265200476803717,
+      "confidence": 0.7265200476803717
+    },
+    {
+      "n": 35,
+      "id": "gemini-api-dev-skill-install-trial-2026-11-26",
+      "label": true,
+      "source": "active",
+      "kind": "ready",
+      "brief": "Install google-gemini/gemini-skills gemini-api-dev into a skills root visible to this session, then run 2-3 realistic Gemini API coding prompts and check outputs against the skill critical rules.",
+      "p_yes": 0.7627078692587926,
+      "confidence": 0.7627078692587926
+    },
+    {
+      "n": 36,
+      "id": "gemini-decision-1-gate-eval-2026-11-26",
+      "label": true,
+      "source": "active",
+      "kind": "ready",
+      "brief": "Grade calibrated noul decisions on 10 real kanban briefs against a reproducible spec-present label, measure confidence and token use, decide whether to replace a full-model yes/no judgment.",
+      "p_yes": 0.8406616869904233,
+      "confidence": 0.8406616869904233
+    },
+    {
+      "n": 37,
+      "id": "gemini-dev-capabilities-research-2026-11-26",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "Explore Gemini surfaces not yet in our SSOT (Interactions/Decisions APIs, Gemini 4, Managed Agents, official skills, TTS/Voice, efficiency levers); publish an evidence-backed Education lesson.",
+      "p_yes": 0.7605380684727124,
+      "confidence": 0.7605380684727124
+    },
+    {
+      "n": 38,
+      "id": "gev-auto-page",
+      "label": false,
+      "source": "archive",
+      "kind": "hard_negative",
+      "brief": "An automated health check flagged: GEV page /apps/gev/ not 200. Read the note, fix it, then close the card.",
+      "p_yes": 0.03063203376758665,
+      "confidence": 0.9693679662324134
+    },
+    {
+      "n": 39,
+      "id": "gev-auto-ws",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "An automated health check flagged: GEV ws /apps/gev-live/ws upgrade fails. Read the note, fix it, then close the card.",
+      "p_yes": 0.044222428603893416,
+      "confidence": 0.9557775713961065
+    },
+    {
+      "n": 40,
+      "id": "grand-rename",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Tony approved a full naming restructure while the system is still small. Spec lives in ssot.system-map.yml rename_map. Subsumes OPS-0726 (mn-dev rename).",
+      "p_yes": 0.49653697505049016,
+      "confidence": 0.5034630249495098
+    },
+    {
+      "n": 41,
+      "id": "ha-ada-isolation",
+      "label": true,
+      "source": "active",
+      "kind": "ready",
+      "brief": "Execute docs/kb/ha-ada-isolation.md \u2014 an Ada backend failure (quota storm, tool loop, token leak, bad deploy, idc03 resource exhaustion) must not damage or take down tony-ha (prod) or kk-ha (member node).",
+      "p_yes": 0.6275171633507778,
+      "confidence": 0.6275171633507778
+    },
+    {
+      "n": 42,
+      "id": "ha-lanes-program",
+      "label": false,
+      "source": "archive",
+      "kind": "hard_negative",
+      "brief": "TONY-HA is the stable household instance for every member; ADA-HA (Tony) is the stable private-project instance; each gets a -dev twin for final testing before release. Umbrella card for the lane build-out.",
+      "p_yes": 0.25271919293725087,
+      "confidence": 0.7472808070627491
+    },
+    {
+      "n": 43,
+      "id": "ha-release-pipeline",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Releases become boring: build on dev, verify, promote with one command per lane, evidence recorded on the card. Extends the existing deploy-card/promote-* pattern to the two-lane topology.",
+      "p_yes": 0.6880138209018426,
+      "confidence": 0.6880138209018426
+    },
+    {
+      "n": 44,
+      "id": "hands-off-waiting-card-procedure",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Define when queued/review cards may run and close unattended, with recoverability classes, preflight, stop gates, and Telegram reporting.",
+      "p_yes": 0.5058622708110392,
+      "confidence": 0.5058622708110392
+    },
+    {
+      "n": 45,
+      "id": "helm-retire-leftovers",
+      "label": true,
+      "source": "active",
+      "kind": "ready",
+      "brief": "helm-retirement card is done (2026-09-30) but leftovers remain: helm service on idc02:3003 in ssot.routes.yml, static bundle stacks/web/public/apps/helm/, ssot.apps.helm.yml still status:active. Tony 2026-11-09 confirmed retire.",
+      "p_yes": 0.7191428892312299,
+      "confidence": 0.7191428892312299
+    },
+    {
+      "n": 46,
+      "id": "idc01-permanent-retirement",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Tony confirmed 2026-11-13: idc01 is retired permanently (superseded by idc03 since 2026-10-05/06). Remove it from host inventory, expected-unit audits, and live references so drift-reconcile and docs stop treating it as a fleet member.",
+      "p_yes": 0.812208473586515,
+      "confidence": 0.812208473586515
+    },
+    {
+      "n": 47,
+      "id": "idc02-vps-lane-canary",
+      "label": true,
+      "source": "active",
+      "kind": "ready",
+      "brief": "One-shot canary for card idc02-second-ada-pi-lane: prove a vps-labeled ada-pi dispatch claims, runs, merges, and passes the test gate on idc02.",
+      "p_yes": 0.6371792093239145,
+      "confidence": 0.6371792093239145
+    },
+    {
+      "n": 48,
+      "id": "idc03-disk-cleanup-20261124",
+      "label": true,
+      "source": "active",
+      "kind": "ready",
+      "brief": "idc03 at 100% (290G disk, 1.3G free). 131G in ~/mddb-backups: 127G is two *.UNVERIFIED filecopy backups (70G + 57G) whose open-verify failed 3x; valid native gz dumps (1.1G, gzip -t OK) exist for the same dates.",
+      "p_yes": 0.5839011665843917,
+      "confidence": 0.5839011665843917
+    },
+    {
+      "n": 49,
+      "id": "jack-opencode-cloudflare-prep",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Use OpenCode for bounded config/test preparation; no live DNS, Access, secrets, or reload changes.",
+      "p_yes": 0.36729193166367474,
+      "confidence": 0.6327080683363253
+    },
+    {
+      "n": 50,
+      "id": "jack-opencode-cloudflare-prep-idc02",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Bounded OpenCode prep for the Jack Cloudflare route on the executor host.",
+      "p_yes": 0.6147542029448082,
+      "confidence": 0.6147542029448082
+    },
+    {
+      "n": 51,
+      "id": "jev-claim-metadata-probe",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Small verified probe for board claim metadata; should classify free_lane and persist action lane/model at the atomic claim.",
+      "p_yes": 0.7470513703981821,
+      "confidence": 0.7470513703981821
+    },
+    {
+      "n": 52,
+      "id": "jevnest-worker-scan-latency",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "The KK-Mac worker eventually processed new packages, but a single --once scan took several minutes over 25+ Drive packs before claiming newly staged work. Make queue discovery bounded and prompt without weakening claim/fallback gates.",
+      "p_yes": 0.4680317715099185,
+      "confidence": 0.5319682284900815
+    },
+    {
+      "n": 53,
+      "id": "kanban-card-brief",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Cards currently open with note/spec jargon. Add a `brief` field \u2014 2-3 sentences of plain language: what's the situation and what Tony's expected action is (review / answer a request / wait / nothing). Expected action on this card: none \u2014 dispatch will implement it.",
+      "p_yes": 0.1828526014443529,
+      "confidence": 0.8171473985556471
+    },
+    {
+      "n": 54,
+      "id": "kanban-card-compact-loading",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Reduce repeated deferral history and avoid reparsing unchanged inactive cards without deleting audit history.",
+      "p_yes": 0.5494761174973486,
+      "confidence": 0.5494761174973486
+    },
+    {
+      "n": 55,
+      "id": "kanban-retention-archive-done-cards-olde-bba115",
+      "label": true,
+      "source": "active",
+      "kind": "ready",
+      "brief": "Done column has 1000+ cards (~6.6MB cards.json polled per client). Define and implement a retention procedure: archive stale done cards to a separate store/page, keep board fast and searchable.",
+      "p_yes": 0.5314455890995563,
+      "confidence": 0.5314455890995563
+    },
+    {
+      "n": 56,
+      "id": "key-watch-monitor",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "2026-10-12 incident: the OR bridge key hit limit_remaining=$0 with ZERO warning \u2014 inference 403s fleet-wide until noticed in a manual sweep. leak-detection-canary (proposed) covers leaked keys, not expiry/quota \u2014 different job. Build scripts/ops/key-watch.py + systemd timer on tony-dell.",
+      "p_yes": 0.9199887225530398,
+      "confidence": 0.9199887225530398
+    },
+    {
+      "n": 57,
+      "id": "kk-mac-devin-decline-smoke",
+      "label": true,
+      "source": "active",
+      "kind": "ready",
+      "brief": "Boundary check: an executor=devin dispatch card pinned to kk-mac must be visibly declined by the launchd runner (devin-dispatch drives systemd-run internally \u2014 Linux-only), never silently claimed. Part of kk-mac-launchd-runner-followthrough e2e.",
+      "p_yes": 0.37456003250147596,
+      "confidence": 0.625439967498524
+    },
+    {
+      "n": 58,
+      "id": "kk-mac-live-llm-probe-access-0978",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Complete the already-approved single bounded KK-Mac JEV probe without enabling automatic routing.",
+      "p_yes": 0.6304882189094384,
+      "confidence": 0.6304882189094384
+    },
+    {
+      "n": 59,
+      "id": "kk-mac-worker-idle-poll-efficiency",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "KK-Mac's LaunchAgent runs nest-worker --once every 15 seconds even when the queue is empty; measure and reduce idle polling/model residency without weakening claim or verifier gates.",
+      "p_yes": 0.6294701628502323,
+      "confidence": 0.6294701628502323
+    },
+    {
+      "n": 60,
+      "id": "kraut-weather-bakeoff",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Tony+Michael decision 2026-10-20: keep the RK600 measured report on top, append every candidate forecast source below in engineer numbers, compare together, pick a winner as a team. Demo = one-shot TG report to the mn lane.",
+      "p_yes": 0.6316274329017119,
+      "confidence": 0.6316274329017119
+    },
+    {
+      "n": 61,
+      "id": "lesson-audit-scheduled",
+      "label": true,
+      "source": "active",
+      "kind": "ready",
+      "brief": "The lesson-polish audit is one-shot. Make it recurring: a nest job (e.g. weekly) runs the lesson-polish pack, and any new R1/R3/R4 flags get routed to the Fable polish pass automatically \u2014 the education system audits + fixes itself.",
+      "p_yes": 0.4906291799579397,
+      "confidence": 0.5093708200420604
+    },
+    {
+      "n": 62,
+      "id": "lesson-polish-nest-pack",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Standard procedure to scan all lesson CPT posts and polish/complete per policy (lesson-capture duty, split rule, series convention, spaced review, Thai). Run nest-style as a Drive pack with an agent lane.",
+      "p_yes": 0.5107506409704315,
+      "confidence": 0.5107506409704315
+    },
+    {
+      "n": 63,
+      "id": "lesson-qc-sweep",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Self-reported lessons are unverified and never retire \u2014 the feedback loop has no damping. Build scripts/board/lesson_qc.py: an advisory QC pass over the lesson corpus that clusters near-duplicates, flags stale/contradicting lines, and publishes a report. Advisory only \u2014 it never deletes.",
+      "p_yes": 0.9322236433705035,
+      "confidence": 0.9322236433705035
+    },
+    {
+      "n": 64,
+      "id": "logs-auto-con01-add-failed",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `con01` MDDB add failed (full). Read the note, then fix it or close the card.",
+      "p_yes": 0.034455972697436714,
+      "confidence": 0.9655440273025633
+    },
+    {
+      "n": 65,
+      "id": "logs-auto-con01-backlog",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `con01` backlog 200. Read the note, then fix it or close the card.",
+      "p_yes": 0.03480851651597013,
+      "confidence": 0.9651914834840298
+    },
+    {
+      "n": 66,
+      "id": "logs-auto-con01-severe-add-failed",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `con01` MDDB add failed (severe). Read the note, then fix it or close the card.",
+      "p_yes": 0.044126927242233785,
+      "confidence": 0.9558730727577662
+    },
+    {
+      "n": 67,
+      "id": "logs-auto-coverage",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: Log coverage gaps. Read the note, then fix it or close the card.",
+      "p_yes": 0.017604546933478918,
+      "confidence": 0.9823954530665211
+    },
+    {
+      "n": 68,
+      "id": "logs-auto-idc01-severe-spike",
+      "label": false,
+      "source": "archive",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `idc01` 73 severe/24h. Read the note, then fix it or close the card.",
+      "p_yes": 0.031111350736436297,
+      "confidence": 0.9688886492635637
+    },
+    {
+      "n": 69,
+      "id": "logs-auto-idc01-silent",
+      "label": false,
+      "source": "archive",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `idc01` silent 16h. Read the note, then fix it or close the card.",
+      "p_yes": 0.044818000498703686,
+      "confidence": 0.9551819995012963
+    },
+    {
+      "n": 70,
+      "id": "logs-auto-idc01-unreachable",
+      "label": false,
+      "source": "archive",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `idc01` ssh probe failed. Read the note, then fix it or close the card.",
+      "p_yes": 0.039574709051053,
+      "confidence": 0.960425290948947
+    },
+    {
+      "n": 71,
+      "id": "logs-auto-idc02-add-failed",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `idc02` MDDB add failed (full). Read the note, then fix it or close the card.",
+      "p_yes": 0.03815499047631155,
+      "confidence": 0.9618450095236885
+    },
+    {
+      "n": 72,
+      "id": "logs-auto-idc02-backlog",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `idc02` backlog 715. Read the note, then fix it or close the card.",
+      "p_yes": 0.042520654811365396,
+      "confidence": 0.9574793451886346
+    },
+    {
+      "n": 73,
+      "id": "logs-auto-idc02-severe-add-failed",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `idc02` MDDB add failed (severe). Read the note, then fix it or close the card.",
+      "p_yes": 0.027537118983955278,
+      "confidence": 0.9724628810160447
+    },
+    {
+      "n": 74,
+      "id": "logs-auto-idc02-severe-spike",
+      "label": false,
+      "source": "archive",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `idc02` 5156 severe/24h. Read the note, then fix it or close the card.",
+      "p_yes": 0.05342165018527192,
+      "confidence": 0.9465783498147281
+    },
+    {
+      "n": 75,
+      "id": "logs-auto-idc02-silent",
+      "label": false,
+      "source": "archive",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `idc02` silent 11h. Read the note, then fix it or close the card.",
+      "p_yes": 0.03141770420676116,
+      "confidence": 0.9685822957932388
+    },
+    {
+      "n": 76,
+      "id": "logs-auto-idc03-add-failed",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `idc03` MDDB add failed (full). Read the note, then fix it or close the card.",
+      "p_yes": 0.029669309989577772,
+      "confidence": 0.9703306900104223
+    },
+    {
+      "n": 77,
+      "id": "logs-auto-idc03-backlog",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `idc03` backlog 2378. Read the note, then fix it or close the card.",
+      "p_yes": 0.04265859302345912,
+      "confidence": 0.9573414069765409
+    },
+    {
+      "n": 78,
+      "id": "logs-auto-idc03-severe-spike",
+      "label": false,
+      "source": "archive",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `idc03` 3255 severe/24h. Read the note, then fix it or close the card.",
+      "p_yes": 0.05204838289232818,
+      "confidence": 0.9479516171076718
+    },
+    {
+      "n": 79,
+      "id": "logs-auto-idc03-silent",
+      "label": false,
+      "source": "archive",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `idc03` silent 16h. Read the note, then fix it or close the card.",
+      "p_yes": 0.03273840972055527,
+      "confidence": 0.9672615902794447
+    },
+    {
+      "n": 80,
+      "id": "logs-auto-michael-ha-silent",
+      "label": false,
+      "source": "archive",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `michael-ha` never shipped state. Read the note, then fix it or close the card.",
+      "p_yes": 0.04648675013096303,
+      "confidence": 0.953513249869037
+    },
+    {
+      "n": 81,
+      "id": "logs-auto-michael-ha-unreachable",
+      "label": false,
+      "source": "archive",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `michael-ha` ssh probe failed. Read the note, then fix it or close the card.",
+      "p_yes": 0.04600103796832143,
+      "confidence": 0.9539989620316786
+    },
+    {
+      "n": 82,
+      "id": "logs-auto-mn01-backlog",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `mn01` backlog 671. Read the note, then fix it or close the card.",
+      "p_yes": 0.03896607097373358,
+      "confidence": 0.9610339290262664
+    },
+    {
+      "n": 83,
+      "id": "logs-auto-mn01-severe-add-failed",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `mn01` MDDB add failed (severe). Read the note, then fix it or close the card.",
+      "p_yes": 0.03823136622309928,
+      "confidence": 0.9617686337769007
+    },
+    {
+      "n": 84,
+      "id": "logs-auto-mn01-severe-spike",
+      "label": false,
+      "source": "archive",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `mn01` 1038 severe/24h. Read the note, then fix it or close the card.",
+      "p_yes": 0.05991719212767127,
+      "confidence": 0.9400828078723287
+    },
+    {
+      "n": 85,
+      "id": "logs-auto-mn01-silent",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `mn01` silent 7h. Read the note, then fix it or close the card.",
+      "p_yes": 0.05484105711066399,
+      "confidence": 0.945158942889336
+    },
+    {
+      "n": 86,
+      "id": "logs-auto-mn01-unreachable",
+      "label": false,
+      "source": "archive",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `mn01` ssh probe failed. Read the note, then fix it or close the card.",
+      "p_yes": 0.03170925724400472,
+      "confidence": 0.9682907427559952
+    },
+    {
+      "n": 87,
+      "id": "logs-auto-tony-dell-add-failed",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `tony-dell` MDDB add failed (full). Read the note, then fix it or close the card.",
+      "p_yes": 0.053294735185264286,
+      "confidence": 0.9467052648147357
+    },
+    {
+      "n": 88,
+      "id": "logs-auto-tony-dell-backlog",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `tony-dell` backlog 1018. Read the note, then fix it or close the card.",
+      "p_yes": 0.06332507101782896,
+      "confidence": 0.9366749289821711
+    },
+    {
+      "n": 89,
+      "id": "logs-auto-tony-dell-severe-add-failed",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `tony-dell` MDDB add failed (severe). Read the note, then fix it or close the card.",
+      "p_yes": 0.04456774754164994,
+      "confidence": 0.9554322524583501
+    },
+    {
+      "n": 90,
+      "id": "logs-auto-tony-dell-severe-spike",
+      "label": false,
+      "source": "archive",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `tony-dell` 2898 severe/24h. Read the note, then fix it or close the card.",
+      "p_yes": 0.1080666696674642,
+      "confidence": 0.8919333303325359
+    },
+    {
+      "n": 91,
+      "id": "logs-auto-tony-dell-silent",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `tony-dell` silent 7h. Read the note, then fix it or close the card.",
+      "p_yes": 0.04248844032191105,
+      "confidence": 0.957511559678089
+    },
+    {
+      "n": 92,
+      "id": "logs-auto-tony-dell-unreachable",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `tony-dell` ssh probe failed. Read the note, then fix it or close the card.",
+      "p_yes": 0.0657204819310199,
+      "confidence": 0.9342795180689801
+    },
+    {
+      "n": 93,
+      "id": "logs-auto-tony-omen-backlog",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `tony-omen` backlog 307. Read the note, then fix it or close the card.",
+      "p_yes": 0.053044960795726875,
+      "confidence": 0.9469550392042732
+    },
+    {
+      "n": 94,
+      "id": "logs-auto-tony-omen-severe-add-failed",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `tony-omen` MDDB add failed (severe). Read the note, then fix it or close the card.",
+      "p_yes": 0.06999205269920293,
+      "confidence": 0.930007947300797
+    },
+    {
+      "n": 95,
+      "id": "logs-auto-tony-omen-severe-spike",
+      "label": false,
+      "source": "archive",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `tony-omen` 5010 severe/24h. Read the note, then fix it or close the card.",
+      "p_yes": 0.0673232158170039,
+      "confidence": 0.9326767841829962
+    },
+    {
+      "n": 96,
+      "id": "logs-auto-tony-omen-silent",
+      "label": false,
+      "source": "archive",
+      "kind": "hard_negative",
+      "brief": "The log digest flagged something worth a look: logs `tony-omen` silent 5h. Read the note, then fix it or close the card.",
+      "p_yes": 0.05205836776531352,
+      "confidence": 0.9479416322346865
+    },
+    {
+      "n": 97,
+      "id": "mcp-colab-control-plane",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Consolidate Colab management into one MCP server (fleet pattern: mcp-gpu, mcp-llama). Wraps rclone gdrive + queue-runner state + tunnel probe so agents/Ada/IDE can submit packs, check status, fetch results without Drive poking.",
+      "p_yes": 0.7648170390381404,
+      "confidence": 0.7648170390381404
+    },
+    {
+      "n": 98,
+      "id": "mcp-kornia-omen-registration",
+      "label": true,
+      "source": "active",
+      "kind": "ready",
+      "brief": "mcp-kornia is declared operational/agent-lanes but configured only on tony-dell; add it to tony-omen.",
+      "p_yes": 0.9271457706466888,
+      "confidence": 0.9271457706466888
+    },
+    {
+      "n": 99,
+      "id": "mddb-main-bank-revision-churn-audit",
+      "label": true,
+      "source": "active",
+      "kind": "ready",
+      "brief": "Read-only audit of high-revision main-bank collections after compaction; identify writers and recommend bounded retention.",
+      "p_yes": 0.518378676932827,
+      "confidence": 0.518378676932827
+    },
+    {
+      "n": 100,
+      "id": "mediawiki-infrastructure-host-hierarchy",
+      "label": true,
+      "source": "active",
+      "kind": "ready",
+      "brief": "Consolidate host, service, timer, load, disk, and audit reports into one Infrastructure/Hosts rollup with one consolidated leaf per host, while keeping full topology private.",
+      "p_yes": 0.6454606497607632,
+      "confidence": 0.6454606497607632
+    },
+    {
+      "n": 101,
+      "id": "mediawiki-private-sso-boundary",
+      "label": true,
+      "source": "active",
+      "kind": "ready",
+      "brief": "Give the shared MediaWiki instance a private in-house hostname and identity-based login so Ada HA can open Infrastructure pages without a second manual login, while public News remains anonymous-safe.",
+      "p_yes": 0.6897641553467809,
+      "confidence": 0.6897641553467809
+    },
+    {
+      "n": 102,
+      "id": "memory-extract-merge-proposals",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Surface probable canonical updates hidden in extract drafts as reviewable proposals \u2014 never auto-write. Builds on memory-distill + consolidate-memory; closes the ADA-0478 leg-3 gap without giving up the human review gate on memory writes.",
+      "p_yes": 0.6241885811052965,
+      "confidence": 0.6241885811052965
+    },
+    {
+      "n": 103,
+      "id": "memory-lane-policy",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Formalize how Ada memory banks map onto the two HA lanes so household members get shared+private memory, Tony gets his private banks, and staging/test traffic can't pollute production memory.",
+      "p_yes": 0.7037070476097338,
+      "confidence": 0.7037070476097338
+    },
+    {
+      "n": 104,
+      "id": "merge-sweep-conflict-request-flood",
+      "label": true,
+      "source": "active",
+      "kind": "ready",
+      "brief": "3 review cards carry 15-18 duplicate merge-conflict-* requests. open_conflict_req() counts only UNANSWERED ones, so once a human answers, the next 15-min pass posts a fresh request. Gate on conflict signature (head + paths), not answer state.",
+      "p_yes": 0.8081539943171469,
+      "confidence": 0.8081539943171469
+    },
+    {
+      "n": 105,
+      "id": "merge-sweep-verified-gate",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "merge-sweep marked nest-manager-node verified because its branch merged \u2014 but the dispatch unit exited 1s in (empty DEVIN_MODEL) and produced nothing. verified should mean the card's expected_goals/auto_done_when checks pass or the outcome doc exists, not just \"branch in master\".",
+      "p_yes": 0.6926641346814938,
+      "confidence": 0.6926641346814938
+    },
+    {
+      "n": 106,
+      "id": "mn-ha-v4-8123-blocked",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "ada-ai-kraut's HOME_ASSISTANT_URL was dead: idc03->michael-ha v4 :8123 times out (silent drop). All HA tools on the mn lane errored (get_rk600_weather, home_search \u2014 journal shows failures since ~Oct 17). Interim fix shipped: HOME_ASSISTANT_URL switched to the v6 ULA literal, lane verified live.",
+      "p_yes": 0.4063867645201724,
+      "confidence": 0.5936132354798276
+    },
+    {
+      "n": 107,
+      "id": "nest-api-unified-mutation-service",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "One write door for agents: cards, nest-job CPT, lessons, reports, inbox \u2014 same doctrine as the card write-path split, applied to every mutable surface.",
+      "p_yes": 0.6672510340842582,
+      "confidence": 0.6672510340842582
+    },
+    {
+      "n": 108,
+      "id": "nest-evidence-loop",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Tony (2026-10-08): evidence is everything \u2014 every answer, bench result, and research finding must land as a CMS report page per cms-page-standard, discussable with Ada and assessable by Devin, automatically. Governance map + loop structure in docs/kb/nest-asher-polity-inspiration.md.",
+      "p_yes": 0.4198283990540476,
+      "confidence": 0.5801716009459523
+    },
+    {
+      "n": 109,
+      "id": "nest-mgr-v2-actuation",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes eligible queued work to idle hosts \u2014 without bypassing owner/quota/leash gates. Build on the v1 census and the devnest-capacity-aware-dispatch lane machinery.",
+      "p_yes": 0.6538603785947589,
+      "confidence": 0.6538603785947589
+    },
+    {
+      "n": 110,
+      "id": "nest-report-integration",
+      "label": true,
+      "source": "archive",
+      "kind": "ready",
+      "brief": "The chaba-nest CMS hub renders lanes + bench scorecards but is invisible to the report node registry \u2014 no meta.yml, no staleness, no SYSTEM-REPORT presence, no runtime telemetry. Register the nodes and close the telemetry gap.",
+      "p_yes": 0.5900538254820038,
+      "confidence": 0.5900538254820038
+    },
+    {
+      "n": 111,
+      "id": "opencode-safe-storage-cleanup-report",
+      "label": false,
+      "source": "archive",
+      "kind": "hard_negative",
+      "brief": "Use OpenCode for read-only storage triage and reporting; deterministic allowlisted cleanup only after policy checks and Telegram report.",
+      "p_yes": 0.5261242759278434,
+      "confidence": 0.5261242759278434
+    },
+    {
+      "n": 112,
+      "id": "runner-auto-con01",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "Automated fleet audit found provisioning gaps on con01 that will strand dispatch cards. Read the note, fix on the host, close the card.",
+      "p_yes": 0.04291040045182025,
+      "confidence": 0.9570895995481797
+    },
+    {
+      "n": 113,
+      "id": "runner-auto-idc01",
+      "label": false,
+      "source": "archive",
+      "kind": "hard_negative",
+      "brief": "Automated fleet audit found provisioning gaps on idc01 that will strand dispatch cards. Read the note, fix on the host, close the card.",
+      "p_yes": 0.046280752641266354,
+      "confidence": 0.9537192473587337
+    },
+    {
+      "n": 114,
+      "id": "runner-auto-idc02",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "Automated fleet audit found provisioning gaps on idc02 that will strand dispatch cards. Read the note, fix on the host, close the card.",
+      "p_yes": 0.04452552097315606,
+      "confidence": 0.9554744790268439
+    },
+    {
+      "n": 115,
+      "id": "runner-auto-idc03",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "Automated fleet audit found provisioning gaps on idc03 that will strand dispatch cards. Read the note, fix on the host, close the card.",
+      "p_yes": 0.0558412483773941,
+      "confidence": 0.9441587516226059
+    },
+    {
+      "n": 116,
+      "id": "runner-auto-kk-mac",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "Automated fleet audit found provisioning gaps on kk-mac that will strand dispatch cards. Read the note, fix on the host, close the card.",
+      "p_yes": 0.0380336450526275,
+      "confidence": 0.9619663549473725
+    },
+    {
+      "n": 117,
+      "id": "runner-auto-mn01",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "Automated fleet audit found provisioning gaps on mn01 that will strand dispatch cards. Read the note, fix on the host, close the card.",
+      "p_yes": 0.044464740110463696,
+      "confidence": 0.9555352598895364
+    },
+    {
+      "n": 118,
+      "id": "runner-auto-tony-dell",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "Automated fleet audit found provisioning gaps on tony-dell that will strand dispatch cards. Read the note, fix on the host, close the card.",
+      "p_yes": 0.04384108520623412,
+      "confidence": 0.9561589147937659
+    },
+    {
+      "n": 119,
+      "id": "runner-auto-tony-macbook",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "Automated fleet audit found provisioning gaps on tony-macbook that will strand dispatch cards. Read the note, fix on the host, close the card.",
+      "p_yes": 0.045072392556376094,
+      "confidence": 0.9549276074436239
+    },
+    {
+      "n": 120,
+      "id": "runner-auto-tony-omen",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "Automated fleet audit found provisioning gaps on tony-omen that will strand dispatch cards. Read the note, fix on the host, close the card.",
+      "p_yes": 0.08672064925467302,
+      "confidence": 0.913279350745327
+    },
+    {
+      "n": 121,
+      "id": "service-onboarding-standard",
+      "label": false,
+      "source": "archive",
+      "kind": "hard_negative",
+      "brief": "A checklist for adding new services cleanly was drafted after recent migrations missed steps. It needs a decision \u2014 read the note and pick a direction.",
+      "p_yes": 0.053813709891903316,
+      "confidence": 0.9461862901080966
+    },
+    {
+      "n": 122,
+      "id": "vcast-auto-audit-cast",
+      "label": false,
+      "source": "archive",
+      "kind": "hard_negative",
+      "brief": "An automated health check flagged: audit-cast runaway guard failing. Read the note, fix it, then close the card.",
+      "p_yes": 0.04807814783496174,
+      "confidence": 0.9519218521650382
+    },
+    {
+      "n": 123,
+      "id": "vcast-auto-cast-browser-proxy",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "An automated health check flagged: cast-browser-proxy :8799 not answering. Read the note, fix it, then close the card.",
+      "p_yes": 0.04379827871565053,
+      "confidence": 0.9562017212843494
+    },
+    {
+      "n": 124,
+      "id": "vcast-auto-displays",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "An automated health check flagged: vcast display fleet unhealthy (dead/drifted screens). Read the note, fix it, then close the card.",
+      "p_yes": 0.04323069990710375,
+      "confidence": 0.9567693000928963
+    },
+    {
+      "n": 125,
+      "id": "vcast-auto-flap",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "An automated health check flagged: vcast flap events in last 24h. Read the note, fix it, then close the card.",
+      "p_yes": 0.04416384461489103,
+      "confidence": 0.955836155385109
+    },
+    {
+      "n": 126,
+      "id": "vcast-auto-flap-check",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "An automated health check flagged: vcast-flap-check regression fails on deployed relay. Read the note, fix it, then close the card.",
+      "p_yes": 0.034870726085045246,
+      "confidence": 0.9651292739149547
+    },
+    {
+      "n": 127,
+      "id": "vcast-auto-lease",
+      "label": false,
+      "source": "active",
+      "kind": "hard_negative",
+      "brief": "An automated health check flagged: stale vcast capture lease / camwall binding. Read the note, fix it, then close the card.",
+      "p_yes": 0.03754637201973263,
+      "confidence": 0.9624536279802673
+    },
+    {
+      "n": 128,
+      "id": "vcast-auto-relay",
+      "label": false,
+      "source": "archive",
+      "kind": "hard_negative",
+      "brief": "An automated health check flagged: input-bridge relay not healthy. Read the note, fix it, then close the card.",
+      "p_yes": 0.04267688528958147,
+      "confidence": 0.9573231147104185
+    },
+    {
+      "n": 129,
+      "id": "vcast-auto-yt-live-api",
+      "label": false,
+      "source": "archive",
+      "kind": "hard_negative",
+      "brief": "An automated health check flagged: yt-live-api :8791/status not 200. Read the note, fix it, then close the card.",
+      "p_yes": 0.05989193758333518,
+      "confidence": 0.9401080624166648
+    },
+    {
+      "n": 130,
+      "id": "wiki-education-cargo-declare-verify",
+      "label": false,
+      "source": "archive",
+      "kind": "hard_negative",
+      "brief": "Agent-owned follow-up to OPS-0038: re-apply the Cargo declare/store and verify only after the host-owned table creation passes.",
+      "p_yes": 0.4825445529921742,
+      "confidence": 0.5174554470078259
+    }
+  ]
+}

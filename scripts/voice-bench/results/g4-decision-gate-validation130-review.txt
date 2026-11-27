@@ -1,0 +1,130 @@
+R 1. [camwall-retire-to-wiki] Tony 2026-11-09: stop camwall and migrate documentation to wiki hierarchy for later restore. WARNING: camwall is a subsystem, not just an app — it feeds Ada stale-snapshot fallback, CMS cam pages, vcast walls, KK twin.
+N 2. [cms-auto-embed-healthcheck-devin] A scheduled report-page job ('embed-healthcheck-devin') is dead. Re-run it or check the generator — details in the note.
+N 3. [cms-auto-flood-report-nongdon-saraburi] A scheduled report-page job ('flood-report-nongdon-saraburi') is error. Re-run it or check the generator — details in the note.
+N 4. [cms-auto-flood-report-pattaya-rayong] A scheduled report-page job ('flood-report-pattaya-rayong') is error. Re-run it or check the generator — details in the note.
+N 5. [cms-auto-media-digest] A scheduled report-page job ('media-digest') is stale. Re-run it or check the generator — details in the note.
+N 6. [cms-auto-memory-digest] A scheduled report-page job ('memory-digest') is stale. Re-run it or check the generator — details in the note.
+R 7. [con01-runner-pilot-smoke-2] Low-risk con01 runner-agent dispatch pilot. Dispatch a tiny verification task on the chaba repo via devin-dispatch and confirm claim/start/close on con01.
+N 8. [devin-usage-allowance-visibility] DEV-0044 lever 3: est-$0 masking is acceptable only after allowance visibility lands. devin-usage.py reports window burn but not plan allowance remaining.
+R 9. [devnest-fl-pilot-report] Supervised pilot job — read the lane catalog + pilot cards and write a read-only status report artifact on the free OpenCode lane.
+R 10. [devnest-free-pilot-c] Controlled free-lane job with a report artifact to measure real usage and merge success.
+R 11. [devnest-free-pilot-doc] Produce a small docs-only artifact through OpenCode Flash Lite, then verify and merge it.
+R 12. [devnest-host-assessment-education-loop] After each deterministic read-only host assessment, publish/update one Education lesson with the fleet snapshot and evidence policy.
+R 13. [devnest-tg-command-router] Extend the live DevNest Telegram relay beyond capture-only: explain card refs and route explicit approvals through board-api.
+N 14. [disk-auto-idc03-root] Disk space on idc03 (/) is running critically low — check the note for the rate and top growers, then free space or close the card.
+N 15. [disk-auto-kk-mac-System-Volumes-Data] Disk space on kk-mac (/System/Volumes/Data) is running critically low — check the note for the rate and top growers, then free space or close the card.
+N 16. [disk-auto-kk-mac-System-Volumes-Data-home] Disk space on kk-mac (/System/Volumes/Data/home) is running critically low — check the note for the rate and top growers, then free space or close the card.
+N 17. [disk-auto-macbook-root] Disk space on macbook (/) is running low — check the note for the rate and top growers, then free space or close the card.
+N 18. [disk-auto-tony-dell-mnt-hdd-root] Disk space on tony-dell (/mnt/hdd-root) is running critically low — check the note for the rate and top growers, then free space or close the card.
+N 19. [disk-auto-tony-dell-mnt-sda5] Disk space on tony-dell (/mnt/sda5) is running critically low — check the note for the rate and top growers, then free space or close the card.
+N 20. [disk-auto-tony-dell-root] Disk space on tony-dell (/) is running low — check the note for the rate and top growers, then free space or close the card.
+R 21. [disk-guard-ssot-enforce] disk-trend-watch.py uses a flat CRIT 90% and ignores declared max_root_disk_percent (85 on dell/omen/mn01). tony-dell at 88% is missed. Add per-host threshold + 15 GiB absolute floor + underused signal.
+R 22. [dispatch-prompt-regression-harness] The dispatch prompt is the highest-blast-radius, lowest-verification artifact in the system: rails and primer merge on anecdote while micro-models get golden/hard/adversarial gates. Add a regression suite that pins build_task's contract plus a byte-budget tripwire on rail accretion.
+R 23. [dispatch-test-baseline-awareness] OpenCode closeout probe changed only README but was blocked by an identical baseline test failure. Make merge gate compare base vs branch or support explicit docs-only expected goals.
+R 24. [dispatcher-jobs-systemd-migration-impl-ops0790] Turn OPS-0790's answered migration decision into a testable code change; do not make live timer changes in this phase.
+R 25. [doc-pilot-v2-polish-music-bed-subs-shot-943456] Rough cut v1 done (ss1-roughcut.mp4, 2026-10-24). v2 scope from lesson-95610f8e4c00: music bed under narration, Thai/bilingual subs, shot QC at the i2v boundaries (shot02/18), VO ear-check, delivery decision (CMS/WP/poster). Watch the rough cut first (ada-nest/doc-pilot/final/) and prioritize.
+R 26. [door-read-ops-lesson-op-list-get-educati-6cfed7] Lessons are invisible to agents (only topics slugs exist). Add /lesson op=list (all topics+modified+level+next_review) and op=get (full content by slug) so agents + lessons-due can read without WP creds.
+R 27. [education-lesson-no-th-marker-readback] A draft Education lesson was created through lesson-add.py with --no-th, but a supported board-api /lesson op=get read-back returned meta.no_th as null. The lesson content is English-only and the writer code intends to persist no_th=true.
+R 28. [education-maintenance-consolidated-report] Combine lesson policy audit, source drift, due review, human-review status, and compliance trend into one recurring maintenance artifact.
+R 29. [eval-ide-opencode-interactive] Hands-on test of the free-lane interactive surface. opencode 1.19.4 already installed on dell + idc02.
+R 30. [evaluate-resshift-rsd-class-distilled-sr-8d9c80] Non-T2I distilled diffusion SR (ResShift/RSD) — fits omen 4GB GPU; benchmark vs realesrgan/swinir on campaign assets.
+R 31. [fix-ada-flood-news-exit] 2026-10-09 audit — ada-flood-news.service on idc02 fetches the flood news fine (journal shows fresh items through 15:01) then exits status=2/INVALIDARGUMENT. The unit is rendered from ssot.jobs.yml — fix the job definition, not the generated unit. Fails every run.
+R 32. [fix-chaba-jobs-network-scan-failure-isolation] Keep healthy dispatcher jobs running when the network-scan dashboard push fails; add per-job backoff and evidence.
+R 33. [fix-lesson-th-translation-timeout] /lesson writes hang 20s+ when the Gemini Thai-translation lane is slow/capped (hit twice: lesson-add needed --no-th manual flag). The code says best-effort EN-only fallback but _gemini_thai() has NO timeout on generate(), so the intent is unenforced.
+R 34. [fleet-mcp-inventory-report-wiki-edu] Consolidate the fleet MCP server inventory into the layered reporting standard, emit a per-host observation script and L2 fleet rollup, and integrate the published report into the wiki Reports: namespace with durable lessons in Education:.
+R 35. [gemini-api-dev-skill-install-trial-2026-11-26] Install google-gemini/gemini-skills gemini-api-dev into a skills root visible to this session, then run 2-3 realistic Gemini API coding prompts and check outputs against the skill critical rules.
+R 36. [gemini-decision-1-gate-eval-2026-11-26] Grade calibrated noul decisions on 10 real kanban briefs against a reproducible spec-present label, measure confidence and token use, decide whether to replace a full-model yes/no judgment.
+N 37. [gemini-dev-capabilities-research-2026-11-26] Explore Gemini surfaces not yet in our SSOT (Interactions/Decisions APIs, Gemini 4, Managed Agents, official skills, TTS/Voice, efficiency levers); publish an evidence-backed Education lesson.
+N 38. [gev-auto-page] An automated health check flagged: GEV page /apps/gev/ not 200. Read the note, fix it, then close the card.
+N 39. [gev-auto-ws] An automated health check flagged: GEV ws /apps/gev-live/ws upgrade fails. Read the note, fix it, then close the card.
+R 40. [grand-rename] Tony approved a full naming restructure while the system is still small. Spec lives in ssot.system-map.yml rename_map. Subsumes OPS-0726 (mn-dev rename).
+R 41. [ha-ada-isolation] Execute docs/kb/ha-ada-isolation.md — an Ada backend failure (quota storm, tool loop, token leak, bad deploy, idc03 resource exhaustion) must not damage or take down tony-ha (prod) or kk-ha (member node).
+N 42. [ha-lanes-program] TONY-HA is the stable household instance for every member; ADA-HA (Tony) is the stable private-project instance; each gets a -dev twin for final testing before release. Umbrella card for the lane build-out.
+R 43. [ha-release-pipeline] Releases become boring: build on dev, verify, promote with one command per lane, evidence recorded on the card. Extends the existing deploy-card/promote-* pattern to the two-lane topology.
+R 44. [hands-off-waiting-card-procedure] Define when queued/review cards may run and close unattended, with recoverability classes, preflight, stop gates, and Telegram reporting.
+R 45. [helm-retire-leftovers] helm-retirement card is done (2026-09-30) but leftovers remain: helm service on idc02:3003 in ssot.routes.yml, static bundle stacks/web/public/apps/helm/, ssot.apps.helm.yml still status:active. Tony 2026-11-09 confirmed retire.
+R 46. [idc01-permanent-retirement] Tony confirmed 2026-11-13: idc01 is retired permanently (superseded by idc03 since 2026-10-05/06). Remove it from host inventory, expected-unit audits, and live references so drift-reconcile and docs stop treating it as a fleet member.
+R 47. [idc02-vps-lane-canary] One-shot canary for card idc02-second-ada-pi-lane: prove a vps-labeled ada-pi dispatch claims, runs, merges, and passes the test gate on idc02.
+R 48. [idc03-disk-cleanup-20261124] idc03 at 100% (290G disk, 1.3G free). 131G in ~/mddb-backups: 127G is two *.UNVERIFIED filecopy backups (70G + 57G) whose open-verify failed 3x; valid native gz dumps (1.1G, gzip -t OK) exist for the same dates.
+R 49. [jack-opencode-cloudflare-prep] Use OpenCode for bounded config/test preparation; no live DNS, Access, secrets, or reload changes.
+R 50. [jack-opencode-cloudflare-prep-idc02] Bounded OpenCode prep for the Jack Cloudflare route on the executor host.
+R 51. [jev-claim-metadata-probe] Small verified probe for board claim metadata; should classify free_lane and persist action lane/model at the atomic claim.
+R 52. [jevnest-worker-scan-latency] The KK-Mac worker eventually processed new packages, but a single --once scan took several minutes over 25+ Drive packs before claiming newly staged work. Make queue discovery bounded and prompt without weakening claim/fallback gates.
+R 53. [kanban-card-brief] Cards currently open with note/spec jargon. Add a `brief` field — 2-3 sentences of plain language: what's the situation and what Tony's expected action is (review / answer a request / wait / nothing). Expected action on this card: none — dispatch will implement it.
+R 54. [kanban-card-compact-loading] Reduce repeated deferral history and avoid reparsing unchanged inactive cards without deleting audit history.
+R 55. [kanban-retention-archive-done-cards-olde-bba115] Done column has 1000+ cards (~6.6MB cards.json polled per client). Define and implement a retention procedure: archive stale done cards to a separate store/page, keep board fast and searchable.
+R 56. [key-watch-monitor] 2026-10-12 incident: the OR bridge key hit limit_remaining=$0 with ZERO warning — inference 403s fleet-wide until noticed in a manual sweep. leak-detection-canary (proposed) covers leaked keys, not expiry/quota — different job. Build scripts/ops/key-watch.py + systemd timer on tony-dell.
+R 57. [kk-mac-devin-decline-smoke] Boundary check: an executor=devin dispatch card pinned to kk-mac must be visibly declined by the launchd runner (devin-dispatch drives systemd-run internally — Linux-only), never silently claimed. Part of kk-mac-launchd-runner-followthrough e2e.
+R 58. [kk-mac-live-llm-probe-access-0978] Complete the already-approved single bounded KK-Mac JEV probe without enabling automatic routing.
+R 59. [kk-mac-worker-idle-poll-efficiency] KK-Mac's LaunchAgent runs nest-worker --once every 15 seconds even when the queue is empty; measure and reduce idle polling/model residency without weakening claim or verifier gates.
+R 60. [kraut-weather-bakeoff] Tony+Michael decision 2026-10-20: keep the RK600 measured report on top, append every candidate forecast source below in engineer numbers, compare together, pick a winner as a team. Demo = one-shot TG report to the mn lane.
+R 61. [lesson-audit-scheduled] The lesson-polish audit is one-shot. Make it recurring: a nest job (e.g. weekly) runs the lesson-polish pack, and any new R1/R3/R4 flags get routed to the Fable polish pass automatically — the education system audits + fixes itself.
+R 62. [lesson-polish-nest-pack] Standard procedure to scan all lesson CPT posts and polish/complete per policy (lesson-capture duty, split rule, series convention, spaced review, Thai). Run nest-style as a Drive pack with an agent lane.
+R 63. [lesson-qc-sweep] Self-reported lessons are unverified and never retire — the feedback loop has no damping. Build scripts/board/lesson_qc.py: an advisory QC pass over the lesson corpus that clusters near-duplicates, flags stale/contradicting lines, and publishes a report. Advisory only — it never deletes.
+N 64. [logs-auto-con01-add-failed] The log digest flagged something worth a look: logs `con01` MDDB add failed (full). Read the note, then fix it or close the card.
+N 65. [logs-auto-con01-backlog] The log digest flagged something worth a look: logs `con01` backlog 200. Read the note, then fix it or close the card.
+N 66. [logs-auto-con01-severe-add-failed] The log digest flagged something worth a look: logs `con01` MDDB add failed (severe). Read the note, then fix it or close the card.
+N 67. [logs-auto-coverage] The log digest flagged something worth a look: Log coverage gaps. Read the note, then fix it or close the card.
+N 68. [logs-auto-idc01-severe-spike] The log digest flagged something worth a look: logs `idc01` 73 severe/24h. Read the note, then fix it or close the card.
+N 69. [logs-auto-idc01-silent] The log digest flagged something worth a look: logs `idc01` silent 16h. Read the note, then fix it or close the card.
+N 70. [logs-auto-idc01-unreachable] The log digest flagged something worth a look: logs `idc01` ssh probe failed. Read the note, then fix it or close the card.
+N 71. [logs-auto-idc02-add-failed] The log digest flagged something worth a look: logs `idc02` MDDB add failed (full). Read the note, then fix it or close the card.
+N 72. [logs-auto-idc02-backlog] The log digest flagged something worth a look: logs `idc02` backlog 715. Read the note, then fix it or close the card.
+N 73. [logs-auto-idc02-severe-add-failed] The log digest flagged something worth a look: logs `idc02` MDDB add failed (severe). Read the note, then fix it or close the card.
+N 74. [logs-auto-idc02-severe-spike] The log digest flagged something worth a look: logs `idc02` 5156 severe/24h. Read the note, then fix it or close the card.
+N 75. [logs-auto-idc02-silent] The log digest flagged something worth a look: logs `idc02` silent 11h. Read the note, then fix it or close the card.
+N 76. [logs-auto-idc03-add-failed] The log digest flagged something worth a look: logs `idc03` MDDB add failed (full). Read the note, then fix it or close the card.
+N 77. [logs-auto-idc03-backlog] The log digest flagged something worth a look: logs `idc03` backlog 2378. Read the note, then fix it or close the card.
+N 78. [logs-auto-idc03-severe-spike] The log digest flagged something worth a look: logs `idc03` 3255 severe/24h. Read the note, then fix it or close the card.
+N 79. [logs-auto-idc03-silent] The log digest flagged something worth a look: logs `idc03` silent 16h. Read the note, then fix it or close the card.
+N 80. [logs-auto-michael-ha-silent] The log digest flagged something worth a look: logs `michael-ha` never shipped state. Read the note, then fix it or close the card.
+N 81. [logs-auto-michael-ha-unreachable] The log digest flagged something worth a look: logs `michael-ha` ssh probe failed. Read the note, then fix it or close the card.
+N 82. [logs-auto-mn01-backlog] The log digest flagged something worth a look: logs `mn01` backlog 671. Read the note, then fix it or close the card.
+N 83. [logs-auto-mn01-severe-add-failed] The log digest flagged something worth a look: logs `mn01` MDDB add failed (severe). Read the note, then fix it or close the card.
+N 84. [logs-auto-mn01-severe-spike] The log digest flagged something worth a look: logs `mn01` 1038 severe/24h. Read the note, then fix it or close the card.
+N 85. [logs-auto-mn01-silent] The log digest flagged something worth a look: logs `mn01` silent 7h. Read the note, then fix it or close the card.
+N 86. [logs-auto-mn01-unreachable] The log digest flagged something worth a look: logs `mn01` ssh probe failed. Read the note, then fix it or close the card.
+N 87. [logs-auto-tony-dell-add-failed] The log digest flagged something worth a look: logs `tony-dell` MDDB add failed (full). Read the note, then fix it or close the card.
+N 88. [logs-auto-tony-dell-backlog] The log digest flagged something worth a look: logs `tony-dell` backlog 1018. Read the note, then fix it or close the card.
+N 89. [logs-auto-tony-dell-severe-add-failed] The log digest flagged something worth a look: logs `tony-dell` MDDB add failed (severe). Read the note, then fix it or close the card.
+N 90. [logs-auto-tony-dell-severe-spike] The log digest flagged something worth a look: logs `tony-dell` 2898 severe/24h. Read the note, then fix it or close the card.
+N 91. [logs-auto-tony-dell-silent] The log digest flagged something worth a look: logs `tony-dell` silent 7h. Read the note, then fix it or close the card.
+N 92. [logs-auto-tony-dell-unreachable] The log digest flagged something worth a look: logs `tony-dell` ssh probe failed. Read the note, then fix it or close the card.
+N 93. [logs-auto-tony-omen-backlog] The log digest flagged something worth a look: logs `tony-omen` backlog 307. Read the note, then fix it or close the card.
+N 94. [logs-auto-tony-omen-severe-add-failed] The log digest flagged something worth a look: logs `tony-omen` MDDB add failed (severe). Read the note, then fix it or close the card.
+N 95. [logs-auto-tony-omen-severe-spike] The log digest flagged something worth a look: logs `tony-omen` 5010 severe/24h. Read the note, then fix it or close the card.
+N 96. [logs-auto-tony-omen-silent] The log digest flagged something worth a look: logs `tony-omen` silent 5h. Read the note, then fix it or close the card.
+R 97. [mcp-colab-control-plane] Consolidate Colab management into one MCP server (fleet pattern: mcp-gpu, mcp-llama). Wraps rclone gdrive + queue-runner state + tunnel probe so agents/Ada/IDE can submit packs, check status, fetch results without Drive poking.
+R 98. [mcp-kornia-omen-registration] mcp-kornia is declared operational/agent-lanes but configured only on tony-dell; add it to tony-omen.
+R 99. [mddb-main-bank-revision-churn-audit] Read-only audit of high-revision main-bank collections after compaction; identify writers and recommend bounded retention.
+R 100. [mediawiki-infrastructure-host-hierarchy] Consolidate host, service, timer, load, disk, and audit reports into one Infrastructure/Hosts rollup with one consolidated leaf per host, while keeping full topology private.
+R 101. [mediawiki-private-sso-boundary] Give the shared MediaWiki instance a private in-house hostname and identity-based login so Ada HA can open Infrastructure pages without a second manual login, while public News remains anonymous-safe.
+R 102. [memory-extract-merge-proposals] Surface probable canonical updates hidden in extract drafts as reviewable proposals — never auto-write. Builds on memory-distill + consolidate-memory; closes the ADA-0478 leg-3 gap without giving up the human review gate on memory writes.
+R 103. [memory-lane-policy] Formalize how Ada memory banks map onto the two HA lanes so household members get shared+private memory, Tony gets his private banks, and staging/test traffic can't pollute production memory.
+R 104. [merge-sweep-conflict-request-flood] 3 review cards carry 15-18 duplicate merge-conflict-* requests. open_conflict_req() counts only UNANSWERED ones, so once a human answers, the next 15-min pass posts a fresh request. Gate on conflict signature (head + paths), not answer state.
+R 105. [merge-sweep-verified-gate] merge-sweep marked nest-manager-node verified because its branch merged — but the dispatch unit exited 1s in (empty DEVIN_MODEL) and produced nothing. verified should mean the card's expected_goals/auto_done_when checks pass or the outcome doc exists, not just "branch in master".
+R 106. [mn-ha-v4-8123-blocked] ada-ai-kraut's HOME_ASSISTANT_URL was dead: idc03->michael-ha v4 :8123 times out (silent drop). All HA tools on the mn lane errored (get_rk600_weather, home_search — journal shows failures since ~Oct 17). Interim fix shipped: HOME_ASSISTANT_URL switched to the v6 ULA literal, lane verified live.
+R 107. [nest-api-unified-mutation-service] One write door for agents: cards, nest-job CPT, lessons, reports, inbox — same doctrine as the card write-path split, applied to every mutable surface.
+R 108. [nest-evidence-loop] Tony (2026-10-08): evidence is everything — every answer, bench result, and research finding must land as a CMS report page per cms-page-standard, discussable with Ada and assessable by Devin, automatically. Governance map + loop structure in docs/kb/nest-asher-polity-inspiration.md.
+R 109. [nest-mgr-v2-actuation] Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes eligible queued work to idle hosts — without bypassing owner/quota/leash gates. Build on the v1 census and the devnest-capacity-aware-dispatch lane machinery.
+R 110. [nest-report-integration] The chaba-nest CMS hub renders lanes + bench scorecards but is invisible to the report node registry — no meta.yml, no staleness, no SYSTEM-REPORT presence, no runtime telemetry. Register the nodes and close the telemetry gap.
+N 111. [opencode-safe-storage-cleanup-report] Use OpenCode for read-only storage triage and reporting; deterministic allowlisted cleanup only after policy checks and Telegram report.
+N 112. [runner-auto-con01] Automated fleet audit found provisioning gaps on con01 that will strand dispatch cards. Read the note, fix on the host, close the card.
+N 113. [runner-auto-idc01] Automated fleet audit found provisioning gaps on idc01 that will strand dispatch cards. Read the note, fix on the host, close the card.
+N 114. [runner-auto-idc02] Automated fleet audit found provisioning gaps on idc02 that will strand dispatch cards. Read the note, fix on the host, close the card.
+N 115. [runner-auto-idc03] Automated fleet audit found provisioning gaps on idc03 that will strand dispatch cards. Read the note, fix on the host, close the card.
+N 116. [runner-auto-kk-mac] Automated fleet audit found provisioning gaps on kk-mac that will strand dispatch cards. Read the note, fix on the host, close the card.
+N 117. [runner-auto-mn01] Automated fleet audit found provisioning gaps on mn01 that will strand dispatch cards. Read the note, fix on the host, close the card.
+N 118. [runner-auto-tony-dell] Automated fleet audit found provisioning gaps on tony-dell that will strand dispatch cards. Read the note, fix on the host, close the card.
+N 119. [runner-auto-tony-macbook] Automated fleet audit found provisioning gaps on tony-macbook that will strand dispatch cards. Read the note, fix on the host, close the card.
+N 120. [runner-auto-tony-omen] Automated fleet audit found provisioning gaps on tony-omen that will strand dispatch cards. Read the note, fix on the host, close the card.
+N 121. [service-onboarding-standard] A checklist for adding new services cleanly was drafted after recent migrations missed steps. It needs a decision — read the note and pick a direction.
+N 122. [vcast-auto-audit-cast] An automated health check flagged: audit-cast runaway guard failing. Read the note, fix it, then close the card.
+N 123. [vcast-auto-cast-browser-proxy] An automated health check flagged: cast-browser-proxy :8799 not answering. Read the note, fix it, then close the card.
+N 124. [vcast-auto-displays] An automated health check flagged: vcast display fleet unhealthy (dead/drifted screens). Read the note, fix it, then close the card.
+N 125. [vcast-auto-flap] An automated health check flagged: vcast flap events in last 24h. Read the note, fix it, then close the card.
+N 126. [vcast-auto-flap-check] An automated health check flagged: vcast-flap-check regression fails on deployed relay. Read the note, fix it, then close the card.
+N 127. [vcast-auto-lease] An automated health check flagged: stale vcast capture lease / camwall binding. Read the note, fix it, then close the card.
+N 128. [vcast-auto-relay] An automated health check flagged: input-bridge relay not healthy. Read the note, fix it, then close the card.
+N 129. [vcast-auto-yt-live-api] An automated health check flagged: yt-live-api :8791/status not 200. Read the note, fix it, then close the card.
+N 130. [wiki-education-cargo-declare-verify] Agent-owned follow-up to OPS-0038: re-apply the Cargo declare/store and verify only after the host-owned table creation passes.
