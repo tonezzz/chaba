@@ -1,7 +1,7 @@
 id: idc03-swap-workload-placement
 title: 'MEM-1511: idc03 swap 4/4 GiB — workload placement triage'
 column: done
-updated: 2026-11-27 21:06
+updated: 2026-11-28 06:19
 brief: 'After MEM-1507/1510 fixes, idc03 still has 4.0/4.0 GiB swap used, 5.1 GiB RAM available, user cgroup 14.4
   GiB RAM + 4.16 GiB swap. Top swap holders: jevos 761MiB, ada-dev 243MiB, ada-kk-dev 184MiB, ada-bankq-student
   309MiB, ada-chaba 364MiB, ada-ha-ada 359MiB, mddb-cms 290MiB.'
@@ -128,6 +128,9 @@ comms:
     avail 9.92%, 0 swap, jev RSS 1543 MiB). Restart=on-failure treated the SIGTERM as a clean exit, so it stayed
     down ~17min. Restored via enable --now; /health=200 in 15s, PID 1353079, listener on 100.123.163.11:8017. Tracked
     as OPS-1516 for a durable fix; evidence doc updated. All other OPS-1511 verification remains valid.'
+- at: 2026-11-28 06:19
+  from: tony
+  text: 'answered idc03-swap-placement-two-owner-decisions-c55571: proceed'
 action:
   type: dispatch
   status: done
@@ -165,10 +168,11 @@ requests:
     with open-jev:8777, only 6GiB avail. (c) Move to con01 — most RAM but load~10, no swap. (d) Keep on idc03 +
     add open-jev-guard-style swap-reclaim timer (restart when MemorySwapCurrent>threshold) — zero migration, partial
     reclaim. (e) Retire — verify open-jev:8777+jev-student:8778 already cover the lane. Which destination?'
-  status: open
+  status: answered
   at: 2026-11-27 19:30
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 review_kind: verify
