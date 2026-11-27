@@ -1,6 +1,6 @@
 id: runner-converge-dirty-pinned-source-guard
 title: 'runner-tools-converge: detect dirty pinned sources before deploy (fail-loop + drift churn)'
-column: backlog
+column: doing
 updated: 2026-11-27 20:47
 brief: 'idc02 exec checkout had an uncommitted edit to scripts/board/dispatch_repos.py (JEVOS_URL WIP). Its runner-tools-converge.timer
   (~2min cadence) ran deploy-runner-tools.yml --limit idc02 from the dirty checkout: copy installed the WIP bytes,
@@ -37,9 +37,15 @@ comms:
 - at: 2026-11-27 20:47
   from: chaba
   text: '[auto-dispatch] wave 34 (2026-11-27 20:47): queued by the overnight incremental dispatcher; all gates clear.'
+- at: 2026-11-27 20:47
+  from: mn01
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: codemod
   lane_source: kw
-claim: {}
+  runner: mn01
+  attempts: 1
+claim:
+  since: 2026-11-27 20:47
