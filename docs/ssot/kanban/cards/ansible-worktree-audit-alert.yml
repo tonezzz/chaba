@@ -1,7 +1,7 @@
 id: ansible-worktree-audit-alert
 title: 'Ansible audit: worktree hygiene drift/fail'
 column: done
-updated: 2026-11-27 20:14
+updated: 2026-11-28 06:38
 spec: 'Read-only ansible audit-worktrees detected fail/drift/unreachable hosts. Hosts: con01, idc02, idc03, mn01,
   tony-dell, tony-omen. Report dir: reports/ansible-benchmark/worktrees/. No remediation performed.'
 action:
@@ -56,3 +56,10 @@ comms:
 - at: 2026-11-27 20:14
   from: tony
   text: closed by tony
+- at: 2026-11-28 06:38
+  from: devin
+  text: 'ansible audit-worktrees: 7 host(s) alerting. fp=con01:drift|idc02:fail|idc03:fail|mn01:drift|tony-dell:fail|tony-macbook:drift|tony-omen:drift.
+    [{"host": "con01", "kind": "drift", "summary": "drift"}, {"host": "idc02", "kind": "fail", "summary": "fail"},
+    {"host": "idc03", "kind": "fail", "summary": "fail"}, {"host": "mn01", "kind": "drift", "summary": "drift"},
+    {"host": "tony-dell", "kind": "fail", "summary": "fail"}, {"host": "tony-macbook", "kind": "drift", "summary":
+    "drift"}, {"host": "tony-'
