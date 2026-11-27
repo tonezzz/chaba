@@ -1,7 +1,7 @@
 id: omen-lan-reservation
 title: tony-omen LAN IP needs DHCP reservation (or dynamic refs)
-column: doing
-updated: 2026-11-27 15:44
+column: review
+updated: 2026-11-27 15:47
 brief: 'Omen DHCP drifted 192.168.2.86->.84 on 2026-10-12 and silently broke every hardcoded LAN reference (cast-browser-proxy
   target, cast-shots-http bind, MEDIA_BASE, barrier scripts). Proxy+shots now DHCP-proof, but MEDIA_BASE=http://192.168.2.84:8090
   must stay a LAN IP (Chromecast cannot reach tailnet) — it will break again on the next renumber. Fix: pin a DHCP
@@ -344,6 +344,33 @@ comms:
     merge-base blob + skip-worktree) so the recurring producer regen cannot re-conflict. Branch delta vs master
     = exactly the 7 deliverable files; git merge-tree vs origin/master clean. Re-verified live: from tony-dell ping
     192.168.2.86 OK + http://192.168.2.86:8090/ -> 200; on omen'
+- at: 2026-11-27 15:47
+  from: idc02
+  text: 'finished (ok): exit=0 ee before finishing). Final comms posted to the card; close-out should now land the
+    merge cleanly. | devin-task-2'
+- at: 2026-11-27 15:47
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 15:47
+  from: chaba
+  text: banked 28 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-27 15:47
+  from: chaba
+  text: pushed dispatch/20261127-152620-configure-a-static-dhcp-reserv to origin
+- at: 2026-11-27 15:47
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_board_api_liveness.py tests/board/test_kanban_act.py
+    tests/board/test_wiki_extension.py tests/board/test_board_ap
+- at: 2026-11-27 15:47
+  from: chaba
+  text: auto-merged 13277333 (dispatch/20261127-152620-configure-a-static-dhcp-reserv) → origin/master
+- at: 2026-11-27 15:47
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-152620-configure-a-static-dhcp-reserv,
+    branch dispatch/20261127-152620-configure-a-static-dhcp-reserv'
 requests:
 - id: the-card-notes-that-the-tony-o-1dbcf8
   ask: The card notes that the tony-omen LAN IP needs a DHCP reservation or dynamic refs, but does not specify the
@@ -377,15 +404,16 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: running
+  status: done
   attempts: 2
   sweep:
     stale_running: 2026-11-27 14:55
     dirty: 1
-  result: 'exit=0 ve to .86 for non-Tailscale LAN clients — left as documented since the .86 literal is the contract).
-    | devin-task-20261127-142035-configure-a-static-dhcp-reserv.service: Consumed 3min 48.402s CPU time, 1.1G memory
-    peak, 0B memory swap peak.'
+  result: 'exit=0 ee before finishing). Final comms posted to the card; close-out should now land the merge cleanly.
+    | devin-task-20261127-152620-configure-a-static-dhcp-reserv.service: Consumed 4min 35.598s CPU time, 582.7M
+    memory peak, 0B memory swap peak.'
   runner: idc02
+  verified: true
 claim:
   since: 2026-11-27 15:25
 review_kind: verify
