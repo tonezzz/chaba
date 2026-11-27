@@ -1,7 +1,7 @@
 id: restic-backup-intermittent-exit-fix-unpinned
 title: fleet-restic-backup on tony-macbook intermittently exits 1
 column: doing
-updated: 2026-11-27 09:39
+updated: 2026-11-27 09:41
 spec: fleet-restic-backup.service on tony-macbook alternates between Result=success (1.8-4.9s) and status=1/FAILURE
   on consecutive runs (including 09:06). Read the full journal around the failed runs to identify the actual restic
   error (repository lock, target tony-dell:/mnt/sdb unavailable, or a transient network drop), then add a bounded
@@ -49,5 +49,9 @@ comms:
     finished (failed): exit=1 /FAILURE | devin-ta; [ops-1025-remote-read-smoke-idc03] finished (failed): exit=1
     1/FAILURE | devin-t; [ansible-vs-legacy-fleet-benchmark] finished (failed): journal=exit-code hmark-a; [devin-session-audit-2026-10-29]
     finished (failed): journal=e'
+- at: 2026-11-27 09:41
+  from: devin
+  text: claimed on tony-dell worktree; SSH to tony-macbook OK — reading fleet-restic-backup.sh + unit + journal
+    around failed runs now
 claim:
   since: 2026-11-27 09:37
