@@ -1,7 +1,7 @@
 id: timer-alert-idc02-ada-ocb-smoke
 title: Timer ada-ocb-smoke on idc02 failing
 column: doing
-updated: 2026-11-27 08:52
+updated: 2026-11-27 08:55
 priority: high
 tags:
 - timer-alert
@@ -595,6 +595,10 @@ comms:
     but never committed, so it kept reverting (3rd recurrence). Fix: committed 02e8365 on dispatch branch (ADA-0172->ADA-1110
     + per-check 15s budgets, byte-identical to proven .bak-retry); hot-applied same bytes to idc02 checkout (ff-pulled
     to 0a5dbd8 first). Verified: manual'
+- at: 2026-11-27 08:55
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-083400-investigate-the-failure-of-ada no longer active on idc02 but card
+    still says running — sweeping its branch'
 action:
   status: running
   type: dispatch
@@ -603,6 +607,8 @@ action:
   lane: paid_frontier
   runner: idc02
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 08:55
 spec: Investigate the failure of `ada-ocb-smoke.service` on host idc02 by checking the user journal via `journalctl
   --user -u ada-ocb-smoke.service`, and redeploy the runner-agent from the chaba repository to idc02 by copying
   scripts/board/runner-agent.py to ~/.local/bin/runner-agent. The target host is idc02 and the relevant repository
