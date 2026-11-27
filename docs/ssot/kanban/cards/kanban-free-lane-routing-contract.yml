@@ -1,7 +1,7 @@
 id: kanban-free-lane-routing-contract
 title: 'Kanban lane-routing contract: free-first dispatch, envelope, verify, escalate'
-column: review
-updated: 2026-11-26 23:44
+column: done
+updated: '2026-11-27'
 brief: 'Codify the lane-routing and closeout contract proven by the ADA-0242 free-lane pilot and the ADA-0042 runner
   fixes: exhaust free/deterministic lanes before paid_frontier and Devin; every opencode dispatch carries a complete
   lane_envelope; verification is held-out and merge-gated; escalation is deliberate and recorded.'
@@ -324,3 +324,9 @@ comms:
 claim:
   since: 2026-11-26 21:38
 review_kind: verify
+note: '[verify 2026-11-27] Recovered the uncommitted idc02 dispatch worktree implementation and landed it as 7c5c014a6b.
+  board-api now stages action.lane_envelope at queue time for opencode free_lane cards (executor=devin pin escape
+  hatch intact); dispatch_repos.lane_envelope_plan derives a complete admission-valid envelope. Also synced master''s
+  divergent runner-agent LANE_MODELS to litellm/agent-local (OPS-1363) and added it to the ops-readonly profile
+  allowlist. 276 tests pass (feature + tooling contract); pre-existing lane-gate test failure on clean master left
+  untouched. Fleet converged to 0 failing / 8 ok with refreshed pins.'
