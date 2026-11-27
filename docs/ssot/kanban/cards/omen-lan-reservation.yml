@@ -1,7 +1,7 @@
 id: omen-lan-reservation
 title: tony-omen LAN IP needs DHCP reservation (or dynamic refs)
 column: doing
-updated: 2026-11-27 15:26
+updated: 2026-11-27 15:29
 brief: 'Omen DHCP drifted 192.168.2.86->.84 on 2026-10-12 and silently broke every hardcoded LAN reference (cast-browser-proxy
   target, cast-shots-http bind, MEDIA_BASE, barrier scripts). Proxy+shots now DHCP-proof, but MEDIA_BASE=http://192.168.2.84:8090
   must stay a LAN IP (Chromecast cannot reach tailnet) — it will break again on the next renumber. Fix: pin a DHCP
@@ -332,6 +332,11 @@ comms:
     2026-11-18 lost ALL drop-ins (stagger + gates) — ; `- ` YAML sequence items containing `: ` must be quoted or
     they parse as mapping; [publish-promote-knowledge-capture-ssot-w-d34a39] Phase B+ ansible session-captu; runbook
     docs/kb/host-hygiene-rules.md: Host Hygiene Rules — h'
+- at: 2026-11-27 15:29
+  from: devin
+  text: 'attempt 2: prior run delivered all work but auto-merge conflicted on docs/ssot/ssot.dev-system.assessment.yml
+    (generated file, last_reviewed timestamp only). Merging dispatch/20261127-142035 into this branch and resolving
+    now.'
 requests:
 - id: the-card-notes-that-the-tony-o-1dbcf8
   ask: The card notes that the tony-omen LAN IP needs a DHCP reservation or dynamic refs, but does not specify the
