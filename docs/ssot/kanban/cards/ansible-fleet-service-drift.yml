@@ -1,7 +1,7 @@
 id: ansible-fleet-service-drift
 title: 'Ansible audit: fleet service drift detected'
 column: done
-updated: 2026-11-27 16:20
+updated: 2026-11-28 06:33
 spec: 'Read-only ansible audit-fleet-services detected service/resource drift vs ssot.audit.hosts.yml. Hosts: con01,
   idc02, idc03, mn01, tony-dell, tony-omen. Report dir: reports/ansible-benchmark/services/. No remediation performed.'
 action:
@@ -127,3 +127,8 @@ comms:
 - at: 2026-11-27 16:20
   from: chaba
   text: closed by chaba
+- at: 2026-11-28 06:33
+  from: devin
+  text: 'ansible audit-fleet-services: 6 host(s) with drift. fp=con01:3|idc02:1|idc03:14|mn01:1|tony-dell:1|tony-omen:2.
+    [{"host": "con01", "count": 3}, {"host": "idc02", "count": 1}, {"host": "idc03", "count": 14}, {"host": "mn01",
+    "count": 1}, {"host": "tony-dell", "count": 1}, {"host": "tony-omen", "count": 2}]'
