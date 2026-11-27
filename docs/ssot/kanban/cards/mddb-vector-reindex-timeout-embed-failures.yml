@@ -1,7 +1,7 @@
 id: mddb-vector-reindex-timeout-embed-failures
 title: 'con01 mddb-vector-reindex: 13 embed failures, then 45min timeout'
 column: doing
-updated: 2026-11-27 21:19
+updated: 2026-11-27 21:39
 brief: '2026-11-26 run: embedded=5 skipped=111688 failed=13 (ada-cms-pages:1, ada-ha-bank-devin-handoff:1, ada-ha-events-michael:1,
   ada-ha-scenario-reports:10). 2026-11-27 05:40 run hit TimeoutStartSec and was TERMed at 06:25.'
 priority: medium
@@ -58,6 +58,13 @@ comms:
 - at: 2026-11-27 21:19
   from: chaba
   text: 'con01 defers: runner at local cap (1/1) — remote slots unaffected'
+- at: 2026-11-27 21:39
+  from: devin
+  text: 'progress: triage done — root cause is structural, not timeout size. Sweep = 64 sequential SYNC /v1/vector-reindex
+    calls; ada-ha-bank-devin-handoff alone has 149,550 docs (86% of 173,924-doc corpus) and the handler materializes
+    all docs + does one bolt View tx per doc for the hash-skip check. No global deadline vs 45min unit budget, no
+    resume state, ops event only emitted at end (SIGTERM = zero telemetry). Live-verified: deployed 2.18.10 already
+    supports async reindex jobs (202+poll, per-doc prog'
 action:
   type: dispatch
   status: running
