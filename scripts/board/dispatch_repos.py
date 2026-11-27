@@ -179,7 +179,7 @@ DEVIN_LANE_MODELS = {
 }
 LANE_EXECUTORS = {"codemod": "script", "manual": None,
                 "nlm_batch": "nlm_batch"}
-JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
+JEVOS = os.environ.get("JEVOS_URL", "http://100.123.163.11:8017")
 
 # ------------------------------------------------- executor contract
 #
