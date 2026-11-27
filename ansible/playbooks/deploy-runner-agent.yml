@@ -15,24 +15,84 @@
 # nightly. macOS hosts are excluded: kk-mac has its own launchd + never-downgrade
 # sync path (scripts/devin/sync-runner-tools.sh), not systemd.
 #
+# Two plays, portable FIRST and always-on LAST — ansible's process exit code
+# is the LAST play's result, so the always-on play keeps the unit's failure
+# semantics:
+#
+#   * portable (tony-macbook, mn01 — laptops that sleep/off-net is normal)
+#     runs with ignore_unreachable: true. Before the split, one sleeping
+#     laptop made ansible exit 4 (HOST_UNREACHABLE — systemd reports it as
+#     status=4/NOPERMISSION) and failed the whole nightly unit even though
+#     every reachable host converged cleanly (2026-11-27 03:30 run).
+#   * always-on hosts keep hard-fail semantics: an unreachable idc0x/con01
+#     still exits non-zero so real outages keep alerting.
+#
 # Restored 2026-11-25 from the untracked snapshot in commit f6c323dab1 —
 # the nightly unit referenced this path but the file was never committed,
 # which made every nightly run fail with "playbook could not be found".
 
-- name: Converge runner-agent across the fleet
-  hosts: all:!macos:!disabled
+- name: Converge runner-agent on portable hosts (best-effort)
+  hosts: portable:!disabled
   gather_facts: true
   become: false
+  # Laptops sleep/off-net is normal — an unreachable portable host is counted
+  # ok+ignored instead of failing the play (ansible exit 4 -> unit exit-code).
+  # Paths use ~ (remote $HOME), NOT ansible_facts.user_dir: a host unreachable
+  # at gather_facts keeps no facts, so fact-based paths would turn the ignored
+  # unreachable into a real task FAILURE on the next task.
+  ignore_unreachable: true
 
   vars:
     runner_src: "{{ playbook_dir }}/../../scripts/board/runner-agent.py"
-    runner_dest: "{{ ansible_user_dir }}/.local/bin/runner-agent"
+    runner_dest: "~/.local/bin/runner-agent"
     runner_mode: "0755"
 
   tasks:
     - name: Ensure ~/.local/bin exists
       ansible.builtin.file:
-        path: "{{ ansible_user_dir }}/.local/bin"
+        path: "~/.local/bin"
+        state: directory
+        mode: "0755"
+
+    - name: Deploy runner-agent only if it drifted (idempotent, checksum-gated)
+      ansible.builtin.copy:
+        src: "{{ runner_src }}"
+        dest: "{{ runner_dest }}"
+        mode: "{{ runner_mode }}"
+      register: runner_deploy
+      notify: restart runner-agent
+
+    - name: Report convergence result
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }}:
+          {{ 'REDEPLOYED' if (runner_deploy.changed | default(false)) else 'in-sync' }}
+
+  handlers:
+    - name: restart runner-agent
+      # no_block keeps a sleeping/off-net laptop from stalling the whole
+      # fleet run (a synchronous systemctl over SSH hung >2m on tony-macbook).
+      ansible.builtin.systemd_service:
+        name: runner-agent
+        scope: user
+        state: restarted
+        no_block: true
+      ignore_errors: true
+
+- name: Converge runner-agent on always-on hosts
+  hosts: all:!macos:!disabled:!portable
+  gather_facts: true
+  become: false
+
+  vars:
+    runner_src: "{{ playbook_dir }}/../../scripts/board/runner-agent.py"
+    runner_dest: "~/.local/bin/runner-agent"
+    runner_mode: "0755"
+
+  tasks:
+    - name: Ensure ~/.local/bin exists
+      ansible.builtin.file:
+        path: "~/.local/bin"
         state: directory
         mode: "0755"
 
