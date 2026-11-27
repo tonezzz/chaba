@@ -1,37 +1,23 @@
 id: runner-auto-kk-mac
-title: Runner host `kk-mac` fails 4 dispatch bootstrap check(s)
+title: Runner host `kk-mac` fails 1 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on kk-mac that will strand dispatch cards. Read the note, fix
   on the host, close the card.
-column: done
+column: review
 review_kind: triage
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
-priority: medium
-note: 'Failing: probe failed: ssh: connect to host 100.108.217.17 port 22: Connection timed out.'
+priority: high
+note: 'Failing: chaba clone 268 commits behind origin/master (limit 200). Info: chaba origin is fetch-only (by design
+  — no push creds); merge-sweep salvage path verified; devin-dispatch intentionally absent — declared lanes do not
+  serve the devin executor; repos.conf differs from canonical (extra=[] missing=[''ada-voice'', ''gods-eye-view'',
+  ''mddb-fork'', ''sunsynk-card''] branch-diff=[]) — per-host table, review only; devin CLI intentionally absent
+  — declared lanes do not serve the devin executor.'
 help: 'Per-check fixes:
 
-  - tool-pin: A deployed tool''s sha differs from the pin read from origin/master (scripts/devin/runner-tooling.manifest.json).
-  Refresh the checkout FIRST (git -C ~/CascadeProjects/chaba pull --ff-only), then run scripts/devin/sync-runner-tools.sh.
-  If the checkout matches the pin but the install does not, the sync was skipped — check the sync-runner-tools journal
-  line (dirty source / no pin / never-downgrade). Do not edit the manifest on a host; bump it in the same commit
-  as the tool.
-
-  - tool-pin: A deployed tool''s sha differs from the pin read from origin/master (scripts/devin/runner-tooling.manifest.json).
-  Refresh the checkout FIRST (git -C ~/CascadeProjects/chaba pull --ff-only), then run scripts/devin/sync-runner-tools.sh.
-  If the checkout matches the pin but the install does not, the sync was skipped — check the sync-runner-tools journal
-  line (dirty source / no pin / never-downgrade). Do not edit the manifest on a host; bump it in the same commit
-  as the tool.
-
-  - tool-pin: A deployed tool''s sha differs from the pin read from origin/master (scripts/devin/runner-tooling.manifest.json).
-  Refresh the checkout FIRST (git -C ~/CascadeProjects/chaba pull --ff-only), then run scripts/devin/sync-runner-tools.sh.
-  If the checkout matches the pin but the install does not, the sync was skipped — check the sync-runner-tools journal
-  line (dirty source / no pin / never-downgrade). Do not edit the manifest on a host; bump it in the same commit
-  as the tool.
-
-  - runner-agent: Usually self-heals within one chaba-repo-sync tick (sync-runner-tools.sh via git-safe-pull). Manual:
-  scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent && ssh <host> chmod +x ~/.local/bin/runner-agent'
-updated: 2026-11-27 10:31
+  - clone-stale: ssh <host> ''git -C ~/CascadeProjects/chaba pull --ff-only'' — stale clones crash runner-agent
+  on missing dispatch_repos helpers (idc01, 860 behind).'
+updated: '2026-11-27'
 comms:
 - at: 2026-11-26 13:30
   from: devin
