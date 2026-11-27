@@ -1,7 +1,7 @@
 id: ops-1025-remote-read-smoke-idc03
 title: 'OPS-1025 one-shot remote-read verification: idc02 to idc03'
 column: doing
-updated: 2026-11-27 08:05
+updated: 2026-11-27 08:15
 brief: One supervised, read-only S3 verification of the merged remote-read gates.
 priority: medium
 program: OPS-1025
@@ -891,6 +891,17 @@ comms:
   from: chaba
   text: model litellm/or-free-nemotron-nano dropped — provider namespace doesn't match executor=devin; running the
     executor default
+- at: 2026-11-27 08:10
+  from: chaba
+  text: 'answer-sweep: ''answer — Answer — reply in chat'' resolves job-input-ops-1025-remote-read-smoke-idc03 —
+    no board action (option ''answer'' action=none)'
+- at: 2026-11-27 08:15
+  from: devin
+  text: 'devin-pinned attempt 2026-11-27: BLOCKED at the tool layer, no diagnosis possible. (1) mcp-debug MCP server
+    never connects in devin sessions on idc02 — spawned as python3 -m mcp_debug.server with no PYTHONPATH/cwd=scripts
+    → ModuleNotFoundError → connection closed (reproduced manually; failing across all recent devin logs). (2) Even
+    if it ran, idc03 is NOT in ssot.mcp-debug.yml hosts (only tony_omen,tony_dell,macbook,con01) so mcp_debug(host=idc03)
+    returns unknown host — the tool response cannot '
 claim:
   since: 2026-11-26 23:44
 requests:
@@ -906,6 +917,7 @@ requests:
   - proceed
   - hold
   answer: proceed
+  executed: 2026-11-27 queue (already running)
 - id: job-input-ops-1025-remote-read-smoke-idc03
   ask: 'Job needs your input: How should OPS-1025 proceed now that the remote-read path to idc03 is blocked at two
     tooling layers (mcp-debug spawn config + idc03 missing from the mcp-debug host registry)?'
@@ -920,3 +932,4 @@ requests:
     label: Hold — leave blocked
     action: hold
   answer: answer — Answer — reply in chat
+  executed: 2026-11-27 none
