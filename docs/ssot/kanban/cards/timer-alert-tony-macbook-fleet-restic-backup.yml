@@ -1,7 +1,7 @@
 id: timer-alert-tony-macbook-fleet-restic-backup
 title: Timer fleet-restic-backup on tony-macbook failing
 column: backlog
-updated: 2026-11-27 09:35
+updated: 2026-11-27 09:57
 priority: high
 tags:
 - timer-alert
@@ -18,3 +18,10 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-27 09:06) of `fleet-restic-backup.service` on `tony-macbook` result=exit-code
     — investigate journal: `journalctl --user -u fleet-restic-backup.service` on the host. See CMS `timer-timeline-tony-macbook`.'
+- at: 2026-11-27 09:57
+  from: devin
+  text: 'RESOLVED 2026-11-27 (card restic-backup-intermittent-exit-fix-unpinned / OPS-1486). The 11-27 09:06 exit-1
+    was a Persistent-timer catch-up 14s after boot before Tailscale was up — ssh to tony-dell: Network is unreachable.
+    fleet-restic-backup.sh on tony-macbook now waits <=180s for the repo host and retries restic 4x with backoff
+    + DIAGNOSIS logging. Verified: 4 consecutive manual runs Result=success; snapshot 65c3694b present in /dell-backup/restic-fleet/tony-macbook.
+    Safe to close — next schedu'
