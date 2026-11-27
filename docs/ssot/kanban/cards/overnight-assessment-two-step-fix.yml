@@ -1,7 +1,7 @@
 id: overnight-assessment-two-step-fix
 title: 'overnight-assessment: log-sweep row conversion + stale sensor health'
 column: doing
-updated: 2026-11-27 11:25
+updated: 2026-11-27 11:29
 spec: 'overnight-assessment.service on idc03 fails 3 of 4 recent runs. reports/ORCHESTRATION.json shows 3/6 steps
   ok; the ssot_validate failure from a malformed YAML trail doc was already fixed and pushed (3219cd79f40). Two
   real failures remain:
@@ -27,6 +27,8 @@ action:
   status: running
   runner: mn01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 11:29
 ref: OPS-1493
 comms:
 - at: 2026-11-27 10:42
@@ -83,5 +85,9 @@ comms:
     (master already had identical line-91 fix via 1ac983ba66; my branch adds the latent chars:0 KeyError fix behind
     it). (2) health_snapshot root cause = tony-omen net.ipv4.ip_forward=0 from 99-chaba-hardening.conf (11-26) silently
     dropping ALL docker published'
+- at: 2026-11-27 11:29
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-104422-overnight-assessment-service-o no longer active on mn01 but card
+    still says running — sweeping its branch'
 claim:
   since: 2026-11-27 10:43
