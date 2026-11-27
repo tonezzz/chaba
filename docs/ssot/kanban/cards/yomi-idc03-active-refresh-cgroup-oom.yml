@@ -1,7 +1,7 @@
 id: yomi-idc03-active-refresh-cgroup-oom
 title: 'MEM-1508: idc03 yomi-api cgroup OOM loop from active refresh sweep'
 column: done
-updated: 2026-11-27 19:17
+updated: 2026-11-27 19:26
 brief: yomi-api 2 GiB cgroup is hit repeatedly by yomi-update-active refresh of top-20 chats; mcpb/run.mjs browser
   worker grows to ~2 GiB on heavy chats. 9 CONSTRAINT_MEMCG kills 18:00-18:44.
 priority: high
@@ -77,6 +77,24 @@ comms:
     kills since 18:50:55 restart, 18:54 sweep clean. Found one residual spec gap: NODE_OPTIONS=1536 in yomi-api.env
     never reaches run.mjs — MCP StdioClientTransport only inherits a safe env subset (HOME/PATH/...), so the mcpb
     worker heap stayed uncapped. Landed the missing piece on dis'
+- at: 2026-11-27 19:26
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 19:26
+  from: chaba
+  text: banked 1040 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-27 19:26
+  from: chaba
+  text: pushed dispatch/20261127-184834-keep-memory-2g-cap-bound-work- to origin
+- at: 2026-11-27 19:26
+  from: chaba
+  text: "auto-merge not done: push: To https://github.com/tonezzz/chaba.git\n ! [rejected]                HEAD ->
+    master (fetch first)\nerror: failed to push some refs to 'https://github.com/tonezzz/chaba.git'\nhint: Updates
+    were rejected  — close will block until merged"
+- at: 2026-11-27 19:26
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-184834-keep-memory-2g-cap-bound-work-,
+    branch dispatch/20261127-184834-keep-memory-2g-cap-bound-work-'
 action:
   type: dispatch
   status: done
