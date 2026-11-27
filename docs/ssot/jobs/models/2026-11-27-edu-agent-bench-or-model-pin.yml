@@ -1,0 +1,61 @@
+title: Store-awareness A/B — pinned free OpenRouter model made the default
+subtitle: clawbot lane default is now nvidia/nemotron-3.5-super-vl:free;
+  raw OR slugs bypass the LiteLLM gateway so the pin is host-independent
+icon: flask
+version: 1
+
+card: pin-a-free-openrouter-model-for-store-aw-ed0cc2
+date: 2026-11-27
+host: tony-dell (worktree); A/B target host mn01 (openrouter.env)
+parent: docs/ssot/jobs/models/2026-10-24-edu-agent-bench-nemotron-supervl-baseline.yml
+model: nvidia/nemotron-3.5-super-vl:free
+
+change: |
+  scripts/bench-edu-manage.py (the store-awareness A/B pipeline —
+  --lanes clawbot [--agent-topics] on the 13-task MockStore fixture):
+  - new OR_PINNED_MODEL constant; --or-model default changed from
+    openrouter/free (dynamic router — rotated 8-12 model IDs per rep in
+    the 2026-10-24 run and can land on non-chat/paid legs) to the pinned
+    :free slug. openrouter/free remains available via explicit
+    --or-model openrouter/free.
+  - clawbot lane routing: the LiteLLM gateway branch now applies only
+    to the dynamic default (-> gemini-3.5-flash-lite-free twin) and to
+    gateway alias names (no '/' in the model name). Raw OR slugs
+    (vendor/model[:free]) always go direct to OR_BASE — previously an
+    explicit --or-model pin on a litellm-creds host was forwarded to the
+    gateway verbatim and 404'd (no such model_name). The pin now
+    resolves identically on every host.
+  - orkey secret search widened to litellm-keys.env / litellm-ada.env so
+    hosts that only carry gateway env still resolve OPENROUTER_API_KEY
+    for the direct-OR path.
+
+model_choice: |
+  nvidia/nemotron-3.5-super-vl:free — or-free scorecard 2026-10-23
+  composite 100.0 / p50 1.9s (best of 17 live :free models) and the
+  exact model of this card's completed 3-rep baseline
+  (2026-10-24-edu-agent-bench-nemotron-supervl-baseline.yml), so the
+  pending store-aware treatment stays comparable. The OR :free daily
+  cap is account-wide (1000/day, resets 00:00Z) — pinning does not add
+  quota, it only removes model-mix confounding.
+
+verified: |
+  - python3 -m py_compile scripts/bench-edu-manage.py — OK
+  - python3 -m pytest tests/test_bench_edu_manage_reps.py — 2 passed
+  - pipeline load smoke (empty --tasks filter, no network):
+    default            -> base=https://openrouter.ai/api/v1
+                           model=nvidia/nemotron-3.5-super-vl:free
+    +LITELLM_* env      -> same direct-OR pin (host-independent)
+    --or-model openrouter/free +LITELLM_* -> gateway +
+                           gemini-3.5-flash-lite-free (legacy path kept)
+    --or-model or-free-nemotron-ultra +LITELLM_* -> gateway alias
+                           passthrough (legacy path kept)
+  - report JSON records the resolved model per lane, so A/B outputs
+    self-document the pin.
+
+not_done: |
+  No live A/B rerun — the store-aware treatment still owes 3 pinned
+  reps on mn01 once OR :free capacity is confirmed (last probe 429s;
+  account cap resets 00:00Z). No deploy: litellm config untouched, no
+  units restarted. Vendored bench-edu-manage.py snapshots under
+  scripts/colab/packs/*/inputs/chaba/ are frozen pack inputs for
+  local-lane runs and were left as-is.

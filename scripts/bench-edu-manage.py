@@ -14,8 +14,10 @@ never prod WP:
   clawbot  OpenClaw-shaped agent surface — tool-calling loop with the
            mock store CRUD — on its default provider. The real gateway
            (tony-omen 127.0.0.1:18789) is loopback-only, so this lane
-           runs the same loop in-process on openrouter/free (its stated
-           primary). Interpretation documented in the report.
+           runs the same loop in-process on a pinned free OpenRouter
+           model by default (nvidia/nemotron-3.5-super-vl:free — the
+           or-free scorecard winner; openrouter/free stays available via
+           --or-model). Interpretation documented in the report.
   hermes   the identical agent surface pointed at omen ollama /v1
            hermes3:8b (T1 tool-call slot, card try-hermes).
   local-colibri  the same agent surface pointed at a local colibri
@@ -107,6 +109,7 @@ CURRENT_MODEL = "gemini-3.5-flash-lite"
 JUDGE_MODEL = "gemini-3.5-flash-lite"
 OR_BASE = "https://openrouter.ai/api/v1"
 OR_MODEL = "openrouter/free"  # OpenClaw's stated primary
+OR_PINNED_MODEL = "nvidia/nemotron-3.5-super-vl:free"  # OPS-0827 A/B pin
 LITELLM_FREE_MODEL = "gemini-3.5-flash-lite-free"  # gateway free twin
 HERMES_MODEL = "hermes3:8b"
 MAX_ROUNDS = 10
@@ -1433,10 +1436,11 @@ def main():
                     help="per-call timeout (s) for the local-colibri lane "
                          "(default 600 — disk-streamed MoE experts start "
                          "slow)")
-    ap.add_argument("--or-model", default=OR_MODEL,
+    ap.add_argument("--or-model", default=OR_PINNED_MODEL,
                     help="OpenRouter model for the clawbot lane "
-                         f"(default {OR_MODEL}; pin a named model to "
-                         "reduce free-router model-mix confounding)")
+                         f"(default {OR_PINNED_MODEL} — pinned :free for "
+                         f"the store-awareness A/B; pass {OR_MODEL} for "
+                         "the dynamic router)")
     ap.add_argument("--clawbot-ollama", action="store_true",
                     help="run the clawbot lane against the local ollama")
     ap.add_argument("--hermes-gateway", action="store_true",
@@ -1494,7 +1498,9 @@ def main():
     gkey = load_secret(("GEMINI_API_KEY_FREE", "GEMINI_API_KEY",
                         "GOOGLE_API_KEY"))
     orkey = load_secret(("OPENROUTER_API_KEY",),
-                        env_files=("~/.config/secrets/openrouter.env",))
+                        env_files=("~/.config/secrets/openrouter.env",
+                                   "~/.config/secrets/litellm-keys.env",
+                                   "~/.config/secrets/litellm-ada.env"))
     litellm_url = load_secret(
         ("LITELLM_URL",),
         env_files=("~/.config/secrets/litellm-keys.env",
@@ -1513,7 +1519,11 @@ def main():
         base, key, model = OR_BASE, orkey, args.or_model
         if args.clawbot_ollama:
             base, key = ollama + "/v1", "ollama"
-        elif litellm_url and litellm_key:
+        elif litellm_url and litellm_key and (
+                model == OR_MODEL or "/" not in model):
+            # Gateway aliases (no '/') and the dynamic router resolve on
+            # litellm; raw OR slugs (vendor/model[:free]) always go
+            # direct so a pinned A/B model is identical on every host.
             base = litellm_url.rstrip("/")
             if not base.endswith("/v1"):
                 base += "/v1"
@@ -1802,7 +1812,7 @@ def write_md(path, result):
                  "incl. its meta-overwrite quirk). Ops/recall run the "
                  "documented scripted-equivalent (deterministic).")
     if "clawbot" in configs:
-        or_model = configs["clawbot"].get("model", OR_MODEL)
+        or_model = configs["clawbot"].get("model", OR_PINNED_MODEL)
         L.append("- `clawbot` = OpenClaw-shaped tool loop (same system-prompt "
                  f"duties + store CRUD tools) on `{or_model}`. The real "
                  "gateway on tony-omen is loopback:18789 — unreachable over "
