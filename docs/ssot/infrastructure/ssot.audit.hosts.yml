@@ -1372,6 +1372,13 @@ hosts:
       # ghost gone. nest-mgr.service runs intentionally (installed
       # 2026-11-17, card ops-macbook-nestmgr-install / SYS-0158) — declared.
       - {name: nest-mgr.service, type: service, scope: user}
+      # 2026-11-27 (OPS-1486): daily fleet restic -> tony-dell sdb declared —
+      # was drift-invisible; script now has bounded repo-host wait + retry
+      # (scripts/ops/fleet-restic-backup.sh, job doc 2026-11-27-macbook-
+      # fleet-restic-retry.yml). Persistent timer catch-up after boot was
+      # the intermittent-exit cause.
+      - {name: fleet-restic-backup.timer, type: timer, scope: user}
+      - {name: fleet-restic-backup.service, type: service, scope: user}
       # 2026-11-25 (tony-macbook-daytime-runner): daytime sleep inhibitor is
       # NOT a systemd unit — it runs inside the XFCE session via
       # ~/.config/autostart/macbook-day-awake.desktop ->

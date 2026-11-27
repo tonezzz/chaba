@@ -1,0 +1,125 @@
+title: "tony-macbook fleet-restic-backup intermittent exit 1 — post-boot network race fixed with bounded retry"
+subtitle: "Kanban card restic-backup-intermittent-exit-fix-unpinned (OPS-1486) — both failures were Persistent-timer catch-up runs ~12-14s after boot, before Tailscale/routes were up; script now waits bounded for the repo host and retries each restic call with backoff + DIAGNOSIS lines"
+icon: database-backup
+
+planning:
+  goal: "fleet-restic-backup.service on tony-macbook alternated Result=success and status=1/FAILURE. Identify the real restic error, add bounded retry/backoff + a clear diagnostic for the specific case, keep the backup enabled, verify consecutive manual successes and a snapshot on the target."
+  scope: "tony-macbook ~/.local/bin/fleet-restic-backup.sh only. Out of scope: fleet-wide rollout of the same script to idc02/idc03/tony-omen/mn01 (they run the pre-retry 13-line version — follow-up card candidate), repo-lock cleanup on other hosts."
+  owner: devin (dispatch on tony-dell, SSH to macbook)
+  related_focus:
+    - label: restic-backup-intermittent-exit-fix-unpinned
+      ref: OPS-1486
+    - label: timer-alert-tony-macbook-fleet-restic-backup
+      ref: SYS-1479
+
+processing:
+  status: completed
+  started_at: 2026-11-27T09:40:00+07:00
+  steps:
+    - id: 1
+      label: Establish real state
+      status: completed
+      notes: >-
+        User unit fleet-restic-backup.service (oneshot) + .timer
+        (OnCalendar 05:15, Persistent=true) on tony-macbook. Script
+        ~/.local/bin/fleet-restic-backup.sh (13 lines, md5 2b79f586…):
+        sources ~/.config/secrets/restic-fleet.env
+        (RESTIC_REPOSITORY=sftp:tony@tony-dell:/dell-backup/restic-fleet/tony-macbook,
+        RESTIC_PASSWORD), logs to ~/var/log/fleet-restic.log, runs
+        `restic backup` over ~/.config/{secrets,systemd,containers,devin}
+        ~/.local/bin ~/bin ~/.ssh then `restic forget --prune`
+        (keep-daily 7 / weekly 4 / monthly 6). set -euo pipefail, no retry.
+        Service TimeoutStartUSec=infinity — retries cannot be killed.
+    - id: 2
+      label: Diagnose the failures
+      status: completed
+      notes: >-
+        journalctl --user shows exactly two failures in retained history:
+        2026-11-23 06:46:11 and 2026-11-27 09:06:56 — both ~12-14s after a
+        boot (journalctl --list-boots: boot 06:45:59 / 09:06:42) i.e.
+        Persistent catch-up runs before Tailscale/routes were up. Log
+        lines identical both times:
+        `subprocess ssh: ssh: connect to host 100.68.142.13 port 22:
+        Network is unreachable` then `Fatal: unable to open repository at
+        sftp:tony@tony-dell:…`. NOT a repo lock, NOT tony-dell down (dell
+        was healthy; the macbook's own uplink was not yet routed). All
+        05:15 runs since install succeeded in 1.8-4.9s.
+    - id: 3
+      label: Fix — bounded wait + retry + diagnostics
+      status: completed
+      notes: >-
+        Rewrote ~/.local/bin/fleet-restic-backup.sh (canonical copy now in
+        repo: scripts/ops/fleet-restic-backup.sh). Added: (a) preflight
+        that parses sftp user@host out of RESTIC_REPOSITORY and polls
+        `ssh -o ConnectTimeout=5 -o BatchMode=yes <target> true` every
+        10s up to FLEET_RESTIC_NET_WAIT=180s, logging each wait — absorbs
+        the post-boot Tailscale bring-up window; aborts with a DIAGNOSIS
+        line if still unreachable; (b) run_restic wrapper giving each
+        restic invocation up to FLEET_RESTIC_ATTEMPTS=4 tries with
+        doubling backoff from FLEET_RESTIC_BACKOFF=15s (cap 120s), output
+        captured then classified by diagnose() into DIAGNOSIS[step]
+        lines: network-unreachable / repo-lock / auth / unclassified;
+        (c) backup must succeed before forget runs (unchanged ordering,
+        now enforced by rc propagation). Backup NOT disabled; worst-case
+        added latency ~5min inside an oneshot with infinite timeout.
+    - id: 4
+      label: Failure-path verification (injection tests on /tmp copies)
+      status: completed
+      notes: >-
+        Test A (RESTIC_REPOSITORY→sftp:tony@192.0.2.1:22/x, NET_WAIT=12):
+        logged 3 wait lines then `DIAGNOSIS: repo host … unreachable
+        after 12s — network/Tailscale still down; aborting`, exit 1.
+        Test B (RESTIC=/bin/false, ATTEMPTS=3, BACKOFF=1): attempt lines,
+        per-attempt DIAGNOSIS, `retrying … in Ns`, `FATAL: backup failed
+        rc=1 after 3 attempts`, forget skipped, exit 1. Caught and fixed
+        two real bugs before live verification: (1) `$?` after `if/fi`
+        with no else is 0 — rc now captured inside else; (2) first draft
+        consumed the `backup` subcommand as the log label so restic saw
+        `restic /home/tony/.config/secrets …` → "unknown command" (4
+        wasted live attempts, ~106s, then fixed and redeployed). Test
+        artifacts removed.
+    - id: 5
+      label: Live verification
+      status: completed
+      notes: >-
+        4 consecutive `systemctl --user start fleet-restic-backup.service`
+        on tony-macbook 09:53:09/09:53:26/09:53:32/09:53:37 — all
+        Result=success ExecMainStatus=0 (journal Finished, no FAILURE).
+        Consumer proof on the target repo (this host):
+        `restic -r /dell-backup/restic-fleet/tony-macbook snapshots`
+        shows snapshot 65c3694b 2026-11-27 09:53:37 fleet-critical
+        387.413 MiB; forget kept one snapshot/day 11-20→11-27 (policy
+        working — the 4 rapid same-day runs collapse to the latest).
+    - id: 6
+      label: Rollback
+      status: completed
+      notes: >-
+        Pre-change script (13 lines, md5 2b79f586a572432aa6360649ae292f8f)
+        preserved at ~/.local/bin/fleet-restic-backup.sh.bak-20261127 on
+        macbook AND embedded below for repo-side rollback:
+
+        ```bash
+        #!/usr/bin/env bash
+        set -euo pipefail
+        set -a; . "$HOME/.config/secrets/restic-fleet.env"; set +a
+        LOG="$HOME/var/log/fleet-restic.log"; mkdir -p "$HOME/var/log"
+        exec >>"$LOG" 2>&1
+        echo "=== $(date -Is) start ==="
+        PATHS=()
+        for d in "$HOME/.config/secrets" "$HOME/.config/systemd" "$HOME/.config/containers" "$HOME/.config/devin" "$HOME/.local/bin" "$HOME/bin" "$HOME/.ssh"; do
+          [ -d "$d" ] && PATHS+=("$d")
+        done
+        ~/.local/bin/restic backup "${PATHS[@]}" --exclude-caches --exclude "containers/*/data" --tag fleet-critical
+        ~/.local/bin/restic forget --tag fleet-critical --keep-daily 7 --keep-weekly 4 --keep-monthly 6 --prune
+        echo "=== $(date -Is) done ==="
+        ```
+
+followups:
+  - "Fleet drift: idc02/idc03/tony-omen/mn01 still run the pre-retry script — same post-boot race applies to any host whose timer is Persistent and that reboots. Candidate card: converge scripts/ops/fleet-restic-backup.sh to all fleet-restic hosts."
+  - "macbook expected_services in ssot.audit.hosts.yml did not declare fleet-restic-backup.{service,timer} — declared in this change; other hosts' declarations unchecked."
+  - "If the preflight ever exhausts NET_WAIT the unit still exits 1 and the timer-alert card fires — that is intended (real outage signal), not masked."
+
+lessons:
+  - "In bash, $? after `if cmd; then …; fi` with NO else branch is 0, not cmd's rc — capture rc inside an else or use `cmd && {…}` / `cmd || rc=$?`."
+  - "fleet-restic-backup failures on macbook were never repo/lock/network-target problems — always check `journalctl --list-boots` first: Persistent timers fire ~10s after boot, before Tailscale is up."
+  - "When wrapping a CLI in a retry helper, keep the subcommand inside \"$@\" — using $1 as a log label silently ate `restic backup` and produced 'unknown command' on the live run."
