@@ -1,7 +1,7 @@
 id: go2rtc-7-camera-producers-return-empty-f-cc9176
 title: 'go2rtc: 7 camera producers return empty frames on omen'
-column: review
-updated: 2026-11-27 14:21
+column: backlog
+updated: 2026-11-27 14:26
 program: infrastructure
 tags:
 - ops
@@ -348,6 +348,13 @@ comms:
 - at: 2026-11-27 14:21
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-27 14:25
+  from: chaba
+  text: 'answer-sweep: executed ''proceed'' -> queued for processing'
+- at: 2026-11-27 14:26
+  from: chaba
+  text: 'kk-mac defers: executor=devin declared but this runner is launchd — devin-dispatch drives systemd-run internally;
+    the card stays queued for a Linux runner (executor=opencode/script serve here)'
 spec: Fix the remaining go2rtc camera producers on tony-omen that return empty 200/0B frames for ip_cam_65 and the
   xiaomi_c100/c201 variants. Inspect and correct the producer configurations located in ~/.config/go2rtc/*.sh on
   tony-omen and check xiaomi-token-refresh.py. The target host is tony-omen and the relevant repo/environment context
@@ -356,10 +363,9 @@ spec: Fix the remaining go2rtc camera producers on tony-omen that return empty 2
   image payloads instead of 0B responses.
 action:
   type: dispatch
-  status: done
+  status: queued
   lane: paid_frontier
   executor: devin
-  runner: tony-dell
   attempts: 1
   sweep:
     stale_running: 2026-11-27 13:56
@@ -382,5 +388,5 @@ requests:
   - proceed
   - hold
   answer: proceed
+  executed: 2026-11-27 queue
 review_kind: verify
-awaiting_action: true
