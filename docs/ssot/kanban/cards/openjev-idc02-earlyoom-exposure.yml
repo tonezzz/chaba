@@ -1,7 +1,7 @@
 id: openjev-idc02-earlyoom-exposure
 title: idc02 openjev (~2.5 GiB RSS) remains earlyoom-exposed after jev exemption
 column: doing
-updated: 2026-11-27 21:47
+updated: 2026-11-27 21:48
 brief: 'Found while applying OPS-1516 fix (card jevos-idc02-earlyoom-kill): earlyoom --avoid ''(^|/)(jev)$'' was
   scoped to comm=jev only. The sibling openjev process (gemma-3-4b-it torch CPU lane on :8777, comm=openjev) is
   the LARGEST process on idc02 (~2.5 GiB RSS vs jev''s ~1.7 GiB) and remains an earlyoom kill candidate — idc02
@@ -41,6 +41,16 @@ comms:
 - at: 2026-11-27 21:47
   from: chaba
   text: claude auto-route not servable on this host — running the next lane
+- at: 2026-11-27 21:48
+  from: chaba
+  text: started devin-task-20261127-214825-decide-openjev-s-protection-on on tony-dell (dispatch executor=claude)
+- at: 2026-11-27 21:48
+  from: chaba
+  text: 'primer injected 8 lesson(s): [jevos-idc02-earlyoom-kill] primer injected 8 lesson(s): [runner-tool-drift-flee;
+    The five "audit alert" cards are fed by `ansible-audit-board.timer` on idc02 (da; idc02 sshd is sftp-only for
+    tony and currently refuses tony-dell''s IP on :22; om; idc02''s kanban-dispatch.service was a linked unit running
+    a stale scripts/-only ; ops-remote-read artifact contract needs all 8 fields incl. failure_class; lane a; [ansible-worktree-audit-alert]
+    RE-AUDIT 2026-11-27 ~15:20 (id'
 action:
   type: dispatch
   status: running
