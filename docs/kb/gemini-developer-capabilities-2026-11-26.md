@@ -95,6 +95,16 @@ turn, so sandbox reuse does reduce billable input. It must not be conflated with
 the Interactions API: one is a stateful conversation primitive, the other is a
 managed execution environment.
 
+**Task-matched cost comparison (2026-11-27):** the same Fibonacci(20) prompt
+was run on the hand-built Interactions lite + `code_execution` arm and on the
+Managed Agents remote sandbox. Both answered `6765`. The hand-built arm used
+19 in / 66 out / 84 tool-use tokens (169 total) in 56.9s; Managed Agents used
+11,189 in / 88 out / 168 thought tokens (11,445 total, 3,415 cached) in 31.1s.
+That is ~68x total and ~589x input tokens for ~0.55x wall time on this one task
+(n=1, model-class dependent). Use Managed Agents only for work that genuinely
+needs a persistent sandbox. Evidence:
+`scripts/voice-bench/results/g4-managed-agents-cost-comparison-20261127.json`.
+
 ### Official `gemini-api-dev` skill
 
 The `google-gemini/gemini-skills` repo publishes a skill that explicitly says
@@ -149,7 +159,11 @@ be empty, so code must handle that. This is distinct from the separate
    rate.
 5. The official `gemini-api-dev` skill is installed and trialled (87.5% vs
    25% pass rate with vs without it); load it for any Gemini API code work.
-6. Guardrails unchanged: no key, billing, or gateway edits without explicit
+6. DONE: Managed Agents verified on the free tier and cost-compared on a
+   task-matched Fibonacci(20) prompt (~68x total tokens, ~589x input tokens,
+   ~half the wall time versus the hand-built lite loop). Use for real sandbox
+   work only; do not promote into a runtime path.
+7. Guardrails unchanged: no key, billing, or gateway edits without explicit
    go-ahead; keep OpenRouter/Ollama as real failover; no secrets, key names,
    project IDs, or topology on published pages.
 
