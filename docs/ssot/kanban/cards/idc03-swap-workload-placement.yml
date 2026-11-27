@@ -1,7 +1,7 @@
 id: idc03-swap-workload-placement
 title: 'MEM-1511: idc03 swap 4/4 GiB — workload placement triage'
 column: doing
-updated: 2026-11-27 19:29
+updated: 2026-11-27 19:30
 brief: 'After MEM-1507/1510 fixes, idc03 still has 4.0/4.0 GiB swap used, 5.1 GiB RAM available, user cgroup 14.4
   GiB RAM + 4.16 GiB swap. Top swap holders: jevos 761MiB, ada-dev 243MiB, ada-kk-dev 184MiB, ada-bankq-student
   309MiB, ada-chaba 364MiB, ada-ha-ada 359MiB, mddb-cms 290MiB.'
@@ -58,6 +58,10 @@ comms:
     localhost :8791, zero conns), mddb-cms 290/1400, ada-kk 263/111, kk-ha 259/91, ada-dev 244/133 + ada-kk-dev
     184/191 (localhost-only twins, all scenario units already point ws://omen:8005 — resurrected by deploy-ada.sh
     SERVICES 11-26 22:29). Capacity verified live: con01 18GiB avail'
+- at: 2026-11-27 19:30
+  from: devin
+  text: 'raised request idc03-swap-placement-two-owner-decisions-c55571: idc03 swap placement — two owner decisions
+    (live numbers 19:20 +07; capacity verified: con01 18GiB avail but load~10, id'
 action:
   type: dispatch
   status: running
@@ -68,3 +72,31 @@ action:
   attempts: 1
 claim:
   since: 2026-11-27 19:17
+requests:
+- id: idc03-swap-placement-two-owner-decisions-c55571
+  ask: 'idc03 swap placement — two owner decisions (live numbers 19:20 +07; capacity verified: con01 18GiB avail
+    but load~10, idc02 6GiB avail load~2.3, omen 13GiB avail load~8.5 already hosting ada-dev/kk-dev twins + jev-student:8778
+    + open-jev).
+
+
+    Q1 dev-twin bench lane: idc03 ada-dev+ada-kk-dev are localhost-only (:8005/:8009), ZERO consumers (all scenario
+    units point ws://100.75.102.88=omen since 11-25; only conn is idc03->omen). They hold ~430MB swap + ~320MB RSS
+    and keep resurrecting because deploy-ada.sh SERVICES still lists them (restarted 11-26 22:29 by a fleet deploy).
+    Options: (a) ★ Retire idc03 twins — stop+disable, remove from deploy-ada.sh SERVICES; bench lane stays on omen.
+    Reclaim ~750MB footprint. (b) Keep idc03 twins as hot local bench backup. (c) Other.
+
+
+    Q2 JevOS destination: jevos.service (OpenVINO v5 /v1/systemone, 127.0.0.1:8017) is the top swap holder — 780MB
+    swap + 961MB RSS (~1.7GiB footprint). Consumers: JEV_LANE=1 claim-classify on idc03 runner-agent (default URL
+    127.0.0.1:8017) + scripts/jev/*.py; falls back to devin lane if unreachable (safe). idc02 already serves open-jev
+    gemma :8777 tailnet; omen hosts jev-student:8778 + 2x open-jev. Options: (a) ★ Move to omen — consolidates jev
+    plane, 13GiB avail; needs tailnet bind + JEVOS_URL repoint on idc03 runner-agent. (b) Move to idc02 — co-locate
+    with open-jev:8777, only 6GiB avail. (c) Move to con01 — most RAM but load~10, no swap. (d) Keep on idc03 +
+    add open-jev-guard-style swap-reclaim timer (restart when MemorySwapCurrent>threshold) — zero migration, partial
+    reclaim. (e) Retire — verify open-jev:8777+jev-student:8778 already cover the lane. Which destination?'
+  status: open
+  at: 2026-11-27 19:30
+  from: devin
+  options:
+  - proceed
+  - hold
