@@ -1,7 +1,7 @@
 id: ops-1025-remote-read-smoke-idc03
 title: 'OPS-1025 one-shot remote-read verification: idc02 to idc03'
 column: doing
-updated: 2026-11-27 08:25
+updated: 2026-11-27 08:46
 brief: One supervised, read-only S3 verification of the merged remote-read gates.
 priority: medium
 program: OPS-1025
@@ -924,6 +924,18 @@ comms:
   from: chaba
   text: 'stalled-claim reaper: status=running but no live devin-task unit (20261126-234536-parent-ops-1025-perform-one-bo)
     and no fresh runner report for >6h — runner=idc02. If the session is dead, requeue via /action do=queue.'
+- at: 2026-11-27 08:46
+  from: tony
+  text: 'answered mcp-debug-cannot-reach-idc03-two-infra-g-d673ff: proceed'
+- at: 2026-11-27 08:46
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
+- at: 2026-11-27 08:46
+  from: tony
+  text: 'answered job-input-ops-1025-remote-read-smoke-idc03-1795742282: answer — Answer — reply in chat'
+- at: 2026-11-27 08:46
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
 claim:
   since: 2026-11-26 23:44
 requests:
@@ -962,16 +974,17 @@ requests:
     → mcp_debug(host=idc03) = unknown host. Per spec I stopped and reported the blocker rather than guessing failed_units.
     Options: (1) register idc03 in ssot.mcp-debug.yml + fix devin mcp-debug launch config, then re-dispatch this
     card; (2) close as blocked/attempted and card the infra fixes separately.'
-  status: open
+  status: answered
   at: 2026-11-27 08:16
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 - id: job-input-ops-1025-remote-read-smoke-idc03-1795742282
   ask: 'Job needs your input: mcp-debug cannot reach idc03 — the mandated read-only tool path is broken at two layers;
     fix infra and re-dispatch, or close the card as blocked?'
-  status: open
+  status: answered
   at: 2026-11-27 08:18
   from: chaba
   options:
@@ -981,3 +994,4 @@ requests:
   - id: hold
     label: Hold — leave blocked
     action: hold
+  answer: answer — Answer — reply in chat
