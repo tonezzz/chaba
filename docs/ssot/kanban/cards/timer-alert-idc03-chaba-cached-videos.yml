@@ -1,7 +1,7 @@
 id: timer-alert-idc03-chaba-cached-videos
 title: Timer chaba-cached-videos on idc03 failing
 column: done
-updated: 2026-11-27 09:46
+updated: 2026-11-27 10:17
 priority: high
 tags:
 - timer-alert
@@ -915,6 +915,13 @@ comms:
 - at: 2026-11-27 09:46
   from: tony
   text: closed by tony
+- at: 2026-11-27 10:17
+  from: devin
+  text: '[resolved-by cms-publish-remote-end-closed-fix-unpinned] Root cause found: transient `Remote end closed
+    connection without response` from mddb-cms (:11027) during embedding-backlog congestion — the publish HTTP call
+    had no retry. Fix adds bounded retry/backoff (scripts/lib/mddb_http.py, 5 retries over ~62s) to the shared _post
+    in cached-videos-update.py; HTTP errors still raise loudly. Verified on idc03 2026-11-27: staged run rode out
+    a real ~30s congestion window and published cached-videos-rep'
 action:
   status: done
 spec: Investigate the recurring exit-code failures of the `chaba-cached-videos.service` user timer on host idc03

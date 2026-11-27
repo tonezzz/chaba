@@ -1,7 +1,7 @@
 id: timer-alert-idc03-chaba-starboard-tracker
 title: Timer chaba-starboard-tracker on idc03 failing
 column: backlog
-updated: 2026-11-27 10:05
+updated: 2026-11-27 10:17
 priority: high
 tags:
 - timer-alert
@@ -930,6 +930,13 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-27 09:46) of `chaba-starboard-tracker.service` on `idc03` result=exit-code
     — investigate journal: `journalctl --user -u chaba-starboard-tracker.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-27 10:17
+  from: devin
+  text: '[resolved-by cms-publish-remote-end-closed-fix-unpinned] Root cause found: transient `Remote end closed
+    connection without response` from mddb-cms (:11027) during embedding-backlog congestion — the publish HTTP call
+    had no retry. Fix adds bounded retry/backoff (scripts/lib/mddb_http.py, 5 retries over ~62s) to the shared _post
+    in starboard-tracker-update.py; HTTP errors still raise loudly. Verified on idc03 2026-11-27: staged run rode
+    out a real ~30s congestion window and published starboard-cat'
 action:
   status: done
 spec: Investigate and resolve the recurring exit-code failure of `chaba-starboard-tracker.service` on host idc03.
