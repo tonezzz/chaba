@@ -1,7 +1,7 @@
 id: mddb-vector-reindex-timeout-embed-failures
 title: 'con01 mddb-vector-reindex: 13 embed failures, then 45min timeout'
 column: backlog
-updated: 2026-11-27 21:03
+updated: 2026-11-27 21:17
 brief: '2026-11-26 run: embedded=5 skipped=111688 failed=13 (ada-cms-pages:1, ada-ha-bank-devin-handoff:1, ada-ha-events-michael:1,
   ada-ha-scenario-reports:10). 2026-11-27 05:40 run hit TimeoutStartSec and was TERMed at 06:25.'
 priority: medium
@@ -12,3 +12,16 @@ comms:
 - at: 2026-11-27 21:03
   from: tony
   text: card captured via board-api
+- at: 2026-11-27 21:17
+  from: chaba
+  text: auto-routed to executor=claude (task_class=report_triage)
+- at: 2026-11-27 21:17
+  from: chaba
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  task_class: report_triage
+  executor: claude
+  executor_source: queue
+claim: {}
