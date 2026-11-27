@@ -1,0 +1,104 @@
+title: "omen-lan-reservation — verify tony-omen LAN IP stability + fix stale cast MEDIA_BASE"
+subtitle: "Kanban card omen-lan-reservation (OPS-0522): DHCP reservation verified live on ZTE F688; eno1 already static; live cast-browser was still pointing at drifted .84 — fixed to .86"
+icon: target
+
+planning:
+  goal: >-
+    tony-omen consistently resolves/responds via its assigned LAN IP without manual
+    intervention (done-condition). Card offered two paths: router DHCP reservation
+    (Tony's chosen answer) or dynamic hostname references.
+  scope: >-
+    Verify live state on tony-omen + ZTE F688 router + LAN peer tony-dell; fix the
+    live cast-browser unit if still drifted; sync repo SSOT. No router writes were
+    needed — bindings already existed.
+  owner: devin (dispatch on idc02)
+  related_focus:
+    - label: omen-lan-reservation
+      file: docs/ssot/kanban/cards/omen-lan-reservation.yml
+
+processing:
+  status: completed
+  started_at: 2026-11-27T14:20:00+07:00
+  steps:
+    - id: 1
+      label: Establish current network reality
+      status: completed
+      notes: >-
+        tony-omen has TWO LAN attachments: eno1 wired on tony-home 192.168.2.0/24
+        (gw 192.168.2.1 ZTE F688) and wlo1 wifi on TP-Link_C4DC_5G 192.168.0.0/24
+        (gw 192.168.0.1, preferred default route metric 10). The ACTIVE eno1 NM
+        connection (named "eno1") is ipv4.method=manual 192.168.2.86/24 — NOT
+        DHCP, so host-side drift is impossible on eno1. (An inactive
+        "netplan-eno1" profile with method=auto also exists — it is not the
+        live connection; verified via `nmcli -t -f NAME,DEVICE con show
+        --active` on 2026-11-27 attempt 2.)
+    - id: 2
+      label: Verify router DHCP bindings live
+      status: completed
+      notes: >-
+        Logged into ZTE F688 admin API from tony-omen (recipe in
+        docs/kb/zte-f688-admin-api.md). DHCP binding table holds exactly 10 entries:
+        "tonyomen"=192.168.2.86/b0:22:7a:f0:73:cd (Bind10) and
+        "omenwlan"=192.168.2.84/d0:57:7b:ea:6a:3c (Bind11) — both added 2026-09-17,
+        still present. Pool is .65-.99 so bindings carve the pinned IPs out of
+        dynamic allocation. No router change needed.
+    - id: 3
+      label: Consumer-side verification
+      status: completed
+      notes: >-
+        From tony-dell (LAN peer): ping 192.168.2.86 OK; http://192.168.2.86:8090/
+        -> 200; cast-browser :8799 answers (404 on / is normal — API paths only).
+        192.168.2.84 does NOT answer (wlo1 is off-subnet) — anything still
+        referencing .84 is broken.
+    - id: 4
+      label: Fix live drift remnant
+      status: completed
+      notes: >-
+        Live ~/.config/systemd/user/cast-browser.service on omen still had
+        MEDIA_BASE=http://192.168.2.84:8090 (the 2026-10-12 drift value) while
+        repo already said .86 — the "DHCP-proof" fix never reached this unit.
+        sed .84->.86, daemon-reload, restart; is-active=active, env verified .86.
+        Live cast-shots-http binds 0.0.0.0:8090 (was already DHCP-proof); repo
+        stacks/services/cast-browser/cast-shots-http.service still had
+        --bind 192.168.2.86 — synced repo to live (0.0.0.0 + pkill ExecStartPre).
+    - id: 5
+      label: SSOT updates
+      status: completed
+      notes: >-
+        ssot.ip-address-registry.yml: .84 re-attributed to tony-omen wlo1
+        (kind=reservation, ZTE binding omenwlan); added .86 tony-omen eno1
+        (kind=static, NM manual + binding tonyomen); old .86 mac-72b5f0db14f3
+        allocation marked stale/superseded. ssot.tony-omen-multi-wan.yml: binding
+        table verified-live note + eno1 static/cast-stack state note.
+    - id: 6
+      label: Attempt 2 — land the stranded branch
+      status: completed
+      notes: >-
+        Attempt 1 (devin-task-20261127-142035) delivered everything above but
+        auto-merge aborted on a conflict in the GENERATED file
+        docs/ssot/ssot.dev-system.assessment.yml (both sides regenerated it;
+        only last_reviewed/score counts differed). Attempt 2
+        (devin-task-20261127-152620) merged dispatch/20261127-142035 into its
+        own branch, resolved the conflict taking the newer generated version,
+        and re-verified live state from tony-dell + tony-omen: ping .86 OK,
+        :8090 -> 200, cast-browser MEDIA_BASE=.86 active, eno1 connection
+        "eno1" confirmed ipv4.method=manual. Branch delta vs master is exactly
+        the 7 deliverable files; `git merge-tree` vs origin/master is clean.
+
+outcome:
+  result: fixed
+  evidence:
+    - "ZTE F688 DHCP bindings live: tonyomen=192.168.2.86/b0:22:7a:f0:73:cd, omenwlan=192.168.2.84/d0:57:7b:ea:6a:3c"
+    - "omen eno1 NM ipv4.method=manual 192.168.2.86/24 — no DHCP on the wired LAN path"
+    - "from tony-dell: ping 192.168.2.86 OK, curl http://192.168.2.86:8090/ -> 200"
+    - "live cast-browser.service MEDIA_BASE=http://192.168.2.86:8090, is-active=active"
+    - "192.168.2.84 confirmed dead on LAN (wlo1 moved to TP-Link 192.168.0.x)"
+  residual:
+    - "avahi-daemon on omen is allow-interfaces=wlo1 only (deliberate 2026-08-05 fix) — tony-omen.local does NOT resolve to .86 for non-Tailscale LAN clients (e.g. Chromecast). Left unchanged; only matters if a consumer needs mDNS — IP literal .86 is the contract."
+    - "If wlo1 ever rejoins TONY-WIFI_5G it takes bound .84 — hardcoded .86 refs then depend on eno1 staying up (multi-WAN reality, documented)."
+    - "ZTE binding table caps at 10 entries and is currently FULL — next new reservation requires deleting one."
+
+lessons:
+  - "Repo unit files and live ~/.config/systemd/user units drift independently — always `systemctl --user cat` the live unit before assuming repo state; the .84 MEDIA_BASE bug was live-only."
+  - "ZTE F688 menuData needs the literal `_lua.lua` tag suffix plus per-page _sessionTmpToken query param, or it returns SessionTimeout — the form-action span shows the exact tag."
+  - "A 'DHCP reservation exists' claim needs live verification — bindings were added 2026-09-17 yet drift still happened 2026-10-12; host-side static config was the actual fix that landed later."

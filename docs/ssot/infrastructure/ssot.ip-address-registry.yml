@@ -286,12 +286,13 @@ config:
           note: superseded tony-omen wlo1; WAN MAC 0a:f0:bc:ad:20:8b, admin UI live at /login.html today
         - ip: 192.168.2.84
           device_id: tony-omen
-          interface_id: eno1
-          kind: dhcp
+          interface_id: wlo1
+          kind: reservation
           status: active
           first_seen: "2026-09-09"
-          last_observed: "2026-09-09"
-          source: dhcp
+          last_observed: "2026-11-27"
+          source: zte-dhcp-binding
+          note: ZTE F688 binding "omenwlan" (d0:57:7b:ea:6a:3c); wlo1 currently on TP-Link 192.168.0.x — returns to this subnet on TONY-WIFI_5G
         - ip: 192.168.2.85
           device_id: tony-tv
           interface_id: wlan0
@@ -304,10 +305,20 @@ config:
           device_id: mac-72b5f0db14f3
           interface_id: wlan0
           kind: dhcp
-          status: active
+          status: stale
           first_seen: "2026-09-09"
           last_observed: "2026-09-09"
           source: dhcp
+          note: superseded by tony-omen eno1 static .86 + ZTE binding "tonyomen" (verified live 2026-11-27)
+        - ip: 192.168.2.86
+          device_id: tony-omen
+          interface_id: eno1
+          kind: static
+          status: active
+          first_seen: "2026-11-27"
+          last_observed: "2026-11-27"
+          source: nmcli+ssh
+          note: NM manual 192.168.2.86/24 on eno1 (b0:22:7a:f0:73:cd) + ZTE binding "tonyomen" inside DHCP pool .65-.99; ping+media :8090 verified from tony-dell
         - ip: 192.168.2.87
           device_id: tuya-plug-coffee
           interface_id: wlan0

@@ -1,8 +1,9 @@
 [Unit]
-Description=Static shot server for cast-browser (LAN only — Chromecast fetches)
+Description=Static shot server for cast-browser (Chromecast fetches; 0.0.0.0 — survives DHCP renumber, ufw gates)
 
 [Service]
-ExecStart=/usr/bin/python3 -m http.server 8090 --bind 192.168.2.86 --directory /home/tony/.local/share/cast-shots
+ExecStartPre=/bin/sh -c "pkill -f '[h]ttp.server 8090' || true"
+ExecStart=/usr/bin/python3 -m http.server 8090 --bind 0.0.0.0 --directory /home/tony/.local/share/cast-shots
 Restart=always
 RestartSec=3
 
