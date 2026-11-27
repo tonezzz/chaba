@@ -1,7 +1,7 @@
 id: yomi-update-conversations-missing-imports
 title: Yomi summaries fail — missing summary-utils imports in update-conversations.mjs
 column: done
-updated: 2026-11-27 16:06
+updated: 2026-11-27 16:33
 brief: yomi-update-all writes conversations but every summary fails with "validateAndTruncateContext is not defined".
   Three symbols used but not imported in update-conversations.mjs; all exported by summary-utils.mjs. Import-only
   fix.
@@ -140,6 +140,13 @@ comms:
     4 in gpu-queue-integration.mjs). Phi-3 was not present on any reachable ollama.
 
     2. yomi-update-all.service.d/home.conf ExecStart: added --network host and -e LLAMA_URL=http://127.0.0.1:11446/v1/chat/completions. '
+- at: 2026-11-27 16:33
+  from: chaba
+  text: 'SOURCE MIRROR LANDED 2026-11-27 16:2x +07 — commit 35d7da1c0cf pushed to origin/master from a clean worktree
+    off origin/master (idc02 and idc03 ~/chaba are both role=exec and reject commits; the served checkout is idc03
+    ~/CascadeProjects/chaba-tony-dell). The commit carries the three remaining fixes into tracked source: guard
+    validatedPrompt in update-conversations.mjs and process-conversations.mjs (6 sites), qwen2.5:7b-instruct instead
+    of Phi-3 (10 sites across update/process/gpu-queue-integrat'
 ref: OPS-1505
 claim:
   since: 2026-11-27 15:33
