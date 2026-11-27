@@ -1,7 +1,7 @@
 id: jevos-idc02-earlyoom-kill
 title: idc02 JevOS killed by earlyoom; clean SIGTERM bypassed Restart=on-failure
 column: doing
-updated: 2026-11-27 21:37
+updated: 2026-11-27 21:40
 brief: '2026-11-27 20:47:40 +07: earlyoom on idc02 (0 swap, avail 9.92% < 10% threshold) sent SIGTERM to jev PID
   1233450 (RSS 1543 MiB) after killing three chrome processes. systemd saw Result=success, so Restart=on-failure
   did not restart it; lane stayed down ~17min (health=000). Restored 21:05, health 200 in 15s.'
@@ -59,6 +59,14 @@ comms:
     argv is /usr/bin/earlyoom -r 3600 --avoid (^|/)(jev)$, is-active=active, jev /health=200, idempotent re-check
     changed=0. systemd quote-stripping proven via transient unit before the run. Rationale vs (b): Restart=always
     allows kill/restart loops under sustained pressure and manual sto'
+- at: 2026-11-27 21:40
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-211808-choose-one-a-add-avoid-jev-to- no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-27 21:40
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261127-211808-choose-one-a-add-avoid-jev-to- on idc02 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: running
@@ -67,5 +75,8 @@ action:
   executor_source: queue
   runner: idc02
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 21:40
+    dirty: 1
 claim:
   since: 2026-11-27 21:17
