@@ -211,7 +211,9 @@
                   else [shipper_script_copy.dest
                         | default(shipper_dest_dir ~ '/log-shipper.py')])
                  + (shipper_units_copy.results | default([])
-                    | selectattr('changed') | map(attribute='dest') | list) }}
+                    | selectattr('changed')
+                    | map(attribute='dest', default='')
+                    | select('truthy') | list) }}
           changed_when: false
 
         - name: Reload user systemd and arm the timers (only on real changes)
