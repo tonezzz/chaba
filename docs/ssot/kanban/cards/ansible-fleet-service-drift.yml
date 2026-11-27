@@ -1,7 +1,7 @@
 id: ansible-fleet-service-drift
 title: 'Ansible audit: fleet service drift detected'
 column: backlog
-updated: 2026-11-27 06:33
+updated: 2026-11-27 13:36
 spec: 'Read-only ansible audit-fleet-services detected service/resource drift vs ssot.audit.hosts.yml. Hosts: con01,
   idc02, idc03, mn01, tony-dell, tony-omen. Report dir: reports/ansible-benchmark/services/. No remediation performed.'
 action:
@@ -99,3 +99,10 @@ comms:
   text: 'ansible audit-fleet-services: 6 host(s) with drift. fp=con01:9|idc02:10|idc03:29|mn01:6|tony-dell:21|tony-omen:22.
     [{"host": "con01", "count": 9}, {"host": "idc02", "count": 10}, {"host": "idc03", "count": 29}, {"host": "mn01",
     "count": 6}, {"host": "tony-dell", "count": 21}, {"host": "tony-omen", "count": 22}]'
+- at: 2026-11-27 13:36
+  from: devin
+  text: 'TRIAGE 2026-11-27 13:10 re-run (idc02 controller, read-only): REAL persistent drift — verified twice (13:10
+    run identical to a 12:57 run for 4 hosts; counts con01:6 idc02:9 idc03:26 mn01:5 tony-dell:19 tony-omen:20 tony-macbook:6).
+    Composition: MAJORITY is ssot.audit.hosts.yml census lag (last_updated 2026-11-11, predates OPS-0725 migration
+    + recent additions) — e.g. opencode-serve+sidecar-collector legitimately run fleet-wide undeclared; idc03 unit
+    renames (chaba-postgres/chaba-redis vs expecte'
