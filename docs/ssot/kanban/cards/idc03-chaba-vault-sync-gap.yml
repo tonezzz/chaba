@@ -1,0 +1,28 @@
+id: idc03-chaba-vault-sync-gap
+title: idc03 chaba-vault checkout has no sync mechanism — 119k commits behind, caused 2 outages
+column: backlog
+updated: 2026-11-27 11:15
+priority: high
+tags:
+- infra
+- drift
+- idc03
+- ada-memory
+spec: 'SECOND outage from this root cause (first: idc03-vault-checkout-drift 2026-10-07). idc03 runs production
+  ada-memory services (ada-memory-sync, memory-*, obsidian vault) from ~/CascadeProjects/chaba-vault — a full clone
+  of the chaba repo that NOTHING syncs: chaba-repo-sync.service only pulls ~/CascadeProjects/chaba. As of 2026-11-27
+  it was 119,557 commits behind origin/master (HEAD e1128f502, 2026-10-16) and still ran the pre-11-18 sync script
+  (timeout=20, no retry) -> hourly ReadTimeout timer-alerts. Surgical scp fix applied 2026-11-27 (see docs/ssot/jobs/infrastructure/2026-11-27-ada-memory-sync-mddb-readtimeout.yml).
+  The checkout is LIVE (dirty private vault files under docs/ada-memory/personal*, obsidian-vault.service serves
+  it, nightly obsidian-vault-backup tars it) so a blind git pull is risky — same constraint as the Oct-07 card.
+  OPTIONS: (a) extend chaba-repo-sync to also safe-pull chaba-vault (autostash handles dirty tracked files; private
+  vault files are untracked-or-tracked? verify first); (b) dedicated chaba-vault-sync.timer with git-safe-pull;
+  (c) split code from data — run scripts from ~/CascadeProjects/chaba (synced) with --vault pointing at chaba-vault/docs/ada-memory
+  (ExecStart already separates script path from --vault arg!); (d) accept surgical scp deploys + document. Recommend
+  (c) — smallest blast radius, vault data untouched, script always current. Also decide fate of the 1-ahead local
+  commit e1128f502 (inbox triage) — push or drop.'
+ref: SYS-1496
+comms:
+- at: 2026-11-27 11:15
+  from: devin
+  text: card captured via board-api
