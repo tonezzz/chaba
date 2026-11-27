@@ -1,7 +1,7 @@
 id: ada-ocb-eval-smoke-harness-fix
 title: ada-ocb-eval and ada-ocb-smoke harness failures on idc02
 column: review
-updated: 2026-11-27 11:12
+updated: 2026-11-27 11:13
 spec: 'Two nightly Ada bridge benchmark services on idc02 both fail:
 
   - ada-ocb-eval.service: gate `preflight-gates-readonly` FAIL — its answer is missing required fields ''start_check'',
@@ -27,6 +27,7 @@ action:
     stale_running: 2026-11-27 11:10
     dirty: 1
     conflict_sig: b7610a309457|docs/ssot/ssot.dev-system.assessment.yml
+    session_gone: 2026-11-27 11:13
   result: 'exit=0 -outcome-20261127-103128-two-nightly-ada-bridge-benchma.md`. | devin-task-20261127-103128-two-nightly-ada-bridge-benchma.service:
     Consumed 3min 35.536s CPU time over 34min 4.538s wall clock time, 863.7M memory peak, 668.1M memory swap peak.'
 ref: ADA-1489
@@ -114,6 +115,10 @@ comms:
 - at: 2026-11-27 11:12
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-27 11:13
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261127-103128-two-nightly-ada-bridge- on tony-dell
+    — if the work was never pushed it may be gone'
 claim:
   since: 2026-11-27 10:30
 requests:
