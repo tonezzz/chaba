@@ -1,7 +1,7 @@
 id: timer-alert-idc03-mddb-embed-probe
 title: Timer mddb-embed-probe on idc03 failing
-column: backlog
-updated: 2026-11-27 08:32
+column: doing
+updated: 2026-11-27 08:33
 priority: high
 tags:
 - timer-alert
@@ -1566,8 +1566,11 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 08:33
+  from: con01
+  text: claimed
 action:
-  status: queued
+  status: running
   type: dispatch
   lane: paid_frontier
   result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093237-timer-mddb-embed-probe-on-idc0.service:
@@ -1578,7 +1581,11 @@ action:
     session_gone: 2026-11-26 17:40
   repo: chaba
   executor: devin
+  runner: con01
+  attempts: 1
 spec: Investigate the recurring failure of mddb-embed-probe.service on host idc03, where the last run at 11-13 19:00
   resulted in an exit-code. Check the journal using `journalctl --user -u mddb-embed-probe.service` on idc03 and
   reference CMS `timer-timeline-idc03` for context. The done-condition is verified when the root cause of the exit-code
   failure is identified and documented or resolved so that subsequent timer runs succeed.
+claim:
+  since: 2026-11-27 08:33
