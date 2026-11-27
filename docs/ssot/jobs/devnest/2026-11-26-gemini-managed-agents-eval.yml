@@ -3,7 +3,7 @@ subtitle: >
   Interactions API agent=... with remote sandbox, code execution, sandbox reuse
   and repository source mount — all verified on the free-tier key, 2026-11-26.
 icon: education
-version: 2  # v2: task-matched cost comparison and rev-4 publication recorded
+version: 3  # v3: web-search and trigger lifecycle probes, rev-5 publication recorded
 
 card: gemini-dev-capabilities-research-2026-11-26  # ADA-1440
 date: 2026-11-26
@@ -53,6 +53,23 @@ delivered:
       model_gemini_3_5_flash_lite: "HTTP 400 FAILED_PRECONDITION"
       model_gemini_3_8_flash: "HTTP 400 FAILED_PRECONDITION"
       interpretation: "observed on the free key with a one-request inline job; treat as a free-tier boundary until checked on paid capacity"
+    web_search_probe:  # 2026-11-27, free key
+      tools: [google_search, url_context]
+      question: "official IANA time zone identifier for Bangkok, Thailand"
+      answer: "Asia/Bangkok plus IANA source URL"
+      elapsed_s: 45.57
+      status: completed
+      steps: [google_search_call, google_search_result, thought, model_output, thought]
+      grounding_tool_count: {google_search: 1}
+      usage: {total: 16794, input: 16382, output: 55, thought: 357, cached: 8146}
+    trigger_lifecycle_probe:  # 2026-11-27, free key, far-future schedule, deleted
+      schedule: "0 0 1 1 *"
+      time_zone: UTC
+      status: active
+      next_run_time: "2027-01-01T00:00:00Z"
+      create_get_delete: ok
+      list_after_delete: empty
+      probe_resource_deleted: true
 
 findings:
   - "Managed Agents run on the free tier: fresh sandbox, code execution, file write/read, sandbox reuse with persistence, and a mounted public repo all completed."
@@ -63,10 +80,12 @@ findings:
   - "Free-tier generation quota remains exhausted (429, ~16h reset at probe time); the agent runs still succeeded, indicating a separate quota path from the lite-model generation bucket."
   - "batchGenerateContent returned 400 FAILED_PRECONDITION for two models on the free key. Not sufficient evidence to call the API paid-only; paid verification is still open."
   - "Task-matched cost comparison (2026-11-27, free key, same Fibonacci(20) prompt): hand-built Interactions lite + code_execution used 19 in / 66 out / 84 tool-use tokens (169 total) in 56.9s; Managed Agents remote sandbox used 11,189 in / 88 out / 168 thought tokens (11,445 total, 3,415 cached) in 31.1s. Both returned 6765. Managed Agents cost ~68x total and ~589x input tokens for ~0.55x wall time (n=1). Evidence: scripts/voice-bench/results/g4-managed-agents-cost-comparison-20261127.json."
+  - "Web search works inside the managed agent on the free key: google_search plus url_context returned Asia/Bangkok with an IANA source in 45.6s, one grounding call, 16,794 total tokens. This is a different surface from generateContent Search grounding, which returned 429."
+  - "Triggers work on the free key: create/get/delete of a far-future cron trigger succeeded, status active with next_run_time 2027-01-01T00:00:00Z, and the list was empty after deletion. Use stored credentials for unattended runs and delete probe triggers."
 
 guardrails:
   - "No key, billing, gateway, model-pin or production-path changes."
-  - "No wiki publish during the eval itself; Tony separately authorized revision 3 on 2026-11-26 (revid 798), then authorized a further update on 2026-11-27 that folded the cost comparison into Education:Gemini-Developer-Capabilities-2026-11-26 via board-api /publish sink wiki-education (revid 808). No direct MediaWiki call."
+  - "No wiki publish during the eval itself; Tony separately authorized revision 3 on 2026-11-26 (revid 798), then authorized further updates on 2026-11-27 that folded the cost comparison into Education:Gemini-Developer-Capabilities-2026-11-26 via board-api /publish sink wiki-education (revid 808) and the web-search / trigger findings (revid 809). No direct MediaWiki call."
   - "Synthetic file contents and a public GitHub repo only; no estate repo or host data mounted."
 
 activation_gate:
@@ -78,9 +97,10 @@ verify:
   - "DONE 2026-11-26: YAML receipts and result JSON parsed; JSONs force-added through a clean detached worktree push."
   - "DONE 2026-11-26: revision 3 of the Education page published via board-api /publish sink wiki-education, pageid 368 revid 798, re-read 14,109 chars with Managed Agents and batch-precondition markers present."
   - "DONE 2026-11-27: task-matched cost comparison recorded in scripts/voice-bench/results/g4-managed-agents-cost-comparison-20261127.json and folded into Education revision 4 via board-api /publish sinks=[wiki-education] -> revid 808, re-read 17,114 chars."
+  - "DONE 2026-11-27: web-search and trigger probes folded into Education revision 5 via board-api /publish sinks=[wiki-education] -> revid 809, re-read 19,093 chars with both markers present."
 
 remaining:
   - "DONE 2026-11-27: task-matched Fibonacci(20) comparison run; token overhead is structural (~11k per managed turn), wall-time win is n=1 and not generalisable. Capability proven, efficiency not."
-  - "Verify triggers and web-search tools inside the managed environment; only filesystem, code execution and repo mount were exercised."
+  - "DONE 2026-11-27: web-search tools and cron trigger lifecycle verified inside the managed environment; probe trigger deleted."
   - "Check batchGenerateContent on paid capacity, including 50% price claim and 24h SLO, when the shared project cap is resolved."
   - "Do not promote Managed Agents into any runtime path on this evidence alone."

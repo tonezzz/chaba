@@ -8,8 +8,8 @@ status: living — re-check the catalog before reusing any model ID
 Pointer-first record for the board card
 `gemini-dev-capabilities-research-2026-11-26` (ADA-1440). Published to
 `Education:Gemini-Developer-Capabilities-2026-11-26` through the board-api
-`wiki-education` sink. **Research only — no key, billing, gateway, or model-pin
-changes were made.**
+`wiki-education` sink (revision 5, MediaWiki revid 809, 2026-11-27).
+**Research only — no key, billing, gateway, or model-pin changes were made.**
 
 ## Why this exists
 
@@ -105,6 +105,19 @@ That is ~68x total and ~589x input tokens for ~0.55x wall time on this one task
 needs a persistent sandbox. Evidence:
 `scripts/voice-bench/results/g4-managed-agents-cost-comparison-20261127.json`.
 
+**Web search and triggers (verified 2026-11-27):** the same managed agent
+accepted `tools=[{"type":"google_search"},{"type":"url_context"}]` and answered
+a factual lookup with `Asia/Bangkok` plus an IANA source URL in 45.6s. Steps
+were `google_search_call -> google_search_result -> thought -> model_output ->
+thought`: one grounding call, 16,794 total tokens (16,382 in, 8,146 cached,
+55 out, 357 thought). This is a different path from `generateContent` Search
+grounding, which still 429s on the free key. Triggers bind an agent, remote
+environment, prompt and cron schedule into a persistent resource whose
+environment is reused between runs; a create / get / delete probe on
+`0 0 1 1 *` UTC returned `active`, next run `2027-01-01T00:00:00Z`, and an
+empty list after deletion. Use stored credentials for unattended runs, not
+inline tokens, and delete probe triggers.
+
 ### Official `gemini-api-dev` skill
 
 The `google-gemini/gemini-skills` repo publishes a skill that explicitly says
@@ -195,8 +208,10 @@ and `scripts/voice-bench/results/g4-*20261126.json`.
   tier — always check the echoed `service_tier` before assuming Priority.
 - **Implicit caching** produced zero hits even with a ~6,000-token shared
   prefix; flash-lite is absent from the documented cache-minimum table.
-- **Google Search grounding** returned 429 on the free-tier key (documented as
-  paid-tier only), so it is a quota boundary, not a capability result.
+- **Google Search grounding on `generateContent`** returned 429 on the free-tier
+  key (documented as paid-tier only), so it is a quota boundary, not a capability
+  result. The Managed Agents `google_search` tool is a separate path and did
+  work on the free key (see section 2).
 - **Batch `batchGenerateContent`** returned HTTP 400 `FAILED_PRECONDITION` on
   the free key for both `gemini-3.5-flash-lite` and `gemini-3.8-flash` with a
   one-request inline job. Documented as 50% of interactive price and with its
@@ -237,6 +252,10 @@ result. Keep 3.5 as the comparison baseline.
   harnesses `scripts/voice-bench/g4-managed-agents-eval.py` and
   `g4-ma-repo-bg.py`, JSONs `g4-managed-agents-eval-20261126.json` and
   `g4-ma-repo-bg-20261126.json`.
+- Managed Agents web search and triggers: live `POST /interactions` and
+  `POST/GET/DELETE /v1beta/triggers` probes on 2026-11-27; one grounding call,
+  16,794 total tokens; trigger created `active` with a far-future schedule and
+  deleted in the same probe.
 - Related prior pages: `Education:LLM Providers/Gemini API`,
   `Education:Ada-Developer-Paid-Model-Candidates`,
   `Education:Ada-Dev-Gap-Model-Vs-Harness`.

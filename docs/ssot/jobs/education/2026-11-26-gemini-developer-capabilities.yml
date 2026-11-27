@@ -2,9 +2,10 @@ title: Wiki education — Gemini developer capabilities beyond the 3.8 Live pin
 subtitle: >
   Live catalog and Decisions API probe, official Gemini skill and docs
   research, then a card-gated /publish to the wiki-education sink; re-published
-  on 2026-11-26 with the free-tier verification sweep and corrected claims.
+  with the free-tier sweep, the decision-1 expansion, the Managed Agents cost
+  comparison, and the web-search / trigger lifecycle findings.
 icon: education
-version: 4  # revision 4: 60-brief decision-1 expansion + task-matched Managed Agents cost comparison
+version: 5  # revision 5: Managed Agents web search + cron trigger lifecycle; grounding caveat sharpened
 
 card: gemini-dev-capabilities-research-2026-11-26  # ADA-1440
 date: 2026-11-26
@@ -41,6 +42,13 @@ delivered:
       sink: wiki-education
       reason: "Tony authorized rev 799-targeted update; folded in the 60-brief decision-1 expansion and the task-matched Managed Agents cost comparison. MediaWiki assigned revid 808 because other publishes advanced the page in between."
       body_chars: 17114
+    revision_5:
+      revid: 809
+      event_id: gemini-dev-capabilities-websearch-triggers-2026-11-27
+      idempotency_key: pub-488044f2a86741d1b723fb5c6947f614
+      sink: wiki-education
+      reason: "Tony approved step 1; folded in the verified Managed Agents google_search / url_context path and cron trigger lifecycle, and sharpened the free-tier grounding caveat to distinguish generateContent grounding from the Managed Agents tool."
+      body_chars: 19093
     topic: gemini-developer-capabilities
     level: working
     next_review: 2026-12-10
@@ -59,6 +67,8 @@ delivered:
     - "revision 3: Managed Agents verified on the free key - fresh sandbox + code execution 31s, sandbox reuse with file persistence 25s, GitHub repo mount 288s in background mode"
     - "revision 3: decision-1 disputed labels confirmed READY by Tony; 8/10 is a true accuracy figure (tp 3 / fn 2 / tn 5 / fp 0); high-confidence reject pre-filter only"
     - "revision 3: batchGenerateContent returned HTTP 400 FAILED_PRECONDITION on the free key for two models; paid check still open"
+    - "revision 5: Managed Agents google_search / url_context worked on the free key (16,794 total tokens, one grounding call, 45.6s); trigger create / get / delete verified and probe deleted"
+    - "revision 5: generateContent Search grounding 429 on the free key is a different path from the working Managed Agents google_search tool"
 
 guardrails:
   - "No billing, key, gateway, or model-pin changes."
@@ -73,6 +83,7 @@ activation_gate:
   - "DONE 2026-11-26: user explicitly authorized publication (answer to the scope question)."
   - "DONE 2026-11-26: POST /publish kind=lesson, meta format=wikitext + wiki_title/topic/level/source/learned_at/next_review/status, sinks=['wiki-education'] -> delivered, pageid 368 revid 792."
   - "DONE 2026-11-26: user authorized re-publish with the free-tier sweep; POST /publish sinks=['wiki-education'] -> delivered, same pageid 368 revid 796."
+  - "DONE 2026-11-27: user approved step 1 of the suggested next moves; POST /publish sinks=['wiki-education'] -> delivered, pageid 368 revid 809."
 
 verify:
   - "DONE 2026-11-26: POST /lesson {op:get, source=wiki, topic=gemini-developer-capabilities} -> ok, slug lesson-34d534c1f525, Education:Gemini-Developer-Capabilities-2026-11-26, full body present."
@@ -80,6 +91,7 @@ verify:
   - "DONE 2026-11-26: card ADA-1440 closed via board-api /action."
   - "DONE 2026-11-26: re-publish re-read via POST /lesson -> 11,277 chars, section 4 present, no key names or project IDs in body."
   - "DONE 2026-11-26: revision 3 published via board-api /publish sinks=[wiki-education] -> pageid 368 revid 798; re-read via POST /lesson -> 14,109 chars, revision-3 and Managed Agents markers present, no key names or project IDs in body."
+  - "DONE 2026-11-27: revision 5 re-read via POST /lesson -> 19,093 chars with revision-5, google_search, trigger and sharpened-grounding markers present; no key names or project IDs in body."
 
 remaining:
   - "DONE 2026-11-26: 20-fixture voice bench on gemini-3.8-live-extended-thinking returned zero tool calls; gemini-3.8-live stays sole voice pin."
@@ -89,5 +101,6 @@ remaining:
   - "After the daily quota reset, complete the three unverified surfaces (thought summaries, inline-image generation, OpenAI compatibility) via the scheduled retry on ADA-1451."
   - "DONE 2026-11-26: revision 3 published with the Managed Agents, decision-1 label-review and batch-precondition findings; pageid 368 revid 798."
   - "DONE 2026-11-27: revision 4 published via board-api /publish sinks=[wiki-education] -> pageid 368 revid 808 (MediaWiki-assigned, not the requested 799); re-read 17,114 chars with decision-1 expansion and cost-comparison markers present, no key names/project IDs in body."
+  - "DONE 2026-11-27: revision 5 published via board-api /publish sinks=[wiki-education] -> pageid 368 revid 809; re-read 19,093 chars with web-search and trigger markers present, no key names/project IDs in body."
   - "Gemini 4 text-agent eval still needs paid capacity; separate go-ahead tracks that."
   - "Re-check the catalog before reusing any model ID; this page is a dated snapshot."
