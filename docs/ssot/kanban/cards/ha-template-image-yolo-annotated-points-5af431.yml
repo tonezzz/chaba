@@ -1,15 +1,17 @@
 id: ha-template-image-yolo-annotated-points-5af431
 title: HA template image.yolo_annotated points at dead LAN-IP :8780 — repoint to 127.0.0.1
 column: done
-updated: '2026-11-27'
+updated: 2026-11-27 09:30
 priority: low
 tags:
 - home-assistant
 - yolo
 - tony-omen
-note: '[verify 2026-11-27] CLOSED as resolved live. tony-omen''s ~/.config/home-assistant/templates.yaml now uses
-  http://127.0.0.1:8780/image?t={{ now().timestamp() | int }}; yolo-detect.service is active, listening on 127.0.0.1:8780
-  (and 100.75.102.88:8780), and GET /image returns HTTP 200. No template or service change made during triage.'
+note: 'Found during tony-omen-post-reboot-dead-user-units-pl-9d08a4 (2026-11-25). tony-ha templates.yaml image.yolo_annotated
+  fetches http://192.168.2.86:8780/image — but yolo-detect.service on omen binds 127.0.0.1:8780 only, so the dashboard
+  yolo image is broken. HA runs host-networked so http://127.0.0.1:8780/image should work (verify /image route responds
+  — it returned 404 on a bare GET during the audit; check server.py route params). Alternative: give yolo-detect
+  a second bind on the LAN IP, but th'
 ref: HOM-1383
 comms:
 - at: 2026-11-25 10:37
@@ -187,6 +189,13 @@ comms:
 - at: 2026-11-26 23:44
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-27 09:30
+  from: tony
+  text: '[verify 2026-11-27] Resolved live: templates.yaml uses 127.0.0.1:8780/image, yolo-detect active, /image
+    HTTP 200. Closed without host changes.'
+- at: 2026-11-27 09:30
+  from: tony
+  text: closed by tony
 spec: 'Repoint tony-ha templates.yaml image.yolo_annotated from http://192.168.2.86:8780/image to http://127.0.0.1:8780/image
   (HA is host-networked; yolo-detect.service on tony-omen binds 127.0.0.1:8780 only). First verify the /image route
   responds with its required params — a bare GET returned 404 during the 2026-11-25 audit, so check server.py route
