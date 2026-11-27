@@ -1,0 +1,405 @@
+{
+ "created": "2026-11-27 15:38:01 +0700",
+ "determinism": "lane inference is pure-python matmul on fixed one-hot inputs; corpus/records/pre-registration hashed; recordings.json appended per cell; replay recomputes all scores with zero provider calls",
+ "files": {
+  "model/rolecond-model.pt": {
+   "bytes": 457661,
+   "sha256": "2b9f51f84a3180c345df7f9a9f1feab6a176dcef778d30a1c801c00f1a1c35b3"
+  },
+  "model/rolecond-weights.json": {
+   "bytes": 2475797,
+   "sha256": "d3bfa879fa9c6199ac7cc742fc3eb90a03e4471d055a085fc47cacd8ecda47d1"
+  },
+  "model/roles.json": {
+   "bytes": 228,
+   "sha256": "b2e053f65bc2a88c2b48272f9b2083ad6fbece8af53520010d2471291bed7d3e"
+  },
+  "model/vocab.json": {
+   "bytes": 1419,
+   "sha256": "2af170ed9abe3e0617cfedf59e3ca160ed5473f3158333fed31a6989e02b220e"
+  },
+  "packet/corpus/fresh/kk-mac-mlx-colab-scene0-control-20261124/pack.yml": {
+   "bytes": 3918,
+   "sha256": "6aba7a2af64cb984061dc64a7bbf3873f3e11e383f20d75a653d924368d48b53"
+  },
+  "packet/corpus/fresh/kk-mac-mlx-colab-scene1-20261124/pack.yml": {
+   "bytes": 3574,
+   "sha256": "e50de5009e81d22f4f4a2232ce828761fd04f565930ed494416e51da6100709e"
+  },
+  "packet/corpus/fresh/kk-mac-mlx-vimax-goldenhour-s0-20261124/pack.yml": {
+   "bytes": 3704,
+   "sha256": "8d0412dbfb257fd1da986de485e17f77c91ab8013a85040e4eb2744744cd28aa"
+  },
+  "packet/corpus/packs/bge-hybrid-shadow-idc03-v2/pack.yml": {
+   "bytes": 3609,
+   "sha256": "baab8ce2c4986ae06683d7917442cd7a5621f44d156d09b081046648a1aabc4a"
+  },
+  "packet/corpus/packs/bge-hybrid-shadow-idc03/pack.yml": {
+   "bytes": 3600,
+   "sha256": "12fd1ce9ee31287afce0fe2fd6b0ecdd967a277f1c2fc9722ae460a8d4703fe7"
+  },
+  "packet/corpus/packs/bge-hybrid-shadow/pack.yml": {
+   "bytes": 3582,
+   "sha256": "11fa694b9b5c656fe13740250bc017c3e34206912890ac5b1e4870580c7fbb94"
+  },
+  "packet/corpus/packs/cline-kanban-nest-bridge/pack.yml": {
+   "bytes": 391,
+   "sha256": "67a3ac95ae1a58fea197d8b3eea090645bfa6d24c3def029a5a000005bbeaecd"
+  },
+  "packet/corpus/packs/colibri-bench/pack.yml": {
+   "bytes": 7193,
+   "sha256": "e97722ce6c877017575b6ce5e4fd06464542ec8b44bd7c2a24315b51cf0a19cb"
+  },
+  "packet/corpus/packs/devnest-model-slot-30m/pack.yml": {
+   "bytes": 3563,
+   "sha256": "b8c336fad184d12d0dcc9186075eedfa4f5c2546474d5965c937342276cc345d"
+  },
+  "packet/corpus/packs/devnest-model-slot-60m/pack.yml": {
+   "bytes": 2613,
+   "sha256": "6e6d6fb6059d6d889e2ae17ee5dc49ce799be8a9eba279521df095ad9d945ef5"
+  },
+  "packet/corpus/packs/devnest-qwen3-8b-hf-prestage/pack.yml": {
+   "bytes": 405,
+   "sha256": "d70a924dbd2ed88f5c7d6d745a153239ffb08bcfa9386f9709da4cc5512ce2bf"
+  },
+  "packet/corpus/packs/doc-assemble-ss1/pack.yml": {
+   "bytes": 3770,
+   "sha256": "a55d6202f04113c6581ae5d7530bbc352d22b9b2333605a13a77999fa87f3e13"
+  },
+  "packet/corpus/packs/doc-embeds-ss1/pack.yml": {
+   "bytes": 4809,
+   "sha256": "e92357733f9f793a728de9dc5dee690ba6884225a2ef88f7a49cff19100d227c"
+  },
+  "packet/corpus/packs/doc-render-ss1/pack.yml": {
+   "bytes": 6444,
+   "sha256": "a57d9adcdae07f68c9b40afebd911a3799dd34871a25aded241d14db3d5ecbce"
+  },
+  "packet/corpus/packs/doc-static-final-v3/pack.yml": {
+   "bytes": 1466,
+   "sha256": "6742e4cf8529ea40adbc4b058d748f6aae739c8561b03e2e1a4041e0cdfd3d82"
+  },
+  "packet/corpus/packs/doc-v2-delivery/pack.yml": {
+   "bytes": 13792,
+   "sha256": "016d2a0702d50ed70c9984b2628e52fb523a665bfac5b78d341e66b0dea12c94"
+  },
+  "packet/corpus/packs/doc-v2-music-bed/pack.yml": {
+   "bytes": 7383,
+   "sha256": "04d86d54e7cd03d83f48ebafdfee06618101b890d8c4ea156b41a5f26285e649"
+  },
+  "packet/corpus/packs/doc-v2-rerender-shots/pack.yml": {
+   "bytes": 9461,
+   "sha256": "534ddaf0a9949422c21171554b0a591b803a46bc95cb70eccd76b9e270ae82bd"
+  },
+  "packet/corpus/packs/doc-v2-shot-qc/pack.yml": {
+   "bytes": 7179,
+   "sha256": "a23c1ca5fe9c11208fb15a5611994d1451ad1019d753ab6a6b437dc0c4bb5129"
+  },
+  "packet/corpus/packs/doc-v2-subs/pack.yml": {
+   "bytes": 7525,
+   "sha256": "8e68131ee9a25ee9385f3d5b4b87b0e89d3bb9c3b437396b064ae94a4ef77d12"
+  },
+  "packet/corpus/packs/doc-v2-vo-earcheck/pack.yml": {
+   "bytes": 7945,
+   "sha256": "9360ce632e6b198021f271787d3bb644b07a74158ae8d04f878e67421ef31cb2"
+  },
+  "packet/corpus/packs/doc-vo-ss1/pack.yml": {
+   "bytes": 5600,
+   "sha256": "ba0d870d587db13729536809ac891aaae6689e04f2eccb4898a081a673112998"
+  },
+  "packet/corpus/packs/doc-vo-v3/pack.yml": {
+   "bytes": 6174,
+   "sha256": "34a02a40a73a9c772f892585145601451d840784493a5cd3e45beddb83f17daf"
+  },
+  "packet/corpus/packs/edu-agent-bench/pack.yml": {
+   "bytes": 3576,
+   "sha256": "876832c0f1978a9e4cffd33dd1ef3f7400b6ddb56ad01ee994c3cb2d8cffa54e"
+  },
+  "packet/corpus/packs/gaussian-splat-hibiscus-recon/pack.yml": {
+   "bytes": 1058,
+   "sha256": "a7e1c732046dd055cbc8e46465dd9dc1452dab13d93c7cb80410fdedfb9f19bc"
+  },
+  "packet/corpus/packs/gaussian-splat-ply-orbit/pack.yml": {
+   "bytes": 924,
+   "sha256": "90c49cec981c95755530e1f4d151eef87731c98d2f77394791eee25588fc1b81"
+  },
+  "packet/corpus/packs/img-gen-bench-t4/pack.yml": {
+   "bytes": 7877,
+   "sha256": "e95a60ffcd6cbeb0654e42b2393ff7b9545fc4a11ff7a7246b4731908e31f349"
+  },
+  "packet/corpus/packs/img-gen-bench/pack.yml": {
+   "bytes": 3554,
+   "sha256": "ad8dc486f1d5db1eb44b282f5e66a6c7bea2d57cae7d67b4cbf1edff6328a3e1"
+  },
+  "packet/corpus/packs/kk-mac-cpu-smoke/pack.yml": {
+   "bytes": 1022,
+   "sha256": "293ef7724d3a1929b58b00d3dbecefc6438b477e7c8f7043143188ba472c188f"
+  },
+  "packet/corpus/packs/kk-mac-image-render-poc-20261126/pack.yml": {
+   "bytes": 1703,
+   "sha256": "8c31e4e1a38e58bb9cd99ba07ad69fdaef56e491ad7057e0548bcf77d20306a8"
+  },
+  "packet/corpus/packs/kk-mac-image-render-poc-20261126b/pack.yml": {
+   "bytes": 1710,
+   "sha256": "4fbdbc5fa08a49ec0c10e0da54a9a4c6da841c0ef795e4d3bf1020a623eebdc3"
+  },
+  "packet/corpus/packs/kk-mac-image-render-poc/pack.yml": {
+   "bytes": 1694,
+   "sha256": "31274bc625a1c6b6f14bdb80a72b4d4fa907ed05dac6592246bfddcdc173e00e"
+  },
+  "packet/corpus/packs/kk-mac-llm-pack/pack.yml": {
+   "bytes": 2757,
+   "sha256": "68c62e2ba5de1c230aa8d502b83fd3be03f404e339c8d574926becde6c92e169"
+  },
+  "packet/corpus/packs/kk-mac-ltx-mps-probe-20261029/pack.yml": {
+   "bytes": 2248,
+   "sha256": "b71fd3c8534114779673715188b15ef6543f39c47c6926bd40bdd0efd772d383"
+  },
+  "packet/corpus/packs/kk-mac-readonly-smoke/pack.yml": {
+   "bytes": 915,
+   "sha256": "437f32b70ceba620182dde874a1333aa715a53a3b8ef93ee781d2d01b682fad9"
+  },
+  "packet/corpus/packs/kk-mac-storyboard-i2v-fullshot01-20261030/pack.yml": {
+   "bytes": 3132,
+   "sha256": "4af2c0f3d6944ceb37cfec51022f6c2b90f5707c1cc342d6c6796dcbe769633b"
+  },
+  "packet/corpus/packs/kk-mac-storyboard-i2v-probe-20261029/pack.yml": {
+   "bytes": 2833,
+   "sha256": "507fc44229daa7dd095d5c1d5e364f1599c01d4ea5a3cd418d6cd86a7dd4e3e8"
+  },
+  "packet/corpus/packs/kk-mac-storyboard-i2v-shot02-20261030/pack.yml": {
+   "bytes": 2820,
+   "sha256": "a4267921831c016d49496deab5635682c19e6d685265b1dd1887390940ddd033"
+  },
+  "packet/corpus/packs/kk-mac-storyboard-i2v-shot03-20261030/pack.yml": {
+   "bytes": 2367,
+   "sha256": "c84b52a16aa8ab7a4155eecd2169bb950f5958a31bd99e67d76b2212a54239bb"
+  },
+  "packet/corpus/packs/kk-mac-storyboard-i2v-shot04-20261030/pack.yml": {
+   "bytes": 2367,
+   "sha256": "0cbc5e92e37ab7b937530316fad7c48be92d362145ecea6795b45d7f6ea56cc2"
+  },
+  "packet/corpus/packs/kk-mac-storyboard-i2v-shot05-20261030/pack.yml": {
+   "bytes": 2367,
+   "sha256": "ab80028d9f08db859d746db0b67080abaa08d02891e8a3b600329dd427c19305"
+  },
+  "packet/corpus/packs/kk-mac-storyboard-i2v-shot06-20261030/pack.yml": {
+   "bytes": 2367,
+   "sha256": "d15cb2c3da89869ab7c90f7eff04a1f56bba074d91c7cfeeff7ba2ca7736e10c"
+  },
+  "packet/corpus/packs/kk-mac-storyboard-i2v-shot07-20261030/pack.yml": {
+   "bytes": 2367,
+   "sha256": "9f008f90fa92c080acc8c2ef6ba2457587b89bc8d11a1176fa19e48f58fa8812"
+  },
+  "packet/corpus/packs/kk-mac-storyboard-i2v-shot08-20261030/pack.yml": {
+   "bytes": 2367,
+   "sha256": "7fc408b868cb376c8e28aa92360a93f5f4e58db920c424f570cbaad8e19fd0be"
+  },
+  "packet/corpus/packs/kk-mac-storyboard-i2v-shot09-20261030/pack.yml": {
+   "bytes": 2367,
+   "sha256": "b7abdee4ebb1defb8229ee62921069cd93dd88b1a61f890d11388d12d7926da4"
+  },
+  "packet/corpus/packs/kk-mac-storyboard-i2v-shot10-20261030/pack.yml": {
+   "bytes": 2367,
+   "sha256": "b8cfa4e98506dbb821997c9f0e7c5b86fb2e4bfb7ca72daf2bf5f7e9631f311e"
+  },
+  "packet/corpus/packs/kk-mac-thai-tts-scout/pack.yml": {
+   "bytes": 2075,
+   "sha256": "c98f3bd6ad1ce3c2fca5a618003d5b520c4048db28c1d6a36d7997fcf4cf392d"
+  },
+  "packet/corpus/packs/kk-mac-thai-tts-shortlist/pack.yml": {
+   "bytes": 1286,
+   "sha256": "49d063d0fe2f67bfb42fb6a3ac897f8517606b5745bae75d8113cd73050c8c64"
+  },
+  "packet/corpus/packs/kk-video-c9f99fee6146-embeds/pack.yml": {
+   "bytes": 4947,
+   "sha256": "b0fc4d37b09d313cdf76808863b4bbebd5ca6c6591e09c514a1fcc6736f139a0"
+  },
+  "packet/corpus/packs/kk-video-c9f99fee6146-image-conditioning-probe/pack.yml": {
+   "bytes": 2247,
+   "sha256": "8154e6e12c566083a8fe22476d4fa81e9e42258de2c2ca6baf1ebfcf66fb35a7"
+  },
+  "packet/corpus/packs/kk-video-c9f99fee6146-pdf-image-audit/pack.yml": {
+   "bytes": 1296,
+   "sha256": "e7705c5310c1df282385f00feaf097218cde89998b0cc2494977dbb5f94c83b4"
+  },
+  "packet/corpus/packs/kk-video-c9f99fee6146-pdf-text-diff/pack.yml": {
+   "bytes": 948,
+   "sha256": "41d91817968638e68fdf337b75e3c517cd12eef399f7c45761d974b2850ae995"
+  },
+  "packet/corpus/packs/kk-video-c9f99fee6146-preflight/pack.yml": {
+   "bytes": 1904,
+   "sha256": "c1368e8c9b5979f209e886be1bd9e745c4e203e30226f7fea1fdda7976a717b2"
+  },
+  "packet/corpus/packs/kk-video-c9f99fee6146-preview-mac/pack.yml": {
+   "bytes": 8224,
+   "sha256": "23642e535558c1912eb27ef72592ec4ee898f77099202686002f099b4d7aaead"
+  },
+  "packet/corpus/packs/kk-video-c9f99fee6146-preview-v2/pack.yml": {
+   "bytes": 3188,
+   "sha256": "5862d7bdecbd197ebb317d67d289e7059d4e4ec9e9fe8b91fa1ec4136e830f7e"
+  },
+  "packet/corpus/packs/kk-video-c9f99fee6146-preview/pack.yml": {
+   "bytes": 20835,
+   "sha256": "bc65e79fbd0abbc80be2bf58e2de1031e12b88847be99ae9812758803938e30b"
+  },
+  "packet/corpus/packs/kk-video-c9f99fee6146-r4-preflight/pack.yml": {
+   "bytes": 1917,
+   "sha256": "901f83694d3db90cc6d2c42ab33a97b076064f2dd393e5b6a0f22cae74d4028d"
+  },
+  "packet/corpus/packs/kk-video-c9f99fee6146-source-image-use-approved/pack.yml": {
+   "bytes": 853,
+   "sha256": "98d8c92b3371a6125d87bea772989975f49f88cfe4151b1c1f717fd1de546754"
+  },
+  "packet/corpus/packs/kk-video-c9f99fee6146-voice-clone-probe/pack.yml": {
+   "bytes": 1613,
+   "sha256": "7e87ed9924566ee9a35e20d44782834e25e3ba7a1b6e5cd863e0dfdc4ecb2329"
+  },
+  "packet/corpus/packs/ltx-probe-77f/pack.yml": {
+   "bytes": 3600,
+   "sha256": "15b6b49de1b05bcbb278716c42ee565f7134c77d371bf74da3b424fce2b3a89c"
+  },
+  "packet/corpus/packs/ltx-probe-81f/pack.yml": {
+   "bytes": 3600,
+   "sha256": "d6c62475978a7f9ad4aa163484bbe2519d7850b770028a159a3299d8ea06fa90"
+  },
+  "packet/corpus/packs/ltx-probe-97f/pack.yml": {
+   "bytes": 3336,
+   "sha256": "82f86dd57c121bbf74a3eadb14b2633e1dd40454bbd77f04306b0139ddbf68fc"
+  },
+  "packet/corpus/packs/nasa-embeds-ss1/pack.yml": {
+   "bytes": 5472,
+   "sha256": "758ccd58dce50866d53d36c7cdf4fae7d82e8c2e6dd96ac31b807055fff7ab82"
+  },
+  "packet/corpus/packs/nasa-i2v/pack.yml": {
+   "bytes": 3779,
+   "sha256": "30fd0de8a44174b07ba5c77e93f1ac5f0630b25cadb77e753e4fc4b070e7bada"
+  },
+  "packet/corpus/packs/s1-frames-extract/pack.yml": {
+   "bytes": 1642,
+   "sha256": "385153ad9901c001a927a6be400c61d64e577d6f813402c53365dfdcbf3b4cd5"
+  },
+  "packet/corpus/packs/s1-i2v-chain/pack.yml": {
+   "bytes": 3298,
+   "sha256": "d792837551970d13745da8cb428bfb160ba0241a69f86c8be0f8ded73ece9dae"
+  },
+  "packet/corpus/packs/scout-thai-tts/pack.yml": {
+   "bytes": 2047,
+   "sha256": "8c3897f7873570fe806040f0dbf17fb4e89f4fd53b22c8af9861d0390ef4e408"
+  },
+  "packet/corpus/packs/smoke/pack.yml": {
+   "bytes": 589,
+   "sha256": "008e8d0658a28b105ea363ca9b5c9fe6aa290e059fe2c2bfe0d28edeac0fb292"
+  },
+  "packet/corpus/packs/thonburian-bench/pack.yml": {
+   "bytes": 3524,
+   "sha256": "2e97f805ce7b23dada83d887a0c25ec51c90ac9383a891ed3292511eebace54b"
+  },
+  "packet/corpus/packs/thonburian-score/pack.yml": {
+   "bytes": 2073,
+   "sha256": "2fad9a02197893c1228a329f931f7861143c75a6867a54b27169e5e0c1b55c85"
+  },
+  "packet/corpus/packs/vyncx-v2-ada2-redo/pack.yml": {
+   "bytes": 3245,
+   "sha256": "9af7209739197aecfa72eff2f8bb5a3d6fcd67c4633c142b5ee9e5cc83b93e1d"
+  },
+  "packet/corpus/packs/vyncx-v2-ada9s-score/pack.yml": {
+   "bytes": 2655,
+   "sha256": "daf7de80dc4932c19fe334e9c397c0264c5c0f8431f35401550401a00edca165"
+  },
+  "packet/corpus/packs/vyncx-v2-ada9s/pack.yml": {
+   "bytes": 2801,
+   "sha256": "0b3ff271348466dfe81615382f96738977f43fe58e1f57f4f5ac7dbd230a1fa9"
+  },
+  "packet/corpus/packs/vyncx-v2-bench/pack.yml": {
+   "bytes": 2987,
+   "sha256": "97021c9ddda8dcd00e3a69209ca5a712d45114287a8a00b1d69b92331839f191"
+  },
+  "packet/corpus/packs/vyncx-v2-cer/pack.yml": {
+   "bytes": 3696,
+   "sha256": "0d5d93d48196eee354ce1b0e2959fccb589ffebb235d84fa07b5547df16330ba"
+  },
+  "packet/corpus/packs/vyncx-v2-score/pack.yml": {
+   "bytes": 2572,
+   "sha256": "8509605721cc6fc04a79de6887e0dc9877d1a08438327a1b6f00c215cc4000cd"
+  },
+  "packet/pre-registration.json": {
+   "bytes": 3908,
+   "sha256": "13e6aa00aa4fe9b2a364e7cffc571105db648970d4340ecc5305fe4316306a67"
+  },
+  "packet/records-corpus.json": {
+   "bytes": 39710,
+   "sha256": "d706039bce1a642326c4eae6bf527a7930c4b7444add2e306358a4333527a024"
+  },
+  "src/ncm_shadow.py": {
+   "bytes": 29507,
+   "sha256": "a9d0ef491afc40847369d81dbc4deb983c068d6fbbb44fbf5e0592ed2893d0e8"
+  }
+ },
+ "fresh_tasks": 3,
+ "manifest": "ncm-variant-b-p3-shadow frozen artifacts",
+ "model_artifacts": {
+  "rolecond-model.pt": "canonical trained MLP (torch state_dict)",
+  "rolecond-weights.json": "float32 export for stdlib replay; verified identical token sets vs model.pt on all 24 role inputs (0 mismatches, min|logit|=0.010878)",
+  "roles.json": "24 block roles",
+  "vocab.json": "81 detail tokens"
+ },
+ "notes": "files[] hashed at freeze; src/ncm_shadow.py re-hashed post-run to the final version that produced results.json (record phase used provider calls only; the score() unrounded-f1 fix landed before scoring and does not affect recordings)",
+ "outputs": {
+  "packet/recordings.json": {
+   "bytes": 70349,
+   "sha256": "3374e261c5bb5379014803fc00efbde1ef262a3d06451f0f60cf3fc984451b19"
+  },
+  "packet/replay-proof.json": {
+   "bytes": 593,
+   "sha256": "24378a7a48c03ce51384dce6fa26a9de5727573417fa6703bd15beaeed465bbd"
+  },
+  "packet/report.md": {
+   "bytes": 1510,
+   "sha256": "6480eda7361e35dcf3b2755a9c7d9284790698952593aab5219553058e89a92d"
+  },
+  "packet/results.json": {
+   "bytes": 109931,
+   "sha256": "683b2d44d87a15a7c0ed005b4981452ebe0d273306847c139d81d0dffd3badfb"
+  },
+  "packet/run-record.log": {
+   "bytes": 7281,
+   "sha256": "e8dacd0f16a9f73d6cd2a661a197ec6026f786e578223d4442d9ad41771c67c7"
+  },
+  "src/ncm_shadow.py": {
+   "bytes": 29507,
+   "sha256": "a9d0ef491afc40847369d81dbc4deb983c068d6fbbb44fbf5e0592ed2893d0e8"
+  }
+ },
+ "platform": "linux",
+ "providers": {
+  "choice": {
+   "endpoint": "idc03:8017 /v1/systemone via ssh",
+   "health_at_freeze": "ready, openvino cpu, fingerprint d6c9958f24d8",
+   "model": "jevos-v5 (jev-latest alias)"
+  },
+  "glue": {
+   "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+   "endpoint": "tony-dell:11434 /api/chat via ssh",
+   "model": "qwen2.5:7b-instruct",
+   "options": {
+    "format": "json",
+    "num_predict": 160,
+    "temperature": 0,
+    "think": false
+   }
+  }
+ },
+ "python": "3.12.3",
+ "reps": 3,
+ "seeds": [
+  42,
+  7,
+  13
+ ],
+ "source_checkout": {
+  "packs": "scripts/colab/packs (73 frozen pack.yml) + scripts/devnest/video-packs (3 fresh)",
+  "repo": "chaba",
+  "rev": "79ae156fded919723ad420d382237f2542b6f689"
+ },
+ "tasks": 30
+}

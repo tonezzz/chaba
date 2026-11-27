@@ -1,0 +1,26 @@
+# Private, CPU-only text comparison for the superseding Sacred Father PDF.
+# The diff stays in private Drive; no model or external summarizer is called.
+name: kk-video-c9f99fee6146-pdf-text-diff
+requires:
+  - kk-video-c9f99fee6146-r4-preflight
+  - kk-video-c9f99fee6146-pdf-image-audit
+needs:
+  gpu_gb: 0
+  disk_gb: 1
+  egress_only_ok: true
+timeout_s: 600
+fetch:
+  - projects/kk-video-c9f99fee6146/project.json
+  - projects/kk-video-c9f99fee6146/source/
+artifacts:
+  - packs/kk-video-c9f99fee6146-pdf-text-diff/out/summary.md
+  - packs/kk-video-c9f99fee6146-pdf-text-diff/out/summary.json
+  - packs/kk-video-c9f99fee6146-pdf-text-diff/out/text-diff.patch
+prep: |
+  apt-get update -qq
+  apt-get install -y -qq poppler-utils
+run_sh: |
+  exec python3 "$PACK_DIR/diff_pdf_text.py" \
+    --project "$NEST_ROOT/projects/kk-video-c9f99fee6146/project.json" \
+    --source-dir "$NEST_ROOT/projects/kk-video-c9f99fee6146/source" \
+    --out "$PACK_DIR/out"

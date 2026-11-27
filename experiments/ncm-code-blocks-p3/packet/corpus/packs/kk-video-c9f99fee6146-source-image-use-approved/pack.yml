@@ -1,0 +1,27 @@
+name: kk-video-c9f99fee6146-source-image-use-approved
+needs:
+  disk_gb: 1
+  egress_only_ok: false
+timeout_s: 120
+artifacts:
+  - packs/kk-video-c9f99fee6146-source-image-use-approved/approval.json
+run: |
+  import json
+  import os
+  import time
+
+  pages = [2, 3, 4, 5, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39]
+  approval = {
+      "project": "kk-video-c9f99fee6146",
+      "scope": "private-preview-only",
+      "source_created_or_generated_by": "kk",
+      "approved_pdf_pages": pages,
+      "publication_authorized": False,
+      "approved_by": "tony",
+      "approved_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+  }
+  out = os.path.join(PACK_DIR, "approval.json")
+  with open(out, "w", encoding="utf-8") as fh:
+      json.dump(approval, fh, indent=2)
+      fh.write("\n")
+  print("recorded private source-image approval", flush=True)

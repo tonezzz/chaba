@@ -1,0 +1,24 @@
+# gaussian-splat-hibiscus-recon — photo->PLY Gaussian-splat reconstruction
+# on the nest-pack contract (card gaussian-splatting-nest-video-poc).
+# COLMAP (pycolmap) on the staged hibiscus-v1 image set, then gsplat
+# training (L1+SSIM, DefaultStrategy densify), PSNR/SSIM eval on a held-out
+# split, PLY export + orbit MP4 + timing/VRAM report. Reads the dataset
+# cross-tree from the Drive store; only egress need is pip installs.
+name: gaussian-splat-hibiscus-recon
+needs:
+  gpu_gb: 8
+  ram_gb: 8
+  disk_gb: 6
+  egress_only_ok: true
+timeout_s: 3600
+artifacts:
+  - packs/gaussian-splat-hibiscus-recon/out/gaussian-splat-hibiscus-recon.ply
+  - packs/gaussian-splat-hibiscus-recon/out/gaussian-splat-hibiscus-recon.mp4
+  - packs/gaussian-splat-hibiscus-recon/out/gaussian-splat-hibiscus-recon.png
+  - packs/gaussian-splat-hibiscus-recon/report.md
+  - packs/gaussian-splat-hibiscus-recon/metrics.json
+prep: |
+  pip install -q "gsplat>=1.5.3" pycolmap "opencv-python-headless" \
+    imageio imageio-ffmpeg plyfile
+run_sh: |
+  exec python3 "$PACK_DIR/recon.py"

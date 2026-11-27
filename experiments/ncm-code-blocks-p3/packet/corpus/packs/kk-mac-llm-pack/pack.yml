@@ -1,0 +1,78 @@
+name: kk-mac-llm-pack
+needs:
+  disk_gb: 1
+  egress_only_ok: false
+timeout_s: 600
+artifacts:
+  - packs/kk-mac-llm-pack/out/result.json
+run: |
+  import json
+  import os
+  import time
+  import urllib.request
+
+  task = json.load(open(f"{PACK_DIR}/inputs/task.json", encoding="utf-8"))
+  request_body = {
+      "model": task.get("model", "qwen3:8b"),
+      "prompt": task["prompt"],
+      "stream": False,
+      "keep_alive": "60m",
+      "think": False,
+      "options": {"temperature": 0},
+  }
+  if task.get("format"):
+      request_body["format"] = task["format"]
+  body = json.dumps(request_body).encode()
+  request = urllib.request.Request(
+      "http://127.0.0.1:11434/api/generate",
+      data=body,
+      headers={"Content-Type": "application/json"},
+  )
+  started = time.time()
+  with urllib.request.urlopen(request, timeout=300) as response:
+      raw = json.load(response)
+  response_text = raw.get("response", "")
+  checks = {"response_nonempty": bool(response_text.strip())}
+  if task.get("format") == "json":
+      candidate = response_text.strip()
+      if candidate.startswith("```"):
+          candidate = candidate.split("\n", 1)[-1]
+          candidate = candidate.rsplit("```", 1)[0].strip()
+      try:
+          parsed = json.loads(candidate)
+          checks["json_parses"] = isinstance(parsed, dict)
+      except json.JSONDecodeError:
+          parsed = None
+          checks["json_parses"] = False
+      for key in task.get("expect", {}).get("required_keys", []):
+          checks[f"required_key:{key}"] = (
+              isinstance(parsed, dict) and key in parsed
+          )
+      haystack = json.dumps(parsed, ensure_ascii=False) if parsed else candidate
+  else:
+      parsed = None
+      haystack = response_text
+  for fact in task.get("expect", {}).get("facts", []):
+      checks[f"fact:{fact[:40]}"] = fact.lower() in haystack.lower()
+  if not all(checks.values()):
+      raise RuntimeError("independent checks failed: " + json.dumps(checks))
+  result = {
+      "task_id": task.get("task_id", "unknown"),
+      "model": raw.get("model"),
+      "response": response_text,
+      "parsed": parsed,
+      "checks": checks,
+      "verified": True,
+      "eval_count": raw.get("eval_count"),
+      "eval_duration": raw.get("eval_duration"),
+      "load_duration": raw.get("load_duration"),
+      "wall_seconds": round(time.time() - started, 3),
+      "read_only": True,
+  }
+  if not result["response"].strip():
+      raise RuntimeError("empty model response")
+  out = f"{PACK_DIR}/out/result.json"
+  os.makedirs(os.path.dirname(out), exist_ok=True)
+  json.dump(result, open(out, "w", encoding="utf-8"), indent=2,
+            ensure_ascii=False)
+  print(json.dumps({"task_id": result["task_id"], "wall_seconds": result["wall_seconds"]}))

@@ -1,0 +1,14 @@
+# nest-pack smoke test — proves the whole lifecycle:
+# discovery -> needs check -> claim -> run -> artifact verify -> done.
+# Safe on any worker; writes one small file under its own pack dir.
+name: smoke
+needs:
+  egress_only_ok: true      # no gpu/disk floor — runs anywhere
+timeout_s: 120
+artifacts:
+  - packs/smoke/out.txt     # glob vs ada-nest/ root — gate before done-mark
+run: |
+  import os, time
+  out = f'{PACK_DIR}/out.txt'          # PACK_DIR = packs/<name> injected by runner
+  open(out, 'w').write(f'smoke ok {time.time():.0f}\n')
+  print('smoke wrote', out, flush=True)

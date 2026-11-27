@@ -1,0 +1,44 @@
+{
+  "experiment": "ncm-variant-b-p3-shadow",
+  "card": "ncm-variant-b-p3-shadow",
+  "parent_card": "OPS-1325",
+  "parent_card_title": "NCM code-block composer — detail by layer (Variant B)",
+  "status": "declared before any provider call",
+  "declared_at": "2026-11-27",
+  "approval": "Tony approved P3 shadow rollout 2026-11-27 (decision on card ncm-code-blocks-detail-composer, request review-decision-ncm-variant-b-research-l-448a63 option p3-shadow)",
+  "design": {
+    "arms": {
+      "A_existing_lane": "Jev/nest block choice (JevOS /v1/systemone on idc03:8017, jevos-v5) + LLM glue detail (qwen2.5:7b-instruct, digest 845dbda0ea48, on tony-dell:11434, temperature 0, JSON mode, num_predict 160)",
+      "B_shadow_lane": "same Jev/nest block choice (paired per cell) + role-conditioned NCM detail generator (frozen supervised MLP, model/rolecond-model.pt + model/rolecond-weights.json) + deterministic compat verifier"
+    },
+    "pairing": "one Jev choice per (task, rep); the chosen block feeds BOTH arms; glue prompt depends only on chosen block + seed",
+    "corpus": "30 real-pack tasks = records[::2][:30] of the frozen 73-pack corpus snapshot (identical selection rule to the scaled run) + 3 fresh real packs from scripts/devnest/video-packs never present in prior training/eval",
+    "reps": 3,
+    "seeds": [42, 7, 13],
+    "shortlist": "dedup([base_role, embeds, bench, render, scout]) shuffled with random.Random(seed + rep_index)",
+    "scoring": "deterministic verifier PRIMARY: token-set F1 >= 0.5 AND at least one produce:* AND at least one need:* token AND zero authority-guard hits, against the role-representative gold record (last-wins per role over the 73 corpus records, same as scaled run). LLM judge: NONE — secondary only, never gating.",
+    "fresh_pack_check": "the 3 fresh packs additionally report self-token F1 (lane/glue tokens vs the fresh pack's own structure|content tokens) as a secondary generalization diagnostic; primary gold remains the role representative for comparability"
+  },
+  "promotion_gate": {
+    "median_advantage_min": 0.10,
+    "guard_violations_max": 0,
+    "fresh_tasks_min": 1,
+    "reps": 3,
+    "definition": "PASS iff median over the 3 paired reps of (lane_pass_rate - glue_pass_rate) >= +0.10 AND total authority/guard violations across all cells and both arms == 0 AND all fresh tasks were executed in every rep",
+    "on_fail": "verdict = stop; shadow stays shadow; no promotion proposal"
+  },
+  "guardrails": {
+    "generated_code_never_sets": ["allowed_paths", "tools", "credentials", "human_gate", "permissions", "authorize", "grant_access"],
+    "nest_owns_queue": "no queue/nest/job mutation; packs read-only",
+    "spend": "zero paid GPU/API spend; local Ollama + self-hosted JevOS only; no account-tier change",
+    "production": "no production lane switch; no change to production nest/pack configs; card ncm-code-blocks-detail-composer stays open in review until this shadow report lands",
+    "replay": "packet/replay-proof.json must show identical per-cell scores recomputed with ZERO provider calls"
+  },
+  "known_caveats": [
+    "not NCM in the VQ-VAE sense: the VQ tokenizer branch is STOP (collapse on Sudoku + pack, anti-collapse v1/v2 and supervised block-identity v1/v2 all failed pre-registered gates); this lane drops the tokenizer and conditions a supervised MLP on block role only",
+    "gold is the role-representative record, not each task pack's own tokens — the lane predicts a per-role canonical detail set; fresh-pack self-token F1 is reported separately",
+    "glue baseline is a small local model (qwen2.5:7b-instruct); prior KK-Mac cross-check showed qwen3:8b omits produce tokens (baseline caveat recorded on parent card)",
+    "JevOS choice is live and may differ from the scaled run's recorded choices; that is expected — the shadow measures THIS run's paired outcome"
+  ],
+  "paid_spend_usd": 0.0
+}
