@@ -46,6 +46,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       .catch((err) => sendResponse({ ok: false, error: String(err.message || err) }));
     return true;
   }
+  if (request.cmd === "RELOAD_CONFIG") {
+    loadConfig()
+      .then((cfg) => sendResponse({ ok: true, recipes: (cfg.recipes || []).length }))
+      .catch((err) => sendResponse({ ok: false, error: String(err.message || err) }));
+    return true;
+  }
   return false;
 });
 
@@ -255,36 +261,64 @@ chrome.cookies.onChanged.addListener((changeInfo) => {
 // Tracked pages are dumped to the local bridge automatically when they
 // finish loading, and on demand via CAPTURE_TRACKED from the sidepanel.
 // No cookies or auth headers are sent — only visible page contents.
-const DEVIN_BASE = "https://app.devin.ai/org/your-organization-d57d938b/settings";
-const DEVIN_USAGE_URL = `${DEVIN_BASE}/usage`;
-const DEVIN_USAGE_HISTORY_URL = `${DEVIN_BASE}/usage?tab=history`;
-
-const CAPTURE_RECIPES = [
-  {
-    key: "devin_usage_history",
-    match: /app\.devin\.ai\/.*\/settings\/usage\?tab=history/,
-    slug: "devin_usage_history",
-  },
-  { key: "devin_usage", match: /app\.devin\.ai\/.*\/settings\/usage/, slug: "devin_usage" },
-  { key: "devin_billing", match: /app\.devin\.ai\/.*\/settings\/plans/, slug: "devin_billing" },
-  {
-    key: "gemini_rate_limits",
-    match: /aistudio\.google\.com\/app\/rate-limit/,
-    slug: "gemini_rate_limits",
-  },
-  {
-    key: "gcp_quotas",
-    match: /console\.cloud\.google\.com\/iam-admin\/quotas/,
-    slug: "gcp_quotas",
-  },
-];
+// Config is hot-loaded from the bridge (~/.local/ai-hub/config.json) on every
+// alarm tick — adding a page or changing the allowlist needs no Chrome reload.
+const DEFAULT_CONFIG = {
+  allow_hosts: ["app.devin.ai", "aistudio.google.com", "console.cloud.google.com"],
+  recipes: [
+    {
+      key: "devin_usage_history",
+      contains: ["app.devin.ai/", "/settings/usage?tab=history"],
+      slug: "devin_usage_history",
+    },
+    { key: "devin_usage", contains: ["app.devin.ai/", "/settings/usage"], slug: "devin_usage" },
+    { key: "devin_billing", contains: ["app.devin.ai/", "/settings/plans"], slug: "devin_billing" },
+    {
+      key: "gemini_rate_limits",
+      contains: ["aistudio.google.com/", "/app/rate-limit"],
+      slug: "gemini_rate_limits",
+    },
+    {
+      key: "gcp_quotas",
+      contains: ["console.cloud.google.com/", "/iam-admin/quotas"],
+      slug: "gcp_quotas",
+    },
+  ],
+};
+let activeConfig = DEFAULT_CONFIG;
 const CAPTURE_COOLDOWN_MS = 30 * 60 * 1000;
 const CAPTURE_RENDER_DELAY_MS = 3000;
 const lastCapture = {};
 
 function recipeForUrl(url) {
-  return CAPTURE_RECIPES.find((r) => r.match.test(url || "")) || null;
+  const u = String(url || "");
+  return (activeConfig.recipes || []).find(
+    (r) => (r.contains || []).every((c) => u.includes(c))
+  ) || null;
 }
+
+async function loadConfig() {
+  try {
+    const resp = await fetch(`${await bridgeBase()}/config`);
+    if (resp.ok) {
+      const cfg = await resp.json();
+      if (Array.isArray(cfg.recipes) && Array.isArray(cfg.allow_hosts)) {
+        activeConfig = cfg;
+        await chrome.storage.local.set({ aiHubConfig: cfg });
+      }
+    }
+  } catch (_) {
+    // bridge down — keep the last known config
+  }
+  return activeConfig;
+}
+
+(async () => {
+  try {
+    const r = await chrome.storage.local.get("aiHubConfig");
+    if (r.aiHubConfig?.recipes) activeConfig = r.aiHubConfig;
+  } catch (_) {}
+})();
 
 // Injected verbatim — must be self-contained (no closure references).
 function extractPage() {
@@ -408,10 +442,18 @@ function waitForComplete(tabId, timeoutMs = 30000) {
 }
 
 async function navigateAndCapture(url, slug) {
-  if (!/^https:\/\/(app\.devin\.ai|aistudio\.google\.com)\//.test(url || "")) {
-    return { ok: false, error: "only app.devin.ai or aistudio.google.com URLs are allowed" };
+  let target;
+  try {
+    target = new URL(url);
+  } catch (_) {
+    return { ok: false, error: "bad url" };
   }
-  const target = new URL(url);
+  const allowed = (activeConfig.allow_hosts || []).some(
+    (h) => target.hostname === h || target.hostname.endsWith("." + h)
+  );
+  if (!allowed) {
+    return { ok: false, error: `host ${target.hostname} not in hot-config allowlist` };
+  }
   const all = await chrome.tabs.query({});
   let tab = all.find((t) => {
     try {
@@ -459,6 +501,7 @@ async function pollCommands() {
   if (commandBusy) return;
   commandBusy = true;
   try {
+    await loadConfig();
     const base = await bridgeBase();
     const resp = await fetch(`${base}/commands`);
     if (!resp.ok) return;

@@ -755,6 +755,20 @@ if (gcpQuickBtn) {
   });
 }
 
+// Hot config: the recipe list and host allowlist live in the bridge's
+// config.json. No Chrome reload is needed after editing it.
+const reloadConfigBtn = document.getElementById("reloadConfigBtn");
+if (reloadConfigBtn) {
+  reloadConfigBtn.addEventListener("click", () => {
+    chrome.runtime.sendMessage({ cmd: "RELOAD_CONFIG" }, (resp) => {
+      const status = document.getElementById("captureSweepStatus");
+      status.textContent = resp?.ok
+        ? `Config reloaded: ${resp.recipes} recipes`
+        : `Config reload failed: ${resp?.error || "unknown"}`;
+    });
+  });
+}
+
 // On-demand navigation + capture of the two Devin Console usage pages.
 const DEVIN_CAPTURE_BASE = "https://app.devin.ai/org/your-organization-d57d938b/settings";
 for (const [btnId, url, slug] of [
