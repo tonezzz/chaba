@@ -1,7 +1,7 @@
 id: runner-converge-dirty-pinned-source-guard
 title: 'runner-tools-converge: detect dirty pinned sources before deploy (fail-loop + drift churn)'
 column: backlog
-updated: 2026-11-27 20:40
+updated: 2026-11-27 20:47
 brief: 'idc02 exec checkout had an uncommitted edit to scripts/board/dispatch_repos.py (JEVOS_URL WIP). Its runner-tools-converge.timer
   (~2min cadence) ran deploy-runner-tools.yml --limit idc02 from the dirty checkout: copy installed the WIP bytes,
   post-copy pin assert failed, drifted file stayed -> audit DRIFT -> runner-tool-drift-fleet re-armed ~50x on 2026-11-27.
@@ -28,3 +28,15 @@ comms:
     with checkout-vs-pin hashes and skips the pass with rc=0 instead of installing bytes that fail the post-copy
     assert. Added scratch-checkout tests for both clean and dirty paths; python3 -m pytest -q tests/devin/test_runner_tools_converge.py
     tests/board/test_runner_tooling_co'
+- at: 2026-11-27 20:46
+  from: chaba
+  text: classified as codemod (kw:drift conf 1.00)
+- at: 2026-11-27 20:46
+  from: chaba
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
+  lane: codemod
+  lane_source: kw
+claim: {}
