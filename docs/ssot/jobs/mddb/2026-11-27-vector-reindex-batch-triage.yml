@@ -1,0 +1,171 @@
+id: vector-reindex-batch-triage-20261127
+title: mddb-vector-reindex timeout/embed-failure triage — bound batches, isolate per-collection failures
+date: 2026-11-27
+card: mddb-vector-reindex-timeout-embed-failures
+ref: OPS-1515 (OPS-1511 fleet triage follow-up)
+status: triage-complete — fix not applied (card is triage-only)
+
+summary: |
+  The daily con01 sweep (scripts/mddb/vector-reindex.py, 05:40, unit
+  TimeoutStartSec=45m) issues 64 sequential SYNCHRONOUS
+  POST /v1/vector-reindex calls — one per collection from /v1/stats —
+  each with a 30-min HTTP timeout and no global deadline. One collection,
+  ada-ha-bank-devin-handoff, holds 149,550 of the leader's 173,924 docs
+  (86%). The 2026-11-27 run was TERMed at the 45-min unit budget mid-sweep
+  and emitted no telemetry because the ops-event doc is only written after
+  the last collection. Raising timeouts cannot fix this: worst case is
+  64 x 30 min against a 45-min budget.
+
+live_state_2026-11-27:
+  leader: "idc03 mddb 2.18.10 @ http://100.102.134.91:11023 (wr, healthy)"
+  corpus: "64 collections, 173,924 docs, db 16.97 GB"
+  largest: "ada-ha-bank-devin-handoff 149,550 docs (86%); next is ada-ha-scenario-reports 7,265"
+  embed: "model=bge-m3 dims=1024 via embed pool; queue depth ~1.4k/4000, dropped=0 at triage time"
+  prior_run: "2026-11-26 completed: embedded=5 skipped=111,688 failed=13 (ada-cms-pages:1, ada-ha-bank-devin-handoff:1, ada-ha-events-michael:1, ada-ha-scenario-reports:10)"
+
+root_cause:
+  - >-
+    Unbounded synchronous fan-out. vector-reindex.py loops collections
+    serially with PER_COLLECTION_TIMEOUT_S=1800 each; there is no sweep-
+    level deadline derived from TimeoutStartSec=2700, so cumulative time
+    is unbounded. HEALTH_DEADLINE_S=1200 can additionally burn 20 min
+    before the first collection.
+  - >-
+    The endpoint is all-or-nothing per collection. Upstream handler
+    (reindexVectors, services/mddbd/vector_reindex.go @ 2.19.x; same shape
+    in deployed 2.18.x) materializes EVERY doc of the collection into a
+    []reindexDoc up front, then per doc does VectorStore.Get — one bolt
+    View transaction per document — plus ContentHash, chunking, embed
+    (30s ctx cap per chunk), PutChunksQuantized, indexChunk,
+    CleanStaleChunks. For 149,550 docs that is ~149k bolt txs plus a full
+    ContentMD materialization inside one request. On 2026-11-27 idc03 was
+    under OPS-1511 memory pressure (swap 4/4 GiB, mddb itself swapped),
+    inflating per-tx latency — the giant collection alone can eat the
+    whole 45-min budget.
+  - >-
+    Failure isolation is count-only. The handler returns errors[] per
+    doc but vector-reindex.py discards it (only sums failed). The 13
+    failures are invisible: no doc IDs, no reasons, no quarantine — the
+    same docs re-fail every sweep. Per-collection exceptions ARE caught
+    client-side, but a SIGTERM mid-collection loses the entire run's
+    telemetry (the "vector-reindex complete" ops event is emitted once,
+    at the end).
+  - >-
+    No resume/checkpoint. Collections run in /v1/stats order; a killed
+    run restarts from collection #1 the next day. Content-hash skip makes
+    re-scans cheap-ish but the 149k-doc scan itself is the expensive part
+    and it repeats in full every run.
+
+verified_capabilities:
+  async_reindex_jobs: >-
+    LIVE on deployed 2.18.10 (verified 2026-11-27 21:35 +07): POST
+    /v1/vector-reindex {"collection":"ssot","async":true} -> 202 +
+    {jobId}; GET /v1/vector-reindex/jobs/{id} polls status
+    queued|running|completed|failed with done/percent/etaSeconds and a
+    final result {total,embedded,skipped,failed,totalChunks,errors[]}.
+    GET /v1/vector-reindex/jobs lists recent jobs. Feature shipped
+    upstream in 2.18.4 (#347); write deadline lifted for sync calls too.
+    Jobs are IN-MEMORY ONLY — a leader restart forgets them (404 "jobs
+    are kept in memory and a restart forgets them").
+  dedup: "second async reindex of same collection while active -> 409 (errReindexRunning)"
+  embedding_budget: >-
+    GO-043 budget check landed 2.18.9 — present on 2.18.10. Sync
+    reindex answers 429 when the daily embedding budget is spent;
+    partway exhaustion appends an explanatory errors[] entry and stops.
+  NOT_present_on_2.18.10: >-
+    GO-054 reindex concurrency slots (MDDB_REINDEX_MAX_CONCURRENT /
+    tenant MaxConcurrentReindexes, "queued" status) are 2.19.8 — not
+    deployed. No limit/offset/cursor/batch params exist even on upstream
+    2.19.13: VectorReindexRequestHTTP = {collection, force, async} only.
+    No cancel endpoint; jobs are GET-only.
+
+recommended_fix:
+  phase_1_client_only_no_mddb_change: >-
+    Rewrite scripts/mddb/vector-reindex.py to drive async jobs:
+    (a) POST {collection, async:true} per collection, then poll the job
+    to completion — the HTTP request no longer bounds the work, so the
+    30-min-per-collection timeout problem disappears;
+    (b) global sweep deadline = TimeoutStartSec minus margin (stop
+    LAUNCHING new jobs inside the last ~5 min; in-flight jobs continue
+    server-side and are picked up next run);
+    (c) order collections by documentCount ASCENDING (cheap first, the
+    149k giant last) so a budget-exhausted run still covers everything
+    except the long pole;
+    (d) per-job poll deadline ~15 min — on expiry leave the job running,
+    record "deferred", continue to next collection (or stop launching);
+    (e) emit a per-collection ops-event immediately when a job finishes
+    with failed>0 or errors[], including an errors[] sample — real
+    per-collection failure isolation + the dead-letter visibility the
+    13 failures never had;
+    (f) final summary event lists per-collection results AND any
+    collections not attempted (incomplete sweep is explicit, not silent);
+    (g) on start, GET /v1/vector-reindex/jobs and skip collections with
+    an active job (attach/poll it instead of 409-ing).
+  phase_2_server_env_optional: >-
+    When idc03 mddb is upgraded to >=2.19.8, set
+    MDDB_REINDEX_MAX_CONCURRENT=1 (or 2) so async jobs serialize
+    server-side — then the client can safely submit ALL collections at
+    once and just poll; the server queues the rest. Until then the
+    client must keep its own sequencing (default slots are unlimited on
+    2.18.10 and a 64-job burst would hammer the embed pool).
+  phase_3_upstream_for_real_batching: >-
+    The remaining wall is per-doc bolt txs + full-collection
+    materialization. Real fix belongs upstream/in the fork:
+    limit/offset or cursor params on vector-reindex, bulk
+    VectorStore.Get (GetVectors(collection, ids) already exists), and
+    job persistence across restart. File upstream or patch
+    ~/CascadeProjects/mddb-fork on tony-dell. ALSO consider whether
+    ada-ha-bank-devin-handoff (a lessons/handoff bank, append-mostly)
+    should be sharded by month or moved off the daily sweep cadence —
+    it is 86% of sweep cost for recall that matters most on the small
+    ada-* collections.
+  immediate_relief_option: >-
+    Without any code change, the next daily run can be unblocked by
+    hand: run the sweep per-collection via async jobs from any host
+    (e.g. loop over /v1/stats names, POST async, poll) — or simply
+    accept that the giant collection needs its own window. NOT done in
+    this triage (card is triage-only; also avoids hammering the embed
+    pool during OPS-1511 recovery).
+
+why_not_just_raise_timeout: |
+  TimeoutStartSec is already 45m; per-collection HTTP timeout is 30m.
+  The binding constraint is total sweep work (~174k docs, one 149k-doc
+  collection) against a fixed unit budget AND against idc03's memory
+  pressure. A bigger timeout only delays the SIGTERM; the sweep still
+  cannot finish, still emits no telemetry, and still re-scans the giant
+  collection from doc #1 every day.
+
+verification: |
+  - curl http://100.102.134.91:11023/v1/stats -> 64 collections,
+    ada-ha-bank-devin-handoff documentCount=149550 (86% of 173,924)
+  - curl /v1/vector-stats -> model=bge-m3, queue depth ~1.4k/4000
+  - POST /v1/vector-reindex {"collection":"ssot","async":true} -> 202,
+    job reindex_546dd26e68a31479 completed skipped=1 (live proof async
+    path works on deployed 2.18.10)
+  - upstream source read: tradik/mddb @ 2.19.13 —
+    services/mddbd/vector_reindex.go (reindexVectors: full []reindexDoc
+    materialization, per-doc VectorStore.Get bolt View, 30s embed ctx),
+    vector_reindex_jobs.go (#347 async jobs, in-memory, GET-only),
+    reindex_slots.go (GO-054, 2.19.8+ only)
+  - scripts/mddb/vector-reindex.py + systemd/generated/con01/
+    mddb-vector-reindex.{service,timer} + ssot.jobs.yml job def reviewed
+
+residual_questions:
+  - "Which collection the 11-27 run died inside is not directly visible
+    (no con01 journal access from mn01; the run emits no ops-event on
+    SIGTERM). Stats order puts ada-ha-bank-devin-handoff ~10th of 64 —
+    consistent with it consuming the whole budget, but unproven."
+  - "skipped=111,688 on 11-26 vs 173,924 total docs today — the bank
+    grows daily and stats documentCount semantics may differ from the
+    endpoint's doc| scan; not reconciled, immaterial to the fix."
+  - "Whether deployed 2.18.10's async job path has the GO-043 budget
+    check exactly as 2.18.9+ describes — likely yes (2.18.10 > 2.18.9)
+    but not exercised live."
+
+rollback: "n/a — triage only, no changes applied"
+
+lessons:
+  - "mddb /v1/vector-reindex is per-collection all-or-nothing: one bolt View tx per doc for the hash-skip check — collection size, not embed count, dominates sweep cost"
+  - "deployed mddb 2.18.10 already has async reindex jobs (#347, 2.18.4+) — check upstream CHANGELOG before assuming a fork patch is needed"
+  - "GO-054 reindex concurrency slots are 2.19.8+ — not on 2.18.10; don't set MDDB_REINDEX_MAX_CONCURRENT expecting it to work"
+  - "vector-reindex.py drops the endpoint's errors[] array — per-doc failure detail exists server-side but never reaches ops events"
