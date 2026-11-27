@@ -1,7 +1,7 @@
 id: mddb-ops-write-latency-triage
 title: 'mddb-ops: diagnose /add + /ingest ~125s congestion waves (read-only, approval-gated)'
 column: doing
-updated: 2026-11-27 13:34
+updated: 2026-11-27 13:35
 brief: Next batch 2026-11-27 — 4 runner slots free.
 priority: high
 tags:
@@ -86,6 +86,15 @@ comms:
 - at: 2026-11-27 13:34
   from: chaba
   text: answer saved but session delivery skipped (bad task_id)
+- at: 2026-11-27 13:35
+  from: tony
+  text: 'Tony approved A+B on the approval request (2026-11-27). Proceed with (A) now: kill PID 3862968 on idc03
+    (client-side only) and verify /add latency + log-shipper heartbeats recover. Then open a new approval request
+    on this card with a concrete Procedure-C compact window and rollback plan before step (B) - do not start the
+    offline compact without that window being accepted.'
+- at: 2026-11-27 13:35
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
 claim:
   since: 2026-11-27 12:58
 requests:
