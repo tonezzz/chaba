@@ -1,0 +1,180 @@
+---
+# zram-swap-deploy.yml — install the fleet-standard compressed-swap stack
+# (zram-swap.service + /usr/local/bin/zram-swap-{setup,teardown}.sh) on hosts
+# that opt in by defining the `zram_size` inventory var.
+#
+# Added 2026-11-27 for idc02 (OPS-1519 / card idc02-zram-swap-earlyoom-relief):
+# idc02 is a 16 GiB host with ZERO swap, so earlyoom's swap arm
+# (-s 10 default) is permanently true and every mem<10% excursion SIGTERMs
+# the worst-badness process (15 kills in 14d incl. the 2026-11-27 20:34-20:49
+# storm). A zram device disarms that arm and absorbs job/dispatch spikes.
+# idc02 gets 8G zstd (half of RAM, matching the ~50% sizing used for the
+# 30 GiB omen host's 24G device is generous; idc02 is tighter so 8G).
+#
+# This is the install half. ansible/playbooks/zram-swap.yml stays the
+# enable/disable toggle for hosts that already carry the unit (tony-omen).
+#
+# Rollback:
+#   ansible-playbook playbooks/zram-swap-deploy.yml --limit <host> \
+#     -e zram_swap_enabled=false
+#   or on the host: swapoff /dev/zram0 && systemctl disable --now zram-swap.service
+#
+# Usage:
+#   ansible-playbook playbooks/zram-swap-deploy.yml --check --diff --limit idc02
+#   ansible-playbook playbooks/zram-swap-deploy.yml --limit idc02
+
+- name: Deploy compressed zram swap
+  hosts: all
+  gather_facts: true
+  become: true
+
+  vars:
+    zram_algorithm: zstd
+    zram_streams: 4
+    zram_swap_enabled: true
+
+  tasks:
+    - name: Skip hosts without zram_size or with zram disabled
+      ansible.builtin.meta: end_host
+      when: zram_size is undefined or not zram_swap_enabled | bool
+
+    - name: Check whether the zram kernel module is available
+      ansible.builtin.command: modinfo zram
+      register: zram_modinfo
+      changed_when: false
+      failed_when: false
+
+    - name: Install kernel modules-extra package that ships zram.ko (Ubuntu)
+      ansible.builtin.apt:
+        name: "linux-modules-extra-{{ ansible_facts['kernel'] }}"
+        state: present
+      when:
+        - zram_modinfo.rc != 0
+        - ansible_facts['distribution'] == 'Ubuntu'
+
+    - name: Fail clearly when zram module is missing on a non-Ubuntu host
+      ansible.builtin.fail:
+        msg: >-
+          zram.ko not found and no auto-install rule for
+          {{ ansible_facts['distribution'] }}; install the kernel modules package
+          manually, then re-run.
+      when:
+        - zram_modinfo.rc != 0
+        - ansible_facts['distribution'] != 'Ubuntu'
+
+    - name: Load zram module
+      ansible.builtin.command: modprobe zram num_devices=1
+      changed_when: false
+
+    - name: Install zram swap setup script
+      ansible.builtin.copy:
+        dest: /usr/local/bin/zram-swap-setup.sh
+        owner: root
+        group: root
+        mode: "0755"
+        content: |
+          #!/bin/bash
+          set -e
+          # zram-swap-setup.sh — fleet-standard compressed swap device.
+          # Deployed by ansible/playbooks/zram-swap-deploy.yml; per-host
+          # sizing via inventory vars zram_size / zram_algorithm /
+          # zram_streams. The device is virtual until pages are swapped
+          # in, so declaring {{ zram_size }} does not immediately consume
+          # that much RAM.
+
+          # Load zram module if not already loaded
+          modprobe zram num_devices=1 2>/dev/null || true
+
+          # Reset any existing zram0 to make this idempotent
+          if [ -b /dev/zram0 ]; then
+            swapoff /dev/zram0 2>/dev/null || true
+            zramctl --reset /dev/zram0 2>/dev/null || true
+          fi
+
+          # Create the zram device. --algorithm must be passed to zramctl
+          # itself: once --size initializes the device, comp_algorithm
+          # writes fail with "Device or resource busy" (verified idc02
+          # 2026-11-27, util-linux zramctl).
+          DEV=$(zramctl --find --size {{ zram_size }} --streams {{ zram_streams }} --algorithm {{ zram_algorithm }})
+
+          mkswap "$DEV"
+          swapon -p 100 "$DEV"
+          echo "zram swap enabled on $DEV ({{ zram_algorithm }}, {{ zram_size }})"
+
+    - name: Install zram swap teardown script
+      ansible.builtin.copy:
+        dest: /usr/local/bin/zram-swap-teardown.sh
+        owner: root
+        group: root
+        mode: "0755"
+        content: |
+          #!/bin/bash
+          if [ -b /dev/zram0 ]; then
+            swapoff /dev/zram0 2>/dev/null || true
+            zramctl --reset /dev/zram0 2>/dev/null || true
+          fi
+          # Do not rmmod; zram may be used elsewhere
+
+    - name: Install zram swap unit
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/zram-swap.service
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Compressed zram swap
+          After=local-fs.target
+
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/local/bin/zram-swap-setup.sh
+          ExecStop=/usr/local/bin/zram-swap-teardown.sh
+          RemainAfterExit=true
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Ensure zram-swap.service.d directory exists
+      ansible.builtin.file:
+        path: /etc/systemd/system/zram-swap.service.d
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install zram swap unit retry drop-in
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/zram-swap.service.d/retry.conf
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          [Unit]
+          # zram0 can still be busy when multi-user comes up — retry after udev settles
+          StartLimitBurst=5
+
+          [Service]
+          Restart=on-failure
+          RestartSec=5
+
+    - name: Enable and start zram swap service
+      ansible.builtin.systemd:
+        name: zram-swap.service
+        enabled: true
+        state: started
+        daemon_reload: true
+
+    - name: Report active swap devices
+      ansible.builtin.command: swapon --show=NAME,TYPE,SIZE,PRIO
+      changed_when: false
+      register: swap_state
+
+    - name: Report memory
+      ansible.builtin.command: free -m
+      changed_when: false
+      register: free_out
+
+    - name: Show swap and memory state
+      ansible.builtin.debug:
+        msg: "{{ swap_state.stdout_lines + free_out.stdout_lines }}"

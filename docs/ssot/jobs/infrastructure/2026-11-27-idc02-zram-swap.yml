@@ -1,0 +1,120 @@
+---
+title: OPS-1519 — idc02 zram swap (8G zstd) deployed; earlyoom swap arm disarmed
+subtitle: Fleet-standard zram-swap stack installed on the zero-swap 16 GiB host that was producing 15 earlyoom SIGTERMs in 14d
+icon: memory
+date: 2026-11-27
+card: idc02-zram-swap-earlyoom-relief
+ref: OPS-1519
+status: applied-verified
+
+context:
+  trigger: >-
+    Card idc02-zram-swap-earlyoom-relief: idc02 (16 GiB, ZERO swap) hits
+    mem<10% excursions chronically — earlyoom journal shows 15 SIGTERMs in
+    14 days incl. a 7-event storm 2026-11-27 20:34-20:49 that killed mddbd
+    x4, chrome x4, jev, and two ~4.3 GiB python procs; openjev killed twice.
+    With swap=0 earlyoom's swap arm (-s 10 default) is permanently true, so
+    every excursion kills the worst-badness process. Per-process exemptions
+    just relocate kills (mn01 precedent
+    2026-11-25-mn01-mn-ha-dev-earlyoom-kills.yml; openjev decision
+    2026-11-27-idc02-openjev-earlyoom-decision.yml). Card spec: install
+    fleet-standard zram swap, ~8 GiB device for the 16 GiB host, zstd.
+  root_cause_gap: >-
+    The fleet-standard zram-swap.service pattern existed only on
+    tony-omen/macbook (static /usr/local/bin scripts, enabled via
+    playbooks/zram-swap.yml which is hosts:tony-omen hardcoded). idc02 had
+    neither the unit nor the zram kernel module — modprobe failed because
+    linux-modules-extra-6.8.0-151-generic was not installed (zram.ko ships
+    in linux-modules-extra on Ubuntu generic kernels, verified via
+    dpkg -c of the .deb before installing).
+
+changes:
+  - id: zram_swap_deploy_playbook
+    verdict: applied-verified
+    action: >-
+      New self-contained playbook ansible/playbooks/zram-swap-deploy.yml —
+      installs the fleet-standard stack (unit + retry drop-in +
+      /usr/local/bin/zram-swap-{setup,teardown}.sh via content: blocks, no
+      template files) on any host that opts in with the `zram_size`
+      inventory var. Handles the kernel-module gap: modinfo probe ->
+      apt install linux-modules-extra-{{ ansible_facts['kernel'] }} on
+      Ubuntu -> modprobe -> deploy -> systemd enable --now -> swapon/free
+      report. ansible/playbooks/zram-swap.yml remains the enable/disable
+      toggle for hosts already carrying the unit.
+    sizing: >-
+      idc02 zram_size: 8G (half of 16 GiB RAM; omen precedent is 24G on
+      30 GiB), zram_algorithm: zstd, zram_streams: 4, swapon priority 100.
+      Inventory host var added under vps:idc02 in
+      ansible/inventory/hosts.yml.
+    gotcha_fixed_in_review: >-
+      First converge produced an lzo-rle device: writing comp_algorithm
+      via sysfs AFTER `zramctl --find --size` fails with "Device or
+      resource busy" (size initialization locks the algorithm). Correct
+      mechanism is `zramctl --find --size 8G --streams 4 --algorithm zstd`
+      — zramctl applies the algorithm before initializing disksize.
+      Caught by zramctl verification, playbook amended, service restarted
+      and re-verified zstd.
+  - id: audit_census
+    verdict: applied
+    action: >-
+      zram-swap.service declared in idc02 expected_services
+      (docs/ssot/infrastructure/ssot.audit.hosts.yml) with the OPS-1519
+      note so audit-hosts verifies it going forward.
+
+verification:
+  checks:
+    - "swapon --show -> /dev/zram0 partition 8G prio 100"
+    - "zramctl -> /dev/zram0 zstd 8G [SWAP]; /sys/block/zram0/comp_algorithm shows [zstd]"
+    - "systemctl is-enabled/is-active zram-swap.service -> enabled/active; restart 22:23:27 +07 ran ExecStart cleanly ('zram swap enabled on /dev/zram0 (zstd, 8G)')"
+    - "free -m -> Swap: 8191 total; first pages already absorbed (68M used within minutes of enable)"
+    - "dpkg -l linux-modules-extra-6.8.0-151-generic -> ii (installed by playbook)"
+    - "idempotency: second ansible-playbook --check --diff -> changed=0 everywhere"
+    - "ansible-playbook --check --diff preflight: 0 unreachable / 0 failed (systemd task expected-fails in check mode before files land — normal)"
+  caveat: >-
+    "earlyoom journal quiet over 7d" from the card spec is a soak
+    observation, not verifiable in-session — the mechanism is verified
+    (swap arm now requires >10% of 8 GiB swap used before it can fire on
+    the swap leg; mem arm alone still applies at <=5% for SIGKILL).
+    earlyoom itself is unchanged and still armed for genuine OOM.
+
+rollback:
+  - >-
+    swapoff /dev/zram0 && systemctl disable --now zram-swap.service
+    (or ansible-playbook playbooks/zram-swap-deploy.yml --limit idc02
+    -e zram_swap_enabled=false removes nothing but stops/disables —
+    manual file removal needed for full uninstall: unit, .d/retry.conf,
+    /usr/local/bin/zram-swap-*.sh; linux-modules-extra can stay, it is
+    inert without the unit).
+  - "Removing zram_size from hosts.yml opts the host out of future runs."
+
+followups:
+  - >-
+    mn01/dell/idc03 zero-or-low-swap posture: this card fixed idc02 only.
+    Any other host where `swapon --show` is empty has the same
+    permanently-true earlyoom swap arm — worth a fleet sweep
+    (audit-hosts expected_resources could flag swap_total=0).
+  - >-
+    earlyoom -m 5 fallback from the card spec was not needed; zram was
+    installed as prescribed.
+
+lessons:
+  - >-
+    zram algorithm must be set via `zramctl --algorithm` (or sysfs
+    comp_algorithm BEFORE disksize is set) — after --size initializes
+    the device, comp_algorithm writes fail "Device or resource busy".
+    sysfs-write recipes copied from older guides silently no-op under
+    `|| true`.
+  - >-
+    Ubuntu generic kernels ship zram.ko in linux-modules-extra-<kver>,
+    NOT linux-modules — a host can have a full kernel install and still
+    lack zram; `modinfo zram` is the check, `dpkg -c` on the .deb proves
+    package contents before a 113 MB install.
+  - >-
+    systemd oneshot services don't re-run ExecStart on a playbook
+    converge when already active — after amending the setup script,
+    `systemctl restart zram-swap.service` (or --force) is needed to
+    exercise the new artifact; verify with zramctl, not just unit state.
+  - >-
+    ansible `command`/`shell` tasks skip in --check mode (registered vars
+    empty) — the modinfo probe path can't be fully exercised in check;
+    verify package logic manually or accept the gap.

@@ -2386,6 +2386,15 @@ hosts:
         expected_state: active
         critical: true
         note: deny-inbound + tailscale0 only (public :22 closed 2026-09-30)
+      # 2026-11-27 (OPS-1519 / card idc02-zram-swap-earlyoom-relief): fleet-
+      # standard compressed swap — 8G zstd zram0 prio 100. The host previously
+      # had ZERO swap, which made earlyoom's swap arm permanently true and
+      # produced 15 SIGTERMs in 14d. Deployed via
+      # ansible/playbooks/zram-swap-deploy.yml (zram_size: 8G in hosts.yml).
+      - name: zram-swap.service
+        type: service
+        scope: system
+        expected_state: active
       - name: open-jev.service
         type: service
         scope: user
