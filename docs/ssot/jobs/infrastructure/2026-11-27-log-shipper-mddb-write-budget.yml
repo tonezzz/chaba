@@ -100,7 +100,10 @@ verified:
       log-shipper-severe-mha.service: "Result=success 12:27 — same"
     mn01:
       log-shipper-severe.service: "Result=success 12:34 — 193 shipped, 0 failed"
-      log-shipper.service: "in flight at doc write — see card comms"
+      log-shipper.service: "Result=timeout 13:11 — honest TimeoutStartSec
+        kill while draining backlog (1846 matched, 1360 shipped, 0
+        failed, cursor checkpointed, ship/mn01 fresh failed:0); NOT the
+        heartbeat bug. Re-run triggered to drain the remainder."
     idc03:
       log-shipper.service: "Result=success 12:32 — 852 shipped, 0 failed"
       log-shipper-severe.service: "Result=success 12:50 — 291 shipped, 0 failed"
@@ -116,8 +119,10 @@ verified:
   cards_closed: >-
     9 of 10 backlog timer-alert-*-log-shipper* cards closed via
     board-api /action do:close with evidence comments (idc02 x2,
-    tony-dell x4, mn01-severe, omen-severe, omen-full). mn01 full
-    lane pending its in-flight run.
+    tony-dell x4, mn01-severe, omen-severe, omen-full).
+    timer-alert-mn01-log-shipper left open with a status comment —
+    its full lane timed out draining backlog (real timeout, not the
+    heartbeat bug); closes when a run finishes green.
 
 known_limits:
   - "Congestion waves >130s server-side still fail honestly — that
