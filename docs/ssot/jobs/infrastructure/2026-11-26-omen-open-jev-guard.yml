@@ -71,45 +71,35 @@ verification: |
   empty list means healthy, not missing config.
 
 follow_up_incident_20261127: |
-  The daily reclaim fired correctly at 04:00 +07 on 2026-11-27: swap was
-  5626 MiB > 4096 MiB, open-jev restarted, Result=success (next fire Sat 04:00).
-  But by 09:17 swap was back at 5.69 GiB and /health timed out; load average
-  39.18 / 20.40 / 20.88. py-spy showed 40/40 AnyIO worker threads active in
-  Gemma3 `Linear.forward`, 93 threads total, 185% CPU, no requests logged
-  (uvicorn only logs after a response, so the burst was never visible).
-  SIGTERM failed; SIGKILL was required. Same signature as the 2026-11-26
-  15:32 incident — this is a recurring availability failure, not swap alone.
-
-  Fix (user-approved 2026-11-27): bound in-flight inference in
-  openjev/server.py with a threading.Semaphore, default 2 via
-  OPENJEV_MAX_INFLIGHT, acquired in /score and /v1/systemone with
-  `acquire(blocking=False)`; excess requests get HTTP 429 + Retry-After: 60.
-  The systemd drop-in now sets Environment=OPENJEV_MAX_INFLIGHT=2 explicitly.
-  Clean commit vs upstream main is open-jev branch ops/openjev-inflight-guard
-  @ 7c864c3; push to daseinlabs/open-jev was denied (403, no fork), so the
-  patch is archived at docs/kb/patches/open-jev-inflight-guard-20261127.patch.
-  Fork tonezzz/open-jev created 2026-11-27 and PR opened as
-  daseinlabs/open-jev#24 (clean branch ops/openjev-inflight-guard @ 7c864c3).
-  Both copies of the repo (idc02 and tony-omen) had pre-existing uncommitted
-  user changes (lane_metrics, bf16 CPU dtype); the guard was layered on top
-  and left uncommitted so that work is not overwritten.
-
-  Verified with a stubbed scorer + TestClient on tony-omen: three concurrent
-  /score calls produced statuses [200, 200, 429] and /health stayed 200
-  throughout. Live service restarted 09:24:44 and /health 200 in 138ms with
-  load_s=55.9. The reclaim timer alone is insufficient at daily cadence;
+  The daily reclaim fired correctly at 04:00 +07 on 2026-11-27: swap was 5626 MiB > 4096 MiB, open-jev
+  restarted, Result=success (next fire Sat 04:00). But by 09:17 swap was back at 5.69 GiB and /health
+  timed out; load average 39.18 / 20.40 / 20.88. py-spy showed 40/40 AnyIO worker threads active in
+  Gemma3 `Linear.forward`, 93 threads total, 185% CPU, no requests logged (uvicorn only logs after a
+  response, so the burst was never visible). SIGTERM failed; SIGKILL was required. Same signature as
+  the 2026-11-26 15:32 incident — this is a recurring availability failure, not swap alone.
+  Fix (user-approved 2026-11-27): bound in-flight inference in openjev/server.py with a
+  threading.Semaphore, default 2 via OPENJEV_MAX_INFLIGHT, acquired in /score and /v1/systemone with
+  `acquire(blocking=False)`; excess requests get HTTP 429 + Retry-After: 60. The systemd drop-in now
+  sets Environment=OPENJEV_MAX_INFLIGHT=2 explicitly. Clean commit vs upstream main is open-jev branch
+  ops/openjev-inflight-guard @ 7c864c3; push to daseinlabs/open-jev was denied (403, no fork), so the
+  patch is archived at docs/kb/patches/open-jev-inflight-guard-20261127.patch. Fork tonezzz/open-jev
+  created 2026-11-27 and PR opened as daseinlabs/open-jev#24 (clean branch ops/openjev-inflight-guard
+  @ 7c864c3). Both copies of the repo (idc02 and tony-omen) had pre-existing uncommitted user changes
+  (lane_metrics, bf16 CPU dtype); the guard was layered on top and left uncommitted so that work is
+  not overwritten.
+  Verified with a stubbed scorer + TestClient on tony-omen: three concurrent /score calls produced
+  statuses [200, 200, 429] and /health stayed 200 throughout. Live service restarted 09:24:44 and
+  /health 200 in 138ms with load_s=55.9. The reclaim timer alone is insufficient at daily cadence;
   reassess after the concurrency bound has run for a full day.
-
-  Production observation 2026-11-27 09:24-09:47 (+07): /health stayed 200
-  (13-138ms) throughout; service MemorySwapCurrent fell from 5.69 GiB to
-  ~0.98 GiB, zram from 23G to 17.9G, load average from 39.18 to 6.44.
-  /metrics counted 11 completed /v1/systemone calls and 12 rejected bursts
-  (429 + Retry-After: 60), all from 100.75.102.88; no AnyIO pileup recurred
-  (2 worker threads, one in Linear.forward, one waiting). Important caveat: every completed call landed only in the le_inf latency bucket (le_60 = 0),
-  ~130s each, and uvicorn logged no 200 lines for them — consistent with
-  callers disconnecting on a shorter timeout while the handler still runs.
-  The guard prevents collapse but does not make CPU gemma-3-4b fast; caller
-  timeouts and model choice remain a separate capacity question.
+  Production observation 2026-11-27 09:24-09:47 (+07): /health stayed 200 (13-138ms) throughout;
+  service MemorySwapCurrent fell from 5.69 GiB to ~0.98 GiB, zram from 23G to 17.9G, load average from
+  39.18 to 6.44. /metrics counted 11 completed /v1/systemone calls and 12 rejected bursts (429 +
+  Retry-After: 60), all from 100.75.102.88; no AnyIO pileup recurred (2 worker threads, one in
+  Linear.forward, one waiting). Important caveat: every completed call landed only in the le_inf
+  latency bucket (le_60 = 0), ~130s each, and uvicorn logged no 200 lines for them — consistent with
+  callers disconnecting on a shorter timeout while the handler still runs. The guard prevents collapse
+  but does not make CPU gemma-3-4b fast; caller timeouts and model choice remain a separate capacity
+  question.
 
 rollback: |
   Delete the 4 installed files and the alarm file, then:
