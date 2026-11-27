@@ -1,6 +1,6 @@
 id: disk-auto-tony-dell-root
 title: Disk tony-dell / over limit
-column: review
+column: done
 review_kind: triage
 generated: disk-trend-watch
 area: monitoring
@@ -9,7 +9,7 @@ note: '89% used >= ssot max_root_disk_percent 85% top grower 24h: /home/tony/.ca
   +0.4 GiB, /var/log +0.3 GiB'
 help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
   (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
-updated: 2026-11-27 20:51
+updated: 2026-11-27 20:52
 comms:
 - at: 2026-10-07 07:27
   from: tony
@@ -290,6 +290,9 @@ comms:
     -> 4K), restarted both units. Earlier sudo apt-get clean had removed 789M of .deb cache. df -h / now 175G used
     / 34G avail = 84%, below the 85% threshold. Both units active/running, Result=success, NRestarts=0; ports 2024
     and 2025 both LISTEN and curl / returns 200; journal show
+- at: 2026-11-27 20:52
+  from: tony
+  text: closed by tony
 brief: Disk space on tony-dell (/) is running low — check the note for the rate and top growers, then free space
   or close the card.
 action:
