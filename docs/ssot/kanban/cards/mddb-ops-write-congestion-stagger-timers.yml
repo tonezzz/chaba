@@ -1,7 +1,7 @@
 id: mddb-ops-write-congestion-stagger-timers
 title: mddb-ops write congestion waves — investigate + stagger fleet shipper timers
 column: doing
-updated: 2026-11-27 13:43
+updated: 2026-11-27 13:45
 priority: medium
 tags:
 - ops
@@ -61,6 +61,13 @@ comms:
   from: devin
   text: 'raised request mddb-ops-deletewhere-drain-loop-on-idc03-acf48f: mddb-ops deleteWhere drain loop on idc03
     (pid 3862968, started 10:48 by ADA-1485 session) is still running and still inj'
+- at: 2026-11-27 13:45
+  from: devin
+  text: 'DONE (branch dispatch/20261127-131736-follow-up-from-ops-1497-log-sh, commits 0a94d8a+69d2b09): (1) correlation
+    — shipper herd CONFIRMED as contributor (OnUnitActiveSec phase-locked all hosts to :50:4x; 10:50 wave -> 11:03
+    add/ingest timeouts) but DISPROVEN as primary cause: dominant load is a deleteWhere storm from a manual drain
+    loop on idc03 (pid 3862968 since 10:48) — 43 handlers at 4000-4955s elapsed, still running, every iteration
+    deleted 0. (2) staggered all 14 shipper units to per-host O'
 action:
   type: dispatch
   status: running
