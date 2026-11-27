@@ -1,0 +1,26 @@
+id: focus-dispatcher-overnight-promise-code-fix
+title: focus-dispatcher-overnight fails with Promise passed as error code
+column: backlog
+updated: 2026-11-27 10:29
+spec: 'focus-dispatcher-overnight.service on tony-omen ends with `[overnight] completed with errors` after `TypeError
+  [ERR_INVALID_ARG_TYPE]: The "code" argument must be of type number. Received an instance of Promise`. The SSOT
+  validation step reports Total errors: 0, so the TypeError is in the JavaScript/Node overnight focus workflow''s
+  error path (an async function returning a Promise passed directly to process.exit or an equivalent exit helper).
+  Find the call site, await the Promise and pass an actual numeric exit code, preserving the intended error semantics.
+  Verify by running the service on tony-omen and confirming Result=success with reports/REMAINING_FOCUS_PLAN.md
+  regenerated, then note the result on timer-alert-tony-omen-focus-dispatcher-overnight.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  lane: paid_frontier
+  status: queued
+ref: OPS-1492
+comms:
+- at: 2026-11-27 10:29
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-27 10:29
+  from: tony
+  text: '[next batch 2026-11-27] Async exit-code bug in the overnight focus workflow — real error path, not a validation
+    failure.'
