@@ -10,7 +10,7 @@ priority: high
 note: 97% used (15.8 GiB free)
 help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
   (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
-updated: '2026-11-27'
+updated: 2026-11-27 17:43
 comms:
 - at: 2026-11-14 14:06
   from: chaba
@@ -228,6 +228,12 @@ comms:
 - at: 2026-11-27 14:51
   from: tony
   text: moved review -> done
+- at: 2026-11-27 17:43
+  from: chaba
+  text: 'NOT CLOSED — RECHECK 2026-11-27 ~17:50 +07 (read-only df on kk-mac): /System/Volumes/Data = 460Gi used
+    / 15Gi avail / 97% full. Disk-trend CRIT_PCT=90, so this is still critical; 15Gi free is exactly the mddb guard
+    floor, not headroom. The 14:51 ''moved review -> done'' was premature. Card stays open; reclaiming data on kk-mac
+    needs Tony approval before any destructive cleanup.'
 action:
   status: done
 claim: {}
