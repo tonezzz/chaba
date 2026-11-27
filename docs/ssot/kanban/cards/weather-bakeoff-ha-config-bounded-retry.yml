@@ -1,7 +1,7 @@
 id: weather-bakeoff-ha-config-bounded-retry
 title: Bounded retry for weather-bakeoff HA /api/config fetch (kraut-rain-watch repeat)
 column: doing
-updated: 2026-11-27 18:25
+updated: 2026-11-27 18:27
 brief: Fix weather-bakeoff.py http_json transient HA reset with bounded retry + tests; code only, no deploy.
 priority: high
 tags:
@@ -68,6 +68,10 @@ comms:
     smoke set) times out on loaded idc03 even for doc-on; lp.build does a repo walk + a 10s-timeout MDDB bank fetch
     on first call — unit t; [job-health-sweep-consecutive-failure-alerts] primer injected 8 lesson(s): editi; [mddb-idc03-oom-coldstart-publisher-window]
     auto-merge not do'
+- at: 2026-11-27 18:27
+  from: devin
+  text: retry implemented in scripts/ada/weather-bakeoff.py (_urlopen helper, <=3 attempts, backoff 0.5+1.0s, 5xx+transport
+    retried, 4xx/non-transient loud); 7 unit tests pass; committing to dispatch branch
 ref: HOM-1509
 claim:
   since: 2026-11-27 18:23
