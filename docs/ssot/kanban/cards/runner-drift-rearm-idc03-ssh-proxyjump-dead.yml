@@ -1,7 +1,7 @@
 id: runner-drift-rearm-idc03-ssh-proxyjump-dead
 title: runner-drift-rearm board writes silently dead on tony-dell (ssh idc03 ProxyJump refused)
-column: backlog
-updated: 2026-11-27 10:01
+column: doing
+updated: 2026-11-27 10:03
 priority: medium
 tags:
 - infra
@@ -32,9 +32,15 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 10:03
+  from: mn01
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: codemod
   lane_source: kw
-claim: {}
+  runner: mn01
+  attempts: 1
+claim:
+  since: 2026-11-27 10:03
