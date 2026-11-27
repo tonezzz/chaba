@@ -1,7 +1,7 @@
 id: lesson-polish-run
 title: 'lesson-polish: Fable pass on audit-flagged lessons (auto-queued)'
 column: review
-updated: 2026-11-27 08:09
+updated: 2026-11-27 08:10
 brief: Auto-queued by chaba-lessons-audit when R1/R3/R4 flags > 0 — the Fable polish pass; standing card, re-armed
   each audit run (AUD-0831 loop).
 priority: medium
@@ -42,6 +42,7 @@ action:
   sweep:
     stale_running: 2026-11-27 07:59
     dirty: 5
+    session_gone: 2026-11-27 08:10
   result: 'exit=0 2026-11-27.json`, full writeup in `dispatch-outcome-20261127-074247-recurring-lesson-polish-pass-q.md`.
     | devin-task-20261127-074247-recurring-lesson-polish-pass-q.service: Consumed 24.318s CPU time, 317.6M memory
     peak, 0B memory swap peak.'
@@ -124,6 +125,10 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-074247-recurring-lesson-polish-pass-q,
     branch dispatch/20261127-074247-recurring-lesson-polish-pass-q'
+- at: 2026-11-27 08:10
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261127-074247-recurring-lesson-polish-pass-q on
+    con01 — if the work was never pushed it may be gone'
 claim:
   since: 2026-11-27 07:41
 review_kind: verify
