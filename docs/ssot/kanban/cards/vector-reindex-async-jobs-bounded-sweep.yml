@@ -1,0 +1,29 @@
+id: vector-reindex-async-jobs-bounded-sweep
+title: 'vector-reindex.py: async jobs + bounded sweep + per-collection failure isolation'
+column: backlog
+updated: 2026-11-27 21:41
+brief: 'Follow-up to OPS-1515 triage: the daily reindex sweep times out at 45min because it fires 64 sequential
+  sync per-collection reindex calls with no global deadline; one collection has 149,550 docs (86% of corpus). Deployed
+  mddb 2.18.10 supports async reindex jobs — switch the client to async+poll with a bounded sweep.'
+priority: medium
+tags:
+- mddb
+- embedding
+- ops
+spec: 'Implement the phase-1 fix from docs/ssot/jobs/mddb/2026-11-27-vector-reindex-batch-triage.yml (card mddb-vector-reindex-timeout-embed-failures,
+  OPS-1515). Client-only change to scripts/mddb/vector-reindex.py — no mddb server change needed: deployed 2.18.10
+  already supports async reindex jobs (verified live 2026-11-27). Requirements: (1) POST /v1/vector-reindex {collection,
+  async:true} per collection then poll GET /v1/vector-reindex/jobs/{id} to completion; (2) global sweep deadline
+  inside the 45-min unit budget — stop LAUNCHING new jobs in the last ~5 min, in-flight jobs continue server-side;
+  (3) order collections by /v1/stats documentCount ASCENDING so the 149k-doc ada-ha-bank-devin-handoff runs last;
+  (4) per-job poll deadline ~15min — on expiry mark deferred and continue; (5) emit a per-collection ops-event immediately
+  when a job finishes failed>0 or has errors[], including an errors[] sample (currently discarded); (6) final summary
+  event lists per-collection results + unattempted collections explicitly; (7) on start, GET /v1/vector-reindex/jobs
+  and attach to/poll already-active jobs instead of hitting 409. Keep MDDB_REINDEX_* env overrides. DO NOT set MDDB_REINDEX_MAX_CONCURRENT
+  — GO-054 slots need mddb >=2.19.8, deployed is 2.18.10. Verify on con01 next 05:40 run or by manual systemctl
+  --user start mddb-vector-reindex.service; confirm ops events land in ada-ha-events-tony via mddb-ops.'
+ref: MEM-1518
+comms:
+- at: 2026-11-27 21:41
+  from: devin
+  text: card captured via board-api
