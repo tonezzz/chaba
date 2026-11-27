@@ -1,7 +1,7 @@
 id: nightly-pytest-suite-7-regressions-fix
 title: 'Nightly chaba pytest suite: 7 regressions still failing on master'
 column: doing
-updated: 2026-11-27 10:53
+updated: 2026-11-27 10:57
 spec: 'chaba-pytest-suite.service on tony-omen reports 10 failed / 2815 passed. Verified against current origin/master:
   3 were fixed by recent merges, but these 7 still fail and must be fixed at source (not skipped, not xfail):
 
@@ -29,6 +29,9 @@ action:
   status: running
   runner: tony-dell
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 10:57
+    dirty: 8
 ref: OPS-1488
 comms:
 - at: 2026-11-27 10:29
@@ -84,5 +87,13 @@ comms:
     Side observation (not mine, already on master): docs/ssot/jobs/cms/2026-11-27-cms-publish-remote-close-retry.yml
     has a YAML plain-scalar colon error at line 33 — ssot-validate-all reports it as the only invalid file; owner
     dispatch may want to fix.'
+- at: 2026-11-27 10:57
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-103236-chaba-pytest-suite-service-on- no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-27 10:57
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261127-103236-chaba-pytest-suite-service-on- on tony-dell still dirty
+    — 8 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 claim:
   since: 2026-11-27 10:31
