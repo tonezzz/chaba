@@ -1,7 +1,7 @@
 id: runner-tools-converge-timer-2min-bug
 title: runner-tools-converge.timer fires every 2 minutes, not 2 hours
 column: doing
-updated: 2026-11-27 21:21
+updated: 2026-11-27 21:33
 brief: ansible/systemd/runner-tools-converge.timer uses OnCalendar=*:0/2:05 (hour=*, minute=0/2, second=05) = every
   2 minutes fleet-wide. Description and commit 45219a493cc claim every 2 hours. tony-omen journal shows full check/apply/audit/re-audit
   at 20:52, 20:54, 20:56 with repeated runner-agent restarts.
@@ -47,6 +47,13 @@ comms:
   text: '[progress] Verified bug: OnCalendar=*:0/2:05 normalizes to *:00/2:05 (every 2min, next elapse 21:22:05).
     Fix 0/2:05:00 -> *-*-* 00/2:05:00 (every 2h). Timer declared on all 7 non-macos hosts (tony-dell/omen, idc02/03,
     con01, tony-macbook, mn01). Editing + ansible --check --diff next.'
+- at: 2026-11-27 21:33
+  from: devin
+  text: '[done] Fixed + applied + verified. OnCalendar *:0/2:05 -> 0/2:05:00 in ansible/systemd/runner-tools-converge.timer.
+    install-runner-tools-converge.yml --check --diff clean, applied --limit all 7 timer hosts (tony-dell/omen, idc02/03,
+    con01, tony-macbook, mn01): 0 unreachable/0 failed; idempotency re-check changed=0. systemctl --machine=tony@.host
+    --user list-timers on every host: NEXT=2026-11-27 22:05:00 +07 (2h cadence restored; daemon-reload rescheduled
+    live timers, no restart needed). con01 al'
 action:
   type: dispatch
   status: running
