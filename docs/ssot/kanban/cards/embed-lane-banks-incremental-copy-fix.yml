@@ -1,6 +1,6 @@
 id: embed-lane-banks-incremental-copy-fix
 title: 'embed-lane-banks: 112k-doc one-shot copy exceeds 15min timer — make resumable'
-column: backlog
+column: doing
 updated: 2026-11-27 11:33
 brief: Systemic fix from live triage 2026-11-27; two runner slots free.
 priority: high
@@ -24,7 +24,9 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: queued
+  status: running
+  runner: tony-dell
+  attempts: 1
 ref: OPS-1498
 comms:
 - at: 2026-11-27 11:32
@@ -37,3 +39,8 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 11:33
+  from: tony-dell
+  text: claimed
+claim:
+  since: 2026-11-27 11:33
