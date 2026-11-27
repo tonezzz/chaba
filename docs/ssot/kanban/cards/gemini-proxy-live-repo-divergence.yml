@@ -1,7 +1,7 @@
 id: gemini-proxy-live-repo-divergence
 title: 'gemini-ollama-proxy: reconcile live idc03 variant with repo (uncommitted free-key ring + embed gateway)'
-column: review
-updated: 2026-11-27 00:14
+column: done
+updated: '2026-11-27'
 priority: medium
 tags:
 - mddb
@@ -20,11 +20,12 @@ spec: 'Reconcile the two proxy variants. Repo master scripts/mddb/gemini-ollama-
   the quota loss. DO NOT restart the unit until decided — restart triggers the swap. Probe harness used for verification:
   dispatch worktree .dispatch-scratch/probe-paid-leg.mjs + fetch-intercept.mjs (node --import fetch rewrite of generativelanguage.googleapis.com
   -> local mock; live file hardcodes the API base, no GEMINI_API_BASE env).'
-note: 'Found during gemini-proxy-paid-last-resort-leg verify (2026-11-26). The RUNNING proxy on idc03 (~/.config/containers/mddb/proxy/gemini-ollama-proxy.mjs,
-  sha256 a8c3df805614b191009bb2990a72922734d248d66c470e9a4e6f481b8bb275ba, deployed 2026-11-25 19:15, container
-  Up since then) runs a variant that exists NOWHERE in git: free-key ring (GEMINI_API_KEY + GEMINI_FREE_KEYS_01..10
-  env, per-key circuit breakers, health free_keys:6) + LiteLLM embed-gateway leg (EMBED_GATEWAY_BASE/LITELLM_KEY
-  -> litellm:e'
+note: '[verify 2026-11-27] CLOSED after reconciling the live idc03 variant into repo. Merged dispatch/20261126-234625-reconcile-the-two-proxy-varian
+  in commit c95bf71eb8: free-key ring (GEMINI_FREE_KEYS_01..10 + per-key circuits) and LiteLLM embed gateway leg
+  now exist in git with tests/embed/test_gemini_proxy_ring_gateway.mjs (2/2 pass, incl. failover + gateway backup).
+  The running proxy snapshot a8c3df805614 still differs byte-wise from the merged file because the repo file also
+  carries the budget/pacing gates from master; no host restart or redeploy was done during triage. Treat live redeploy
+  as a separate follow-up if byte parity is required.'
 ref: MEM-1464
 comms:
 - at: 2026-11-26 23:29
