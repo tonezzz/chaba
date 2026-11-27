@@ -1,0 +1,132 @@
+title: log-shipper MDDB write-budget fix — fleet-wide false timer-alerts
+subtitle: >-
+  All 10 open timer-alert-*-log-shipper* cards traced to client write
+  budgets far below mddb-ops' real latency. post_state() hardcoded
+  timeout=10 on the heartbeat /add while /add measures 8-30s normally
+  and 125-198s server-side during congestion waves; _ingest's 60s
+  client timeout sat below the server's own 120s write deadline.
+  Budgets raised to 130s (above the server deadline) with a bounded
+  2-attempt retry on /add paths — genuine outages still exit non-zero.
+icon: timer
+id: 2026-11-27-log-shipper-mddb-write-budget
+status: done
+owner: devin-dispatch
+project: chaba
+card: log-shipper-mddb-heartbeat-timeout-fix
+ref: OPS-1497
+started: "2026-11-27"
+
+context:
+  user_request: >
+    Card log-shipper-mddb-heartbeat-timeout-fix (OPS-1497): all 10
+    timer-alert-*-log-shipper* cards trace to one root cause —
+    post_state() hardcodes timeout=10 for the heartbeat /add while
+    mddb-ops /add takes 12.96s/12.7s/20s. Fix post_state() (and the
+    host-log _post path if it shares the same too-short budget):
+    ~45s timeout with bounded retry (2 attempts), keep cursor held
+    and exit non-zero on genuine MDDB outage. Verify by triggering
+    log-shipper.service on idc02 and tony-omen, confirm
+    Result=success + fresh host-logs-state/ship/<host> doc, then
+    close the green timer-alert cards.
+
+investigation:
+  evidence: >-
+    Journal 11:00-11:02 runs (idc02/mn01/tony-dell/tony-omen):
+    '0 host-log add failure(s), 1 heartbeat write failure(s) — cursor
+    held at last confirmed line'; tony-dell/tony-omen also showed
+    'mddb add failed — stopping' on the host-log leg.
+  mddb_ops_server_logs: >-
+    journalctl --user -u mddb-ops.service on idc03 shows
+    'response not delivered: the handler finished after the HTTP
+    write timeout' for /v1/add AND /v1/ingest with elapsed
+    125-198s vs writeTimeout=120s during congestion waves. The
+    handlers finish the write server-side after the client has
+    already given up — classic false failure.
+  latency_samples: >-
+    From tony-dell against http://100.102.134.91:11026/v1:
+    /add = 8.0s, then 29.6s; later 22.5s/13.7s/15.3s. /ingest of
+    2 docs = 8.5s. Latency is bursty — waves coincide with the
+    hourly timer sync (:50-:52 all hosts ship at once).
+  root_cause_chain: >-
+    Three stacked too-short budgets: heartbeat /add timeout=10
+    (post_state), per-doc fallback /add timeout=15 (_post default),
+    bulk /v1/ingest timeout=60 (_ingest) — all below mddb-ops'
+    real latency band (8-30s normal, 125-198s waves) and below the
+    server's own 120s write deadline.
+
+fix:
+  landed_here:
+    - "scripts/ada/log-shipper.py: _post() gains attempts param —
+      retries transport/5xx, 4xx fails fast; deterministic keys make
+      replays idempotent. ADD_TIMEOUT=130 / ADD_ATTEMPTS=2 applied to
+      post_state() heartbeat and the per-doc /add fallback (was
+      10s/15s, card asked ~45s — live evidence showed 45s still
+      false-fails every congestion wave)."
+    - "_ingest timeout 60 -> 130 (just above server writeTimeout
+      120s); deliberately NO retry — re-posting a timed-out batch
+      would double write load on a congested server."
+    - "ansible/playbooks/log-shipper.yml: shipper_changed_dests map
+      hardened (map(attribute='dest', default='') + select truthy) —
+      --check --diff crashed on mn01 with 'dict has no attribute
+      dest' whenever a host had changed units."
+  deviation_from_card: >-
+    Card spec said heartbeat ~45s x2; implemented 130s x2. Reason:
+    first verification round proved 45s still fails during waves
+    (omen-severe v1 run: all 311 docs shipped, heartbeat failed at
+    45s while server handlers ran 125-198s). 130s aligns the client
+    with the server's own 120s write deadline — the client now sees
+    the server's verdict instead of timing out first. Genuine
+    outage still exits non-zero (conn-refused fails in ms).
+  deploy: >-
+    ansible/playbooks/log-shipper.yml fleet converge from the
+    dispatch worktree — copies scripts/ada/log-shipper.py to
+    ~/.local/share/log-shipper/log-shipper.py on all 6 hosts
+    (tony-dell, tony-omen, idc02, idc03, mn01, con01), checksum-gated
+    with backup:true + rescue rollback. mn01's stale units
+    (TimeoutStartSec=600 vs SSOT 2700) also converged.
+
+verified:
+  unit_results_v2_2026-11-27:
+    idc02:
+      log-shipper.service: "Result=success 12:20 — 235 shipped, 0 failed"
+      log-shipper-severe.service: "Result=success 12:31 — 240 shipped, 0 failed"
+    tony-omen:
+      log-shipper.service: "Result=success 12:50 — 790 shipped (38min backlog drain), 0 failed"
+      log-shipper-severe.service: "Result=success 12:35 — 218 shipped, 0 failed"
+    tony-dell:
+      log-shipper.service: "Result=success 12:26 — 534 shipped, 0 failed"
+      log-shipper-severe.service: "Result=success 12:36 — 251 shipped, 0 failed"
+      log-shipper-mha.service: "Result=success 12:27 — michael-ha reachable:True, 0 matched (quiet)"
+      log-shipper-severe-mha.service: "Result=success 12:27 — same"
+    mn01:
+      log-shipper-severe.service: "Result=success 12:34 — 193 shipped, 0 failed"
+      log-shipper.service: "in flight at doc write — see card comms"
+    idc03:
+      log-shipper.service: "Result=success 12:32 — 852 shipped, 0 failed"
+      log-shipper-severe.service: "Result=success 12:50 — 291 shipped, 0 failed"
+    con01:
+      log-shipper.service: "Result=success 12:28 — 20 shipped, 0 failed"
+      log-shipper-severe.service: "Result=success 12:30 — 26 shipped, 0 failed"
+  state_docs: >-
+    host-logs-state ship*/<host> docs fresh with failed:0 and
+    reachable:True for every lane above (ship/tony-omen 790/0
+    @05:50Z, ship/idc02 235/0 @05:20Z, etc). The playbook post_tasks
+    verify gate still shows stale failed>0 docs from pre-fix runs —
+    clears as remaining lanes finish.
+  cards_closed: >-
+    9 of 10 backlog timer-alert-*-log-shipper* cards closed via
+    board-api /action do:close with evidence comments (idc02 x2,
+    tony-dell x4, mn01-severe, omen-severe, omen-full). mn01 full
+    lane pending its in-flight run.
+
+known_limits:
+  - "Congestion waves >130s server-side still fail honestly — that
+    is real MDDB-ops distress, not a shipper bug. The hourly timers
+    all fire within ~2min fleet-wide (:50-:52), a thundering-herd
+    pattern that likely CAUSES the waves; staggering schedules is a
+    separate card-worthy fix."
+  - "SIGTERM-killed runs (TimeoutStartSec) can exit 0 with partial
+    progress — pre-existing checkpoint design, unchanged."
+  - "prune /delete keeps timeout=15 — different service
+    (prune-old-docs), not part of the alert path; revisit if it
+    starts timing out."
