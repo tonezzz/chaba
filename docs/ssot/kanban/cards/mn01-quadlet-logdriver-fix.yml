@@ -1,7 +1,7 @@
 id: mn01-quadlet-logdriver-fix
 title: mn01 rootless podman quadlets repaired — mn-ha-dev + xmeye-vms
 column: done
-updated: 2026-11-27 14:51
+updated: 2026-11-27 15:03
 brief: Fixed the 2-day conmon restart loop on mn01 by overriding the global k8s-file log driver with LogDriver=journald
   in both quadlets. Both services healthy; no reboot needed.
 priority: high
@@ -47,3 +47,10 @@ comms:
 - at: 2026-11-27 14:51
   from: tony
   text: closed by tony
+- at: 2026-11-27 15:03
+  from: tony
+  text: 'FOLLOW-UP 2026-11-27 15:03 +07 (Tony). The card spec above was written at the first healthy start and understated
+    what followed; correcting it here. The LogDriver=journald fix itself is CONFIRMED GOOD: 0 conmon/''k8s-file
+    doesn''t support --log-tag'' errors since 14:47, and the container reaches healthy. However, on its first boot
+    after ~2 days down, HA Core did a transient clean-exit retry burst: recorder shows 8 homeassistant_stop events
+    14:48:05 -> 15:01:05 and NRestarts climbed 1->8; each cycle'
