@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: review
-updated: 2026-11-27 09:14
+updated: 2026-11-27 09:15
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -866,6 +866,32 @@ comms:
   from: chaba
   text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-080530-decision-2026-11-26-tony-run-s,
     branch dispatch/20261127-080530-decision-2026-11-26-tony-run-s on mn01'
+- at: 2026-11-27 09:15
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 09:15
+  from: chaba
+  text: banked 932 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-27 09:15
+  from: chaba
+  text: 'branch push failed: fatal: cannot change to ''/home/tony/CascadeProjects/dispatch-wt-20261127-080530-decision-2026-11-26-tony-run-s'':
+    No such file or directory'
+- at: 2026-11-27 09:15
+  from: chaba
+  text: 'push failed AND patch-relay failed: bundle: cannot pin session head to a ref — rescue the branch by hand'
+- at: 2026-11-27 09:15
+  from: chaba
+  text: 'auto-merge not done: worktree add: Preparing worktree (detached HEAD c653c23bec)
+
+    Updating files:  45% (8027/17658)
+
+    Updating files:  46% (8123/17658)
+
+    Updating files:  47% (8300/17658)
+
+    Updating files:  48% (8476/17658)
+
+    Updating files:  4 — close will block until merged'
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
