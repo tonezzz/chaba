@@ -1,7 +1,7 @@
 id: board-diagram-lanes-view
 title: 'Board: finish /apps/board-diagram lane view — prototype exists, needs commit+deploy+tab+controls'
 column: doing
-updated: 2026-11-27 14:19
+updated: 2026-11-27 14:58
 brief: Lane/sub lane diagram of kanban cards per project, starting with Adobe Stock; Tony wants a mental image of
   project flow and manual control (claim/move/finish) without n8n.
 priority: high
@@ -261,6 +261,13 @@ comms:
     DECISION 2026-11-24: all 7 code/WIP file; runbook docs/kb/board-static-deploy.md: Deploying board / board2 static
     UI chang; A dispatch that edits files OUTSIDE its worktree (live /home/tony/ansible on idc; board-api derives
     REPO from `__file__`, so bind-mounting the '
+- at: 2026-11-27 14:58
+  from: devin
+  text: 'dispatch in progress (idc02): prototype was already committed to master since 2026-11-10 — the worktree
+    already had files+route+Caddyfile. Found+fixed real bug: diagram.js imported groupOf, renamed to groupIdOf in
+    board-gantt on 2026-11-24 → page was dead. Added CONTROL: node-click action panel (claim/move/finish → board-api
+    /action) + lane claim-queued button. Node smoke test PASS (5 adobe-stock cards), headless chrome render verified.
+    Pushed df098af67e3; awaiting merge for deploy sync.'
 action:
   type: dispatch
   status: running
