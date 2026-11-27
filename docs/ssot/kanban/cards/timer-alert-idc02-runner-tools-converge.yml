@@ -1,14 +1,14 @@
 id: timer-alert-idc02-runner-tools-converge
 title: Timer runner-tools-converge on idc02 failing
-column: backlog
-updated: 2026-11-27 00:34
+column: done
+updated: 2026-11-27 09:03
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-27 00:02) of `runner-tools-converge.service` on `idc02` result=exit-code — investigate
-  journal: `journalctl --user -u runner-tools-converge.service` on the host. See CMS `timer-timeline-idc02`.'
+note: 'Last run (11-27 00:02) of `runner-tools-converge.service` on `idc02` result=exit-code — investigate journal:
+  `journalctl --user -u runner-tools-converge.service` on the host. See CMS `timer-timeline-idc02`.'
 ref: OPS-1471
 comms:
 - at: 2026-11-27 00:24
@@ -21,8 +21,20 @@ comms:
 - at: 2026-11-27 07:23
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
-spec: Investigate the failure of `runner-tools-converge.service` on host `idc02` from the 2026-11-27 00:02
-  run which exited with an error code. Check the systemd user journal using `journalctl --user -u runner-tools-converge.service`
+- at: 2026-11-27 09:03
+  from: tony
+  text: '[cleanup 2026-11-27] FALSE ALERT — installed tools were already in sync with the pin (controller audit:
+    OK on 6 reachable hosts, 0 drift, 0 fail). The nightly converge unit runs a fleet-wide ansible check locally:
+    idc03/mn01/tony-omen have no ansible-playbook, and idc02/tony-dell abort on the sleeping tony-macbook. The 08:38
+    pin bump had also not reached these checkouts. Synced idc02/mn01/tony-omen via chaba-repo-sync.service (behind=0,
+    pin=38d84bc073da), re-ran audit-runner-tools.yml from tony-'
+- at: 2026-11-27 09:03
+  from: tony
+  text: closed by tony
+spec: Investigate the failure of `runner-tools-converge.service` on host `idc02` from the 2026-11-27 00:02 run which
+  exited with an error code. Check the systemd user journal using `journalctl --user -u runner-tools-converge.service`
   and consult CMS `timer-timeline-idc02` for context. The host is `idc02` and the target service is `runner-tools-converge.service`.
-  The done-condition is a documented diagnosis of the root cause of the non-zero exit code recorded in
-  the card comments or CMS.
+  The done-condition is a documented diagnosis of the root cause of the non-zero exit code recorded in the card
+  comments or CMS.
+action:
+  status: done
