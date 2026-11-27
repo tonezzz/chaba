@@ -1,14 +1,14 @@
 id: timer-alert-mn01-runner-tools-converge
 title: Timer runner-tools-converge on mn01 failing
-column: backlog
-updated: 2026-11-27 00:14
+column: done
+updated: 2026-11-27 09:03
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-27 00:00) of `runner-tools-converge.service` on `mn01` result=exit-code — investigate
-  journal: `journalctl --user -u runner-tools-converge.service` on the host. See CMS `timer-timeline-mn01`.'
+note: 'Last run (11-27 00:00) of `runner-tools-converge.service` on `mn01` result=exit-code — investigate journal:
+  `journalctl --user -u runner-tools-converge.service` on the host. See CMS `timer-timeline-mn01`.'
 ref: OPS-1467
 comms:
 - at: 2026-11-27 00:04
@@ -21,10 +21,21 @@ comms:
 - at: 2026-11-27 01:23
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
-spec: Investigate the failure of runner-tools-converge.service on mn01 resulting in an exit-code during
-  the 11-27 00:00 run, as noted in CMS timer-timeline-mn01. The goal is to inspect the user journal via
-  journalctl --user -u runner-tools-converge.service on mn01, identify the root cause of the exit-code
-  failure, and resolve or document it. Constraints include operating strictly on host mn01 and utilizing
-  existing systemd journal logs without modifying unrelated infrastructure. The verifiable done-condition
-  is a documented root cause in the card comments along with a successful manual trigger or subsequent
-  clean run of runner-tools-converge.service on mn01.
+- at: 2026-11-27 09:03
+  from: tony
+  text: '[cleanup 2026-11-27] FALSE ALERT — installed tools were already in sync with the pin (controller audit:
+    OK on 6 reachable hosts, 0 drift, 0 fail). The nightly converge unit runs a fleet-wide ansible check locally:
+    idc03/mn01/tony-omen have no ansible-playbook, and idc02/tony-dell abort on the sleeping tony-macbook. The 08:38
+    pin bump had also not reached these checkouts. Synced idc02/mn01/tony-omen via chaba-repo-sync.service (behind=0,
+    pin=38d84bc073da), re-ran audit-runner-tools.yml from tony-'
+- at: 2026-11-27 09:03
+  from: tony
+  text: closed by tony
+spec: Investigate the failure of runner-tools-converge.service on mn01 resulting in an exit-code during the 11-27
+  00:00 run, as noted in CMS timer-timeline-mn01. The goal is to inspect the user journal via journalctl --user
+  -u runner-tools-converge.service on mn01, identify the root cause of the exit-code failure, and resolve or document
+  it. Constraints include operating strictly on host mn01 and utilizing existing systemd journal logs without modifying
+  unrelated infrastructure. The verifiable done-condition is a documented root cause in the card comments along
+  with a successful manual trigger or subsequent clean run of runner-tools-converge.service on mn01.
+action:
+  status: done
