@@ -1,7 +1,7 @@
 id: idc03-swap-workload-placement
 title: 'MEM-1511: idc03 swap 4/4 GiB — workload placement triage'
 column: done
-updated: 2026-11-27 21:03
+updated: 2026-11-27 21:06
 brief: 'After MEM-1507/1510 fixes, idc03 still has 4.0/4.0 GiB swap used, 5.1 GiB RAM available, user cgroup 14.4
   GiB RAM + 4.16 GiB swap. Top swap holders: jevos 761MiB, ada-dev 243MiB, ada-kk-dev 184MiB, ada-bankq-student
   309MiB, ada-chaba 364MiB, ada-ha-ada 359MiB, mddb-cms 290MiB.'
@@ -122,6 +122,12 @@ comms:
     RSS 2.42GiB -> 1.27GiB. Whack-a-mole caveat from the 19:44 placement pass still applies; recheck later. Runner
     pin c77eecb4264a now on all 6 hosts (tony-omen checkout was 141 commits stale; fleet-repo-sync fixed it; audit
     0 DRIFT). Failed-service triage filed as OPS-1513/1514/1515 (timer '
+- at: 2026-11-27 21:06
+  from: chaba
+  text: 'CAUGHT AT FINAL CHECK 21:05 +07: relocated JevOS on idc02 had been SIGTERMed by earlyoom at 20:47:40 (mem
+    avail 9.92%, 0 swap, jev RSS 1543 MiB). Restart=on-failure treated the SIGTERM as a clean exit, so it stayed
+    down ~17min. Restored via enable --now; /health=200 in 15s, PID 1353079, listener on 100.123.163.11:8017. Tracked
+    as OPS-1516 for a durable fix; evidence doc updated. All other OPS-1511 verification remains valid.'
 action:
   type: dispatch
   status: done
