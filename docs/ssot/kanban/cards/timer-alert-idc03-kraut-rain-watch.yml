@@ -1,7 +1,7 @@
 id: timer-alert-idc03-kraut-rain-watch
 title: Timer kraut-rain-watch on idc03 failing
 column: backlog
-updated: 2026-11-27 18:22
+updated: 2026-11-27 18:25
 priority: high
 tags:
 - timer-alert
@@ -148,5 +148,11 @@ comms:
     while reading the HA API response. http_json does one attempt with timeout=20 and no retry, so a transient HA
     reset kills the whole job. Confirmed repeat: 17:41 and 18:11 both died at the same HA /api/config read. A bounded-retry
     code fix is being queued; card stays op'
+- at: 2026-11-27 18:25
+  from: chaba
+  text: 'THIRD CONSECUTIVE FAILURE 2026-11-27 18:23:13 +07 — same HA /api/config ConnectionResetError in weather-bakeoff.py
+    http_json(). No new dispatch: fix card HOM-1509 (weather-bakeoff-ha-config-bounded-retry) is already running
+    on con01 as devin-task-20261127-182454-root-cause-scripts-ada-weather (attempts=1). Card stays open until the
+    fix is reviewed, deployed with approval, and one rain-watch tick passes.'
 action:
   status: done
