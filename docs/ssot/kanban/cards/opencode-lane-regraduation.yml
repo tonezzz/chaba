@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: doing
-updated: 2026-11-27 08:20
+updated: 2026-11-27 08:46
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -832,6 +832,12 @@ comms:
     08:12 +07 (OpenRouter free daily cap lifted at 07:00 +07 as predicted). Executing the documented runbook: requalify
     #2 (provider-outage banked fails, same S1-rollback incident review bd2725f4) -> fresh S0 climb -> review/promote
     -> stage S1 canary for Tony live watch -> S2 only if S1 gate passes. STOP before S3; STRONG_MODELS untouched.'
+- at: 2026-11-27 08:46
+  from: tony
+  text: 'answered free-lane-providers-quota-capped-until-0-169f8f: proceed'
+- at: 2026-11-27 08:46
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
@@ -929,12 +935,13 @@ requests:
   ask: 'Free-lane providers quota-capped until ~07:00-08:00 +07 (OpenRouter :free daily cap + Zen free limit). S0
     climb recorded HOLD (0/5, provider outage not safety). Retry needs requalify #2. A) wait for reset then requalify+climb+S1-watch+S2
     when you can watch live, B) authorize alternate non-free model for qualification, C) hold card until quota resets?'
-  status: open
+  status: answered
   at: 2026-11-26 23:26
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 action:
   type: dispatch
   status: running
