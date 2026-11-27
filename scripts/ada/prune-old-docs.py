@@ -136,7 +136,12 @@ def sweep_where(collection: str, ts_key: str, days: int, dry: bool,
         # A timed-out call keeps deleting server-side (mddb finishes past
         # the 120s write timeout); retrying the SAME cursor is safe — the
         # orphaned batch's already-deleted docs return as notFound errors
-        # and nextCursor still advances past the window.
+        # and nextCursor still advances past the window. But every retry
+        # adds ANOTHER concurrent server-side handler while the orphan is
+        # still running — under congestion observed orphans lived ~70min
+        # (OPS-1502, 2026-11-27 deleteWhere storm starved fleet /add writes).
+        # Back off minutes, not seconds, so the orphan can drain before the
+        # next attempt lands.
         r = None
         for attempt in range(4):
             try:
@@ -153,7 +158,7 @@ def sweep_where(collection: str, ts_key: str, days: int, dry: bool,
                                     and time.monotonic() > deadline):
                     return (f"{collection}: deleteWhere failed — {e} "
                             f"(deleted {deleted} before failure)")
-                time.sleep(15)
+                time.sleep(min(60 * (attempt + 1), 240))
         calls += 1
         matched = r.get("matched", 0)
         if dry:

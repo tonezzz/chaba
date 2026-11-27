@@ -1,0 +1,112 @@
+title: mddb-ops write congestion — herd correlation + shipper timer stagger
+subtitle: >
+  OPS-1502 follow-up to OPS-1497. Correlated mddb-ops slow-handler
+  timestamps against fleet shipper timer schedules; staggered the 14
+  log-shipper units onto per-host OnCalendar minutes; root-caused the
+  dominant congestion source to a runaway prune-old-docs deleteWhere
+  drain loop, not the shipper herd.
+icon: workflow
+date: 2026-11-27
+slug: write-congestion-stagger-timers
+card: mddb-ops-write-congestion-stagger-timers
+ref: OPS-1502
+host: idc03 (mddb-ops), fleet (shippers)
+status: fix-landed-awaiting-install
+
+problem: >
+  mddb-ops journal showed /v1/add + /v1/ingest handlers running
+  125-198s server-side vs writeTimeout=120s during congestion windows
+  (~11:03-11:04, ~12:0x +07 on 2026-11-27), producing fleet-wide
+  log-shipper failures. Hypothesis: all 6 hosts fire log-shipper+severe
+  timers within ~2min hourly — a thundering herd.
+
+correlation: >
+  Herd theory CONFIRMED as a contributor, DISPROVEN as the primary
+  cause. Evidence:
+  - Installed shipper timers use OnUnitActiveSec=60min anchored to last
+    activation; all hosts were activated in the same fleet event, so
+    shipper.service fires synchronized at :50:4x (5 hosts within ~10s;
+    idc03 ~12min later at :02:3x). Severe lanes spread :50:56-:04:14.
+  - 2026-11-27 10:50:39-10:50:48 five hosts' log-shipper.service fired
+    together; their "mddb add failed" client errors land 10:55-11:02,
+    matching server handlers completing 11:03:30-11:04:10 (arrivals
+    ~11:00-11:02 computed as completion - elapsed).
+  - BUT the dominant load was /v1/documents:deleteWhere: 43 warnings
+    today, handlers elapsed 4000-4955s (67-82min), continuously
+    10:21->13:41+ and ongoing. These are NOT timer-synchronized — they
+    come from a detached drain loop on idc03 (see root_cause).
+  - add/ingest write-timeout warnings occur ONLY in the 11:03-11:04
+    window (17 total, plus 3 minor on 11-26); none after OPS-1497's
+    130s client budgets deployed ~12:0x-12:36. deleteWhere warnings
+    continue unabated.
+
+root_cause: >
+  A manual detached drain loop on idc03, started ~10:48 by the
+  ADA-1485 session (job doc 2026-11-27-ada-review-refresh-prune-timeout):
+    bash -c 'while true; do python3 ~/CascadeProjects/chaba/scripts/ada/
+    prune-old-docs.py --only host-logs --budget-seconds 1800 >>
+    /tmp/prune-drain.log 2>&1; sleep 90; done'   (pid 3862968)
+  to clear ~390k expired host-logs docs on mddb-ops :11026
+  (597,158 docs / 2,996,851 meta-index entries / 26.8GB DB at 13:07).
+  Failure amplifier: prune-old-docs.py's deleteWhere retry (09fe54c,
+  10:50) retries a timed-out call on the same cursor up to 4x with 15s
+  sleeps — but mddb finishes handlers server-side past the 120s write
+  timeout, so EVERY timed-out attempt leaves an orphaned server handler.
+  Observed: ~40-60 concurrent deleteWhere handlers, each elapsed
+  ~4000-4900s (mostly queue wait behind the bbolt write lock + 3M-entry
+  meta-index walks). The drain loop re-injects ~4 orphans per ~10min
+  iteration forever; /tmp/prune-drain.log shows every iteration ending
+  "deleteWhere failed — timed out (deleted 0 before failure)". Net
+  effect: client-confirmed progress is zero while server-side delete
+  pressure starves ALL other mddb-ops writes — including fleet
+  log-shipper /add + /ingest (the 11:03 window) and even /v1/stats
+  ("database statistics computed" took 154s at 13:32).
+
+fix:
+  - >-
+    docs/ssot/infrastructure/ssot.jobs.yml: all 14 log-shipper units
+    (6x log-shipper, 6x log-shipper-severe, 2x tony_dell mha pulls)
+    converted every:1h -> on_calendar hourly at per-host staggered
+    minutes + persistent:true. Shipper lanes 10min apart (dell :05,
+    omen :15, idc02 :25, idc03 :35, mn01 :45, con01 :55), severe lanes
+    shipper+7min, dell mha fills :08/:19. Re-rendered
+    systemd/generated/* (render-jobs.py --check OK, 139 jobs).
+    NOT yet installed on hosts — needs merge + render-jobs.py --install
+    per host (deploy gate).
+  - >-
+    scripts/ada/prune-old-docs.py: deleteWhere retry backoff raised
+    15s -> min(60*(attempt+1),240)s so orphaned server handlers get
+    minutes to drain before the next attempt lands (was injecting a
+    new concurrent handler every ~15s during congestion).
+
+capacity_assessment: >
+  mddb-ops capacity relief is real but secondary: idc03 is a 15GB/4-core
+  VPS permanently ~13GB used (idc03-structural-capacity card, SYS-0151 —
+  phase-1 migrations done, resize is a Tony spend decision). The
+  deleteWhere storm is self-inflicted client behavior, not organic
+  load; once the ~390k-doc backlog drains, ops write latency should
+  normalize. Options ranked: (1) stop/restart the drain loop with the
+  backoff-fixed script and a bounded nightly window — needs a decision
+  because the drain is deliberate backlog remediation; (2) reduce
+  WHERE_LIMIT so calls finish under the 120s write timeout (fewer
+  orphans by construction); (3) MDDB_HTTP_WRITE_TIMEOUT raise only
+  delays client-visible failure, does not add throughput; (4) weekly
+  mddb-restart.timer already bounds freelist growth. Recommend (1)+(2).
+
+verify: >
+  - python3 scripts/render-jobs.py --check -> OK 139 jobs
+  - python3 -m pytest tests/ops/test_render_jobs.py -> 27 passed
+  - systemd/generated/*/log-shipper*.timer now carry OnCalendar +
+    Persistent (diff vs every/OnUnitActiveSec)
+  - mddb-ops journal: deleteWhere warnings still accruing at 13:41 —
+    drain loop still live; shipper add/ingest warnings stopped after
+    11:04 (130s budgets absorbing congestion)
+  - Post-install check: `systemctl --user list-timers log-shipper*`
+    per host shows staggered NEXT columns; mddb-ops journal should
+    show no add/ingest write-timeout warnings during shipper waves.
+
+followups:
+  - Board request raised on the card: drain-loop intervention decision
+    (pause vs let-run vs fix+restart bounded).
+  - Install staggered units after merge: render-jobs.py --host <h>
+    --install on each of the 6 hosts (or ansible playbook path).

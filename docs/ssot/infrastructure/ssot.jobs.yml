@@ -1284,7 +1284,8 @@ jobs:
   name: Log shipper (local journald -> MDDB host-logs)
   host: tony_dell
   dispatch: systemd
-  every: 1h
+  on_calendar: '*-*-* *:05:00'
+  persistent: true
   timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --max-docs 2000
   env:
@@ -1293,11 +1294,14 @@ jobs:
   note: MDDB_BASE_URL = live leader (idc03 tailnet IP — the docs' idc01 label is stale; 100.74.146.0 no longer serves
     MDDB). MDDB_OPS_URL = mddb-ops no-embed instance on idc03:11026 — ops collections (host-logs, host-logs-state)
     route there per ssot.log-digest-standard.yml; only leader writes (CMS/banks) belong on :11023.
+    on_calendar staggered 2026-11-27 (OPS-1502) — was every:1h -> OnUnitActiveSec anchored all hosts to the same
+    phase (:50:4x fleet-wide); now wall-clock per-host minute — shipper lanes 10min apart, severe +7min.
 - id: log-shipper
   name: Log shipper (local journald -> MDDB host-logs)
   host: tony_omen
   dispatch: systemd
-  every: 1h
+  on_calendar: '*-*-* *:15:00'
+  persistent: true
   timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --max-docs 2000
   env:
@@ -1307,7 +1311,8 @@ jobs:
   name: Log shipper (local journald -> MDDB host-logs)
   host: idc02
   dispatch: systemd
-  every: 1h
+  on_calendar: '*-*-* *:25:00'
+  persistent: true
   timeout: 45m
   note: '2026-11-23 — 10m too tight: 09:11 run needed 9m47s and later runs were TERM-killed at 10m; OPS-1197.'
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --max-docs 2000
@@ -1318,7 +1323,8 @@ jobs:
   name: Log shipper (local journald -> MDDB host-logs)
   host: idc03
   dispatch: systemd
-  every: 1h
+  on_calendar: '*-*-* *:35:00'
+  persistent: true
   timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --max-docs 2000
   env:
@@ -1330,7 +1336,8 @@ jobs:
   name: Log shipper (local journald -> MDDB host-logs)
   host: mn01
   dispatch: systemd
-  every: 1h
+  on_calendar: '*-*-* *:45:00'
+  persistent: true
   timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --max-docs 2000
   env:
@@ -1340,7 +1347,8 @@ jobs:
   name: Log shipper (local journald -> MDDB host-logs)
   host: con01
   dispatch: systemd
-  every: 1h
+  on_calendar: '*-*-* *:55:00'
+  persistent: true
   timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --max-docs 2000
   env:
@@ -1351,7 +1359,8 @@ jobs:
   name: Log shipper pull — michael-ha via ha-cli
   host: tony_dell
   dispatch: systemd
-  every: 1h
+  on_calendar: '*-*-* *:08:00'
+  persistent: true
   timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --hosts michael-ha
   env:
@@ -1365,7 +1374,8 @@ jobs:
   name: Log shipper — severe kinds fast lane
   host: tony_dell
   dispatch: systemd
-  every: 1h
+  on_calendar: '*-*-* *:12:00'
+  persistent: true
   timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --severe
   env:
@@ -1375,7 +1385,8 @@ jobs:
   name: Log shipper — severe kinds fast lane
   host: tony_omen
   dispatch: systemd
-  every: 1h
+  on_calendar: '*-*-* *:22:00'
+  persistent: true
   timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --severe
   env:
@@ -1385,7 +1396,8 @@ jobs:
   name: Log shipper — severe kinds fast lane
   host: idc02
   dispatch: systemd
-  every: 1h
+  on_calendar: '*-*-* *:32:00'
+  persistent: true
   timeout: 45m
   note: '2026-11-23 — 10m too tight: 09:11 run needed 7m53s and later runs were TERM-killed at 10m; OPS-1198.'
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --severe
@@ -1396,7 +1408,8 @@ jobs:
   name: Log shipper — severe kinds fast lane
   host: idc03
   dispatch: systemd
-  every: 1h
+  on_calendar: '*-*-* *:42:00'
+  persistent: true
   timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --severe
   env:
@@ -1408,7 +1421,8 @@ jobs:
   name: Log shipper — severe kinds fast lane
   host: mn01
   dispatch: systemd
-  every: 1h
+  on_calendar: '*-*-* *:52:00'
+  persistent: true
   timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --severe
   env:
@@ -1418,7 +1432,8 @@ jobs:
   name: Log shipper — severe kinds fast lane
   host: con01
   dispatch: systemd
-  every: 1h
+  on_calendar: '*-*-* *:02:00'
+  persistent: true
   timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --severe
   env:
@@ -1429,7 +1444,8 @@ jobs:
   name: Log shipper severe pull — michael-ha via ha-cli
   host: tony_dell
   dispatch: systemd
-  every: 1h
+  on_calendar: '*-*-* *:19:00'
+  persistent: true
   timeout: 45m
   exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --hosts michael-ha --severe
   env:
