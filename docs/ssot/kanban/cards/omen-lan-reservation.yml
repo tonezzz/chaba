@@ -1,7 +1,7 @@
 id: omen-lan-reservation
 title: tony-omen LAN IP needs DHCP reservation (or dynamic refs)
 column: doing
-updated: 2026-11-27 14:47
+updated: 2026-11-27 14:54
 brief: 'Omen DHCP drifted 192.168.2.86->.84 on 2026-10-12 and silently broke every hardcoded LAN reference (cast-browser-proxy
   target, cast-shots-http bind, MEDIA_BASE, barrier scripts). Proxy+shots now DHCP-proof, but MEDIA_BASE=http://192.168.2.84:8090
   must stay a LAN IP (Chromecast cannot reach tailnet) — it will break again on the next renumber. Fix: pin a DHCP
@@ -275,6 +275,13 @@ comms:
     + omenwlan->.84 both present (10/10 table). Found live cast-browser.service still had MEDIA_BASE=.84 (dead IP)
     — fixed to .86 + restarted, verified active. cast-shots-http repo synced to live 0.0.0.0 bind. SSOT registries
     updated; runbook docs/kb/zte-f688-admin-api.md + jobs trail written.'
+- at: 2026-11-27 14:54
+  from: devin
+  text: 'DONE: done-condition verified — tony-omen answers reliably at 192.168.2.86 (eno1 NM manual static + ZTE
+    binding tonyomen, both confirmed live; ping+:8090 200 from tony-dell). Root cause of remaining breakage found+fixed:
+    live cast-browser.service still had MEDIA_BASE=.84 — corrected to .86 and restarted. Deliverables: docs/kb/zte-f688-admin-api.md
+    (router API recipe), docs/ssot/jobs/infrastructure/2026-11-27-omen-lan-reservation.yml (trail), SSOT registry
+    updates, repo cast-shots-http synced to '
 requests:
 - id: the-card-notes-that-the-tony-o-1dbcf8
   ask: The card notes that the tony-omen LAN IP needs a DHCP reservation or dynamic refs, but does not specify the
