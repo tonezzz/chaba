@@ -1,7 +1,7 @@
 id: ada-ocb-eval-smoke-harness-fix
 title: ada-ocb-eval and ada-ocb-smoke harness failures on idc02
 column: doing
-updated: 2026-11-27 11:10
+updated: 2026-11-27 11:12
 spec: 'Two nightly Ada bridge benchmark services on idc02 both fail:
 
   - ada-ocb-eval.service: gate `preflight-gates-readonly` FAIL — its answer is missing required fields ''start_check'',
@@ -26,6 +26,7 @@ action:
   sweep:
     stale_running: 2026-11-27 11:10
     dirty: 1
+    conflict_sig: b7610a309457|docs/ssot/ssot.dev-system.assessment.yml
 ref: ADA-1489
 comms:
 - at: 2026-11-27 10:29
@@ -85,5 +86,32 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261127-103128-two-nightly-ada-bridge-benchma on tony-dell still dirty
     — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-27 11:12
+  from: chaba
+  text: 'merge-sweep: dispatch/20261127-103128-two-nightly-ada-bridge-benchma conflicts with origin/master: docs/ssot/ssot.dev-system.assessment.yml
+    — merge aborted, card stays for human resolution'
+- at: 2026-11-27 11:12
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261127-103128-two-nightly-ada-bridge-benchma:
+    2 commit(s) conflict with origin/master '
 claim:
   since: 2026-11-27 10:30
+requests:
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261127-103128-two-nightly-ada-bridge-benchma: 2 commit(s) conflict with
+    origin/master in chaba — conflicted paths: docs/ssot/ssot.dev-system.assessment.yml. Merge tony-dell:/home/tony/CascadeProjects/dispatch-wt-20261127-103128-two-nightly-ada-bridge-benchma
+    by hand, or retry/abandon the card.'
+  status: open
+  at: 2026-11-27 11:12
+  from: chaba
+  options:
+  - id: resolve
+    action: queue
+    label: let devin resolve the conflict and land it ★
+  - id: drop
+    action: retry
+    label: drop this dispatch — re-dispatch fresh from current main
+  - id: hold
+    action: hold
+    label: hold the card
+  suggested: resolve — let devin resolve the conflict and land it ★
