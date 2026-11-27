@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-chaba-render-memory
 title: Timer chaba-render-memory on tony-dell failing
 column: backlog
-updated: 2026-11-27 19:15
+updated: 2026-11-27 19:25
 priority: high
 tags:
 - timer-alert
@@ -314,5 +314,17 @@ comms:
   text: '[reopened — condition recurred] Last run (11-27 19:01) of `chaba-render-memory.service` on `tony-dell`
     result=exit-code — investigate journal: `journalctl --user -u chaba-render-memory.service` on the host. See
     CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-27 19:23
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-27 19:25
+  from: devin
+  text: '[still suspicious] Last run (11-27 19:01) of `chaba-render-memory.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-render-memory.service` on the host. See CMS `timer-timeline-tony-dell`.'
 action:
   status: done
+spec: 'Goal: Investigate the recurring failure of the systemd user timer `chaba-render-memory.service` on `tony-dell`.
+  Host: tony-dell. Repo: chaba. Constraints: Rely strictly on the journal logs via `journalctl --user -u chaba-render-memory.service`
+  on the host and the CMS `timer-timeline-tony-dell` to diagnose the cause of the exit-code failure. Testable done-condition:
+  The root cause of the last failed run at 11-27 19:01 is identified and documented in the card notes, or a subsequent
+  run executes with a success result.'
