@@ -1,6 +1,6 @@
 id: mddb-ops-write-latency-triage
 title: 'mddb-ops: diagnose /add + /ingest ~125s congestion waves (read-only, approval-gated)'
-column: backlog
+column: doing
 updated: 2026-11-27 12:58
 brief: Next batch 2026-11-27 — 4 runner slots free.
 priority: high
@@ -28,9 +28,16 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: queued
+  status: running
+  runner: idc02
+  attempts: 1
 ref: OPS-1500
 comms:
 - at: 2026-11-27 12:58
   from: tony
   text: card captured via board-api
+- at: 2026-11-27 12:58
+  from: idc02
+  text: claimed
+claim:
+  since: 2026-11-27 12:58
