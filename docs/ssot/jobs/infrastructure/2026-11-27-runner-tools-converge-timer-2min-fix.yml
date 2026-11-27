@@ -1,0 +1,82 @@
+---
+title: runner-tools-converge.timer OnCalendar fix — every 2 minutes back to every 2 hours
+subtitle: OPS-1513 follow-up; one-line timer fix converged to all 7 timer hosts, verified via list-timers
+date: 2026-11-27
+card: runner-tools-converge-timer-2min-bug
+ref: OPS-1513
+status: applied-verified
+
+context:
+  trigger: >-
+    Card runner-tools-converge-timer-2min-bug, filed from the 2026-11-27
+    idc03-mddb-swap-reclaim-fleet-triage job finding: every host's
+    runner-tools-converge.timer carried `OnCalendar=*:0/2:05`, which systemd
+    reads as hour=*, minute=0/2, second=05 — EVERY TWO MINUTES, not the
+    "every 2 hours" in the unit Description and commit 45219a493cc. tony-omen
+    journal showed full check/apply/audit/re-audit at 20:52/20:54/20:56 with
+    repeated runner-agent restarts.
+  root_cause: >-
+    Commit 45219a493cc (2026-11-27 16:56 +07, "converge every 2h") wrote
+    `OnCalendar=*:0/2:05` intending hour-step syntax but put the step on the
+    minute field. `systemd-analyze calendar` confirms: `*:0/2:05` normalizes
+    to `*-*-* *:00/2:05` (next elapse ~2 min out, observed 21:22:05);
+    `0/2:05:00` normalizes to `*-*-* 00/2:05:00` (even hours at :05:00).
+
+changes:
+  - id: oncalendar_fix
+    action: >-
+      ansible/systemd/runner-tools-converge.timer: `OnCalendar=*:0/2:05` ->
+      `OnCalendar=0/2:05:00`. Applied via
+      `ansible-playbook playbooks/install-runner-tools-converge.yml
+      --limit 'tony-dell:tony-omen:idc02:idc03:con01:tony-macbook:mn01'`
+      (play targets all:!macos:!disabled; --limit names the 7 hosts whose
+      ssot.audit.hosts.yml census declares the timer). Preflight
+      `--check --diff` showed only the expected timer-line diff on all 7
+      hosts (0 unreachable / 0 failed); real run changed=1 per host, con01
+      changed=2 (also picked up the current master runner-tools-converge.sh
+      whose installed copy was stale). Post-apply `--check --diff` re-run:
+      changed=0 everywhere — idempotent.
+    scope_note: >-
+      daemon-reload alone rescheduled the live timers; no timer/service
+      restart was needed. Each host's LAST fire was ~21:24 under the old
+      cadence; NEXT is uniformly 2026-11-27 22:05:00 +07.
+
+verification:
+  - >-
+    `systemctl --machine=tony@.host --user list-timers
+    runner-tools-converge.timer` on all 7 hosts: NEXT = Fri 2026-11-27
+    22:05:00 +07 (~38 min out at check time), LAST ~21:24 — consistent with
+    `*-*-* 00/2:05:00`. (Plain `systemctl --user` fails over ansible ad-hoc
+    because become=True lands in root's context; the --machine=<user>@.host
+    form is the working read path — same as the triage job used.)
+  - >-
+    Play recap apply: con01 ok=6 changed=2; idc02/idc03/mn01/tony-dell/
+    tony-macbook/tony-omen ok=6 changed=1; unreachable=0 failed=0 all.
+  - >-
+    Idempotency re-check: all hosts ok=5 changed=0 skipped=1
+    (daemon-reload task), unreachable=0 failed=0.
+
+rollback:
+  - >-
+    Revert ansible/systemd/runner-tools-converge.timer to
+    `OnCalendar=*:0/2:05` and re-run the same playbook --limit; or on a host
+    `systemctl --machine=tony@.host --user edit` is NOT needed — ansible copy
+    backups are not taken for unit files (mode 0644 copy, no backup flag),
+    so rollback = git revert + re-apply. Not needed.
+
+lessons:
+  - >-
+    systemd OnCalendar field order is DayOfWeek Year-Month-Day Hour:Minute:
+    Second — a bare `H:M:S` triple parses as Hour:Minute:Second. `*:0/2:05`
+    looks like "every 2 hours" to a human but steps the MINUTE field; always
+    run `systemd-analyze calendar '<expr>'` before committing a timer change.
+  - >-
+    `ansible <host> -m shell -a 'systemctl --user ...'` silently becomes
+    root (ansible.cfg privilege_escalation become=True) and loses the user
+    bus; use `systemctl --machine=<user>@.host --user` for read-only timer
+    checks, and `-e ansible_become=false` on hosts without passwordless sudo
+    (tony-macbook).
+  - >-
+    daemon-reload is sufficient to reschedule an already-active timer after
+    a unit-file change — no explicit timer restart required (verified: all
+    7 hosts picked up 22:05:00 next-elapse immediately).
