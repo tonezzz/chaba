@@ -1,7 +1,7 @@
 id: ada-review-refresh-prune-timeout-fix
 title: ada-review-refresh times out in prune-old-docs.py on tony-omen
 column: backlog
-updated: 2026-11-27 09:31
+updated: 2026-11-27 09:33
 spec: 'ada-review-refresh.service on tony-omen failed at 09:03 with subprocess.TimeoutExpired: export-transcripts.py
   calling prune-old-docs.py exceeded its 600s timeout (whole unit ran 18m52s wall, 51M swap used). Investigate why
   the prune step now takes >10 minutes and make it complete reliably within the job budget — batch/incremental traversal,
@@ -14,7 +14,7 @@ action:
   executor: devin
   target_host: tony-omen
   lane: paid_frontier
-  status: queued
+  status: idle
 ref: ADA-1482
 comms:
 - at: 2026-11-27 09:30
@@ -28,3 +28,6 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 09:33
+  from: tony
+  text: put on hold
