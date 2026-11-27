@@ -1,12 +1,16 @@
 id: adobe-stock-kkmac-vision-qa
 title: adobe-stock candidates — kk-mac qwen2.5vl visual QA pass
 column: backlog
-updated: 2026-11-26 20:35
+updated: 2026-11-27 14:40
 spec: '3 adobe-stock cards sit in review (illustration-pivot-test, inpaint-defect-repair, upscaler-eval). Once kk-mac
   vision eval proves qwen2.5vl:7b usable, run a visual QA pass over the stock candidate images: defect detection,
   spec-match, artifact flagging. Depends on kk-mac-vision-lane-eval verdict.'
 action:
-  type: manual
+  type: dispatch
+  repo: chaba
+  executor: devin
+  lane: paid_frontier
+  status: queued
 ref: OPS-0222
 comms:
 - at: 2026-11-19 08:58
@@ -169,3 +173,12 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-27 14:40
+  from: tony
+  text: '[next batch 2026-11-27] Re-arm as approval-gated visual QA: first confirm qwen2.5vl:7b is usable on kk-mac;
+    then run a read-only QA pass over the candidate images for illustration-pivot-test, inpaint-defect-repair and
+    upscaler-eval. Report defects/spec mismatches/artifacts as comments only; do not change card states or publish
+    anything without approval.'
+- at: 2026-11-27 14:40
+  from: tony
+  text: re-spawned from report page
