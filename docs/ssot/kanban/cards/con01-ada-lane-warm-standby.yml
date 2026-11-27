@@ -1,7 +1,7 @@
 id: con01-ada-lane-warm-standby
 title: con01 warm standby for ada-line-relay + ada-ha-tony
 column: doing
-updated: 2026-11-27 14:34
+updated: 2026-11-27 14:40
 priority: low
 action:
   type: dispatch
@@ -11,6 +11,9 @@ action:
   status: running
   runner: tony-dell
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 14:40
+    dirty: 1
 note: 'LINE relay + tony lane are idc03-only. Apply the proven DR pattern (mddb-follower, caddy-edge, ada-stt on
   con01): standby unit files, env/secrets sync path, caddy-edge failover route for /webhook/line, doc restore steps.
   Size: multi-step infra work — dispatch or dedicated session.'
@@ -295,5 +298,13 @@ comms:
     routes /webhook/line+/relay-img/*->:8912 and /apps/ha/ada-tony/*->:8002 intact, live idc03 units unchanged.
     SSOT drift fixed in 5e9153f: services.yml stale idc01-standby notes corrected (idc01 retired 2026-11-14), system-map
     standby pointers added, audit.hosts con01 declares both ma'
+- at: 2026-11-27 14:40
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-142108-con01-warm-standby-for-ada-lin no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-27 14:40
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261127-142108-con01-warm-standby-for-ada-lin on tony-dell still dirty
+    — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 claim:
   since: 2026-11-27 14:20
