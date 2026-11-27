@@ -1,0 +1,32 @@
+id: embed-lane-banks-incremental-copy-fix
+title: 'embed-lane-banks: 112k-doc one-shot copy exceeds 15min timer — make resumable'
+column: backlog
+updated: 2026-11-27 11:32
+brief: Systemic fix from live triage 2026-11-27; two runner slots free.
+priority: high
+tags:
+- ops
+- mddb
+spec: 'embed-lane-banks.service on idc02 times out every run: journal shows steady progress (''ada-ha-bank-devin-handoff:
+  18050/112386 copied'' ~50 docs/s) when systemd kills it at 15min (start operation timed out, status=15/TERM).
+  This is a one-shot 112k-doc MDDB bank sync that cannot finish inside one timer window; raising TimeoutStartSec
+  would just move the problem.
+
+  Make scripts/embed/embed-lane.py banks resumable/incremental: persist a per-bank cursor/budget so each hourly
+  run copies a bounded slice (e.g. 5k docs or <=10min wall) and the next run resumes from the last confirmed doc;
+  report progress clearly and exit 0 when the run''s budget completes, non-zero on real copy errors. Ensure no duplicate/overwritten
+  docs on resume.
+
+  Verify several consecutive runs on idc02 complete Result=success within budget and the copied count advances toward
+  112386; then live-verify and close timer-alert-idc02-embed-lane-banks.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  lane: paid_frontier
+  status: queued
+ref: OPS-1498
+comms:
+- at: 2026-11-27 11:32
+  from: tony
+  text: card captured via board-api

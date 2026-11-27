@@ -1,0 +1,37 @@
+id: log-shipper-mddb-heartbeat-timeout-fix
+title: 'Log shipper: heartbeat /add 10s timeout < observed 13-20s (fleet-wide false failures)'
+column: backlog
+updated: 2026-11-27 11:32
+brief: Systemic fix from live triage 2026-11-27; two runner slots free.
+priority: high
+tags:
+- ops
+- mddb
+spec: 'Fleet-wide log-shipper false failures: all 10 timer-alert-*-log-shipper* cards trace to one root cause.
+
+  Journal evidence (idc02/mn01/tony-dell/tony-omen, 11:00-11:02 runs): ''0 host-log add failure(s), 1 heartbeat
+  write failure(s) — cursor held at last confirmed line''; tony-dell/tony-omen also show ''mddb add failed - stopping''
+  for the host-log leg.
+
+  Measured from idc02 against mddb-ops (http://100.102.134.91:11026/v1): POST /add takes 12.96s and 12.7s on two
+  tries, then 20.02s timeout on the third. scripts/ada/log-shipper.py post_state() hardcodes timeout=10 for the
+  heartbeat /add, so the write always times out under current load even when every journal line shipped successfully.
+
+  Fix post_state() (and the host-log _post path if it shares the same too-short budget): raise the heartbeat write
+  timeout to ~45s with a bounded retry (2 attempts), keep the cursor held and the exit non-zero on a genuine MDDB
+  outage. Do NOT just silence the heartbeat failure or raise the global timeout to hide an outage; the judge must
+  still see silent/unreachable hosts.
+
+  Verify by triggering log-shipper.service on idc02 and tony-omen, confirming Result=success and a fresh host-logs-state/ship/<host>
+  doc, then close the green timer-alert cards after live verification.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  lane: paid_frontier
+  status: queued
+ref: OPS-1497
+comms:
+- at: 2026-11-27 11:32
+  from: tony
+  text: card captured via board-api
