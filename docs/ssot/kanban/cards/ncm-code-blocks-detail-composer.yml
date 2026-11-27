@@ -1,7 +1,7 @@
 id: ncm-code-blocks-detail-composer
 title: NCM code-block composer — detail by layer (Variant B, review)
 column: review
-updated: 2026-11-27 09:48
+updated: 2026-11-27 10:30
 brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
   by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
   for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
@@ -310,3 +310,10 @@ comms:
     in one pass, and a deterministic compat checker required produce+need tokens with zero authority-guard violations.
     Compared with recorded qwen2.5:7b LLM glue on the same 12 tasks: lane verifier pass rate 0.8333 (mean fidelity
     0.8742) vs glue 0.5000 -> advantage +0.3333 vs floor +0.10,'
+- at: 2026-11-27 10:30
+  from: devin
+  text: 'KK-Mac cross-check done — gate PASS but with a baseline caveat. 12 tasks x 3 reps, same role-conditioned
+    lane, baseline qwen3:8b on KK-Mac Studio (JSON mode, ~5s/call, 5-10x faster than tony-dell). Lane 0.8333, glue
+    0.0000 in all reps, median advantage +0.8333 (floor +0.10), guard 0 -> PASS. The glue arm''s zero is NOT an
+    empty-output artifact: qwen3:8b returns parseable JSON but usually emits only consume tokens and omits produce,
+    so the deterministic compat gate rejects it. First attempt had a '
