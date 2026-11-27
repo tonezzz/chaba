@@ -1,0 +1,183 @@
+---
+# idc03-yomi-refresh-bounds.yml — bound the active Yomi refresh sweep (MEM-1510).
+#
+# yomi-update-active used to refresh the top 20 chats; each heavy chat made
+# update-conversations walk up to 20k messages and download every attachment
+# through mcpb/run.mjs inside yomi-api's 2 GiB cgroup. That produced repeated
+# CONSTRAINT_MEMCG kills of the container's node process (9 kills 18:00-18:45).
+#
+# This play installs three pinned scripts with timestamped backups:
+#   * refresh-limits.mjs       — shared, testable env-bound helpers
+#   * yomi-refresh-active.mjs  — MAX_ACTIVE 20 -> 5 (YOMI_REFRESH_MAX_ACTIVE)
+#   * update-conversations.mjs — page/message/media ceilings (YOMI_MAX_PAGES,
+#     YOMI_MAX_MESSAGES, YOMI_MEDIA_MAX, YOMI_MEDIA_CONCURRENCY)
+# It also adds NODE_OPTIONS=--max-old-space-size=1536 to the yomi-api env file
+# so V8 leaves cgroup headroom, then restarts yomi-api to pick the env up.
+# The refresh timer runs from a separate, uncapped container; its next tick
+# picks up the new scripts from the shared volume with no unit edit.
+#
+# Usage (controller = tony-dell; ALWAYS --limit):
+#   ansible-playbook playbooks/idc03-yomi-refresh-bounds.yml --check --diff --limit idc03
+#   ansible-playbook playbooks/idc03-yomi-refresh-bounds.yml --limit idc03 \
+#     -e idc03_yomi_bounds_approved=true -e card_id=yomi-idc03-active-refresh-cgroup-oom
+#
+# Disruption: one yomi-api restart (in-flight API requests drop). Rollback:
+# restore the timestamped backups in backup_root/<tag>/ and restart yomi-api.
+
+- name: Bound idc03 Yomi active-refresh work
+  hosts: idc03
+  gather_facts: false
+  become: false
+
+  vars:
+    idc03_yomi_bounds_approved: false
+    backup_root: /home/tony/.local/share/chaba-backups/idc03-yomi-refresh-bounds
+    checkout: /home/tony/CascadeProjects/chaba-tony-dell
+    env_file: /home/tony/.config/yomi/yomi-api.env
+    scripts:
+      - name: refresh-limits.mjs
+        src: "{{ playbook_dir }}/../../scripts/yomi/refresh-limits.mjs"
+        dest: "{{ checkout }}/scripts/yomi/refresh-limits.mjs"
+        sha256: 11ba65f7be6b4d095c63540e10ab8e4987dddd45fad8fea895f98f2ecf2755b7
+      - name: yomi-refresh-active.mjs
+        src: "{{ playbook_dir }}/../../scripts/yomi/yomi-refresh-active.mjs"
+        dest: "{{ checkout }}/scripts/yomi/yomi-refresh-active.mjs"
+        sha256: 989fbd7d7164683902a3f48432bfae888c1cfe2fa425e77df559b1d9819f4139
+      - name: update-conversations.mjs
+        src: "{{ playbook_dir }}/../../scripts/yomi/update-conversations.mjs"
+        dest: "{{ checkout }}/scripts/yomi/update-conversations.mjs"
+        sha256: 0c783eaae11588fa54f002f1f285c253892512dd1c6b740dbe54c15e56439796
+
+  tasks:
+    - name: Require explicit approval and traceability for a real run
+      ansible.builtin.assert:
+        that:
+          - idc03_yomi_bounds_approved | bool
+          - card_id is defined and card_id | length > 0
+        fail_msg: >-
+          Pass -e idc03_yomi_bounds_approved=true and -e card_id=<card> to
+          deploy Yomi refresh bounds to idc03.
+      when: not ansible_check_mode
+
+    - name: Compute one backup tag for this run
+      ansible.builtin.set_fact:
+        backup_tag: "{{ lookup('pipe', 'date +%Y%m%dT%H%M%S') }}"
+      run_once: true
+      delegate_to: localhost
+
+    - name: Verify controller sources match their pins
+      ansible.builtin.stat:
+        path: "{{ item.src }}"
+        get_checksum: true
+        checksum_algorithm: sha256
+      register: source_stat
+      loop: "{{ scripts }}"
+      loop_control:
+        label: "{{ item.name }}"
+      run_once: true
+      delegate_to: localhost
+
+    - name: Fail on a source/pin mismatch
+      ansible.builtin.assert:
+        that: item.stat.checksum == item.item.sha256
+        fail_msg: >-
+          {{ item.item.src }} is {{ item.stat.checksum }}, expected
+          {{ item.item.sha256 }} — update the pin in the same commit
+      loop: "{{ source_stat.results }}"
+      loop_control:
+        label: "{{ item.item.name }}"
+      run_once: true
+      delegate_to: localhost
+
+    - name: Create the timestamped backup directory
+      ansible.builtin.file:
+        path: "{{ backup_root }}/{{ backup_tag }}"
+        state: directory
+        mode: "0755"
+      when: not ansible_check_mode
+
+    - name: Check which installed scripts exist
+      ansible.builtin.stat:
+        path: "{{ item.dest }}"
+      register: existing_scripts
+      loop: "{{ scripts }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: not ansible_check_mode
+
+    - name: Back up the installed scripts before replacing them
+      ansible.builtin.copy:
+        src: "{{ item.dest }}"
+        dest: "{{ backup_root }}/{{ backup_tag }}/{{ item.name }}"
+        remote_src: true
+        mode: preserve
+        force: true
+      loop: "{{ existing_scripts.results | selectattr('stat.exists') | map(attribute='item') | list }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: not ansible_check_mode
+
+    - name: Back up the yomi-api env file
+      ansible.builtin.copy:
+        src: "{{ env_file }}"
+        dest: "{{ backup_root }}/{{ backup_tag }}/yomi-api.env"
+        remote_src: true
+        mode: preserve
+        force: true
+      when: not ansible_check_mode
+
+    - name: Install pinned Yomi refresh scripts
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: preserve
+        backup: true
+      loop: "{{ scripts }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: not ansible_check_mode
+
+    - name: Add a V8 heap ceiling for the yomi-api container
+      ansible.builtin.blockinfile:
+        path: "{{ env_file }}"
+        marker: "# {mark} MEM-1510 yomi-api heap ceiling"
+        block: |
+          NODE_OPTIONS=--max-old-space-size=1536
+        create: false
+        backup: true
+      when: not ansible_check_mode
+
+    - name: Verify installed script hashes match the pins
+      ansible.builtin.stat:
+        path: "{{ item.dest }}"
+        get_checksum: true
+        checksum_algorithm: sha256
+      register: installed_stat
+      loop: "{{ scripts }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: not ansible_check_mode
+
+    - name: Fail on an installed hash mismatch
+      ansible.builtin.assert:
+        that: item.stat.checksum == item.item.sha256
+        fail_msg: "{{ item.item.dest }} failed checksum verification"
+      loop: "{{ installed_stat.results }}"
+      loop_control:
+        label: "{{ item.item.name }}"
+      when: not ansible_check_mode
+
+    - name: Restart yomi-api so the new env takes effect
+      ansible.builtin.systemd:
+        name: yomi-api.service
+        scope: user
+        state: restarted
+        daemon_reload: false
+      when: not ansible_check_mode
+
+    - name: Wait for yomi-api to be active again
+      ansible.builtin.systemd:
+        name: yomi-api.service
+        scope: user
+        state: started
+      when: not ansible_check_mode

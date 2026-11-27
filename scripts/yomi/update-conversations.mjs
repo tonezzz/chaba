@@ -3,6 +3,7 @@ import { StdioClientTransport } from "/home/tony/.yomi/mcpb/node_modules/@modelc
 import { writeFileSync, readFileSync, mkdirSync, existsSync, readdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { categorize } from "./categorize-conversations.mjs";
+import { limitFromEnv, capMediaMessages } from "./refresh-limits.mjs";
 import {
   evaluateSummaryQuality,
   isMeaningfulSummary,
@@ -58,6 +59,14 @@ const USE_GEMINI = process.env.USE_GEMINI !== "false" && process.env.USE_GEMINI 
 
 const GEMINI_MAX_DATES = parseInt(process.env.GEMINI_MAX_DATES || "10", 10); // Limit dates per run for Gemini
 const GEMINI_PRIORITY_MODE = process.env.GEMINI_PRIORITY_MODE || "recent"; // 'recent', 'high-activity', 'all'
+
+// idc03 MEM-1510: a single heavy chat used to walk up to 20k messages and
+// download every media attachment inside yomi-api's 2 GiB cgroup. Bound the
+// page walk, retained messages and media fan-out; all knobs are env-tunable.
+const YOMI_MAX_PAGES = limitFromEnv("YOMI_MAX_PAGES", 5, { min: 1, max: 50 });
+const YOMI_MAX_MESSAGES = limitFromEnv("YOMI_MAX_MESSAGES", 500, { min: 1, max: 5000 });
+const YOMI_MEDIA_MAX = limitFromEnv("YOMI_MEDIA_MAX", 10, { min: 0, max: 100 });
+const YOMI_MEDIA_CONCURRENCY = limitFromEnv("YOMI_MEDIA_CONCURRENCY", 2, { min: 1, max: 4 });
 // Filter out messages that only contain encrypted keyMaterial/fileName data
 function shouldFilterMessage(text) {
   if (!text) return true;
@@ -420,9 +429,9 @@ async function getChatMessages(chatId, pageSize = 100) {
   const seen = new Set();
   let before = null;
   let iterations = 0;
-  const MAX_PAGES = 200;
+  const MAX_PAGES = YOMI_MAX_PAGES;
 
-  while (iterations < MAX_PAGES) {
+  while (iterations < MAX_PAGES && all.length < YOMI_MAX_MESSAGES) {
     const args = { chatId, count: pageSize };
     if (before) args.before = before;
     const result = await client.callTool({ name: "get_chat_messages", arguments: args });
@@ -455,11 +464,11 @@ async function getChatMessages(chatId, pageSize = 100) {
     iterations++;
   }
 
-  const MAX_CONCURRENCY = 3;
+  if (all.length > YOMI_MAX_MESSAGES) all.length = YOMI_MAX_MESSAGES;
+
+  const MAX_CONCURRENCY = YOMI_MEDIA_CONCURRENCY;
   const BATCH_DELAY_MS = 100;
-  const mediaMessages = all.filter((m) =>
-    /^(image|video|audio|file)$/.test(String(m.mediaType || "").toLowerCase())
-  );
+  const mediaMessages = capMediaMessages(all, YOMI_MEDIA_MAX);
   for (let i = 0; i < mediaMessages.length; i += MAX_CONCURRENCY) {
     const batch = mediaMessages.slice(i, i + MAX_CONCURRENCY);
     await Promise.all(

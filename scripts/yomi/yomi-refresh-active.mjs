@@ -1,5 +1,9 @@
+import { limitFromEnv } from "./refresh-limits.mjs";
+
 const API = "http://127.0.0.1:3000";
-const MAX_ACTIVE = 20;
+// Bound the active-refresh sweep so one run cannot push yomi-api into its
+// 2 GiB cgroup cap (idc03 MEM-1510). Env-overridable for staged rollout.
+const MAX_ACTIVE = limitFromEnv("YOMI_REFRESH_MAX_ACTIVE", 5);
 
 async function getConversations() {
   const res = await fetch(`${API}/api/yomi/conversations`);
