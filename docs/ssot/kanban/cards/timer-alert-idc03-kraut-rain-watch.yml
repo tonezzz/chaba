@@ -1,7 +1,7 @@
 id: timer-alert-idc03-kraut-rain-watch
 title: Timer kraut-rain-watch on idc03 failing
 column: backlog
-updated: 2026-11-27 17:43
+updated: 2026-11-27 18:22
 priority: high
 tags:
 - timer-alert
@@ -141,5 +141,12 @@ comms:
     reset by peer while reading the HTTP response. mddb /v1/health and board /health are 200 now; idc03 load remains
     elevated (5.8/8.9/20.4), consistent with a transient reset under congestion. Next tick has not run yet — no
     dispatch this wave, recheck after it.'
+- at: 2026-11-27 18:22
+  from: chaba
+  text: 'ROOT CAUSE CORRECTION 2026-11-27 ~18:22 +07: this is NOT an mddb issue. Full 18:11 traceback shows weather-bakeoff.py
+    line 534 main() -> http_json(f"{ha_url}/api/config") -> urllib.request.urlopen (line 94) -> ConnectionResetError
+    while reading the HA API response. http_json does one attempt with timeout=20 and no retry, so a transient HA
+    reset kills the whole job. Confirmed repeat: 17:41 and 18:11 both died at the same HA /api/config read. A bounded-retry
+    code fix is being queued; card stays op'
 action:
   status: done

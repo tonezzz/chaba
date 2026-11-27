@@ -1,0 +1,44 @@
+id: weather-bakeoff-ha-config-bounded-retry
+title: Bounded retry for weather-bakeoff HA /api/config fetch (kraut-rain-watch repeat)
+column: backlog
+updated: 2026-11-27 18:22
+brief: Fix weather-bakeoff.py http_json transient HA reset with bounded retry + tests; code only, no deploy.
+priority: high
+tags:
+- timer-alert
+- kraut-rain-watch
+- code-fix
+spec: 'Root cause: scripts/ada/weather-bakeoff.py main() line ~534 fetches {ha_url}/api/config via http_json() (line
+  ~87-96), which performs a single urllib.request.urlopen(timeout=20) with no retry. Two consecutive kraut-rain-watch
+  runs (17:41 and 18:11 on idc03) died with ConnectionResetError [Errno 104] reading the HA response, before rain_check()
+  ran. This is an HA API read failure, not mddb.
+
+
+  Task: add bounded retry with short exponential backoff to http_json() (and http_bytes() if it shares the same
+  transient failure surface) for transient network errors: ConnectionResetError, socket.timeout, urllib.error.URLError,
+  and HTTP 5xx. Keep attempts strictly bounded (<=3 total), total added delay <=5s, preserve existing timeout semantics
+  and non-transient error behavior, and do not change the success path or weather-source logic. Add focused unit
+  tests (tests/ada/test_weather_bakeoff_http_retry.py) covering reset-then-success, persistent failure raising the
+  final error, and backoff bound. Run py_compile and the new pytest module.
+
+
+  Guardrails: code change only in a chaba worktree on master. Do NOT deploy to idc03, do NOT edit the rendered systemd
+  unit or ssot.jobs.yml, do NOT touch HA configuration, and do NOT send LINE messages. Return the branch/commit
+  and test output for review; deployment requires separate approval.
+
+
+  Acceptance: <=3 attempts, <=5s added delay, tests pass, no behavior change on the success path.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+  lane: free_lane
+  lane_source: kw
+comms:
+- at: 2026-11-27 18:22
+  from: chaba
+  text: classified as free_lane (kw:try conf 1.00)
+- at: 2026-11-27 18:22
+  from: chaba
+  text: card captured via board-api
+ref: HOM-1509
