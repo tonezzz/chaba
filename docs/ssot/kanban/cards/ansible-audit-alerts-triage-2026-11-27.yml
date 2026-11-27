@@ -1,7 +1,7 @@
 id: ansible-audit-alerts-triage-2026-11-27
 title: Triage 5 open Ansible audit alerts — stale vs real drift (approval-gated)
 column: doing
-updated: 2026-11-27 13:36
+updated: 2026-11-27 13:37
 brief: Next batch 2026-11-27 — 4 runner slots free.
 priority: high
 tags:
@@ -51,5 +51,25 @@ comms:
     healed vs pin d0465bfe; log-shipper remediation verified in-flight (OPS-1497); mcp-verify = real mn-ha-dev crash-loop
     on mn01; fleet-services = persistent drift mostly ssot.audit.hosts.yml census lag; worktrees = real findings
     + one policy bug. verdict comments next.'
+- at: 2026-11-27 13:37
+  from: devin
+  text: 'raised request approve-host-state-remediation-on-mn01-f-fc1183: Approve host-state remediation on mn01?
+    Fresh audits confirm mn-ha-dev.service (HA dev, MCP mn01:9585 — drives the mcp-v'
 claim:
   since: 2026-11-27 12:58
+requests:
+- id: approve-host-state-remediation-on-mn01-f-fc1183
+  ask: 'Approve host-state remediation on mn01? Fresh audits confirm mn-ha-dev.service (HA dev, MCP mn01:9585 —
+    drives the mcp-verify fails on tony-dell/tony-omen/macbook/canonical-ha) crash-looping since ~09:16 today and
+    xmeye-vms.service (:5900 VNC) crash-looping long-term — both rootless podman quadlets dying with conmon exit
+    126 / rootless netns kill permission denied on tailnet-IP publishes; other quadlets healthy. No ansible playbook
+    covers quadlet repair. Proposed: investigate+repair mn01 rootless netns (stale pasta/rootlessport cleanup, quadlet
+    restart; worst case podman system migration reset or reboot) — reversible, service-level only.'
+  status: open
+  at: 2026-11-27 13:37
+  from: devin
+  options:
+  - approve mn01 quadlet repair dispatch
+  - approve restart-only first (podman rm -f + unit restart, escalate if persists)
+  - hold — investigate manually first
+  suggested: approve restart-only first (podman rm -f + unit restart, escalate if persists)
