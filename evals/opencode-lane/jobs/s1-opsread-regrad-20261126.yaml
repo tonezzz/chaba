@@ -1,0 +1,40 @@
+# S1 profile job — ops-readonly canary on idc02, re-graduation
+# attempt 2026-11-26 (card opencode-lane-regraduation; Tony decision
+# 2026-11-26: run S1 then S2, hold S5). Same bounded host-health shape
+# as s1-nemotron-opsread-idc02 on the proven free dispatch model
+# litellm/or-free-nemotron-ultra. Supervised per S1: heartbeat
+# required, human watch with recorded human_minutes.
+# NOTE: admits only after a fresh qualification boundary — the
+# 2026-11-13 epoch's S1 ledger is polluted by OPS-1363 gate-run
+# traffic (see 2026-11-26-promotion-review.json: rollback on
+# scope_violation rows) and jobs_completed S1 is 15/15.
+id: s1-opsread-regrad-20261126
+card: opencode-lane-regraduation
+task_class: report
+stage: S1
+target_host: idc02
+executor: opencode
+profile: ops-readonly
+model: litellm/or-free-nemotron-ultra
+provider: litellm
+unattended: true
+mcp_allowlist: []           # idc02 has no mcp-allowlist proxy — bash
+                            # allowlist covers the collection; the
+                            # profile's MCP ceiling is still enforced
+allowed_paths: [evals/opencode-lane/out/]
+artifact:
+  path: evals/opencode-lane/out/s1-opsread-regrad-20261126-health.json
+  schema: >-
+    evals/opencode-lane/profiles/ops-readonly/fixture/task.yaml
+    #contract.required_fields
+verifier:
+  type: held_out_py
+  ref: evals/opencode-lane/profiles/ops-readonly/fixture/verify.py
+escalation:
+  on_fail: manual
+  max_retries: 1
+rollback:
+  kind: none
+heartbeat:
+  required: true
+  stale_s: 300
