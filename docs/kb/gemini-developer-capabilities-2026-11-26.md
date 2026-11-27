@@ -137,6 +137,25 @@ so its 0.25 threshold remains unvalidated. Evidence: receipt
 `docs/ssot/jobs/devnest/2026-11-26-gemini-decision-1-approve-gate-expanded.yml`
 and `scripts/voice-bench/results/g4-decision-gate-validation130-graded.json`.
 
+**Decisions rubric probe (2026-11-27):** the Decisions API also supports
+`choice` (fixed options with calibrated probabilities) and `score` (ordered
+rubric levels, probability-weighted expected score). Both were tried on the
+same shared input over 130 and 110 briefs, two batched calls with zero output
+tokens (51,773 and 44,158 input tokens; ~1.2–1.4s). The `choice` arm's
+`P(option == ready)` looked better on the 130 set at a fixed 0.5 threshold
+(53/62 READY approved, 0 FP, Brier 0.0525 vs binary noul's 0.0767) but was
+effectively tied with noul on the independent 110 set (one FP each, Brier
+0.1245 vs 0.1248); the gain did not replicate, so it is **not adopted**.
+`score` is useful as a triage rubric but not an approve signal: its expected
+value places the "partial" level (2/3) above 0.5, producing 63 false approvals
+on the 130 set, while `P(level 3)` is too conservative (recall 0.56). Combining
+choice and score never beat choice alone. A directional confident-NO shortcut
+(`p_yes <= 0.10 and confidence >= 0.90`) was clean on 130 but still falsely
+rejected one genuinely READY brief on 110, so neither the broad nor the
+directional auto-reject shortcut is safe. Binary `noul` at 0.5 remains the
+recommended high-precision pre-filter with human approval. Evidence:
+`scripts/voice-bench/results/g4-decision-gate-rubric{130,110}-graded.json`.
+
 ### Managed Agents
 
 `client.agents` / `agent=...` with a sandboxed filesystem, code execution, web
@@ -237,10 +256,11 @@ be empty, so code must handle that. This is distinct from the separate
    approve pre-filter with human dispatch approval. The independent 130-brief
    set confirmed the Decisions threshold has zero genuine false approvals
    (one raw-label "false approval" was a note-marker misfire), but the
-   confidence >= 0.90 auto-reject shortcut is rejected and the full-model
-   threshold is still unvalidated. Production has no model judge and preflight
-   cannot approve at all today, so a model gate must sit after those
-   preconditions, never bypass them.
+   confidence >= 0.90 auto-reject shortcut is rejected, a score/choice rubric
+   probe found no reliable gain over binary noul, and the full-model threshold
+   is still unvalidated. Production has no model judge and preflight cannot
+   approve at all today, so a model gate must sit after those preconditions,
+   never bypass them.
 5. The official `gemini-api-dev` skill is installed and trialled (87.5% vs
    25% pass rate with vs without it); load it for any Gemini API code work.
 6. DONE: Managed Agents verified on the free tier and cost-compared on a
@@ -341,6 +361,9 @@ result. Keep 3.5 as the comparison baseline.
   `scripts/voice-bench/g4-decision-gate-validation130-{build,grade}.py` and
   JSONs `g4-decision-gate-validation130-*` under
   `scripts/voice-bench/results/`, including the label-noise sensitivity read.
+- Decisions rubric probe: harnesses `scripts/voice-bench/g4-decision-gate-rubric{130,110}-{build,grade}.py`
+  and JSONs `g4-decision-gate-rubric{130,110}-*` under
+  `scripts/voice-bench/results/`.
 - Related prior pages: `Education:LLM Providers/Gemini API`,
   `Education:Ada-Developer-Paid-Model-Candidates`,
   `Education:Ada-Dev-Gap-Model-Vs-Harness`.
