@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-runner-agent-converge
 title: Timer runner-agent-converge on tony-dell failing
 column: done
-updated: 2026-11-27 11:09
+updated: 2026-11-27 11:15
 priority: high
 tags:
 - timer-alert
@@ -234,6 +234,13 @@ comms:
 - at: 2026-11-27 11:09
   from: tony
   text: closed by tony
+- at: 2026-11-27 11:15
+  from: devin
+  text: 'RESOLVED via card runner-agent-converge-nopermission-fix (OPS-1491). The 11-27 03:30 exit-code was ansible
+    exit 4 = HOST_UNREACHABLE: tony-macbook (portable laptop, asleep) ssh-timed-out during gather_facts; all 6 reachable
+    hosts converged fine. deploy-runner-agent.yml now runs portable hosts in a first play with ignore_unreachable:true
+    and always-on hosts last (exit code = last play result, so infra outages still alert). Verified: 3x consecutive
+    unit runs Result=success ExecMainStatus=0; all 7 '
 spec: Investigate and resolve the failure of runner-agent-converge.service on host tony-dell, which exited with
   a non-zero code during the 11-25 03:31 run. Inspect the user journal using journalctl --user -u runner-agent-converge.service
   on tony-dell and consult the CMS timer-timeline-tony-dell for additional context. Following the insight from con01,
