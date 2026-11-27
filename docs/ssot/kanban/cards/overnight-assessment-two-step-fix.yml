@@ -1,6 +1,6 @@
 id: overnight-assessment-two-step-fix
 title: 'overnight-assessment: log-sweep row conversion + stale sensor health'
-column: doing
+column: done
 updated: 2026-11-27 11:29
 spec: 'overnight-assessment.service on idc03 fails 3 of 4 recent runs. reports/ORCHESTRATION.json shows 3/6 steps
   ok; the ssot_validate failure from a malformed YAML trail doc was already fixed and pushed (3219cd79f40). Two
@@ -24,11 +24,12 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: running
+  status: done
   runner: mn01
   attempts: 1
   sweep:
     stale_running: 2026-11-27 11:29
+  verified: true
 ref: OPS-1493
 comms:
 - at: 2026-11-27 10:42
@@ -89,5 +90,19 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261127-104422-overnight-assessment-service-o no longer active on mn01 but card
     still says running — sweeping its branch'
+- at: 2026-11-27 11:29
+  from: chaba
+  text: 'merge-sweep: merged dca50a4c (dispatch/20261127-104422-overnight-assessment-service-o from mn01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261127-104422-overnight-assessment-service-o.md)
+    — auto-closed'
+- at: 2026-11-27 11:29
+  from: local
+  text: 'pub milestone: card verified: overnight-assessment-two-step-fix on idc03 — merged dca50a4c (dispatch/20261127-104422-overnight-assessment-service-o
+    from mn01) -> origin/master — verified — auto-c — merged dca50a4c (dispatch/20261127-104422-overnight-assessment-service-o
+    from mn01) -> origin/master — verified — auto-closed [evt-e38277bb34d3e38a]'
 claim:
   since: 2026-11-27 10:43
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 11:29
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261127-104422-overnight-assessment-service-o.md
