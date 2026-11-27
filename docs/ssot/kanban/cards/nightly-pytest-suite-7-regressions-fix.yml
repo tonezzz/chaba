@@ -1,7 +1,7 @@
 id: nightly-pytest-suite-7-regressions-fix
 title: 'Nightly chaba pytest suite: 7 regressions still failing on master'
-column: doing
-updated: 2026-11-27 10:57
+column: review
+updated: 2026-11-27 10:58
 spec: 'chaba-pytest-suite.service on tony-omen reports 10 failed / 2815 passed. Verified against current origin/master:
   3 were fixed by recent merges, but these 7 still fail and must be fixed at source (not skipped, not xfail):
 
@@ -26,12 +26,14 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: running
+  status: done
   runner: tony-dell
   attempts: 1
   sweep:
     stale_running: 2026-11-27 10:57
     dirty: 8
+  result: 'exit=0 =github-mcp-server, org.opencontainers.image.version=1.11.0) | devin-task-20261127-103236-chaba-pytest-suite-service-on-.service:
+    Consumed 6min 2.160s CPU time over 21min 37.513s wall clock time, 939.9M memory peak, 685.9M memory swap peak.'
 ref: OPS-1488
 comms:
 - at: 2026-11-27 10:29
@@ -95,5 +97,25 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261127-103236-chaba-pytest-suite-service-on- on tony-dell still dirty
     — 8 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-27 10:58
+  from: tony-dell
+  text: 'finished (ok): exit=0 =github-mcp-server, org.opencontainers.image.version=1.11.0) | devin-task-20261127-103236-chaba-pytest-suite-serv'
+- at: 2026-11-27 10:58
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 10:58
+  from: chaba
+  text: banked 84 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-27 10:58
+  from: chaba
+  text: pushed dispatch/20261127-103236-chaba-pytest-suite-service-on- to origin
+- at: 2026-11-27 10:58
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-27 10:58
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
 claim:
   since: 2026-11-27 10:31
+review_kind: verify
