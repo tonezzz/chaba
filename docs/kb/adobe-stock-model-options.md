@@ -71,6 +71,12 @@ inference). Receipts in scratch `/tmp/opencode/ab-sr/`
   `flat_region_lap_gain` near ~1.2, and the wall-time gap is explicitly accepted. With the
   guard now working, only SwinIR classical passes ~1.2 (1.184) but it over-smooths (laplacian
   55.21). No arm clears all three criteria today; Tony is the QC gate.
+- **Tony's QC verdict (2026-11-27):** Incumbent (Real-ESRGAN, unsharp 60) is the preferred
+  choice. Sharpest detail, preserves source texture faithfully (white-dot rows in source are
+  retained, not invented). ResShift and SwinIR variants all invent texture not present in
+  the source. Guard needs refinement: it measures total flat-region texture, not *invented*
+  texture (delta vs source). The white-dot hallucination in SwinIR classical (bottom-left)
+  was not caught by the guard (1.184 <= 1.2).
 
 ## Rules
 
