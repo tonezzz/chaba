@@ -1,0 +1,48 @@
+id: yomi-update-conversations-missing-imports
+title: Yomi summaries fail — missing summary-utils imports in update-conversations.mjs
+column: backlog
+updated: 2026-11-27 15:33
+brief: yomi-update-all writes conversations but every summary fails with "validateAndTruncateContext is not defined".
+  Three symbols used but not imported in update-conversations.mjs; all exported by summary-utils.mjs. Import-only
+  fix.
+priority: high
+program: yomi
+tags:
+- yomi
+- bug
+- summaries
+- imports
+- regression
+spec: "Found 2026-11-27 during LINE re-login verification (card yomi-line-session-expired-idc03). The live yomi-update-all
+  run on idc03 wrote 70 conversations + 15 message chats to Postgres and exited 0, but EVERY conversation summary
+  failed with 'validateAndTruncateContext is not defined' after 3 retries each. Root cause confirmed: scripts/yomi/update-conversations.mjs
+  USES three symbols from summary-utils.mjs that it never IMPORTS:\n  - validateAndTruncateContext  (lines 560,
+  866, 1002)\n  - getContextLengthStatus      (lines 561, 867, 1003)\n  - LLAMA_REQUEST_TIMEOUT       (lines 588,
+  620, 894, 933, 1037, 1076)\nThe file's current import from ./summary-utils.mjs (near line 6) lists only evaluateSummaryQuality,
+  isMeaningfulSummary, retryWithBackoff, generateCacheKey, parseCacheKey. The sibling scripts/yomi/process-conversations.mjs
+  imports all three correctly — that is the reference.\nAll three symbols ARE exported from scripts/yomi/summary-utils.mjs
+  (LLAMA_REQUEST_TIMEOUT line 10, validateAndTruncateContext line 189, getContextLengthStatus line 214), so the
+  fix is import-only.\n\nFIX: add validateAndTruncateContext, getContextLengthStatus and LLAMA_REQUEST_TIMEOUT to
+  the named import from \"./summary-utils.mjs\" at the top of update-conversations.mjs. No other logic changes.\n\nVERIFY:
+  run `node --check scripts/yomi/update-conversations.mjs`; then confirm the three names resolve (grep the import
+  block). Ideally trigger a yomi-update-all on idc03 on a small chat set and confirm a summary is produced with
+  no 'is not defined' errors. Note the job runs from the chaba-tony-dell checkout on idc03 (systemd ExecStart points
+  at %h/CascadeProjects/chaba-tony-dell/scripts/yomi/update-conversations.mjs), so land the fix in the served checkout
+  and make sure that copy is refreshed before declaring done.\n\nScope: chaba repo, scripts/yomi/update-conversations.mjs
+  only. Non-blocking for the LINE credential fix (conversations still write); this is about restoring conversation/daily
+  summaries."
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+  task_class: verify_only
+  executor: claude
+  executor_source: queue
+comms:
+- at: 2026-11-27 15:33
+  from: chaba
+  text: auto-routed to executor=claude (task_class=verify_only)
+- at: 2026-11-27 15:33
+  from: chaba
+  text: card captured via board-api
+ref: OPS-1505
