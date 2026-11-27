@@ -1,7 +1,7 @@
 id: ai-forge-skills-wiki-education-2026-11-27
 title: Evaluate ansible-community/ai-forge skills for Ada-OCB and update Education:Ada-Ocb-Skills
 column: doing
-updated: 2026-11-27 13:18
+updated: 2026-11-27 13:25
 brief: 'Authorize the 2026-11-27 hub refresh: evaluate ai-forge Lola skills for Ada-OCB use, add a pointer-first
   section to docs/kb, render offline, publish via board-api wiki-education sink with a fresh event_id, and verify
   source=wiki.'
@@ -101,6 +101,14 @@ comms:
     republished via /publish wiki-education -> pageid 333 revid 813 (event skills-wiki-export-2026-11-27-ai-forge);
     /lesson op=get source=wiki verified (slug lesson-d8b6938588d3). Receipt recorded in docs/ssot/jobs/education/2026-11-24-skills-wiki-education.yml.
     Commit b215b985c6'
+- at: 2026-11-27 13:25
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-130333-source-https-github-com-ansibl no longer active on mn01 but card
+    still says running — sweeping its branch'
+- at: 2026-11-27 13:25
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261127-130333-source-https-github-com-ansibl on mn01 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   status: running
   type: dispatch
@@ -109,5 +117,8 @@ action:
   model: swe-2-flash-medium
   runner: mn01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 13:25
+    dirty: 1
 claim:
   since: 2026-11-27 13:02
