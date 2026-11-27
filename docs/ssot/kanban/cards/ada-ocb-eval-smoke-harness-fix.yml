@@ -1,7 +1,7 @@
 id: ada-ocb-eval-smoke-harness-fix
 title: ada-ocb-eval and ada-ocb-smoke harness failures on idc02
 column: doing
-updated: 2026-11-27 10:30
+updated: 2026-11-27 10:31
 spec: 'Two nightly Ada bridge benchmark services on idc02 both fail:
 
   - ada-ocb-eval.service: gate `preflight-gates-readonly` FAIL — its answer is missing required fields ''start_check'',
@@ -51,5 +51,15 @@ comms:
   from: chaba
   text: 'kk-mac defers: executor=devin declared but this runner is launchd — devin-dispatch drives systemd-run internally;
     the card stays queued for a Linux runner (executor=opencode/script serve here)'
+- at: 2026-11-27 10:31
+  from: chaba
+  text: started devin-task-20261127-103128-two-nightly-ada-bridge-benchma on tony-dell (dispatch executor=devin)
+- at: 2026-11-27 10:31
+  from: chaba
+  text: 'primer injected 8 lesson(s): [timer-alert-idc02-ada-ocb-eval] 2026-11-25 14:2x (+07): TRIAGE: three-card
+    OCB ; [timer-alert-idc02-ada-ocb-smoke] RESOLVED 2026-11-27 08:50 +07. Root cause: smo; [timer-alert-idc02-kk-mac-model-status]
+    root cause found via nest-mgr-v2 soak re; Benchmark scenario "fail" lines in the unit journal are normal output
+    — the wrap; Benchmark/oneshot services that exit nonzero on FAIL (ada-ocb-eval/smoke) belong; The card''s declared
+    artifact path must be committed, not just'
 claim:
   since: 2026-11-27 10:30
