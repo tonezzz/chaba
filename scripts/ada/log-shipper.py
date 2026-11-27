@@ -431,16 +431,41 @@ def _journal(host: str, user: bool, kinds: set | None = None,
     return rows, sup, leg
 
 
-def _post(path: str, payload: dict, timeout: int = 15) -> bool:
-    try:
-        req = urllib.request.Request(
-            f"{MDDB_URL}{path}", data=json.dumps(payload).encode(),
-            headers={"content-type": "application/json"}, method="POST")
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            r.read()
-        return True
-    except Exception:
-        return False
+# /add write budget for the heartbeat and the per-doc fallback
+# (OPS-1497, 2026-11-27): mddb-ops /add measured 8-20s under normal
+# load, so the old 10s heartbeat / 15s fallback budgets false-failed
+# every run while every journal line had shipped. 45s covers the
+# observed p-max with headroom; 2 bounded attempts absorb
+# single-sample spikes. Keys are deterministic upserts, so a retried
+# /add is idempotent. A genuine MDDB outage still fails the run:
+# conn-refused returns fast on both attempts, and >90s of server-side
+# congestion still exits non-zero — the judge keeps seeing real
+# distress, only the false timeout is gone.
+ADD_TIMEOUT = 45
+ADD_ATTEMPTS = 2
+
+
+def _post(path: str, payload: dict, timeout: int = 15,
+          attempts: int = 1) -> bool:
+    """POST one doc/delete. attempts>1 retries transport and 5xx
+    failures; 4xx returns immediately (a retry can't fix a bad
+    request). Safe to retry /add//delete — deterministic keys make
+    the replayed write an idempotent upsert."""
+    for _ in range(attempts):
+        try:
+            req = urllib.request.Request(
+                f"{MDDB_URL}{path}", data=json.dumps(payload).encode(),
+                headers={"content-type": "application/json"},
+                method="POST")
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                r.read()
+            return True
+        except urllib.error.HTTPError as e:
+            if e.code < 500:
+                return False
+        except Exception:
+            pass
+    return False
 
 
 BATCH = 5  # docs per /v1/ingest call. mddb-ops closes the connection
@@ -561,7 +586,9 @@ def ship(host: str, dry: bool, max_docs: int, kinds: set | None = None,
                 res = True
                 for r in batch:
                     if not _post("/add",
-                                 {"collection": COLLECTION, **_doc(r)}):
+                                 {"collection": COLLECTION, **_doc(r)},
+                                 timeout=ADD_TIMEOUT,
+                                 attempts=ADD_ATTEMPTS):
                         res = False
                         break
                     sent += 1
@@ -610,7 +637,8 @@ def post_state(r: dict) -> bool:
         "contentMd": json.dumps(r),
         "meta": {"host": [r["host"]], "kind": ["ship-state"],
                  "ts": [datetime.datetime.now(datetime.timezone.utc)
-                        .isoformat(timespec="seconds")]}}, timeout=10)
+                        .isoformat(timespec="seconds")]}},
+        timeout=ADD_TIMEOUT, attempts=ADD_ATTEMPTS)
 
 
 def prune(days: int) -> int:
