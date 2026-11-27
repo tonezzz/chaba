@@ -1,0 +1,77 @@
+---
+# fix-mcp-fleet-failures.yml — remediate the two verified MCP host failures.
+#
+# 1. playlive "no initialize response": the hosts-file loader runs a self-heal
+#    command via ssh. With inherited stdin, ssh consumes the MCP initialize
+#    line from the stdio pipe before the loader execs playlive-server.py.
+#    Force the self-heal subprocess to use /dev/null for stdin.
+# 2. HA MCP "Connection refused": per-host configs point at tony-dell:9584 and
+#    tony-dell:19584, where nothing listens. Use the endpoints verified 3/3 ok
+#    with verify-all-mcp-servers.py on both tony-dell and tony-omen.
+#
+# Both tasks are regex-gated and backup: true, so a second run is a no-op.
+#
+# Usage (from ansible/):
+#   ansible-playbook playbooks/fix-mcp-fleet-failures.yml --check --diff --limit tony-dell
+#   ansible-playbook playbooks/fix-mcp-fleet-failures.yml --limit tony-dell
+
+- name: Fix remaining MCP fleet failures
+  hosts: all:!disabled
+  gather_facts: true
+  become: false
+  serial: 1
+  any_errors_fatal: false
+
+  vars:
+    devin_dir: "{{ ansible_facts.user_dir }}/.config/devin"
+    loader_path: "{{ devin_dir }}/mcp-scripts/playlive-hosts-loader.py"
+    mcp_config_path: "{{ devin_dir }}/mcp_config.json"
+    stale_loader_call: 'result = subprocess\.run\(command, capture_output=True, text=True\)'
+    fixed_loader_call: 'result = subprocess.run(command, capture_output=True, text=True, stdin=subprocess.DEVNULL)'
+
+  tasks:
+    - name: Check for MCP files on this host
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - "{{ loader_path }}"
+        - "{{ mcp_config_path }}"
+      loop_control:
+        label: "{{ item }}"
+      register: mcp_file_stat
+
+    - name: Fix playlive self-heal stdin consumption (with backup)
+      ansible.builtin.replace:
+        path: "{{ loader_path }}"
+        regexp: "{{ stale_loader_call }}"
+        replace: "{{ fixed_loader_call }}"
+        backup: true
+      when: mcp_file_stat.results[0].stat.exists
+      register: playlive_fix
+
+    - name: Repoint stale home-assistant MCP URL (with backup)
+      ansible.builtin.replace:
+        path: "{{ mcp_config_path }}"
+        regexp: 'http://tony-dell:9584/'
+        replace: 'http://tony-omen.taila0626a.ts.net:9584/'
+        backup: true
+      when: mcp_file_stat.results[1].stat.exists
+      register: ha_fix
+
+    - name: Repoint stale michael-ha MCP URL (with backup)
+      ansible.builtin.replace:
+        path: "{{ mcp_config_path }}"
+        regexp: 'http://tony-dell:19584/'
+        replace: 'http://100.80.105.88:9584/'
+        backup: true
+      when: mcp_file_stat.results[1].stat.exists
+      register: michael_fix
+
+    - name: Report remediation result
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }}:
+          playlive={{ 'fixed' if playlive_fix.changed | default(false) else 'in sync' }},
+          home-assistant={{ 'fixed' if ha_fix.changed | default(false) else 'in sync' }},
+          michael-ha={{ 'fixed' if michael_fix.changed | default(false) else 'in sync' }}
+      when: mcp_file_stat.results[0].stat.exists or mcp_file_stat.results[1].stat.exists

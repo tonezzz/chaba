@@ -413,7 +413,9 @@
     board_notify: false
     board_api_base: "https://idc03.taila0626a.ts.net:10000"
     board_from: "devin"
-    chaba_checkout: "{{ chaba_repo_path | default('/home/tony/CascadeProjects/chaba') }}"
+    # playbook_dir is absolute; chaba_repo_path from group_vars is "~/..." and
+    # tilde is not expanded inside the quoted shell cd in the probe task.
+    chaba_checkout: "{{ playbook_dir }}/../.."
     canonical_ha_mcp_servers:
       home-assistant:
         url: http://tony-omen:9584/private_CtYuVkJEl28cp8qA8yXNCQ
