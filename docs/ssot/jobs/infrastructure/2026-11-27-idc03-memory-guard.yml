@@ -110,7 +110,7 @@ applied_followups:
       OOMScoreAdjust=500. Idempotency changed=0.
 
 publisher_hardening:
-  status: "prepared, tested, NOT DEPLOYED — awaiting approval"
+  status: "applied and verified 2026-11-27 ~18:13"
   symptom: >-
     Both timer publishers POST /v1/add immediately after a TCP/health probe.
     An OOM restart leaves /health open ~84-104s before /v1 routes are live
@@ -142,16 +142,23 @@ publisher_hardening:
     ansible-playbook playbooks/idc03-publisher-hardening.yml --limit idc03
     -e idc03_publisher_hardening_approved=true
     -e card_id=mddb-idc03-oom-coldstart-publisher-window
-  verify: >-
-    After deploy: installed sha256 matches both pins; py_compile passes with
-    each script's own interpreter; GET /v1/stats is 200 on :11023 and :11027;
-    next media-inbox-update-kk and ops-health-report timer ticks exit 0;
-    re-run --check --diff shows changed=0. No service restart: both are
-    oneshot timers, so no in-flight pass is killed.
+  result: >-
+    Applied 2026-11-27 18:10:47: ok=12 changed=3 unreachable=0 failed=0.
+    Backups in /home/tony/.local/share/chaba-backups/
+    idc03-publisher-hardening/20261127T181047/. Installed sha256 matched both
+    pins; py_compile passed with each script's own interpreter; GET /v1/stats
+    was 200 on :11023 and :11027. Two fresh oneshot ticks were started
+    manually after the deploy (the 18:10 media tick had started before it):
+    both finished ExecMainStatus=0 — media-inbox[kk] published 28 leaves +
+    rollup + qc, ops-health published report/health-20261127-181221 (5
+    pre-existing health flags, not a script failure). No service restart.
+    Memory after: 10 GiB used / 5.3 GiB available, swap 4.0/4.0 GiB, zero
+    kernel OOM since 18:10. Idempotency re-check: ok=4 changed=0 failed=0
+    after gating the timestamped backup-directory task out of check mode.
   rollback: >-
     Restore from /home/tony/.local/share/chaba-backups/
-    idc03-publisher-hardening/<timestamp>/, or from the copy module's sibling
-    .bak files. No rollback was needed.
+    idc03-publisher-hardening/20261127T181047/, or from the copy module's
+    sibling .bak files. No rollback was needed.
 
 rollback: >-
   Restore both .conf files from the timestamped backup directory, delete the
@@ -171,3 +178,9 @@ lessons:
     silently overridden by an existing zzzz-*.conf, and the shim kept both
     upstreams. Name managed override drop-ins to sort last, and verify the
     *effective* config (shim /health, systemctl show), not just file install."
+  - "A timestamped backup-directory task shows changed=1 on every --check,
+    masking real drift. Gate directory creation (and its dependent copy)
+    out of check mode so idempotency can read changed=0."
+  - "A oneshot timer that started just before deploy ran the old code; to
+    prove a publisher fix, trigger a fresh tick and check ExecMainStatus and
+    the published document, not just the timer's last-pass timestamp."

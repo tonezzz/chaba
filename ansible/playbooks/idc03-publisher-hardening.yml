@@ -87,6 +87,9 @@
         path: "{{ backup_root }}/{{ backup_tag }}"
         state: directory
         mode: "0755"
+      # A fresh tag would otherwise show changed=1 on every --check,
+      # hiding real configuration drift.
+      when: not ansible_check_mode
 
     - name: Back up the installed publishers before replacing them
       ansible.builtin.copy:
