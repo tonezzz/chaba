@@ -1,0 +1,21 @@
+id: runner-drift-rearm-idc03-ssh-proxyjump-dead
+title: runner-drift-rearm board writes silently dead on tony-dell (ssh idc03 ProxyJump refused)
+column: backlog
+updated: 2026-11-27 10:01
+priority: medium
+tags:
+- infra
+- board-api
+- ssh
+spec: 'Found during runner-tools-converge-local-scope-fix (OPS-1478). scripts/board/runner-drift-rearm.py defaults
+  --ssh-host idc03; from tony-dell `ssh idc03` resolves via ~/.ssh/config ProxyJump tony-omen which refuses forwarding
+  (channel 0: open failed: administratively prohibited) while direct `ssh tony@100.102.134.91` works. Every board_call
+  raises RuntimeError; callers || true it so drift re-arm + verify comments silently no-op on the controller. Same
+  ProxyJump likely makes timer-sentinel _live_verify inconclusive for idc03 cards. Fix options: repair the ProxyJump
+  path (check tony-omen AllowTcpForwarding/PermitOpen or ssh-config-generate.yml), or point rearm at a working route.
+  Evidence: docs/ssot/jobs/infrastructure/2026-11-27-runner-tools-converge-local-scope.yml residuals.'
+ref: SYS-1487
+comms:
+- at: 2026-11-27 10:01
+  from: devin
+  text: card captured via board-api
