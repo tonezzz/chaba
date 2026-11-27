@@ -2,7 +2,7 @@ id: gev-auto-ws
 title: GEV ws /apps/gev-live/ws upgrade fails
 brief: 'An automated health check flagged: GEV ws /apps/gev-live/ws upgrade fails. Read the note, fix it, then close
   the card.'
-column: review
+column: done
 review_kind: triage
 generated: gev-auto-health
 program: gev
@@ -12,7 +12,7 @@ note: ws upgrade ws://tony-dell.taila0626a.ts.net/apps/gev-live/ws?remote=1 -> H
 help: 'Dell Caddy proxies /apps/gev-live/ws -> idc02:8789 (gev-gemini bridge). Page ok + ws fail usually means the
   bridge is down or stuck (unit can read ''active'' while the process hangs — check the port): ssh idc02 systemctl
   --user status gev-gemini; ssh idc02 ss -tln | grep 8789; ssh idc02 systemctl --user restart gev-gemini'
-updated: '2026-11-27'
+updated: 2026-11-27 20:18
 comms:
 - at: 2026-11-24 11:38
   from: chaba
@@ -98,3 +98,15 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-27 20:18
+  from: tony
+  text: 'FIXED 2026-11-27 20:18 +07. Root cause: tony-dell live /etc/caddy/Caddyfile dated 2026-10-07 still proxied
+    /apps/gev-live/ws to 127.0.0.1:8789, but gev-gemini on idc02 now binds 100.123.163.11:8789 (verified active/running,
+    local upgrade 101 and Gemini Live session connect). Canonical stacks/web/Caddyfile has the correct upstream.
+    With approval: backed up live file to /tmp/opencode/Caddyfile.live-20261127-2017.bak on tony-dell, caddy validate
+    OK, sudo install canonical file, caddy reload. Verifi'
+- at: 2026-11-27 20:18
+  from: tony
+  text: closed by tony
+action:
+  status: done
