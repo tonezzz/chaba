@@ -28,7 +28,7 @@ help: 'Per-check fixes:
   If the checkout matches the pin but the install does not, the sync was skipped — check the sync-runner-tools journal
   line (dirty source / no pin / never-downgrade). Do not edit the manifest on a host; bump it in the same commit
   as the tool.'
-updated: '2026-11-27'
+updated: 2026-11-27 16:49
 comms:
 - at: 2026-11-26 13:30
   from: devin
@@ -58,5 +58,12 @@ comms:
 - at: 2026-11-27 09:01
   from: tony
   text: closed by tony
+- at: 2026-11-27 16:49
+  from: chaba
+  text: 'ANSIBLE SYSTEMWIDE VERIFY 2026-11-27 16:50 +07 (read-only, controller tony-dell): ansible-playbook playbooks/deploy-runner-agent.yml
+    --check --diff — 7/7 hosts reachable, 0 unreachable / 0 failed / 0 changed. Every host reported ''in-sync''
+    on the checksum-gated task: tony-dell, idc02, idc03, tony-omen, con01, mn01, tony-macbook. So the recurring
+    ''con01 defers: installed runner-agent drifted'' defer line is stale as of this check — no redeploy needed,
+    and NO apply/restart was performed. Note: verif'
 action:
   status: done
