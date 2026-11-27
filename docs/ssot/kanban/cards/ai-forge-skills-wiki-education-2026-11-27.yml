@@ -1,0 +1,24 @@
+id: ai-forge-skills-wiki-education-2026-11-27
+title: Evaluate ansible-community/ai-forge skills for Ada-OCB and update Education:Ada-Ocb-Skills
+column: backlog
+updated: 2026-11-27 12:50
+brief: 'Authorize the 2026-11-27 hub refresh: evaluate ai-forge Lola skills for Ada-OCB use, add a pointer-first
+  section to docs/kb, render offline, publish via board-api wiki-education sink with a fresh event_id, and verify
+  source=wiki.'
+priority: medium
+program: ada-ocb
+tags:
+- ada-ocb
+- education
+- skills
+- wiki
+spec: 'Source: https://github.com/ansible-community/ai-forge/ at 28a9a58. Offline render: python3 scripts/skills-wiki-export.py
+  --out /tmp/opencode/ada-ocb-skills-ai-forge.wiki --today 2026-11-27 --next-review 2026-12-11 --event-id skills-wiki-export-2026-11-27-ai-forge.
+  Publish: POST /publish sinks=[wiki-education], visibility=private, meta.format=wikitext, meta.wiki_title=Education:Ada-Ocb-Skills.
+  Verify: POST /lesson {op:get, source:wiki, topic:ada-ocb-skills}; record revid/receipt in docs/ssot/jobs/education/2026-11-24-skills-wiki-education.yml.
+  No direct MediaWiki API.'
+ref: DEV-1499
+comms:
+- at: 2026-11-27 12:50
+  from: tony
+  text: card captured via board-api
