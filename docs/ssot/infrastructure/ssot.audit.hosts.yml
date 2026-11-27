@@ -291,6 +291,7 @@ hosts:
       - {name: system-report-watchdog.timer, type: timer, scope: user, note: "Timer census 2026-11-27: job:system-report-watchdog. System-report freshness watchdog (stale-data / host-down alert) (job:system-report-watchdog, rendered from ssot.jobs.yml..."}
       - {name: tony-dell-wan-failover.timer, type: timer, scope: system, note: "Timer census 2026-11-27: ad-hoc fleet timer. Run tony-dell WAN failover check every 30 seconds"}
       - {name: chaba-postgres-16.service, type: service, scope: user, note: "podman quadlet active on dell again (Description: restored to live) — supersedes the OPS-0725 migration note; idc03 now uses chaba-postgres.service"}
+      - {name: gemini-ollama-proxy.service, type: service, scope: user, note: "podman quadlet embedding proxy 127.0.0.1:11435 -> Gemini free-key ring + paid leg, LiteLLM gateway backup; restored 2026-11-27 (conmon --log-tag cleared via containers.conf log_tag removal + ~/.config/secrets/mddb-gemini.env provisioned from idc03; card gemini-ollama-proxy-conmon-logtag-failure)"}
       - {name: openchamber-update.service, type: oneshot, scope: user, note: "Monthly OpenChamber + @opencode/cli update — oneshot fired by its timer (unit file present, inactive between fires)"}
       - {name: picker-server.service, scope: user, note: "Adobe Stock mask-picker HTTP server (chaba/scripts/adobe-stock/picker-server.py) on :8777; unitized 2026-11-27"}
 
@@ -484,7 +485,6 @@ hosts:
         reason: Devin desktop runs as a background nohup job, not via the
           autostart unit — same rationale as the app-devin-desktop entry.
         action: restart-devin-desktop
-      - {name: gemini-ollama-proxy.service, note: "failed podman quadlet (exit-code) on dell; broken envfile — card gemini-proxy-quadlet-envfile-drop tracks the fix"}
     expected_resources:
       min_free_ram_mb: 500
       max_swap_used_percent: 80

@@ -1,0 +1,129 @@
+id: gemini-ollama-proxy-dell-conmon-logtag-20261127
+title: tony-dell gemini-ollama-proxy — conmon --log-tag failure resolved; env file provisioned; unit restored
+card: gemini-ollama-proxy-conmon-logtag-failure
+ref: OPS-1514
+date: 2026-11-27
+host: tony-dell
+status: verified-live
+
+# ─── Symptom ───────────────────────────────────────────────────────────────
+goal: >
+  gemini-ollama-proxy.service on tony-dell had been failed since
+  2026-11-26 ~11:48 +07 (card brief said 11:56 — the start-rate-limit trip
+  was 11:56:44; churn ran 11:34-11:56). conmon logged
+  "k8s-file doesn't support --log-tag", podman create/remove churned,
+  ExecMainStatus=126, NRestarts hit the limit and systemd gave up.
+  Spec: drop --log-tag or switch log driver, restart, verify /health.
+
+# ─── Root cause (two stacked blockers, not one) ────────────────────────────
+root_cause:
+  - "Blocker 1 (the card's named cause): ~/.config/containers/containers.conf on
+    tony-dell carried `log_tag = \"{{.Name}}/{{.ID}}\"` with
+    `log_driver = \"k8s-file\"` — pushed fleet-wide 2026-11-26 ~11:24-12:35
+    (same event as jobs/infrastructure/2026-11-26-podman-conmon-log-tag-fix.yml,
+    which fixed con01/idc02/idc03 but deliberately left dell 'because conmon
+    2.1.13 supports --log-tag'). That assumption was WRONG for dell: its
+    conmon 2.1.13 + k8s-file rejects --log-tag exactly like 2.1.10 did.
+    Someone already commented the line out on dell at 2026-11-26 19:35
+    ('removed: k8s-file driver rejects --log-tag (broke web.service)') —
+    web.service is the canary: active, NRestarts=0."
+  - "Blocker 2 (found only after blocker 1 cleared): the quadlet installed by
+    card gemini-proxy-quadlet-envfile-drop (2026-11-27 01:08) declares
+    EnvironmentFile=/home/tony/.config/secrets/mddb-gemini.env — that file
+    NEVER existed on dell. podman --env-file on a missing path is a hard
+    error ('parsing file ... no such file or directory'), so the unit could
+    not have started even with log_tag gone. The envfile-drop dispatch
+    patched ansible host_vars + installed the quadlet on both hosts but
+    only idc03 had the secrets file."
+  - "Unit was also stuck in systemd 'failed' (start-rate-limited) — needed
+    reset-failed before any retry."
+
+# ─── What changed ──────────────────────────────────────────────────────────
+changes:
+  - "tony-dell: created ~/.config/secrets/mddb-gemini.env (mode 600) by piping
+    idc03's canonical file over SSH — contents never displayed. Key-name diff
+    vs idc03: identical (19 keys: GEMINI_FREE_KEYS_01..10, GEMINI_API_KEY_PAID,
+    EMBED_GATEWAY_BASE/MODEL, LITELLM_URL/LITELLM_KEY, OPENROUTER_PRIMARY,
+    OR_FALLBACK_DAILY_CAP, PAID_GEMINI_{HOURLY,DAILY}_CAP)."
+  - "tony-dell: systemctl --user reset-failed + start gemini-ollama-proxy.service."
+  - "Repo (this worktree): ssot.audit.hosts.yml — removed dell's known_failed
+    entry for gemini-ollama-proxy.service; added expected_services entry
+    (active, non-critical) so the audit now guards it instead of tolerating it."
+
+# ─── What did NOT need changing ────────────────────────────────────────────
+non_changes:
+  - "containers.conf on dell: log_tag already commented out 2026-11-26 19:35;
+    log_driver stays k8s-file. No --log-tag or LogTag= anywhere in the
+    quadlet — podman derives it solely from containers.conf log_tag."
+  - "The quadlet itself: correct as installed by gemini-proxy-quadlet-envfile-drop
+    (EnvironmentFile + GEMINI_PROXY_HOST=127.0.0.1 loopback is the declared
+    design — idc03's audit note says the same)."
+  - "Secret=gemini-api-key: resolves from `podman secret ls` store (file driver,
+    created ~6 weeks ago); the current proxy script ignores the mounted file
+    anyway — vestigial but harmless."
+
+# ─── Verification ──────────────────────────────────────────────────────────
+verification:
+  reproduce_evidence:
+    - "journal 2026-11-26 11:48-11:56: repeated 'conmon[e] k8s-file doesn't
+      support --log-tag' -> 'conmon failed: exit status 1' -> status=126,
+      then 'Start request repeated too quickly'"
+  preflight:
+    - "podman 5.7.0 / conmon 2.1.13 / crun on dell; logDriver=k8s-file;
+      no log_tag in any of the 3 containers.conf layers or containers.conf.d"
+    - "podman run --env-file /nonexistent -> hard error (proved env file was
+      a hard blocker); podman run --secret gemini-api-key -> resolves OK"
+    - "script audit: gemini-ollama-proxy.mjs reads GEMINI_FREE_KEYS_NN env
+      vars directly; never reads GEMINI_API_KEY_FILE or /run/secrets"
+  applied:
+    - "2026-11-27 21:36:23 +07: unit active (running); conmon cmdline shows
+      '-l k8s-file:...' and NO --log-tag; journal clean (only the pre-existing
+      benign 'Port mappings discarded' host-network notice)"
+  consumer_proof:
+    - "GET http://127.0.0.1:11435/health -> 200 {status:ok, provider_mode:
+      gemini-primary, embed_gateway:embedding, circuit.free_keys:6, all
+      budget caps delivered} — proves env-file delivery end-to-end"
+    - "POST /api/embed {input:'health check'} -> 200, 768-dim vector,
+      provider=gemini-embedding-2, 653ms — real free-leg embed works"
+    - "podman ps: systemd-gemini-ollama-proxy Up; HealthCmd curl /health
+      every 60s will keep it honest"
+
+# ─── Residual / follow-ups ─────────────────────────────────────────────────
+residual:
+  - "mddb-gemini.env now lives on both idc03 and tony-dell — rotate-or-key
+    updates must hit both (or accept dell's copy going stale; keys are
+    fleet-shared so staleness = a dead key in the ring, circuit-breaker
+    absorbs it). Consider documenting the file's host list in
+    ssot.llm-gateway.yml / secrets inventory."
+  - "conmon 2.1.13 k8s-file DOES reject --log-tag — the 2026-11-26 job doc's
+    claim that dell/omen were safe was wrong; if any host re-pushes
+    containers.conf with log_tag, dell breaks again. The 'Managed by
+    Ansible' provenance is still unknown (see that job's caveat)."
+  - "PublishPort=100.68.142.13:11435:11435 in the quadlet is dead config —
+    discarded under Network=host, and GEMINI_PROXY_HOST=127.0.0.1 binds
+    loopback anyway. Harmless; cleanup candidate next quadlet regen."
+  - "idc03's gemini-ollama-proxy is the declared embedding proxy; dell's is
+    standby/secondary (mddb on idc03 moved to bge-m3 :11436 on 2026-11-18).
+    Dell copy kept alive per ansible host_vars + this card."
+
+rollback: >
+  On dell: systemctl --user stop gemini-ollama-proxy.service; rm
+  ~/.config/secrets/mddb-gemini.env restores the pre-fix state (unit was
+  already failed — nothing else depended on it). containers.conf needs no
+  rollback — log_tag removal predates this session.
+
+lessons:
+  - "conmon 2.1.13 k8s-file rejects --log-tag just like 2.1.10 — 'newer conmon
+    supports it' was assumed, never tested on dell; verify the exact host's
+    conmon before exempting it from a fleet config fix."
+  - "A quadlet fix can be DOA on a second missing file: envfile-drop patched
+    the quadlet on two hosts but only one had ~/.config/secrets/mddb-gemini.env
+    — always check every file a generated unit references exists on THAT host."
+  - "podman --env-file with a missing path is a hard create-time error, not a
+    warning — it fails before conmon ever runs, so it masks/extends the
+    visible failure signature."
+  - "systemd 'Start request repeated too quickly' leaves the unit in failed
+    state forever — a fixed root cause still needs reset-failed + start; the
+    card's 'restart and verify' can't be skipped."
+  - "The proxy's /health response self-reports env delivery (free_keys count,
+    budget caps) — consumer proof without reading secret values."
