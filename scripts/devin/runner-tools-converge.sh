@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # runner-tools-converge — converge pinned runner tools, locally by default.
 #
-# Called by runner-tools-converge.timer (user scope) on each managed host, or
-# manually from any controller with the chaba checkout + ansible installed.
+# Called by runner-tools-converge.timer (user scope, every 2h since
+# 2026-11-27) on each managed host, or manually from any controller with the
+# chaba checkout + ansible installed. Hosts with an active devin-task-* unit
+# are excluded from the apply so a restart cannot kill a live dispatch.
 #
 # Two scopes (OPS-1478 / card runner-tools-converge-local-scope-fix):
 #
@@ -61,9 +63,41 @@ if ! ansible-inventory --host "$LOCAL_HOST" >/dev/null 2>&1; then
   exit 1
 fi
 
+# Never restart runner-agent underneath a live dispatch: a drift apply fires
+# the restart handler in deploy-runner-tools.yml, which would kill an in-flight
+# devin-task-* unit on that host. Self is checked locally; remote hosts over
+# tailnet SSH. An SSH failure is treated as no active unit — reachability is
+# handled by the fleet pass's ansible ping.
+host_has_active_dispatch() {
+  local h="$1"
+  if [ "$h" = "$LOCAL_HOST" ]; then
+    systemctl --user list-units --type=service --state=active --no-pager 2>/dev/null \
+      | grep -q 'devin-task-'
+  else
+    ssh -o BatchMode=yes -o ConnectTimeout=5 "$h" \
+      'systemctl --user list-units --type=service --state=active --no-pager 2>/dev/null | grep -q "devin-task-"' \
+      >/dev/null 2>&1
+  fi
+}
+
 # check -> apply -> audit -> board re-arm -> re-audit, scoped by --limit.
 converge() {
   local limit="$1" tag="$2"
+
+  local -a targets=() busy=()
+  IFS=: read -ra targets <<< "$limit"
+  for h in "${targets[@]}"; do
+    host_has_active_dispatch "$h" && busy+=("$h")
+  done
+  if [ "${#busy[@]}" -gt 0 ]; then
+    say "$tag: active dispatch on ${busy[*]} — excluding from apply to avoid restarting runner-agent mid-task"
+    if [ "${#busy[@]}" -eq "${#targets[@]}" ]; then
+      say "$tag: all targets busy — skip this pass"
+      return 0
+    fi
+    for h in "${busy[@]}"; do limit="$limit:!$h"; done
+  fi
+
   say "$tag ($limit): check mode"
   ansible-playbook playbooks/deploy-runner-tools.yml --check --diff --limit "$limit" \
     > "$WORK/$tag-check.txt" 2>&1 || {
