@@ -79,13 +79,28 @@ jobs:
       Resume-safe by key, --force re-adds for queue-drop repair.
       Ops-routed collections (recall-summary, scenario-reports)
       intentionally absent — keyword-ranked, no vectors needed.
-    refresh: dispatcher every 1d on idc02 (driver off idc03).
-      Rendered unit runs `banks --budget 2400` — a 40min wall-clock cap
-      inside the 45min TimeoutStartSec (card embed-lane-banks-bounded-run,
-      2026-11-26). The ~71K-doc backlog at queue-throttled copy speed
-      cannot finish in one window; the cap makes each run exit 0 with
-      incremental progress and the daily timer advances the resume-safe
-      key-set cursor instead of dying on SIGTERM.
+    refresh: >
+      dispatcher hourly on idc02 (driver off idc03). Card
+      embed-lane-banks-incremental-copy-fix (2026-11-27) made `banks`
+      truly resumable: per-bank cursor in
+      ~/.local/share/embed-lane/banks-state.json (offset/pass/
+      counters) + persisted target key-set banks-have/<coll>.keys
+      (refreshed every 24 runs). Each run copies a bounded slice —
+      `--budget 600` (10min wall inside TimeoutStartSec=15m) — and
+      exits 0 on budget completion. Add failures and have-fetch
+      errors exit non-zero; src-scan transport drops only fail the
+      run after 3 consecutive errors on the same collection
+      (scan_failures counter) so a single "Remote end closed"
+      blip doesn't flap the alert. Synced banks skip until
+      --rescan-hours (6h). The
+      earlier --budget 2400 daily cap (embed-lane-banks-bounded-run,
+      2026-11-26) bounded wall-clock but still re-scanned from row 0
+      every run; the cursor now resumes mid-collection so the ~112K
+      devin-handoff backlog drains across hourly slices instead of
+      one giant pass.
+      NOTE: rendered ExecStart keeps only `--budget 600` — flags the
+      pre-cursor code rejects (--max-docs etc.) stay manual until
+      idc02's checkout syncs the merged script.
     seed: "2026-10-27: full-surface backfill delivered from idc02 —
       7179 docs copied across 23 collections, 0 failed, 0 queue drops
       (devin-tony bank was already 2561/2561 from MEM-0805; instance

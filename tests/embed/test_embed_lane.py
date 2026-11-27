@@ -290,6 +290,31 @@ class TestBanksCursor(unittest.TestCase):
             self.assertEqual(rc, 1)
             self.assertEqual(target, {})
 
+    def test_transient_scan_errors_eventually_alert(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            def down_src(url, payload, timeout=60, headers=None):
+                if url.endswith("/v1/search"):
+                    if ":11028" in url:
+                        return []          # empty target have-set
+                    raise RuntimeError("Remote end closed connection")
+                if url.endswith("/v1/vector-stats"):
+                    return {"queue": {"depth": 0, "dropped": 0}}
+                raise AssertionError(url)
+            args = mock.Mock(collection=["c1"], dir=d, dry_run=False,
+                             force=False, budget=0, max_docs=0, limit=0,
+                             queue_hi=3000, rescan_hours=6.0,
+                             have_refresh=24)
+            rcs = []
+            for _ in range(el.SCAN_FAIL_ALERT):
+                with mock.patch.object(el, "_post", down_src), \
+                        mock.patch.object(el, "PAGE", 2), \
+                        mock.patch.object(el.time, "sleep"):
+                    rcs.append(el.cmd_banks(args, None, None))
+            # single blips stay rc=0; the run fails only once the same
+            # collection has errored SCAN_FAIL_ALERT times consecutively
+            self.assertEqual(rcs, [0] * (el.SCAN_FAIL_ALERT - 1) + [1])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -451,6 +451,7 @@ HAVE_REFRESH_DEFAULT = 24     # runs between full target-key refreshes
 RESCAN_HOURS_DEFAULT = 6.0    # synced collections re-verify this often
 BAD_KEY_FAILS = 2             # add failures before a key is quarantined
 BAD_KEYS_CAP = 500
+SCAN_FAIL_ALERT = 3           # consecutive src-scan errors before rc=1
 
 
 def _bank_state_path(args):
@@ -655,6 +656,13 @@ def _bank_scan_coll(args, coll, cs, have, state, state_path,
         else:
             stop = "error"
             cs["last_error"] = str(e)
+            # transient transport drops ("Remote end closed") self-heal
+            # via the cursor — only count consecutive failures so one
+            # blip doesn't fail the whole run / flap the alert card.
+            cs["scan_failures"] = int(
+                cs.get("scan_failures") or 0) + 1
+    else:
+        cs["scan_failures"] = 0
     if wrapped:
         cs["pass_failures"] = 0
     else:
@@ -769,10 +777,14 @@ def cmd_banks(args, url, key):
         total_copied += copied
         total_fail += fail
         if stop == "error":
-            run_errors.append(
-                f"{coll}: scan failed: {cs.get('last_error')}")
+            scan_fails = int(cs.get("scan_failures") or 0)
+            if scan_fails >= SCAN_FAIL_ALERT:
+                run_errors.append(
+                    f"{coll}: scan failed {scan_fails}x consecutively: "
+                    f"{cs.get('last_error')}")
             print(f"banks {coll}: scan failed "
-                  f"{cs.get('last_error')}", file=sys.stderr)
+                  f"{cs.get('last_error')} ({scan_fails}/"
+                  f"{SCAN_FAIL_ALERT})", file=sys.stderr)
             continue
         if fail and not copied:
             run_errors.append(
