@@ -334,10 +334,37 @@ class TestMddbRetry(unittest.TestCase):
         m = self._mddb([sync.requests.ConnectionError("reset"),
                         sync.requests.ReadTimeout("slow"),
                         _FakeResp({"ok": True})])
-        with mock.patch.object(sync.time, "sleep") as sleep:
+        with mock.patch.object(sync.time, "sleep") as sleep, \
+                mock.patch.object(sync.random, "uniform", return_value=1.0):
             self.assertEqual(m._post("/add", {}), {"ok": True})
         self.assertEqual(m.s.calls, 3)
         self.assertEqual([c.args[0] for c in sleep.call_args_list], [30, 60])
+
+    def test_backoff_waits_are_jittered_and_bounded(self):
+        m = self._mddb([sync.requests.ConnectionError("down")] * 3,
+                       attempts=3)
+        with mock.patch.object(sync.time, "sleep") as sleep:
+            self.assertRaises(sync.requests.ConnectionError,
+                              m._post, "/search", {})
+        waits = [c.args[0] for c in sleep.call_args_list]
+        self.assertEqual(len(waits), 2)
+        # base 30/60 with ±25% jitter, capped at 90
+        self.assertTrue(22.4 <= waits[0] <= 37.6, waits)
+        self.assertTrue(44.9 <= waits[1] <= 75.1, waits)
+
+    def test_exhaustion_prints_endpoint_diagnostic(self):
+        m = self._mddb([sync.requests.ConnectionError("down")] * 3,
+                       attempts=3)
+        with mock.patch.object(sync.time, "sleep"), \
+                mock.patch.object(sync.random, "uniform", return_value=1.0), \
+                mock.patch("sys.stderr") as err:
+            self.assertRaises(sync.requests.ConnectionError,
+                              m._post, "/search", {})
+        out = "".join(c.args[0] for c in err.write.call_args_list
+                      if c.args)
+        self.assertIn("FAILED after 3 attempts", out)
+        self.assertIn("http://x", out)
+        self.assertIn("not skipped", out)
 
     def test_exhausts_retries_and_raises(self):
         m = self._mddb([sync.requests.ConnectionError("down")] * 3,
@@ -359,6 +386,93 @@ class TestMddbRetry(unittest.TestCase):
         with mock.patch.object(sync.time, "sleep"):
             self.assertEqual(m._post("/add", {}), {"ok": True})
         self.assertEqual(m.s.calls, 2)
+
+    def test_delete_404_is_benign(self):
+        # /search index lags deletes — a just-deleted doc still lists and
+        # /delete answers 404. Already-gone is the desired end state.
+        m = self._mddb([_FakeResp(status=404)])
+        m.delete("coll", "k")  # must not raise
+        self.assertEqual(m.s.calls, 1)
+
+    def test_delete_5xx_still_raises(self):
+        m = self._mddb([_FakeResp(status=503)] * 3, attempts=3)
+        with mock.patch.object(sync.time, "sleep"):
+            self.assertRaises(sync.requests.HTTPError,
+                              m.delete, "coll", "k")
+        self.assertEqual(m.s.calls, 3)
+
+
+class _FakeMddb:
+    """Records sync() calls; serves a fixed remote doc list per collection."""
+    def __init__(self, remote):
+        self.remote = remote
+        self.searches = []
+        self.added = []
+        self.deleted = []
+
+    def list_docs(self, collection):
+        self.searches.append(collection)
+        return list(self.remote.get(collection, []))
+
+    def add(self, collection, key, content, meta):
+        self.added.append((collection, key))
+
+    def delete(self, collection, key):
+        self.deleted.append((collection, key))
+
+
+def _vault_note(key, body="body"):
+    return f"---\nkey: {key}\n---\n{body}\n"
+
+
+def _remote_doc(key, writer="obsidian-vault", source="manual"):
+    return {"key": key, "contentMd": "old body",
+            "meta": {"written_by": [writer], "source": [source]}}
+
+
+class TestSyncSharedCollection(unittest.TestCase):
+    """Two bank mappings can resolve to one MDDB collection (personal/tony
+    + personal-tony -> ada-ha-bank-personal-tony). The vault diff must see
+    the union of both dirs — independent passes delete each other's docs."""
+
+    def test_shared_collection_unions_dirs(self):
+        with tempfile.TemporaryDirectory() as td:
+            vault = Path(td)
+            d1 = vault / "dir-a"
+            d2 = vault / "dir-b"
+            d1.mkdir()
+            d2.mkdir()
+            (d1 / "one.md").write_text(_vault_note("k1", "new body"))
+            (d2 / "two.md").write_text(_vault_note("k2", "b body"))
+            mapping = [
+                {"dir": "dir-a", "bank": "banka", "collection": "coll-x",
+                 "scope": "sa"},
+                {"dir": "dir-b", "bank": "bankb", "collection": "coll-x",
+                 "scope": "sb"},
+                {"dir": "dir-c", "bank": "bankc", "collection": "coll-y",
+                 "scope": "sc"},
+            ]
+            remote = {"coll-x": [
+                _remote_doc("k1"),          # vault doc, vault has newer -> update
+                _remote_doc("k3"),          # vault doc, gone from vault -> delete
+                _remote_doc("k9", "ada_remember", "voice"),  # voice -> keep
+            ], "coll-y": []}
+            fake = _FakeMddb(remote)
+            old_vault = sync.VAULT
+            sync.VAULT = vault
+            try:
+                conflicts = sync.sync(fake, mapping, dry=False,
+                                      delete_remote=False, take_remote=False,
+                                      take_vault=False)
+            finally:
+                sync.VAULT = old_vault
+            self.assertEqual(conflicts, 0)
+            # One search per collection, not per mapping.
+            self.assertEqual(fake.searches, ["coll-x", "coll-y"])
+            # k1 updated (not deleted), k3 deleted once, k2 created.
+            self.assertEqual(sorted(fake.added),
+                             [("coll-x", "k1"), ("coll-x", "k2")])
+            self.assertEqual(fake.deleted, [("coll-x", "k3")])
 
 
 if __name__ == "__main__":
