@@ -1,7 +1,7 @@
 id: gemini-decision-1-gate-eval-2026-11-26
 title: Evaluate gemini-decision-1 as a cheap dispatch-readiness gate
 column: done
-updated: 2026-11-26 23:37
+updated: 2026-11-27 08:33
 brief: Grade calibrated noul decisions on 10 real kanban briefs against a reproducible spec-present label, measure
   confidence and token use, decide whether to replace a full-model yes/no judgment.
 priority: medium
@@ -40,5 +40,12 @@ comms:
     -> NOT_READY (approval-gated). After overrides: 55/60 at p_yes>=0.5 (tp25/fn5/tn30/fp0, accuracy 0.9167, Brier
     0.0842), approve precision 1.0 / recall 0.833. High-confidence reject replicated: 13/13 rejects at confidence>=0.90
     correct. Train-calibrated threshol'
+- at: 2026-11-27 08:33
+  from: ada
+  text: 'Education revision 4 published after Tony go-ahead: Education:Gemini-Developer-Capabilities-2026-11-26,
+    pageid 368, MediaWiki revid 808 (not 799 - other publishes advanced the page). Via board-api /publish sinks=[wiki-education],
+    fresh event id + idempotency key, no direct MediaWiki call. Section 2 now records the 60-brief decision-1 expansion:
+    55/60 (tp25/fn5/tn30/fp0), Brier 0.0842, p_yes>=0.5162 calibrated on 40 briefs with 10/10 not-ready rejected
+    and 6/10 ready approved on 20 held-out brief'
 action:
   status: done
