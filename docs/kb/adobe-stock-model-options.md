@@ -31,6 +31,25 @@ capture bot; raw dumps live in the infra session folder. Wiki companion:
 | Similarity / dedupe | CLIP vit-base-patch32 | 16.3M downloads | campaign coverage and reuse checks |
 | Aesthetic pre-score | shunk031 aesthetics predictor v2 | 11k downloads | advisory only; never a QC gate |
 
+## Verified comparison (2026-11-27, advisory only)
+
+One bounded A/B on the frozen `comparison-b-sharp-leaves` source (1024x576), scored with
+`upscale-eval.py --backend precomputed` (no new image generation). Receipts in scratch
+`/tmp/opencode/ab-sr/` (incumbent `realesrgan-sharp60.json`, challenger `resshift-v1-s15.json`).
+
+| Metric | Incumbent (Real-ESRGAN x4plus, unsharp 60) | ResShift v1-s15 |
+|---|---:|---:|
+| laplacian_var output | 289.58 | 193.56 |
+| roundtrip PSNR (dB) | 30.28 | 35.60 |
+| roundtrip SSIM | 0.9613 | 0.9788 |
+| flat_region_lap_gain | NaN | NaN |
+
+- ResShift v1-s15 wins both roundtrip metrics but is smoother (lower laplacian) and ~200x slower.
+- `flat_region_lap_gain` is NaN in both receipts, so the invented-texture guard is **unverified**.
+- Decision rule (advisory): challenger advances only if it wins both PSNR and SSIM, keeps
+  `flat_region_lap_gain` near ~1.2, and the wall-time gap is explicitly accepted. ResShift
+  passes the first two only partially; Tony is the QC gate.
+
 ## Rules
 
 1. Compare any new backend against the existing lane with the repo's metric harness before adopting.
