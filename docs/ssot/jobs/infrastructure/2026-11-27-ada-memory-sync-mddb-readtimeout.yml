@@ -1,0 +1,121 @@
+# SSOT Job Lifecycle: ada-memory-sync MDDB ReadTimeout fix
+# Card: ada-memory-sync-mddb-readtimeout-fix (ADA-1490), surfaced by
+# timer-alert-idc03-ada-memory-sync (reopened 2026-11-27 10:00 run).
+
+title: ada-memory-sync — jittered retry diagnostic + shared-collection grouping + delete-404 tolerance
+subtitle: Root cause was NOT the client timeout — idc03 chaba-vault ran a 6-week-stale script; endpoint itself OOM'd mid-run
+icon: shield
+
+planning:
+  goal: |
+    Stop hourly red timer-alert cards from ada-memory-sync.service on
+    idc03 (ReadTimeout on 100.102.134.91:11023, read timeout=20) without
+    hiding real outages.
+  findings: |
+    Endpoint health (probed 2026-11-27 ~10:40 +07): /v1/search ~40-60ms on
+    small collections, /health status=healthy — the endpoint was UP.
+    The 20s timeout in the alert was a stale-client artifact:
+    idc03's ~/CascadeProjects/chaba-vault (the checkout ExecStart runs
+    from) was 119,557 commits behind origin/master, still on the
+    pre-2026-11-18 script (timeout=20, zero retry). chaba-repo-sync only
+    covers ~/CascadeProjects/chaba — chaba-vault has NO sync mechanism
+    (same drift class as archived card idc03-vault-checkout-drift).
+    Deployed fix surgically: scp'd current script into chaba-vault
+    (established precedent — blind pull risks live services).
+    Timer unit also installed from repo (OnCalendar *:17:00, the
+    already-merged MEM-1253 change that was never deployed).
+    First post-fix run then exposed TWO deeper bugs:
+      (a) mddb /v1/delete returns 404 "document not found" for docs that
+          /search still lists — the search index lags deletes; crashed
+          phase 2 with HTTPError (4xx fail-fast, by design).
+      (b) TWO bank mappings share one collection — personal/tony and
+          personal-tony both -> ada-ha-bank-personal-tony. Independent
+          per-mapping passes made the empty personal-tony dir delete
+          every obsidian-vault doc the personal/tony pass had just
+          written (silent churn every run since ~Oct-13 MEM-0572).
+    Endpoint instability is REAL but episodic: mddb.service was
+    OOM-killed at 11:03:28 (5.5G peak, 2h52m uptime) during a
+    mddb-vector-reindex sweep; ~30s restart + ~80s index warmup. The
+    60s timeout + bounded retry correctly absorbed phase-1's blip and
+    produced the new greppable diagnostic on phase-2 exhaustion.
+  decisions: |
+    (1) scripts/ada/sync-ada-memory-to-mddb.py:
+        - retry backoff now jittered: base 30s*(attempt+1), ±25%,
+          capped 90s (constants _RETRY_BASE_S/_RETRY_CAP_S/_JITTER) so
+          callers that hit the same outage don't re-collide in lockstep.
+        - _report_exhausted(): on final-attempt failure prints
+          "mddb<path> FAILED after N attempts (<reason>) — endpoint
+          <base> unreachable or unhealthy; aborting sync (not skipped —
+          next timer run retries)" to stderr before re-raising. Real
+          outages stay red AND greppable; nothing is silently skipped.
+        - Mddb.delete(): HTTP 404 = already gone = desired end state,
+          returns quietly (search-index lag / concurrent deleters no
+          longer crash the run). Other errors still raise.
+        - sync(): mappings grouped by collection before diffing —
+          notes/paths/note_map union across all dirs sharing a
+          collection (per-note mapping preserved for bank/scope meta),
+          one list_docs per collection, remote-only sweep runs once.
+          Fixes the personal-tony delete-storm; label prints
+          "dir-a+dir-b -> collection". Duplicate keys across dirs warn
+          on stderr, later registry entry wins.
+    (2) Deployed to idc03 chaba-vault via scp (same surgical pattern as
+        2026-10-07 idc03-vault-checkout-drift); unit files
+        ada-memory-sync.{service,timer} installed to
+        ~/.config/systemd/user + daemon-reload + timer restart.
+        chaba-vault remains 119k commits behind — full convergence is
+        still an open problem (live dirty vault data; see card
+        idc03-vault-checkout-drift precedent).
+    Rejected: raising timeout past 60s — the failures were OOM/restart
+    events, not slow queries; bigger timeouts just delay the same red.
+    export_inbox left per-mapping (read-only; dup collection lists
+    twice but path.exists() dedupes exports) — noted as follow-up.
+
+changed:
+  - "scripts/ada/sync-ada-memory-to-mddb.py (jitter, _report_exhausted,
+    delete-404 tolerance, collection grouping)"
+  - "tests/ada_memory/test_memory_scripts.py (+5 tests: jitter bounds,
+    exhaustion diagnostic, delete-404 benign, delete-5xx raises,
+    shared-collection union) — 39 tests OK"
+  - "idc03: chaba-vault script + ~/.config/systemd/user units updated"
+
+deploy:
+  propagate: |
+    Repo change lands via normal master merge -> dispatch close-out.
+    idc03 already running the new script (scp'd); when chaba-vault
+    eventually converges the file content matches origin/master.
+    mn01 has no ada-memory-sync.timer and no chaba-vault checkout —
+    nothing to do there despite the unit comment saying "idc03 (and mn01)".
+  verify: |
+    journalctl --user -u ada-memory-sync.service   # "retrying in Ns"
+    # jittered waits; "FAILED after N attempts ... unreachable or
+    # unhealthy" only on genuine exhaustion; per-bank
+    # "dir(s) -> collection (vault: N, remote: M)" — personal/tony+
+    # personal-tony now prints as ONE grouped line.
+
+verification:
+  tests: |
+    python3 -m unittest tests.ada_memory.test_memory_scripts — 39 OK.
+    Live on idc03 2026-11-27: phase-1 export-inbox absorbed a
+    RemoteDisconnected (retry 26s) and a 60s ReadTimeout; phase-2
+    absorbed retries then hit mddb OOM-kill -> clean FAILED-after-3
+    diagnostic, exit 1 (correct: real outage stays red).
+  endpoint: |
+    :11023 healthy outside OOM windows; OOM root cause is mddb memory
+    growth (5.5G peak) + vector-reindex sweep — tracked separately,
+    NOT a sync-client problem. 20s was unrealistic; 60s + retry is the
+    right client posture.
+
+open:
+  - chaba-vault on idc03 is 119k commits behind origin with live dirty
+    vault data and no sync mechanism — every future repo fix to
+    scripts/ada/* will silently lag again (same class as the
+    ~/.local/share drift in KNOWN_PITFALLS). Needs a decision: extend
+    chaba-repo-sync to chaba-vault (autostash risk on private vault
+    files), a dedicated vault-sync unit, or accept surgical scp deploys.
+  - mddb OOM recurrence: 5.5G peak before kill; weekly restart bounds
+    freelist/RSS but mid-week OOM happened during vector-reindex.
+    Watch whether it recurs now that the sweep finished.
+  - export_inbox double-lists the shared personal-tony collection and
+    could export the same voice doc to inbox/personal/ AND
+    inbox/personal-tony/ — cosmetic dup in the review queue; worth a
+    follow-up card if it produces double promotions.
