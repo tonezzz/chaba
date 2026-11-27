@@ -320,6 +320,9 @@ and `scripts/voice-bench/results/g4-*20261126.json`.
 | Token counting | `countTokens` works even after generation quota is exhausted |
 | Files API | upload / get / list / delete all work without generation quota; URIs are `/v1/files/<id>` |
 | Managed Agents (`antigravity-preview-09-2026`) | fresh sandbox + code execution, sandbox reuse with file persistence, and GitHub repo mount all work on the free key (see section 2 and the managed-agents receipt); repo mount needs background mode |
+| Thought summaries (default / high / streaming) | all OK after the 500/day quota reset on 2026-11-27; `thought_summary` delta observed in streaming |
+| Inline-image generation | OK after reset; Files API upload / get / list / delete also OK |
+| OpenAI compatibility (SDK + REST chat completions) | both OK after reset; model echoed and `finish_reason` present |
 
 ### What does not
 
@@ -337,9 +340,12 @@ and `scripts/voice-bench/results/g4-*20261126.json`.
   own rate limits; treat free-tier access as unavailable until confirmed on
   paid capacity. This is an observed precondition, not a model capability
   failure.
-- **Generation quota**: 500 requests/day per model. The final surfaces
-  (thought summaries, inline-image generation, OpenAI compatibility) all hit
-  this cap with ~17h to reset. They are **unverified**, not failed.
+- **Generation quota resets**: the 500 requests/day per-model cap hit on
+  2026-11-26 had reset by 2026-11-27 08:30 UTC (one raw REST POST returned 200).
+  The previously blocked surfaces — thought summaries, inline-image generation
+  and OpenAI compatibility — then all passed on `gemini-3.5-flash-lite` and are
+  now **verified** (see `g4-interactions-misc-reset-20261127.json`). They were
+  quota-blocked on 2026-11-26, not capability failures.
 - **Image token estimate**: docs say images ≤384px count as 258 tokens, but
   `countTokens` reported **1,089 image tokens** for a 64×64 PNG on flash-lite.
   Measure with `countTokens`; do not budget from the table.
@@ -352,6 +358,18 @@ matching only because it enriches topic arguments with recalled context;
 attendees, date and time were exact on 4/4. 3.1 single-call latency varied
 136s / 2.9s / 69s versus 3–6s for 3.5 — free-tier throttling, not a model-speed
 result. Keep 3.5 as the comparison baseline.
+
+### Gemini 4 models (post-reset probe, 2026-11-27)
+
+- **gemini-4-hydrogen**: one raw REST POST to `/v1beta/interactions` on the
+  free key returned **HTTP 503 service_unavailable** ("currently experiencing
+  high demand"), `retry-after: 30`. Hydrogen free-tier pricing is documented as
+  free of charge, but 503 high demand was observed on 2026-11-26 and again on
+  2026-11-27. The six-task eval was skipped (no retry loop); no Hydrogen result
+  is claimed yet.
+- **gemini-4-neon** and **gemini-4-carbon**: still report 0 free input
+  tokens/min. They were not probed in this retry and still need paid capacity;
+  no Neon/Carbon results are claimed.
 
 ## Evidence and references
 

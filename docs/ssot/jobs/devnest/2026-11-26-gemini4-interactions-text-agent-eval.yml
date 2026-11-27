@@ -277,6 +277,45 @@ final_free_tier_batch:
     - "OpenAI compatibility and thought-summary surfaces are neither confirmed nor refuted on this key; they returned quota 429, not a capability error."
   retry_condition: "After the 500/day window resets, run scripts/voice-bench/g4-interactions-misc.py once on gemini-3.5-flash-lite; do not switch keys or projects."
 
+post_reset_retry:
+  date: 2026-11-27
+  runner: idc03
+  key_used: GEMINI_API_KEY_MICHAEL  # name only; value never displayed
+  quota_check:
+    method: "one raw REST POST https://generativelanguage.googleapis.com/v1beta/interactions"
+    model: gemini-3.5-flash-lite
+    input: "Reply with exactly: OK"
+    http: 200
+    note: "500/day free generation quota had reset; no retry loop was needed."
+  misc_harness:
+    harness: scripts/voice-bench/g4-interactions-misc.py
+    env: "GEMINI_API_KEY=$GEMINI_API_KEY_MICHAEL MODEL=gemini-3.5-flash-lite"
+    result_json: scripts/voice-bench/results/g4-interactions-misc-reset-20261127.json
+    complete: true
+    surfaces:
+      thought_summary_default: {ok: true, elapsed_s: 3.81}
+      thought_summary_high: {ok: true, elapsed_s: 5.89}
+      thought_summary_stream: {ok: true, elapsed_s: 5.71}
+      token_count: {ok: true, elapsed_s: 2.79}
+      inline_image: {ok: true, elapsed_s: 3.44}
+      files_api: {ok: true, elapsed_s: 8.97}
+      openai_sdk: {ok: true, elapsed_s: 1.35}
+      openai_rest: {ok: true, elapsed_s: 0.74}
+  hydrogen_probe:
+    method: "one raw REST POST /v1beta/interactions"
+    model: gemini-4-hydrogen
+    input: "Reply with exactly: OK"
+    curl_max_time_s: 45
+    http: 503
+    retry_after_s: 30
+    code: service_unavailable
+    message: "gemini-4-hydrogen is currently experiencing high demand, spikes in demand are usually temporary. Please try again later."
+    note: "Hydrogen free-tier pricing is documented as free of charge, but 503 high demand was observed on 2026-11-26 and again on 2026-11-27."
+  hydrogen_eval:
+    ran: false
+    reason: "Skipped: probe returned 503 high demand; no retry loop per the retry condition."
+    note: "Neon and Carbon were not probed in this retry; they still need paid capacity and no results are claimed for them."
+
 verdict: >
   Interactions API is a viable stateful text-agent primitive and is worth a
   paid-tier trial with a Gemini 4 model, but this run cannot validate the
@@ -304,10 +343,10 @@ verify:
 
 remaining:
   - "DONE 2026-11-26: token counting, model metadata and Files API upload/get/list/delete verified after generation quota was exhausted."
-  - "SCHEDULED 2026-11-27 08:30 UTC (task d282b2f3): after the 500/day reset, retry thought summaries (default/high/streaming), inline-image generation and OpenAI compatibility via g4-interactions-misc.py; were blocked, not failed."
+  - "DONE 2026-11-27: after the 500/day reset, re-ran g4-interactions-misc.py on gemini-3.5-flash-lite; all 8 surfaces OK (thought summaries default/high/stream, token count, inline image, Files API, OpenAI SDK + REST). Were blocked by quota on 2026-11-26, not failed."
   - "DONE 2026-11-26: Tony gave go-ahead and set the shared paid cap target at $5/month. Applying the cap itself is a billing-console action on Tony's account; this agent cannot change it."
   - "SCHEDULED (task 059dec83, daily 09:00 UTC): raw one-call cap check; on success run the six tasks on gemini-4-neon then gemini-4-carbon with gemini-3.8-flash as baseline, hard estimated-cost ceiling $4.00, then self-disable."
-  - "SCHEDULED 2026-11-27 08:30 UTC (task d282b2f3): one-call gemini-4-hydrogen probe on the free tier; if it returns 200, run the same six tasks there. Hydrogen is documented free of charge; a 503 high-demand response was seen on 2026-11-26. Neon/Carbon confirm 0 free input tokens/min."
+  - "DONE 2026-11-27 (probe) / BLOCKED (eval): one-call gemini-4-hydrogen free-tier probe returned HTTP 503 'currently experiencing high demand' (retry-after 30s) again on 2026-11-27, so the six-task Hydrogen eval was skipped; new blocker is Hydrogen high demand, retry when capacity allows. Hydrogen is documented free of charge. Neon/Carbon still confirm 0 free input tokens/min and need paid capacity — no results claimed."
   - "DONE 2026-11-26: 20-turn free-tier run found only a 2.6% input-token saving; do not claim a token-cost benefit from previous_interaction_id on this evidence."
   - "SCHEDULED: legacy generateContent arm on a paid quota replaces the 2/6 partial baseline in the 059dec83 harness."
   - "OPEN, not scheduled: gemini-4-argon (paid-only, outside the approved eval scope); Managed Agents eval; computer-use acknowledgement; TTS/voice design/replication; batch generation; explicit and paid implicit caching; Priority/Flex tier confirmation on paid; large PDF/audio/video Files API paths; Genie 4, Omni video and Transcribe Live catalog surfaces."
