@@ -1,7 +1,7 @@
 id: timer-alert-mn01-log-shipper-severe
 title: Timer log-shipper-severe on mn01 failing
 column: backlog
-updated: 2026-11-27 11:25
+updated: 2026-11-27 11:35
 priority: high
 tags:
 - timer-alert
@@ -200,6 +200,10 @@ comms:
   from: devin
   text: '[reopened — condition recurred] Last run (11-27 11:02) of `log-shipper-severe.service` on `mn01` result=exit-code
     — investigate journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-mn01`.'
+- at: 2026-11-27 11:35
+  from: devin
+  text: '[still suspicious] Last run (11-27 11:02) of `log-shipper-severe.service` on `mn01` result=exit-code —
+    investigate journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-mn01`.'
 action:
   status: done
 spec: Investigate the failure of `log-shipper-severe.service` on host mn01, where the last run resulted in an exit-code
