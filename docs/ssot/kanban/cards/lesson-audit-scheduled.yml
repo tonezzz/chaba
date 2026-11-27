@@ -1,7 +1,7 @@
 id: lesson-audit-scheduled
 title: schedule lesson-polish audit as a recurring nest job (self-perpetuating loop)
 column: done
-updated: 2026-11-27 07:41
+updated: 2026-11-27 07:54
 brief: 'The lesson-polish audit is one-shot. Make it recurring: a nest job (e.g. weekly) runs the lesson-polish
   pack, and any new R1/R3/R4 flags get routed to the Fable polish pass automatically — the education system audits
   + fixes itself.'
@@ -436,6 +436,17 @@ comms:
   text: 'lesson-audit 2026-11-27: 231 lessons, 61 flagged (R1:overdue x6, R2:thin(234ch) x1, R2:thin(24ch) x1, R2:thin(257ch)
     x1, R2:thin(26ch) x1, R2:thin(29ch) x1, R2:thin(366ch) x1, R5:consider-thai x57); polish new-flags -> lesson-polish-run
     — docs/reports/lesson-audit/lesson-audit-2026-11-27.json'
+- at: 2026-11-27 07:54
+  from: devin
+  text: 'lesson-polish pass DONE (dispatch 20261127-074247) — before: 231 lessons / 6 polish-flagged (61 flagged
+    rows total); after: 231 / 0 R1/R3/R4 (60 flagged = R5 x57 + R2 thin x6, all out-of-scope).
+
+
+    Per-lesson actions (all R1:overdue, next_review 2026-11-26 -> 2026-12-04 via /lesson upsert; level/source/status/learned_at
+    preserved; bodies byte-identical verified):
+
+    - lesson-0eb6ad2333e2 Object Storage — JUNK probe (''hi'' + ''=== ไทย ==='' + ''แปล'', 26ch) — bumped like prior
+    junk lessons; still R2:thin, '
 action:
   type: dispatch
   status: done
