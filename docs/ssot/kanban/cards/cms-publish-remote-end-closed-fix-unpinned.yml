@@ -1,7 +1,7 @@
 id: cms-publish-remote-end-closed-fix-unpinned
 title: idc03 CMS publish timers fail with 'Remote end closed connection'
-column: doing
-updated: 2026-11-27 10:17
+column: review
+updated: 2026-11-27 10:24
 spec: 'Journal on idc03 for chaba-starboard-tracker.service (08:47) and chaba-cached-videos.service (08:37) ends
   with `error: Remote end closed connection without response` and exit=1, although earlier runs of both published
   successfully. Root cause is an unhandled transient connection close during the CMS page publish step, not missing
@@ -16,9 +16,13 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: running
+  status: done
   runner: idc02
   attempts: 1
+  result: 'exit=0 no restart, and until then congestion windows can still produce a self-healing exit=1 on the next
+    tick. | devin-task-20261127-093742-journal-on-idc03-for-chaba-sta.service: Consumed 49.246s CPU time, 592.5M
+    memory peak, 0B memory swap peak.'
+  verified: true
 ref: KNB-1484
 comms:
 - at: 2026-11-27 09:36
@@ -66,5 +70,33 @@ comms:
     outcome dispatch-outcome-20261127-093742-journal-on-idc03-for-chaba-sta.md (fa985e04d5). Verified on idc03:
     fault-injection proxy + live mddb-cms congestion both absorbed by retry -> en+th published EXIT=0; real oneshot
     units Result=success. Resolution notes posted on both t'
+- at: 2026-11-27 10:24
+  from: idc02
+  text: 'finished (ok): exit=0 no restart, and until then congestion windows can still produce a self-healing exit=1
+    on the next tick. | devin-t'
+- at: 2026-11-27 10:24
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 10:24
+  from: chaba
+  text: banked 937 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-27 10:24
+  from: chaba
+  text: pushed dispatch/20261127-093742-journal-on-idc03-for-chaba-sta to origin
+- at: 2026-11-27 10:24
+  from: chaba
+  text: test gate passed (python3 -m pytest tests/board/test_merge_sweep.py tests/board/test_dispatch_close_out.py
+    tests/board/test_claim_order.py tests/board/test_queue_time_classify.py tests/board/test_runner_agent_lane.py
+    tests/board/test_runner_agent_reconcile.py tests/board/test_worktree_gc.py tests/board/test_runner_push_guard.py
+    tests/board/test_board_api_mutations.py tests/board/test_board_api_liveness.py tests/board/test_kanban_act.py
+    tests/board/test_wiki_extension.py tests/board/test_board_ap
+- at: 2026-11-27 10:24
+  from: chaba
+  text: auto-merged a415bac3 (dispatch/20261127-093742-journal-on-idc03-for-chaba-sta) → origin/master
+- at: 2026-11-27 10:24
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-093742-journal-on-idc03-for-chaba-sta,
+    branch dispatch/20261127-093742-journal-on-idc03-for-chaba-sta'
 claim:
   since: 2026-11-27 09:36
+review_kind: verify
