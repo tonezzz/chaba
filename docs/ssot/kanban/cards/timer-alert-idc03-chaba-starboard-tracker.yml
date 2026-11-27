@@ -1,7 +1,7 @@
 id: timer-alert-idc03-chaba-starboard-tracker
 title: Timer chaba-starboard-tracker on idc03 failing
-column: backlog
-updated: 2026-11-27 10:17
+column: done
+updated: 2026-11-27 10:27
 priority: high
 tags:
 - timer-alert
@@ -937,6 +937,12 @@ comms:
     had no retry. Fix adds bounded retry/backoff (scripts/lib/mddb_http.py, 5 retries over ~62s) to the shared _post
     in starboard-tracker-update.py; HTTP errors still raise loudly. Verified on idc03 2026-11-27: staged run rode
     out a real ~30s congestion window and published starboard-cat'
+- at: 2026-11-27 10:27
+  from: tony
+  text: '[cleanup 2026-11-27] Live verify: idc03-chaba-starboard-tracker Result=success. Closing; condition healed.'
+- at: 2026-11-27 10:27
+  from: tony
+  text: closed by tony
 action:
   status: done
 spec: Investigate and resolve the recurring exit-code failure of `chaba-starboard-tracker.service` on host idc03.
