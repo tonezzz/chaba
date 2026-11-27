@@ -1,6 +1,6 @@
 id: board-diagram-lanes-view
 title: 'Board: finish /apps/board-diagram lane view — prototype exists, needs commit+deploy+tab+controls'
-column: doing
+column: done
 updated: 2026-11-27 15:10
 brief: Lane/sub lane diagram of kanban cards per project, starting with Adobe Stock; Tony wants a mental image of
   project flow and manual control (claim/move/finish) without n8n.
@@ -279,14 +279,29 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261127-141928-prototype-already-exists-uncom no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-27 15:10
+  from: chaba
+  text: 'merge-sweep: merged ec82cf6d (dispatch/20261127-141928-prototype-already-exists-uncom from idc02) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261127-141928-prototype-already-exists-uncom.md)
+    — auto-closed'
+- at: 2026-11-27 15:10
+  from: local
+  text: 'pub milestone: card verified: board-diagram-lanes-view on idc03 — merged ec82cf6d (dispatch/20261127-141928-prototype-already-exists-uncom
+    from idc02) -> origin/master — verified — auto- — merged ec82cf6d (dispatch/20261127-141928-prototype-already-exists-uncom
+    from idc02) -> origin/master — verified — auto-closed [evt-cc28e57aca0f66e5]'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   executor: devin
   runner: idc02
   attempts: 1
   sweep:
     stale_running: 2026-11-27 15:10
+  verified: true
 claim:
   since: 2026-11-27 14:18
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 15:10
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261127-141928-prototype-already-exists-uncom.md
