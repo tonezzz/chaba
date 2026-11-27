@@ -1,7 +1,7 @@
 id: gemini-decision-1-gate-eval-2026-11-26
 title: Evaluate gemini-decision-1 as a cheap dispatch-readiness gate
 column: done
-updated: 2026-11-27 10:13
+updated: 2026-11-27 10:28
 brief: Grade calibrated noul decisions on 10 real kanban briefs against a reproducible spec-present label, measure
   confidence and token use, decide whether to replace a full-model yes/no judgment.
 priority: medium
@@ -61,5 +61,12 @@ comms:
     is always False and Approve dispatch is never offered. The preconditions are weak semantic classifiers: no_open_requests
     precision 0.4526, safe_scope 0.2917, both together 0.25 precision / 0.29 recall; risk terms reject 34/55 genuinely
     READY briefs. Model judgments add 46 approvals be'
+- at: 2026-11-27 10:28
+  from: ada
+  text: 'Independent 130-brief validation complete (60 READY / 70 NOT_READY, disjoint from the 60 train, 41 probe
+    and 110 holdout). Decisions API: 48/60 READY approved, 2/70 negatives approved at default 0.5 (precision 0.96,
+    Brier 0.0812), 0.96s, 19,511 input tokens and 0 output tokens. Holdout-tuned 0.536574 had 1 raw-label false
+    approval, but that brief had a spec and was dispatched: a "not yet in our SSOT" marker misfire, as was the second
+    FP at 0.5 ("only after policy checks"). With those two labels '
 action:
   status: done
