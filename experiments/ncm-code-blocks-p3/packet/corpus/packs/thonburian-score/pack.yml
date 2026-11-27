@@ -1,0 +1,54 @@
+# thonburian-score — gather leaf for the TTS eval (OPS-0759 v3).
+# Scores packs/thonburian-bench/out/*.wav against staged refs:
+# speaker similarity (resemblyzer) + duration. Deliberately CPU-shaped —
+# no gpu_gb floor so any worker can take it, Colab or fleet.
+name: thonburian-score
+needs:
+  egress_only_ok: true
+  disk_gb: 2
+timeout_s: 900
+artifacts:
+  - packs/thonburian-score/report.md
+  - packs/thonburian-score/scores.json
+prep: |
+  pip install -q resemblyzer soundfile
+run: |
+  import os, json, glob, tarfile
+  import numpy as np
+  import soundfile as sf
+  from resemblyzer import VoiceEncoder, preprocess_wav
+
+  OUT = PACK_DIR
+  os.makedirs(f'{OUT}/refs', exist_ok=True)
+  with tarfile.open(f'{NEST_ROOT}/voice-bench/'
+                    'voice-bench-assets.tgz') as t:
+      t.extractall(f'{OUT}/refs')
+
+  enc = VoiceEncoder()
+  def sim(a, b):
+      return float(np.dot(
+          enc.embed_utterance(preprocess_wav(a)),
+          enc.embed_utterance(preprocess_wav(b))))
+
+  refs = {'ada': f'{OUT}/refs/ada-ref.wav',
+          'tony': f'{OUT}/refs/tony-ref-8s.wav'}
+  bench = f'{NEST_ROOT}/packs/thonburian-bench/out'
+  rows = []
+  for who, ref in refs.items():
+      for w in sorted(glob.glob(f'{bench}/thon-{who}-*.wav')):
+          s = sim(w, ref)
+          y, sr = sf.read(w)
+          rows.append({'clip': os.path.basename(w), 'ref': who,
+                       'sim': round(s, 3), 'dur_s': round(len(y) / sr, 2)})
+          print(os.path.basename(w), 'sim', round(s, 3), flush=True)
+
+  json.dump(rows, open(f'{OUT}/scores.json', 'w'), indent=1)
+  md = ['# thonburian-bench — speaker-similarity scores', '',
+        f"scored {len(rows)} clips vs staged refs (resemblyzer cosine)", '',
+        '| clip | ref | sim | dur_s |', '|---|---|---|---|']
+  md += [f"| {r['clip']} | {r['ref']} | {r['sim']} | {r['dur_s']} |"
+         for r in rows]
+  if rows:
+      md += ['', f"mean sim: {round(sum(r['sim'] for r in rows) / len(rows), 3)}"]
+  open(f'{OUT}/report.md', 'w').write('\n'.join(md) + '\n')
+  print('scored', len(rows), 'clips ->', OUT, flush=True)

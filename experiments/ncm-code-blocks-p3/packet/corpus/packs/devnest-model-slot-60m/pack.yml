@@ -1,0 +1,63 @@
+# devnest-model-slot-60m — extended 60-minute Colab T4 model slot.
+# Companion of devnest-model-slot-30m (card
+# devnest-colab-t4-model-slot-adapter). Same pinned snapshot, same
+# synthetic battery repeated 3x for steadier throughput stats.
+#
+# STAGED IN REPO ONLY — deliberately NOT uploaded to ada-nest/packs yet:
+# uploading it is the operator's explicit "take a 60m slot" decision.
+# Even if uploaded early it cannot fire prematurely: the requires gate
+# needs devnest-model-slot-30m's done marker, and the queue-runner
+# refuses the claim when that pack's preflight.json verdict is 'fail'
+# (partial/failed first slot). 60 minutes only after a passing 30m slot.
+name: devnest-model-slot-60m
+requires:
+  - devnest-model-slot-30m
+needs:
+  gpu_gb: 10
+  ram_gb: 8
+  disk_gb: 45
+  egress_only_ok: true
+timeout_s: 3600
+artifacts:
+  - packs/devnest-model-slot-60m/out/metrics.json
+  - packs/devnest-model-slot-60m/out/verdict.json
+  - packs/devnest-model-slot-60m/out/report.md
+  - packs/devnest-model-slot-60m/preflight.json
+prep: |
+  set -eu
+  test -d /content
+  TAR="$NEST_ROOT/packs/devnest-qwen3-8b-hf-prestage/out/qwen3-8b-hf-cache.tar.zst"
+  MAN="$NEST_ROOT/packs/devnest-qwen3-8b-hf-prestage/out/model-manifest.json"
+  test -s "$TAR" && test -s "$MAN"
+  python3 - "$MAN" <<'PY'
+  import json, sys
+  m = json.load(open(sys.argv[1]))
+  want = {"repo_id": "Qwen/Qwen3-8B",
+          "revision": "b968826d9c46dd6066d109eabc6255188de91218"}
+  sys.exit(0 if all(m.get(k) == v for k, v in want.items()) else 1)
+  PY
+  command -v zstd >/dev/null || apt-get install -y -qq zstd
+  mkdir -p /tmp/qwen3-8b-hf
+  if [ ! -s /tmp/qwen3-8b-hf/config.json ]; then
+    tar -I zstd -xf "$TAR" -C /tmp/qwen3-8b-hf
+  fi
+  test -s /tmp/qwen3-8b-hf/config.json
+  python3 - <<'PY'
+  import importlib.util, subprocess, sys
+  mods = ("torch", "transformers", "bitsandbytes", "accelerate")
+  if any(importlib.util.find_spec(m) is None for m in mods):
+      subprocess.check_call([sys.executable, "-m", "pip", "install", "-q",
+                             "transformers==4.51.3", "bitsandbytes==0.45.5",
+                             "accelerate==1.6.0"])
+  PY
+  python3 -c "import torch, transformers, bitsandbytes; assert torch.cuda.is_available()"
+run_sh: |
+  HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 python3 \
+    "$PACK_DIR/run_hf_slot.py" \
+    --model-dir /tmp/qwen3-8b-hf \
+    --manifest "$NEST_ROOT/packs/devnest-qwen3-8b-hf-prestage/out/model-manifest.json" \
+    --fixtures "$PACK_DIR/inputs/fixtures.json" \
+    --out "$PACK_DIR/out" \
+    --max-seconds 3300 \
+    --repeat 3 \
+    --gate-file "$PACK_DIR/preflight.json"

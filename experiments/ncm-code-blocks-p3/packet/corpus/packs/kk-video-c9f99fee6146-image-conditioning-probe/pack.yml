@@ -1,0 +1,44 @@
+# One private image-conditioned technical smoke, not a story/final render.
+# KK approved all v1_01 PDF images for this private preview only (OPS-0952).
+name: kk-video-c9f99fee6146-image-conditioning-probe
+requires:
+  - kk-video-c9f99fee6146-r4-preflight
+  - kk-video-c9f99fee6146-embeds
+  - kk-video-c9f99fee6146-pdf-image-audit
+needs:
+  gpu_gb: 14
+  disk_gb: 30
+  egress_only_ok: true
+timeout_s: 1800
+fetch:
+  - packs/kk-video-c9f99fee6146-embeds/embeds/shot01.pt
+  - packs/kk-video-c9f99fee6146-pdf-image-audit/out/audit.json
+  - packs/kk-video-c9f99fee6146-pdf-image-audit/out/v1_01/images/image-000.jpg
+artifacts:
+  - packs/kk-video-c9f99fee6146-image-conditioning-probe/out/shot01-conditioned.mp4
+  - packs/kk-video-c9f99fee6146-image-conditioning-probe/out/verdict.json
+  - packs/kk-video-c9f99fee6146-image-conditioning-probe/out/verdict.md
+prep: |
+  TAR=$NEST_ROOT/model-archive/hf/ltx-slim.tar.zst
+  [ -f "$TAR" ] || TAR=$NEST_ROOT/model-archive/hf/ltx-video.tar.zst
+  DEST=/root/.cache/huggingface/hub
+  apt-get install -y -qq zstd ffmpeg >/dev/null 2>&1 || true
+  pip uninstall -y -q torchao >/dev/null 2>&1 || true
+  if [ -f "$TAR" ]; then
+    tar -I zstd -tf "$TAR" 2>/dev/null | head -1 | grep -q '^hub/' \
+      && DEST=/root/.cache/huggingface || DEST=/root/.cache/huggingface/hub
+    if du -sh "$DEST/models--Lightricks--LTX-Video" 2>/dev/null | awk '$1+0 >= 9 {exit 1}'; then
+      mkdir -p "$DEST" && tar -I zstd -xf "$TAR" -C "$DEST"
+    fi
+  fi
+  python -c "from diffusers import LTXImageToVideoPipeline; print('LTX I2V import ok')"
+  if ! ls "$DEST/models--Lightricks--LTX-Video"/snapshots/*/transformer/*.safetensors >/dev/null 2>&1; then
+    python -c "from huggingface_hub import snapshot_download; snapshot_download('Lightricks/LTX-Video',ignore_patterns=['text_encoder/*','tokenizer/*','*.bin','*fp8*','*gguf*'])"
+  fi
+run_sh: |
+  exec python3 "$PACK_DIR/run_probe.py" \
+    --image "$NEST_ROOT/packs/kk-video-c9f99fee6146-pdf-image-audit/out/v1_01/images/image-000.jpg" \
+    --embeds "$NEST_ROOT/packs/kk-video-c9f99fee6146-embeds/embeds/shot01.pt" \
+    --audit "$NEST_ROOT/packs/kk-video-c9f99fee6146-pdf-image-audit/out/audit.json" \
+    --out "$PACK_DIR/out/shot01-conditioned.mp4" \
+    --verdict "$PACK_DIR/out"

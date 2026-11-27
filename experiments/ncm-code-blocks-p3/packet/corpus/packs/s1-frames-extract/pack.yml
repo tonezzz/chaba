@@ -1,0 +1,37 @@
+# s1-frames-extract — CPU prep leaf for the scene-1 continuation chain.
+# Extracts first+last frames from the rendered s1 shots (1236 rev) and
+# publishes them to renders/keyframes/scene1-frames/ — the keyframe
+# convention the i2v chain consumes (same as scene0-frames/). The GPU
+# chain pack can then be authored against stable paths.
+name: s1-frames-extract
+needs:
+  egress_only_ok: true
+  disk_gb: 1
+timeout_s: 300
+fetch:
+  - renders/ltx_s1_shot0_20261022-1236.mp4
+  - renders/ltx_s1_shot1_20261022-1236.mp4
+  - renders/ltx_s1_shot2_20261022-1236.mp4
+publish:
+  scene1-frames/: renders/keyframes/scene1-frames/
+artifacts:
+  - packs/s1-frames-extract/scene1-frames/s1shot0_last.png
+  - packs/s1-frames-extract/scene1-frames/s1shot1_last.png
+  - packs/s1-frames-extract/scene1-frames/s1shot2_last.png
+  - renders/keyframes/scene1-frames/s1shot2_last.png   # publish landed
+run: |
+  import os, subprocess
+  OUT = f'{PACK_DIR}/scene1-frames'
+  os.makedirs(OUT, exist_ok=True)
+  for i in range(3):
+      src = f'{NEST_ROOT}/renders/ltx_s1_shot{i}_20261022-1236.mp4'
+      subprocess.run(['ffmpeg', '-y', '-sseof', '-0.1', '-i', src,
+                      '-frames:v', '1', '-update', '1', '-q:v', '2',
+                      f'{OUT}/s1shot{i}_last.png'],
+                     check=True, capture_output=True)
+      subprocess.run(['ffmpeg', '-y', '-i', src,
+                      '-frames:v', '1', '-update', '1', '-q:v', '2',
+                      f'{OUT}/s1shot{i}_first.png'],
+                     check=True, capture_output=True)
+      print(f's1shot{i}: frames extracted', flush=True)
+  print('s1-frames-extract complete', flush=True)

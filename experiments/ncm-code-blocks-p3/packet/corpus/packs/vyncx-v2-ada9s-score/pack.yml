@@ -1,0 +1,67 @@
+# vyncx-v2-ada9s-score — gather leaf for the ref-bleed hypothesis.
+# Scores packs/vyncx-v2-ada9s/out/*.wav (9s ada ref) vs staged refs.
+# Bleed check is duration: vyncx-v2-bench ada clips carried a
+# hallucinated ~17s-ref prefix; clean ada9s clips should be short and
+# near the sentence length, with SIM >= bench's 0.93-0.96.
+name: vyncx-v2-ada9s-score
+needs:
+  egress_only_ok: true
+  disk_gb: 2
+venv: true        # PEP-668 hosts (dell/omen) — prep/run inside .venv
+fetch:            # store paths outside this pack's dir, materialized at NEST_ROOT
+  - voice-bench/voice-bench-assets.tgz
+  - packs/vyncx-v2-ada9s/out/
+timeout_s: 900
+artifacts:
+  - packs/vyncx-v2-ada9s-score/report.md
+  - packs/vyncx-v2-ada9s-score/scores.json
+prep: |
+  pip install -q 'setuptools<81'   # >=81 removes pkg_resources; webrtcvad needs it
+  pip install -q resemblyzer soundfile
+run: |
+  import os, json, glob, tarfile
+  import numpy as np
+  import soundfile as sf
+  from resemblyzer import VoiceEncoder, preprocess_wav
+
+  OUT = PACK_DIR
+  os.makedirs(f'{OUT}/refs', exist_ok=True)
+  with tarfile.open(f'{NEST_ROOT}/voice-bench/'
+                    'voice-bench-assets.tgz') as t:
+      t.extractall(f'{OUT}/refs')
+
+  bench = f'{NEST_ROOT}/packs/vyncx-v2-ada9s/out'
+  wavs = sorted(glob.glob(f'{bench}/*.wav'))
+  if not wavs:
+      raise RuntimeError('no wavs yet — bench pack not done; retry later')
+
+  enc = VoiceEncoder()
+  def sim(a, b):
+      return float(np.dot(
+          enc.embed_utterance(preprocess_wav(a)),
+          enc.embed_utterance(preprocess_wav(b))))
+
+  refs = {'ada': f'{OUT}/refs/ada-ref.wav',
+          'tony': f'{OUT}/refs/tony-ref-8s.wav'}
+  rows = []
+  for w in wavs:
+      who = 'ada' if 'ada' in os.path.basename(w) else (
+            'tony' if 'tony' in os.path.basename(w) else None)
+      if not who:
+          continue
+      s = sim(w, refs[who])
+      y, sr = sf.read(w)
+      rows.append({'clip': os.path.basename(w), 'ref': who,
+                   'sim': round(s, 3), 'dur_s': round(len(y) / sr, 2)})
+      print(os.path.basename(w), 'sim', round(s, 3), flush=True)
+
+  json.dump(rows, open(f'{OUT}/scores.json', 'w'), indent=1)
+  md = ['# vyncx-v2-ada9s — speaker-similarity scores', '',
+        f"scored {len(rows)} clips vs staged refs (resemblyzer cosine)", '',
+        '| clip | ref | sim | dur_s |', '|---|---|---|---|']
+  md += [f"| {r['clip']} | {r['ref']} | {r['sim']} | {r['dur_s']} |"
+         for r in rows]
+  if rows:
+      md += ['', f"mean sim: {round(sum(r['sim'] for r in rows) / len(rows), 3)}"]
+  open(f'{OUT}/report.md', 'w').write('\n'.join(md) + '\n')
+  print('scored', len(rows), 'clips ->', OUT, flush=True)

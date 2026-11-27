@@ -1,0 +1,105 @@
+title: "NCM Variant B — P3 shadow rollout (role-conditioned detail lane)"
+subtitle: >-
+  Pre-registered promotion gate PASS on the shadow corpus: median
+  advantage +0.4848 over the existing Jev/nest + LLM-glue lane with zero
+  authority/guard violations and deterministic replay. Verdict PROMOTE —
+  recommendation only; no production lane switch.
+icon: 🔬
+id: 2026-11-27-ncm-variant-b-p3-shadow
+card: ncm-variant-b-p3-shadow
+ref: OPS-1325
+status: done
+decision: promote-recommended
+started: "2026-11-27"
+completed: "2026-11-27"
+
+approval: >-
+  Tony approved P3 shadow rollout 2026-11-27 via request
+  review-decision-ncm-variant-b-research-l-448a63 on card
+  ncm-code-blocks-detail-composer (option p3-shadow).
+
+experiment_packet: experiments/ncm-code-blocks-p3/
+
+frozen_artifacts:
+  location: experiments/ncm-code-blocks-p3/
+  manifest: experiments/ncm-code-blocks-p3/packet/manifest.json
+  corpus: >-
+    73 pack.yml snapshot from chaba@79ae156f scripts/colab/packs (same
+    selection rule as the scaled run: records[::2][:30] = 30 tasks) +
+    3 fresh real packs from scripts/devnest/video-packs
+    (kk-mac-mlx-colab-scene0-control-20261124,
+    kk-mac-mlx-colab-scene1-20261124,
+    kk-mac-mlx-vimax-goldenhour-s0-20261124) — never in prior
+    training/eval (all map to role misc).
+  generator: >-
+    role-conditioned MLP (24 role one-hot + 81 zero detail bits ->
+    256 -> 256 -> 81 logits), canonical torch state_dict
+    model/rolecond-model.pt plus stdlib JSON export
+    model/rolecond-weights.json; pure-python inference verified
+    identical token sets vs torch on all 24 role inputs (0 mismatches,
+    min |logit| 0.010878).
+  checker: >-
+    deterministic compat verifier in src/ncm_shadow.py — token-set
+    Dice F1 >= 0.5 (unrounded, as scaled run) AND >=1 produce:* AND
+    >=1 need:* AND zero forbidden-substring hits; primary verifier,
+    no LLM judge.
+  seeds: [42, 7, 13]
+  reps: 3
+  cells: 99
+
+pre_registration:
+  path: experiments/ncm-code-blocks-p3/packet/pre-registration.json
+  written: before any provider call
+  gate: "median advantage >= +0.10 AND guard violations == 0 AND >=1 fresh pack in every rep"
+
+run:
+  choice_plane: "JevOS jevos-v5 on idc03:8017 via ssh (99 calls, 1 fail -> base-role fallback recorded)"
+  glue_baseline: "qwen2.5:7b-instruct digest 845dbda0ea48 on tony-dell:11434 via ssh; 39 unique (block,seed) calls deduped from 99 cells (temperature 0, JSON mode, num_predict 160) — outputs deterministic per (block,seed)"
+  runtime_seconds: 1976
+  paid_spend_usd: 0.0
+
+results:
+  replay: "PASS — packet/replay-proof.json, 99 cells, fingerprint sha256 521d8ff2ee0c3b89…, 0 provider calls, matches results.json"
+  reps:
+    - {seed: 42, lane: 0.5758, glue: 0.1212, advantage: 0.4545, guard: 0}
+    - {seed: 7, lane: 0.5758, glue: 0.0909, advantage: 0.4848, guard: 0}
+    - {seed: 13, lane: 0.5758, glue: 0.0909, advantage: 0.4848, guard: 0}
+  median_advantage: 0.4848
+  total_guard_violations: 0
+  corpus30_only: >-
+    Excluding the 3 fresh misc packs the shadow reproduces the scaled
+    run exactly: lane 0.6333 and glue 0.1333/0.1000/0.1000 in all reps.
+  by_block: >-
+    lane pass 1.0 on assemble/bench/delivery/i2v/model-slot/preview/
+    shadow/subs/tts/vo; 0.0 on misc/probe/render (18/12/12 cells).
+    glue pass only on bench (1.0) and assemble (0.3333).
+  fresh_packs: >-
+    All 3 fresh packs chose block=misc in all reps; both arms failed
+    the role-rep compat gate (0/9 each) but lane self-token F1 0.4348
+    vs glue 0.3333 — lane ahead on unseen packs' own tokens, though
+    absolute quality on misc remains weak for both arms.
+
+decision:
+  status: promote-recommended
+  gate_result: PASS
+  verdict: PROMOTE
+  meaning: >-
+    Recommendation to Tony only. No production lane switch, no user-
+    facing promotion, no nest/pack config change. Card
+    ncm-code-blocks-detail-composer stays in review until Tony decides.
+  honest_limits:
+    - "VQ tokenizer branch remains STOP; this lane has no tokenizer — it is a supervised role->detail-token MLP, not NCM VQ-VAE"
+    - "gold is the role-representative record; per-role canonical detail, not per-pack generation"
+    - "glue baseline is small local qwen2.5:7b-instruct; KK-Mac qwen3:8b caveat (omits produce tokens) still applies to baseline strength"
+    - "fresh-pack coverage is thin: all three mapped to misc, the weakest role for both arms"
+
+guardrails_honored:
+  - "generated tokens never contain allowed_paths/tools/credentials/human_gate/permissions/authorize/grant_access (0 hits both arms)"
+  - "Nest queue untouched; packs read-only"
+  - "zero paid GPU/API spend; no account-tier change"
+  - "no production lane switch; parent card stays open"
+
+reentry:
+  - "Tony decision on promotion: shadow -> live Variant B detail lane behind nest, or hold/close"
+  - "if promoted: wire role-conditioned detail into the nest pack composer behind the deterministic compat gate, keep glue fallback"
+  - "misc/probe/render roles are the weak spot for BOTH arms — candidate for corpus expansion or role-specific detail heads"

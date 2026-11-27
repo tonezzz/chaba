@@ -1,0 +1,42 @@
+# kk-video-c9f99fee6146-preflight — deterministic release gate for the
+# Sacred Father pack set (card kk-video-preflight-stage).
+#
+# CPU-only: needs.gpu_gb=0, pure-stdlib validator (+pyyaml via prep). Runs
+# BEFORE embeds/render packs in the release — those packs declare
+# `requires: [kk-video-c9f99fee6146-preflight]`, and the queue runners
+# refuse to claim them until this pack's done marker exists AND its
+# preflight.json verdict is not 'fail'. Stage the whole release
+# (this pack + the dependent packs) BEFORE the queue launches — pack
+# discovery happens once at runner start; nothing here retro-fits a
+# running queue snapshot.
+#
+# Project docs are read from the first hit of:
+#   $PACK_DIR/inputs/kk-video-c9f99fee6146/   (bundled snapshot)
+#   $NEST_ROOT/projects/kk-video-c9f99fee6146/ (Drive mirror — also the
+#     `fetch:` source so fleet workers materialize the same tree)
+# Release staging therefore also mirrors
+#   ~/.local/share/devnest/projects/kk-video-c9f99fee6146/{project.json,
+#   brief/,story/,shots/,assets/,qc/,packs/,source/}
+# to gdrive:ada-nest/projects/kk-video-c9f99fee6146/ — private store.
+# A fail verdict writes preflight.json all the same, then exits nonzero:
+# no done marker, dependents stay unclaimable, report says why.
+name: kk-video-c9f99fee6146-preflight
+needs:
+  gpu_gb: 0        # cpu-safe — any worker qualifies
+  disk_gb: 2
+  egress_only_ok: true
+timeout_s: 600
+fetch:
+  - projects/kk-video-c9f99fee6146/    # nest-worker materializes; Colab mounts it
+artifacts:
+  - packs/kk-video-c9f99fee6146-preflight/preflight.json
+  - packs/kk-video-c9f99fee6146-preflight/preflight.md
+prep: |
+  pip install -q pyyaml >/dev/null 2>&1 || true
+run_sh: |
+  exec python3 "$PACK_DIR/pack-preflight.py" \
+    --policy "$PACK_DIR/policy.yml" \
+    --pack-dir "$PACK_DIR" \
+    --nest-root "$NEST_ROOT" \
+    --packs "$NEST_ROOT/packs" \
+    --out "$PACK_DIR"
