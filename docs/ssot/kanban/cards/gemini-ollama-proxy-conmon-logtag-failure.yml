@@ -1,7 +1,7 @@
 id: gemini-ollama-proxy-conmon-logtag-failure
 title: 'tony-dell gemini-ollama-proxy: conmon rejects --log-tag, exit 126'
 column: doing
-updated: 2026-11-27 21:44
+updated: 2026-11-27 21:55
 brief: 'Persistent failure since 2026-11-26 11:56 +07: conmon says k8s-file doesn t support --log-tag; podman create/remove
   churn; ExecMainStatus=126; NRestarts=5 then start-rate limited. Unrelated to existing MEM-1464/MEM-1469 proxy
   cards.'
@@ -55,6 +55,10 @@ comms:
     envfile-drop installed EnvironmentFile=mddb-gemini.env but the file never existed on dell — provisioned it from
     idc03 (key names identical, values never displayed). reset-failed + start -> active 21:36 +07; /health 200 (free_keys=6,
     caps delivered); real /api/embed returned 768-dim gem'
+- at: 2026-11-27 21:55
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-211932-inspect-the-quadlet-unit-on-to no longer active on con01 but card
+    still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
@@ -63,5 +67,7 @@ action:
   executor_source: queue
   runner: con01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 21:56
 claim:
   since: 2026-11-27 21:18
