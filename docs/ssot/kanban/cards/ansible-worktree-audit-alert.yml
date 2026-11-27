@@ -1,11 +1,12 @@
 id: ansible-worktree-audit-alert
 title: 'Ansible audit: worktree hygiene drift/fail'
-column: backlog
-updated: 2026-11-27 16:38
+column: done
+updated: 2026-11-27 20:14
 spec: 'Read-only ansible audit-worktrees detected fail/drift/unreachable hosts. Hosts: con01, idc02, idc03, mn01,
   tony-dell, tony-omen. Report dir: reports/ansible-benchmark/worktrees/. No remediation performed.'
 action:
   type: manual
+  status: done
 ref: AUD-1476
 comms:
 - at: 2026-11-27 06:36
@@ -46,3 +47,12 @@ comms:
     untracked artifacts (LiteLLM spend-hook/credits-poll scripts + service units, public/apps/or-panel/, out/, .stale-board2-nested-20261120/,
     backup/conflict files, and the three timestamped Yomi hotfix backups from OPS-1505). No mass clean performed:
     these are uncommitted user work or safe'
+- at: 2026-11-27 20:14
+  from: tony
+  text: 'RE-AUDIT 2026-11-27 20:13 +07 (idc02 controller, read-only, reports/ansible-benchmark/worktrees/*.yml refreshed):
+    0 unreachable / 0 failed playbook tasks. Verdicts: idc02/idc03/tony-dell = fail, con01/mn01/tony-macbook/tony-omen
+    = drift. The idc03 chaba-tony-dell role-marker false positive is GONE after policy fix e70c424b433 (role=served/declared_role=served).
+    Remaining findings are long-lived local artifacts, not new drift: served checkouts carry untracked render-state/local-conflict/backup/ti'
+- at: 2026-11-27 20:14
+  from: tony
+  text: closed by tony
