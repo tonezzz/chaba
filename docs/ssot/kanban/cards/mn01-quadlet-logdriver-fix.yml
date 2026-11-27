@@ -1,0 +1,49 @@
+id: mn01-quadlet-logdriver-fix
+title: mn01 rootless podman quadlets repaired — mn-ha-dev + xmeye-vms
+column: done
+updated: 2026-11-27 14:51
+brief: Fixed the 2-day conmon restart loop on mn01 by overriding the global k8s-file log driver with LogDriver=journald
+  in both quadlets. Both services healthy; no reboot needed.
+priority: high
+tags:
+- mn01
+- podman
+- quadlet
+- ops
+- host-state
+spec: '[Tony-approved OPS-1501, 2026-11-27] Full host-state remediation on mn01 for the two rootless podman quadlets
+  stuck in `activating (auto-restart)` since 11-25 (mn-ha-dev, NRestarts=2136) and 11-26 (xmeye-vms, NRestarts=10032).
+
+
+  ROOT CAUSE (not quadlet content): ~/.config/containers/containers.conf on mn01 sets `log_driver = "k8s-file"`
+  together with a global `log_tag = "{{.Name}}/{{.ID}}"`. conmon''s k8s-file driver rejects `--log-tag` -> `[conmon:e]
+  k8s-file doesn''t support --log-tag` -> `conmon failed: exit status 1` on every start. The secondary `rootless
+  netns: kill network process: permission denied` was cleanup noise. Working containers (google-home-mcp, notebooklm-mcp,
+  icloud-mcp) all override with `-l journald`, which supports log-tag. Tailscale bind IP 100.106.196.22 verified
+  current.
+
+
+  FIX (narrow, no reboot): backed up both .container files as *.bak-20261127-144649-logdriver, stopped the restart
+  loops, added `LogDriver=journald` to [Container] in mn-ha-dev.container and xmeye-vms.container, `systemctl --user
+  daemon-reload`, started both. Generated units now carry `--log-driver journald`.
+
+
+  VERIFY 2026-11-27 14:50 +07: both units active/running, NRestarts mn-ha-dev=1 (a clean HA Core exit-0 on first
+  start, not a podman failure; stable afterwards) and xmeye-vms=0. `podman ps`: mn-ha-dev Up (healthy), xmeye-vms-vnc
+  Up. HA UI http://127.0.0.1:8124/ -> 200. Ports open: 127.0.0.1:8124, 127.0.0.1:9585, 100.106.196.22:9585, 100.106.196.22:5900
+  (VNC tailnet-only, as designed). No conmon/log-tag errors since 14:50. Reboot/reset NOT needed — omitted.
+
+
+  ROLLBACK: restore the .bak-20261127-144649-logdriver files and daemon-reload. Related prior work: ansible-chaba-stale-quadlet-inventory,
+  idc02-audit-census-reconcile.'
+action:
+  type: manual
+  status: done
+ref: OPS-1503
+comms:
+- at: 2026-11-27 14:51
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-27 14:51
+  from: tony
+  text: closed by tony
