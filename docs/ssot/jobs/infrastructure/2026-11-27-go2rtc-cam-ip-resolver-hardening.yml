@@ -1,0 +1,118 @@
+title: go2rtc camera IP-resolution hardening + registry corrections (attempt 2)
+date: 2026-11-27
+card: go2rtc-7-camera-producers-return-empty-f-cc9176
+status: software-self-healing-complete-cameras-still-offline
+host_scope: tony-omen (all host changes); chaba worktree (ssot/docs)
+
+context: >-
+  Attempt 1 (dispatch 20261127-125944) diagnosed all 3 remaining cameras as
+  off-L2 and shipped xiaomi-cam-resolve (5min timer rewriting stale
+  xiaomi:// IPs). Tony answered its physical-check request "proceed" at
+  14:21. This attempt re-verified state and hardened the self-healing so
+  the done-condition (non-empty frame.jpeg) is met automatically once the
+  cameras physically return.
+
+verified_state_2026-11-27_15xx:
+  - >-
+    All 3 cameras STILL off-L2: fresh ping-sweep of 192.168.2.0/24 (eno1)
+    and 192.168.0.0/24 (wlo1) finds none of the camera MACs —
+    xiaomi_c100 b8:88:80:cb:7d:2c, xiaomi_c201 d8:3a:36:7d:10:0d,
+    ip_cam_65 d4:9e:3b:6a:94:90. All 7 target producers still 200/0B;
+    omen_cam healthy (~30KB JPEG).
+  - >-
+    DHCP churn is live: go2rtc cloud device_list now reports c100 at
+    192.168.2.92 — but .92's ARP MAC is e0:73:e7:05:c5:16 = the HP
+    DeskJet 2700 (registry-confirmed). Cloud localip is stale; only
+    MAC-verified resolution is trustworthy.
+  - >-
+    ip_cam_65's registry "legacy" MAC cc:50:e3:19:a0:2f IS on the network
+    at 192.168.2.70 but :10554 is closed — it is a different device
+    (registry already flags mac_conflict). Camera still offline.
+
+changes_on_tony_omen:
+  - >-
+    xiaomi-cam-resolve.py REWRITTEN (backup .bak-20261127): two-pass
+    resolve — pass 1 ARP-MAC-checks each cloud-reported IP; pass 2 runs
+    ONE throttled sweep matching ALL pending camera MACs at once.
+    Sweep now covers every local /24 on PHYSICAL interfaces only
+    (eno*/wlo*/wlan*/eth* — excludes docker/libvirt/tailnet prefixes
+    that would make it ~2000 pings and blow the 2m timeout). Verified:
+    prefixes=[192.168.0,192.168.2], dry-run exit 0, correct offline
+    behavior for both cams.
+  - >-
+    NEW ~/.config/go2rtc/ipcam65-ip.sh: runtime resolver for ip_cam_65
+    (VStarcam has no cloud API). Finds MAC d4:9e:3b:6a:94:90 via ip neigh,
+    verifies TCP/10554, 300s positive+negative caches (avoids sweep
+    storms from per-stream exec spawns), falls back to 192.168.2.71.
+    Cold sweep ~8s, warm path ~25ms. Verified live on omen.
+  - >-
+    ip_cam_65_{auto,hd,low}.sh rewritten to resolve CAM_IP via the helper
+    instead of hardcoded .71 (backups .bak-20261127). rotate-ipcam65.sh
+    and ipcam65-rotate-finisher.sh CAM= line patched the same way — the
+    armed credential rotation (card rotate-omen-rtsp-credential) now
+    fires whenever the camera rejoins at ANY IP, not just .71.
+  - >-
+    xiaomi-token-refresh.py fix from attempt 1 confirmed live (restarts
+    go2rtc-omen.service via sudo -n); timer remains masked/retired.
+
+changes_in_repo:
+  - >-
+    Cherry-picked attempt-1 commit 5272be200ac (its auto-merge had failed:
+    "commit after conflict resolution failed"). Carries ssot.jobs.yml
+    xiaomi-cam-resolve entry + generated units + attempt-1 job doc.
+    Skipped its unrelated ssot.dev-system.assessment.yml churn commit —
+    likely the merge-conflict source.
+  - >-
+    ssot.jobs.yml: xiaomi-cam-resolve note updated for multi-subnet
+    physical-iface sweep + ipcam65-ip.sh helper.
+  - >-
+    ssot.ip-camera.yml: documented runtime IP resolution for ip_cam_65.
+  - >-
+    ssot.services.yml go2rtc entry CORRECTED: was declaring the degraded
+    user go2rtc.service (autostart/health_check) while system
+    go2rtc-omen.service actually owns :1984/:8554/:8555 — this stale
+    entry is what made xiaomi-token-refresh restart the wrong unit.
+    Entry now names go2rtc-omen.service and warns about the user-unit
+    duplicate. (User unit left enabled — possible accidental failover;
+    disabling is a prod decision for Tony, flagged in card comms.)
+  - >-
+    MAC registry CORRECTED: device_id bedroom-remote -> xiaomi-c201 in
+    ssot.mac-address-registry.yml (+legend), .tony.yml, and
+    ssot.ip-address-registry.yml (.77 DHCP obs); stacks ui file entry
+    relabeled (generated file hand-edited — build inputs are gitignored,
+    next build regenerates from fixed sources). Verified via go2rtc
+    cloud device_list: MAC d8:3a:36:7d:10:0d = camera did 1213157088
+    (xiaomi.camera.c201). A MAC cannot be two devices — the "Bedroom IR
+    remote" label was a misidentification.
+
+verify:
+  - ssh tony-omen 'journalctl --user -u xiaomi-cam-resolve.service -n 20'
+  - ssh tony-omen '~/.config/go2rtc/ipcam65-ip.sh'   # prints .71 fallback while cam off
+  - ssh tony-omen 'python3 ~/.config/go2rtc/xiaomi-cam-resolve.py --dry-run'
+  - >-
+    done-condition once cameras return: for cam in ip_cam_65
+    ip_cam_65_hd ip_cam_65_low xiaomi_c100 xiaomi_c100_h264 xiaomi_c100_hd
+    xiaomi_c100_hd_h264 xiaomi_c201 xiaomi_c201_h264 xiaomi_c201_hd
+    xiaomi_c201_hd_h264; do curl -s -o /tmp/f.jpg -w "%{size_download}\n"
+    "http://127.0.0.1:1984/api/frame.jpeg?src=$cam"; done   # all >0
+
+blockers_for_done_condition:
+  - >-
+    PHYSICAL: all 3 cameras absent from L2 on both omen subnets —
+    power or WiFi loss at the camera location. Software now self-heals:
+    xiaomi IPs rewrite within ~5min via timer; ip_cam_65 resolves at
+    exec time. No further software action possible until they rejoin.
+  - >-
+    Optional durable fix (needs Tony/router access): DHCP reservations
+    on the ZTE for the 3 camera MACs would end the float entirely.
+
+notes:
+  - >-
+    Stray user-unit go2rtc.service (pid 3036, enabled) still runs
+    degraded alongside system go2rtc-omen.service — owns no ports,
+    ~zero CPU. Left enabled deliberately (accidental failover if the
+    system unit dies; also declared in repo systemd/go2rtc.service).
+    Recommend Tony decide: disable it or keep as failover — card comms.
+  - >-
+    /bin/go2rtc container instance (pid 12911) on 127.0.0.1:18554/18555
+    remains an orphan, unrelated to the cam path.

@@ -141,6 +141,10 @@ jobs:
     schedule: "every 1h"
     dispatch: "systemd"
     persistent: true
+  - id: job-health-sweep
+    schedule: "hourly"
+    dispatch: "systemd"
+    persistent: true
   - id: kanban-notify
     schedule: "every 5m"
     dispatch: "systemd"
@@ -150,6 +154,10 @@ jobs:
     persistent: true
   - id: kraut-rain-watch
     schedule: "*-*-* *:11,41:00"
+    dispatch: "systemd"
+    persistent: true
+  - id: litellm-budget-watch
+    schedule: "every 1h"
     dispatch: "systemd"
     persistent: true
   - id: log-shipper
@@ -186,6 +194,10 @@ jobs:
     persistent: true
   - id: qc-scoreboard
     schedule: "*-*-* 07,19:20:00"
+    dispatch: "systemd"
+    persistent: true
+  - id: retry-storm-watch
+    schedule: "every 10min"
     dispatch: "systemd"
     persistent: true
   - id: scenario-runner-drift-check

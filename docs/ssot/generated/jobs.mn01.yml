@@ -2,9 +2,17 @@ title: Scheduled jobs — mn01
 generated: true  # DO NOT EDIT — rendered by scripts/render-jobs-catalog.py from ssot.jobs.yml
 source: docs/ssot/infrastructure/ssot.jobs.yml
 jobs:
+  - id: job-health-sweep
+    schedule: "hourly"
+    dispatch: "systemd"
+    persistent: true
   - id: log-shipper
     schedule: "every 1h"
     dispatch: "systemd"
   - id: log-shipper-severe
     schedule: "every 1h"
     dispatch: "systemd"
+  - id: retry-storm-watch
+    schedule: "every 10min"
+    dispatch: "systemd"
+    persistent: true

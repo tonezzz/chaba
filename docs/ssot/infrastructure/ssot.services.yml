@@ -570,7 +570,7 @@ tony-dell:
     status: enabled
     note: "Dev staging container for michael-ha. Runs on mn01 podman bridge (moved idc02 -> mn01 2026-11-25, card michael-dev-migrate-mn01); UI 127.0.0.1:8124 + https://mn01.taila0626a.ts.net:8124 via tailscale serve (+ public https://michael-dev.surf-thailand.com via idc02 edge/CF -> mn01 tailnet), MCP 9585 on tailnet IP + loopback."
   go2rtc:
-    service: go2rtc.service
+    service: go2rtc-omen.service
     host: tony_omen
     port: 1984
     host_port: 0.0.0.0:1984
@@ -581,8 +581,8 @@ tony-dell:
     purpose: H.264 transcoding proxy for the IP camera so Home Assistant can display the high-res stream in browsers
     config: /home/tony/.config/go2rtc/go2rtc.yaml
     binary: /home/tony/.local/bin/go2rtc
-    autostart: systemctl --user enable go2rtc
-    health_check: systemctl --user is-active go2rtc
+    autostart: sudo systemctl enable go2rtc-omen (system unit; the user unit go2rtc.service is a degraded duplicate that cannot bind :1984 — do not restart it for config reloads, use POST /api/restart or systemctl restart go2rtc-omen)
+    health_check: systemctl is-active go2rtc-omen && curl -sf http://127.0.0.1:1984/api/frame.jpeg?src=omen_cam -o /dev/null
     hls_url: "http://tony-omen.taila0626a.ts.net:1984/api/stream.m3u8?src=ip_cam_65_hd"
     tailnet_url: "http://tony-omen.taila0626a.ts.net:1984"
     status: migrated to tony-omen (2026-10-20); dell copy retired

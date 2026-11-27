@@ -42,11 +42,19 @@ jobs:
     schedule: "Sun *-*-* 05:15"
     dispatch: "systemd"
     persistent: true
+  - id: retry-storm-watch
+    schedule: "every 10min"
+    dispatch: "systemd"
+    persistent: true
   - id: session-audit
     schedule: "*-*-* 05:30:00"
     dispatch: "systemd"
     persistent: true
   - id: telemetry-ha-push
+    schedule: "*:0/5"
+    dispatch: "systemd"
+    persistent: true
+  - id: telemetry-ha-push-ada
     schedule: "*:0/5"
     dispatch: "systemd"
     persistent: true
@@ -58,6 +66,9 @@ jobs:
     schedule: "every 15min"
     dispatch: "systemd"
     persistent: true
+  - id: xiaomi-cam-resolve
+    schedule: "every 5min"
+    dispatch: "systemd"
   - id: xiaomi-token-refresh
     schedule: "daily"
     dispatch: "systemd"
