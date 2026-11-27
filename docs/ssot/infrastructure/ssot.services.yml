@@ -93,17 +93,24 @@ tony-dell:
     quadlet:
       container_unit: ~/.config/containers/systemd/mddb.container
       service_unit: ~/.config/systemd/user/mddb.service
-      drop_in: ~/.config/systemd/user/mddb.service.d/mem.conf
+      drop_in: ~/.config/systemd/user/mddb.service.d/60-idc03-memory.conf
+      # Ansible-managed since 2026-11-27 (ansible/playbooks/idc03-memory-guard.yml).
+      # The old mem.conf/memory.conf carried idc01's 31 GiB tuning (MemoryMax
+      # 20G/28G) and were removed; backups are under
+      # ~/.local/share/chaba-backups/idc03-memory-guard/<timestamp>/.
     tuning:
-      # Applied 2026-09-27/28 after 8G→32G RAM upgrade. Warmup RSS
-      # 19G→~550M, vector readiness ~50min→~5min.
+      # Retuned 2026-11-27 for idc03's 15 GiB / 4-core host after the OOM
+      # restart loop; earlier 8G→32G-era values were for the idc01 31 GiB box.
       drop_in_mem_conf: |
         [Unit]
         StartLimitIntervalSec=300   # MUST be in [Unit], not [Service]
         [Service]
-        Environment=GOMEMLIMIT=12000MiB GOGC=150
-        MemoryHigh=24G
-        MemoryMax=28G
+        Environment=GOMEMLIMIT=3200MiB GOGC=150
+        Environment=MDDB_EMBEDDING_PROVIDER=gemini-ollama-proxy
+        Environment=GEMINI_OLLAMA_PROXY_URL=http://127.0.0.1:11435
+        MemoryHigh=3800M
+        MemoryMax=4500M
+        OOMScoreAdjust=-500
         RestartSec=30
       collection_config:
         quantization: int8        # all collections (auto-applied)

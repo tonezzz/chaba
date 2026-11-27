@@ -9,5 +9,7 @@ chaba_repo_path: ~/CascadeProjects/chaba-tony-dell
 ssh_push_repo_path: ~/CascadeProjects/chaba-tony-dell
 
 # runner-agent cap (managed by ansible/playbooks/runner-cap.yml)
-runner_cap: 2
+# Lowered 2026-11-27 from 2 to 1 after the idc03 OOM loop: ~3.5 GiB/session
+# on a 15 GiB box allowed up to 7 GiB of transient node-job demand.
+runner_cap: 1
 runner_max_load_pc: 0.7

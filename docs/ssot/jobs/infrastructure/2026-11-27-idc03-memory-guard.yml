@@ -1,0 +1,104 @@
+---
+title: idc03 memory guard — replace idc01-era mddb drop-ins, bound co-tenants
+subtitle: 2026-11-27 MDDB OOM loop (8 mddbd + 7 node kills); global OOM became a contained cgroup kill
+icon: shield
+date: 2026-11-27
+card: mddb-idc03-oom-coldstart-publisher-window
+ref: MEM-1507
+status: applied-verified
+
+context:
+  symptom: >-
+    media-inbox-update-kk and ops-health-report timer alerts traced to mddb
+    restart windows; kernel OOM killed mddbd 8x and node runner jobs 7x on
+    2026-11-27. Swap was 4/4 GiB exhausted; OOM was global_oom /
+    CONSTRAINT_NONE, so any oom_score_adj=200 container process could be reaped.
+  root_cause: >-
+    idc03 (15 GiB / 4 core) still carried idc01's 31 GiB tuning in two
+    mddb.service.d drop-ins: mem.conf (MemoryHigh=16G, MemoryMax=20G,
+    GOMEMLIMIT=22000MiB) and memory.conf (MemoryHigh=24G, MemoryMax=28G,
+    GOMEMLIMIT=12000MiB). The idc01→idc03 migration plan says "retune for
+    idc03" — never done. Effective MemoryMax=28G on a 15 GiB host.
+    mddb-cms/ops, litellm and jevos had no cgroup caps (cms peak 7.6 GiB).
+
+changes:
+  - "ansible/playbooks/idc03-memory-guard.yml — new idc03-only gated play."
+  - "6 managed 60-idc03-memory.conf drop-ins (mddb, mddb-cms, mddb-ops,
+    litellm, jevos, runner-agent) with MemoryHigh/MemoryMax and OOMScoreAdjust.
+    mddb: 3800M/4500M, GOMEMLIMIT=3200MiB, -500; cms 2048M/2500M -400;
+    ops 1536M/2048M -400; litellm 900M/1200M +500; jevos 1200M/1600M +500;
+    runner-agent 400M/600M +500. Restart policy and embedding-proxy env
+    preserved."
+  - "Stale mem.conf and memory.conf removed after timestamped backup."
+  - "Runtime MemoryHigh/MemoryMax applied via systemctl set-property — no
+    service restarts. OOMScoreAdjust/GOMEMLIMIT are exec-time and take effect
+    at each unit's next natural restart."
+  - "docs/ssot/infrastructure/ssot.services.yml — drop_in path and tuning
+    updated to the managed values."
+
+evidence:
+  artifacts:
+    - reports/ansible-benchmark/idc03-memory-guard/20261127T164522/ (plan)
+    - reports/ansible-benchmark/idc03-memory-guard/20261127T164754/ (re-plan)
+    - /tmp/opencode/idc03-memory-guard-idempotency.log
+  apply_recap: "ok=18 changed=10 unreachable=0 failed=0"
+  idempotency: "--check --diff after apply: ok=10 changed=0 unreachable=0 failed=0"
+  backup: "~/.local/share/chaba-backups/idc03-memory-guard/20261127T165726/{mem.conf,memory.conf}"
+  backup_sha1:
+    mem.conf: f5595dcfb1cd596bfb3e0984d5e847714fa41178
+    memory.conf: fdf34405b24f368dec7b95a8482682d504ce76da
+  effective_properties_bytes:
+    mddb.service: [3984588800, 4718592000, -500]
+    mddb-cms.service: [2147483648, 2621440000, -400]
+    mddb-ops.service: [1610612736, 2147483648, -400]
+    litellm.service: [943718400, 1258291200, 500]
+    jevos.service: [1258291200, 1677721600, 500]
+    runner-agent.service: [419430400, 629145600, 500]
+  consumer_proof:
+    - "mddb /health 200; /v1/stats mode=wr; last mddb OOM 16:54:52 (pre-apply);
+      no mddb OOM after apply; NRestarts stable at 10."
+    - "Post-apply OOM at 16:57:46 was CONSTRAINT_MEMCG on litellm.service only —
+      the guard contained the kill instead of letting the kernel reap MDDB.
+      litellm restarted once at 16:58:01, active with 170 MB cgroup usage."
+    - "media-inbox-update-kk 16:54:52 tick ExecMainStatus=0;
+      ops-health-report 16:45 tick ExecMainStatus=0, report published."
+  residual_risk: >-
+    This bounds failure, it does not free RAM: post-apply free shows 14 GiB used,
+    649 MiB available, 4/4 GiB swap. A 3.2 GiB node job and two llama-server
+    processes (~2.5 GiB + 1.8 GiB) remain the main pressure. Moving those
+    workloads off idc03 or adding RAM is still needed to stop OOM churn entirely.
+
+prepared_followups:
+  status: "prepared and preflighted 2026-11-27, NOT APPLIED"
+  embed_offload:
+    playbook: ansible/playbooks/idc03-embed-offload.yml
+    finding: >-
+      The 1.8 GiB local llama-server is bge-m3, not idle: mddb-cms embeds via
+      the shim, and the shim races every primary. Health stats showed remote
+      100.75.102.88 winning 1239 races at ~136ms (warm probe 0.07s) while local
+      100.102.134.91 had 17 consecutive failures and ~4.7s last call (direct
+      probe 16.4s). Fix: drop local from primaries, keep remote as sole primary
+      with 100.72.146.39 + kk-mac 11447 deferred, restart the stateless shim,
+      then `ollama stop bge-m3` to release ~1.8 GiB immediately.
+  runner_cap:
+    file: ansible/inventory/host_vars/idc03.yml
+    change: "runner_cap 2 -> 1 (RUNNER_MAX_LOAD_PC stays 0.7)"
+    mechanism: "ansible-playbook playbooks/runner-cap.yml --limit idc03"
+  litellm_cap:
+    file: ansible/playbooks/idc03-memory-guard.yml
+    change: "MemoryHigh/MemoryMax 900M/1200M -> 1200M/1600M (OOMScoreAdjust stays 500)"
+
+rollback: >-
+  Restore both .conf files from the timestamped backup directory, delete the
+  six 60-idc03-memory.conf files, systemctl --user daemon-reload, and re-apply
+  the old properties: mddb MemoryHigh=25769803776 / MemoryMax=30064771072;
+  set the other five back to infinity. No restore command was needed.
+
+lessons:
+  - "A vars-level lookup('pipe','date ...') is re-evaluated per loop item:
+    pin one tag with set_fact, and create the destination directory before a
+    remote_src copy. The first apply aborted here before any mutation."
+  - "OOMScoreAdjust is exec-time (systemd.exec), not a runtime
+    resource-control property; deliver it by drop-in, not set-property."
+  - "idc01→idc03 migrations must retune memory drop-ins — host size is part
+    of the config, not just the service list."
