@@ -1,7 +1,7 @@
 id: ops-1025-remote-read-smoke-idc03
 title: 'OPS-1025 one-shot remote-read verification: idc02 to idc03'
 column: doing
-updated: 2026-11-27 08:47
+updated: 2026-11-27 08:58
 brief: One supervised, read-only S3 verification of the merged remote-read gates.
 priority: medium
 program: OPS-1025
@@ -946,6 +946,16 @@ comms:
   from: chaba
   text: model litellm/or-free-nemotron-nano dropped — provider namespace doesn't match executor=devin; running the
     executor default
+- at: 2026-11-27 08:55
+  from: chaba
+  text: 'answer-sweep: ''answer — Answer — reply in chat'' resolves job-input-ops-1025-remote-read-smoke-idc03-1795742282
+    — no board action (option ''answer'' action=none)'
+- at: 2026-11-27 08:58
+  from: devin
+  text: 'attempt 2 (devin): mcp-debug spawn fixed in-session via worktree symlink mcp_debug->scripts/mcp_debug (server
+    now lists tools). idc03 still absent from ssot.mcp-debug.yml hosts — executing approved option (a): registering
+    idc03 in the worktree SSOT, then hot-reload + mcp_health preflight + the sanctioned systemctl --user failed-units
+    inventory.'
 claim:
   since: 2026-11-26 23:44
 requests:
@@ -991,6 +1001,7 @@ requests:
   - proceed
   - hold
   answer: proceed
+  executed: 2026-11-27 queue (already running)
 - id: job-input-ops-1025-remote-read-smoke-idc03-1795742282
   ask: 'Job needs your input: mcp-debug cannot reach idc03 — the mandated read-only tool path is broken at two layers;
     fix infra and re-dispatch, or close the card as blocked?'
@@ -1005,3 +1016,4 @@ requests:
     label: Hold — leave blocked
     action: hold
   answer: answer — Answer — reply in chat
+  executed: 2026-11-27 none
