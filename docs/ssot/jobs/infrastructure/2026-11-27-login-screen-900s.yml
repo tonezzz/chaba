@@ -1,0 +1,105 @@
+---
+job: 2026-11-27-login-screen-900s
+title: Restore GDM login screen and enforce 900s screen-off on three hosts
+area: infrastructure
+created: '2026-11-27'
+status: done
+goal: >-
+  Restore the GDM login screen on tony-omen (tty1 was a bare agetty printing a
+  text list) and enforce Tony's chosen 15-minute / 900s screen-off standard on
+  tony-omen, mn01 and tony-dell.
+decision:
+  - "Tony chose 900s (15 min) over the 300s value in ssot.mysystem.home.yml; the 900s screen-blank-15min.desktop value in ssot.tony-dell-monitoring.yml wins."
+  - "All three hosts converged, each on its own seat path: omen/mn01 via the timeout daemon + dconf; tony-dell via a dedicated oneshot+timer on physical seat :1 (vt7)."
+  - Playbook preflighted then applied on each host.
+targets: [tony-omen, mn01, tony-dell]
+playbook: ansible/playbooks/host-login-screen.yml
+commands:
+  preflight: >-
+    cd /home/tony/CascadeProjects/chaba/ansible &&
+    ansible-playbook -i inventory/hosts.yml playbooks/host-login-screen.yml
+    --check --diff --limit 'tony-omen:mn01:tony-dell'
+  apply: >-
+    cd /home/tony/CascadeProjects/chaba/ansible &&
+    ansible-playbook -i inventory/hosts.yml playbooks/host-login-screen.yml
+    --limit tony-omen:mn01 -e login_screen_apply=true
+    && ... --limit tony-dell -e login_screen_apply=true
+  drift_test: >-
+    same preflight with -e screen_blank_seconds=600 -> changed=1 on all three
+    hosts, proving the drift report fires (with 900s it is changed=0).
+before:
+  tony-omen: 'vt=tty1 agetty, gdm inactive/disabled, no greeter session, idle-delay=300, daemon TIMEOUT_SEC=300, autostart xset s 900 900'
+  mn01: 'vt=tty1 GDM greeter already active, idle-delay=0 (never blanks), no timeout daemon or autostart'
+  tony-dell: 'X screensaver 300 / DPMS Off 300 on :1, idle-delay=300, screen-timeout-daemon intentionally inactive (2026-09-11 freeze), no screen-blank-seat.timer'
+after:
+  tony-omen: 'vt=tty1 gdm active, greeter session c3 on tty1, no agetty, idle-delay=900, daemon TIMEOUT_SEC=900 active, autostart xset s 900 900'
+  mn01: 'vt=tty1 gdm active, greeter session c3 on tty1, idle-delay=900, daemon TIMEOUT_SEC=900 active, autostart xset s 900 900'
+  tony-dell: 'physical seat :1 on vt7 unchanged (xorg-seat + xfce-seat + barrier-pin-vt all active), X screensaver 900 / DPMS disabled, idle-delay=900, screen-blank-seat.timer active+enabled, screen-timeout-daemon still inactive by design'
+results:
+  syntax_check: pass
+  preflight_rc: 0
+  preflight_recap: 'mn01/tony-omen ok=9 changed=0; tony-dell ok=7 changed=1 (timer missing) initially; 0 unreachable, 0 failed'
+  apply_omen: 'ok=15 changed=5 failed=0 (script, unit, autostart, dconf, GDM, handler restart)'
+  apply_mn01: 'first run failed 1 task (root-owned autostart dir); after fix ok=14 changed=4 failed=0'
+  apply_dell: 'RC=0; deployed screen-blank-seat.service + .timer (backup: yes), enabled+started timer, dconf idle-delay=900'
+  final_preflight: >-
+    RC=0; mn01 ok=9 changed=0, tony-omen ok=9 changed=0, tony-dell ok=7 changed=0;
+    0 unreachable, 0 failed on all three (idempotent).
+  live_verify: >-
+    omen/mn01: /sys/class/tty/tty0/active=tty1, gdm active, is-enabled
+    display-manager=alias, greeter session on tty1, idle-delay=uint32 900,
+    screen-timeout-daemon active with TIMEOUT_SEC=900. tony-dell: :1 X screensaver
+    timeout 900 / cycle 900, DPMS disabled, screen-blank-seat.timer active+enabled
+    with ExecStart xset s 900 900 && xset s blank && xset -dpms, tty7 still active
+    with xorg-seat.service, xfce-seat.service and barrier-pin-vt.timer active,
+    idle-delay=uint32 900, screen-timeout-daemon inactive (unchanged).
+backup: 'copy tasks use backup: yes; sibling backups beside each deployed file on all three hosts'
+rollback:
+  - 'Re-enable the old 300s posture: revert playbook screen_blank_seconds to 300 and re-run apply, or restore the .bak copies.'
+  - 'Restore console agetty: sudo systemctl disable --now gdm (display-manager alias remains); getty@tty1 is enabled and returns.'
+  - 'GNOME idle: gsettings set org.gnome.desktop.session idle-delay 0.'
+  - 'tony-dell: systemctl --user disable --now screen-blank-seat.timer and restore .bak files; GDM/vt7 were never touched.'
+lessons:
+  - >-
+    On Ubuntu the boot-persistent GDM enable state is the display-manager.service
+    alias (systemctl is-enabled display-manager = alias), while is-enabled gdm
+    stays disabled even after systemctl enable gdm. Drift checks must test the
+    alias, not gdm.
+  - >-
+    gdm.service declares Conflicts=getty@tty1.service, so starting GDM cleanly
+    replaces a bare agetty on tty1 - no manual chvt needed.
+  - >-
+    mn01 has /home/tony/.config/autostart owned by root:root (755); the autostart
+    copy task needs become: yes there.
+  - >-
+    The screen-timeout daemon re-applies xset every 60s, so changing only the
+    autostart to 900s is insufficient - the script itself must be re-templated
+    to TIMEOUT_SEC=900 or it drags the X screensaver back to 300s.
+  - >-
+    tony-dell's screen-timeout-daemon was deliberately disabled after the
+    2026-09-11 display freeze, so do NOT re-enable it. Its physical seat is
+    xorg-seat.service on vt7 with xfce-seat.service and barrier-pin-vt.timer;
+    a separate user oneshot+timer (screen-blank-seat) applies xset to :1 without
+    touching GDM or the VT. xset works from a clean env with DISPLAY=:1 alone.
+  - >-
+    xfce-seat.service and barrier-pin-vt.timer are user units; probing them with
+    systemctl (system) produced a false 'inactive' drift. Use systemctl --user
+    for both.
+  - >-
+    ansible.builtin.set_fact cannot reference sibling facts created in the same
+    task; split the constants task from the derived drift-flag task.
+  - >-
+    A changed_when list is ANDed; use one OR expression (or a derived boolean
+    fact) when any one of several drift conditions should mark the task changed.
+doc_sync: >-
+  ssot.mysystem.home.yml updated 2026-11-27 to 900s/15 min in all three
+  identical copies (docs/ssot, stacks/web/public, public/docs/overview);
+  its per-host lines now show all three hosts at 900s, with tony-dell's
+  seat-specific mechanism and the intentionally-inactive daemon documented.
+refs:
+  - docs/ssot/infrastructure/ssot.operations.yml
+  - docs/ssot/jobs/nest/2026-10-23-omen-travel-slim-exit.yml
+  - docs/ssot/ssot.mysystem.home.yml
+  - docs/ssot/infrastructure/ssot.tony-dell-monitoring.yml
+  - docs/ssot/focus-inbox/processed/2026-09-11-174148-tony-dell-display-freeze-auto-login.yml
+  - scripts/barrier/barrier-pin-vt.sh

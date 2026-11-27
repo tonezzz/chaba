@@ -1,0 +1,413 @@
+---
+# host-login-screen.yml — restore the GDM login screen on tony-omen / mn01 and
+# enforce the 15-minute (900s) screen-off standard on all three hosts.
+# tony-dell uses a separate physical-seat path (:1 on vt7) and deliberately
+# keeps screen-timeout-daemon.service disabled (see 2026-09-11 freeze item).
+#
+# SSOT / evidence:
+#   docs/ssot/infrastructure/ssot.operations.yml
+#     "GDM greeter remains on tty1" (physical Dell seat is vt7, separate).
+#   docs/ssot/jobs/nest/2026-10-23-omen-travel-slim-exit.yml
+#     "gdm greeter on tty1, no interactive session; CRD active -> headless+CRD".
+#   docs/ssot/ssot.mysystem.home.yml (screen off, no system suspend).
+#   docs/ssot/infrastructure/ssot.tony-dell-monitoring.yml
+#     "X screen saver 900s ... screen-blank-15min.desktop on tony-omen:0".
+#
+# Tony decided 2026-11-27: 900s wins over the 300s daemon default in
+# ssot.mysystem.home.yml. The daemon is re-templated to 900s because its
+# 60-second loop would otherwise keep dragging the X screensaver back to 300s.
+#
+# Default run is a READ-ONLY preflight (apply tasks are gated off):
+#   cd /home/tony/CascadeProjects/chaba/ansible
+#   ansible-playbook -i inventory/hosts.yml playbooks/host-login-screen.yml \
+#     --check --diff --limit tony-omen:mn01:tony-dell
+#
+# Real converge (sudo is NOPASSWD on all three hosts; no -K needed):
+#   ansible-playbook -i inventory/hosts.yml playbooks/host-login-screen.yml \
+#     --limit tony-omen:mn01:tony-dell -e login_screen_apply=true
+#
+# Design notes:
+#   * hosts is pinned to tony-omen:mn01 and --limit is asserted. No fleet run.
+#   * gdm.service has Conflicts=getty@tty1.service, so starting GDM replaces
+#     the bare agetty that was printing the text list on omen's tty1.
+#   * ansible.cfg sets become=True globally; this play uses become:false so
+#     read/user tasks work over BatchMode SSH. Only the GDM task opts in.
+#   * XDG_RUNTIME_DIR / DBUS_SESSION_BUS_ADDRESS are pinned so `systemctl
+#     --user`, gsettings and the dconf module reach the real user session.
+- name: Restore login screen and 15-minute screen blank (scoped)
+  hosts: tony-omen:mn01
+  gather_facts: false
+  become: false
+  environment:
+    XDG_RUNTIME_DIR: /run/user/1000
+    DBUS_SESSION_BUS_ADDRESS: unix:path=/run/user/1000/bus
+
+  vars:
+    login_screen_apply: false
+    screen_blank_seconds: 900
+    timeout_script: /home/tony/screen-timeout-daemon.sh
+    timeout_unit: /home/tony/.config/systemd/user/screen-timeout-daemon.service
+    blank_autostart: /home/tony/.config/autostart/screen-blank-15min.desktop
+
+  tasks:
+    - name: Refuse unscoped runs
+      ansible.builtin.assert:
+        that:
+          - inventory_hostname in ['tony-omen', 'mn01']
+          - (ansible_limit | default('')) | length > 0
+        fail_msg: 'Scope with --limit tony-omen:mn01 (or one of those hosts).'
+      check_mode: false
+
+    # ---- Read-only diagnosis / preflight evidence ----
+    - name: Read login-screen state
+      ansible.builtin.command:
+        argv:
+          - sh
+          - -c
+          - 'printf "vt=%s gdm_active=%s dm_enabled=%s\n" "$(cat /sys/class/tty/tty0/active)" "$(systemctl is-active gdm)" "$(systemctl is-enabled display-manager 2>&1)"'
+      check_mode: false
+      changed_when: false
+      register: login_state
+
+    - name: Read greeter sessions
+      ansible.builtin.command:
+        argv:
+          - sh
+          - -c
+          - 'loginctl list-sessions --no-legend --no-pager | grep greeter || true'
+      check_mode: false
+      changed_when: false
+      register: greeter_state
+
+    - name: Read GNOME idle delay
+      ansible.builtin.command:
+        argv: [gsettings, get, org.gnome.desktop.session, idle-delay]
+      check_mode: false
+      changed_when: false
+      register: idle_state
+
+    - name: Read daemon timeout setting
+      ansible.builtin.command:
+        argv:
+          - sh
+          - -c
+          - 'grep -E "^TIMEOUT_SEC=" {{ timeout_script }} 2>/dev/null || echo MISSING'
+      check_mode: false
+      changed_when: false
+      register: daemon_state
+
+    - name: Read screen-blank autostart
+      ansible.builtin.command:
+        argv:
+          - sh
+          - -c
+          - 'grep -E "xset s [0-9]+" {{ blank_autostart }} 2>/dev/null || echo MISSING'
+      check_mode: false
+      changed_when: false
+      register: autostart_state
+
+    - name: Compute desired state strings
+      ansible.builtin.set_fact:
+        want_gdm_active: 'gdm_active=active'
+        want_dm_enabled: 'dm_enabled=alias'
+        want_idle: 'uint32 {{ screen_blank_seconds }}'
+        want_timeout: 'TIMEOUT_SEC={{ screen_blank_seconds }}'
+        want_autostart: 'xset s {{ screen_blank_seconds }}'
+
+    - name: Compute login-screen drift flag
+      ansible.builtin.set_fact:
+        login_screen_drift: >-
+          {{ want_gdm_active not in login_state.stdout
+             or want_dm_enabled not in login_state.stdout
+             or greeter_state.stdout | trim | length == 0
+             or want_idle not in idle_state.stdout
+             or want_timeout not in daemon_state.stdout
+             or want_autostart not in autostart_state.stdout }}
+
+    - name: Report login-screen and screen-off drift
+      ansible.builtin.debug:
+        msg:
+          - '{{ inventory_hostname }}: {{ login_state.stdout }}'
+          - 'greeter sessions: {{ greeter_state.stdout | default("") | trim }}'
+          - 'idle-delay={{ idle_state.stdout }} daemon={{ daemon_state.stdout }} autostart={{ autostart_state.stdout }}'
+      changed_when: login_screen_drift | bool
+
+    # ---- Apply half: opt-in only ----
+    - name: Deploy repo-managed screen-timeout daemon (900s)
+      ansible.builtin.copy:
+        dest: '{{ timeout_script }}'
+        owner: tony
+        group: tony
+        mode: '0755'
+        backup: yes
+        content: |
+          #!/bin/bash
+          # Blank the screen after {{ screen_blank_seconds }}s of idle; never suspend.
+          # Repo-managed by playbooks/host-login-screen.yml (Tony chose 900s).
+          TIMEOUT_SEC={{ screen_blank_seconds }}
+          INTERVAL_SEC=60
+          LOG_FILE="${SCREEN_TIMEOUT_LOG:-$HOME/.local/share/screen-timeout-daemon.log}"
+          PID_FILE="${SCREEN_TIMEOUT_PID:-$HOME/.local/share/screen-timeout-daemon.pid}"
+
+          mkdir -p "$(dirname "$LOG_FILE")"
+
+          # Single-instance check
+          if [ -f "$PID_FILE" ]; then
+              OLD_PID=$(cat "$PID_FILE" 2>/dev/null)
+              if [ -n "$OLD_PID" ] && kill -0 "$OLD_PID" 2>/dev/null; then
+                  echo "Already running (PID $OLD_PID). Exiting." >&2
+                  exit 1
+              fi
+          fi
+          echo $$ > "$PID_FILE"
+
+          log() {
+              echo "$(date '+%Y-%m-%d %H:%M:%S') $1" >> "$LOG_FILE"
+          }
+
+          displays=(":0" ":1" ":20")
+          auths=("$HOME/.Xauthority" "/run/user/1000/gdm/Xauthority" "/run/user/1000/.Xauthority")
+
+          log "screen-timeout-daemon started (timeout=${TIMEOUT_SEC}s)"
+
+          apply_for_display() {
+              local display auth
+              display=$1
+              auth=$2
+              # X screensaver blanks; DPMS is disabled so the monitor wakes on
+              # real input and long-running jobs keep running (no suspend).
+              DISPLAY="$display" XAUTHORITY="$auth" timeout 5 xset s "$TIMEOUT_SEC" "$TIMEOUT_SEC" >/dev/null 2>&1 && \
+              DISPLAY="$display" XAUTHORITY="$auth" timeout 5 xset s blank >/dev/null 2>&1 && \
+              DISPLAY="$display" XAUTHORITY="$auth" timeout 5 xset -dpms >/dev/null 2>&1
+          }
+
+          while true; do
+              APPLIED=false
+              for display in "${displays[@]}"; do
+                  for auth in "${auths[@]}"; do
+                      [ -f "$auth" ] || continue
+                      if DISPLAY="$display" XAUTHORITY="$auth" xset q >/dev/null 2>&1; then
+                          if apply_for_display "$display" "$auth"; then
+                              log "Applied ${TIMEOUT_SEC}s screen timeout on $display (auth $auth)"
+                              APPLIED=true
+                          else
+                              log "Failed to apply on $display (auth $auth)"
+                          fi
+                      fi
+                  done
+              done
+              if [ "$APPLIED" = false ]; then
+                  log "No accessible X display found"
+              fi
+              sleep "$INTERVAL_SEC"
+          done
+      when: login_screen_apply | bool
+      notify: Restart screen-timeout daemon
+      tags: [apply]
+
+    - name: Deploy screen-timeout user unit
+      ansible.builtin.copy:
+        dest: '{{ timeout_unit }}'
+        owner: tony
+        group: tony
+        mode: '0644'
+        backup: yes
+        content: |
+          [Unit]
+          Description=15-minute screen timeout daemon
+
+          [Service]
+          Type=simple
+          ExecStart={{ timeout_script }}
+          Restart=always
+          RestartSec=10
+
+          [Install]
+          WantedBy=default.target
+      when: login_screen_apply | bool
+      notify: Restart screen-timeout daemon
+      tags: [apply]
+
+    - name: Deploy 900s screen-blank autostart (X seats)
+      ansible.builtin.copy:
+        dest: '{{ blank_autostart }}'
+        owner: tony
+        group: tony
+        mode: '0664'
+        backup: yes
+        content: |
+          [Desktop Entry]
+          Type=Application
+          Name=Screen blank 15min
+          Exec=/bin/sh -c "xset s {{ screen_blank_seconds }} {{ screen_blank_seconds }}"
+          X-GNOME-Autostart-enabled=true
+      become: yes
+      when: login_screen_apply | bool
+      tags: [apply]
+
+    - name: Ensure screen-timeout daemon is enabled and running (user)
+      ansible.builtin.systemd:
+        name: screen-timeout-daemon.service
+        scope: user
+        enabled: true
+        state: started
+      when: login_screen_apply | bool
+      tags: [apply]
+
+    - name: Enforce GNOME idle delay for Wayland sessions
+      community.general.dconf:
+        key: /org/gnome/desktop/session/idle-delay
+        value: 'uint32 {{ screen_blank_seconds }}'
+        state: present
+      when: login_screen_apply | bool
+      tags: [apply]
+
+    - name: Enable and start GDM (login screen on tty1)
+      ansible.builtin.systemd:
+        name: gdm
+        enabled: true
+        state: started
+      become: yes
+      when: login_screen_apply | bool
+      tags: [apply]
+
+  handlers:
+    - name: Restart screen-timeout daemon
+      ansible.builtin.systemd:
+        name: screen-timeout-daemon.service
+        scope: user
+        state: restarted
+      tags: [apply]
+
+# ---- tony-dell physical seat (:1 on vt7) ---------------------------------
+# Do NOT touch GDM or chvt here: xorg-seat.service owns vt7 and the
+# barrier-pin-vt.timer keeps the physical seat there. The screen-timeout
+# daemon stays inactive by design after the 2026-09-11 display freeze.
+- name: Apply 15-minute screen blank to tony-dell physical seat (scoped)
+  hosts: tony-dell
+  gather_facts: false
+  become: false
+  environment:
+    XDG_RUNTIME_DIR: /run/user/1000
+    DBUS_SESSION_BUS_ADDRESS: unix:path=/run/user/1000/bus
+
+  vars:
+    login_screen_apply: false
+    screen_blank_seconds: 900
+    seat_service: /home/tony/.config/systemd/user/screen-blank-seat.service
+    seat_timer: /home/tony/.config/systemd/user/screen-blank-seat.timer
+
+  tasks:
+    - name: Refuse unscoped runs
+      ansible.builtin.assert:
+        that:
+          - inventory_hostname == 'tony-dell'
+          - (ansible_limit | default('')) | length > 0
+        fail_msg: 'Scope with --limit tony-dell.'
+      check_mode: false
+
+    - name: Read Dell seat blanking state
+      ansible.builtin.command:
+        argv:
+          - sh
+          - -c
+          - 'printf "timeout=%s dpms_enabled=%s\n" "$(xset -display :1 q 2>/dev/null | awk "/timeout:/{print \$2; exit}")" "$(xset -display :1 q 2>/dev/null | grep -c "DPMS is Enabled")"'
+      check_mode: false
+      changed_when: false
+      register: dell_blank_state
+
+    - name: Read Dell physical-seat units
+      ansible.builtin.command:
+        argv:
+          - sh
+          - -c
+          - 'systemctl is-active xorg-seat.service; systemctl --user is-active xfce-seat.service barrier-pin-vt.timer'
+      check_mode: false
+      changed_when: false
+      register: dell_seat_state
+
+    - name: Read Dell screen-blank timer state
+      ansible.builtin.command:
+        argv:
+          - sh
+          - -c
+          - 'systemctl --user is-active screen-blank-seat.timer 2>&1 || true; systemctl --user is-enabled screen-blank-seat.timer 2>&1 || true'
+      check_mode: false
+      changed_when: false
+      register: dell_timer_state
+
+    - name: Compute desired Dell blank string
+      ansible.builtin.set_fact:
+        want_blank: 'timeout={{ screen_blank_seconds }} dpms_enabled=0'
+
+    - name: Compute Dell drift flag
+      ansible.builtin.set_fact:
+        dell_drift: >-
+          {{ (want_blank not in dell_blank_state.stdout)
+             or ('inactive' in dell_seat_state.stdout)
+             or ('active' not in dell_timer_state.stdout)
+             or ('enabled' not in dell_timer_state.stdout) }}
+
+    - name: Report Dell seat drift
+      ansible.builtin.debug:
+        msg:
+          - 'tony-dell: {{ dell_blank_state.stdout | trim }}'
+          - 'seat units: {{ dell_seat_state.stdout | trim }}'
+          - 'screen-blank-seat.timer: {{ dell_timer_state.stdout | trim }}'
+      changed_when: dell_drift | bool
+
+    - name: Deploy Dell seat screen-blank oneshot
+      ansible.builtin.copy:
+        dest: '{{ seat_service }}'
+        owner: tony
+        group: tony
+        mode: '0644'
+        backup: yes
+        content: |
+          [Unit]
+          Description=Apply {{ screen_blank_seconds }}s screen blank on physical seat :1
+
+          [Service]
+          Type=oneshot
+          Environment=DISPLAY=:1
+          ExecStart=/bin/sh -c 'xset s {{ screen_blank_seconds }} {{ screen_blank_seconds }} && xset s blank && xset -dpms'
+      when: login_screen_apply | bool
+      tags: [apply]
+
+    - name: Deploy Dell seat screen-blank timer
+      ansible.builtin.copy:
+        dest: '{{ seat_timer }}'
+        owner: tony
+        group: tony
+        mode: '0644'
+        backup: yes
+        content: |
+          [Unit]
+          Description=Reapply {{ screen_blank_seconds }}s screen blank on physical seat :1
+
+          [Timer]
+          OnBootSec=2min
+          OnUnitActiveSec=15min
+          Persistent=true
+
+          [Install]
+          WantedBy=timers.target
+      when: login_screen_apply | bool
+      tags: [apply]
+
+    - name: Enable and start Dell screen-blank timer
+      ansible.builtin.systemd:
+        name: screen-blank-seat.timer
+        scope: user
+        enabled: true
+        state: started
+      when: login_screen_apply | bool
+      tags: [apply]
+
+    - name: Enforce GNOME idle delay on Dell
+      community.general.dconf:
+        key: /org/gnome/desktop/session/idle-delay
+        value: 'uint32 {{ screen_blank_seconds }}'
+        state: present
+      when: login_screen_apply | bool
+      tags: [apply]
