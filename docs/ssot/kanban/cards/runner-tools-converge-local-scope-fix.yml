@@ -1,7 +1,7 @@
 id: runner-tools-converge-local-scope-fix
 title: Scope runner-tools-converge.timer to its local host and skip hosts without ansible
-column: review
-updated: 2026-11-27 10:14
+column: done
+updated: 2026-11-27 10:16
 spec: 'The nightly runner-tools-converge.service invokes scripts/devin/runner-tools-converge.sh, which runs deploy-runner-tools.yml
   across the whole fleet from each host. Any off-net host (tony-macbook sleeps) makes the --check phase fail, and
   idc03/mn01/tony-omen have no ansible-playbook on PATH, so five false timer-alert cards were filed on 2026-11-27
@@ -102,6 +102,13 @@ comms:
 - at: 2026-11-27 10:14
   from: chaba
   text: 'worktree kept: dirty — 2 uncommitted file(s)'
+- at: 2026-11-27 10:16
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 claim:
   since: 2026-11-27 09:17
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 10:16
+  note: verified — evidence checks green, closing itself
