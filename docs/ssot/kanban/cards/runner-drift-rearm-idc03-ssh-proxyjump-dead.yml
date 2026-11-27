@@ -1,6 +1,6 @@
 id: runner-drift-rearm-idc03-ssh-proxyjump-dead
 title: runner-drift-rearm board writes silently dead on tony-dell (ssh idc03 ProxyJump refused)
-column: doing
+column: done
 updated: 2026-11-27 10:34
 priority: medium
 tags:
@@ -63,14 +63,29 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261127-100423-found-during-runner-tools-conv no longer active on mn01 but card
     still says running — sweeping its branch'
+- at: 2026-11-27 10:34
+  from: chaba
+  text: 'merge-sweep: merged 7aaff711 (dispatch/20261127-100423-found-during-runner-tools-conv from mn01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261127-100423-found-during-runner-tools-conv.md)
+    — auto-closed'
+- at: 2026-11-27 10:34
+  from: local
+  text: 'pub milestone: card verified: runner-drift-rearm-idc03-ssh-proxyjump-dead on idc03 — merged 7aaff711 (dispatch/20261127-100423-found-during-runner-tools-conv
+    from mn01) -> origin/master — verified — auto-c — merged 7aaff711 (dispatch/20261127-100423-found-during-runner-tools-conv
+    from mn01) -> origin/master — verified — auto-closed [evt-84997596a8e0a038]'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: codemod
   lane_source: kw
   runner: mn01
   attempts: 1
   sweep:
     stale_running: 2026-11-27 10:34
+  verified: true
 claim:
   since: 2026-11-27 10:03
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 10:34
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261127-100423-found-during-runner-tools-conv.md
