@@ -1,7 +1,7 @@
 id: overnight-assessment-two-step-fix
 title: 'overnight-assessment: log-sweep row conversion + stale sensor health'
 column: backlog
-updated: 2026-11-27 10:42
+updated: 2026-11-27 10:43
 spec: 'overnight-assessment.service on idc03 fails 3 of 4 recent runs. reports/ORCHESTRATION.json shows 3/6 steps
   ok; the ssot_validate failure from a malformed YAML trail doc was already fixed and pushed (3219cd79f40). Two
   real failures remain:
@@ -34,3 +34,10 @@ comms:
   from: tony
   text: '[next 2026-11-27] Two real step failures after the YAML syntax fix landed. Service-log row conversion is
     a code bug; sensor endpoint needs an honest ok/down decision.'
+- at: 2026-11-27 10:42
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 4.18 > 0.7)'
+- at: 2026-11-27 10:43
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
