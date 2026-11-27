@@ -1,7 +1,7 @@
 id: mddb-ops-write-latency-triage
 title: 'mddb-ops: diagnose /add + /ingest ~125s congestion waves (read-only, approval-gated)'
 column: doing
-updated: 2026-11-27 13:35
+updated: 2026-11-27 13:40
 brief: Next batch 2026-11-27 — 4 runner slots free.
 priority: high
 tags:
@@ -31,6 +31,9 @@ action:
   status: running
   runner: idc02
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 13:40
+    dirty: 2
 ref: OPS-1500
 comms:
 - at: 2026-11-27 12:58
@@ -95,6 +98,14 @@ comms:
 - at: 2026-11-27 13:35
   from: chaba
   text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-27 13:40
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-125922-diagnose-read-only-first-the-c no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-27 13:40
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261127-125922-diagnose-read-only-first-the-c on idc02 still dirty —
+    2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 claim:
   since: 2026-11-27 12:58
 requests:
