@@ -1,7 +1,7 @@
 id: yomi-update-conversations-missing-imports
 title: Yomi summaries fail — missing summary-utils imports in update-conversations.mjs
 column: done
-updated: 2026-11-27 15:43
+updated: 2026-11-27 15:47
 brief: yomi-update-all writes conversations but every summary fails with "validateAndTruncateContext is not defined".
   Three symbols used but not imported in update-conversations.mjs; all exported by summary-utils.mjs. Import-only
   fix.
@@ -124,6 +124,13 @@ comms:
     on idc03 — added validateAndTruncateContext, getContextLengthStatus and LLAMA_REQUEST_TIMEOUT to the named import
     from "./summary-utils.mjs". Timestamped backup kept at update-conversations.mjs.pre-OPS-1505-20261127-153730
     (rollback: copy it back over the file). Verification: node --check rc=0; all three symbols confirmed expo'
+- at: 2026-11-27 15:47
+  from: chaba
+  text: 'GUARD HOTFIX ALSO APPLIED + VERIFIED (Tony 2026-11-27 15:44 +07), same live copy on idc03. Changed all
+    3 occurrences of getContextLengthStatus(prompt) -> getContextLengthStatus(validatedPrompt) (now lines 564/870/1006)
+    so the truncation the code already performs is actually the value being guarded and sent. Backup: update-conversations.mjs.pre-guardfix-20261127-154413.
+    node --check rc=0. Re-ran yomi-update-all from 15:44:19 to 15:46:07, ExecMainStatus=0, wrote 70 conversations;
+    counts since the '
 ref: OPS-1505
 claim:
   since: 2026-11-27 15:33
