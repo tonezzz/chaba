@@ -1099,7 +1099,7 @@ jobs:
   on_calendar: hourly
   persistent: true
   timeout: 10m
-  exec: /usr/bin/podman run --rm --name yomi-update-all -v %h/CascadeProjects/chaba-tony-dell:%h/CascadeProjects/chaba-tony-dell:Z
+  exec: /usr/bin/podman run --rm --name yomi-update-all --network host -e HOME=/home/tony -e LLAMA_URL=http://127.0.0.1:11446/v1/chat/completions -v %h/CascadeProjects/chaba-tony-dell:%h/CascadeProjects/chaba-tony-dell:Z
     -v %h/.yomi/mcpb:%h/.yomi/mcpb:Z -v %h/.local/share/yomi:%h/.local/share/yomi:Z -w %h/CascadeProjects/chaba-tony-dell/scripts/yomi
     --add-host postgre:100.102.134.91 --env-file %h/.config/yomi/yomi-update-all.env docker.io/library/node:22-slim
     node %h/CascadeProjects/chaba-tony-dell/scripts/yomi/update-conversations.mjs
@@ -1170,7 +1170,7 @@ jobs:
   host: idc03
   dispatch: systemd   # dispatcher->systemd 2026-10-29 (OPS-0790)
   every: 15m
-  timeout: 120s
+  timeout: 15m
   exec: /usr/bin/podman run --rm --name yomi-update-active --network=container:yomi-api -v %h/CascadeProjects/chaba-tony-dell:%h/CascadeProjects/chaba-tony-dell:Z
     -v %h/.yomi/mcpb:%h/.yomi/mcpb:Z -v %h/.local/share/yomi:%h/.local/share/yomi:Z -w %h/CascadeProjects/chaba-tony-dell/scripts/yomi
     docker.io/library/node:22-slim node %h/CascadeProjects/chaba-tony-dell/scripts/yomi/yomi-refresh-active.mjs

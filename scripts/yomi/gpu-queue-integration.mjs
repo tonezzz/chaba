@@ -1,6 +1,6 @@
 import { createJob, getJob, updateJobStatus } from "../gpu-queue/db.mjs";
 
-const LLAMA_URL = process.env.LLAMA_URL || "http://localhost:8001/v1/chat/completions";
+const LLAMA_URL = process.env.LLAMA_URL || "http://127.0.0.1:11446/v1/chat/completions";
 
 // Submit a summary job to GPU queue
 export async function submitSummaryJob(chatId, prompt, type = "yomi_summary") {
@@ -8,7 +8,7 @@ export async function submitSummaryJob(chatId, prompt, type = "yomi_summary") {
     chatId,
     prompt,
     type: "summary",
-    model: "Phi-3-mini-4k-instruct-q4",
+    model: "qwen2.5:7b-instruct",
     maxTokens: 50,
     temperature: 0.3,
   };
@@ -25,7 +25,7 @@ export async function submitDailySummaryJob(chatId, date, prompt, type = "yomi_d
     date,
     prompt,
     type: "daily_summary",
-    model: "Phi-3-mini-4k-instruct-q4",
+    model: "qwen2.5:7b-instruct",
     maxTokens: 300,
     temperature: 0.3,
   };
@@ -42,7 +42,7 @@ export async function submitBatchDailySummaryJob(chatId, dates, prompt, type = "
     dates,
     prompt,
     type: "batch_daily_summary",
-    model: "Phi-3-mini-4k-instruct-q4",
+    model: "qwen2.5:7b-instruct",
     maxTokens: 600,
     temperature: 0.3,
   };
@@ -86,7 +86,7 @@ export async function waitForJob(jobId, timeout = 300000) {
 // Direct Llama API call (fallback when GPU queue not available)
 export async function directLlamaCall(prompt, options = {}) {
   const {
-    model = "Phi-3-mini-4k-instruct-q4",
+    model = "qwen2.5:7b-instruct",
     maxTokens = 300,
     temperature = 0.3,
     systemPrompt = "You extract structured information from chat conversations and return valid JSON.",

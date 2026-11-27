@@ -140,7 +140,7 @@ const MEDIA_DIR = "/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/
 const SUMMARY_CACHE =
   process.env.SUMMARY_CACHE ||
   "/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/yomi/summaries.json";
-const LLAMA_URL = process.env.LLAMA_URL || "http://localhost:8001/v1/chat/completions";
+const LLAMA_URL = process.env.LLAMA_URL || "http://127.0.0.1:11446/v1/chat/completions";
 const YOMI_MCP_PATH = process.env.YOMI_MCP_PATH || "/home/tony/.yomi/mcpb/run.mjs";
 
 const nodePath = process.env.NODE_BINARY_PATH || "/usr/local/bin/node";
@@ -561,7 +561,7 @@ function buildPrompt(name, messages) {
 async function summarizeWithLlama(prompt, chatId = "unknown") {
   // Validate and truncate context length before API call
   const validatedPrompt = validateAndTruncateContext(prompt, chatId);
-  const contextStatus = getContextLengthStatus(prompt);
+  const contextStatus = getContextLengthStatus(validatedPrompt);
 
   if (!contextStatus.valid) {
     console.error(
@@ -595,7 +595,7 @@ async function summarizeWithLlama(prompt, chatId = "unknown") {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              model: "Phi-3-mini-4k-instruct-q4",
+              model: "qwen2.5:7b-instruct",
               messages: [
                 {
                   role: "system",
@@ -867,7 +867,7 @@ async function extractDailyWithLlama(prompt, chatId = "unknown", date = "unknown
 
   // Validate and truncate context length before API call
   const validatedPrompt = validateAndTruncateContext(prompt, chatId);
-  const contextStatus = getContextLengthStatus(prompt);
+  const contextStatus = getContextLengthStatus(validatedPrompt);
 
   if (!contextStatus.valid) {
     console.error(
@@ -901,7 +901,7 @@ async function extractDailyWithLlama(prompt, chatId = "unknown", date = "unknown
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              model: "Phi-3-mini-4k-instruct-q4",
+              model: "qwen2.5:7b-instruct",
               messages: [
                 {
                   role: "system",
@@ -1003,7 +1003,7 @@ async function extractBatchDailyWithLlama(prompt, chatId = "unknown", dates = []
 
   // Validate and truncate context length before API call
   const validatedPrompt = validateAndTruncateContext(prompt, chatId);
-  const contextStatus = getContextLengthStatus(prompt);
+  const contextStatus = getContextLengthStatus(validatedPrompt);
 
   if (!contextStatus.valid) {
     console.error(
@@ -1044,7 +1044,7 @@ async function extractBatchDailyWithLlama(prompt, chatId = "unknown", dates = []
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              model: "Phi-3-mini-4k-instruct-q4",
+              model: "qwen2.5:7b-instruct",
               messages: [
                 {
                   role: "system",
