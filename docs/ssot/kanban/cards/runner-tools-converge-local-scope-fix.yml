@@ -1,7 +1,7 @@
 id: runner-tools-converge-local-scope-fix
 title: Scope runner-tools-converge.timer to its local host and skip hosts without ansible
 column: doing
-updated: 2026-11-27 10:01
+updated: 2026-11-27 10:10
 spec: 'The nightly runner-tools-converge.service invokes scripts/devin/runner-tools-converge.sh, which runs deploy-runner-tools.yml
   across the whole fleet from each host. Any off-net host (tony-macbook sleeps) makes the --check phase fail, and
   idc03/mn01/tony-omen have no ansible-playbook on PATH, so five false timer-alert cards were filed on 2026-11-27
@@ -16,6 +16,9 @@ action:
   status: running
   runner: tony-dell
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 10:10
+    dirty: 2
 ref: OPS-1478
 comms:
 - at: 2026-11-27 09:03
@@ -59,5 +62,13 @@ comms:
     fails loudly); fleet converge only on tony-dell (RUNNER_CONVERGE_FLEET=1 override) over ansible-ping-reachable
     hosts, self excluded — sleeping tony-macbook can no longer fail the run. Correction: tony-omen HAS ansible via
     ~/.local/bin uv tool — its failure was the fleet check,'
+- at: 2026-11-27 10:10
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-091756-the-nightly-runner-tools-conve no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-11-27 10:10
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261127-091756-the-nightly-runner-tools-conve on tony-dell still dirty
+    — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 claim:
   since: 2026-11-27 09:17
