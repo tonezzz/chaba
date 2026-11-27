@@ -432,16 +432,20 @@ def _journal(host: str, user: bool, kinds: set | None = None,
 
 
 # /add write budget for the heartbeat and the per-doc fallback
-# (OPS-1497, 2026-11-27): mddb-ops /add measured 8-20s under normal
+# (OPS-1497, 2026-11-27): mddb-ops /add measured 8-30s under normal
 # load, so the old 10s heartbeat / 15s fallback budgets false-failed
-# every run while every journal line had shipped. 45s covers the
-# observed p-max with headroom; 2 bounded attempts absorb
-# single-sample spikes. Keys are deterministic upserts, so a retried
-# /add is idempotent. A genuine MDDB outage still fails the run:
-# conn-refused returns fast on both attempts, and >90s of server-side
-# congestion still exits non-zero — the judge keeps seeing real
-# distress, only the false timeout is gone.
-ADD_TIMEOUT = 45
+# every run while every journal line had shipped. The card spec said
+# ~45s, but mddb-ops' own MDDB_HTTP_WRITE_TIMEOUT is 120s and its
+# logs show /add//ingest handlers running 125-198s during congestion
+# waves — a 45s budget would still false-fail every wave (the write
+# lands server-side after the client gives up). 130s sits just above
+# the server's own deadline so the client sees the server's verdict;
+# handlers that blow even that still fail here — honest distress,
+# not a hidden outage. 2 bounded attempts absorb transient transport
+# errors; keys are deterministic upserts so a retried /add is
+# idempotent. A genuine MDDB outage still fails the run:
+# conn-refused returns fast on both attempts.
+ADD_TIMEOUT = 130
 ADD_ATTEMPTS = 2
 
 
@@ -511,11 +515,21 @@ def _doc(r: dict) -> dict:
             "meta": meta}
 
 
-def _ingest(docs: list[dict], timeout: int = 60) -> bool | None:
+def _ingest(docs: list[dict], timeout: int = 130) -> bool | None:
     """Bulk-post one batch. True = all added; False = transport/server
     error or partial failure (caller stops — keys are deterministic, so
     replaying the batch upserts identical content); None = endpoint
-    missing on this mddb (caller falls back to per-doc /add)."""
+    missing on this mddb (caller falls back to per-doc /add).
+
+    timeout=130 (OPS-1497, 2026-11-27): the old 60s budget sat BELOW
+    mddb-ops' own MDDB_HTTP_WRITE_TIMEOUT=120s, so the client always
+    gave up before the server could answer — every congestion-wave
+    batch false-failed as 'mddb add failed — stopping' even though
+    the handler went on to finish the write. 130s lets the client
+    see the server's verdict; handlers that blow the server's own
+    120s deadline still fail here, which is honest distress signal.
+    No retry: re-posting a timed-out batch would double-write load
+    on an already congested server."""
     try:
         req = urllib.request.Request(
             f"{MDDB_URL}/ingest",
