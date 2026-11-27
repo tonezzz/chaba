@@ -1,7 +1,7 @@
 id: ops-1025-remote-read-smoke-idc03
 title: 'OPS-1025 one-shot remote-read verification: idc02 to idc03'
 column: doing
-updated: 2026-11-27 08:15
+updated: 2026-11-27 08:16
 brief: One supervised, read-only S3 verification of the merged remote-read gates.
 priority: medium
 program: OPS-1025
@@ -902,6 +902,10 @@ comms:
     → ModuleNotFoundError → connection closed (reproduced manually; failing across all recent devin logs). (2) Even
     if it ran, idc03 is NOT in ssot.mcp-debug.yml hosts (only tony_omen,tony_dell,macbook,con01) so mcp_debug(host=idc03)
     returns unknown host — the tool response cannot '
+- at: 2026-11-27 08:16
+  from: devin
+  text: 'raised request mcp-debug-cannot-reach-idc03-two-infra-g-d673ff: mcp-debug cannot reach idc03 — two infra
+    gaps: (a) devin mcp-debug MCP server fails to spawn on idc02 (python3 -m mcp_de'
 claim:
   since: 2026-11-26 23:44
 requests:
@@ -933,3 +937,16 @@ requests:
     action: hold
   answer: answer — Answer — reply in chat
   executed: 2026-11-27 none
+- id: mcp-debug-cannot-reach-idc03-two-infra-g-d673ff
+  ask: 'mcp-debug cannot reach idc03 — two infra gaps: (a) devin mcp-debug MCP server fails to spawn on idc02 (python3
+    -m mcp_debug.server → ModuleNotFoundError, needs PYTHONPATH=<repo>/scripts or cwd=scripts; the ssh-wrapper config
+    mcp-debug-ssh.sh is not what devin uses); (b) idc03 absent from ssot.mcp-debug.yml hosts {tony_omen,tony_dell,macbook,con01}
+    → mcp_debug(host=idc03) = unknown host. Per spec I stopped and reported the blocker rather than guessing failed_units.
+    Options: (1) register idc03 in ssot.mcp-debug.yml + fix devin mcp-debug launch config, then re-dispatch this
+    card; (2) close as blocked/attempted and card the infra fixes separately.'
+  status: open
+  at: 2026-11-27 08:16
+  from: devin
+  options:
+  - proceed
+  - hold
