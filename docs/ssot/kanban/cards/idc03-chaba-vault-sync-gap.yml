@@ -1,7 +1,7 @@
 id: idc03-chaba-vault-sync-gap
 title: idc03 chaba-vault checkout has no sync mechanism — 119k commits behind, caused 2 outages
-column: doing
-updated: 2026-11-27 11:40
+column: done
+updated: 2026-11-27 11:44
 priority: high
 tags:
 - infra
@@ -79,9 +79,19 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261127-111946-second-outage-from-this-root-c on con01 still dirty —
     1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-27 11:44
+  from: chaba
+  text: 'merge-sweep: merged b1d59ff9 (dispatch/20261127-111946-second-outage-from-this-root-c from con01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261127-111946-second-outage-from-this-root-c.md)
+    — auto-closed'
+- at: 2026-11-27 11:44
+  from: local
+  text: 'pub milestone: card verified: idc03-chaba-vault-sync-gap on idc03 — merged b1d59ff9 (dispatch/20261127-111946-second-outage-from-this-root-c
+    from con01) -> origin/master — verified — auto- — merged b1d59ff9 (dispatch/20261127-111946-second-outage-from-this-root-c
+    from con01) -> origin/master — verified — auto-closed [evt-0ce2ec7f3713426c]'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   lane_source: kw
   runner: con01
@@ -89,5 +99,10 @@ action:
   sweep:
     stale_running: 2026-11-27 11:40
     dirty: 1
+  verified: true
 claim:
   since: 2026-11-27 11:18
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 11:44
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261127-111946-second-outage-from-this-root-c.md
