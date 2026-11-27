@@ -1,7 +1,7 @@
 id: openjev-idc02-earlyoom-exposure
 title: idc02 openjev (~2.5 GiB RSS) remains earlyoom-exposed after jev exemption
-column: review
-updated: 2026-11-27 22:05
+column: done
+updated: 2026-11-27 22:11
 brief: 'Found while applying OPS-1516 fix (card jevos-idc02-earlyoom-kill): earlyoom --avoid ''(^|/)(jev)$'' was
   scoped to comm=jev only. The sibling openjev process (gemma-3-4b-it torch CPU lane on :8777, comm=openjev) is
   the LARGEST process on idc02 (~2.5 GiB RSS vs jev''s ~1.7 GiB) and remains an earlyoom kill candidate — idc02
@@ -87,6 +87,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-214825-decide-openjev-s-protection-on,
     branch dispatch/20261127-214825-decide-openjev-s-protection-on'
+- at: 2026-11-27 22:11
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -101,3 +104,7 @@ action:
 claim:
   since: 2026-11-27 21:47
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 22:11
+  note: verified — evidence checks green, closing itself
