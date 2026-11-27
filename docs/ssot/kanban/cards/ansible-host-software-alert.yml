@@ -1,7 +1,7 @@
 id: ansible-host-software-alert
 title: 'Ansible audit: host software capability drift/fail'
 column: done
-updated: 2026-11-27 06:34
+updated: 2026-11-28 06:34
 spec: 'Read-only ansible verify-host-software detected capability failures/unreachable hosts vs ssot.host-software.yml.
   Hosts: kk-mac. Report dir: reports/ansible-benchmark/host-software/. No remediation performed.'
 action:
@@ -39,3 +39,8 @@ comms:
   text: 'ansible verify-host-software: 2 host(s) alerting. fp=kk-mac:unreachable:3|tony-macbook:unreachable:2. [{"host":
     "kk-mac", "kind": "unreachable", "failed": 3, "summary": "unreachable (3 declared capabilities down)"}, {"host":
     "tony-macbook", "kind": "unreachable", "failed": 2, "summary": "unreachable (2 declared capabilities down)"}]'
+- at: 2026-11-28 06:34
+  from: devin
+  text: 'ansible verify-host-software: 2 host(s) alerting. fp=kk-mac:unreachable:3|mn01:fail:1. [{"host": "kk-mac",
+    "kind": "unreachable", "failed": 3, "summary": "unreachable (3 declared capabilities down)"}, {"host": "mn01",
+    "kind": "fail", "failed": 1, "summary": "fail (1/2 capabilities failing)"}]'
