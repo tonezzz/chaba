@@ -1,7 +1,7 @@
 id: runner-tools-converge-local-scope-fix
 title: Scope runner-tools-converge.timer to its local host and skip hosts without ansible
 column: doing
-updated: 2026-11-27 09:44
+updated: 2026-11-27 10:01
 spec: 'The nightly runner-tools-converge.service invokes scripts/devin/runner-tools-converge.sh, which runs deploy-runner-tools.yml
   across the whole fleet from each host. Any off-net host (tony-macbook sleeps) makes the --check phase fail, and
   idc03/mn01/tony-omen have no ansible-playbook on PATH, so five false timer-alert cards were filed on 2026-11-27
@@ -52,5 +52,12 @@ comms:
   text: 'Fix written: runner-tools-converge.sh now skips exit-0 without ansible-playbook, scopes all playbook calls
     to --limit <hostname> (verified hostname==inventory name on all 7 hosts), and runs the fleet pass only on tony-dell
     over ansible-ping-reachable hosts. 7 stubbed-binary pytest cases pass. Live verification running next.'
+- at: 2026-11-27 10:01
+  from: devin
+  text: 'DONE (commit 0e6d85ec3c8 on dispatch branch). runner-tools-converge.sh now: exit-0 SKIP without ansible-playbook;
+    --limit <hostname -s> on every playbook call (hostname==inventory name verified on all 7 hosts, unknown host
+    fails loudly); fleet converge only on tony-dell (RUNNER_CONVERGE_FLEET=1 override) over ansible-ping-reachable
+    hosts, self excluded — sleeping tony-macbook can no longer fail the run. Correction: tony-omen HAS ansible via
+    ~/.local/bin uv tool — its failure was the fleet check,'
 claim:
   since: 2026-11-27 09:17
