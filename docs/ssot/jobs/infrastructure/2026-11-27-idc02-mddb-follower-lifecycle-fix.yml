@@ -1,0 +1,101 @@
+---
+job: 2026-11-27-idc02-mddb-follower-lifecycle-fix
+title: Fix idc02 mddb follower clean-exit crash loop and watchdog false stalls
+area: infrastructure
+created: '2026-11-27'
+status: done
+goal: >-
+  Keep the read-only idc02 mddb follower of idc03 alive after a clean container
+  exit, stop the 5-minute watchdog from restarting it during normal startup,
+  and clear the last fleet audit delta.
+targets: [idc02]
+decision:
+  - "Tony approved an immediate live fix (follower is read-only, already down, DR degraded: con01 follower also healthy:false)."
+  - "No Ansible playbook exists for mddb quadlet/watchdog files; handled as a one-off host change with timestamped backups and an explicit rollback (ansible-first triage: one-off path)."
+diagnosis:
+  root_cause: >-
+    Systemd quadlet lifecycle, not the database or image. An identical manual
+    container (same image/env/14.8GB data, no --rm/sdnotify) ran 21+ minutes,
+    resumed from persisted LSN 262145664 and caught up to 262182506. The
+    service container instead exited cleanly after 6-13 min (Result=success,
+    no OOM, 48GB disk free). Quadlet injects `podman run --rm` and the unit had
+    Restart=on-failure, so a clean exit removed the container and systemd never
+    restarted it.
+  aggravator: >-
+    mddb-watchdog.timer fires every 5m and restarts on healthy:false + frozen
+    LSN. A fresh start spends ~61s scanning embedding provenance across 24
+    collections, so a still-initializing follower looks stalled and gets
+    restarted again (STALL events 17:28 and 17:53). healthy:false alone is not
+    a crash signal - con01's follower shows the same flag while receiving.
+evidence:
+  - "mddb.service: Result=success, NRestarts=0, clean exit status 137 only after explicit watchdog Stopping."
+  - "watchdog journal: STALL 17:28:19 lsn=262123663; STALL 17:53:28 lsn=262127485; 18:38:34 api unreachable on recheck, skip."
+  - "diagnostic container mddb-diag: alive 21+ min, LSN 262145664 -> 262182506, watchdog logged 'applying: ... (catch-up, leave it)'."
+  - "leader idc03 healthy; con01 follower healthy:false lag ~218s (similar flag, no crash)."
+changes:
+  quadlet:
+    file: /home/tony/.config/containers/systemd/mddb.container
+    edits:
+    - "Restart=on-failure -> Restart=always (systemd now restarts clean exits too)."
+    - "PodmanArgs=--rm=false added; podman 4.9.3 quadlet auto-injects --rm first, PodmanArgs last, and pflag takes the final value. Generated ExecStart order confirmed: `--rm --rm=false`."
+    - "--replace, --cidfile, --sdnotify=conmon, TimeoutStopSec=70 left unchanged."
+  watchdog:
+    file: /home/tony/.local/bin/mddb-follower-watchdog.sh
+    edits:
+    - "GRACE_S=180: skip the stall branch while mddb.service uptime < 180s, so the ~61s embedding-provenance scan is not misread as a stall."
+    - "bash -n syntax check passed."
+commands:
+  apply: >-
+    ssh idc02 'sed -i s/^Restart=on-failure$/Restart=always/
+    ~/.config/containers/systemd/mddb.container; python3 patch of watchdog with
+    GRACE_S=180; systemctl --user daemon-reload; systemctl --user start
+    mddb.service'
+  verify: >-
+    ssh idc02 'systemctl --user show mddb.service -p ActiveState -p SubState
+    -p Result -p NRestarts; podman inspect mddb --format
+    "{{.State.Status}} autoRemove={{.HostConfig.AutoRemove}}"; curl -sS
+    http://100.123.163.11:11023/v1/replication/status'
+backup:
+  - /home/tony/.config/containers/systemd/mddb.container.bak-20261127-195127
+  - /home/tony/.local/bin/mddb-follower-watchdog.sh.bak-20261127-195127
+rollback:
+  - "Restore the two .bak-20261127-195127 files, then `systemctl --user daemon-reload` and `systemctl --user restart mddb.service`."
+  - "To reproduce the pre-fix posture exactly, set Restart back to on-failure and remove PodmanArgs (leaves the container auto-removed on clean exit)."
+verification:
+  immediate_2026-11-27T19-54+07: >-
+    service active/running, Result=success, NRestarts=0; container running with
+    autoRemove=false; replication current_lsn 262184205, connected=true,
+    last_recv_age_ms=82, Healthy=false with lag ~2052s (actively catching up).
+  soak: >-
+    18-minute background monitor 2026-11-27T19:54-20:11+07, 1-minute sampling
+    of ActiveState/SubState/NRestarts, LSN/healthy/lag and watchdog STALL count:
+    active/running at every sample, NRestarts=0 throughout, zero STALL events.
+    LSN advanced 262184914 -> 262216271 (+31357); replication_lag_s grew to
+    2739 then fell to 1772 in the last two samples (catch-up turning the corner).
+    This outlasts the old 6-13 min clean-exit window, so the crash loop is
+    resolved.
+  fleet_audit: >-
+    ansible-playbook playbooks/audit-fleet-services.yml (full fleet, read-only)
+    reports 0 deltas on all 7 hosts after the fix and the related SSOT
+    reconciliations; idc02 report mtime 2026-11-27T20:00+07, final pass clean.
+  concurrent_deltas: >-
+    Three new idc03 deltas and one new idc02 delta appeared during this job from
+    other live work (19:42-19:57) and were reconciled in ssot.audit.hosts.yml:
+    ada-dev/ada-kk-dev stopped+disabled on idc03 after their 2026-11-18 move to
+    tony-omen (stale active expectations -> inactive), Ansible-managed
+    jevos-swap-reclaim.timer declared, kanban-commit.service git index.lock
+    collision declared known_failed as transient, and runner-tools-converge.service
+    declared known_failed pending an unstaged dispatch_repos.py edit being
+    committed together with an updated runner-tooling.manifest.json pin.
+lessons:
+  - >-
+    Podman 4.9.3 quadlet always appends `--rm` to `podman run`; Restart=alone
+    does not suppress it. `PodmanArgs=--rm=false` placed after the auto flag
+    wins, and `podman inspect .HostConfig.AutoRemove` proves effective state.
+  - >-
+    A healthy:false replication status is expected during catch-up; only a
+    frozen LSN while the API is up is a stall signal, and even then a fresh
+    restart needs a startup grace window before it can be trusted.
+  - >-
+    `healthy:false` on con01's follower is a pre-existing baseline, not a
+    crash indicator - compare against peer hosts before treating it as drift.

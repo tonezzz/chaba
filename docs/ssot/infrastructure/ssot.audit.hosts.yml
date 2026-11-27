@@ -1892,10 +1892,11 @@ hosts:
       - name: ada-dev.service
         type: service
         scope: user
-        expected_state: active
+        expected_state: inactive
         critical: false
-        note: Lab instance on 127.0.0.1:8005 (running but intentionally
-          not-enabled at boot — pre-migration decision carried over)
+        note: Lab instance on 127.0.0.1:8005 — migrated to tony-omen
+          2026-11-18 (expected_services there); stopped+disabled on idc03
+          2026-11-27. Stale active expectation corrected to inactive.
       - name: obsidian-vault.service
         type: service
         scope: user
@@ -2142,7 +2143,10 @@ hosts:
       # --- census 2026-10-12 (drift-reconcile OPS-0521) ---
       - {name: ada-bankq-student.service, type: service, scope: user}
       - {name: ada-kk.service, type: service, scope: user}
-      - {name: ada-kk-dev.service, type: service, scope: user}
+      - {name: ada-kk-dev.service, type: service, scope: user, expected_state: inactive,
+         note: "Kaewta dev twin ADA-0480 :8009 — migrated to tony-omen 2026-11-18; stopped+disabled on idc03 2026-11-27"}
+      - {name: jevos-swap-reclaim.timer, type: timer, scope: user,
+         note: "Daily 04:30 swap reclaim check; Ansible-managed by idc03-swap-placement.yml (host file says 'Managed by chaba/ansible — do not edit on host'). Surfaced by 2026-11-27 full timer census."}
       - {name: ada-tg-relay-kk.service, type: service, scope: user}
       - {name: kk-ha.service, type: service, scope: user}
       - {name: litellm.service, type: service, scope: user}
@@ -2290,6 +2294,9 @@ hosts:
       - {name: ada-ha-michael.service, scope: user, note: "renamed to ada-ai-kraut.service on idc03 (grand-rename KNB-1098); mn01 keeps its own standby copy"}
     oom_kills_tolerance: 0
     known_failed:
+      - name: kanban-commit.service
+        reason: "2026-11-27 19:57 transient: concurrent board-api/git writers collided on chaba-tony-dell/.git/index.lock ('Unable to create index.lock: File exists'), so the scoped kanban-persist oneshot exited 1. The 19:40 fire finished cleanly; a repeat failure after the lock clears is real and needs investigation."
+        action: monitor-next-fire
       - name: ada-memory-sync.service
         reason: "Hourly vault→MDDB sync exits 1 when it detects push conflicts (remote content preserved) — RESIDUAL finding-reporter under the 2026-10-13 exit-code contract (docs/kb/timer-expectations.md); migrate when next touched"
         action: review-sync-conflicts
@@ -2439,9 +2446,11 @@ hosts:
         expected_state: active
         critical: false
         note: Read-only replication follower of idc03 leader (quadlet,
-          100.123.163.11:11023, localhost/mddb:2.15.4-blrotate) — migrated
+          100.123.163.11:11023, localhost/mddb:2.18.10-merge) — migrated
           from tony-dell 2026-10-05; self-seeds via leader snapshot, SSD
-          verify ~4 min vs dell HDD >6h timeout loop
+          verify ~4 min vs dell HDD >6h timeout loop. Since 2026-11-27,
+          Restart=always + PodmanArgs=--rm=false stop clean-exit removal; watchdog has a 180s
+          startup grace (job 2026-11-27-idc02-mddb-follower-lifecycle-fix).
       - name: chaba-repo-sync.timer
         type: timer
         scope: user
@@ -2659,6 +2668,9 @@ hosts:
       - {name: mddb-gdrive-tier.timer, scope: user, note: "retired — migrated from tony-dell 2026-10-18/19; no active copy at 2026-11-27 census"}
       - {name: jev-bench.timer, scope: user, note: "canonical con01 (active+enabled there); not-found on idc02"}
     known_failed:
+      - name: runner-tools-converge.service
+        reason: "2026-11-27 19:50+ transient from concurrent uncommitted work, not host drift: scripts/board/dispatch_repos.py has an unstaged one-line JEVOS_URL change (127.0.0.1:8017 -> 100.123.163.11:8017) in ~/CascadeProjects/chaba; installed tool and source both hash c77eecb4… while the manifest pin and HEAD source both hash 02217656…, so deploy-runner-tools.yml 'Assert installed checksum matches the pin' fails after a 0-change apply. Re-running after the edit is committed WITH a manifest pin update should exit 0 — a failure after that is real."
+        action: update-runner-tooling-pin-when-dispatch-repos-edit-lands
       - name: chaba-audit.service
         reason: "Pre-OPS-0581 finding-reporter (exited nonzero on error findings — findings tracked in card fix-idc02-audit-suite); since 2026-10-13 exits 0 on completed runs — findings via reports/audits/summary.* + focus-inbox (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"
         action: card-fix-idc02-audit-suite
