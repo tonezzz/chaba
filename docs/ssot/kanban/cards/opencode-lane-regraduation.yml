@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: doing
-updated: 2026-11-27 08:55
+updated: 2026-11-27 09:11
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -841,6 +841,17 @@ comms:
 - at: 2026-11-27 08:55
   from: chaba
   text: 'answer-sweep: 5 answered request(s) still unmapped — stays flagged'
+- at: 2026-11-27 09:11
+  from: devin
+  text: 'attempt-14 DONE (post-quota-reset): two fresh S0 climbs ran on idc02. climb1 = ROLLBACK (tool_denial adjudicated
+    detector-FP: artifact heredoc named fixture __pycache__ dirs; no held-out reads) + genuine verifier fails. climb2
+    = HOLD (0 denials, 2/5 verified=0.40<0.60). backup-freshness + worktree-safety failed BOTH climbs — capability
+    ceiling not variance. storage-dryrun passed climb2 after fixture __pycache__ hygiene. Lane stays S0; S1/S2 not
+    reached. Evidence: evals/opencode-lane/reports/2026'
+- at: 2026-11-27 09:11
+  from: devin
+  text: 'raised request s0-gate-ran-twice-post-reset-or-free-nem-a3e28c: S0 gate ran twice post-reset: or-free-nemotron-ultra
+    verified 2/5 both climbs (0.40 < 0.60 gate). backup-freshness (untr'
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
@@ -946,6 +957,20 @@ requests:
   - hold
   answer: proceed
   executed: 2026-11-27 queue (already running)
+- id: s0-gate-ran-twice-post-reset-or-free-nem-a3e28c
+  ask: 'S0 gate ran twice post-reset: or-free-nemotron-ultra verified 2/5 both climbs (0.40 < 0.60 gate). backup-freshness
+    (untruthful mtimes) + worktree-safety (worktree enumeration) failed identically both times — looks like a capability
+    ceiling, not bad luck. How to proceed? A) requalify+climb again same free model (cheap, ~30-40%/climb, may take
+    several) B) qualification climb with an alternate model — e.g. gemini-2.5-flash-lite (verified responsive ~$0.0000012/req;
+    qualification-only, NOT a STRONG_MODELS/free-tier admission change — your call) C) hold lane at S0, revisit
+    later. Note: S1 canary still needs your live ~10min watch on idc02 (s1-watch.sh) whenever the gate passes. Prior
+    quota request is moot post-reset.'
+  status: open
+  at: 2026-11-27 09:11
+  from: devin
+  options:
+  - proceed
+  - hold
 action:
   type: dispatch
   status: running
