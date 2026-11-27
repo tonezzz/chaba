@@ -1,7 +1,7 @@
 id: idc03-chaba-vault-sync-gap
 title: idc03 chaba-vault checkout has no sync mechanism — 119k commits behind, caused 2 outages
 column: doing
-updated: 2026-11-27 11:29
+updated: 2026-11-27 11:40
 priority: high
 tags:
 - infra
@@ -71,6 +71,14 @@ comms:
     ~411 untracked inbox extracts); ~/CascadeProjects/chaba is synced/current; mn01 has no chaba-vault; idc01 offline
     (its exec checkout IS chaba-vault per ssot.jobs.yml — flagged as open item). Changed: ada-memory-sync/drift/obsidian-vault
     ExecStart repointed to chaba checkout (--va'
+- at: 2026-11-27 11:40
+  from: chaba
+  text: 'merge-sweep: devin-task-20261127-111946-second-outage-from-this-root-c no longer active on con01 but card
+    still says running — sweeping its branch'
+- at: 2026-11-27 11:40
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261127-111946-second-outage-from-this-root-c on con01 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: running
@@ -78,5 +86,8 @@ action:
   lane_source: kw
   runner: con01
   attempts: 1
+  sweep:
+    stale_running: 2026-11-27 11:40
+    dirty: 1
 claim:
   since: 2026-11-27 11:18
