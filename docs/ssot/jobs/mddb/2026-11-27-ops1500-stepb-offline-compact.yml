@@ -1,0 +1,74 @@
+icon: archive
+title: OPS-1500 Step B — offline bbolt compact of mddb-ops (32G to 6.3G)
+date: 2026-11-27
+card: mddb-ops-write-latency-triage
+ref: OPS-1500
+context: >-
+  OPS-1500 Step A killed the detached prune drain loop that caused the
+  deleteWhere write-lock convoy (/v1/add 10-200s). Tony approved A+B on
+  2026-11-27 and chose the 22:00 +07 window for Step B. Procedure C from
+  docs/kb/mddb-prune-compact.md is the only path that shrinks the bbolt file
+  while preserving docs, revisions, vectors and index. Preflight at 22:01
+  was green: service active/running with NRestarts=0, db 33,689,640,960
+  bytes, no stray compact or .pre-compact file, no running compact,
+  docker.io/golang:1.23-bookworm present, 113G free on /, and
+  MDDB_ADDR=100.102.134.91:11026 confirmed tailnet-only.
+changes:
+  - "Stopped mddb-ops.service on idc03 at 22:02:32 +07; inactive/dead in
+    1s, container gone, source db untouched."
+  - "Ran the approved bbolt@v1.4.3 compact detached in golang:1.23-bookworm
+    with a :U bind mount, with a completion marker, a log and a
+    no-double-trigger guard (~/mddb-ops-compact-20261127 on idc03)."
+  - "Compact finished 22:18:00 +07, rc=0, bbolt reported 33689640960 ->
+    6777569280 bytes (gain=4.97x) after 15m28s."
+  - "After confirming rc=0, service stopped, no compact process running
+    and output non-empty, swapped via podman unshare: mddb.db ->
+    mddb.db.pre-compact and mddb-compact.db -> mddb.db."
+  - "Started mddb-ops.service at 22:18 +07: active/running in 1s,
+    Result=success, NRestarts=0, container up, clean startup journal and
+    mddb HTTP listening on 100.102.134.91:11026."
+verification:
+  - "http://100.102.134.91:11026/health returns 200 status healthy;
+    127.0.0.1:11026/health returns http=000 as expected (tailnet-only)."
+  - "/v1/stats first returned statsPending with empty collections (expected
+    per runbook, not data loss), then recomputed within ~1 minute: 655,276
+    docs / 656,602 revisions / 3,335,450 meta-index across all four
+    collections (host-logs 629,787; device-telemetry 25,417;
+    host-logs-state 66; ada-nest-heartbeats 6). Pre-change baseline was
+    627,806 / 655,982 / 3,195,358 with statsComputedAt ~7h stale, so the
+    increase is queued writes caught up, not loss."
+  - "Baseline sample id host-logs-state|probe-heartbeat-0|en confirmed
+    byte-identical after restart via /v1/get and targeted /v1/search;
+    device-telemetry vector search returned a real live document with
+    content intact."
+  - "POST /v1/add x3 from idc02 to a keyed host-logs-state probe returned
+    200 in 0.059s / 0.018s / 0.014s (was 10-27s during the convoy, ~3s
+    after Step A)."
+  - "The 22:02:43 log-shipper tick fired during the outage and failed with
+    the cursor held; replayed manually at 22:19:19 -> Result=success,
+    1619 lines shipped, 0 failed, ship/idc03 heartbeat ts
+    2026-11-27T15:19:52Z. Other host heartbeat docs remain present."
+  - "Only after all checks passed, removed the rollback with podman unshare
+    rm -f mddb.db.pre-compact (rc=0); final data dir contains only
+    mddb.db (6,830,108,672 bytes after post-restart writes) and health is
+    still 200. No other MDDB bank was touched."
+rollback: >-
+  Before the swap the rollback was mddb.db.pre-compact at
+  33,689,640,960 bytes; the service would have been stopped and the old
+  file moved back if any verification failed. All checks passed, so it was
+  removed at 22:20 +07 per the approved procedure. The compact output and
+  runner log/rc marker remain at ~/mddb-ops-compact-20261127 on idc03 as
+  evidence.
+residual: >-
+  Total mddb-ops outage was about 15.5 minutes. Writers self-healed via
+  cursor replay; the single failed hourly tick was replayed manually.
+  The host-logs retention backlog (Phase C) remains backlog work — do not
+  re-run the while-true drain pattern or raise the deleteWhere limit.
+lesson: >-
+  An SSH-command self-match in a pgrep guard aborted the first swap attempt
+  harmlessly; use ps with a bracketed pattern (or anchor pgrep) so the
+  guard does not match its own command line. A detached podman compact with
+  an explicit rc file and a no-double-trigger guard survives session drops
+  and makes the reattach-before-swap check unambiguous. Check statsPending
+  with a targeted /v1/get for a known id before ever treating empty stats
+  collections as data loss.
