@@ -1,10 +1,13 @@
 """MEM-1507: MDDB publisher readiness gate + bounded write retries.
 
-Both publishers used to POST straight to /v1/add after only a TCP/health
+ops-health-report.py used to POST straight to /v1/add after only a TCP/health
 probe. After an OOM restart mddb opens /health ~84-104s before /v1 routes are
 live, so the write got a 404 and the timer tick exited 1. These tests prove
-that both scripts now (a) gate on GET /v1/stats, (b) retry only transient
-failures at most 3 times, and (c) refuse the POST when routes never appear.
+it now (a) gates on GET /v1/stats, (b) retries only transient failures at
+most 3 times, and (c) refuses the POST when routes never appear.
+
+The media publisher is covered upstream by tests/ada/test_media_inbox_mddb_gate.py
+(commit 9098c165719, shared mddb_http retry + /v1/health gate).
 
 Runs under the system python; httpx is stubbed and the ops script's
 import-time health probes are excluded by AST filtering.
@@ -141,8 +144,6 @@ def harness(mod, which):
 
 def pair():
     out = []
-    if MEDIA_SCRIPT.exists():
-        out.append(("media", load(MEDIA_SCRIPT)))
     if OPS_SCRIPT.exists():
         # The script's own sys.path insertion is an executable statement that
         # AST filtering drops, so provide its repo root here.

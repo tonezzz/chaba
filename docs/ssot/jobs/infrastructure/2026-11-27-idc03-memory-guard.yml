@@ -126,13 +126,15 @@ publisher_hardening:
        MDDB_CMS_URL and the two timeout knobs are env-overridable."
     - "Keyed /v1/add makes a retry an upsert, not a duplicate document."
   pins_sha256:
-    media-inbox-update.py: 03c905bf06ebad0fe563a153163971ad36af67afbc3b9c6a3445bd1cf07d09d9
+    media-inbox-update.py: ca19116810cba172296dd968f8595e21377e9b5e54075ec3c0560d8769336168
     ops-health-report.py: b04d81ecf329655a12cbc02f749642d4f89e14ae224f4c8cf163e9aa57e5c4d3
   tests:
     file: tests/test_publisher_mddb_retry.py
-    result: "10 passed (5 cases x 2 scripts): readiness 404/503 -> POST,
+    result: "5 passed for ops-health-report.py: readiness 404/503 -> POST,
       disconnect retried, 3-attempt ceiling, routes-never-ready refuses POST,
-      non-retryable 400 fails immediately"
+      non-retryable 400 fails immediately. media-inbox-update.py is covered
+      upstream by tests/ada/test_media_inbox_mddb_gate.py (commit
+      9098c165719)"
     run: "python3 -m pytest tests/test_publisher_mddb_retry.py -q (system python; httpx stubbed)"
   playbook: ansible/playbooks/idc03-publisher-hardening.yml
   preflight: "--check --diff --limit idc03: ok=5 changed=1 unreachable=0
@@ -155,6 +157,18 @@ publisher_hardening:
     Memory after: 10 GiB used / 5.3 GiB available, swap 4.0/4.0 GiB, zero
     kernel OOM since 18:10. Idempotency re-check: ok=4 changed=0 failed=0
     after gating the timestamped backup-directory task out of check mode.
+  rebase_reconciliation: >-
+    Rebasing onto master exposed upstream commit 9098c165719, which had
+    already landed equivalent publisher hardening for media-inbox-update.py
+    (shared mddb_http retry, /v1/health readiness gate, upstream test
+    tests/ada/test_media_inbox_mddb_gate.py) plus the original incident job
+    record. Our divergent media implementation was dropped in favour of the
+    upstream version and the playbook pin updated to master's sha256;
+    ops-health-report.py keeps our implementation because the upstream
+    integration patch (integrations/ada-voice/scripts.ops-health-report.mddb-gate.patch)
+    no longer applies to ada-voice HEAD even without our change, which is
+    the actual cause of the pre-commit hook failure. Host was redeployed
+    with the reconciled pins and both timer ticks re-verified.
   rollback: >-
     Restore from /home/tony/.local/share/chaba-backups/
     idc03-publisher-hardening/20261127T181047/, or from the copy module's
