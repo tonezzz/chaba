@@ -8,5 +8,7 @@ OnFailure=ada-report-fail@%p.service
 
 [Service]
 Type=oneshot
-TimeoutStartSec=1200
+# ~15 sequential steps; the prune leg alone can legitimately take ~10min
+# when MDDB retention has a backlog (ADA-1485). 40min hard bound.
+TimeoutStartSec=2400
 ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/export-transcripts.py
