@@ -1,7 +1,7 @@
 id: ncm-code-blocks-detail-composer
 title: NCM code-block composer — detail by layer (Variant B, review)
 column: lab
-updated: 2026-11-27 16:48
+updated: 2026-11-27 16:53
 brief: 'Tony 2026-11-24: use NCM to generate code from our prepared nest modules like Lego blocks, with detail increasing
   by layer (NCM coarse-to-fine levels). Design doc for review: docs/kb/ncm-code-blocks-design.md. Variant B selected
   for the first probe: Jev/nest picks the block skeleton, NCM generates the detail levels.'
@@ -435,6 +435,15 @@ comms:
 - at: 2026-11-27 16:48
   from: tony
   text: moved review -> lab
+- at: 2026-11-27 16:53
+  from: tony
+  text: 'Parked in lab as requested (Tony 2026-11-27). Board API could not move to lab because served COLUMNS omitted
+    it; fixed via new Ansible playbook ansible/playbooks/board-api-lab-column.yml: preflight ok=4 changed=2, converge
+    ok=10 changed=2, py_compile ok, service active, idempotency recheck changed=0. Card now column=lab with lab.review_by=2026-12-11
+    (14 days, set by the governed lab-review path). Backup at board-api.py.lab-column.bak; rollback in docs/ssot/jobs/infrastructure/2026-11-27-board-ap'
+- ts: '2026-11-27T16:56:01'
+  from: chaba
+  text: 'lab decision executed: extend'
 requests:
 - id: review-decision-ncm-variant-b-research-l-448a63
   ask: 'REVIEW DECISION — NCM Variant B research lane concluded; P3 (shadow/promotion) needs your call. Results:
@@ -466,6 +475,7 @@ requests:
   - retire
   - extend
   answer: extend
+  executed: '2026-11-27'
 lab:
-  review_by: '2026-12-11'
+  review_by: '2026-12-25'
 review_kind: verify

@@ -1,7 +1,7 @@
 id: mddb-idc03-oom-coldstart-publisher-window
 title: MDDB idc03 OOM restarts + cold-start window break publishers
 column: doing
-updated: 2026-11-27 16:48
+updated: 2026-11-27 17:09
 brief: mddb.service on idc03 was OOM-killed 15:58:20 (NRestarts=7 today); ~104s cold start leaves /v1 routes 404
   after health port opens. mddb-cms POST /v1/add write timeout 30s under embed congestion. Two timer publishers
   exited 1 at 15:55 and 16:00; both self-healed next tick.
@@ -80,6 +80,39 @@ comms:
     config mutation; verified on host: both stale mddb drop-ins still present, no 60-idc03-memory.conf files on
     any unit, effective mddb MemoryHigh/MemoryMax unchanged (25769803776/30064771072). Fixed in ansible/playbooks/idc03-memory-guard.yml:
     backup_tag now pinned once via set_fact and '
+- at: 2026-11-27 16:58
+  from: devin
+  text: 'raised request approval-needed-idc03-mddb-oom-loop-9-ki-1bd95c: APPROVAL NEEDED — idc03 mddb OOM loop (9+
+    kills today, global OOM on 15Gi). Publisher-side fixes done in worktree; these'
+- at: 2026-11-27 16:58
+  from: devin
+  text: 'DIAGNOSIS+FIXES (dispatch con01): (a) OOM = GLOBAL memory exhaustion on idc03 — 19 OOM kills today (10x
+    mddbd ~3-4GB RSS, 9x node incl. yomi-api 4x ~3.5GB), swap 4Gi FULL. Proximate config drift: stale ansible drop-ins
+    mddb.service.d/{memory.conf,mem.conf} (from retired quadlet_services inventory, generated 11-26) force GOMEMLIMIT=12000MiB
+    + MemoryMax=28G — bounds that can never fire on 15Gi. mddb-cms/mddb-ops have NO cgroup bound (cms peaked 7.1G).
+    (b)+(c) DONE in worktree: media-inbox-update.p'
+- at: 2026-11-27 16:59
+  from: chaba
+  text: 'APPLIED + VERIFIED 2026-11-27 ~17:00. Gated play idc03-memory-guard.yml ran clean: ok=18 changed=10 unreachable=0
+    failed=0. Idempotency re-check: ok=10 changed=0. Effective caps/OOM values confirmed on all 6 units; mddb 3800M/4500M/-500,
+    cms 2048M/2500M/-400, ops 1536M/2048M/-400, litellm/jevos/runner-agent protected-but-preferred-victim +500.
+    Backups with matching SHA1 at ~/.local/share/chaba-backups/idc03-memory-guard/20261127T165726/. Consumer proof:
+    mddb /health 200, no mddb OOM after apply '
+- at: 2026-11-27 17:09
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-27 17:09
+  from: chaba
+  text: pushed dispatch/20261127-163402-follow-up-from-triage-of-timer to origin
+- at: 2026-11-27 17:09
+  from: chaba
+  text: "auto-merge not done: push: Authorized access only. All activity may be monitored and reported.\nTo tony-dell:CascadeProjects/chaba\n
+    ! [rejected]                HEAD -> master (fetch first)\nerror: failed to push some refs to 'ton — close will
+    block until merged"
+- at: 2026-11-27 17:09
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261127-163402-follow-up-from-triage-of-timer,
+    branch dispatch/20261127-163402-follow-up-from-triage-of-timer'
 action:
   type: dispatch
   status: running
@@ -89,3 +122,24 @@ action:
   attempts: 1
 claim:
   since: 2026-11-27 16:32
+requests:
+- id: approval-needed-idc03-mddb-oom-loop-9-ki-1bd95c
+  ask: 'APPROVAL NEEDED — idc03 mddb OOM loop (9+ kills today, global OOM on 15Gi). Publisher-side fixes done in
+    worktree; these are host/service changes only you can approve. Findings: (1) stale ansible drop-ins ~/.config/systemd/user/mddb.service.d/{memory.conf,mem.conf}
+    (generated 2026-11-26 from now-retired quadlet_services inventory) override the quadlet to GOMEMLIMIT=12000MiB
+    + MemoryHigh=24G/MemoryMax=28G — cgroup limits that can NEVER trigger on 15Gi RAM; effective env also re-imposes
+    gemini-ollama-proxy@11435 over the quadlet''s ollama/bge-m3@11436 (same stale-redeploy pattern as the embed-probe
+    incident). (2) mddb-cms/mddb-ops have NO cgroup memory bound; mddb-cms peaked 7.1G RSS. (3) mddb-cms lacks MDDB_HTTP_WRITE_TIMEOUT
+    (30s default) — caused the media-inbox-update RemoteDisconnected. PROPOSAL: (A) [recommended] delete both stale
+    drop-ins + daemon-reload — restores quadlet env (GOMEMLIMIT=8000MiB, bge-m3 route); NOTE this reverts embedding
+    to ollama/bge-m3 — confirm that is intended vs keeping the gemini proxy. (B) add Environment=MDDB_HTTP_WRITE_TIMEOUT=120s
+    to mddb-cms.container (precedent: mddb-ops already has it) and optionally mddb.container. (C) optional: real
+    cgroup bounds e.g. MemoryHigh=8G/MemoryMax=10G on mddb.service, MemoryMax=8G on mddb-cms — hard RSS bound since
+    GOMEMLIMIT only caps heap. Structural capacity stays with card idc03-structural-capacity-15gb-4core. Full evidence:
+    docs/ssot/jobs/mddb/2026-11-27-idc03-oom-coldstart-publisher-window.yml in dispatch worktree.'
+  status: open
+  at: 2026-11-27 16:58
+  from: devin
+  options:
+  - proceed
+  - hold
