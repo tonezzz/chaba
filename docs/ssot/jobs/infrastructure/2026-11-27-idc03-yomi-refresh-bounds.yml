@@ -1,0 +1,66 @@
+---
+title: idc03 Yomi active-refresh bounds — stop yomi-api cgroup OOM loop
+subtitle: MEM-1510 follow-up to the memory guard; bound work, not the 2 GiB cap
+icon: shield
+date: 2026-11-27
+card: yomi-idc03-active-refresh-cgroup-oom
+ref: MEM-1510
+status: applied-verified
+
+context:
+  symptom: >-
+    Nine CONSTRAINT_MEMCG oom-kills between 18:00 and 18:45 on idc03, all
+    task=node inside the yomi-api container (libpod scope
+    libpod-678195d1…, --memory=2g --memory-swap=2g). RSS reached
+    ~1.95-2.03 GiB per kill; no global OOM and mddb stayed healthy.
+  root_cause: >-
+    yomi-update-active.service refreshed the top 20 active chats. Each heavy
+    chat (unread 224/154/150) made update-conversations.mjs walk up to 200
+    pages x 100 messages and download every media attachment through
+    mcpb/run.mjs inside the capped yomi-api container. Raising the cap would
+    reopen the global-OOM path that caused MEM-1507.
+
+changes:
+  - "scripts/yomi/refresh-limits.mjs — new dependency-free helpers:
+    limitFromEnv(), truncateMessages(), capMediaMessages()."
+  - "scripts/yomi/yomi-refresh-active.mjs — MAX_ACTIVE 20 -> 5 via
+    YOMI_REFRESH_MAX_ACTIVE (env-overridable)."
+  - "scripts/yomi/update-conversations.mjs — getChatMessages page walk 200 ->
+    5, retained messages -> 500, media downloads -> 10 with concurrency 2;
+    knobs YOMI_MAX_PAGES / YOMI_MAX_MESSAGES / YOMI_MEDIA_MAX /
+    YOMI_MEDIA_CONCURRENCY."
+  - "/home/tony/.config/yomi/yomi-api.env — NODE_OPTIONS=--max-old-space-size=1536
+    so V8 leaves cgroup headroom; inherited by spawned update-conversations
+    and mcpb node workers."
+  - "ansible/playbooks/idc03-yomi-refresh-bounds.yml — new gated play with
+    sha256 pins, timestamped backups and a yomi-api restart for the env."
+
+evidence:
+  commit: 1d696bf948c
+  preflight: "--check --diff --limit idc03: ok=3 changed=0 failed=0"
+  deploy: >-
+    18:50:55 +07, ok=14 changed=6 unreachable=0 failed=0, all three installed
+    sha256 values matched the pins; backups in
+    /home/tony/.local/share/chaba-backups/idc03-yomi-refresh-bounds/<tag>/.
+  verification: >-
+    The 18:54:25 timer tick refreshed 5 heavy chats (unread 224, 154, 150,
+    96, 75) in ~93s; yomi-update-active Result=success, ExecMainStatus=0.
+    Zero CONSTRAINT_MEMCG kills since 18:50:55; yomi-api NRestarts=0,
+    MemoryCurrent ~52 MiB, NODE_OPTIONS visible via podman exec printenv.
+  tests: "node --test scripts/yomi/test-refresh-limits.mjs: 3/3 passed;
+    node --check clean on all three scripts."
+
+rollback: >-
+  Restore the three scripts and yomi-api.env from
+  ~/.local/share/chaba-backups/idc03-yomi-refresh-bounds/<tag>/, then restart
+  yomi-api.service. No rollback was needed.
+
+lessons:
+  - "For a container cgroup OOM, keep the memory cap and bound the work that
+    fills it: page depth, retained messages, media fan-out and sweep size."
+  - "A new pinned file has no installed copy to back up; stat installed
+    destinations first and only back up the ones that exist."
+  - "Check-mode verification of installed hashes must be gated out when the
+    install task itself is gated out, or --check reports false failures."
+  - "NODE_OPTIONS in the container env file is inherited by spawned node
+    workers, giving a V8 heap ceiling inside the cgroup ceiling."
