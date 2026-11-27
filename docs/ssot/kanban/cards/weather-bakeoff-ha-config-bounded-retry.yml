@@ -1,7 +1,7 @@
 id: weather-bakeoff-ha-config-bounded-retry
 title: Bounded retry for weather-bakeoff HA /api/config fetch (kraut-rain-watch repeat)
 column: doing
-updated: 2026-11-27 18:27
+updated: 2026-11-27 18:29
 brief: Fix weather-bakeoff.py http_json transient HA reset with bounded retry + tests; code only, no deploy.
 priority: high
 tags:
@@ -72,6 +72,13 @@ comms:
   from: devin
   text: retry implemented in scripts/ada/weather-bakeoff.py (_urlopen helper, <=3 attempts, backoff 0.5+1.0s, 5xx+transport
     retried, 4xx/non-transient loud); 7 unit tests pass; committing to dispatch branch
+- at: 2026-11-27 18:29
+  from: devin
+  text: 'DONE on branch dispatch/20261127-182454-root-cause-scripts-ada-weather commit ce1c4ef8ad3 (not pushed).
+    http_json/http_bytes now share _urlopen: <=3 attempts, backoff 0.5+1.0s (<=1.5s added), retries transport resets/timeouts/URLError
+    + HTTP 5xx; 4xx and non-transient raise immediately; success path unchanged. New tests/ada/test_weather_bakeoff_http_retry.py:
+    7 passed. py_compile clean. No deploy per guardrails — idc03 promotion needs separate approval. Note: new test
+    file is not in REPO_TESTS m'
 ref: HOM-1509
 claim:
   since: 2026-11-27 18:23
