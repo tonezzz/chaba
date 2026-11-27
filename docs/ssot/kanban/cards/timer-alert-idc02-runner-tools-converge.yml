@@ -1,7 +1,7 @@
 id: timer-alert-idc02-runner-tools-converge
 title: Timer runner-tools-converge on idc02 failing
-column: backlog
-updated: 2026-11-27 19:55
+column: done
+updated: 2026-11-27 20:11
 priority: high
 tags:
 - timer-alert
@@ -59,6 +59,16 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-27 19:42) of `runner-tools-converge.service` on `idc02` result=exit-code
     — investigate journal: `journalctl --user -u runner-tools-converge.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-27 20:11
+  from: tony
+  text: 'ROOT CAUSE (2026-11-27 20:12): idc02 checkout had an uncommitted, one-line local edit to scripts/board/dispatch_repos.py
+    (JEVOS default 127.0.0.1:8017 -> 100.123.163.11:8017, mtime 20:00). Manifest pin scripts/devin/runner-tooling.manifest.json
+    still expects sha256 02217656...; deploy-runner-tools.yml copied the edited source then failed the post-copy
+    assert dispatch_repos.py hash drift after deploy (rc=1). Check mode passed because it skips hash verification,
+    which is why this recurred as an ex'
+- at: 2026-11-27 20:11
+  from: tony
+  text: closed by tony
 spec: Investigate the failure of `runner-tools-converge.service` on host `idc02` from the 2026-11-27 00:02 run which
   exited with an error code. Check the systemd user journal using `journalctl --user -u runner-tools-converge.service`
   and consult CMS `timer-timeline-idc02` for context. The host is `idc02` and the target service is `runner-tools-converge.service`.
