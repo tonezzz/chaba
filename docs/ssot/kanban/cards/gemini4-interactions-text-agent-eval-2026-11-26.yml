@@ -1,7 +1,7 @@
 id: gemini4-interactions-text-agent-eval-2026-11-26
 title: Evaluate Gemini 4 + Interactions API for a stateful text agent
 column: done
-updated: 2026-11-26 22:00
+updated: 2026-11-27 15:34
 brief: Compare gemini-4-hydrogen/neon via the Interactions API against the current 3.x stateless text path on a
   small multi-turn tool-and-recall task set; measure task accuracy, token growth and latency.
 priority: medium
@@ -179,6 +179,21 @@ comms:
     are UNVERIFIED, not failed. Non-generation surfaces all passed: countTokens (15 tokens for 67-char prompt),
     model metadata (1,048,576 in / 65,536 out), and Files API upload/get/list/delete. Notable: countTokens reported
     1,089 image tokens for a 64x64 PNG vs the documented 258; measure'
+- at: 2026-11-27 15:34
+  from: ada
+  text: '[ADA-1451 post-reset retry — 2026-11-27, idc03]
+
+
+    Quota check: one raw REST POST /v1beta/interactions with gemini-3.5-flash-lite (key GEMINI_API_KEY_MICHAEL,
+    name only; value never displayed) returned HTTP 200. The 500/day free generation quota had reset.
+
+
+    Misc harness scripts/voice-bench/g4-interactions-misc.py (complete=true; result scripts/voice-bench/results/g4-interactions-misc-reset-20261127.json):
+    all 8 surfaces OK, elapsed seconds in parentheses:
+
+    - thought_summary_default OK (3.81s)
+
+    - tho'
 action:
   type: dispatch
   status: done
