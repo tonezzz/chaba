@@ -1,7 +1,7 @@
 id: mddb-ops-write-congestion-stagger-timers
 title: mddb-ops write congestion waves — investigate + stagger fleet shipper timers
 column: done
-updated: 2026-11-27 14:27
+updated: 2026-11-27 14:49
 priority: medium
 tags:
 - ops
@@ -137,6 +137,13 @@ comms:
     kill of drain loop pid 3862968 on idc03 — still alive at 14:29 (+ child prune-old-docs.py 269016); mddb-ops
     journal still logging deleteWhere completions at ~3300-3450s elapsed. Killing now, then verifying no new deleteWhere
     requests land.'
+- at: 2026-11-27 14:49
+  from: devin
+  text: 'DONE (attempt-2, OPS-1071 zombie restart): executed the approved kill that the 14:25 auto-close dropped
+    — SIGTERM to drain-loop pid 3862968 + in-flight child prune-old-docs.py 269016 on idc03; zero prune processes
+    remain, no respawn possible. VERIFIED recovery: all post-kill deleteWhere completions are pre-kill orphans (arrival
+    <=13:57, elapsed decaying 3450s->2530s); zero add/ingest/search write-timeout warnings since ~14:40; consumer
+    proof POST /v1/add 200 in 3.8s (was 125-198s), /v1/stats 11m'
 action:
   type: dispatch
   status: done
