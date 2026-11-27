@@ -1,7 +1,7 @@
 id: restic-backup-intermittent-exit-fix-unpinned
 title: fleet-restic-backup on tony-macbook intermittently exits 1
-column: doing
-updated: 2026-11-27 09:59
+column: done
+updated: 2026-11-27 10:00
 spec: fleet-restic-backup.service on tony-macbook alternates between Result=success (1.8-4.9s) and status=1/FAILURE
   on consecutive runs (including 09:06). Read the full journal around the failed runs to identify the actual restic
   error (repository lock, target tony-dell:/mnt/sdb unavailable, or a transient network drop), then add a bounded
@@ -13,11 +13,12 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: running
+  status: done
   runner: tony-dell
   attempts: 1
   sweep:
     stale_running: 2026-11-27 09:59
+  verified: true
 ref: OPS-1486
 comms:
 - at: 2026-11-27 09:36
@@ -66,5 +67,14 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261127-093800-fleet-restic-backup-service-on no longer active on tony-dell but
     card still says running — sweeping its branch'
+- at: 2026-11-27 10:00
+  from: chaba
+  text: 'merge-sweep: merged 4006bad2 (dispatch/20261127-093800-fleet-restic-backup-service-on from tony-dell) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261127-093800-fleet-restic-backup-service-on.md)
+    — auto-closed'
 claim:
   since: 2026-11-27 09:37
+auto_close:
+  by: merge-sweep
+  at: 2026-11-27 10:00
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261127-093800-fleet-restic-backup-service-on.md
