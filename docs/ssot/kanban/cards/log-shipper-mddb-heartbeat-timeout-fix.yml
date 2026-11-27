@@ -1,7 +1,7 @@
 id: log-shipper-mddb-heartbeat-timeout-fix
 title: 'Log shipper: heartbeat /add 10s timeout < observed 13-20s (fleet-wide false failures)'
 column: doing
-updated: 2026-11-27 11:59
+updated: 2026-11-27 12:27
 brief: Systemic fix from live triage 2026-11-27; two runner slots free.
 priority: high
 tags:
@@ -73,5 +73,12 @@ comms:
     checksum-deployed; mn01 stale TimeoutStartSec=600 units also refreshed to 2700). Triggered log-shipper+severe
     on idc02 and tony-omen — polling for Result=success + fresh ship/<host> docs. Note: mddb-ops server logs show
     congestion-window handlers at 127-198s — those remain ho'
+- at: 2026-11-27 12:27
+  from: devin
+  text: 'update: first verify round showed 45s heartbeat STILL fails during mddb-ops congestion waves — server logs
+    show /add//ingest handlers at 125-198s vs its own 120s write deadline, and _ingest 60s client timeout was below
+    that. Raised all write budgets to 130s (above server deadline; >deadline still fails = honest distress), redeployed
+    fleet-wide, retriggered all 14 lanes on 6 hosts. idc02 full lane already green (235 shipped, 0 failed). omen-severe
+    v1 run confirmed the 45s gap (heartbeat fail at 4'
 claim:
   since: 2026-11-27 11:34
