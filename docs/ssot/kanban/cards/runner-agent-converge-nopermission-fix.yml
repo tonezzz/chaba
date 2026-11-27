@@ -1,7 +1,7 @@
 id: runner-agent-converge-nopermission-fix
 title: runner-agent-converge exits 4/NOPERMISSION on tony-dell
 column: doing
-updated: 2026-11-27 10:32
+updated: 2026-11-27 10:47
 spec: runner-agent-converge.service on tony-dell alternates between clean runs and `Main process exited, code=exited,
   status=4/NOPERMISSION`. Read the full journal and the underlying ansible task output around the failed runs to
   identify the exact task that loses permission (likely a become/become_user or file-mode step when redeploying
@@ -55,5 +55,12 @@ comms:
     finished (failed): exit=2 ead-only profile. |; [ops-1025-remote-read-smoke-idc03] finished (failed): exit=2
     ead-only profile. |; [ops-1025-remote-read-smoke-idc03] finished (failed): exit=2 ead-only profile. |; [ops-1025-remote-read-smoke-idc03]
     finished (failed): exit=2 '
+- at: 2026-11-27 10:47
+  from: devin
+  text: 'Root cause found: status=4/NOPERMISSION is ansible exit code 4 = HOST_UNREACHABLE (ansible-core 2.20 ExitCode
+    enum; sysexits label is misleading). The 11-27 03:30 run redeployed 6 hosts fine but tony-macbook (portable
+    group, off-net laptop) timed out on ssh -> ansible exits 4 -> unit fails. Not a become/file-mode permission
+    issue. Fix in progress: split deploy-runner-agent.yml so portable hosts converge best-effort (ignore_unreachable)
+    while always-on hosts keep hard-fail semantics.'
 claim:
   since: 2026-11-27 10:31
