@@ -1,4 +1,5 @@
 id: oswe-ada-test-stack-boot-2026-11-27
+title: OpenSWE/Robin Ada test stack boot on tony-dell
 card: oswe-eval-ada-test-tab
 date: 2026-11-27
 host: tony-dell
@@ -61,13 +62,13 @@ gate_substitutions:
 eval_runs:
   # all via: OPEN_SWE_BACKEND_URL=http://localhost:2024 cli/dist/robin run "<prompt>"
   # in a fresh git dir on tony-dell; bridged sandbox = the dir itself, unsandboxed
-  - task: bugfix (calc.py add() subtracted)
-    result: PASS — agent edited file, added fix comment, verified; ~2min
-  - task: small feature (greet.py optional title param, backward compat)
-    result: PASS — correct minimal diff; note: returned title verbatim
-      ("Hello dr ada") not capitalized as the prompt's example implied
-  - task: refactor (extract transform_value helper, identical behavior)
-    result: PASS — clean extraction, self-verified
+  runs:
+    - task: bugfix (calc.py add() subtracted)
+      result: PASS — agent edited file, added fix comment, verified; ~2min
+    - task: small feature (greet.py optional title param, backward compat)
+      result: "PASS — correct minimal diff; note: returned title verbatim (\"Hello dr ada\") not capitalized as the prompt's example implied"
+    - task: refactor (extract transform_value helper, identical behavior)
+      result: PASS — clean extraction, self-verified
   model_used: openrouter/deepseek-v4-flash via LiteLLM (NOT Anthropic —
     scores reflect a cheaper model than the spec's intent; rerun with a
     real provider key before final verdict)
