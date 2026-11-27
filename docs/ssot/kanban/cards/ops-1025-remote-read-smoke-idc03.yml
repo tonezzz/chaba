@@ -1,7 +1,7 @@
 id: ops-1025-remote-read-smoke-idc03
 title: 'OPS-1025 one-shot remote-read verification: idc02 to idc03'
 column: doing
-updated: 2026-11-27 08:58
+updated: 2026-11-27 09:08
 brief: One supervised, read-only S3 verification of the merged remote-read gates.
 priority: medium
 program: OPS-1025
@@ -956,6 +956,12 @@ comms:
     now lists tools). idc03 still absent from ssot.mcp-debug.yml hosts — executing approved option (a): registering
     idc03 in the worktree SSOT, then hot-reload + mcp_health preflight + the sanctioned systemctl --user failed-units
     inventory.'
+- at: 2026-11-27 09:08
+  from: devin
+  text: 'final: COLLECTED. mcp_debug(host=idc03, systemctl --user list-units --state=failed --no-legend) -> ok rc=0,
+    13 failed user units (12 job .service + ada-bench-casting.timer masked). Artifact: evals/opencode-lane/out/ops-1025-remote-read-smoke-idc03.json
+    (host=idc03, read_only=true, failure_class=unit_failed, collected_at=2026-11-27T02:03:56Z). Committed on dispatch
+    branch: idc03 registered in ssot.mcp-debug.yml (approved option a) + jobs trail docs/ssot/jobs/infrastructure/2026-11-27-ops-1025-rem'
 claim:
   since: 2026-11-26 23:44
 requests:
