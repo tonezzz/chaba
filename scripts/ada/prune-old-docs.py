@@ -133,17 +133,27 @@ def sweep_where(collection: str, ts_key: str, days: int, dry: bool,
                 "limit": WHERE_LIMIT, "cursor": cursor}
         if dry:
             body["dryRun"] = True
-        try:
-            r = post("/documents:deleteWhere", body, base,
-                     timeout=WHERE_CALL_TIMEOUT)
-        except urllib.error.HTTPError as e:
-            if e.code == 404:
-                return None
-            return (f"{collection}: deleteWhere http {e.code} — "
-                    f"deleted {deleted} before failure")
-        except Exception as e:
-            return (f"{collection}: deleteWhere failed — {e} "
-                    f"(deleted {deleted} before failure)")
+        # A timed-out call keeps deleting server-side (mddb finishes past
+        # the 120s write timeout); retrying the SAME cursor is safe — the
+        # orphaned batch's already-deleted docs return as notFound errors
+        # and nextCursor still advances past the window.
+        r = None
+        for attempt in range(4):
+            try:
+                r = post("/documents:deleteWhere", body, base,
+                         timeout=WHERE_CALL_TIMEOUT)
+                break
+            except urllib.error.HTTPError as e:
+                if e.code == 404:
+                    return None
+                return (f"{collection}: deleteWhere http {e.code} — "
+                        f"deleted {deleted} before failure")
+            except Exception as e:
+                if attempt == 3 or (deadline is not None
+                                    and time.monotonic() > deadline):
+                    return (f"{collection}: deleteWhere failed — {e} "
+                            f"(deleted {deleted} before failure)")
+                time.sleep(15)
         calls += 1
         matched = r.get("matched", 0)
         if dry:
