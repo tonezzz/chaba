@@ -1,7 +1,7 @@
 id: ada-ocb-eval-smoke-harness-fix
 title: ada-ocb-eval and ada-ocb-smoke harness failures on idc02
-column: backlog
-updated: 2026-11-27 10:29
+column: doing
+updated: 2026-11-27 10:30
 spec: 'Two nightly Ada bridge benchmark services on idc02 both fail:
 
   - ada-ocb-eval.service: gate `preflight-gates-readonly` FAIL — its answer is missing required fields ''start_check'',
@@ -20,7 +20,9 @@ action:
   repo: chaba
   executor: devin
   lane: paid_frontier
-  status: queued
+  status: running
+  runner: tony-dell
+  attempts: 1
 ref: ADA-1489
 comms:
 - at: 2026-11-27 10:29
@@ -42,3 +44,8 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-27 10:30
+  from: tony-dell
+  text: claimed
+claim:
+  since: 2026-11-27 10:30
