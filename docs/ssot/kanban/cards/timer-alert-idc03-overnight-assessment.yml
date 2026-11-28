@@ -1,7 +1,7 @@
 id: timer-alert-idc03-overnight-assessment
 title: Timer overnight-assessment on idc03 failing
-column: backlog
-updated: 2026-11-28 02:25
+column: done
+updated: 2026-11-29 02:15
 priority: high
 tags:
 - timer-alert
@@ -1399,6 +1399,12 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-28 02:09) of `overnight-assessment.service` on `idc03` result=exit-code
     — investigate journal: `journalctl --user -u overnight-assessment.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-29 02:15
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-29 02:09 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-29 02:15
+  from: tony
+  text: closed by tony
 spec: Investigate the failure of overnight-assessment.service on idc03 from the 11-08 02:01 run which exited with
   an exit-code during the mddb-embed runaway window. Examine the journal using journalctl --user -u overnight-assessment.service
   on idc03 and cross-reference with CMS timer-timeline-idc03. Confirm successful execution of the next scheduled
