@@ -1,7 +1,7 @@
 id: idc03-swap-workload-placement
 title: 'MEM-1511: idc03 swap 4/4 GiB — workload placement triage'
 column: done
-updated: 2026-11-28 06:19
+updated: 2026-11-28 07:37
 brief: 'After MEM-1507/1510 fixes, idc03 still has 4.0/4.0 GiB swap used, 5.1 GiB RAM available, user cgroup 14.4
   GiB RAM + 4.16 GiB swap. Top swap holders: jevos 761MiB, ada-dev 243MiB, ada-kk-dev 184MiB, ada-bankq-student
   309MiB, ada-chaba 364MiB, ada-ha-ada 359MiB, mddb-cms 290MiB.'
@@ -131,6 +131,13 @@ comms:
 - at: 2026-11-28 06:19
   from: tony
   text: 'answered idc03-swap-placement-two-owner-decisions-c55571: proceed'
+- at: 2026-11-28 07:37
+  from: chaba
+  text: 'FOLLOW-UP 2026-11-28 07:40 +07 (idc03 zram swap): the mddb restart from 2026-11-27 bought only transient
+    relief; by this morning mddb + cold voice lanes had refilled the single 4 GiB /swapfile to 4.0/4.0 GiB with
+    Committed_AS 22.9G vs CommitLimit 12.4G. Installed the fleet-standard compressed-swap device already proven
+    on idc02 (OPS-1519) via new ansible/playbooks/zram-swap-deploy.yml: /dev/zram0 8 GiB zstd, 4 streams, priority
+    100 ahead of the disk swapfile. Applied + verified: zram-swap.servic'
 action:
   type: dispatch
   status: done
