@@ -7,8 +7,8 @@ tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-25 05:55) of `bank-inspect.service` on `tony-dell` result=timeout — investigate journal: `journalctl
-  --user -u bank-inspect.service` on the host. See CMS `timer-timeline-tony-dell`.'
+note: 'Last run (11-25 05:55) of `bank-inspect.service` on `tony-dell` result=timeout — investigate journal:
+  `journalctl --user -u bank-inspect.service` on the host. See CMS `timer-timeline-tony-dell`.'
 ref: OPS-1345
 comms:
 - at: 2026-11-25 06:14
@@ -16,8 +16,8 @@ comms:
   text: card captured via board-api
 - at: 2026-11-25 06:24
   from: devin
-  text: '[still suspicious] Last run (11-25 05:55) of `bank-inspect.service` on `tony-dell` result=timeout — investigate
-    journal: `journalctl --user -u bank-inspect.service` on the host. See CMS `timer-timeline-tony-dell`.'
+  text: '[still suspicious] Last run (11-25 05:55) of `bank-inspect.service` on `tony-dell` result=timeout
+    — investigate journal: `journalctl --user -u bank-inspect.service` on the host. See CMS `timer-timeline-tony-dell`.'
 - at: 2026-11-25 07:45
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -25,10 +25,10 @@ comms:
 - at: 2026-11-25 14:34
   from: tony
   text: '2026-11-25 14:35 (+07): Bank-inspect reads idc03 :11023 and writes :11027, so the same MDDB embed-path
-    fix applies. Verified after the fix: embed-probe up, CMS embed queue 0/4000, leader 47/4000, shim ~500ms with
-    0 fails, vector-reindex failed=0. The previous ''PUBLISH FAIL Remote end closed connection without response''
-    was consistent with the saturated backend. Awaiting the next scheduled run (daily ~05:55) for the timer-sentinel
-    auto-close; no manual publish was forced.'
+    fix applies. Verified after the fix: embed-probe up, CMS embed queue 0/4000, leader 47/4000, shim
+    ~500ms with 0 fails, vector-reindex failed=0. The previous ''PUBLISH FAIL Remote end closed connection
+    without response'' was consistent with the saturated backend. Awaiting the next scheduled run (daily
+    ~05:55) for the timer-sentinel auto-close; no manual publish was forced.'
 - at: 2026-11-25 16:49
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -100,11 +100,21 @@ comms:
   text: moved done -> backlog
 - at: 2026-11-28 06:05
   from: devin
-  text: '[reopened — condition recurred] Last run (11-28 05:54) of `bank-inspect.service` on `tony-dell` result=exit-code
-    — investigate journal: `journalctl --user -u bank-inspect.service` on the host. See CMS `timer-timeline-tony-dell`.'
+  text: '[reopened — condition recurred] Last run (11-28 05:54) of `bank-inspect.service` on `tony-dell`
+    result=exit-code — investigate journal: `journalctl --user -u bank-inspect.service` on the host. See
+    CMS `timer-timeline-tony-dell`.'
 - at: 2026-11-28 06:15
   from: devin
-  text: '[still suspicious] Last run (11-28 05:54) of `bank-inspect.service` on `tony-dell` result=exit-code — investigate
-    journal: `journalctl --user -u bank-inspect.service` on the host. See CMS `timer-timeline-tony-dell`.'
+  text: '[still suspicious] Last run (11-28 05:54) of `bank-inspect.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u bank-inspect.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-28 07:23
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
 action:
   status: done
+spec: Investigate the failing `bank-inspect.service` timer on the target host tony-dell by examining the
+  systemd user journal using `journalctl --user -u bank-inspect.service` and checking the CMS `timer-timeline-tony-dell`.
+  Ensure the runner-agent on tony-dell is redeployed from the chaba repo script (`scripts/board/runner-agent.py`)
+  as previously noted. The done-condition is verified when the root cause of the timer failure is identified,
+  the issue is resolved or documented, and a subsequent manual run of the service completes successfully
+  without timing out or returning an error exit code.

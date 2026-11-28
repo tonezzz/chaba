@@ -7,8 +7,8 @@ tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-28 05:30) of `fleet-restic-backup.service` on `mn01` result=exit-code — investigate journal:
-  `journalctl --user -u fleet-restic-backup.service` on the host. See CMS `timer-timeline-mn01`.'
+note: 'Last run (11-28 05:30) of `fleet-restic-backup.service` on `mn01` result=exit-code — investigate
+  journal: `journalctl --user -u fleet-restic-backup.service` on the host. See CMS `timer-timeline-mn01`.'
 ref: OPS-1521
 comms:
 - at: 2026-11-28 05:45
@@ -16,5 +16,13 @@ comms:
   text: card captured via board-api
 - at: 2026-11-28 05:55
   from: devin
-  text: '[still suspicious] Last run (11-28 05:30) of `fleet-restic-backup.service` on `mn01` result=exit-code —
-    investigate journal: `journalctl --user -u fleet-restic-backup.service` on the host. See CMS `timer-timeline-mn01`.'
+  text: '[still suspicious] Last run (11-28 05:30) of `fleet-restic-backup.service` on `mn01` result=exit-code
+    — investigate journal: `journalctl --user -u fleet-restic-backup.service` on the host. See CMS `timer-timeline-mn01`.'
+- at: 2026-11-28 07:23
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
+spec: Investigate the failure of `fleet-restic-backup.service` on host mn01, which exited with a non-zero
+  code during its 11-28 05:30 run. Log into host mn01 and inspect the service journal using `journalctl
+  --user -u fleet-restic-backup.service` to diagnose the underlying error. The done-condition is met once
+  the root cause of the exit-code failure is identified, documented in the CMS timer-timeline-mn01, and
+  the service is either successfully run or scheduled for fix.
