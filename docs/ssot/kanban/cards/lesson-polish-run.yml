@@ -1,7 +1,7 @@
 id: lesson-polish-run
 title: 'lesson-polish: Fable pass on audit-flagged lessons (auto-queued)'
 column: doing
-updated: 2026-11-28 22:46
+updated: 2026-11-28 22:49
 brief: Auto-queued by chaba-lessons-audit when R1/R3/R4 flags > 0 — the Fable polish pass; standing card, re-armed
   each audit run (AUD-0831 loop).
 priority: medium
@@ -248,6 +248,17 @@ comms:
     Zero writes landed, store clean. Full pass staged: .dispatch-scratch/lesson-polish-20261128.py + verify script
     + docs/ssot/jobs/education/2026-11-28-lesson-polish-pass.yml (incl. 2 canonical-title migrations for hf-image-models
     + ncm). needs-input.txt filed; existing request job-input'
+- at: 2026-11-28 22:49
+  from: chaba
+  text: 'raised request job-input-lesson-polish-run-1795880957: Job needs your input: MediaWiki writes on wiki.h3.gizmo-thailand.com
+    are still failing (~37h outage) — can someone check'
+- at: 2026-11-28 22:49
+  from: chaba
+  text: 'answered job-input-lesson-polish-run-1795828757: superseded — newer needs-input'
+- at: 2026-11-28 22:49
+  from: chaba
+  text: 'needs input: MediaWiki writes on wiki.h3.gizmo-thailand.com are still failing (~37h outage) — can someone
+    check the Plesk host''s DB, or resume this dispatch once edits recover?'
 claim:
   since: 2026-11-28 21:59
 review_kind: verify
@@ -257,7 +268,7 @@ requests:
 - id: job-input-lesson-polish-run-1795828757
   ask: 'Job needs your input: MediaWiki write path on wiki.h3.gizmo-thailand.com is down (DB query errors on every
     edit) — can someone check the Plesk host, or resume this dispatch once writes recover?'
-  status: open
+  status: answered
   at: 2026-11-28 08:19
   from: chaba
   options:
@@ -268,3 +279,18 @@ requests:
     label: Hold — leave blocked
     action: hold
   escalated_at: 2026-11-28 20:26
+  answer: superseded — newer needs-input
+- id: job-input-lesson-polish-run-1795880957
+  ask: 'Job needs your input: MediaWiki writes on wiki.h3.gizmo-thailand.com are still failing (~37h outage) — can
+    someone check the Plesk host''s DB, or resume this dispatch once edits recover?'
+  status: open
+  at: 2026-11-28 22:49
+  from: chaba
+  options:
+  - id: answer
+    label: Answer — reply in chat
+    action: none
+  - id: hold
+    label: Hold — leave blocked
+    action: hold
+awaiting_action: true
