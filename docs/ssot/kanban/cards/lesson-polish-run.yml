@@ -1,7 +1,7 @@
 id: lesson-polish-run
 title: 'lesson-polish: Fable pass on audit-flagged lessons (auto-queued)'
 column: doing
-updated: 2026-11-28 08:18
+updated: 2026-11-28 08:19
 brief: Auto-queued by chaba-lessons-audit when R1/R3/R4 flags > 0 — the Fable polish pass; standing card, re-armed
   each audit run (AUD-0831 loop).
 priority: medium
@@ -196,8 +196,31 @@ comms:
     per recentchanges (~22h). Probed ~25min, no recovery; needs-input.txt filed for operator. Zero writes landed
     — state clean. All 15 flagged lessons fully staged + locally verified; action list in docs/ssot/jobs/education/2026-11-28-lesson-polish-pass.yml
     + dispatch-outcome-20261128-07'
+- at: 2026-11-28 08:19
+  from: chaba
+  text: 'raised request job-input-lesson-polish-run-1795828757: Job needs your input: MediaWiki write path on wiki.h3.gizmo-thailand.com
+    is down (DB query errors on every edit) — can s'
+- at: 2026-11-28 08:19
+  from: chaba
+  text: 'needs input: MediaWiki write path on wiki.h3.gizmo-thailand.com is down (DB query errors on every edit)
+    — can someone check the Plesk host, or resume this dispatch once writes recover?'
 claim:
   since: 2026-11-28 07:41
 review_kind: verify
 note: '[verify 2026-11-27] Polish logs had landed in MDDB but audit reports conflicted; re-ran audit (0 R1/R3/R4),
   regenerated reports + lesson-polish-after-2026-11-27.json (edd946f654), posted before/after to both cards.'
+requests:
+- id: job-input-lesson-polish-run-1795828757
+  ask: 'Job needs your input: MediaWiki write path on wiki.h3.gizmo-thailand.com is down (DB query errors on every
+    edit) — can someone check the Plesk host, or resume this dispatch once writes recover?'
+  status: open
+  at: 2026-11-28 08:19
+  from: chaba
+  options:
+  - id: answer
+    label: Answer — reply in chat
+    action: none
+  - id: hold
+    label: Hold — leave blocked
+    action: hold
+awaiting_action: true
