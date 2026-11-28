@@ -1,7 +1,7 @@
 id: lesson-polish-run
 title: 'lesson-polish: Fable pass on audit-flagged lessons (auto-queued)'
 column: doing
-updated: 2026-11-28 07:48
+updated: 2026-11-28 07:54
 brief: Auto-queued by chaba-lessons-audit when R1/R3/R4 flags > 0 — the Fable polish pass; standing card, re-armed
   each audit run (AUD-0831 loop).
 priority: medium
@@ -182,6 +182,13 @@ comms:
     edit, 2 canonical-title migrations (ncm-code-block-composer-exploration, hf-image-models — non-canonical Education:
     titles = dup hazard). NOT touching docs/reports/lesson-audit/{latest,lesson-audit-2026-11-28}.json — last run
     merge-conflicted on those; audit job owns them on served'
+- at: 2026-11-28 07:54
+  from: devin
+  text: 'BLOCKER: all /lesson + /wiki/page writes fail — MediaWiki edit returns DB query error (reads fine, 237
+    lessons list OK, wiki front 200). First probe: create-permission denied on new page; edit probes on existing
+    Education: pages -> [awol...] Exception caught: A database query error has occurred. board-api wiki-primary
+    write path is down server-side (Plesk MediaWiki host, not fleet-reachable from dispatch). Nothing was written
+    — state clean. Probing every ~3min; will run the full 19-write pass if'
 claim:
   since: 2026-11-28 07:41
 review_kind: verify
