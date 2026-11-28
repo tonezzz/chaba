@@ -1,7 +1,7 @@
 id: stagger-idc03-timer-herd
 title: Stagger idc03 timer herd — ~25 jobs fire at :00/:30 and congest board-api/CMS
 column: done
-updated: 2026-11-26 20:34
+updated: 2026-11-28 21:10
 priority: medium
 tags:
 - ops
@@ -376,6 +376,10 @@ comms:
   from: chaba
   text: 'con01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-28 21:10
+  from: chaba
+  text: 'dispatch-wt-sweep salvaged unpushed commits before reap: dispatch-wt-20261125-025125-goal-eliminate-the-idc03-timer
+    head fd695d5a → origin refs/heads/wip/dispatch/20261125-025125-goal-eliminate-the-idc03-timer'
 spec: 'Goal: eliminate the idc03 timer congestion herd by applying jitter via ssot.jobs.yml and redeploying the
   drifted runner-agent on idc03. Host: idc03. Repo: chaba. Constraints: update on_calendar offsets per job to avoid
   simultaneous firing at :00/:30 and scp scripts/board/runner-agent.py to ~/.local/bin/runner-agent on idc03. Testable
