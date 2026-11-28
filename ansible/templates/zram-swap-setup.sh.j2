@@ -1,0 +1,26 @@
+#!/bin/bash
+set -e
+# zram-swap-setup.sh — fleet-standard compressed swap device.
+# Deployed by ansible/playbooks/zram-swap-deploy.yml. Size, algorithm,
+# streams and priority come from the playbook vars rather than a host-local
+# edit; the device is virtual until pages are swapped in.
+#
+# {{ zram_size }} {{ zram_algorithm }} / {{ zram_streams }} streams / prio {{ zram_priority }}
+
+# Load zram module if not already loaded (kernel extras package is installed
+# by the playbook on hosts where modinfo zram is missing, e.g. idc03).
+modprobe zram num_devices=1 2>/dev/null || true
+
+# Reset any existing zram0 to keep repeated runs idempotent.
+if [ -b /dev/zram0 ]; then
+  swapoff /dev/zram0 2>/dev/null || true
+  zramctl --reset /dev/zram0 2>/dev/null || true
+fi
+
+# --algorithm must be passed to zramctl itself: after --size initializes the
+# device, comp_algorithm writes fail with "Device or resource busy".
+DEV=$(zramctl --find --size {{ zram_size }} --streams {{ zram_streams }} --algorithm {{ zram_algorithm }})
+
+mkswap "$DEV"
+swapon -p {{ zram_priority }} "$DEV"
+echo "zram swap enabled on $DEV ({{ zram_algorithm }}, {{ zram_size }}, prio {{ zram_priority }})"

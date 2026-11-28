@@ -1,0 +1,101 @@
+---
+title: idc03 zram swap — durable compressed-swap headroom after mddb restart relief proved transient
+subtitle: 8 GiB zstd zram0 at prio 100 ahead of the 4 GiB disk swapfile; CommitLimit raised 12.4G -> 20.8G
+icon: shield
+date: 2026-11-28
+card: idc03-swap-workload-placement
+ref: OPS-1511
+status: applied-verified
+
+context:
+  trigger: >-
+    OPS-1511 relocated the JevOS decision lane to idc02, reclaimed the dev
+    twins on tony-omen and stopped ada-bankq-student, then restarted primary
+    mddb on idc03 to reclaim swap. That restart freed ~1.2 GiB briefly, but by
+    2026-11-28 07:00 mddb and the cold voice lanes had re-swapped the single
+    4 GiB disk swapfile back to 4.0/4.0 GiB.
+  state_at_start: >-
+    idc03 is a 16 GiB (15 GiB usable) / 4-core host with one 4 GiB /swapfile at
+    priority -2 and no zram device. At 07:2x: MemAvailable 9,108,832 kB,
+    SwapTotal 4,194,300 kB with SwapFree 12 kB, CommitLimit 12,382,772 kB but
+    Committed_AS 22,899,388 kB — the host was overcommitted by ~10.5 GiB with
+    no compressed-swap headroom. vmstat showed continuous si/so. No zram
+    module loaded and no zram scripts/unit installed; earlyoom is inactive on
+    idc03 (its permanently-true swap-arm problem is an idc02 issue, OPS-1519).
+  root_cause: >-
+    A single, small disk swapfile cannot absorb the job/dispatch spikes on this
+    box. Restarting mddb buys seconds, not a durable fix. The fleet-standard
+    zram0 mechanism already proven on idc02 (8 GiB zstd, prio 100, OPS-1519)
+    was never installed on idc03.
+
+changes:
+  - "ansible/playbooks/zram-swap-deploy.yml — new idc03-targeted play, opt-in
+    zram_enabled / zram_size / zram_algorithm / zram_streams / zram_priority
+    vars (defaults 8G / zstd / 4 / 100); installs kernel extras when modinfo
+    zram is absent, installs setup + teardown scripts, the systemd unit and a
+    retry drop-in, then asserts /dev/zram0 is in swapon --show after converge."
+  - "ansible/templates/zram-swap-setup.sh.j2 — parameterised version of the
+    idc02 setup script. modprobe zram, reset any existing zram0, create the
+    device with `zramctl --find --size ... --streams ... --algorithm ...`,
+    mkswap and `swapon -p 100`."
+  - "ansible/files/zram-swap-teardown.sh — swapoff + zramctl --reset, no rmmod."
+  - "ansible/systemd/zram-swap.service + ansible/systemd/zram-swap-retry.conf —
+    oneshot unit (RemainAfterExit=true) with Restart=on-failure/5s and
+    StartLimitBurst=5 for the multi-user udev race."
+
+evidence:
+  artifacts:
+    - /tmp/opencode/idc03-zram-check-mode.log
+  preflight: "--check --diff --limit idc03: ok=6 changed=0 unreachable=0
+    failed=0 skipped=7 (setup/teardown/unit/drop-in shown as would-install;
+    service and swap assertions previewed, not executed)"
+  first_apply_failure: >-
+    The first real apply failed at the drop-in copy because
+    /etc/systemd/system/zram-swap.service.d did not exist. Fixed by adding an
+    idempotent `file: state=directory` task before the copy (playbook line
+    "Ensure the zram service drop-in directory exists"); the resumed apply
+    converged fully.
+  apply: >-
+    Real run installed linux-modules-extra-6.8.0-151-generic (modinfo zram was
+    absent), wrote the setup/teardown scripts and unit + retry drop-in, ran
+    daemon-reload, enabled and started zram-swap.service. The setup script
+    created /dev/zram0 (zstd, 8G, 4 streams) and swapped it on at priority 100;
+    the "assert zram0 active" task passed.
+  idempotency: "--check --diff after apply: ok=6 changed=0 unreachable=0
+    failed=0 skipped=7"
+  live_state_2026_11_28_07_34:
+    swap_total: "12,582,904 kB (4 GiB disk + 8 GiB zram)"
+    swap_free: "8,389,944 kB"
+    swapfile: "/swapfile 4G used 4G prio -2 (unchanged)"
+    zram0: "/dev/zram0 8G used 0B prio 100; zramctl zstd disksize 8G DATA 4K
+      COMPRESS 59B TOTAL 20K streams 4"
+    commit_limit: "20,771,376 kB (was 12,382,772 kB)"
+    committed_as: "22,781,256 kB"
+    mem_available: "9,159,076 kB"
+    service: "zram-swap.service enabled + active; earlyoom inactive (idc03)"
+    load: "3.15 5.21 5.41 (down from 5+ during the incident)"
+  follow_up_fix: >-
+    Replaced `ansible_kernel` with `ansible_facts.kernel` in the play vars to
+    remove the Ansible 2.18+ INJECT_FACTS_AS_VARS deprecation warning;
+    re-ran --check --diff and confirmed changed=0 with no warning.
+
+rollback: >-
+  `ansible-playbook playbooks/zram-swap-deploy.yml --limit idc03 -e
+  zram_enabled=false` (stops + disables the service, teardown swapoffs and
+  resets zram0), or on the host: `swapoff /dev/zram0 && systemctl disable
+  --now zram-swap.service`. The kernel-extras package is harmless if left
+  installed. No rollback was needed.
+
+lessons:
+  - "Check mode cannot start a systemd unit whose file a prior task has not
+    actually copied; preview that task under --check instead of letting it
+    fail, and keep the real assertion in the non-check run."
+  - "Pass --algorithm to zramctl itself: once --size initializes the device,
+    comp_algorithm writes fail with 'Device or resource busy'."
+  - "Create the /etc/systemd/system/<unit>.d parent directory before a copy
+    module writes into it — the copy does not create intermediate dirs."
+  - "Use ansible_facts.kernel (not the auto-injected ansible_kernel) in play
+    vars to survive the INJECT_FACTS_AS_VARS deprecation."
+  - "zram is virtual until pages are swapped in: declaring 8 GiB raises
+    CommitLimit immediately but does not consume 8 GiB of RAM. It gives
+    earlyoom a real swap arm and absorbs job spikes without a service restart."

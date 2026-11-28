@@ -1,0 +1,12 @@
+[Unit]
+Description=Compressed zram swap
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/zram-swap-setup.sh
+ExecStop=/usr/local/bin/zram-swap-teardown.sh
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,124 @@
+---
+# zram-swap-deploy.yml — install the fleet-standard compressed swap device on
+# a selected host. The mechanism mirrors idc02's working zram0 (OPS-1519):
+# /usr/local/bin/zram-swap-setup.sh + zram-swap.service + retry drop-in.
+#
+# idc03 (OPS-1511 follow-up, 2026-11-28): its single 4 GiB disk swapfile has
+# been 100% full again after the mddb restart bought ~1.2 GiB of temporary
+# relief. An 8 GiB zstd zram device at priority 100 sits ahead of the
+# swapfile, raises CommitLimit and gives earlyoom a real swap arm instead of
+# a permanently-true one. zram is virtual until pages are swapped in.
+#
+# Sizing is opt-in via play vars / -e, no inventory edits required:
+#   ansible-playbook playbooks/zram-swap-deploy.yml --check --diff --limit idc03
+#   ansible-playbook playbooks/zram-swap-deploy.yml --limit idc03
+#   ansible-playbook playbooks/zram-swap-deploy.yml --limit idc03 -e zram_enabled=false
+#
+# Rollback (keeps the kernel extras package, which is harmless):
+#   ansible-playbook playbooks/zram-swap-deploy.yml --limit idc03 -e zram_enabled=false
+#   or on the host: swapoff /dev/zram0 && systemctl disable --now zram-swap.service
+
+- name: Deploy compressed zram swap
+  hosts: idc03
+  gather_facts: true
+  become: true
+  serial: 1
+  any_errors_fatal: true
+
+  vars:
+    zram_enabled: true
+    zram_size: 8G
+    zram_algorithm: zstd
+    zram_streams: 4
+    zram_priority: 100
+    zram_module_pkg: "linux-modules-extra-{{ ansible_facts.kernel }}"
+
+  tasks:
+    - name: Check zram kernel module availability
+      ansible.builtin.command: modinfo zram
+      register: zram_modinfo
+      changed_when: false
+      failed_when: false
+
+    - name: Install kernel extras when zram module is absent
+      ansible.builtin.apt:
+        name: "{{ zram_module_pkg }}"
+        state: present
+      register: zram_pkg
+      when:
+        - zram_modinfo.rc != 0
+        - not ansible_check_mode
+
+    - name: Install zram setup script
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../templates/zram-swap-setup.sh.j2"
+        dest: /usr/local/bin/zram-swap-setup.sh
+        mode: "0755"
+      register: zram_setup
+
+    - name: Install zram teardown script
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../files/zram-swap-teardown.sh"
+        dest: /usr/local/bin/zram-swap-teardown.sh
+        mode: "0755"
+      register: zram_teardown
+
+    - name: Ensure the zram service drop-in directory exists
+      ansible.builtin.file:
+        path: /etc/systemd/system/zram-swap.service.d
+        state: directory
+        mode: "0755"
+
+    - name: Install zram systemd unit and retry drop-in
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../systemd/{{ item.src }}"
+        dest: "/etc/systemd/system/{{ item.dest }}"
+        mode: "0644"
+      loop:
+        - {src: zram-swap.service, dest: zram-swap.service}
+        - {src: zram-swap-retry.conf, dest: zram-swap.service.d/retry.conf}
+      register: zram_units
+
+    - name: Reload systemd manager
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+      when: zram_units.changed or zram_setup.changed or zram_teardown.changed
+
+    # Check mode cannot see a unit whose file has not been copied yet, so
+    # preview that step instead of failing on it. The real run still asserts
+    # zram0 is active below.
+    - name: Preview zram service state in check mode
+      ansible.builtin.debug:
+        msg: >-
+          idc03: check mode — would enable and
+          {{ zram_enabled | ternary('start', 'stop') }} zram-swap.service;
+          rerun without --check to converge
+      when: ansible_check_mode
+
+    - name: Enable the zram swap service in the requested state
+      ansible.builtin.systemd_service:
+        name: zram-swap.service
+        enabled: "{{ zram_enabled }}"
+        state: "{{ zram_enabled | ternary('started', 'stopped') }}"
+      register: zram_service
+      when: not ansible_check_mode
+
+    - name: Read active swap devices
+      ansible.builtin.command: swapon --show=NAME,TYPE,SIZE,USED,PRIO
+      register: swap_state
+      changed_when: false
+      when: not ansible_check_mode
+
+    - name: Assert zram0 is active when enabled
+      ansible.builtin.assert:
+        that:
+          - "'/dev/zram0' in swap_state.stdout"
+        fail_msg: "zram0 missing from swapon --show after convergence"
+      when:
+        - zram_enabled
+        - not ansible_check_mode
+
+    - name: Report active swap devices
+      ansible.builtin.debug:
+        var: swap_state.stdout_lines
+      when: not ansible_check_mode
