@@ -41,8 +41,9 @@ context:
       killed mddbd x4 (badness ~891-896), chrome x4, jev x1 (the OPS-1516
       incident), plus Nov 26 two python procs at badness ~980 RSS ~4.3 GiB.
       openjev was NOT killed in the storm — bigger residents took the hits."
-    - "/etc/default/earlyoom live: EARLYOOM_ARGS=\"-r 3600 --avoid
-      '(^|/)(jev)$\"" — only comm=jev exempt, as designed.
+    - >-
+      /etc/default/earlyoom live: EARLYOOM_ARGS="-r 3600 --avoid
+      '(^|/)(jev)$'" — only comm=jev exempt, as designed.
     - "Consumer proof: curl http://100.123.163.11:8777/health -> 200 in 7ms."
 
 decision:
