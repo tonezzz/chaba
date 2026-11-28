@@ -1,7 +1,7 @@
 id: lesson-polish-run
 title: 'lesson-polish: Fable pass on audit-flagged lessons (auto-queued)'
 column: doing
-updated: 2026-11-28 22:45
+updated: 2026-11-28 22:46
 brief: Auto-queued by chaba-lessons-audit when R1/R3/R4 flags > 0 — the Fable polish pass; standing card, re-armed
   each audit run (AUD-0831 loop).
 priority: medium
@@ -241,6 +241,13 @@ comms:
   from: chaba
   text: 'stagnation gate: warn (noul p=0.6847296660392022 choice=continue backends={''noul'': ''jevos'', ''choice'':
     ''jevos''}) — job still running, watching'
+- at: 2026-11-28 22:46
+  from: devin
+  text: 'polish pass BLOCKED again (retry 2026-11-28 22:43): MediaWiki edit path on wiki.h3 still down ~37h — 12
+    write probes 22:03-22:43 all HTTP 500 mediawiki edit failed; reads fine (237 lessons, same 15 R1/R3/R4 flags).
+    Zero writes landed, store clean. Full pass staged: .dispatch-scratch/lesson-polish-20261128.py + verify script
+    + docs/ssot/jobs/education/2026-11-28-lesson-polish-pass.yml (incl. 2 canonical-title migrations for hf-image-models
+    + ncm). needs-input.txt filed; existing request job-input'
 claim:
   since: 2026-11-28 21:59
 review_kind: verify
