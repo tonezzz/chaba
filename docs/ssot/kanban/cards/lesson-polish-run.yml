@@ -42,6 +42,7 @@ action:
     stale_running: 2026-11-27 07:59
     dirty: 5
     session_gone: 2026-11-27 08:10
+    stalled_claim: 2026-11-28 18:26
   result: 'exit=0 2026-11-27.json`, full writeup in `dispatch-outcome-20261127-074247-recurring-lesson-polish-pass-q.md`.
     | devin-task-20261127-074247-recurring-lesson-polish-pass-q.service: Consumed 24.318s CPU time, 317.6M memory
     peak, 0B memory swap peak.'
@@ -204,6 +205,10 @@ comms:
   from: chaba
   text: 'needs input: MediaWiki write path on wiki.h3.gizmo-thailand.com is down (DB query errors on every edit)
     — can someone check the Plesk host, or resume this dispatch once writes recover?'
+- at: 2026-11-28 18:26
+  from: chaba
+  text: 'stalled-claim reaper: status=running but no live devin-task unit (20261128-074220-recurring-lesson-polish-pass-q)
+    and no fresh runner report for >6h — runner=idc02. If the session is dead, requeue via /action do=queue.'
 claim:
   since: 2026-11-28 07:41
 review_kind: verify
@@ -223,3 +228,4 @@ requests:
   - id: hold
     label: Hold — leave blocked
     action: hold
+awaiting_action: true
