@@ -7,8 +7,8 @@ tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-25 09:58) of `chaba-lessons-due.service` on `idc03` result=exit-code — investigate journal:
-  `journalctl --user -u chaba-lessons-due.service` on the host. See CMS `timer-timeline-idc03`.'
+note: 'Last run (11-25 09:58) of `chaba-lessons-due.service` on `idc03` result=exit-code — investigate
+  journal: `journalctl --user -u chaba-lessons-due.service` on the host. See CMS `timer-timeline-idc03`.'
 ref: OPS-1378
 comms:
 - at: 2026-11-25 10:14
@@ -20,14 +20,15 @@ comms:
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 - at: 2026-11-25 10:24
   from: devin
-  text: '[still suspicious] Last run (11-25 09:58) of `chaba-lessons-due.service` on `idc03` result=exit-code —
-    investigate journal: `journalctl --user -u chaba-lessons-due.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (11-25 09:58) of `chaba-lessons-due.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-lessons-due.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-25 16:29
   from: tony
-  text: '2026-11-25 16:31 (+07): RESOLVED — the 09:58 run died on an HTTPS read TimeoutError while publishing to
-    the wiki/WP door, during the same backend-degradation window. Board endpoint now responds in ~0.36s and ~/.config/secrets/wp-boards.env
-    is present. Dry-run succeeded (source=wiki, due=170, upcoming=57); real unit run Result=success, ExecMainStatus=0
-    at 16:29:03. No code/timeout change needed — transient upstream failure.'
+  text: '2026-11-25 16:31 (+07): RESOLVED — the 09:58 run died on an HTTPS read TimeoutError while publishing
+    to the wiki/WP door, during the same backend-degradation window. Board endpoint now responds in ~0.36s
+    and ~/.config/secrets/wp-boards.env is present. Dry-run succeeded (source=wiki, due=170, upcoming=57);
+    real unit run Result=success, ExecMainStatus=0 at 16:29:03. No code/timeout change needed — transient
+    upstream failure.'
 - at: 2026-11-25 16:32
   from: devin
   text: '[auto-resolved] last run result=success at 11-25 16:29 — closing (timer-sentinel KNB-0577)'
@@ -99,11 +100,21 @@ comms:
   text: moved done -> backlog
 - at: 2026-11-28 07:45
   from: devin
-  text: '[reopened — condition recurred] Last run (11-28 07:31) of `chaba-lessons-due.service` on `idc03` result=exit-code
-    — investigate journal: `journalctl --user -u chaba-lessons-due.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[reopened — condition recurred] Last run (11-28 07:31) of `chaba-lessons-due.service` on `idc03`
+    result=exit-code — investigate journal: `journalctl --user -u chaba-lessons-due.service` on the host.
+    See CMS `timer-timeline-idc03`.'
 - at: 2026-11-28 07:55
   from: devin
-  text: '[still suspicious] Last run (11-28 07:31) of `chaba-lessons-due.service` on `idc03` result=exit-code —
-    investigate journal: `journalctl --user -u chaba-lessons-due.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (11-28 07:31) of `chaba-lessons-due.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-lessons-due.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-28 13:23
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (litellm:gemini-3.5-flash-lite) — review before queueing
 action:
   status: done
+spec: Investigate the failure of chaba-lessons-due.service on host idc03, where the last run resulted
+  in an exit-code. Access the host idc03 to inspect the systemd user journal using journalctl --user -u
+  chaba-lessons-due.service and review the CMS timer-timeline-idc03 for context. The target host is idc03
+  and the relevant repository is chaba. The done-condition is verified when the root cause of the service
+  failure is identified and resolved, and a subsequent manual or scheduled run of chaba-lessons-due.service
+  on idc03 completes successfully with an exit code of zero.
