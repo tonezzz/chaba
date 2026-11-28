@@ -1,7 +1,7 @@
 id: lesson-polish-run
 title: 'lesson-polish: Fable pass on audit-flagged lessons (auto-queued)'
-column: done
-updated: 2026-11-27 10:43
+column: backlog
+updated: 2026-11-28 07:41
 brief: Auto-queued by chaba-lessons-audit when R1/R3/R4 flags > 0 — the Fable polish pass; standing card, re-armed
   each audit run (AUD-0831 loop).
 priority: medium
@@ -36,8 +36,7 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: done
-  runner: con01
+  status: queued
   attempts: 1
   sweep:
     stale_running: 2026-11-27 07:59
@@ -142,6 +141,26 @@ comms:
 - at: 2026-11-27 10:43
   from: tony
   text: closed by tony
+- at: 2026-11-28 07:41
+  from: chaba
+  text: re-spawned from report page
+- at: 2026-11-28 07:41
+  from: chaba
+  text: 'lesson-audit 2026-11-28: 15 lesson(s) with R1/R3/R4 flags -> new-flags (lesson-polish-run)
+
+    flagged:
+
+    - `lesson-049482bc8bc7` Fleet MCP inventory SSOT and reports — `R1:overdue`
+
+    - `lesson-06ecd4245705` ada-ocb tools MCP workflow card discovery — `R1:overdue`
+
+    - `lesson-0c5b4a35ae59` ncm-code-block-composer-exploration — `R1:level-invalid`
+
+    - `lesson-163c276cd838` LLM Providers/Gemini API — `R1:overdue`
+
+    - `lesson-38e0e5554998` LLM Providers/Groq — `R1:overdue`
+
+    - `lesson-3da75cff08b2` SSOT-aligned kno'
 claim:
   since: 2026-11-27 07:41
 review_kind: verify
