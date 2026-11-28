@@ -1,7 +1,7 @@
 id: lesson-polish-run
 title: 'lesson-polish: Fable pass on audit-flagged lessons (auto-queued)'
-column: backlog
-updated: 2026-11-28 21:58
+column: doing
+updated: 2026-11-28 21:59
 brief: Auto-queued by chaba-lessons-audit when R1/R3/R4 flags > 0 — the Fable polish pass; standing card, re-armed
   each audit run (AUD-0831 loop).
 priority: medium
@@ -36,8 +36,8 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: queued
-  attempts: 0
+  status: running
+  attempts: 1
   sweep:
     stale_running: 2026-11-27 07:59
     dirty: 5
@@ -47,6 +47,7 @@ action:
   last_failure: 'exit=0 2026-11-27.json`, full writeup in `dispatch-outcome-20261127-074247-recurring-lesson-polish-pass-q.md`.
     | devin-task-20261127-074247-recurring-lesson-polish-pass-q.service: Consumed 24.318s CPU time, 317.6M memory
     peak, 0B memory swap peak.'
+  runner: idc02
 ref: OPS-1477
 comms:
 - at: 2026-11-27 07:41
@@ -219,7 +220,11 @@ comms:
 - at: 2026-11-28 21:58
   from: tony
   text: retry requested
-claim: {}
+- at: 2026-11-28 21:59
+  from: idc02
+  text: claimed
+claim:
+  since: 2026-11-28 21:59
 review_kind: verify
 note: '[verify 2026-11-27] Polish logs had landed in MDDB but audit reports conflicted; re-ran audit (0 R1/R3/R4),
   regenerated reports + lesson-polish-after-2026-11-27.json (edd946f654), posted before/after to both cards.'
